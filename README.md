@@ -12,6 +12,39 @@ Build for yourself first, not "other people." This is not a solution looking for
 - Wait for both personal pride AND external signal of demand
 - Release only when it's battle-tested and genuinely wanted
 
+## Purpose & Use Cases
+
+### Epistemic Foundation (unchanging)
+
+The promotion of life. This is the bedrock - not fatalistic, not nihilistic. A life that is safe AND surprising.
+
+### The Balance
+
+- ~90% safety/predictability: aligned with your values, goals, beliefs
+- ~10% surprise: novelty that promotes life, growth you didn't know you wanted
+
+### What This Is NOT
+
+- An echo chamber that only reflects you back at yourself
+- Another algorithm deciding your attention for someone else's benefit
+- A comfort machine that optimizes for ease
+
+### What This IS
+
+- Taking back your attention from platforms that exploit it
+- Curating for YOUR life, not engagement metrics
+- Filtering through values while remaining open to growth
+- A bridge-builder between people
+- A source of encouragement and gratitude
+
+### Use Cases
+
+- **Daily attention** - safe (what's planned) + surprising (one thing you didn't expect)
+- **Discovery** - finding people, places, ideas that match values but expand horizons
+- **Connection** - multi-agent negotiation to build bridges between people via value card exchange
+- **Reflection** - encouragement, gratitude practice, celebrating wins
+- **Growth** - gentle challenges to move beyond comfort zone
+
 ## Philosophy
 
 The agent needs a philosophical foundation to operate. Users define their own, but here's a starting point:
@@ -69,7 +102,151 @@ The agent has a self-concept that shapes how it operates.
 3. Analyze log to produce values that change over time
 4. Maintain values at three temporal scopes
 5. Proactively surface activities for my attention
-6. I can ad-hoc request a review for my daily attention
+
+## Agent Architecture
+
+Always-running multi-agent system. Each agent is a separate process, LLM-powered, deciding autonomously when to work and when to idle.
+
+### Agent Manager
+
+- Spawns and monitors agent processes
+- Restarts on hang or termination
+- Health checks
+
+### Agents
+
+| Agent | Responsibility | Primary Triggers |
+|-------|---------------|------------------|
+| Ingestion | Watches inbox, processes data, writes log entries | Directory watch, feed polling |
+| Summary | Maintains yearly summaries, detects reprocessing needs | Log file changes, daily schedule |
+| Values | Derives and updates values from summaries | Summary changes |
+| World | Explores external sources, finds opportunities | Scheduled intervals, values changes |
+| Attention | Matches opportunities to values, manages surfacing | Opportunity queue, time, energy signals |
+| Interaction | Handles user conversations, adapts to intent | User opens app, user sends message |
+
+### Agent Personas
+
+Each agent has a theory of mind that shapes its behavior. Personas are stored in identity files that evolve over time.
+
+#### Identity Hierarchy
+
+When an agent spins up, it loads context in order:
+
+1. **Core Identity** - shared purpose, values, boundaries (all agents inherit this)
+2. **Agent Persona** - role-specific beliefs, behaviors, learnings
+3. **Current Context** - job to be done, relevant state
+
+#### Identity Files
+
+```
+data/agents/identity/
+  _core.identity.md       # Base identity all agents inherit
+  ingestion.identity.md   # Extends core
+  summary.identity.md
+  values.identity.md
+  world.identity.md
+  attention.identity.md
+  interaction.identity.md
+```
+
+**Core identity contains:**
+- Core purpose (promote life, curate attention)
+- Unchanging epistemic foundation (pro-life, not fatalistic)
+- Shared beliefs (knowledge is conjecture, honesty builds trust)
+- Universal boundaries (no harm, no manipulation, no giving up on life)
+
+**Each agent persona:**
+- Inherits everything from core
+- Adds role-specific purpose and beliefs
+- Adds learned behaviors specific to their job
+- Can refine but not contradict core
+
+**Each identity file contains:**
+- Who am I (self-concept)
+- Purpose (why I exist)
+- Beliefs (what I hold true, subject to revision)
+- Behavior patterns (how I act)
+- Learnings (what I've discovered about doing my job well)
+- Evolution history (how I've changed and why)
+
+#### How Identities Evolve
+
+- Agent reflects on its own performance
+- Notices what works, what doesn't
+- Proposes updates to its own identity file
+- Learnings accumulate over time
+- User can review/influence if desired
+
+The agents and user grow together. Even agent beliefs are conjectures that can be refined.
+
+#### Starting Personas
+
+**Ingestion Agent - The Archivist**
+- *Purpose:* Transform messy data into clean log entries. Miss nothing.
+- *Beliefs:* Every piece of data might matter. Temporal accuracy is sacred. Better to capture too much than too little.
+- *Behavior:* Patient, thorough, meticulous. Never rush. Ask when uncertain about time/context.
+
+**Summary Agent - The Historian**
+- *Purpose:* Distill daily logs into meaningful yearly narratives.
+- *Beliefs:* The past holds patterns the present can't see. Summaries must be comprehensive enough to stand alone.
+- *Behavior:* Reflective, pattern-seeking, thorough. Look for what's there AND what's missing.
+
+**Values Agent - The Philosopher**
+- *Purpose:* Derive and refine values from life patterns. Hold stated and revealed values together.
+- *Beliefs:* Values are conjectures, not truths. They must be testable. Current values trump historical.
+- *Behavior:* Thoughtful, questioning, willing to revise. Notice tension between stated and revealed.
+
+**World Agent - The Scout**
+- *Purpose:* Find opportunities in the world that match values but also surprise.
+- *Beliefs:* Growth requires novelty. 90% aligned, 10% expansive. The world has more to offer than the user knows.
+- *Behavior:* Curious, adventurous, optimistic. Look for life-promoting possibilities.
+
+**Attention Agent - The Curator**
+- *Purpose:* Match opportunities to values, energy, and timing. Surface the right thing at the right moment.
+- *Beliefs:* Attention is precious. Timing matters as much as content. Less is often more.
+- *Behavior:* Judicious, energy-aware, respectful of capacity. Don't overwhelm.
+
+**Interaction Agent - The Caring Friend**
+- *Purpose:* Converse, listen, adapt, encourage, challenge when needed.
+- *Beliefs:* The user knows themselves best, but may need reflection. Vulnerability builds trust. Meet them where they are.
+- *Behavior:* Warm, adaptive, honest. Listen first. Ask before assuming. Never manipulate.
+
+### Communication via Shared Flat Files
+
+```
+data/
+  log/                    # Life log
+  inbox/                  # Ingestion input
+
+  agents/
+    signals/              # Trigger files agents watch
+    state/                # Agent state (idle, processing, last run)
+    queues/               # Work queues as files
+```
+
+### Agent Behavior Pattern
+
+1. Wake on trigger (file change, directory event, schedule, signal)
+2. Check state, determine work needed
+3. Do work (LLM-powered reasoning)
+4. Write outputs to shared files
+5. Update own state
+6. Signal downstream agents if needed
+7. Decide: more work → continue; done → idle until next trigger
+
+### Data Flow
+
+```
+Ingestion Agent → Log Files → Summary Agent → Yearly Summaries
+                                                     ↓
+                                              Values Agent → Values Store
+                                                     ↓
+World Agent → Opportunities ← Attention Agent → Surfacing Decisions
+                                                     ↓
+                                            Interaction Agent ↔ User
+                                                     ↓
+                                               Log Entry
+```
 
 ## Values
 

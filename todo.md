@@ -4,7 +4,6 @@ Track topics to flesh out in the spec across sessions.
 
 ## Pending
 
-- [ ] Agent processing pipeline (how functions chain together)
 - [ ] World exploration (external sources, discovery mechanisms, opportunity matching)
 - [ ] Multi-agent negotiation (protocol, privacy, value sharing)
 - [ ] User interface (web app design, REST API, calendar integration details)
@@ -25,3 +24,5 @@ Track topics to flesh out in the spec across sessions.
 - [x] Attention modes (morning, ad-hoc with intent adaptation, evening journal, weekly/phase/cool shit reviews)
 - [x] Agent identity (who am I, purpose, beliefs, will do, won't do)
 - [x] Persuasion model (persistence, resistance strategies, collaboration, the line)
+- [x] Purpose & use cases (epistemic foundation, 90/10 balance, what it is/isn't)
+- [x] Agent architecture (multi-agent, manager, shared files, behavior pattern, data flow, agent personas)
