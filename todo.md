@@ -1,31 +1,118 @@
-# Discussion Topics
+# Implementation Todo
 
-Track topics to flesh out in the spec across sessions.
+Track user flows and features to implement.
 
-## Pending
+## User Flows
 
-(none remaining)
+### Push Flows (system initiates)
 
-## In Progress
+- [ ] **Morning Attention**
+  - [ ] Generate morning briefing content
+  - [ ] Show today's calendar events
+  - [ ] Display surfaced opportunities
+  - [ ] Show energy forecast
+  - [ ] Include "one thing to look forward to"
+  - [ ] Notification trigger (email/push)
 
-## Complete
+- [ ] **Evening Journal**
+  - [ ] Agent-generated reflection prompts based on the day
+  - [ ] Warm, tired-friendly tone
+  - [ ] Auto-save journal entry to log
+  - [ ] Notification trigger
 
-- [x] Philosophy (Popperian epistemology, meaning in life)
-- [x] Log storage structure (daily files, yearly directories, manifest, summary)
-- [x] Daily entry format
-- [x] Yearly manifest and summary contents
-- [x] Values temporal scopes (current, phase, lifetime)
-- [x] Phase detection (signals, corroboration, nested phases)
-- [x] Values model (representation, discovery, stated vs revealed, interaction)
-- [x] Data ingestion (methods, inbox structure, processing triggers, storage, temporal detection)
-- [x] Energy management (dimensions, modeling, signals, caring friend voice, user override)
-- [x] Attention modes (morning, ad-hoc with intent adaptation, evening journal, weekly/phase/cool shit reviews)
-- [x] Agent identity (who am I, purpose, beliefs, will do, won't do)
-- [x] Persuasion model (persistence, resistance strategies, collaboration, the line)
-- [x] Purpose & use cases (epistemic foundation, 90/10 balance, what it is/isn't)
-- [x] Agent architecture (multi-agent, manager, shared files, behavior pattern, data flow, agent personas)
-- [x] World exploration (sources, privacy/consent, location, frequency, filtering, output)
-- [x] Multi-agent negotiation (value cards, public card flow, REST exchange, temporal evolution)
-- [x] File format standardization (all .md for simplicity)
-- [x] User interface (push not pull, sections, dynamic UI that evolves with values)
-- [x] Technical design (design.md - Python agents, core pattern, tools, file structure, API)
+- [ ] **Weekly Review**
+  - [ ] Patterns from the past week
+  - [ ] Upcoming week preparation
+  - [ ] Notification trigger
+
+### Pull Flows (user initiates)
+
+- [ ] **Chat Intent Detection**
+  - [ ] Detect intent from message tone/content
+  - [ ] Ask when uncertain: "Do you want me to help solve this, or just hear it?"
+  - [ ] Adapt response mode:
+    - [ ] Explore → participate, challenge, expand
+    - [ ] Vent → listen, reflect, empathize
+    - [ ] Capture → confirm, clarify, log
+    - [ ] Decide → surface values, pros/cons
+    - [ ] Brainstorm → generate, connect, play
+
+- [ ] **Chat Ingestion**
+  - [ ] Text capture: "I had a conversation with Sarah about X"
+  - [ ] Auto-log conversations to life log
+  - [ ] File upload support in web UI
+  - [ ] URL fetching: "Read this article and log what's interesting"
+  - [ ] Photo/image processing via chat
+
+- [ ] **Log Browsing**
+  - [ ] View entries by date
+  - [ ] Search across logs
+  - [ ] Filter by source/type
+
+### Cards & Connection
+
+- [ ] **Value Cards**
+  - [ ] Generate internal card from values
+  - [ ] Generate public card (user reviews/approves)
+  - [ ] Edit public card via UI
+  - [ ] Approve public card for sharing
+
+- [ ] **Card Exchange**
+  - [ ] Receive cards from others
+  - [ ] View received cards
+  - [ ] Update card status (reviewed, connected, declined)
+  - [ ] REST endpoint for card exchange
+
+### Discovery
+
+- [ ] **World Agent Discovery**
+  - [ ] Scheduled discovery sweeps
+  - [ ] 90/10 aligned vs expansive balance
+  - [ ] Surface opportunities in Today view
+  - [ ] Mark opportunities as surfaced/responded
+
+## Technical Infrastructure
+
+- [ ] **Agent Manager**
+  - [ ] Spawn and monitor all agents
+  - [ ] Health checks and auto-restart
+  - [ ] Scheduled triggers (morning, evening, weekly)
+
+- [ ] **Notifications**
+  - [ ] Email notifications
+  - [ ] Push notifications (web/mobile)
+
+- [ ] **File Processing**
+  - [ ] Image OCR/description
+  - [ ] PDF text extraction
+  - [ ] Audio transcription
+  - [ ] Video processing
+
+- [ ] **External Integrations**
+  - [ ] Calendar API (Google/Apple)
+  - [ ] URL content fetching
+
+## UI Improvements
+
+- [ ] Theme system (user customizable)
+- [ ] File upload in chat
+- [ ] Better markdown rendering
+- [ ] Mobile responsive refinements
+- [ ] Keyboard shortcuts
+
+---
+
+## Completed
+
+- [x] Core agent pattern (context + loop + tools)
+- [x] All 6 agents implemented (Ingestion, Interaction, Summary, Values, Attention, World)
+- [x] Log tools (write, read, search)
+- [x] File processing tools (inbox watching)
+- [x] Summary tools
+- [x] Values tools (current, phase, lifetime)
+- [x] Attention tools (energy, queue)
+- [x] World tools (opportunities)
+- [x] Cards tools (internal, public, received)
+- [x] FastAPI web server
+- [x] Web UI with all spec sections (Today, Chat, Journal, Review, Cards, Logs, Agents, Settings)
+- [x] Markdown rendering in UI
