@@ -6,8 +6,9 @@ Finds patterns in the noise, tracks entities across time.
 """
 
 from datetime import datetime
-from .base import create_agent
-from ..tools.summary import SUMMARY_TOOLS, SUMMARY_HANDLERS, list_years, check_summary_needed
+from pathlib import Path
+from .base import create_agent, AutonomousAgent
+from ..tools.summary import SUMMARY_TOOLS, SUMMARY_HANDLERS, list_years, check_summary_needed, LOG_DIR
 
 
 def create_summary_agent():
@@ -126,6 +127,72 @@ def check_and_summarize_all():
             print(f"Generating summary for {year}...")
             result = summarize_year(year)
             print(f"Result: {result}")
+
+
+class AutonomousSummaryAgent(AutonomousAgent):
+    """
+    Autonomous Summary Agent that monitors logs for changes.
+
+    Checks:
+    - Signal: logs_updated
+    - Any year where summary is outdated
+
+    Work:
+    - Generate/update summaries for years that need it
+
+    Signals:
+    - summaries_updated: After generating summaries
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="summary",
+            persona_name="summary",
+            tools=SUMMARY_TOOLS,
+            tool_handlers=SUMMARY_HANDLERS,
+            check_interval=300,  # Check every 5 minutes
+            signals_on_complete=["summaries_updated"]
+        )
+        self._years_needing_summary = []
+
+    def check_work_needed(self) -> bool:
+        """Check if any summaries need updating."""
+        # First check for explicit signal
+        if self.check_signal("logs_updated"):
+            self.logger.info("Received logs_updated signal")
+
+        # Check each year
+        self._years_needing_summary = []
+
+        if not LOG_DIR.exists():
+            return False
+
+        for year_dir in sorted(LOG_DIR.iterdir()):
+            if not year_dir.is_dir() or not year_dir.name.isdigit():
+                continue
+
+            year = int(year_dir.name)
+            status = check_summary_needed(year)
+
+            if "needed" in status.lower() or "outdated" in status.lower():
+                self._years_needing_summary.append(year)
+
+        if self._years_needing_summary:
+            self.logger.debug(f"Years needing summary: {self._years_needing_summary}")
+
+        return len(self._years_needing_summary) > 0
+
+    def do_work(self) -> str:
+        """Generate summaries for years that need them."""
+        results = []
+
+        for year in self._years_needing_summary:
+            self.logger.info(f"Generating summary for {year}...")
+            result = summarize_year(year)
+            results.append(f"{year}: done")
+            self.agent.clear_context()
+
+        return f"Summarized {len(results)} year(s)"
 
 
 if __name__ == "__main__":

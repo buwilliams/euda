@@ -5,8 +5,10 @@ Derives and refines values from life patterns. Holds stated and revealed
 values together. Tracks values across temporal scopes.
 """
 
-from .base import create_agent
+from pathlib import Path
+from .base import create_agent, AutonomousAgent
 from ..tools.values import VALUES_TOOLS, VALUES_HANDLERS, get_all_values
+from ..tools.summary import get_summary, LOG_DIR
 
 
 def create_values_agent():
@@ -114,6 +116,49 @@ Remember:
 """
 
     return agent.process(prompt, VALUES_HANDLERS)
+
+
+class AutonomousValuesAgent(AutonomousAgent):
+    """
+    Autonomous Values Agent that updates values when summaries change.
+
+    Checks:
+    - Signal: summaries_updated
+    - Summaries newer than current values
+
+    Work:
+    - Derive values from summaries at all temporal scopes
+
+    Signals:
+    - values_updated: After deriving values
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="values",
+            persona_name="values",
+            tools=VALUES_TOOLS,
+            tool_handlers=VALUES_HANDLERS,
+            check_interval=600,  # Check every 10 minutes
+            signals_on_complete=["values_updated"]
+        )
+
+    def check_work_needed(self) -> bool:
+        """Check if values need updating."""
+        # Check for explicit signal
+        if self.check_signal("summaries_updated"):
+            self.logger.info("Received summaries_updated signal")
+            return True
+
+        # Could also check if summaries are newer than values files
+        # For now, just respond to signals
+        return False
+
+    def do_work(self) -> str:
+        """Derive values from summaries."""
+        result = derive_values()
+        self.agent.clear_context()
+        return "Values derived from summaries"
 
 
 if __name__ == "__main__":

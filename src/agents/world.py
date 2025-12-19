@@ -5,7 +5,8 @@ Discovers opportunities in the external world that align with user values
 while occasionally surprising with life-promoting novelty.
 """
 
-from .base import create_agent
+from datetime import datetime, timedelta
+from .base import create_agent, AutonomousAgent
 from ..tools.world import WORLD_TOOLS, WORLD_HANDLERS
 from ..tools.values import VALUES_TOOLS, VALUES_HANDLERS
 
@@ -116,6 +117,62 @@ Remember:
 """
 
     return agent.process(prompt, ALL_HANDLERS)
+
+
+class AutonomousWorldAgent(AutonomousAgent):
+    """
+    Autonomous World Agent that periodically discovers opportunities.
+
+    Checks:
+    - Signal: values_updated
+    - Time since last discovery sweep
+
+    Work:
+    - Run discovery sweep to find new opportunities
+
+    Signals:
+    - opportunities_updated: After discovering new opportunities
+    """
+
+    def __init__(self, sweep_interval_hours: int = 24):
+        super().__init__(
+            name="world",
+            persona_name="world",
+            tools=ALL_TOOLS,
+            tool_handlers=ALL_HANDLERS,
+            check_interval=3600,  # Check every hour
+            signals_on_complete=["opportunities_updated"]
+        )
+        self.sweep_interval = timedelta(hours=sweep_interval_hours)
+
+    def check_work_needed(self) -> bool:
+        """Check if a discovery sweep is needed."""
+        # Check for explicit signal
+        if self.check_signal("values_updated"):
+            self.logger.info("Received values_updated signal - running discovery")
+            return True
+
+        # Check if enough time has passed since last sweep
+        state = self.load_state()
+        last_sweep = state.get("last_sweep")
+
+        if last_sweep:
+            last_time = datetime.fromisoformat(last_sweep)
+            if datetime.now() - last_time < self.sweep_interval:
+                return False
+
+        # Time for a sweep
+        return True
+
+    def do_work(self) -> str:
+        """Run a discovery sweep."""
+        result = run_discovery_sweep()
+
+        # Save state
+        self.save_state({"last_sweep": datetime.now().isoformat()})
+        self.agent.clear_context()
+
+        return "Discovery sweep complete"
 
 
 if __name__ == "__main__":

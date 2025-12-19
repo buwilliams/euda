@@ -5,10 +5,21 @@ An agent is simply:
 - A context (list of messages)
 - A loop (process input → call LLM → handle tools → repeat)
 - Tools (functions the agent can call)
+
+Autonomous agents add:
+- A check_work_needed() method to decide if work is required
+- A do_work() method to perform the work
+- Signal sending when work completes
+- Continuous loop with idle periods
 """
 
+import asyncio
 import json
+import logging
+from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
+from typing import Optional
 from dotenv import load_dotenv
 from anthropic import Anthropic
 
@@ -190,6 +201,162 @@ def create_agent(persona_name: str, tools: list = None, model: str = "claude-son
     agent.system_prompt = system_prompt
 
     return agent
+
+
+# ============== Autonomous Agent Base ==============
+
+# Signals directory
+SIGNALS_DIR = DATA_DIR / "agents" / "signals"
+STATE_DIR = DATA_DIR / "agents" / "state"
+SIGNALS_DIR.mkdir(parents=True, exist_ok=True)
+STATE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+class AutonomousAgent(ABC):
+    """
+    Base class for autonomous agents that run continuously.
+
+    Each agent:
+    1. Wakes on trigger or interval
+    2. Checks if work is needed
+    3. Does work if needed
+    4. Signals downstream agents
+    5. Idles until next check
+    """
+
+    def __init__(
+        self,
+        name: str,
+        persona_name: str,
+        tools: list = None,
+        tool_handlers: dict = None,
+        check_interval: int = 60,
+        signals_on_complete: list = None
+    ):
+        self.name = name
+        self.persona_name = persona_name
+        self.tools = tools or []
+        self.tool_handlers = tool_handlers or {}
+        self.check_interval = check_interval
+        self.signals_on_complete = signals_on_complete or []
+
+        self.logger = logging.getLogger(f"agent.{name}")
+        self.running = False
+        self.last_work_time: Optional[datetime] = None
+        self.work_count = 0
+        self.error_count = 0
+
+        # Create the underlying agent
+        self.agent = create_agent(persona_name, tools)
+
+        # State file for tracking
+        self.state_file = STATE_DIR / f"{name}.state.json"
+
+    @abstractmethod
+    def check_work_needed(self) -> bool:
+        """
+        Check if work is needed.
+
+        Each agent implements this to decide whether to do work.
+        Examples:
+        - Ingestion: Are there files in the inbox?
+        - Summary: Have logs changed since last summary?
+        - Values: Have summaries changed since last derivation?
+
+        Returns:
+            True if work is needed, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def do_work(self) -> str:
+        """
+        Perform the agent's work.
+
+        Returns:
+            A status message describing what was done
+        """
+        pass
+
+    def load_state(self) -> dict:
+        """Load agent state from file."""
+        if self.state_file.exists():
+            with open(self.state_file, 'r') as f:
+                return json.load(f)
+        return {}
+
+    def save_state(self, state: dict):
+        """Save agent state to file."""
+        state['updated'] = datetime.now().isoformat()
+        with open(self.state_file, 'w') as f:
+            json.dump(state, f, indent=2)
+
+    def send_signal(self, signal_name: str):
+        """Send a signal to trigger other agents."""
+        signal_file = SIGNALS_DIR / f"{signal_name}.signal"
+        signal_file.write_text(datetime.now().isoformat())
+        self.logger.info(f"Sent signal: {signal_name}")
+
+    def check_signal(self, signal_name: str) -> bool:
+        """Check if a signal exists (and consume it)."""
+        signal_file = SIGNALS_DIR / f"{signal_name}.signal"
+        if signal_file.exists():
+            signal_file.unlink()
+            return True
+        return False
+
+    async def run_once(self) -> bool:
+        """
+        Run one iteration of the agent loop.
+
+        Returns:
+            True if work was done, False otherwise
+        """
+        try:
+            if self.check_work_needed():
+                self.logger.info(f"Work needed, starting...")
+                result = self.do_work()
+                self.last_work_time = datetime.now()
+                self.work_count += 1
+                self.logger.info(f"Work complete: {result}")
+
+                # Send completion signals
+                for signal in self.signals_on_complete:
+                    self.send_signal(signal)
+
+                return True
+            return False
+
+        except Exception as e:
+            self.error_count += 1
+            self.logger.error(f"Error during work: {e}")
+            return False
+
+    async def run(self):
+        """Run the agent continuously."""
+        self.running = True
+        self.logger.info(f"Starting autonomous agent: {self.name}")
+
+        while self.running:
+            await self.run_once()
+            await asyncio.sleep(self.check_interval)
+
+        self.logger.info(f"Agent stopped: {self.name}")
+
+    def stop(self):
+        """Stop the agent."""
+        self.running = False
+
+    def get_status(self) -> dict:
+        """Get agent status."""
+        return {
+            "name": self.name,
+            "running": self.running,
+            "last_work_time": self.last_work_time.isoformat() if self.last_work_time else None,
+            "work_count": self.work_count,
+            "error_count": self.error_count,
+            "check_interval": self.check_interval
+        }
 
 
 # Simple test

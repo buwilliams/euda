@@ -5,8 +5,8 @@ Decides what deserves attention right now. Matches opportunities to values,
 energy, and timing. Surfaces the right thing at the right moment.
 """
 
-from datetime import datetime
-from .base import create_agent
+from datetime import datetime, time
+from .base import create_agent, AutonomousAgent
 from ..tools.attention import ATTENTION_TOOLS, ATTENTION_HANDLERS
 from ..tools.values import VALUES_TOOLS, VALUES_HANDLERS
 from ..tools.log import LOG_TOOLS, LOG_HANDLERS
@@ -129,6 +129,105 @@ Be warm. Be brief. Honor their tiredness.
 """
 
     return agent.process(prompt, ALL_HANDLERS)
+
+
+class AutonomousAttentionAgent(AutonomousAgent):
+    """
+    Autonomous Attention Agent that triggers at key moments.
+
+    Checks:
+    - Signal: opportunities_updated
+    - Time: morning window (7-9am), evening window (8-10pm)
+    - Has morning/evening attention been delivered today?
+
+    Work:
+    - Generate morning attention
+    - Generate evening reflection
+    - Surface high-priority opportunities
+
+    Signals:
+    - attention_delivered: After generating attention content
+    """
+
+    def __init__(self, morning_hour: int = 7, evening_hour: int = 21):
+        super().__init__(
+            name="attention",
+            persona_name="attention",
+            tools=ALL_TOOLS,
+            tool_handlers=ALL_HANDLERS,
+            check_interval=300,  # Check every 5 minutes
+            signals_on_complete=["attention_delivered"]
+        )
+        self.morning_hour = morning_hour
+        self.evening_hour = evening_hour
+
+    def check_work_needed(self) -> bool:
+        """Check if attention is needed based on time or signals."""
+        now = datetime.now()
+        today = now.date().isoformat()
+        state = self.load_state()
+
+        # Check for opportunities signal - might want to surface something
+        if self.check_signal("opportunities_updated"):
+            self.logger.info("Received opportunities_updated signal")
+            # Don't immediately act, but note it for next attention window
+            state["new_opportunities"] = True
+            self.save_state(state)
+
+        # Check morning window (7-9am)
+        if self.morning_hour <= now.hour < self.morning_hour + 2:
+            last_morning = state.get("last_morning_date")
+            if last_morning != today:
+                self.logger.info("Morning attention window - generating")
+                state["pending_type"] = "morning"
+                self.save_state(state)
+                return True
+
+        # Check evening window (9-11pm)
+        if self.evening_hour <= now.hour < self.evening_hour + 2:
+            last_evening = state.get("last_evening_date")
+            if last_evening != today:
+                self.logger.info("Evening attention window - generating")
+                state["pending_type"] = "evening"
+                self.save_state(state)
+                return True
+
+        return False
+
+    def do_work(self) -> str:
+        """Generate morning or evening attention."""
+        state = self.load_state()
+        pending_type = state.get("pending_type", "morning")
+        today = datetime.now().date().isoformat()
+
+        if pending_type == "morning":
+            result = morning_attention()
+            state["last_morning_date"] = today
+            state["last_morning_content"] = result
+            self.logger.info("Morning attention generated")
+        else:
+            result = evening_attention()
+            state["last_evening_date"] = today
+            state["last_evening_content"] = result
+            self.logger.info("Evening attention generated")
+
+        # Clear flags
+        state["pending_type"] = None
+        state["new_opportunities"] = False
+        self.save_state(state)
+
+        self.agent.clear_context()
+        return f"{pending_type.title()} attention delivered"
+
+    def get_latest_attention(self) -> dict:
+        """Get the most recent attention content for display."""
+        state = self.load_state()
+        return {
+            "morning": state.get("last_morning_content"),
+            "morning_date": state.get("last_morning_date"),
+            "evening": state.get("last_evening_content"),
+            "evening_date": state.get("last_evening_date")
+        }
 
 
 if __name__ == "__main__":
