@@ -308,9 +308,9 @@ World Agent → Opportunities ← Attention Agent → Surfacing Decisions
 ```
 data/log/
   [yyyy]/
-    [yyyy-mm-dd].txt   # daily log entries
-    _manifest.txt      # tracks completeness, sources, processing state
-    _summary.txt       # comprehensive yearly distillation
+    [yyyy-mm-dd].md    # daily log entries
+    _manifest.md       # tracks completeness, sources, processing state
+    _summary.md        # comprehensive yearly distillation
 ```
 
 ### Daily Entry Format
@@ -382,10 +382,14 @@ data/inbox/
   google-photos-export.zip
   facebook-takeout/
   random-screenshot.png
-  notes.txt
+  notes.md
+  voice-memo.m4a
+  document.pdf
+  ...any file type
 ```
 
-- Agent watches directory, identifies file types, extracts content
+- Agent processes files of any type - it figures out what to do with each
+- Identifies file type, extracts content appropriately (OCR, transcription, parsing, etc.)
 - Writes to log, moves processed files to archive
 
 #### Processing Triggers
@@ -513,7 +517,47 @@ User initiates conversation whenever ideas arise. Agent adapts to conversational
 - Agent proactively searches external world for opportunities matching values
 - People to meet, events to attend, places to visit, things to learn, goals to pursue
 - Not passive; actively discovers and proposes
-- [TO BE DEFINED]
+
+### What It Searches
+
+| Category | Possible Sources |
+|----------|------------------|
+| Events | Eventbrite, Meetup, local calendars, venue schedules |
+| People | LinkedIn, mutual connections, community groups |
+| Places | Travel sites, local discovery apps, reviews |
+| Learning | Courses, books, podcasts, articles, tutorials |
+| Goals | Based on values + what others with similar values pursue |
+
+### Privacy & Consent
+
+- Only publicly available information unless someone shares their value card
+- Each person manages their own accessibility
+- Agents monitor outcomes - if something led to undesirable results, learn from it
+
+### Location & Resources
+
+- Balance practical constraints (money, time, distance) with aspirational desires
+- Reflects user's values - some want local, some want adventure
+- Both "what's nearby this weekend" and "dream trip to plan toward"
+
+### Frequency
+
+- Periodic sweeps, not constant searching
+- Driven by user's expressed values and availability
+- Attention Agent coordinates timing
+- Adapts to life rhythm - more discovery during open periods, less during intense phases
+
+### Filtering (90/10 Applied)
+
+- Wise guesses based on user's demonstrated values, not generic recommendations
+- No imposing others' preferences (popularity means nothing)
+- The 10% surprise is still plausibly life-promoting for this user, not random novelty
+- The ratio itself can evolve based on what the user responds to
+
+### Output
+
+- Opportunities go to a queue for the Attention Agent to evaluate
+- Each opportunity tagged with: source, relevance reasoning, energy cost, time sensitivity
 
 ## Persuasion
 
@@ -566,11 +610,122 @@ User initiates conversation whenever ideas arise. Agent adapts to conversational
 - Share what each values about themselves
 - Surface what each is likely to value about the other
 - Help navigate interactions
-- [TO BE DEFINED]
+
+### Value Cards
+
+Two types of cards, both evolving temporally like everything else in the system.
+
+| Card | Who Manages | User Role |
+|------|-------------|-----------|
+| Internal | Agent (fully autonomous) | User can view but doesn't manage |
+| Public | Agent (proposes, updates) | User reviews, adjusts for comfort |
+
+### Public Card Flow
+
+1. Agent makes first pass based on values analysis
+2. Presents to user: "Here's what I'd suggest sharing publicly"
+3. User reviews, adjusts comfort levels, approves
+4. Agent continues updating as values evolve
+5. Surfaces changes to user: "Your values have shifted - want to update your public card?"
+6. User approves changes or holds
+
+### Exchange Protocol (REST)
+
+```
+Agent A                          Agent B
+   |                                |
+   |-- Request value card --------->|
+   |                                |
+   |<-- Return public card ---------|
+   |                                |
+   |-- Share own public card ------>|
+   |                                |
+```
+
+- Agents can request or respond to requests
+- Exchange includes timestamp ("as of [date]")
+- Cards reflect current values, not historical
+
+### What Agents Do With Exchanged Cards
+
+- Find common ground (shared values, interests)
+- Surface potential friction points
+- Suggest conversation topics
+- Help user prepare for interaction
+- "Last time you met Sarah, her card emphasized X. Now it emphasizes Y."
+
+### Storage
+
+```
+data/cards/
+  internal.card.md      # Full private card (agent-managed)
+  public.card.md        # Approved public card
+  exchanges/            # Cards received from others
+    sarah_2024-01-15.card.md
+    sarah_2024-06-20.card.md
+```
+
+### Temporal Evolution
+
+- Cards are always "current" - reflecting now
+- No discrete versioning, just continuous evolution
+- Historical snapshots exist in exchanges folder, captured at time of exchange
+- Natural evolution visible through re-exchanges over time
 
 ## User Interface
 
-- Web app as primary interface
-- REST API for integrations
-- Calendar integration to prompt user to open web app
-- [TO BE DEFINED]
+Web app as primary interface, REST API for integrations.
+
+### Push, Don't Pull
+
+The system reaches out to you - you don't obsessively check it.
+
+| Touchpoint | When | How |
+|------------|------|-----|
+| Morning attention | Early morning | Email/notification → focused view |
+| Ad-hoc chat | When you need it | You initiate |
+| Evening journal | End of day | Notification → guided reflection |
+| Weekly review | Weekend | Notification |
+
+### Sections
+
+| Section | Purpose |
+|---------|---------|
+| **Today** | Responds to morning push, focused attention |
+| **Chat** | Conversation with agent |
+| **Journal** | Evening reflection (prompted) |
+| **Review** | Weekly, phase, cool shit - when prompted |
+| **Cards** | View/edit public card, view internal card |
+| **Logs** | Browse life log when needed |
+| **Agents** | Monitor/manage agent status (power user) |
+| **Settings** | Data sources, notifications, preferences |
+
+### Dynamic UI
+
+The interface itself evolves based on values and usage - it's not fixed.
+
+**What stays fixed:**
+- Chat (always available)
+- Core navigation (logs, cards, settings always accessible)
+- Push notifications (morning, evening, reviews)
+
+**What evolves:**
+- What appears on "Today"
+- Which sections are prominent vs. tucked away
+- What the agent proactively shows
+- The questions asked in journal prompts
+
+**Agent manages UI state:**
+```
+data/ui/
+  layout.md          # Current UI configuration
+  evolution.md       # History of UI changes and why
+```
+
+**Evolution examples:**
+- Early on: more structure, guided prompts, learning mode
+- Later: streamlined to what you actually engage with
+- Life phase shift: UI adapts (new job → more planning, new relationship → more reflection)
+- Seasonal: different emphasis if that matches your patterns
+
+The UI becomes another expression of values - a living reflection rather than a static tool.

@@ -4,9 +4,7 @@ Track topics to flesh out in the spec across sessions.
 
 ## Pending
 
-- [ ] World exploration (external sources, discovery mechanisms, opportunity matching)
-- [ ] Multi-agent negotiation (protocol, privacy, value sharing)
-- [ ] User interface (web app design, REST API, calendar integration details)
+(none remaining)
 
 ## In Progress
 
@@ -26,3 +24,8 @@ Track topics to flesh out in the spec across sessions.
 - [x] Persuasion model (persistence, resistance strategies, collaboration, the line)
 - [x] Purpose & use cases (epistemic foundation, 90/10 balance, what it is/isn't)
 - [x] Agent architecture (multi-agent, manager, shared files, behavior pattern, data flow, agent personas)
+- [x] World exploration (sources, privacy/consent, location, frequency, filtering, output)
+- [x] Multi-agent negotiation (value cards, public card flow, REST exchange, temporal evolution)
+- [x] File format standardization (all .md for simplicity)
+- [x] User interface (push not pull, sections, dynamic UI that evolves with values)
+- [x] Technical design (design.md - Python agents, core pattern, tools, file structure, API)

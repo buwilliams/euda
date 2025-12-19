@@ -9,7 +9,8 @@ Me and Us (Meandus) is an AI personal assistant that manages user attention to m
 ## Current State
 
 This project is in product vision/specification phase. No code yet. Key files:
-- `README.md` - Product specification (actively being developed)
+- `README.md` - Product specification
+- `design.md` - Technical architecture and implementation spec
 - `todo.md` - Discussion topics to flesh out across sessions
 
 ## Development Philosophy
