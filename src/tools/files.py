@@ -41,7 +41,7 @@ def list_pending_files() -> str:
 
     result = "Pending files:\n"
     for f in files:
-        result += f"- {f['name']} ({f['size']} bytes, modified: {f['modified']})\n"
+        result += f"- {f['path']} ({f['size']} bytes, modified: {f['modified']})\n"
     return result
 
 

@@ -331,46 +331,63 @@ async def get_year_summary(year: int):
 
 # ============== Agent Status ==============
 
+# Agent metadata
+AGENT_INFO = {
+    "ingestion": {"display_name": "Ingestion (Archivist)", "description": "Transforms data into log entries"},
+    "interaction": {"display_name": "Interaction (Caring Friend)", "description": "User-facing conversations"},
+    "summary": {"display_name": "Summary (Historian)", "description": "Yearly summaries from logs"},
+    "values": {"display_name": "Values (Philosopher)", "description": "Derive and refine values"},
+    "attention": {"display_name": "Attention (Curator)", "description": "Surface the right thing at the right time"},
+    "world": {"display_name": "World (Scout)", "description": "Discover opportunities"},
+    "worker": {"display_name": "Worker (Executor)", "description": "Execute approved tasks"},
+}
+
+STATE_DIR = BASE_DIR / "data" / "agents" / "state"
+
+
+def get_agent_state(agent_name: str) -> dict:
+    """Load agent state from file if it exists."""
+    state_file = STATE_DIR / f"{agent_name}.state.json"
+    if state_file.exists():
+        with open(state_file, 'r') as f:
+            return json.load(f)
+    return {}
+
+
 @app.get("/api/agents/status")
 async def get_agent_status():
-    """Get status of all agents."""
-    # Simple status based on file existence
-    data_dir = BASE_DIR / "data"
+    """Get status of all agents with real state data."""
+    agents = []
+
+    for agent_name, info in AGENT_INFO.items():
+        state = get_agent_state(agent_name)
+
+        agent_data = {
+            "name": info["display_name"],
+            "description": info["description"],
+            "status": "ready" if state.get("updated") else "idle",
+        }
+
+        # Add state details if available
+        if state.get("updated"):
+            agent_data["last_active"] = state["updated"]
+
+        # Special handling for interaction agent - show active sessions
+        if agent_name == "interaction":
+            agent_data["active_sessions"] = len(sessions)
+
+        # Show last work time if available
+        if state.get("last_work_time"):
+            agent_data["last_work"] = state["last_work_time"]
+
+        # Show work count if available
+        if state.get("work_count"):
+            agent_data["work_count"] = state["work_count"]
+
+        agents.append(agent_data)
 
     return {
-        "agents": [
-            {
-                "name": "Ingestion (Archivist)",
-                "status": "available",
-                "description": "Transforms data into log entries"
-            },
-            {
-                "name": "Interaction (Caring Friend)",
-                "status": "available",
-                "active_sessions": len(sessions),
-                "description": "User-facing conversations"
-            },
-            {
-                "name": "Summary (Historian)",
-                "status": "available",
-                "description": "Yearly summaries from logs"
-            },
-            {
-                "name": "Values (Philosopher)",
-                "status": "available",
-                "description": "Derive and refine values"
-            },
-            {
-                "name": "Attention (Curator)",
-                "status": "available",
-                "description": "Surface the right thing at the right time"
-            },
-            {
-                "name": "World (Scout)",
-                "status": "available",
-                "description": "Discover opportunities"
-            }
-        ],
+        "agents": agents,
         "timestamp": datetime.now().isoformat()
     }
 

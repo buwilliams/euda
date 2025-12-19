@@ -507,6 +507,150 @@ python main.py
 uvicorn web.app:app --reload
 ```
 
+---
+
+## User Interface Design
+
+### Philosophy
+
+The UI must embody the project's core value: **attention is sacred**. Every element competes for attention. Therefore:
+
+- **Empty is good.** If the system has nothing to say, the screen should communicate peace, not emptiness. A nearly-blank screen means "you're free, go live."
+- **Push, don't pull.** The user shouldn't come here to check on things. The system reaches out when there's something worth their attention.
+- **Less is more.** Each element must earn its place. No decoration, no "nice to have" info.
+- **The friend, not the dashboard.** The primary relationship is conversational, not informational.
+
+### Anti-Patterns to Avoid
+
+These patterns optimize for engagement, not wellbeing:
+
+- **Cards and containers** - Visual boxes create the illusion of "content to consume"
+- **Grids of options** - Decision fatigue disguised as choice
+- **Tabs demanding attention** - Every tab is a question: "What about me?"
+- **Stats and counts** - Gamification that creates compulsion
+- **Notification badges** - Anxiety triggers
+- **Dense information** - Information overload defeats attention management
+
+### Visual Principles
+
+**Typography-first:**
+- Black text on white background
+- Let words breathe with generous spacing
+- No visual noise competing with content
+- The logo is the only graphical anchor
+
+**Minimal structure:**
+- Plain HTML with light CSS
+- No containers, borders, boxes (except navigation)
+- No shadows, gradients, or decorative elements
+- Whitespace communicates importance through absence
+
+**Progressive disclosure:**
+- Primary: What matters right now (dashboard)
+- Secondary: Chat (always available)
+- Tertiary: Everything else (hidden in navigation)
+
+### Information Architecture
+
+**Single Screen Design**
+
+There is one screen with three persistent elements:
+
+1. **Header** - Logo + title, always present
+2. **Activity Feed** - Real-time agent status, shows what the system is doing
+3. **Chat** - The Caring Friend, primary interface for everything
+
+**Activity Feed:**
+
+Shows what agents are doing in real-time:
+- "All quiet. Your attention is free." when nothing is happening
+- "Ingestion working..." when processing new data
+- "Summary finished" when agents complete work
+- Pulsing dot indicates active work, green dot shows completion
+
+This keeps the user informed without leaving them in limbo.
+
+**Chat as Primary Interface:**
+
+Everything happens through conversation:
+- Ask "what are my values" → Friend fetches and explains your values
+- Ask "any discoveries" → Friend shows relevant opportunities
+- Ask "what did I log today" → Friend reads your log
+- Share information → Friend captures it to the log
+
+No separate screens needed. The friend knows you and can access everything.
+
+**Loading States:**
+
+Never leave the user wondering:
+- "Thinking..." with animated dots while waiting for response
+- Input disabled during processing
+- Agent activity visible in the feed
+
+**Subtle Hints:**
+
+Below the chat input, gentle suggestions:
+- "what did I log today"
+- "what are my values"
+- "any discoveries"
+
+These are not buttons - they're conversation starters. Clicking fills the input.
+
+### Layout Structure
+
+```
+┌─────────────────────────────────────┐
+│  [logo] Me and Us                   │
+├─────────────────────────────────────┤
+│  All quiet. Your attention is free. │  ← Activity feed
+│  (or: Ingestion working...)         │
+├─────────────────────────────────────┤
+│                                     │
+│  Hey. I'm here when you need me.    │  ← Chat messages
+│  What's on your mind?               │
+│                                     │
+│  [user message]                     │
+│                                     │
+│  Thinking...                        │  ← Loading state
+│                                     │
+│  [Talk to me...              ] Send │  ← Input
+│                                     │
+│  Try: "what are my values" ·        │  ← Hints
+│       "any discoveries"             │
+└─────────────────────────────────────┘
+```
+
+### No Separate Screens
+
+Everything happens through chat:
+- Ask about logs → Friend reads and summarizes
+- Ask about values → Friend explains your values
+- Ask about discoveries → Friend shares opportunities
+- Share something → Friend captures to log
+
+No navigation needed. The friend knows you and has access to everything.
+
+### Logo Usage
+
+The logo (`static/images/meandus.png`) serves as:
+- Visual anchor at the top
+- The "face" of the friend
+- A moment of recognition, not branding
+
+Place it simply. Don't make it a "header" or wrap it in navigation chrome.
+
+### What Success Looks Like
+
+A user opens the app and sees: their best friend waiting quietly.
+
+"All quiet. Your attention is free." - and they feel relieved.
+
+When they want to know something, they just ask. "What are my values?" "Any discoveries?" The friend knows them and has the answers.
+
+When agents are working, they see it: "Ingestion working..." No limbo. No wondering.
+
+The UI feels like talking to a brilliant, caring friend who happens to know everything about you and the world.
+
 ## Development Approach
 
 ### Bootstrapping with Claude Code

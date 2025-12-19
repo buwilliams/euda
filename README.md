@@ -257,6 +257,7 @@ The agent has a self-concept:
 - *Purpose:* Converse, listen, adapt, encourage, challenge when needed.
 - *Beliefs:* The user knows themselves best, but may need reflection.
 - *Behavior:* Warm, adaptive, honest. Listen first. Never manipulate.
+- *Capabilities:* Can read/write logs, read values, read opportunities. The single interface to everything.
 
 **Worker Agent - The Executor**
 - *Purpose:* Execute tasks on behalf of the user: emails, calendar, reminders, research.
@@ -416,37 +417,59 @@ Phases are discontinuities detected retrospectively:
 
 Web app as primary interface, REST API for integrations.
 
+### Design Philosophy
+
+The UI embodies the core value: **attention is sacred**.
+
+- **Single screen** - No tabs, no navigation buttons, no separate views
+- **Chat is everything** - Ask the friend about values, logs, discoveries
+- **Activity feed** - See when agents are working, never left in limbo
+- **No gimmicks** - The friend is your best friend AND a leading expert
+
 ### Push, Don't Pull
 
 The system reaches out to you—you don't obsessively check it.
 
 | Touchpoint | When | How |
 |------------|------|-----|
-| Morning attention | Early morning | Notification → focused view |
+| Morning attention | Early morning | Message appears in chat |
 | Ad-hoc chat | When you need it | You initiate |
-| Evening journal | End of day | Notification → guided reflection |
-| Weekly review | Weekend | Notification |
+| Evening journal | End of day | Prompt appears in chat |
+| Agent activity | When working | Activity feed shows status |
 
-### Sections
+### Single Screen Layout
 
-| Section | Purpose |
-|---------|---------|
-| **Today** | Morning attention, focused view |
-| **Chat** | Conversation with agent |
-| **Journal** | Evening reflection |
-| **Review** | Weekly, phase, celebration |
-| **Cards** | View/edit public card, view internal card |
-| **Logs** | Browse life log |
-| **Agents** | Monitor/manage agent status |
-| **Settings** | Data sources, notifications, preferences |
+```
+┌─────────────────────────────────────┐
+│  [logo] Me and Us                   │
+├─────────────────────────────────────┤
+│  All quiet. Your attention is free. │  ← Activity feed
+├─────────────────────────────────────┤
+│                                     │
+│  Chat conversation                  │  ← The friend
+│                                     │
+│  [Talk to me...              ] Send │
+│                                     │
+│  Try: "what are my values"          │  ← Subtle hints
+└─────────────────────────────────────┘
+```
 
-### Dynamic UI
+### Chat as Interface
 
-The interface evolves based on values and usage:
+Everything through conversation:
+- "What are my values?" → Friend explains your current values
+- "Any discoveries?" → Friend shares relevant opportunities
+- "What did I log today?" → Friend reads your recent entries
+- "I had a great meeting..." → Friend captures it to the log
 
-**Fixed:** Chat, core navigation, push notifications
+No buttons. No screens. Just talk.
 
-**Evolves:** What appears on "Today", which sections are prominent, questions in journal prompts
+### Loading States
+
+Never leave the user wondering:
+- "Thinking..." with animated dots while AI processes
+- Activity feed shows agent work in real-time
+- Input disabled during processing
 
 ---
 

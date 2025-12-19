@@ -3,18 +3,84 @@ Interaction Agent - The Caring Friend
 
 The user-facing conversational agent. Listens, adapts, encourages, challenges.
 Detects intent and responds appropriately.
+
+This agent can:
+- Read and write to the life log
+- Read user values (current, phase, lifetime)
+- Read discovered opportunities
+- Answer questions about the user's data
 """
 
 from .base import create_agent
 from ..tools.log import LOG_TOOLS, LOG_HANDLERS
+from ..tools.values import (
+    get_current_values, get_phase_values, get_lifetime_values, get_all_values
+)
+from ..tools.world import get_opportunities
 
 
-# Tools for the Interaction Agent
-# Includes all log tools for reading context and writing conversations
-INTERACTION_TOOLS = LOG_TOOLS
+# Additional tools for reading values
+VALUES_READ_TOOLS = [
+    {
+        "name": "get_current_values",
+        "description": "Get the user's current values (rolling year focus). Use when they ask about their values or what matters to them now.",
+        "input_schema": {"type": "object", "properties": {}}
+    },
+    {
+        "name": "get_phase_values",
+        "description": "Get the user's life phase values (the chapter they're in).",
+        "input_schema": {"type": "object", "properties": {}}
+    },
+    {
+        "name": "get_lifetime_values",
+        "description": "Get the user's lifetime values (persistent patterns).",
+        "input_schema": {"type": "object", "properties": {}}
+    },
+    {
+        "name": "get_all_values",
+        "description": "Get all values at once (current, phase, lifetime). Use when they want a comprehensive view.",
+        "input_schema": {"type": "object", "properties": {}}
+    }
+]
+
+# Tools for reading opportunities
+WORLD_READ_TOOLS = [
+    {
+        "name": "get_opportunities",
+        "description": "Get discovered opportunities from the World Agent. Use when they ask about discoveries, suggestions, or things to explore.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "description": "Filter by category: event, person, place, learning, goal"
+                },
+                "alignment": {
+                    "type": "string",
+                    "enum": ["aligned", "expansive"],
+                    "description": "Filter by aligned (matches values) or expansive (surprising)"
+                },
+                "include_surfaced": {
+                    "type": "boolean",
+                    "description": "Include already-shown opportunities"
+                }
+            }
+        }
+    }
+]
+
+# Combined tools for the Interaction Agent
+INTERACTION_TOOLS = LOG_TOOLS + VALUES_READ_TOOLS + WORLD_READ_TOOLS
 
 # Handlers for tool execution
-INTERACTION_HANDLERS = LOG_HANDLERS.copy()
+INTERACTION_HANDLERS = {
+    **LOG_HANDLERS,
+    "get_current_values": get_current_values,
+    "get_phase_values": get_phase_values,
+    "get_lifetime_values": get_lifetime_values,
+    "get_all_values": get_all_values,
+    "get_opportunities": get_opportunities,
+}
 
 
 def create_interaction_agent():

@@ -2,22 +2,60 @@
 
 Track user flows and features to implement.
 
+---
+
+## Demo Priority (Critical Path)
+
+### P0 - Agent Verification ✓
+
+- [x] **Verify end-to-end flow works**
+  - [x] Test: Drop file in inbox → Ingestion Agent processes → Log entry created
+  - [x] Test: Chat with Interaction Agent → Intent detection → Response
+  - [x] Test: Manager starts all agents without errors
+  - [x] Test: Web UI loads and connects to API
+
+- [x] **Fix Agent Status endpoint**
+  - [x] Connect to actual agent state files instead of hardcoded response
+  - [x] Show real status and last active timestamps
+
+**Bugs Fixed:**
+- [x] Agent process() now accumulates text from responses with tool calls
+- [x] list_pending_files() now shows full paths for file tools
+
+### P1 - New UI/UX ✓
+
+- [x] **Design new minimal UI**
+  - [x] Document UI principles in design.md
+  - [x] Black text, white background, typography-first
+  - [x] Avoid containers, borders, boxes
+  - [x] Hide secondary features in navigation
+  - [x] Dashboard shows only what matters NOW ("Freedom." when empty)
+
+- [x] **Build new UI**
+  - [x] Replace current index.html with minimal design
+  - [x] Add logo (static/images/meandus.png)
+  - [x] Chat as primary interface
+  - [x] Attention items when pushed content exists
+  - [x] Hidden navigation for Logs, Values, World, Agents
+
+---
+
 ## User Flows
 
 ### Push Flows (system initiates)
 
 - [ ] **Morning Attention**
-  - [ ] Generate morning briefing content
+  - [x] Generate morning briefing content
   - [ ] Show today's calendar events
-  - [ ] Display surfaced opportunities
-  - [ ] Show energy forecast
-  - [ ] Include "one thing to look forward to"
+  - [x] Display surfaced opportunities
+  - [x] Show energy forecast
+  - [x] Include "one thing to look forward to"
   - [ ] Notification trigger (email/push)
 
 - [ ] **Evening Journal**
-  - [ ] Agent-generated reflection prompts based on the day
-  - [ ] Warm, tired-friendly tone
-  - [ ] Auto-save journal entry to log
+  - [x] Agent-generated reflection prompts based on the day
+  - [x] Warm, tired-friendly tone
+  - [x] Auto-save journal entry to log
   - [ ] Notification trigger
 
 - [ ] **Weekly Review**
@@ -27,56 +65,56 @@ Track user flows and features to implement.
 
 ### Pull Flows (user initiates)
 
-- [ ] **Chat Intent Detection**
-  - [ ] Detect intent from message tone/content
-  - [ ] Ask when uncertain: "Do you want me to help solve this, or just hear it?"
-  - [ ] Adapt response mode:
-    - [ ] Explore → participate, challenge, expand
-    - [ ] Vent → listen, reflect, empathize
-    - [ ] Capture → confirm, clarify, log
-    - [ ] Decide → surface values, pros/cons
-    - [ ] Brainstorm → generate, connect, play
+- [x] **Chat Intent Detection**
+  - [x] Detect intent from message tone/content
+  - [x] Ask when uncertain: "Do you want me to help solve this, or just hear it?"
+  - [x] Adapt response mode:
+    - [x] Explore → participate, challenge, expand
+    - [x] Vent → listen, reflect, empathize
+    - [x] Capture → confirm, clarify, log
+    - [x] Decide → surface values, pros/cons
+    - [x] Brainstorm → generate, connect, play
 
 - [ ] **Chat Ingestion**
-  - [ ] Text capture: "I had a conversation with Sarah about X"
-  - [ ] Auto-log conversations to life log
+  - [x] Text capture: "I had a conversation with Sarah about X"
+  - [x] Auto-log conversations to life log
   - [ ] File upload support in web UI
   - [ ] URL fetching: "Read this article and log what's interesting"
   - [ ] Photo/image processing via chat
 
-- [ ] **Log Browsing**
-  - [ ] View entries by date
-  - [ ] Search across logs
+- [x] **Log Browsing**
+  - [x] View entries by date
+  - [x] Search across logs
   - [ ] Filter by source/type
 
 ### Cards & Connection
 
 - [ ] **Value Cards**
-  - [ ] Generate internal card from values
-  - [ ] Generate public card (user reviews/approves)
+  - [x] Generate internal card from values
+  - [x] Generate public card (user reviews/approves)
   - [ ] Edit public card via UI
-  - [ ] Approve public card for sharing
+  - [x] Approve public card for sharing
 
 - [ ] **Card Exchange**
-  - [ ] Receive cards from others
-  - [ ] View received cards
-  - [ ] Update card status (reviewed, connected, declined)
+  - [x] Receive cards from others
+  - [x] View received cards
+  - [x] Update card status (reviewed, connected, declined)
   - [ ] REST endpoint for card exchange
 
 ### Discovery
 
-- [ ] **World Agent Discovery**
-  - [ ] Scheduled discovery sweeps
-  - [ ] 90/10 aligned vs expansive balance
-  - [ ] Surface opportunities in Today view
-  - [ ] Mark opportunities as surfaced/responded
+- [x] **World Agent Discovery**
+  - [x] Scheduled discovery sweeps
+  - [x] 90/10 aligned vs expansive balance
+  - [x] Surface opportunities in Today view
+  - [x] Mark opportunities as surfaced/responded
 
 ## Technical Infrastructure
 
-- [ ] **Agent Manager**
-  - [ ] Spawn and monitor all agents
-  - [ ] Health checks and auto-restart
-  - [ ] Scheduled triggers (morning, evening, weekly)
+- [x] **Agent Manager**
+  - [x] Spawn and monitor all agents
+  - [x] Health checks and auto-restart
+  - [x] Scheduled triggers (morning, evening, weekly)
 
 - [ ] **Notifications**
   - [ ] Email notifications
@@ -96,7 +134,7 @@ Track user flows and features to implement.
 
 - [ ] Theme system (user customizable)
 - [ ] File upload in chat
-- [ ] Better markdown rendering
+- [x] Better markdown rendering
 - [ ] Mobile responsive refinements
 - [ ] Keyboard shortcuts
 
@@ -106,6 +144,8 @@ Track user flows and features to implement.
 
 - [x] Core agent pattern (context + loop + tools)
 - [x] All 6 agents implemented (Ingestion, Interaction, Summary, Values, Attention, World)
+- [x] Worker Agent (The Executor) for task execution
+- [x] Autonomous agent base class with signal-based communication
 - [x] Log tools (write, read, search)
 - [x] File processing tools (inbox watching)
 - [x] Summary tools
@@ -116,3 +156,5 @@ Track user flows and features to implement.
 - [x] FastAPI web server
 - [x] Web UI with all spec sections (Today, Chat, Journal, Review, Cards, Logs, Agents, Settings)
 - [x] Markdown rendering in UI
+- [x] Agent Manager with file watchers
+- [x] Signal-based inter-agent communication

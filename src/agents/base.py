@@ -165,13 +165,21 @@ def create_agent(persona_name: str, tools: list = None, model: str = "claude-son
         # Call the LLM
         response = call()
 
+        # Accumulate text from all responses (agent may return text alongside tool calls)
+        all_text_blocks = []
+
         # Handle tool calls in a loop
         while handle_tool_calls(response, tool_handlers):
+            # Collect any text from this response before processing tools
+            text_blocks = [block.text for block in response.content if hasattr(block, 'text')]
+            all_text_blocks.extend(text_blocks)
             response = call()
 
-        # Extract text response
+        # Extract text from final response
         text_blocks = [block.text for block in response.content if hasattr(block, 'text')]
-        output = "\n".join(text_blocks)
+        all_text_blocks.extend(text_blocks)
+
+        output = "\n".join(all_text_blocks)
 
         # Add assistant response to context
         context.append({
