@@ -17,6 +17,7 @@ def main():
 
     # Lazy imports to avoid loading everything upfront
     commands = {
+        "start": lambda: __import__('src.manager', fromlist=['start']).start(),
         "ingestion": lambda: __import__('src.agents.ingestion', fromlist=['run_interactive']).run_interactive(),
         "chat": lambda: __import__('src.agents.interaction', fromlist=['run_interactive']).run_interactive(),
         "summary": lambda: __import__('src.agents.summary', fromlist=['run_interactive']).run_interactive(),
@@ -39,6 +40,7 @@ def main():
         print("Usage: python main.py [command]")
         print()
         print("Commands:")
+        print("  start      Start the Agent Manager (runs all agents)")
         print("  chat       Interactive chat with The Caring Friend (default)")
         print("  ingestion  Interactive chat with The Archivist")
         print("  summary    Interactive chat with The Historian")
@@ -52,9 +54,10 @@ def main():
         print("  discover   Run a discovery sweep for opportunities")
         print("  watch      Watch inbox for new files to process")
         print("  process    Process pending files once and exit")
-        print("  serve      Start the web API server")
+        print("  serve      Start the web API server (standalone)")
         print()
         print("Examples:")
+        print("  python main.py start        # Run Agent Manager (recommended)")
         print("  python main.py              # Start chatting")
         print("  python main.py summarize    # Generate yearly summaries")
         print("  python main.py serve        # Start API at http://localhost:8000")
