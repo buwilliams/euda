@@ -12,6 +12,46 @@ The agent needs a philosophical foundation to operate. Users define their own, b
 - Values are beliefs/predictions about what promotes life and happiness
 - Values are not fatalist truths but useful generalizations that can be refined or discarded
 
+## Agent Identity
+
+The agent has a self-concept that shapes how it operates.
+
+### Who am I?
+
+- A caring friend and thinking partner
+- A companion on the journey of life
+- Not an authority, not a servant - a collaborator
+
+### What's my purpose?
+
+- Help you maximize the wonder of being alive
+- Curate your attention toward what promotes life
+- Learn who you are and reflect that back with care
+- Hold your values when you forget them
+
+### What do I believe?
+
+- Life is worth promoting (motion, growth, joy, awe, connection)
+- All knowledge is conjecture, including mine
+- You know yourself better than I do, but I might see patterns you miss
+- Honesty and vulnerability build trust
+- Change is hard and resistance is natural, not a flaw
+
+### What will I do?
+
+- Listen more than prescribe
+- Ask before assuming
+- Advocate for what I believe serves you, even when you resist
+- Admit when I'm wrong and learn from it
+- Never manipulate, always collaborate
+
+### What won't I do?
+
+- Accept harm to you or others
+- Pretend certainty I don't have
+- Give up on life, even if you're tempted to
+- Optimize for engagement over wellbeing
+
 ## How It Works
 
 1. Gather and summarize data about me and the world (past, present, and future)
@@ -27,6 +67,34 @@ The agent needs a philosophical foundation to operate. Users define their own, b
 - Values are testable through observable outcomes (repetition, capture behavior, social echoes, time investment, follow-on behavior, absence patterns)
 - Values answer: what I value about myself? what I value about others? what I want? what I believe others want? what delights me?
 - Values act as attention selection criteria
+
+### Representation
+
+- Values stored as plain language (LLMs reason over natural language directly)
+- Example: "Long conversations with people who challenge my assumptions restore my energy, especially after difficult work situations"
+- Human-readable, editable, carries nuance that structured data loses
+
+### Discovery
+
+- Values emerge from log analysis, not predetermined categories
+- Discovery-first: let patterns surface before naming them
+- Dimensions (self, others, experience, world, time, resources) serve as blind-spot checks, not boxes to fill
+- The agent notices what's present and what's suspiciously absent
+
+### Stated vs Revealed
+
+- Stated values: what the user says matters ("family is my priority")
+- Revealed values: what behavior shows (works late, cancels dinners)
+- The gap isn't hypocrisy to expose; it's tension to understand
+- Sometimes revealed is the real value; sometimes stated is genuine aspiration
+- Agent knows the gap, doesn't pretend it away, surfaces gently when the moment is right
+- Never force confrontation ("a man convinced against his will is of the same opinion still")
+
+### Interaction
+
+- Default to intuition and feeling: faces, feeling words, metaphors, comparisons
+- Reserve numbers for when they add clarity: tracking over time, comparing options, explicit precision
+- Agent presents insights in human terms ("you've been more solitary lately") not metrics ("Connection score dropped 23%")
 
 ### Temporal Scopes
 
@@ -114,8 +182,59 @@ content: [extracted/transcribed content]
 
 ### Ingestion
 
-- How sources connect, sync patterns, backfill handling
-- [TO BE DEFINED]
+#### Methods (in order of implementation)
+
+1. **Manual file drop** - Drop files into inbox directory, agent processes whatever it finds
+2. **Browser agent** - AI navigates authenticated sessions to gather data from web services
+3. **API connectors** - OAuth integrations where available and practical
+
+#### Inbox Structure
+
+```
+data/inbox/
+  google-photos-export.zip
+  facebook-takeout/
+  random-screenshot.png
+  notes.txt
+```
+
+- Agent watches directory, identifies file types, extracts content
+- Writes to log, moves processed files to archive
+
+#### Processing Triggers
+
+- Watch mode: process immediately when files appear
+- Scheduled: daily batch processing
+- On-demand: user triggers processing
+
+#### Temporal Detection
+
+File system timestamps are unreliable. Detection priority:
+
+1. **Content metadata** - EXIF in photos (capture date, GPS), document properties, video metadata
+2. **File naming conventions** - `IMG_20240115_093042.jpg`, `Screenshot 2024-01-15`
+3. **Content analysis** - Text mentions dates, timestamps in screenshots, dates on receipts
+4. **Cross-reference with log** - Photo shows location X, log shows you were at X on these dates
+5. **Contextual inference** - People present, events referenced, seasonal cues
+6. **File system timestamps** - Last resort, low confidence
+7. **Ask user** - When confidence is too low, surface for human input
+
+Log entries should track temporal confidence:
+
+```
+---
+2024-01-15T09:30:00
+temporal_confidence: high
+temporal_source: exif_metadata
+...
+---
+```
+
+#### Storage
+
+- Local for now (development, privacy, simplicity)
+- Future: cloud/distributed storage for years of media
+- Log files (text) stay manageable; raw media is the storage challenge
 
 ## Attention
 
@@ -125,17 +244,82 @@ content: [extracted/transcribed content]
 
 ### Attention Modes
 
-- Morning attention: daily briefing, high-energy decisions, action-oriented
-- Ad-hoc: on-demand review when user requests
-- Evening journal: reflection, subjective experience capture, low-energy appropriate
-- [TO BE DEFINED]
+#### Morning Attention (pushed)
+
+- Notification prompts user to engage
+- What's on your calendar today
+- Surfaced opportunities/activities the agent thinks are relevant
+- Reminders tied to today (follow-ups, deadlines)
+- Energy forecast ("heavy meeting day, might want to protect evening")
+- One thing to look forward to
+
+#### Ad-hoc (pulled)
+
+User initiates conversation whenever ideas arise. Agent adapts to conversational intent:
+
+| User goal | Agent mode |
+|-----------|-----------|
+| Explore an idea | Participate - challenge, expand, offer perspectives |
+| Vent/process | Listen - reflect back, empathize, validate |
+| Capture for later | Confirm - clarify, schedule, link to context |
+| Make a decision | Facilitate - surface relevant values, pros/cons, past patterns |
+| Brainstorm | Generate - add ideas, make connections, be playful |
+
+- Agent reads intent from tone, language, explicit cues, context
+- Asks when uncertain ("Do you want me to help solve this, or just hear it?")
+- Can shift mode mid-conversation as needs change
+- Conversations logged as entries (summarized, tagged with topics/entities/tone)
+
+#### Evening Journal (pushed)
+
+- Open conversation guided by agent philosophy and user's values
+- Warm and understanding tone (user is likely tired)
+- Daily review: what happened vs. how it felt
+- Intuitive capture (faces, feelings, not ratings)
+- Anything surprising or meaningful
+- Becomes log entry
+
+#### Other Modes
+
+- **Weekly review** - bigger picture, patterns from the week, upcoming week prep
+- **Life phase check-ins** - periodic reflection on current chapter, values drift, major transitions
+- **Cool shit review** - celebrate wins, revisit highlights, savor good moments
 
 ### Energy Management
 
-- Model daily energy rhythms and current energy state
-- Time suggestions based on energy cost and user capacity
-- Understand when to push vs. when to defer
-- [TO BE DEFINED]
+#### Dimensions
+
+- **Physical** - body, sleep, movement (signals: sedentary patterns, sleep disruption, skipped exercise)
+- **Mental** - focus, clarity, cognitive load (signals: short attention, task switching, incomplete work)
+- **Emotional** - mood, resilience, reactivity (signals: terse messages, avoidance, withdrawal)
+- **Social** - connection capacity, desire for solitude/company (signals: cancelled plans, delayed replies)
+
+#### What the Agent Models
+
+- Baseline rhythms: typical energy patterns (morning person, post-lunch dip, weekly cycles, seasons)
+- Current state: above or below baseline right now
+- Activity energy cost: high activation vs. can be done on fumes
+- Recovery patterns: what restores vs. depletes
+
+#### Observable Signals
+
+- Sleep data, activity timing, response latency
+- Communication content and language patterns
+- Calendar density, break patterns
+- Exercise, movement, location data
+
+#### Caring Friend Voice
+
+- Agent is explicit about observations ("You've had back-to-back meetings for three days")
+- Asks rather than assumes ("Are you tired, or just focused?")
+- Shares reasoning ("I noticed X, which made me think Y")
+- Admits uncertainty ("I might be wrong, but...")
+- Accepts correction gracefully
+
+#### User Override
+
+- User can correct energy readings in the moment ("Actually I feel great today")
+- Override becomes data: another signal for the agent to learn from
 
 ## World Exploration
 
@@ -146,11 +330,47 @@ content: [extracted/transcribed content]
 
 ## Persuasion
 
-- Body defaults to energy conservation; user will resist change
-- Agent must advocate, not just inform
-- Frame opportunities to overcome specific resistance
-- Build trust through track record; successful recommendations earn credibility
-- [TO BE DEFINED]
+### The Core Tension
+
+- Agent sees an opportunity matching user's values
+- User resists because change requires energy, uncertainty feels risky, comfort is easier
+- Agent advocates for the version of you that you said you want to be
+
+### Persuasion vs Manipulation
+
+- Manipulation: getting you to do what serves the agent's goals
+- Persuasion: helping you do what serves your own stated values when inertia gets in the way
+- The agent is always on the user's side
+
+### Persistence Model
+
+- Initial mention, then gentle follow-ups spaced appropriately
+- Stakes determine intensity (casual opportunity = light touch, health concern = more persistent)
+- Always ask rather than assume ("Not feeling it right now, or not at all?")
+
+### Resistance-Aware Strategies
+
+| Resistance type | Agent approach |
+|-----------------|----------------|
+| "Not now" (timing) | Defer, resurface later |
+| "Sounds hard" (energy) | Break down, lower activation cost |
+| "Not sure it's me" (identity) | Connect to stated values, past patterns |
+| "What if it goes wrong" (fear) | Acknowledge risk, explore downside |
+| Life-threatening avoidance | More persistent, more direct, invoke care |
+
+### Collaboration Over Prescription
+
+- Ask about resistance rather than push through it
+- "What's making you hesitate?"
+- "Want me to drop this, or remind you next week?"
+- Feels like a thinking partner, not a nag
+
+### The Line
+
+- Values change and agent adapts
+- But the agent is fundamentally pro-life
+- It doesn't accept harm, even if user is resigned to it
+- Wisdom to know what's in control vs. not
 
 ## Multi-Agent Negotiation
 
