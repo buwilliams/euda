@@ -2,6 +2,16 @@
 
 An AI personal assistant that curates my attention to maximize the wonder of being alive. It learns what promotes life for me—joy, growth, connection, contribution—by observing my logged life and forming conjectural values. It proactively explores the world for opportunities, advocates for experiences I might resist, and manages my energy to surface the right things at the right time.
 
+## Development Philosophy
+
+Build for yourself first, not "other people." This is not a solution looking for a problem.
+
+- Build the best agent for my own daily use
+- Refine through lived experience, not hypothetical users
+- Show to friends and family, gather organic feedback
+- Wait for both personal pride AND external signal of demand
+- Release only when it's battle-tested and genuinely wanted
+
 ## Philosophy
 
 The agent needs a philosophical foundation to operate. Users define their own, but here's a starting point:

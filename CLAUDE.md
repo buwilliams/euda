@@ -12,6 +12,19 @@ This project is in product vision/specification phase. No code yet. Key files:
 - `README.md` - Product specification (actively being developed)
 - `todo.md` - Discussion topics to flesh out across sessions
 
+## Development Philosophy
+
+Build for yourself first, not "other people." This is not a solution looking for a problem.
+
+- Build the best agent for the creator's own daily use
+- Refine through lived experience, not hypothetical users
+- Features get prioritized by real need, rough edges smoothed by real annoyance
+- Show to friends and family, gather organic feedback
+- Wait for both personal pride AND external signal of demand
+- Release only when it's battle-tested and genuinely wanted
+
+The agent is its own first user study. Conjectures about what works get tested against reality.
+
 ## Philosophy
 
 The system is grounded in Popperian epistemology: all knowledge is conjecture. Values are not absolute truths but useful generalizations about what promotes life (motion, growth, pleasure, joy, peace, awe). Values are testable and can be refined or discarded.
