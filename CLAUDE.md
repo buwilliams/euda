@@ -8,10 +8,52 @@ Me and Us (Meandus) is an AI personal assistant that manages user attention to m
 
 ## Current State
 
-This project is in product vision/specification phase. No code yet. Key files:
+Initial implementation with working Ingestion Agent. Key files:
 - `README.md` - Product specification
 - `design.md` - Technical architecture and implementation spec
-- `todo.md` - Discussion topics to flesh out across sessions
+- `main.py` - Entry point for running agents
+
+## Setup
+
+1. Create a `.env` file from the example:
+   ```
+   cp .env.example .env
+   ```
+
+2. Add your Anthropic API key to `.env`:
+   ```
+   ANTHROPIC_API_KEY=your-actual-key
+   ```
+
+3. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+
+4. Run the Ingestion Agent:
+   ```
+   python main.py
+   ```
+
+## Project Structure
+
+```
+meandus/
+├── main.py                 # Entry point
+├── src/
+│   ├── agents/
+│   │   ├── base.py         # Core agent pattern
+│   │   └── ingestion.py    # Ingestion Agent (The Archivist)
+│   └── tools/
+│       └── log.py          # Log read/write tools
+└── data/
+    ├── agents/identity/    # Agent identity files
+    │   ├── _core.identity.md
+    │   ├── ingestion.identity.md
+    │   └── ... (6 agent personas)
+    └── log/                # Life log entries
+        └── [yyyy]/[yyyy-mm-dd].md
+```
 
 ## Development Philosophy
 
@@ -20,39 +62,31 @@ Build for yourself first, not "other people." This is not a solution looking for
 - Build the best agent for the creator's own daily use
 - Refine through lived experience, not hypothetical users
 - Features get prioritized by real need, rough edges smoothed by real annoyance
-- Show to friends and family, gather organic feedback
-- Wait for both personal pride AND external signal of demand
-- Release only when it's battle-tested and genuinely wanted
-
-The agent is its own first user study. Conjectures about what works get tested against reality.
+- The agent is its own first user study
 
 ## Philosophy
 
 The system is grounded in Popperian epistemology: all knowledge is conjecture. Values are not absolute truths but useful generalizations about what promotes life (motion, growth, pleasure, joy, peace, awe). Values are testable and can be refined or discarded.
 
-## Core Architecture (Planned)
+## Agent Architecture
 
-1. **Data Ingestion** - Connectors for personal sources (phone, social, financial, calendar) and world sources (events, opportunities)
-2. **Log** - One unified stream of all life data, stored as daily flat files with yearly manifests and summaries
-3. **Values Engine** - Derives values at three temporal scopes: current (rolling year), life phase (detected), lifetime
-4. **World Exploration** - Proactively discovers opportunities matching user values
-5. **Attention System** - Three modes: morning briefing, ad-hoc, evening journal
-6. **Persuasion** - Advocates for life-promoting activities, overcoming energy conservation bias
-7. **Multi-Agent** - Negotiates with other users' agents for social interactions
+Six agents communicate via shared flat files:
+1. **Ingestion Agent (The Archivist)** - Transforms messy data into clean log entries
+2. **Summary Agent (The Historian)** - Distills patterns from the life log
+3. **Values Agent (The Philosopher)** - Derives and refines user values
+4. **World Agent (The Scout)** - Explores external opportunities
+5. **Attention Agent (The Curator)** - Orchestrates what surfaces when
+6. **Interaction Agent (The Caring Friend)** - User-facing conversations
 
-## Data Storage Structure
+Each agent has:
+- Core identity (shared beliefs and behaviors)
+- Persona identity (role-specific traits)
+- Tools (functions it can call)
+- Context (conversation history)
 
-```
-data/log/
-  [yyyy]/
-    [yyyy-mm-dd].txt   # daily log entries
-    _manifest.txt      # tracks completeness, sources, processing state
-    _summary.txt       # comprehensive yearly distillation
-```
+## Adding New Agents
 
-## When Continuing Spec Work
-
-- Read `todo.md` for pending discussion topics
-- Sections marked `[TO BE DEFINED]` in README.md need fleshing out
-- Maintain the existing format style (H2 headers, bullet points, concise language)
-- Update both README.md and todo.md as topics are completed
+1. Create identity file: `data/agents/identity/[name].identity.md`
+2. Create agent module: `src/agents/[name].py`
+3. Add tools if needed: `src/tools/[name].py`
+4. Register in `main.py`

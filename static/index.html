@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Me and Us</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --surface: #f5f5f5;
+            --primary: #e0e0e0;
+            --accent: #333;
+            --text: #555;
+            --text-muted: #999;
+            --success: #666;
+            --border: #ddd;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Layout */
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background: var(--surface);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        /* Navigation */
+        nav {
+            background: var(--surface);
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        nav button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+        }
+
+        nav button:hover {
+            color: var(--text);
+            background: rgba(0,0,0,0.02);
+        }
+
+        nav button.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        /* Main content */
+        main {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow: auto;
+            padding: 1.5rem;
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tab-content h2 {
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .tab-content .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Chat */
+        #chat-tab {
+            display: none;
+        }
+
+        #chat-tab.active {
+            display: flex;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 12px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: var(--primary);
+            align-self: flex-end;
+        }
+
+        .message.assistant {
+            background: var(--surface);
+            align-self: flex-start;
+            border: 1px solid var(--border);
+        }
+
+        .message-content {
+            line-height: 1.5;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .chat-input input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .chat-input button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .chat-input button:hover {
+            opacity: 0.9;
+        }
+
+        .chat-input button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card h3 {
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        /* Agent status */
+        .agent-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .agent-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .agent-card h4 {
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+        }
+
+        .agent-card p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .agent-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            background: rgba(102, 102, 102, 0.15);
+            color: var(--success);
+            margin-top: 0.5rem;
+        }
+
+        /* Content sections */
+        .content-section {
+            margin-bottom: 2rem;
+        }
+
+        .content-section h3 {
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--accent);
+        }
+
+        .content-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            line-height: 1.6;
+            font-size: 0.9rem;
+        }
+
+        /* Today section */
+        .today-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .today-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .today-card h4 {
+            margin-bottom: 0.75rem;
+            color: var(--accent);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Journal */
+        .journal-prompt {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .journal-prompt p {
+            font-style: italic;
+            color: var(--text);
+            margin-bottom: 1rem;
+        }
+
+        .journal-textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .journal-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: var(--primary);
+            color: var(--text);
+        }
+
+        /* Logs */
+        .log-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .log-nav select {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .log-entry {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .log-entry-header {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Settings */
+        .settings-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .settings-section h3 {
+            margin-bottom: 1rem;
+            border: none;
+            padding: 0;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-weight: 500;
+        }
+
+        .setting-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Loading */
+        .loading {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* Markdown styling */
+        .content-box h1, .content-box h2, .content-box h3,
+        .message-content h1, .message-content h2, .message-content h3 {
+            margin: 0.75rem 0 0.5rem;
+            color: var(--accent);
+        }
+
+        .content-box h1, .message-content h1 { font-size: 1.25rem; }
+        .content-box h2, .message-content h2 { font-size: 1.1rem; }
+        .content-box h3, .message-content h3 { font-size: 1rem; }
+
+        .content-box ul, .content-box ol,
+        .message-content ul, .message-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .content-box li, .message-content li {
+            margin-bottom: 0.25rem;
+        }
+
+        .content-box p, .message-content p {
+            margin-bottom: 0.5rem;
+        }
+
+        .content-box strong, .message-content strong {
+            color: var(--accent);
+        }
+
+        .content-box em, .message-content em {
+            font-style: italic;
+        }
+
+        .content-box code, .message-content code {
+            background: var(--primary);
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header>
+            <h1>Me and Us</h1>
+            <div class="status">
+                <span class="status-dot"></span>
+                <span id="status-text">Connected</span>
+            </div>
+        </header>
+
+        <nav>
+            <button class="active" data-tab="today">Today</button>
+            <button data-tab="chat">Chat</button>
+            <button data-tab="journal">Journal</button>
+            <button data-tab="review">Review</button>
+            <button data-tab="cards">Cards</button>
+            <button data-tab="logs">Logs</button>
+            <button data-tab="agents">Agents</button>
+            <button data-tab="settings">Settings</button>
+        </nav>
+
+        <main>
+            <!-- Today Tab -->
+            <div id="today-tab" class="tab-content active">
+                <h2>Today</h2>
+                <p class="subtitle">Your morning attention - what matters right now</p>
+                <div class="today-grid" id="today-content">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Chat Tab -->
+            <div id="chat-tab" class="tab-content">
+                <div class="chat-container">
+                    <div class="messages" id="messages">
+                        <div class="message assistant">
+                            <div class="message-content">Hey. I'm here to listen, think with you, or help capture ideas. Whatever you need right now.</div>
+                        </div>
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" id="chat-input" placeholder="Type a message...">
+                        <button id="send-btn">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Journal Tab -->
+            <div id="journal-tab" class="tab-content">
+                <h2>Evening Journal</h2>
+                <p class="subtitle">Reflect on your day with warmth and honesty</p>
+                <div id="journal-content">
+                    <div class="journal-prompt">
+                        <p id="journal-prompt-text">How did today feel? What moments stood out - whether delightful, challenging, or surprising?</p>
+                    </div>
+                    <textarea class="journal-textarea" id="journal-entry" placeholder="Write freely..."></textarea>
+                    <button class="btn" id="save-journal">Save Entry</button>
+                </div>
+            </div>
+
+            <!-- Review Tab -->
+            <div id="review-tab" class="tab-content">
+                <h2>Review</h2>
+                <p class="subtitle">Bigger picture reflections</p>
+                <div id="review-content">
+                    <div class="card-grid">
+                        <div class="card">
+                            <h3>Weekly Review</h3>
+                            <p style="color: var(--text-muted); margin-bottom: 1rem;">Patterns from the past week</p>
+                            <div id="weekly-review" class="content-box">
+                                <div class="loading">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>Cool Shit</h3>
+                            <p style="color: var(--text-muted); margin-bottom: 1rem;">Wins and highlights to celebrate</p>
+                            <div id="cool-shit" class="content-box">
+                                <div class="loading">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card" style="margin-top: 1rem;">
+                        <h3>Life Phase</h3>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">The chapter you're in right now</p>
+                        <div id="life-phase" class="content-box">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cards Tab -->
+            <div id="cards-tab" class="tab-content">
+                <h2>Value Cards</h2>
+                <p class="subtitle">Your values in shareable form</p>
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>Internal Card</h3>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.85rem;">Full detail, agent-managed</p>
+                        <div id="internal-card-content" class="content-box">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Public Card</h3>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.85rem;">User-approved, for sharing</p>
+                        <div id="public-card-content" class="content-box">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" style="margin-top: 1rem;">
+                    <h3>Received Cards</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.85rem;">Cards shared with you by others</p>
+                    <div id="received-cards-content" class="content-box">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Tab -->
+            <div id="logs-tab" class="tab-content">
+                <h2>Life Log</h2>
+                <p class="subtitle">Browse your logged life</p>
+                <div class="log-nav">
+                    <select id="log-year">
+                        <option value="">Select year...</option>
+                    </select>
+                    <select id="log-date">
+                        <option value="">Select date...</option>
+                    </select>
+                </div>
+                <div id="logs-content">
+                    <div class="content-box">
+                        <p style="color: var(--text-muted);">Select a year and date to view log entries.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agents Tab -->
+            <div id="agents-tab" class="tab-content">
+                <h2>Agent Status</h2>
+                <p class="subtitle">All six agents powering Me and Us</p>
+                <div class="agent-list" id="agent-list">
+                    <div class="loading">Loading agents...</div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings-tab" class="tab-content">
+                <h2>Settings</h2>
+                <p class="subtitle">Configure your experience</p>
+
+                <div class="settings-section">
+                    <h3>Notifications</h3>
+                    <div class="setting-row">
+                        <div>
+                            <div class="setting-label">Morning Attention</div>
+                            <div class="setting-desc">Daily morning briefing notification</div>
+                        </div>
+                        <select id="setting-morning">
+                            <option value="enabled">Enabled</option>
+                            <option value="disabled">Disabled</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <div>
+                            <div class="setting-label">Evening Journal</div>
+                            <div class="setting-desc">Evening reflection prompt</div>
+                        </div>
+                        <select id="setting-evening">
+                            <option value="enabled">Enabled</option>
+                            <option value="disabled">Disabled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Data Sources</h3>
+                    <div class="setting-row">
+                        <div>
+                            <div class="setting-label">Inbox Directory</div>
+                            <div class="setting-desc">data/inbox/pending</div>
+                        </div>
+                        <span style="color: var(--success);">Active</span>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Discovery</h3>
+                    <div class="setting-row">
+                        <div>
+                            <div class="setting-label">Discovery Balance</div>
+                            <div class="setting-desc">Ratio of aligned vs expansive opportunities</div>
+                        </div>
+                        <select id="setting-balance">
+                            <option value="90-10">90% aligned / 10% expansive</option>
+                            <option value="80-20">80% aligned / 20% expansive</option>
+                            <option value="70-30">70% aligned / 30% expansive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // State
+        let sessionId = localStorage.getItem('sessionId') || null;
+
+        // API helpers
+        async function api(endpoint, options = {}) {
+            const response = await fetch(`/api${endpoint}`, {
+                headers: { 'Content-Type': 'application/json' },
+                ...options
+            });
+            return response.json();
+        }
+
+        function renderMarkdown(text) {
+            if (typeof marked !== 'undefined') {
+                return marked.parse(text || '');
+            }
+            return escapeHtml(text || '');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Tab switching
+        document.querySelectorAll('nav button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(`${btn.dataset.tab}-tab`).classList.add('active');
+                loadTabContent(btn.dataset.tab);
+            });
+        });
+
+        // Chat functionality
+        const messagesEl = document.getElementById('messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, 'user');
+            chatInput.value = '';
+            sendBtn.disabled = true;
+
+            try {
+                const data = await api('/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({ message, session_id: sessionId })
+                });
+
+                sessionId = data.session_id;
+                localStorage.setItem('sessionId', sessionId);
+                addMessage(data.response, 'assistant');
+            } catch (error) {
+                addMessage('Sorry, something went wrong. Please try again.', 'assistant');
+            }
+
+            sendBtn.disabled = false;
+            chatInput.focus();
+        }
+
+        function addMessage(content, role) {
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            div.innerHTML = `<div class="message-content">${role === 'assistant' ? renderMarkdown(content) : escapeHtml(content)}</div>`;
+            messagesEl.appendChild(div);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Load tab content
+        async function loadTabContent(tab) {
+            switch (tab) {
+                case 'today': loadToday(); break;
+                case 'journal': loadJournal(); break;
+                case 'review': loadReview(); break;
+                case 'cards': loadCards(); break;
+                case 'logs': loadLogs(); break;
+                case 'agents': loadAgents(); break;
+            }
+        }
+
+        async function loadToday() {
+            try {
+                const [energy, queue, opportunities] = await Promise.all([
+                    api('/energy?hours=24'),
+                    api('/queue'),
+                    api('/opportunities')
+                ]);
+
+                let html = `
+                    <div class="today-card">
+                        <h4>Energy State</h4>
+                        <div class="content-box">${renderMarkdown(energy.content || 'No recent energy readings.')}</div>
+                    </div>
+                    <div class="today-card">
+                        <h4>Attention Queue</h4>
+                        <div class="content-box">${renderMarkdown(queue.content || 'Nothing queued for attention.')}</div>
+                    </div>
+                    <div class="today-card">
+                        <h4>Opportunities</h4>
+                        <div class="content-box">${renderMarkdown(opportunities.content || 'No opportunities discovered yet.')}</div>
+                    </div>
+                `;
+                document.getElementById('today-content').innerHTML = html;
+            } catch (error) {
+                document.getElementById('today-content').innerHTML = '<p>Failed to load today view</p>';
+            }
+        }
+
+        async function loadJournal() {
+            // Journal prompts could come from the Attention Agent
+            // For now, use a default prompt
+            const prompts = [
+                "How did today feel? What moments stood out - whether delightful, challenging, or surprising?",
+                "What's on your mind as the day winds down?",
+                "Was there anything today that you want to remember?",
+                "How are you feeling right now, in this moment?",
+                "What worked well today? What didn't?"
+            ];
+            const prompt = prompts[Math.floor(Math.random() * prompts.length)];
+            document.getElementById('journal-prompt-text').textContent = prompt;
+        }
+
+        document.getElementById('save-journal').addEventListener('click', async () => {
+            const entry = document.getElementById('journal-entry').value.trim();
+            if (!entry) return;
+
+            try {
+                await api('/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        message: `[Evening Journal Entry]\n\n${entry}`,
+                        session_id: sessionId
+                    })
+                });
+                document.getElementById('journal-entry').value = '';
+                alert('Journal entry saved to your log.');
+            } catch (error) {
+                alert('Failed to save entry. Please try again.');
+            }
+        });
+
+        async function loadReview() {
+            try {
+                const [values, logs] = await Promise.all([
+                    api('/values'),
+                    api('/logs/recent?days=7')
+                ]);
+
+                // Weekly review from recent logs
+                document.getElementById('weekly-review').innerHTML = renderMarkdown(
+                    logs.content || 'No log entries from the past week.'
+                );
+
+                // Life phase from phase values
+                document.getElementById('life-phase').innerHTML = renderMarkdown(
+                    values.phase || 'No life phase values defined yet.'
+                );
+
+                // Cool shit - placeholder for now
+                document.getElementById('cool-shit').innerHTML = `
+                    <p style="color: var(--text-muted);">Highlight reel coming soon. This will surface wins and highlights from your logs.</p>
+                `;
+            } catch (error) {
+                console.error('Failed to load review:', error);
+            }
+        }
+
+        async function loadCards() {
+            // Load internal card
+            try {
+                const data = await api('/cards/internal');
+                if (data.card) {
+                    document.getElementById('internal-card-content').innerHTML = `<pre style="white-space: pre-wrap; font-family: inherit;">${JSON.stringify(data.card, null, 2)}</pre>`;
+                } else {
+                    document.getElementById('internal-card-content').innerHTML = `<p style="color: var(--text-muted);">${data.message || 'No internal card yet.'}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('internal-card-content').innerHTML = '<p>Failed to load</p>';
+            }
+
+            // Load public card
+            try {
+                const data = await api('/cards/public');
+                if (data.card) {
+                    const card = data.card;
+                    document.getElementById('public-card-content').innerHTML = `
+                        <p><strong>Name:</strong> ${card.display_name || 'Not set'}</p>
+                        <p><strong>Summary:</strong> ${card.values_summary || 'Not set'}</p>
+                        <p><strong>Interests:</strong> ${card.interests?.join(', ') || 'None'}</p>
+                        <p><strong>Open to:</strong> ${card.open_to?.join(', ') || 'None'}</p>
+                        <p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.85rem;">
+                            ${card.approved ? 'Approved for sharing' : 'Not yet approved'}
+                        </p>
+                    `;
+                } else {
+                    document.getElementById('public-card-content').innerHTML = `<p style="color: var(--text-muted);">${data.message || 'No public card yet.'}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('public-card-content').innerHTML = '<p>Failed to load</p>';
+            }
+
+            // Load received cards
+            try {
+                const data = await api('/cards/received');
+                document.getElementById('received-cards-content').innerHTML = renderMarkdown(data.content);
+            } catch (error) {
+                document.getElementById('received-cards-content').innerHTML = '<p>Failed to load</p>';
+            }
+        }
+
+        async function loadLogs() {
+            // Populate year selector
+            try {
+                const data = await api('/summaries');
+                const yearSelect = document.getElementById('log-year');
+                const currentYear = new Date().getFullYear();
+
+                // Add current year and previous years
+                yearSelect.innerHTML = '<option value="">Select year...</option>';
+                for (let y = currentYear; y >= currentYear - 5; y--) {
+                    yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
+                }
+            } catch (error) {
+                console.error('Failed to load years:', error);
+            }
+        }
+
+        document.getElementById('log-year').addEventListener('change', async (e) => {
+            const year = e.target.value;
+            if (!year) return;
+
+            const dateSelect = document.getElementById('log-date');
+            dateSelect.innerHTML = '<option value="">Select date...</option>';
+
+            // Generate dates for the selected year
+            const now = new Date();
+            const startDate = new Date(year, 0, 1);
+            const endDate = year == now.getFullYear() ? now : new Date(year, 11, 31);
+
+            for (let d = new Date(endDate); d >= startDate; d.setDate(d.getDate() - 1)) {
+                const dateStr = d.toISOString().split('T')[0];
+                dateSelect.innerHTML += `<option value="${dateStr}">${dateStr}</option>`;
+            }
+        });
+
+        document.getElementById('log-date').addEventListener('change', async (e) => {
+            const date = e.target.value;
+            if (!date) return;
+
+            try {
+                const data = await api(`/logs/${date}`);
+                document.getElementById('logs-content').innerHTML = `
+                    <div class="content-box">${renderMarkdown(data.content || 'No entries for this date.')}</div>
+                `;
+            } catch (error) {
+                document.getElementById('logs-content').innerHTML = '<div class="content-box"><p>Failed to load log entries.</p></div>';
+            }
+        });
+
+        async function loadAgents() {
+            try {
+                const data = await api('/agents/status');
+                const html = data.agents.map(agent => `
+                    <div class="agent-card">
+                        <h4>${agent.name}</h4>
+                        <p>${agent.description}</p>
+                        <span class="agent-status">${agent.status}</span>
+                        ${agent.active_sessions ? `<span style="margin-left: 0.5rem; color: var(--text-muted); font-size: 0.75rem;">${agent.active_sessions} session(s)</span>` : ''}
+                    </div>
+                `).join('');
+                document.getElementById('agent-list').innerHTML = html;
+            } catch (error) {
+                document.getElementById('agent-list').innerHTML = '<p>Failed to load agents</p>';
+            }
+        }
+
+        // Health check
+        async function checkHealth() {
+            try {
+                await api('/health');
+                document.getElementById('status-text').textContent = 'Connected';
+                document.querySelector('.status-dot').style.background = 'var(--success)';
+            } catch (error) {
+                document.getElementById('status-text').textContent = 'Disconnected';
+                document.querySelector('.status-dot').style.background = '#c00';
+            }
+        }
+
+        // Initial load
+        checkHealth();
+        loadToday();
+        setInterval(checkHealth, 30000);
+    </script>
+</body>
+</html>
