@@ -63,6 +63,10 @@ def create_agent(persona_name: str, tools: list = None, model: str = "claude-son
     # Load identity
     system_prompt = load_identity(persona_name)
 
+    # Add current date context
+    today = datetime.now().strftime('%Y-%m-%d')
+    system_prompt += f"\n\n---\n\nToday's date is {today}. Use this when referencing 'today' or recent dates."
+
     # Initialize context (messages only, system is separate)
     context = []
 
