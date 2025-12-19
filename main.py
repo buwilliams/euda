@@ -29,6 +29,9 @@ def main():
         "evening": run_evening,
         "world": lambda: __import__('src.agents.world', fromlist=['run_interactive']).run_interactive(),
         "discover": run_discover,
+        "worker": lambda: __import__('src.agents.worker', fromlist=['run_interactive']).run_interactive(),
+        "tasks": run_tasks,
+        "approvals": run_approvals,
         "watch": lambda: __import__('src.watcher', fromlist=['watch_inbox']).watch_inbox(),
         "process": lambda: __import__('src.watcher', fromlist=['process_pending']).process_pending(),
         "serve": run_server,
@@ -52,6 +55,9 @@ def main():
         print("  evening    Generate evening reflection")
         print("  world      Interactive chat with The Scout")
         print("  discover   Run a discovery sweep for opportunities")
+        print("  worker     Interactive chat with The Executor")
+        print("  tasks      Process the task queue once")
+        print("  approvals  Show actions waiting for approval")
         print("  watch      Watch inbox for new files to process")
         print("  process    Process pending files once and exit")
         print("  serve      Start the web API server (standalone)")
@@ -139,6 +145,28 @@ def run_discover():
     print("=" * 60)
     print()
     result = run_discovery_sweep()
+    print(f"\n{result}")
+
+
+def run_tasks():
+    """Process the task queue once."""
+    from src.agents.worker import process_task_queue
+    print("=" * 60)
+    print("Me and Us - Task Queue Processing")
+    print("=" * 60)
+    print()
+    result = process_task_queue()
+    print(f"\n{result}")
+
+
+def run_approvals():
+    """Show actions waiting for approval."""
+    from src.agents.worker import check_pending_approvals
+    print("=" * 60)
+    print("Me and Us - Pending Approvals")
+    print("=" * 60)
+    print()
+    result = check_pending_approvals()
     print(f"\n{result}")
 
 

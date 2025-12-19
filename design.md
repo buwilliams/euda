@@ -271,6 +271,46 @@ async def run_interaction_agent():
         return response
 ```
 
+### Worker Agent
+
+Executes tasks on behalf of the user with approval workflows.
+
+```python
+async def run_worker_agent():
+    agent = create_agent(
+        "data/agents/identity/worker.identity.md",
+        tools=[create_task, get_tasks, update_task_status,
+               create_pending_action, approve_action, reject_action,
+               mark_action_executed, get_integration_status]
+    )
+
+    while True:
+        # Check for pending tasks
+        tasks = get_pending_tasks()
+        for task in tasks:
+            # Process task, create pending action
+            result = agent(f"""
+                Process this task: {task}
+
+                1. Determine what action is needed
+                2. Create a pending action with clear summary
+                3. If read-only, auto-approve
+                4. If write operation, await user approval
+            """)
+
+        # Execute approved actions
+        approved = get_approved_actions()
+        for action in approved:
+            result = agent(f"""
+                Execute this approved action: {action}
+
+                Use the appropriate integration (mock or live).
+                Mark completed with result.
+            """)
+
+        await asyncio.sleep(30)
+```
+
 ## Tools
 
 Tools are just functions with JSON schema descriptions.
@@ -334,11 +374,13 @@ meandus/
     world.py
     attention.py
     interaction.py
+    worker.py
   tools/
     log.py                # Log read/write tools
     files.py              # File processing tools
     search.py             # External search tools
     notifications.py      # Push notification tools
+    worker.py             # Task and action management
   web/
     app.py                # FastAPI app
     routes/
@@ -358,10 +400,15 @@ meandus/
       identity/
         _core.identity.md
         ingestion.identity.md
+        worker.identity.md
         ...
       state/
       signals/
       queues/
+    worker/               # Worker agent data
+      tasks/              # Task queue (queue.json)
+      actions/            # Pending and completed actions
+      config/             # Integration settings
     cards/
       internal.card.md
       public.card.md

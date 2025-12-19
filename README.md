@@ -139,9 +139,15 @@ data/
       world.identity.md
       attention.identity.md
       interaction.identity.md
+      worker.identity.md
     signals/                # Inter-agent communication
     state/                  # Agent state (JSON files)
     queues/                 # Work queues
+
+  worker/                   # Worker agent data
+    tasks/                  # Task queue
+    actions/                # Pending and completed actions
+    config/                 # Integration settings
 
   values/                   # Derived values at three scopes
     current.values.md
@@ -170,6 +176,7 @@ data/
 | **World** | The Scout | 1hr | `values_updated`, time-based (24hr) | `opportunities_updated` |
 | **Attention** | The Curator | 5min | Time windows (7-9am, 9-11pm), `opportunities_updated` | `attention_delivered` |
 | **Interaction** | The Caring Friend | On-demand | User messages | — |
+| **Worker** | The Executor | 30s | `new_task`, pending tasks/actions | `task_completed` |
 
 ### Identity System
 
@@ -250,6 +257,11 @@ The agent has a self-concept:
 - *Purpose:* Converse, listen, adapt, encourage, challenge when needed.
 - *Beliefs:* The user knows themselves best, but may need reflection.
 - *Behavior:* Warm, adaptive, honest. Listen first. Never manipulate.
+
+**Worker Agent - The Executor**
+- *Purpose:* Execute tasks on behalf of the user: emails, calendar, reminders, research.
+- *Beliefs:* User trust is sacred. Every action should be reversible or confirmable.
+- *Behavior:* Clear, actionable, transparent. Request approval for write operations.
 
 ---
 
