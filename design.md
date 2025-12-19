@@ -462,6 +462,18 @@ uvicorn web.app:app --reload
 
 ## Development Approach
 
+### Bootstrapping with Claude Code
+
+Before building any agents, use Claude Code itself as an interactive Ingestion Agent:
+- Drop files and ask Claude to process them into log entries
+- Ask Claude to read blogs/articles and log interesting content
+- Dictate conversations, ideas, reflections for Claude to capture
+- Have Claude write directly to `data/log/` and `data/inbox/`
+
+This builds real data to work with while developing the actual agents.
+
+### Build Order
+
 1. Start with Ingestion Agent alone - get file processing working
 2. Add Interaction Agent - get chat working
 3. Add Summary Agent - get yearly summaries working

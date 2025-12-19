@@ -371,9 +371,19 @@ content: [extracted/transcribed content]
 
 #### Methods (in order of implementation)
 
-1. **Manual file drop** - Drop files into inbox directory, agent processes whatever it finds
-2. **Browser agent** - AI navigates authenticated sessions to gather data from web services
-3. **API connectors** - OAuth integrations where available and practical
+1. **Claude Code session** - Interactive ingestion via conversation (bootstrapping)
+2. **Manual file drop** - Drop files into inbox directory, agent processes whatever it finds
+3. **Browser agent** - AI navigates authenticated sessions to gather data from web services
+4. **API connectors** - OAuth integrations where available and practical
+
+#### Claude Code Ingestion
+
+Before the full system exists, use Claude Code as an interactive Ingestion Agent:
+- "Here's a photo, add it to my log"
+- "Read this blog post and log what I found interesting"
+- "I just had a conversation with Sarah about X, capture it"
+- "Process this data export I downloaded"
+- Conversations themselves become log entries (ideas explored, decisions made)
 
 #### Inbox Structure
 
