@@ -19,27 +19,63 @@
             min-height: 100vh;
         }
 
+        /* Main layout with optional panel */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+        }
+
         .app {
             display: flex;
             flex-direction: column;
             height: 100vh;
+            width: 100%;
             max-width: 640px;
-            margin: 0 auto;
             padding: 1.5rem;
+            transition: max-width 0.3s ease;
+        }
+
+        .app-container.panel-open .app {
+            max-width: 480px;
         }
 
         /* Header */
         header {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 1rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid #eee;
         }
 
         .logo {
-            width: 240px;
+            width: 200px;
             height: auto;
+        }
+
+        .panel-toggle {
+            background: none;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .panel-toggle:hover {
+            border-color: #999;
+            color: #333;
+        }
+
+        .app-container.panel-open .panel-toggle {
+            background: #000;
+            color: #fff;
+            border-color: #000;
         }
 
         /* Activity Feed */
@@ -296,6 +332,235 @@
             color: #666;
         }
 
+        /* ============== Side Panel ============== */
+        .panel {
+            width: 280px;
+            height: 100vh;
+            background: #fafafa;
+            border-left: 1px solid #eee;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .app-container.panel-open .panel {
+            display: flex;
+        }
+
+        .panel-header {
+            padding: 1.5rem 1rem 1rem;
+            border-bottom: 1px solid #eee;
+            background: #fff;
+        }
+
+        .panel-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #999;
+            margin-bottom: 0.25rem;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        /* Panel Sections */
+        .panel-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .panel-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .panel-section-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #333;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .panel-section-count {
+            font-size: 0.75rem;
+            color: #999;
+            background: #eee;
+            padding: 0.1rem 0.4rem;
+            border-radius: 10px;
+        }
+
+        /* Task Items */
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .task-item:hover {
+            background: #f0f0f0;
+            margin: 0 -0.5rem;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 1.5px solid #ccc;
+            border-radius: 3px;
+            margin-right: 0.75rem;
+            margin-top: 2px;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .task-checkbox:hover {
+            border-color: #666;
+        }
+
+        .task-item.completed .task-checkbox {
+            background: #10b981;
+            border-color: #10b981;
+        }
+
+        .task-item.completed .task-checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .task-item.completed .task-description {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .task-description {
+            font-size: 0.9rem;
+            color: #333;
+            line-height: 1.4;
+            flex: 1;
+        }
+
+        .task-meta {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 0.25rem;
+        }
+
+        .task-empty {
+            color: #999;
+            font-style: italic;
+            font-size: 0.9rem;
+            padding: 0.5rem 0;
+        }
+
+        /* Project Items */
+        .project-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .project-item:last-child {
+            border-bottom: none;
+        }
+
+        .project-header {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+
+        .project-header:hover {
+            color: #000;
+        }
+
+        .project-toggle {
+            font-size: 0.7rem;
+            color: #999;
+            margin-right: 0.5rem;
+            transition: transform 0.2s;
+        }
+
+        .project-item.expanded .project-toggle {
+            transform: rotate(90deg);
+        }
+
+        .project-name {
+            font-size: 0.9rem;
+            color: #333;
+            flex: 1;
+        }
+
+        .project-badge {
+            font-size: 0.7rem;
+            color: #666;
+            background: #eee;
+            padding: 0.1rem 0.4rem;
+            border-radius: 8px;
+        }
+
+        .project-tasks {
+            display: none;
+            padding-left: 1.25rem;
+            margin-top: 0.5rem;
+        }
+
+        .project-item.expanded .project-tasks {
+            display: block;
+        }
+
+        .project-empty {
+            color: #999;
+            font-style: italic;
+            font-size: 0.9rem;
+            padding: 0.5rem 0;
+        }
+
+        /* Quick Add Button */
+        .panel-footer {
+            padding: 1rem;
+            border-top: 1px solid #eee;
+            background: #fff;
+        }
+
+        .quick-add-btn {
+            width: 100%;
+            padding: 0.625rem 1rem;
+            border: 1px dashed #ccc;
+            border-radius: 4px;
+            background: transparent;
+            color: #666;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-add-btn:hover {
+            border-color: #999;
+            color: #333;
+            background: #f5f5f5;
+        }
+
         /* Markdown Styles */
         .message-content h1,
         .message-content h2,
@@ -409,58 +674,291 @@
             background: #f9f9f9;
             font-weight: 600;
         }
+
+        /* Responsive */
+        @media (max-width: 800px) {
+            .app-container.panel-open .app {
+                display: none;
+            }
+
+            .panel {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="app">
-        <header>
-            <img src="/static/images/meanddus-logo-with-subtitle.png" alt="me·an·dus" class="logo">
-        </header>
+    <div class="app-container" id="app-container">
+        <div class="app">
+            <header>
+                <img src="/static/images/meanddus-logo-with-subtitle.png" alt="me·an·dus" class="logo">
+                <button class="panel-toggle" onclick="togglePanel()">Tasks</button>
+            </header>
 
-        <section class="activity" id="activity">
-            <div class="activity-quiet">All quiet. Your attention is free.</div>
-        </section>
+            <section class="activity" id="activity">
+                <div class="activity-quiet">All quiet. Your attention is free.</div>
+            </section>
 
-        <section class="chat">
-            <div class="messages" id="messages">
-                <div class="message message-friend">
-                    <div class="message-content">Hey. I'm here when you need me. What's on your mind?</div>
+            <section class="chat">
+                <div class="messages" id="messages">
+                    <div class="message message-friend">
+                        <div class="message-content">Hey. I'm here when you need me. What's on your mind?</div>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <div class="chat-input">
+                        <input type="text" id="chat-input" placeholder="Talk to me..." autofocus>
+                        <button id="send-btn" onclick="sendMessage()">Send</button>
+                    </div>
+                    <div class="hints">
+                        Try: <span class="hint" onclick="askAbout('what tasks do I have today')">"tasks today"</span> ·
+                        <span class="hint" onclick="askAbout('show my projects')">"my projects"</span> ·
+                        <span class="hint" onclick="askAbout('create a task to')">"create task"</span> ·
+                        <span class="hint" onclick="askAbout('what has the agent completed for me')">"results"</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Side Panel -->
+        <aside class="panel" id="panel">
+            <div class="panel-header">
+                <div class="panel-title">Focus</div>
+            </div>
+
+            <div class="panel-content">
+                <!-- Today's Tasks -->
+                <div class="panel-section">
+                    <div class="panel-section-header">
+                        <span class="panel-section-title">Today</span>
+                        <span class="panel-section-count" id="today-count">0</span>
+                    </div>
+                    <div id="today-tasks">
+                        <div class="task-empty">No tasks for today</div>
+                    </div>
+                </div>
+
+                <!-- Projects -->
+                <div class="panel-section">
+                    <div class="panel-section-header">
+                        <span class="panel-section-title">Projects</span>
+                        <span class="panel-section-count" id="projects-count">0</span>
+                    </div>
+                    <div id="projects-list">
+                        <div class="project-empty">No active projects</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="chat-input-container">
-                <div class="chat-input">
-                    <input type="text" id="chat-input" placeholder="Talk to me..." autofocus>
-                    <button id="send-btn" onclick="sendMessage()">Send</button>
-                </div>
-                <div class="hints">
-                    Try: <span class="hint" onclick="askAbout('what tasks do I have today')">"tasks today"</span> ·
-                    <span class="hint" onclick="askAbout('show my projects')">"my projects"</span> ·
-                    <span class="hint" onclick="askAbout('create a task to')">"create task"</span> ·
-                    <span class="hint" onclick="askAbout('what has the agent completed for me')">"results"</span>
-                </div>
+            <div class="panel-footer">
+                <button class="quick-add-btn" onclick="quickAddTask()">+ Add task</button>
             </div>
-        </section>
+        </aside>
     </div>
 
     <script>
         // Configure marked for security
         marked.setOptions({
-            breaks: true,      // Convert \n to <br>
-            gfm: true,         // GitHub Flavored Markdown
-            headerIds: false,  // Don't add IDs to headers
-            mangle: false      // Don't mangle email addresses
+            breaks: true,
+            gfm: true,
+            headerIds: false,
+            mangle: false
         });
 
         // State
         let sessionId = localStorage.getItem('sessionId') || null;
         let isWaiting = false;
+        let panelOpen = localStorage.getItem('panelOpen') === 'true';
+        let tasksData = [];
+        let projectsData = [];
 
         // Elements
+        const appContainer = document.getElementById('app-container');
         const messagesEl = document.getElementById('messages');
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
         const activityEl = document.getElementById('activity');
+
+        // Initialize panel state
+        if (panelOpen) {
+            appContainer.classList.add('panel-open');
+        }
+
+        // Panel toggle
+        function togglePanel() {
+            panelOpen = !panelOpen;
+            appContainer.classList.toggle('panel-open', panelOpen);
+            localStorage.setItem('panelOpen', panelOpen);
+
+            if (panelOpen) {
+                loadPanelData();
+            }
+        }
+
+        // Load panel data
+        async function loadPanelData() {
+            try {
+                const [tasksRes, projectsRes] = await Promise.all([
+                    fetch('/api/tasks'),
+                    fetch('/api/projects')
+                ]);
+
+                const tasksJson = await tasksRes.json();
+                const projectsJson = await projectsRes.json();
+
+                tasksData = tasksJson.tasks || [];
+                projectsData = projectsJson.projects || [];
+
+                renderTodayTasks();
+                renderProjects();
+            } catch (error) {
+                console.error('Failed to load panel data:', error);
+            }
+        }
+
+        // Render today's tasks
+        function renderTodayTasks() {
+            const container = document.getElementById('today-tasks');
+            const countEl = document.getElementById('today-count');
+
+            const today = new Date().toISOString().split('T')[0];
+            const todayTasks = tasksData.filter(t => {
+                const dueDate = t.scheduling?.due_date;
+                const isToday = dueDate === today || !dueDate;
+                const isPending = t.status === 'pending' || t.status === 'in_progress';
+                return isPending || t.status === 'completed';
+            }).slice(0, 10); // Limit to 10
+
+            const pendingCount = todayTasks.filter(t => t.status !== 'completed').length;
+            countEl.textContent = pendingCount;
+
+            if (todayTasks.length === 0) {
+                container.innerHTML = '<div class="task-empty">No tasks for today</div>';
+                return;
+            }
+
+            container.innerHTML = todayTasks.map((task, idx) => `
+                <div class="task-item ${task.status === 'completed' ? 'completed' : ''}" data-task-id="${task.id}">
+                    <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
+                    <div class="task-info" onclick="discussTask('${escapeHtml(task.description)}')">
+                        <div class="task-description">${escapeHtml(task.description)}</div>
+                        ${task.project_id ? `<div class="task-meta">in project</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render projects
+        function renderProjects() {
+            const container = document.getElementById('projects-list');
+            const countEl = document.getElementById('projects-count');
+
+            const activeProjects = projectsData.filter(p => p.status === 'active');
+            countEl.textContent = activeProjects.length;
+
+            if (activeProjects.length === 0) {
+                container.innerHTML = '<div class="project-empty">No active projects</div>';
+                return;
+            }
+
+            container.innerHTML = activeProjects.map(project => {
+                const projectTasks = tasksData.filter(t => t.project_id === project.id && t.status !== 'completed');
+                const taskCount = projectTasks.length;
+
+                return `
+                    <div class="project-item" data-project-id="${project.id}">
+                        <div class="project-header" onclick="toggleProject('${project.id}')">
+                            <span class="project-toggle">▶</span>
+                            <span class="project-name">${escapeHtml(project.title)}</span>
+                            <span class="project-badge">${taskCount}</span>
+                        </div>
+                        <div class="project-tasks">
+                            ${projectTasks.length === 0
+                                ? '<div class="task-empty">No pending tasks</div>'
+                                : projectTasks.map(task => `
+                                    <div class="task-item ${task.status === 'completed' ? 'completed' : ''}" data-task-id="${task.id}">
+                                        <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
+                                        <div class="task-description" onclick="discussTask('${escapeHtml(task.description)}')">${escapeHtml(task.description)}</div>
+                                    </div>
+                                `).join('')
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Toggle project expansion
+        function toggleProject(projectId) {
+            const projectEl = document.querySelector(`[data-project-id="${projectId}"]`);
+            if (projectEl) {
+                projectEl.classList.toggle('expanded');
+            }
+        }
+
+        // Toggle task completion
+        async function toggleTask(event, taskId) {
+            event.stopPropagation();
+
+            const task = tasksData.find(t => t.id === taskId);
+            if (!task) return;
+
+            const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+
+            // Optimistic update
+            task.status = newStatus;
+            renderTodayTasks();
+            renderProjects();
+
+            // Update via chat (let the agent handle it)
+            const action = newStatus === 'completed' ? 'completed' : 'reopened';
+            addMessage(`Mark task "${task.description}" as ${action}`, 'you');
+            setWaiting(true);
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: `Mark the task "${task.description}" as ${action}`,
+                        session_id: sessionId
+                    })
+                });
+
+                const data = await response.json();
+                sessionId = data.session_id;
+                localStorage.setItem('sessionId', sessionId);
+
+                removeThinking();
+                addMessage(data.response, 'friend');
+
+                // Refresh panel data
+                loadPanelData();
+            } catch (error) {
+                removeThinking();
+                addMessage('Had trouble updating that task.', 'friend');
+            }
+
+            setWaiting(false);
+        }
+
+        // Discuss a task
+        function discussTask(description) {
+            chatInput.value = `Tell me about the task: ${description}`;
+            chatInput.focus();
+        }
+
+        // Quick add task
+        function quickAddTask() {
+            chatInput.value = 'Create a task to ';
+            chatInput.focus();
+
+            // Position cursor at end
+            const len = chatInput.value.length;
+            chatInput.setSelectionRange(len, len);
+        }
 
         // Send message
         async function sendMessage() {
@@ -484,6 +982,11 @@
 
                 removeThinking();
                 addMessage(data.response, 'friend');
+
+                // Refresh panel if open (in case tasks/projects changed)
+                if (panelOpen) {
+                    setTimeout(loadPanelData, 500);
+                }
             } catch (error) {
                 removeThinking();
                 addMessage('I had trouble processing that. Could you try again?', 'friend');
@@ -506,7 +1009,6 @@
             const div = document.createElement('div');
             div.className = `message message-${role}`;
 
-            // Render markdown for assistant messages, escape HTML for user messages
             let html;
             if (role === 'friend') {
                 html = marked.parse(content);
@@ -559,7 +1061,6 @@
 
         async function pollActivity() {
             try {
-                // Fetch both agent status and notifications in parallel
                 const [agentResponse, notifResponse] = await Promise.all([
                     fetch('/api/agents/status'),
                     fetch('/api/notifications')
@@ -574,7 +1075,6 @@
                     const key = agent.name;
                     const prevState = lastAgentStates[key];
 
-                    // Check if agent just completed work
                     if (agent.last_active && prevState?.last_active !== agent.last_active) {
                         if (prevState) {
                             activities.push({
@@ -584,7 +1084,6 @@
                         }
                     }
 
-                    // Check if agent is working (status is 'ready' with recent activity)
                     if (agent.status === 'ready') {
                         const lastActive = new Date(agent.last_active);
                         const now = new Date();
@@ -601,12 +1100,10 @@
                     lastAgentStates[key] = { ...agent };
                 }
 
-                // Store notifications for click handling
                 notifications = notifData.notifications || [];
-
                 updateActivityFeed(activities, notifications);
             } catch (error) {
-                // Silent fail - activity feed is non-critical
+                // Silent fail
             }
         }
 
@@ -620,15 +1117,12 @@
         }
 
         function handleNotificationClick(notification) {
-            // Mark as seen
             fetch(`/api/notifications/${notification.id}/seen`, { method: 'POST' });
 
-            // If there's an action prompt, inject it into chat
             if (notification.action_prompt) {
                 chatInput.value = notification.action_prompt;
                 chatInput.focus();
             } else {
-                // Default: inject the title as a conversation starter
                 chatInput.value = `Tell me about: ${notification.title}`;
                 chatInput.focus();
             }
@@ -637,7 +1131,6 @@
         function updateActivityFeed(activities, notifs) {
             let html = '';
 
-            // Show notifications first (they're more important)
             if (notifs && notifs.length > 0) {
                 notifs.forEach((n, idx) => {
                     const typeClass = n.type ? `type-${n.type}` : '';
@@ -655,7 +1148,6 @@
                 });
             }
 
-            // Then show agent activities
             if (activities.length > 0) {
                 activities.forEach(a => {
                     html += `<div class="activity-item">
@@ -665,7 +1157,6 @@
                 });
             }
 
-            // If nothing to show
             if (html === '') {
                 html = '<div class="activity-quiet">All quiet. Your attention is free.</div>';
             }
@@ -673,11 +1164,20 @@
             activityEl.innerHTML = html;
         }
 
-        // Poll every 3 seconds
+        // Initialize
         setInterval(pollActivity, 3000);
         pollActivity();
 
-        // Focus input on load
+        // Load panel data if open
+        if (panelOpen) {
+            loadPanelData();
+        }
+
+        // Refresh panel data periodically if open
+        setInterval(() => {
+            if (panelOpen) loadPanelData();
+        }, 10000);
+
         chatInput.focus();
     </script>
 </body>
