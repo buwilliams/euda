@@ -68,6 +68,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     session_id: str
+    clear_chat: bool = False
 
 
 class LogSearchRequest(BaseModel):
@@ -144,22 +145,43 @@ async def app_page():
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """Chat with the Interaction Agent."""
+    from ..tools.conversation import CLEAR_CONVERSATION_MARKER
+
     session_id, agent = get_or_create_session(request.session_id)
 
     try:
         sessions[session_id]["last_used"] = datetime.now()
         response = agent.process(request.message, INTERACTION_HANDLERS)
 
-        # Auto-log the conversation
-        write_log_entry(
-            content=f"**Me:** {request.message}\n\n**Friend:** {response}",
-            source="conversation",
-            entry_type="chat"
-        )
+        # Check if this is a clear conversation request
+        clear_chat = False
+        if CLEAR_CONVERSATION_MARKER in response:
+            clear_chat = True
+            # Remove the marker from the response
+            response = response.replace(CLEAR_CONVERSATION_MARKER, "").strip()
+            # Clear the agent's context
+            agent.clear_context()
+            # Create a fresh session
+            new_session_id = str(uuid.uuid4())
+            sessions[new_session_id] = {
+                "agent": create_agent("interaction", INTERACTION_TOOLS),
+                "created": datetime.now(),
+                "last_used": datetime.now()
+            }
+            session_id = new_session_id
+
+        # Auto-log the conversation (skip if clearing)
+        if not clear_chat:
+            write_log_entry(
+                content=f"**Me:** {request.message}\n\n**Friend:** {response}",
+                source="conversation",
+                entry_type="chat"
+            )
 
         return ChatResponse(
             response=response,
-            session_id=session_id
+            session_id=session_id,
+            clear_chat=clear_chat
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

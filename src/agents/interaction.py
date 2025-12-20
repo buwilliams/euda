@@ -26,6 +26,7 @@ from ..tools.task import TASK_TOOLS, TASK_HANDLERS
 from ..tools.project import PROJECT_TOOLS, PROJECT_HANDLERS
 from ..tools.introspection import get_last_introspection, get_system_overview
 from ..tools.agent_log import AGENT_LOG_TOOLS, AGENT_LOG_HANDLERS
+from ..tools.conversation import CONVERSATION_TOOLS, CONVERSATION_HANDLERS
 
 
 # Additional tools for reading values
@@ -101,7 +102,8 @@ INTERACTION_TOOLS = (
     TASK_TOOLS +
     PROJECT_TOOLS +
     INTROSPECTION_TOOLS +
-    AGENT_LOG_TOOLS
+    AGENT_LOG_TOOLS +
+    CONVERSATION_TOOLS
 )
 
 # Handlers for tool execution
@@ -111,6 +113,7 @@ INTERACTION_HANDLERS = {
     **TASK_HANDLERS,
     **PROJECT_HANDLERS,
     **AGENT_LOG_HANDLERS,
+    **CONVERSATION_HANDLERS,
     "get_current_values": get_current_values,
     "get_phase_values": get_phase_values,
     "get_lifetime_values": get_lifetime_values,

@@ -1141,6 +1141,12 @@
                 localStorage.setItem('sessionId', sessionId);
 
                 removeThinking();
+
+                // Check if we should clear the chat
+                if (data.clear_chat) {
+                    clearMessages();
+                }
+
                 addMessage(data.response, 'friend');
 
                 // Always refresh data after chat (tasks/projects may have changed)
@@ -1151,6 +1157,11 @@
             }
 
             setWaiting(false);
+        }
+
+        function clearMessages() {
+            // Clear all messages except keep the container
+            messagesEl.innerHTML = '';
         }
 
         function setWaiting(waiting) {
