@@ -12,6 +12,7 @@ This agent can:
 - Create and manage tasks and projects
 - View daily task list and results
 - Explain system capabilities
+- Query agent activity logs (what agents are doing, task pickup status, etc.)
 """
 
 from .base import create_agent
@@ -24,6 +25,7 @@ from ..tools.world import get_opportunities
 from ..tools.task import TASK_TOOLS, TASK_HANDLERS
 from ..tools.project import PROJECT_TOOLS, PROJECT_HANDLERS
 from ..tools.introspection import get_last_introspection, get_system_overview
+from ..tools.agent_log import AGENT_LOG_TOOLS, AGENT_LOG_HANDLERS
 
 
 # Additional tools for reading values
@@ -98,7 +100,8 @@ INTERACTION_TOOLS = (
     FETCH_TOOLS +
     TASK_TOOLS +
     PROJECT_TOOLS +
-    INTROSPECTION_TOOLS
+    INTROSPECTION_TOOLS +
+    AGENT_LOG_TOOLS
 )
 
 # Handlers for tool execution
@@ -107,6 +110,7 @@ INTERACTION_HANDLERS = {
     **FETCH_HANDLERS,
     **TASK_HANDLERS,
     **PROJECT_HANDLERS,
+    **AGENT_LOG_HANDLERS,
     "get_current_values": get_current_values,
     "get_phase_values": get_phase_values,
     "get_lifetime_values": get_lifetime_values,

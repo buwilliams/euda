@@ -1,9 +1,12 @@
 """
 Introspection Tools - System self-awareness
 
-Tools for analyzing agent identities, capabilities, and tools.
+Tools for analyzing agent identities, capabilities, tools, and activity.
 Used by the Introspection Agent to maintain a living document
-of what the system can do.
+of what the system can do and what it is currently doing.
+
+Also provides agent activity log access for querying what agents
+have been doing, checking task status, and understanding system behavior.
 """
 
 import re
@@ -436,8 +439,8 @@ INTROSPECTION_TOOLS = [
     }
 ]
 
-# Handler mapping
-INTROSPECTION_HANDLERS = {
+# Handler mapping for introspection-specific tools
+_INTROSPECTION_HANDLERS = {
     "list_agents": list_agents,
     "get_agent_identity": get_agent_identity,
     "get_core_identity": get_core_identity,
@@ -448,3 +451,10 @@ INTROSPECTION_HANDLERS = {
     "get_last_introspection": get_last_introspection,
     "save_capabilities": save_capabilities,
 }
+
+# Import agent activity log tools
+from .agent_log import AGENT_LOG_TOOLS, AGENT_LOG_HANDLERS
+
+# Combined tools and handlers (introspection + agent logs)
+INTROSPECTION_TOOLS = INTROSPECTION_TOOLS + AGENT_LOG_TOOLS
+INTROSPECTION_HANDLERS = {**_INTROSPECTION_HANDLERS, **AGENT_LOG_HANDLERS}

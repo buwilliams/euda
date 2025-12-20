@@ -24,6 +24,10 @@ from dotenv import load_dotenv
 from anthropic import Anthropic
 
 from ..tools.identity import IDENTITY_TOOLS, IDENTITY_HANDLERS
+from ..tools.agent_log import (
+    log_activity, log_tool_call, log_work_check, log_work_start,
+    log_work_complete, log_signal_sent, log_error
+)
 
 # Load environment variables from .env file (use explicit path, override existing)
 ENV_FILE = Path(__file__).parent.parent.parent / ".env"
@@ -127,6 +131,8 @@ def create_agent(persona_name: str, tools: list = None, model: str = "claude-son
                         "tool_use_id": tool_call.id,
                         "content": str(result)
                     })
+                    # Log successful tool call
+                    log_tool_call(persona_name, tool_name, tool_input, str(result)[:200], success=True)
                 except Exception as e:
                     tool_results.append({
                         "type": "tool_result",
@@ -134,6 +140,8 @@ def create_agent(persona_name: str, tools: list = None, model: str = "claude-son
                         "content": f"Error: {str(e)}",
                         "is_error": True
                     })
+                    # Log failed tool call
+                    log_tool_call(persona_name, tool_name, tool_input, str(e), success=False)
             else:
                 tool_results.append({
                     "type": "tool_result",
@@ -141,6 +149,7 @@ def create_agent(persona_name: str, tools: list = None, model: str = "claude-son
                     "content": f"Unknown tool: {tool_name}",
                     "is_error": True
                 })
+                log_tool_call(persona_name, tool_name, tool_input, f"Unknown tool: {tool_name}", success=False)
 
         # Add tool results to context
         context.append({
@@ -315,6 +324,7 @@ class AutonomousAgent(ABC):
         signal_file = SIGNALS_DIR / f"{signal_name}.signal"
         signal_file.write_text(datetime.now().isoformat())
         self.logger.info(f"Sent signal: {signal_name}")
+        log_signal_sent(self.name, signal_name)
 
     def check_signal(self, signal_name: str) -> bool:
         """Check if a signal exists (and consume it)."""
@@ -332,12 +342,18 @@ class AutonomousAgent(ABC):
             True if work was done, False otherwise
         """
         try:
-            if self.check_work_needed():
+            work_needed = self.check_work_needed()
+            log_work_check(self.name, work_needed)
+
+            if work_needed:
                 self.logger.info(f"Work needed, starting...")
+                log_work_start(self.name, f"{self.name} autonomous work")
+
                 result = self.do_work()
                 self.last_work_time = datetime.now()
                 self.work_count += 1
                 self.logger.info(f"Work complete: {result}")
+                log_work_complete(self.name, result[:200] if result else "completed")
 
                 # Send completion signals
                 for signal in self.signals_on_complete:
@@ -349,6 +365,7 @@ class AutonomousAgent(ABC):
         except Exception as e:
             self.error_count += 1
             self.logger.error(f"Error during work: {e}")
+            log_error(self.name, str(e))
             return False
 
     async def run(self):
