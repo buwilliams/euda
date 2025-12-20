@@ -1,4 +1,4 @@
-# Me and Us
+# me·an·dus
 
 An AI personal assistant that curates my attention to maximize the wonder of being alive. It learns what promotes life for me—joy, growth, connection, contribution—by observing my logged life and forming conjectural values. It proactively explores the world for opportunities, advocates for experiences I might resist, and manages my energy to surface the right things at the right time.
 
@@ -539,7 +539,7 @@ The system reaches out to you—you don't obsessively check it.
 
 ```
 ┌─────────────────────────────────────┐
-│  [logo] Me and Us                   │
+│  [logo] me·an·dus                   │
 ├─────────────────────────────────────┤
 │  All quiet. Your attention is free. │  ← Activity feed
 ├─────────────────────────────────────┤

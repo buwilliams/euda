@@ -712,7 +712,7 @@ These are not buttons - they're conversation starters. Clicking fills the input.
 
 ```
 ┌─────────────────────────────────────┐
-│  [logo] Me and Us                   │
+│  [logo] me·an·dus                   │
 ├─────────────────────────────────────┤
 │  All quiet. Your attention is free. │  ← Activity feed
 │  (or: Ingestion working...)         │

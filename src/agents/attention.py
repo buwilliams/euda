@@ -28,7 +28,7 @@ def create_attention_agent():
 def run_interactive():
     """Run an interactive session with the Attention Agent."""
     print("=" * 60)
-    print("Me and Us - Attention Agent (The Curator)")
+    print("me·an·dus - Attention Agent (The Curator)")
     print("=" * 60)
     print("\nI decide what deserves your attention right now.")
     print("Commands:")

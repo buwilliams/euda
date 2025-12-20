@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Me and Us (Meandus) is an AI personal assistant that manages user attention to maximize life enjoyment through learning, growth, and contribution. The agent builds an understanding of the user and their world to surface personalized activities and recommendations.
+me·an·dus is an AI personal assistant that manages user attention to maximize life enjoyment through learning, growth, and contribution. The agent builds an understanding of the user and their world to surface personalized activities and recommendations.
 
 ## Current State
 

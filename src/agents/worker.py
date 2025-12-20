@@ -41,7 +41,7 @@ def create_worker_agent():
 def run_interactive():
     """Run an interactive session with the Worker Agent."""
     print("=" * 60)
-    print("Me and Us - Worker Agent (The Executor)")
+    print("me·an·dus - Worker Agent (The Executor)")
     print("=" * 60)
     print("\nI help you execute tasks: emails, calendar, research, reminders.")
     print("Examples:")

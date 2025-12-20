@@ -1,5 +1,5 @@
 """
-Base agent pattern for Me and Us.
+Base agent pattern for me·an·dus.
 
 An agent is simply:
 - A context (list of messages)

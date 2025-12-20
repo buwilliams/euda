@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Me and Us - AI Personal Assistant
+me·an·dus - AI Personal Assistant
 
 Entry point for running agents and services.
 """
@@ -39,7 +39,7 @@ def main():
     }
 
     if command in ("help", "-h", "--help"):
-        print("Me and Us - AI Personal Assistant")
+        print("me·an·dus - AI Personal Assistant")
         print()
         print("Usage: python main.py [command]")
         print()
@@ -85,7 +85,7 @@ def run_server():
     """Run the FastAPI web server."""
     import uvicorn
     print("=" * 60)
-    print("Me and Us - Web API Server")
+    print("me·an·dus - Web API Server")
     print("=" * 60)
     print()
     print("Starting server at http://localhost:8000")
@@ -110,7 +110,7 @@ def run_derive_values():
     """Derive values from summaries."""
     from src.agents.values import derive_values
     print("=" * 60)
-    print("Me and Us - Deriving Values")
+    print("me·an·dus - Deriving Values")
     print("=" * 60)
     print()
     result = derive_values()
@@ -121,7 +121,7 @@ def run_morning():
     """Generate morning attention."""
     from src.agents.attention import morning_attention
     print("=" * 60)
-    print("Me and Us - Morning Attention")
+    print("me·an·dus - Morning Attention")
     print("=" * 60)
     print()
     result = morning_attention()
@@ -132,7 +132,7 @@ def run_evening():
     """Generate evening reflection."""
     from src.agents.attention import evening_attention
     print("=" * 60)
-    print("Me and Us - Evening Reflection")
+    print("me·an·dus - Evening Reflection")
     print("=" * 60)
     print()
     result = evening_attention()
@@ -143,7 +143,7 @@ def run_discover():
     """Run a discovery sweep for opportunities."""
     from src.agents.world import run_discovery_sweep
     print("=" * 60)
-    print("Me and Us - Discovery Sweep")
+    print("me·an·dus - Discovery Sweep")
     print("=" * 60)
     print()
     result = run_discovery_sweep()
@@ -154,7 +154,7 @@ def run_tasks():
     """Process the task queue once."""
     from src.agents.worker import process_task_queue
     print("=" * 60)
-    print("Me and Us - Task Queue Processing")
+    print("me·an·dus - Task Queue Processing")
     print("=" * 60)
     print()
     result = process_task_queue()
@@ -165,7 +165,7 @@ def run_approvals():
     """Show actions waiting for approval."""
     from src.agents.worker import check_pending_approvals
     print("=" * 60)
-    print("Me and Us - Pending Approvals")
+    print("me·an·dus - Pending Approvals")
     print("=" * 60)
     print()
     result = check_pending_approvals()
@@ -183,7 +183,7 @@ def run_evolve():
     EVOLUTION_DIR = Path(__file__).parent / "data" / "agents" / "evolution"
 
     print("=" * 60)
-    print("Me and Us - Identity Evolution Review")
+    print("me·an·dus - Identity Evolution Review")
     print("=" * 60)
     print()
 

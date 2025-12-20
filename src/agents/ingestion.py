@@ -36,7 +36,7 @@ def create_ingestion_agent(include_file_tools: bool = False):
 def run_interactive():
     """Run an interactive session with the Ingestion Agent."""
     print("=" * 60)
-    print("Me and Us - Ingestion Agent (The Archivist)")
+    print("me·an·dus - Ingestion Agent (The Archivist)")
     print("=" * 60)
     print("\nI help you capture life data. Tell me what to log.")
     print("Examples:")

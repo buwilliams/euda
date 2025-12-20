@@ -91,7 +91,7 @@ def watch_inbox(once: bool = False):
         once: If True, process existing files and exit. If False, watch continuously.
     """
     print("=" * 60)
-    print("Me and Us - Inbox Watcher")
+    print("me·an·dus - Inbox Watcher")
     print("=" * 60)
     print(f"\nWatching: {PENDING_DIR}")
     print("Drop files here to process them into your life log.")

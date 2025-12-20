@@ -22,7 +22,7 @@ def create_summary_agent():
 def run_interactive():
     """Run an interactive session with the Summary Agent."""
     print("=" * 60)
-    print("Me and Us - Summary Agent (The Historian)")
+    print("me·an·dus - Summary Agent (The Historian)")
     print("=" * 60)
     print("\nI find patterns in your life log and distill them into summaries.")
     print("Commands:")

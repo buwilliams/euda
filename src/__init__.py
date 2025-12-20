@@ -1,1 +1,1 @@
-# Me and Us - AI Personal Assistant
+# me·an·dus - AI Personal Assistant

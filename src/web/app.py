@@ -1,5 +1,5 @@
 """
-Me and Us - Web API
+me·an·dus - Web API
 
 FastAPI application for the Interaction Agent and other endpoints.
 """
@@ -35,7 +35,7 @@ STATIC_DIR = BASE_DIR / "static"
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Me and Us",
+    title="me·an·dus",
     description="AI Personal Assistant API",
     version="0.1.0"
 )
@@ -124,7 +124,7 @@ async def root():
     if index_file.exists():
         return FileResponse(index_file)
     return {
-        "name": "Me and Us",
+        "name": "me·an·dus",
         "version": "0.1.0",
         "docs": "/docs"
     }

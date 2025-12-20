@@ -27,7 +27,7 @@ def create_world_agent():
 def run_interactive():
     """Run an interactive session with the World Agent."""
     print("=" * 60)
-    print("Me and Us - World Agent (The Scout)")
+    print("me·an·dus - World Agent (The Scout)")
     print("=" * 60)
     print("\nI bring back news from beyond. Growth requires novelty.")
     print("Commands:")

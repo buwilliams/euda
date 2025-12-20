@@ -22,7 +22,7 @@ def create_values_agent():
 def run_interactive():
     """Run an interactive session with the Values Agent."""
     print("=" * 60)
-    print("Me and Us - Values Agent (The Philosopher)")
+    print("me·an·dus - Values Agent (The Philosopher)")
     print("=" * 60)
     print("\nI articulate what matters. Values are conjectures, not truths.")
     print("Commands:")

@@ -1,5 +1,5 @@
 """
-Agent Manager - Orchestrates all agents in the Me and Us system.
+Agent Manager - Orchestrates all agents in the me·an·dus system.
 
 Responsibilities:
 - Spawn and monitor all autonomous agents as async tasks
@@ -164,7 +164,7 @@ class AgentManager:
         self.running = True
 
         logger.info("=" * 60)
-        logger.info("Me and Us - Agent Manager")
+        logger.info("me·an·dus - Agent Manager")
         logger.info("=" * 60)
 
         # Start file watchers (create signals for agents)
