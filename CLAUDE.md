@@ -50,7 +50,7 @@ meandus/
     ├── agents/identity/    # Agent identity files
     │   ├── _core.identity.md
     │   ├── ingestion.identity.md
-    │   └── ... (6 agent personas)
+    │   └── ... (8 agent personas)
     └── log/                # Life log entries
         └── [yyyy]/[yyyy-mm-dd].md
 ```
@@ -70,13 +70,15 @@ The system is grounded in Popperian epistemology: all knowledge is conjecture. V
 
 ## Agent Architecture
 
-Six agents communicate via shared flat files:
+Eight agents communicate via shared flat files:
 1. **Ingestion Agent (The Archivist)** - Transforms messy data into clean log entries
 2. **Summary Agent (The Historian)** - Distills patterns from the life log
 3. **Values Agent (The Philosopher)** - Derives and refines user values
 4. **World Agent (The Scout)** - Explores external opportunities
 5. **Attention Agent (The Curator)** - Orchestrates what surfaces when
 6. **Interaction Agent (The Caring Friend)** - User-facing conversations
+7. **Worker Agent (The Executor)** - Executes tasks with smart delegation
+8. **Introspection Agent (The Mirror)** - Documents system capabilities
 
 Each agent has:
 - Core identity (shared beliefs and behaviors)

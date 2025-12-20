@@ -55,3 +55,8 @@
 - [x] Design and build new minimal UI (black text, white background, typography-first)
 - [x] Chat as primary interface with activity feed
 - [x] Add logo and loading states
+- [x] Introspection Agent (The Mirror)
+  - [x] Identity file: data/agents/identity/introspection.identity.md
+  - [x] Tools: src/tools/introspection.py (agent/code analysis, capability docs)
+  - [x] Agent: src/agents/introspection.py (30-min autonomous loop)
+  - [x] Outputs: data/agents/introspection/capabilities.md

@@ -32,6 +32,8 @@ def main():
         "worker": lambda: __import__('src.agents.worker', fromlist=['run_interactive']).run_interactive(),
         "tasks": run_tasks,
         "approvals": run_approvals,
+        "introspection": lambda: __import__('src.agents.introspection', fromlist=['run_interactive']).run_interactive(),
+        "introspect": run_introspect,
         "evolve": run_evolve,
         "watch": lambda: __import__('src.watcher', fromlist=['watch_inbox']).watch_inbox(),
         "process": lambda: __import__('src.watcher', fromlist=['process_pending']).process_pending(),
@@ -59,6 +61,8 @@ def main():
         print("  worker     Interactive chat with The Executor")
         print("  tasks      Process the task queue once")
         print("  approvals  Show actions waiting for approval")
+        print("  introspection  Interactive chat with The Mirror")
+        print("  introspect Run a full system analysis")
         print("  evolve     Review pending identity evolution proposals")
         print("  watch      Watch inbox for new files to process")
         print("  process    Process pending files once and exit")
@@ -169,6 +173,19 @@ def run_approvals():
     print("=" * 60)
     print()
     result = check_pending_approvals()
+    print(f"\n{result}")
+
+
+def run_introspect():
+    """Run a full system analysis."""
+    from src.agents.introspection import run_analysis
+    print("=" * 60)
+    print("me·an·dus - System Introspection")
+    print("=" * 60)
+    print()
+    print("Analyzing system capabilities...")
+    print()
+    result = run_analysis()
     print(f"\n{result}")
 
 
