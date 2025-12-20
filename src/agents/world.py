@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from .base import create_agent, AutonomousAgent
 from ..tools.world import WORLD_TOOLS, WORLD_HANDLERS
 from ..tools.values import VALUES_TOOLS, VALUES_HANDLERS
+from ..tools.notifications import queue_notification
 
 
 # Combined tools - World agent needs access to values
@@ -171,6 +172,16 @@ class AutonomousWorldAgent(AutonomousAgent):
         # Save state
         self.save_state({"last_sweep": datetime.now().isoformat()})
         self.agent.clear_context()
+
+        # Notify user about new discoveries
+        queue_notification(
+            agent_name="world",
+            title="New opportunities discovered",
+            message="I've found some new opportunities that might interest you based on your values.",
+            notification_type="info",
+            action_prompt="Show me the opportunities you discovered",
+            priority="normal"
+        )
 
         return "Discovery sweep complete"
 

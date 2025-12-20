@@ -600,6 +600,112 @@ Agents communicate through files, not direct calls:
 
 This keeps agents decoupled and debuggable.
 
+## Notification System
+
+Agents proactively notify users through a unified notification system.
+
+### Architecture
+
+```
+Agent completes work
+    ↓
+Calls queue_notification()
+    ↓
+Notification saved to data/notifications/{id}.json
+    ↓
+Frontend polls /api/notifications
+    ↓
+User sees notification in activity feed
+    ↓
+Click triggers action_prompt in chat
+```
+
+### Notification Schema
+
+```json
+{
+  "id": "20251220_093000_123456",
+  "agent_name": "attention",
+  "title": "Good morning",
+  "message": "Here's what to focus on today...",
+  "type": "info",
+  "action_prompt": "Tell me more about what I should focus on today",
+  "priority": "normal",
+  "created_at": "2025-12-20T09:30:00",
+  "status": "pending",
+  "seen": false
+}
+```
+
+### Notification Types
+
+| Type | Purpose | Example |
+|------|---------|---------|
+| `info` | FYI, no action needed | "Morning attention ready" |
+| `approval` | Needs user decision | "Identity evolution proposal" |
+| `question` | Needs user input | "How are you feeling today?" |
+| `alert` | Important, time-sensitive | "Project deadline tomorrow" |
+
+### Agent Integration
+
+Each autonomous agent calls `queue_notification()` after completing work:
+
+```python
+from ..tools.notifications import queue_notification
+
+def do_work(self):
+    result = run_discovery_sweep()
+
+    # Notify user about new discoveries
+    queue_notification(
+        agent_name="world",
+        title="New opportunities discovered",
+        message="Found opportunities matching your values",
+        notification_type="info",
+        action_prompt="Show me the opportunities you discovered",
+        priority="normal"
+    )
+```
+
+## Conversation History
+
+All conversations are persisted for later retrieval and analysis.
+
+### Storage Structure
+
+```
+data/conversations/
+  sessions/
+    {session_id}.json      # Full conversation for a session
+  daily/
+    {yyyy-mm-dd}.json      # Index of sessions by date
+```
+
+### Session Schema
+
+```json
+{
+  "session_id": "abc123",
+  "created": "2025-12-20T09:00:00",
+  "updated": "2025-12-20T10:30:00",
+  "messages": [
+    {
+      "timestamp": "2025-12-20T09:00:00",
+      "user": "What should I focus on today?",
+      "assistant": "Based on your values..."
+    }
+  ]
+}
+```
+
+### Capabilities
+
+- **Auto-save**: Every exchange saved automatically
+- **Search**: Find conversations by keyword/topic
+- **Load by date**: Retrieve all conversations from a specific day
+- **Theme analysis**: Identify patterns and themes over time
+- **Restore**: Load previous conversations into current chat
+
 ## API
 
 Simple REST API via FastAPI.
@@ -642,12 +748,24 @@ async def get_current_values(): ...
 ## Running
 
 ```bash
-# Start all agents
-python main.py
+# Start web server with background agents (recommended for daily use)
+python main.py serve
 
-# Web UI (separate process)
-uvicorn web.app:app --reload
+# Start full agent manager (all agents + file watchers + web server)
+python main.py start
+
+# Interactive chat only (no background agents)
+python main.py chat
+
+# Individual agent commands
+python main.py morning      # Generate morning attention
+python main.py evening      # Generate evening reflection
+python main.py discover     # Run world discovery sweep
+python main.py tasks        # Process task queue
+python main.py introspect   # Run system analysis
 ```
+
+The `serve` command automatically starts background agents (Worker, Attention, World, Ingestion) so you get proactive functionality out of the box.
 
 ---
 

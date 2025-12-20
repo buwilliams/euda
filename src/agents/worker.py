@@ -12,6 +12,7 @@ Delegation Strategy:
 """
 
 from pathlib import Path
+from datetime import datetime
 from .base import create_agent, AutonomousAgent
 from ..tools.worker import (
     WORKER_TOOLS, WORKER_HANDLERS, EXTENDED_WORKER_TOOLS,
@@ -22,6 +23,7 @@ from ..tools.task import (
     update_task_status,
     store_result
 )
+from ..tools.notifications import queue_notification
 
 
 # Data paths
@@ -217,11 +219,14 @@ class AutonomousWorkerAgent(AutonomousAgent):
     def do_work(self) -> str:
         """Process tasks based on delegation and execute approved actions."""
         results = []
+        tasks_processed = 0
+        actions_executed = 0
 
         # Process pending tasks with delegation logic
         pending_tasks = get_pending_tasks_for_worker()
         if pending_tasks:
-            self.logger.info(f"Processing {len(pending_tasks)} pending tasks...")
+            tasks_processed = len(pending_tasks)
+            self.logger.info(f"Processing {tasks_processed} pending tasks...")
             result = process_task_queue()
             results.append(f"Tasks: {result}")
 
@@ -231,15 +236,27 @@ class AutonomousWorkerAgent(AutonomousAgent):
             self.logger.info("Executing approved actions...")
             result = execute_approved_actions()
             results.append(f"Actions: {result}")
+            actions_executed += 1
 
         # Update state
         state = self.load_state()
-        state["last_work_time"] = __import__('datetime').datetime.now().isoformat()
+        state["last_work_time"] = datetime.now().isoformat()
         state["work_count"] = state.get("work_count", 0) + 1
         self.save_state(state)
 
         # Clear context to avoid memory buildup
         self.agent.clear_context()
+
+        # Notify user about completed work
+        if tasks_processed > 0 or actions_executed > 0:
+            queue_notification(
+                agent_name="worker",
+                title=f"Completed {tasks_processed} task(s)",
+                message=f"I've been working on your tasks. {'; '.join(results)}"[:200],
+                notification_type="info",
+                action_prompt="Show me what you completed",
+                priority="low"
+            )
 
         if results:
             return "; ".join(results)

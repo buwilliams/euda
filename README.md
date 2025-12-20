@@ -566,8 +566,21 @@ Everything through conversation:
 - "Any discoveries?" → Friend shares relevant opportunities
 - "What did I log today?" → Friend reads your recent entries
 - "I had a great meeting..." → Friend captures it to the log
+- "What did we talk about yesterday?" → Friend loads previous conversations
+- "What should I do with my free time?" → Friend suggests activities based on your values
+- "Clear chat" → Friend clears the conversation (recoverable later)
 
 No buttons. No screens. Just talk.
+
+### Conversation History
+
+Conversations are automatically saved and can be retrieved:
+- **Search by topic**: "When did we discuss ice skating?"
+- **Load by date**: "Show me our conversations from December 15th"
+- **Analyze themes**: "What topics have come up this week?"
+- **Restore previous chats**: "Load yesterday's conversation"
+
+Even after clearing the chat or refreshing the page, your conversation history is preserved and searchable.
 
 ### Loading States
 
@@ -579,6 +592,39 @@ Never leave the user wondering:
 ---
 
 ## Advanced Features
+
+### Proactive Notifications
+
+Agents don't just wait for you to ask—they reach out when they have something for you:
+
+| Agent | When It Notifies | Example |
+|-------|-----------------|---------|
+| **Attention** | Morning (7-9am), Evening (9-11pm) | "Good morning - here's what to focus on today" |
+| **World** | After discovery sweeps | "New opportunities discovered based on your values" |
+| **Worker** | After completing tasks | "Completed 3 tasks for you" |
+| **Values** | When proposing changes | "Values ready for review" |
+
+Notifications appear in the activity feed and can trigger chat conversations when clicked.
+
+### Activity Suggestions
+
+Ask "What should I do with my free time?" and the agent will suggest activities based on:
+- Your current, phase, and lifetime values
+- World Agent discoveries (opportunities aligned with your values)
+- Recent conversation themes
+- Your context (time available, energy level, mood)
+
+The agent synthesizes everything it knows about you to make personalized suggestions.
+
+### Archiving Personal Content
+
+When you share a link to your own writing (blog posts, articles, essays), the agent saves the **full content** rather than just a summary. Your personal writing reveals your thoughts, values, and perspective—rich data that helps the Values Agent understand who you really are.
+
+Use: "Here's a blog post I wrote: [url]"
+
+The agent distinguishes between:
+- **External content** (news, articles by others) → Summarized
+- **Your own writing** → Archived in full to the life log
 
 ### World Exploration
 

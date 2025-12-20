@@ -1,10 +1,16 @@
 """
 URL fetching tool for reading web content.
+
+Includes tools for:
+- fetch_url: Read any web content
+- archive_my_content: Save user's own writing (blogs, articles) to the log
 """
 
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+
+from .log import write_log_entry
 
 
 def fetch_url(url: str, max_length: int = 15000) -> str:
@@ -93,11 +99,60 @@ def fetch_url(url: str, max_length: int = 15000) -> str:
     return result
 
 
+def archive_my_content(url: str, content_type: str = "blog", notes: str = "") -> str:
+    """
+    Archive the user's own content (blog posts, articles they wrote) to the life log.
+
+    This saves the FULL content, not a summary, because the user's own writing
+    reveals their thoughts, values, and perspective. This rich data helps the
+    Values Agent understand who they really are.
+
+    Args:
+        url: The URL to the user's content
+        content_type: Type of content - blog, article, essay, newsletter, etc.
+        notes: Optional notes from the user about why this is meaningful
+
+    Returns:
+        Confirmation message
+    """
+    # Fetch with higher limit for personal content
+    content = fetch_url(url, max_length=50000)
+
+    if content.startswith("Error"):
+        return content
+
+    # Build the log entry
+    entry_parts = [
+        f"## My {content_type.title()}",
+        "",
+        content,
+    ]
+
+    if notes:
+        entry_parts.extend([
+            "",
+            "---",
+            "",
+            f"**My notes:** {notes}"
+        ])
+
+    full_entry = "\n".join(entry_parts)
+
+    # Write to the life log
+    result = write_log_entry(
+        content=full_entry,
+        source=f"my_{content_type}",
+        entry_type="personal_writing"
+    )
+
+    return f"Archived your {content_type} to the life log. The Values Agent will be able to learn from your writing."
+
+
 # Tool definition for the LLM
 FETCH_TOOLS = [
     {
         "name": "fetch_url",
-        "description": "Fetch a URL and extract its readable text content. Use this to read blog posts, articles, documentation, or any web page the user shares. Returns the page title and main text content.",
+        "description": "Fetch a URL and extract its readable text content. Use this for reading external content like news, documentation, or articles by OTHER people. For the user's OWN writing, use archive_my_content instead.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -112,12 +167,36 @@ FETCH_TOOLS = [
             },
             "required": ["url"]
         }
+    },
+    {
+        "name": "archive_my_content",
+        "description": "Archive the user's OWN writing (their blog posts, articles, essays, newsletters) to the life log. Use this when the user shares a link to something THEY wrote - their personal content reveals their thoughts, values, and perspective. Saves the FULL content (not a summary) so the Values Agent can learn who they really are.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "URL to the user's own content"
+                },
+                "content_type": {
+                    "type": "string",
+                    "enum": ["blog", "article", "essay", "newsletter", "post", "writing"],
+                    "description": "Type of content (default: blog)"
+                },
+                "notes": {
+                    "type": "string",
+                    "description": "Optional notes from the user about why this content is meaningful to them"
+                }
+            },
+            "required": ["url"]
+        }
     }
 ]
 
 # Tool handlers mapping
 FETCH_HANDLERS = {
     "fetch_url": fetch_url,
+    "archive_my_content": archive_my_content,
 }
 
 

@@ -86,16 +86,53 @@ def main():
 
 
 def run_server():
-    """Run the FastAPI web server."""
+    """Run the FastAPI web server with background agents."""
+    import asyncio
     import uvicorn
+    import threading
+    from src.agents.worker import AutonomousWorkerAgent
+    from src.agents.attention import AutonomousAttentionAgent
+    from src.agents.world import AutonomousWorldAgent
+    from src.agents.ingestion import AutonomousIngestionAgent
+
     print("=" * 60)
     print("me·an·dus - Web API Server")
     print("=" * 60)
     print()
     print("Starting server at http://localhost:8000")
     print("API docs at http://localhost:8000/docs")
+    print()
+
+    # Start background agents in a separate thread
+    def run_agents():
+        async def agent_loop():
+            agents = [
+                AutonomousWorkerAgent(),
+                AutonomousAttentionAgent(morning_hour=7, evening_hour=21),
+                AutonomousWorldAgent(sweep_interval_hours=24),
+                AutonomousIngestionAgent(),
+            ]
+
+            # Start all agent loops
+            tasks = [asyncio.create_task(agent.run()) for agent in agents]
+            print(f"Started {len(agents)} background agents")
+
+            # Keep running until cancelled
+            try:
+                await asyncio.gather(*tasks)
+            except asyncio.CancelledError:
+                for agent in agents:
+                    agent.stop()
+
+        asyncio.run(agent_loop())
+
+    # Start agents in background thread
+    agent_thread = threading.Thread(target=run_agents, daemon=True)
+    agent_thread.start()
+    print("Background agents running (Worker, Attention, World, Ingestion)")
     print("Press Ctrl+C to stop.")
     print()
+
     uvicorn.run(
         "src.web.app:app",
         host="0.0.0.0",

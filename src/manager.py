@@ -45,6 +45,7 @@ from src.agents.values import AutonomousValuesAgent
 from src.agents.world import AutonomousWorldAgent
 from src.agents.attention import AutonomousAttentionAgent
 from src.agents.introspection import AutonomousIntrospectionAgent
+from src.agents.worker import AutonomousWorkerAgent
 
 
 class AutonomousAgentTask:
@@ -217,6 +218,7 @@ class AgentManager:
             AutonomousWorldAgent(sweep_interval_hours=24),
             AutonomousAttentionAgent(morning_hour=7, evening_hour=21),
             AutonomousIntrospectionAgent(check_interval=1800),  # 30 minutes
+            AutonomousWorkerAgent(),  # Task executor - checks every 30 seconds
         ]
 
         # Wrap in tasks and start

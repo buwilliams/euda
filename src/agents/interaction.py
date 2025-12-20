@@ -13,6 +13,10 @@ This agent can:
 - View daily task list and results
 - Explain system capabilities
 - Query agent activity logs (what agents are doing, task pickup status, etc.)
+- Clear conversations and start fresh
+- Load and search previous conversation history
+- Analyze conversation themes over time
+- Suggest activities based on understanding of user (values, discoveries, patterns)
 """
 
 from .base import create_agent
@@ -27,6 +31,7 @@ from ..tools.project import PROJECT_TOOLS, PROJECT_HANDLERS
 from ..tools.introspection import get_last_introspection, get_system_overview
 from ..tools.agent_log import AGENT_LOG_TOOLS, AGENT_LOG_HANDLERS
 from ..tools.conversation import CONVERSATION_TOOLS, CONVERSATION_HANDLERS
+from ..tools.conversation_history import CONVERSATION_HISTORY_TOOLS, CONVERSATION_HISTORY_HANDLERS
 
 
 # Additional tools for reading values
@@ -103,7 +108,8 @@ INTERACTION_TOOLS = (
     PROJECT_TOOLS +
     INTROSPECTION_TOOLS +
     AGENT_LOG_TOOLS +
-    CONVERSATION_TOOLS
+    CONVERSATION_TOOLS +
+    CONVERSATION_HISTORY_TOOLS
 )
 
 # Handlers for tool execution
@@ -114,6 +120,7 @@ INTERACTION_HANDLERS = {
     **PROJECT_HANDLERS,
     **AGENT_LOG_HANDLERS,
     **CONVERSATION_HANDLERS,
+    **CONVERSATION_HISTORY_HANDLERS,
     "get_current_values": get_current_values,
     "get_phase_values": get_phase_values,
     "get_lifetime_values": get_lifetime_values,

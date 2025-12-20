@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from ..agents.base import create_agent
 from ..agents.interaction import INTERACTION_TOOLS, INTERACTION_HANDLERS
 from ..tools.log import read_log_entry, search_log, get_recent_entries, write_log_entry
+from ..tools.conversation_history import save_message, get_conversation_data, get_recent_conversations
 from ..tools.values import get_current_values, get_phase_values, get_lifetime_values, get_all_values
 from ..tools.cards import (
     get_internal_card, get_public_card, write_public_card,
@@ -177,6 +178,12 @@ async def chat(request: ChatRequest):
                 content=f"**Me:** {request.message}\n\n**Friend:** {response}",
                 source="conversation",
                 entry_type="chat"
+            )
+            # Also save to conversation history for retrieval
+            save_message(
+                session_id=session_id,
+                user_message=request.message,
+                assistant_response=response
             )
 
         return ChatResponse(
@@ -448,6 +455,30 @@ async def delete_session(session_id: str):
         del sessions[session_id]
         return {"status": "deleted", "session_id": session_id}
     raise HTTPException(status_code=404, detail="Session not found")
+
+
+# ============== Conversation History ==============
+
+@app.get("/api/conversations/recent")
+async def get_recent_convos(count: int = 5):
+    """Get recent conversations with previews."""
+    content = get_recent_conversations(count)
+    return {"content": content}
+
+
+@app.get("/api/conversations/history")
+async def get_history(session_id: str = None, date: str = None):
+    """
+    Load conversation history for display in UI.
+
+    Either provide session_id for a specific session,
+    or date (YYYY-MM-DD) for all conversations from that day.
+    """
+    if not session_id and not date:
+        return {"error": "Provide either session_id or date parameter"}
+
+    data = get_conversation_data(session_id=session_id, date=date)
+    return data
 
 
 # ============== Notifications ==============

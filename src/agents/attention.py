@@ -10,6 +10,7 @@ from .base import create_agent, AutonomousAgent
 from ..tools.attention import ATTENTION_TOOLS, ATTENTION_HANDLERS
 from ..tools.values import VALUES_TOOLS, VALUES_HANDLERS
 from ..tools.log import LOG_TOOLS, LOG_HANDLERS
+from ..tools.notifications import queue_notification
 
 
 # Combined tools - Attention agent needs access to values and logs too
@@ -205,11 +206,31 @@ class AutonomousAttentionAgent(AutonomousAgent):
             state["last_morning_date"] = today
             state["last_morning_content"] = result
             self.logger.info("Morning attention generated")
+
+            # Send notification to user
+            queue_notification(
+                agent_name="attention",
+                title="Good morning",
+                message=result[:200] + "..." if len(result) > 200 else result,
+                notification_type="info",
+                action_prompt="Tell me more about what I should focus on today",
+                priority="normal"
+            )
         else:
             result = evening_attention()
             state["last_evening_date"] = today
             state["last_evening_content"] = result
             self.logger.info("Evening attention generated")
+
+            # Send notification to user
+            queue_notification(
+                agent_name="attention",
+                title="Evening reflection",
+                message=result[:200] + "..." if len(result) > 200 else result,
+                notification_type="info",
+                action_prompt="Let's reflect on the day",
+                priority="normal"
+            )
 
         # Clear flags
         state["pending_type"] = None
