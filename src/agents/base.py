@@ -342,14 +342,17 @@ class AutonomousAgent(ABC):
             True if work was done, False otherwise
         """
         try:
-            work_needed = self.check_work_needed()
+            # Run blocking check in thread pool to not block event loop
+            loop = asyncio.get_event_loop()
+            work_needed = await loop.run_in_executor(None, self.check_work_needed)
             log_work_check(self.name, work_needed)
 
             if work_needed:
                 self.logger.info(f"Work needed, starting...")
                 log_work_start(self.name, f"{self.name} autonomous work")
 
-                result = self.do_work()
+                # Run blocking work in thread pool to not block event loop
+                result = await loop.run_in_executor(None, self.do_work)
                 self.last_work_time = datetime.now()
                 self.work_count += 1
                 self.logger.info(f"Work complete: {result}")

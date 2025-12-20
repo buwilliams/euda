@@ -263,8 +263,23 @@ class AgentManager:
         server = uvicorn.Server(config)
 
         # Run server in background
-        asyncio.create_task(server.serve())
-        logger.info("Web server started at http://localhost:8000")
+        server_task = asyncio.create_task(server.serve())
+
+        # Wait for server to actually start (up to 5 seconds)
+        for _ in range(50):
+            if server.started:
+                logger.info("Web server started at http://localhost:8000")
+                return
+            if server_task.done():
+                # Server failed to start
+                try:
+                    server_task.result()
+                except Exception as e:
+                    logger.error(f"Web server failed to start: {e}")
+                return
+            await asyncio.sleep(0.1)
+
+        logger.warning("Web server start timed out, but may still be starting...")
 
     async def _health_check_loop(self):
         """Monitor agent health and restart if needed."""
