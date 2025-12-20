@@ -17,7 +17,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from ..agents.base import create_agent
-from ..tools.log import LOG_TOOLS, LOG_HANDLERS, read_log_entry, search_log, get_recent_entries
+from ..agents.interaction import INTERACTION_TOOLS, INTERACTION_HANDLERS
+from ..tools.log import read_log_entry, search_log, get_recent_entries, write_log_entry
 from ..tools.values import get_current_values, get_phase_values, get_lifetime_values, get_all_values
 from ..tools.cards import (
     get_internal_card, get_public_card, write_public_card,
@@ -102,7 +103,7 @@ def get_or_create_session(session_id: Optional[str] = None) -> tuple[str, object
     new_id = session_id or str(uuid.uuid4())
     agent = create_agent(
         persona_name="interaction",
-        tools=LOG_TOOLS
+        tools=INTERACTION_TOOLS
     )
 
     sessions[new_id] = {
@@ -147,7 +148,14 @@ async def chat(request: ChatRequest):
 
     try:
         sessions[session_id]["last_used"] = datetime.now()
-        response = agent.process(request.message, LOG_HANDLERS)
+        response = agent.process(request.message, INTERACTION_HANDLERS)
+
+        # Auto-log the conversation
+        write_log_entry(
+            content=f"**Me:** {request.message}\n\n**Friend:** {response}",
+            source="conversation",
+            entry_type="chat"
+        )
 
         return ChatResponse(
             response=response,
@@ -417,6 +425,253 @@ async def delete_session(session_id: str):
         del sessions[session_id]
         return {"status": "deleted", "session_id": session_id}
     raise HTTPException(status_code=404, detail="Session not found")
+
+
+# ============== Notifications ==============
+
+from ..tools.notifications import (
+    get_pending_notifications, mark_seen, dismiss_notification,
+    check_for_pending_approvals
+)
+
+
+@app.get("/api/notifications")
+async def get_notifications(include_seen: bool = False):
+    """Get pending notifications for the user."""
+    # First, sync approval queues with notifications
+    check_for_pending_approvals()
+
+    notifications = get_pending_notifications(include_seen)
+    return {
+        "notifications": notifications,
+        "count": len(notifications),
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.post("/api/notifications/{notification_id}/seen")
+async def mark_notification_seen(notification_id: str):
+    """Mark a notification as seen."""
+    result = mark_seen(notification_id)
+    return {"status": "success", "message": result}
+
+
+@app.post("/api/notifications/{notification_id}/dismiss")
+async def dismiss_notification_endpoint(notification_id: str):
+    """Dismiss a notification."""
+    result = dismiss_notification(notification_id)
+    return {"status": "success", "message": result}
+
+
+# ============== Projects ==============
+
+from ..tools.project import (
+    create_project, get_projects, get_project, update_project,
+    add_milestone, archive_project, get_projects_with_deadlines
+)
+
+
+class ProjectRequest(BaseModel):
+    title: str
+    description: str
+    project_type: str = "goal"
+    priority: str = "normal"
+    deadline: Optional[str] = None
+    review_frequency: str = "weekly"
+    values_alignment: Optional[list] = None
+
+
+class ProjectUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    priority: Optional[str] = None
+    deadline: Optional[str] = None
+
+
+class MilestoneRequest(BaseModel):
+    title: str
+    target_date: Optional[str] = None
+
+
+@app.get("/api/projects")
+async def list_projects(status: str = "active", project_type: Optional[str] = None):
+    """Get projects."""
+    content = get_projects(status=status, project_type=project_type)
+    return {"content": content}
+
+
+@app.get("/api/projects/deadlines")
+async def get_upcoming_deadlines(days: int = 7):
+    """Get projects with upcoming deadlines."""
+    projects = get_projects_with_deadlines(days)
+    return {"projects": projects, "days": days}
+
+
+@app.get("/api/projects/{project_id}")
+async def get_project_details(project_id: str):
+    """Get project details."""
+    content = get_project(project_id)
+    return {"content": content}
+
+
+@app.post("/api/projects")
+async def create_new_project(request: ProjectRequest):
+    """Create a new project."""
+    result = create_project(
+        title=request.title,
+        description=request.description,
+        project_type=request.project_type,
+        priority=request.priority,
+        deadline=request.deadline,
+        review_frequency=request.review_frequency,
+        values_alignment=request.values_alignment
+    )
+    return {"status": "success", "message": result}
+
+
+@app.put("/api/projects/{project_id}")
+async def update_project_details(project_id: str, request: ProjectUpdateRequest):
+    """Update a project."""
+    result = update_project(
+        project_id=project_id,
+        title=request.title,
+        description=request.description,
+        status=request.status,
+        priority=request.priority,
+        deadline=request.deadline
+    )
+    return {"status": "success", "message": result}
+
+
+@app.post("/api/projects/{project_id}/milestones")
+async def add_project_milestone(project_id: str, request: MilestoneRequest):
+    """Add a milestone to a project."""
+    result = add_milestone(project_id, request.title, request.target_date)
+    return {"status": "success", "message": result}
+
+
+@app.post("/api/projects/{project_id}/archive")
+async def archive_project_endpoint(project_id: str):
+    """Archive a project."""
+    result = archive_project(project_id)
+    return {"status": "success", "message": result}
+
+
+# ============== Tasks ==============
+
+from ..tools.task import (
+    create_task, create_learning_task, get_tasks, get_task,
+    get_daily_view, add_quick_task, update_task_status,
+    get_recent_results, get_result
+)
+
+
+class TaskRequest(BaseModel):
+    description: str
+    task_type: str = "general"
+    project_id: Optional[str] = None
+    priority: str = "normal"
+    due_date: Optional[str] = None
+
+
+class LearningTaskRequest(BaseModel):
+    description: str
+    project_id: Optional[str] = None
+    learning_objectives: Optional[list] = None
+    preferred_format: str = "mixed"
+
+
+class QuickTaskRequest(BaseModel):
+    description: str
+
+
+@app.get("/api/tasks")
+async def list_tasks(
+    status: Optional[str] = None,
+    project_id: Optional[str] = None,
+    priority: Optional[str] = None,
+    limit: int = 50
+):
+    """Get tasks with optional filters."""
+    content = get_tasks(
+        status=status,
+        project_id=project_id,
+        priority=priority,
+        limit=limit
+    )
+    return {"content": content}
+
+
+@app.get("/api/tasks/daily")
+async def get_todays_tasks(date: Optional[str] = None):
+    """Get daily task view."""
+    content = get_daily_view(date)
+    return {"content": content}
+
+
+@app.get("/api/tasks/{task_id}")
+async def get_task_details(task_id: str):
+    """Get task details."""
+    from ..tools.task import get_task as get_task_detail
+    content = get_task_detail(task_id)
+    return {"content": content}
+
+
+@app.post("/api/tasks")
+async def create_new_task(request: TaskRequest):
+    """Create a new task."""
+    result = create_task(
+        description=request.description,
+        task_type=request.task_type,
+        project_id=request.project_id,
+        priority=request.priority,
+        due_date=request.due_date,
+        source_agent="api"
+    )
+    return {"status": "success", "message": result}
+
+
+@app.post("/api/tasks/learning")
+async def create_new_learning_task(request: LearningTaskRequest):
+    """Create a learning task."""
+    result = create_learning_task(
+        description=request.description,
+        project_id=request.project_id,
+        learning_objectives=request.learning_objectives,
+        preferred_format=request.preferred_format
+    )
+    return {"status": "success", "message": result}
+
+
+@app.post("/api/tasks/quick")
+async def add_new_quick_task(request: QuickTaskRequest):
+    """Add a quick ad-hoc task for today."""
+    result = add_quick_task(request.description)
+    return {"status": "success", "message": result}
+
+
+@app.put("/api/tasks/{task_id}/status")
+async def update_task_status_endpoint(task_id: str, status: str):
+    """Update task status."""
+    result = update_task_status(task_id, status)
+    return {"status": "success", "message": result}
+
+
+# ============== Results ==============
+
+@app.get("/api/results")
+async def list_results(project_id: Optional[str] = None, limit: int = 10):
+    """Get recent results."""
+    content = get_recent_results(project_id=project_id, limit=limit)
+    return {"content": content}
+
+
+@app.get("/api/results/{result_id}")
+async def get_result_details(result_id: str):
+    """Get result details."""
+    content = get_result(result_id)
+    return {"content": content}
 
 
 # ============== Health ==============

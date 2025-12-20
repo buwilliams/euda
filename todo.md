@@ -1,8 +1,7 @@
 # Implementation Todo
 
 ## Todo
-
-- [ ] Render markdown in chat (bold, italic, lists, headers, code blocks)
+- [ ] Attention Agent: project awareness (deadlines in morning/evening, rollover trigger)
 - [ ] Integrate proactive surfacing into UI - show real surfaced content in activity area
 - [ ] Poll for attention queue items (morning attention, evening prompts, opportunities)
 - [ ] "All quiet" only appears when there truly is nothing to surface
@@ -10,7 +9,6 @@
 - [ ] Morning/evening notification triggers (email/push)
 - [ ] Weekly review: patterns from past week, upcoming prep
 - [ ] File upload support in web UI
-- [ ] URL fetching: "Read this article and log what's interesting"
 - [ ] Photo/image processing via chat
 - [ ] Filter logs by source/type
 - [ ] Edit public value card via UI
@@ -28,6 +26,28 @@
 
 ## Completed
 
+- [x] Project and task management system
+  - [x] Project CRUD operations (create, read, update, archive)
+  - [x] Task queue with delegation logic
+  - [x] Daily views and quick tasks
+  - [x] Results storage
+  - [x] Rollover processing
+  - [x] Delegation decision tree (autonomous, approval, user-only, learning)
+- [x] API endpoints for projects, tasks, and results
+- [x] Chat integration - task/project tools in Interaction Agent
+- [x] Frontend hints updated: "tasks today", "my projects", "create task", "results"
+- [x] Notification system for agent-to-user proactive messaging
+  - [x] Notification queue (queue_notification, get_pending, mark_seen, dismiss)
+  - [x] API endpoints for notifications
+  - [x] Frontend polling and display with clickable action prompts
+- [x] Agent identity evolution system
+  - [x] Agents can read their identity
+  - [x] Agents can propose restructured identities (not just append)
+  - [x] Approval workflow for identity changes
+  - [x] CLI command: python main.py evolve
+- [x] URL fetching: "Read this article and log what's interesting"
+- [x] Render markdown in chat (bold, italic, lists, headers, code blocks)
+- [x] Auto-log conversations to the life log
 - [x] Verify end-to-end flow works (inbox → ingestion → logs, chat → intent → response)
 - [x] Fix Agent Status endpoint to read real state files
 - [x] Fix agent process() to accumulate text from responses with tool calls

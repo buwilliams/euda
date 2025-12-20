@@ -1,6 +1,6 @@
 # Design
 
-Technical architecture and implementation spec for Me and Us.
+Technical architecture and implementation spec for me·and·us.
 
 ## Philosophy
 
@@ -273,7 +273,7 @@ async def run_interaction_agent():
 
 ### Worker Agent
 
-Executes tasks on behalf of the user with approval workflows.
+Executes tasks on behalf of the user with delegation logic and approval workflows.
 
 ```python
 async def run_worker_agent():
@@ -281,35 +281,130 @@ async def run_worker_agent():
         "data/agents/identity/worker.identity.md",
         tools=[create_task, get_tasks, update_task_status,
                create_pending_action, approve_action, reject_action,
-               mark_action_executed, get_integration_status]
+               mark_action_executed, get_integration_status,
+               create_project, store_result, prepare_learning_materials]
     )
 
     while True:
         # Check for pending tasks
-        tasks = get_pending_tasks()
+        tasks = get_pending_tasks_for_worker()
         for task in tasks:
-            # Process task, create pending action
-            result = agent(f"""
-                Process this task: {task}
+            # Delegation decision based on task type
+            delegation = task.get('delegation', {})
 
-                1. Determine what action is needed
-                2. Create a pending action with clear summary
-                3. If read-only, auto-approve
-                4. If write operation, await user approval
-            """)
+            if delegation.get('strategy') == 'prepare_materials':
+                # Learning task: prepare materials, notify user
+                result = agent(f"Prepare learning materials for: {task}")
+            elif delegation.get('strategy') == 'user_only':
+                # Cannot execute, surface to user
+                queue_notification(f"Task for you: {task['description']}")
+            elif delegation.get('requires_approval'):
+                # Create pending action for approval
+                create_pending_action(task)
+            else:
+                # Execute autonomously, store result
+                result = agent(f"Execute: {task}")
+                store_result(task['id'], result)
 
         # Execute approved actions
         approved = get_approved_actions()
         for action in approved:
-            result = agent(f"""
-                Execute this approved action: {action}
-
-                Use the appropriate integration (mock or live).
-                Mark completed with result.
-            """)
+            result = agent(f"Execute approved action: {action}")
+            mark_action_executed(action['id'], result)
 
         await asyncio.sleep(30)
 ```
+
+## Project and Task Management
+
+The system includes a comprehensive project and task management system that spans the entire year.
+
+### Philosophy
+
+Tasks are not just to-do items—they're opportunities for the agent to either:
+1. **Execute autonomously** (research, information gathering)
+2. **Prepare materials** (learning tasks—user does the learning, agent curates)
+3. **Request approval** (high-stakes actions)
+4. **Surface to user** (user-only tasks like physical activity)
+
+### Delegation Decision Tree
+
+```
+TASK → Is Learning? → YES → Prepare materials, surface to user
+                  ↓ NO
+       Is User-Only? → YES → Surface to user (cannot execute)
+                  ↓ NO
+       High Stakes? → YES → Create pending action (require approval)
+                  ↓ NO
+       Read-Only/Low-Risk? → YES → Execute autonomously, store result
+                  ↓ NO
+       Within Rate Limits? → YES → Execute autonomously
+                  ↓ NO
+       Pause & notify (rate limit hit)
+```
+
+### Data Structures
+
+**Projects** (`data/tasks/projects/`):
+```json
+{
+  "id": "project-xxx",
+  "title": "Learn Spanish",
+  "description": "Achieve conversational fluency",
+  "type": "learning",
+  "status": "active",
+  "priority": "high",
+  "deadline": "2025-06-01",
+  "milestones": [],
+  "values_alignment": ["growth", "adventure"],
+  "meta": { "tasks_completed": 3, "total_tasks_created": 12 }
+}
+```
+
+**Tasks** (`data/tasks/queue.json`):
+```json
+{
+  "id": "task-xxx",
+  "description": "Find Spanish conversation groups",
+  "type": "research",
+  "project_id": "project-xxx",
+  "delegation": {
+    "strategy": "agent_autonomous",
+    "requires_approval": false,
+    "learning_task": false
+  },
+  "scheduling": {
+    "due_date": "2025-12-22",
+    "energy_level": "medium",
+    "best_window": "morning"
+  },
+  "rollover": {
+    "times_rolled": 0,
+    "original_date": null
+  }
+}
+```
+
+**Results** (`data/tasks/results/`):
+```json
+{
+  "id": "result-xxx",
+  "task_id": "task-xxx",
+  "project_id": "project-xxx",
+  "summary": "Found 3 Spanish conversation groups",
+  "content": { "findings": [...], "recommendations": "..." },
+  "surfaced_to_user": false
+}
+```
+
+### Rollover Logic
+
+Incomplete tasks are processed each evening:
+1. **High priority** → Always migrate to tomorrow
+2. **Has future deadline** → Reschedule before deadline
+3. **Rolled 3+ times** → Mark stale, queue for user review
+4. **Low priority, no deadline** → Archive
+5. **Default** → Migrate to tomorrow, increment count
 
 ## Tools
 
@@ -404,11 +499,28 @@ meandus/
         ...
       state/
       signals/
-      queues/
-    worker/               # Worker agent data
-      tasks/              # Task queue (queue.json)
+      evolution/          # Identity evolution proposals
+    tasks/                # Project and task management
+      queue.json          # Master task queue
+      projects/           # Project definitions
+        _index.json       # Quick lookup
+        project-xxx.json
+      daily/              # Daily task views
+        2024-12-20.json
+      results/            # Completed work output
+        2024/12/
+          result-xxx.json
+      learning/           # Prepared learning materials
+        project-xxx/
+      archive/            # Completed/archived projects
+      config/
+        delegation.json   # Delegation rules
+        rollover.json     # Rollover policies
+    worker/               # Worker agent data (legacy)
       actions/            # Pending and completed actions
       config/             # Integration settings
+    notifications/        # Agent-to-user messages
+      timestamp.json
     cards/
       internal.card.md
       public.card.md

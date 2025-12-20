@@ -2,9 +2,11 @@
 Worker Tools - Task and action management for the Worker Agent.
 
 Handles:
-- Task queue management (create, update, list tasks)
+- Task queue management (via task.py for the new project-based system)
 - Pending action management (create, approve, reject, execute)
 - Action history tracking
+- Delegation decisions (what agent does vs what user does)
+- Results storage
 """
 
 import json
@@ -12,10 +14,37 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+# Import new task and project systems
+from .task import (
+    create_task as new_create_task,
+    create_learning_task,
+    get_tasks as new_get_tasks,
+    get_task as new_get_task,
+    get_daily_view,
+    add_quick_task,
+    update_task_status as new_update_task_status,
+    store_result,
+    get_recent_results,
+    get_pending_tasks_for_worker,
+    process_rollover,
+    determine_delegation,
+    TASK_TOOLS, TASK_HANDLERS
+)
+from .project import (
+    create_project,
+    get_projects,
+    get_project,
+    update_project,
+    add_milestone,
+    archive_project,
+    get_projects_with_deadlines,
+    PROJECT_TOOLS, PROJECT_HANDLERS
+)
+
 # Data paths
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 WORKER_DIR = DATA_DIR / "worker"
-TASKS_FILE = WORKER_DIR / "tasks" / "queue.json"
+TASKS_FILE = DATA_DIR / "tasks" / "queue.json"  # New location
 PENDING_FILE = WORKER_DIR / "actions" / "pending.json"
 COMPLETED_FILE = WORKER_DIR / "actions" / "completed.json"
 CONFIG_FILE = WORKER_DIR / "config" / "integrations.json"
@@ -685,10 +714,12 @@ WORKER_TOOLS = [
 ]
 
 WORKER_HANDLERS = {
+    # Legacy task management (for backwards compatibility)
     "create_task": create_task,
     "get_tasks": get_tasks,
     "get_task": get_task,
     "update_task_status": update_task_status,
+    # Action management
     "create_pending_action": create_pending_action,
     "get_pending_actions": get_pending_actions,
     "approve_action": approve_action,
@@ -696,4 +727,58 @@ WORKER_HANDLERS = {
     "mark_action_executed": mark_action_executed,
     "get_action_history": get_action_history,
     "get_integration_status": get_integration_status,
+    # New task system
+    **TASK_HANDLERS,
+    # Project system
+    **PROJECT_HANDLERS,
+    # Results
+    "store_result": store_result,
+    "get_recent_results": get_recent_results,
 }
+
+# Extended tools including project and new task system
+EXTENDED_WORKER_TOOLS = WORKER_TOOLS + TASK_TOOLS + PROJECT_TOOLS + [
+    {
+        "name": "store_result",
+        "description": "Store the result of completed work for a task. Use after autonomous execution or preparing materials.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "string",
+                    "description": "The task ID this result is for"
+                },
+                "summary": {
+                    "type": "string",
+                    "description": "Brief summary of what was accomplished"
+                },
+                "content": {
+                    "type": "object",
+                    "description": "Structured content of the result"
+                },
+                "recommendations": {
+                    "type": "string",
+                    "description": "Optional next steps"
+                }
+            },
+            "required": ["task_id", "summary", "content"]
+        }
+    },
+    {
+        "name": "get_recent_results",
+        "description": "Get recent completed work results to show what has been accomplished.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "project_id": {
+                    "type": "string",
+                    "description": "Filter by project"
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max results (default 10)"
+                }
+            }
+        }
+    }
+]

@@ -10,6 +10,7 @@ An AI personal assistant that curates my attention to maximize the wonder of bei
 - [Agents](#agents)
 - [Data](#data)
 - [Values](#values)
+- [Projects & Tasks](#projects--tasks)
 - [Attention](#attention)
 - [User Interface](#user-interface)
 - [Advanced Features](#advanced-features)
@@ -144,8 +145,15 @@ data/
     state/                  # Agent state (JSON files)
     queues/                 # Work queues
 
-  worker/                   # Worker agent data
-    tasks/                  # Task queue
+  tasks/                    # Project and task management
+    queue.json              # Master task queue
+    projects/               # Project definitions
+    daily/                  # Daily views (scheduled + ad-hoc)
+    results/                # Completed work output
+    learning/               # Prepared learning materials
+    config/                 # Delegation and rollover rules
+
+  worker/                   # Worker agent legacy data
     actions/                # Pending and completed actions
     config/                 # Integration settings
 
@@ -260,9 +268,9 @@ The agent has a self-concept:
 - *Capabilities:* Can read/write logs, read values, read opportunities. The single interface to everything.
 
 **Worker Agent - The Executor**
-- *Purpose:* Execute tasks on behalf of the user: emails, calendar, reminders, research.
-- *Beliefs:* User trust is sacred. Every action should be reversible or confirmable.
-- *Behavior:* Clear, actionable, transparent. Request approval for write operations.
+- *Purpose:* Execute tasks on behalf of the user with smart delegation.
+- *Beliefs:* User trust is sacred. Bias toward action within safe boundaries.
+- *Behavior:* Proactive for research and low-risk tasks. Prepares materials for learning. Requests approval for high-stakes actions. Surfaces user-only tasks without attempting execution.
 
 ---
 
@@ -357,6 +365,96 @@ Phases are discontinuities detected retrospectively:
 - Time rhythm changes
 - Topic clusters
 - Multiple signals shifting together indicates transition
+
+---
+
+## Projects & Tasks
+
+### The Core Loop
+
+The agent doesn't just observe—it acts. Projects represent ongoing goals (learning Spanish, maintaining fitness, building relationships), while tasks are concrete actions that move projects forward or stand alone as daily to-dos.
+
+```
+Projects (ongoing goals)
+    ↓
+Tasks (concrete actions)
+    ↓
+Worker Agent (decides: do it or delegate to user)
+    ↓
+Results (stored outcomes)
+```
+
+### Proactive Execution
+
+The Worker Agent operates with a bias toward action. Most tasks are completed autonomously—the agent only surfaces items when:
+
+- **User-only tasks**: Physical activity, creative work, personal decisions
+- **High-stakes tasks**: External communication, calendar changes with others, financial actions
+- **Learning tasks**: Agent prepares materials, user does the learning
+
+For everything else (research, reminders, information gathering), the agent just does it and stores the result.
+
+### Delegation Decision Tree
+
+```
+TASK arrives
+    ↓
+Is it a Learning task? → YES → Prepare materials, surface to user
+    ↓ NO
+Is it User-Only? → YES → Surface to user (cannot execute)
+    ↓ NO
+Is it High-Stakes? → YES → Request approval before acting
+    ↓ NO
+Execute autonomously, store result
+```
+
+### Projects vs Tasks
+
+**Projects** are ongoing goals with:
+- Type (learning, habit, goal, project)
+- Priority and optional deadline
+- Milestones to track progress
+- Values alignment (connects to what matters)
+
+*Example:* "Learn Spanish" (deadline: June 2025, type: learning)
+
+**Tasks** are concrete actions with:
+- Description and type (research, email, reminder, etc.)
+- Association with a project (optional)
+- Scheduling (due date, energy level, best time window)
+- Delegation strategy (determined automatically)
+
+*Example:* "Find Spanish conversation partner groups" (project: Learn Spanish, type: research → auto-execute)
+
+### Results
+
+When the agent completes a task, it stores the result:
+- Summary of what was done
+- Actual content/findings
+- Recommendations for next steps
+
+Results are organized by date and linked to tasks and projects. You can ask "What has the agent done for me?" to see completed work.
+
+### Daily Flow
+
+Each day has a view of:
+- Scheduled tasks (from projects with due dates)
+- Quick tasks (ad-hoc items you add via chat)
+- Results from agent work
+
+At end of day, incomplete tasks are evaluated:
+- High priority → Migrates to tomorrow
+- Has deadline → Rescheduled before deadline
+- Rolled 3+ times → Marked stale for review
+- Low priority, no deadline → Archived
+
+### Chat Integration
+
+All task management happens through conversation:
+- "What tasks do I have today?" → Daily view
+- "Create a task to call the dentist" → Ad-hoc task
+- "Add that to my health project" → Project association
+- "What has the agent completed for me?" → Recent results
 
 ---
 

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Me and Us</title>
+    <title>me·an·dus</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -92,6 +93,72 @@
             font-style: italic;
         }
 
+        /* Notification items - clickable */
+        .notification-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 0.5rem 0.75rem;
+            margin: 0.25rem 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .notification-item:hover {
+            background: #eef0f2;
+        }
+
+        .notification-icon {
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+
+        .notification-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .notification-title {
+            font-weight: 500;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .notification-agent {
+            color: #888;
+            font-size: 0.8rem;
+            margin-top: 0.15rem;
+        }
+
+        .notification-item.priority-high {
+            background: #fef3c7;
+            border-left: 3px solid #f59e0b;
+        }
+
+        .notification-item.priority-high:hover {
+            background: #fde68a;
+        }
+
+        .notification-item.type-approval {
+            background: #dbeafe;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .notification-item.type-approval:hover {
+            background: #bfdbfe;
+        }
+
+        .notification-item.type-alert {
+            background: #fee2e2;
+            border-left: 3px solid #ef4444;
+        }
+
+        .notification-item.type-alert:hover {
+            background: #fecaca;
+        }
+
         /* Chat Section */
         .chat {
             flex: 1;
@@ -121,7 +188,8 @@
         }
 
         .message-content {
-            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         .message-thinking {
@@ -227,12 +295,126 @@
         .hint:hover {
             color: #666;
         }
+
+        /* Markdown Styles */
+        .message-content h1,
+        .message-content h2,
+        .message-content h3,
+        .message-content h4 {
+            margin: 0.75em 0 0.5em 0;
+            line-height: 1.3;
+        }
+
+        .message-content h1:first-child,
+        .message-content h2:first-child,
+        .message-content h3:first-child,
+        .message-content h4:first-child {
+            margin-top: 0;
+        }
+
+        .message-content h1 { font-size: 1.4em; }
+        .message-content h2 { font-size: 1.2em; }
+        .message-content h3 { font-size: 1.1em; }
+        .message-content h4 { font-size: 1em; font-weight: 600; }
+
+        .message-content p {
+            margin: 0.5em 0;
+        }
+
+        .message-content p:first-child {
+            margin-top: 0;
+        }
+
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-content strong {
+            font-weight: 600;
+        }
+
+        .message-content em {
+            font-style: italic;
+        }
+
+        .message-content ul,
+        .message-content ol {
+            margin: 0.5em 0;
+            padding-left: 1.5em;
+        }
+
+        .message-content li {
+            margin: 0.25em 0;
+        }
+
+        .message-content code {
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 0.9em;
+            background: #f5f5f5;
+            padding: 0.15em 0.4em;
+            border-radius: 3px;
+        }
+
+        .message-content pre {
+            margin: 0.75em 0;
+            padding: 0.75em 1em;
+            background: #f5f5f5;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .message-content pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+
+        .message-content blockquote {
+            margin: 0.75em 0;
+            padding-left: 1em;
+            border-left: 3px solid #ddd;
+            color: #666;
+        }
+
+        .message-content a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        .message-content a:hover {
+            text-decoration: underline;
+        }
+
+        .message-content hr {
+            margin: 1em 0;
+            border: none;
+            border-top: 1px solid #eee;
+        }
+
+        .message-content table {
+            margin: 0.75em 0;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .message-content th,
+        .message-content td {
+            padding: 0.5em 0.75em;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .message-content th {
+            background: #f9f9f9;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
     <div class="app">
         <header>
-            <img src="/static/images/meandus.png" alt="Me and Us" class="logo">
+            <img src="/static/images/meanddus-logo-with-subtitle.png" alt="Me and Us" class="logo">
         </header>
 
         <section class="activity" id="activity">
@@ -252,15 +434,24 @@
                     <button id="send-btn" onclick="sendMessage()">Send</button>
                 </div>
                 <div class="hints">
-                    Try: <span class="hint" onclick="askAbout('what did I log today')">"what did I log today"</span> ·
-                    <span class="hint" onclick="askAbout('what are my values')">"what are my values"</span> ·
-                    <span class="hint" onclick="askAbout('any discoveries for me')">"any discoveries"</span>
+                    Try: <span class="hint" onclick="askAbout('what tasks do I have today')">"tasks today"</span> ·
+                    <span class="hint" onclick="askAbout('show my projects')">"my projects"</span> ·
+                    <span class="hint" onclick="askAbout('create a task to')">"create task"</span> ·
+                    <span class="hint" onclick="askAbout('what has the agent completed for me')">"results"</span>
                 </div>
             </div>
         </section>
     </div>
 
     <script>
+        // Configure marked for security
+        marked.setOptions({
+            breaks: true,      // Convert \n to <br>
+            gfm: true,         // GitHub Flavored Markdown
+            headerIds: false,  // Don't add IDs to headers
+            mangle: false      // Don't mangle email addresses
+        });
+
         // State
         let sessionId = localStorage.getItem('sessionId') || null;
         let isWaiting = false;
@@ -314,7 +505,16 @@
         function addMessage(content, role) {
             const div = document.createElement('div');
             div.className = `message message-${role}`;
-            div.innerHTML = `<div class="message-content">${escapeHtml(content)}</div>`;
+
+            // Render markdown for assistant messages, escape HTML for user messages
+            let html;
+            if (role === 'friend') {
+                html = marked.parse(content);
+            } else {
+                html = escapeHtml(content);
+            }
+
+            div.innerHTML = `<div class="message-content">${html}</div>`;
             messagesEl.appendChild(div);
             scrollToBottom();
         }
@@ -355,16 +555,22 @@
 
         // Activity polling
         let lastAgentStates = {};
+        let notifications = [];
 
         async function pollActivity() {
             try {
-                const response = await fetch('/api/agents/status');
-                const data = await response.json();
+                // Fetch both agent status and notifications in parallel
+                const [agentResponse, notifResponse] = await Promise.all([
+                    fetch('/api/agents/status'),
+                    fetch('/api/notifications')
+                ]);
+
+                const agentData = await agentResponse.json();
+                const notifData = await notifResponse.json();
 
                 const activities = [];
-                let anyWorking = false;
 
-                for (const agent of data.agents) {
+                for (const agent of agentData.agents) {
                     const key = agent.name;
                     const prevState = lastAgentStates[key];
 
@@ -389,32 +595,82 @@
                                 text: `${agent.name.split(' ')[0]} working...`,
                                 status: 'working'
                             });
-                            anyWorking = true;
                         }
                     }
 
                     lastAgentStates[key] = { ...agent };
                 }
 
-                updateActivityFeed(activities);
+                // Store notifications for click handling
+                notifications = notifData.notifications || [];
+
+                updateActivityFeed(activities, notifications);
             } catch (error) {
                 // Silent fail - activity feed is non-critical
             }
         }
 
-        function updateActivityFeed(activities) {
-            if (activities.length === 0) {
-                activityEl.innerHTML = '<div class="activity-quiet">All quiet. Your attention is free.</div>';
+        function getNotificationIcon(type) {
+            switch (type) {
+                case 'approval': return '👋';
+                case 'question': return '❓';
+                case 'alert': return '⚠️';
+                default: return '💬';
+            }
+        }
+
+        function handleNotificationClick(notification) {
+            // Mark as seen
+            fetch(`/api/notifications/${notification.id}/seen`, { method: 'POST' });
+
+            // If there's an action prompt, inject it into chat
+            if (notification.action_prompt) {
+                chatInput.value = notification.action_prompt;
+                chatInput.focus();
             } else {
-                let html = '';
+                // Default: inject the title as a conversation starter
+                chatInput.value = `Tell me about: ${notification.title}`;
+                chatInput.focus();
+            }
+        }
+
+        function updateActivityFeed(activities, notifs) {
+            let html = '';
+
+            // Show notifications first (they're more important)
+            if (notifs && notifs.length > 0) {
+                notifs.forEach((n, idx) => {
+                    const typeClass = n.type ? `type-${n.type}` : '';
+                    const priorityClass = n.priority === 'high' ? 'priority-high' : '';
+                    const icon = getNotificationIcon(n.type);
+
+                    html += `<div class="notification-item ${typeClass} ${priorityClass}"
+                                 onclick="handleNotificationClick(notifications[${idx}])">
+                        <span class="notification-icon">${icon}</span>
+                        <div class="notification-content">
+                            <div class="notification-title">${escapeHtml(n.title)}</div>
+                            <div class="notification-agent">from ${escapeHtml(n.agent_name)}</div>
+                        </div>
+                    </div>`;
+                });
+            }
+
+            // Then show agent activities
+            if (activities.length > 0) {
                 activities.forEach(a => {
                     html += `<div class="activity-item">
                         <span class="activity-dot ${a.status}"></span>
                         ${escapeHtml(a.text)}
                     </div>`;
                 });
-                activityEl.innerHTML = html;
             }
+
+            // If nothing to show
+            if (html === '') {
+                html = '<div class="activity-quiet">All quiet. Your attention is free.</div>';
+            }
+
+            activityEl.innerHTML = html;
         }
 
         // Poll every 3 seconds

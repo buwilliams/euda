@@ -32,6 +32,7 @@ def main():
         "worker": lambda: __import__('src.agents.worker', fromlist=['run_interactive']).run_interactive(),
         "tasks": run_tasks,
         "approvals": run_approvals,
+        "evolve": run_evolve,
         "watch": lambda: __import__('src.watcher', fromlist=['watch_inbox']).watch_inbox(),
         "process": lambda: __import__('src.watcher', fromlist=['process_pending']).process_pending(),
         "serve": run_server,
@@ -58,6 +59,7 @@ def main():
         print("  worker     Interactive chat with The Executor")
         print("  tasks      Process the task queue once")
         print("  approvals  Show actions waiting for approval")
+        print("  evolve     Review pending identity evolution proposals")
         print("  watch      Watch inbox for new files to process")
         print("  process    Process pending files once and exit")
         print("  serve      Start the web API server (standalone)")
@@ -168,6 +170,71 @@ def run_approvals():
     print()
     result = check_pending_approvals()
     print(f"\n{result}")
+
+
+def run_evolve():
+    """Interactive review of identity evolution proposals."""
+    from src.tools.identity import (
+        get_pending_evolutions, review_evolution,
+        approve_evolution, reject_evolution
+    )
+    from pathlib import Path
+
+    EVOLUTION_DIR = Path(__file__).parent / "data" / "agents" / "evolution"
+
+    print("=" * 60)
+    print("Me and Us - Identity Evolution Review")
+    print("=" * 60)
+    print()
+
+    # Show pending proposals
+    pending = get_pending_evolutions()
+    print(pending)
+
+    if "No pending" in pending:
+        return
+
+    print("\nCommands:")
+    print("  review <filename>  - View full proposal details")
+    print("  approve <filename> - Approve and apply the evolution")
+    print("  reject <filename>  - Reject the proposal")
+    print("  quit               - Exit")
+    print()
+
+    while True:
+        try:
+            cmd = input("> ").strip()
+
+            if not cmd:
+                continue
+
+            if cmd.lower() in ('quit', 'exit', 'q'):
+                break
+
+            parts = cmd.split(maxsplit=1)
+            action = parts[0].lower()
+
+            if action == "review" and len(parts) > 1:
+                print()
+                print(review_evolution(parts[1]))
+                print()
+            elif action == "approve" and len(parts) > 1:
+                print()
+                print(approve_evolution(parts[1]))
+                print()
+            elif action == "reject" and len(parts) > 1:
+                reason = input("Reason (optional): ").strip()
+                print()
+                print(reject_evolution(parts[1], reason))
+                print()
+            else:
+                print("Unknown command. Use: review, approve, reject, or quit")
+
+        except KeyboardInterrupt:
+            print("\n")
+            break
+        except Exception as e:
+            print(f"Error: {e}")
 
 
 if __name__ == "__main__":

@@ -3,26 +3,38 @@ Worker Agent - The Executor
 
 Executes tasks on behalf of the user: emails, calendar events, research,
 reminders. Handles task queue processing and action approval workflows.
+
+Delegation Strategy:
+- Learning tasks: Prepare materials, surface to user
+- User-only tasks: Surface to user (cannot execute)
+- High-stakes tasks: Create pending action (require approval)
+- Read-only/research: Execute autonomously, store result
 """
 
 from pathlib import Path
 from .base import create_agent, AutonomousAgent
 from ..tools.worker import (
-    WORKER_TOOLS, WORKER_HANDLERS,
+    WORKER_TOOLS, WORKER_HANDLERS, EXTENDED_WORKER_TOOLS,
     get_tasks, get_pending_actions, get_action
+)
+from ..tools.task import (
+    get_pending_tasks_for_worker,
+    update_task_status,
+    store_result
 )
 
 
 # Data paths
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 WORKER_DIR = DATA_DIR / "worker"
+TASKS_DIR = DATA_DIR / "tasks"
 
 
 def create_worker_agent():
-    """Create a Worker Agent instance."""
+    """Create a Worker Agent instance with extended tools."""
     return create_agent(
         persona_name="worker",
-        tools=WORKER_TOOLS
+        tools=EXTENDED_WORKER_TOOLS
     )
 
 
@@ -64,25 +76,47 @@ def run_interactive():
 
 def process_task_queue():
     """
-    Process the task queue once.
+    Process the task queue once with delegation logic.
+
+    Delegation Strategy:
+    - Learning tasks: Prepare materials, notify user when ready
+    - User-only tasks: Surface to user via notification
+    - High-stakes tasks: Create pending action for approval
+    - Read-only/research: Execute autonomously, store result
 
     Returns status of what was done.
     """
     agent = create_worker_agent()
 
-    prompt = """Check the task queue and process any pending tasks.
+    prompt = """Check the task queue and process pending tasks using appropriate delegation.
 
-For each pending task:
-1. Update its status to in_progress
-2. Determine what action is needed
-3. Create a pending action with clear summary
-4. Update task status to awaiting_approval (for actions that need approval)
+For each pending task, check its delegation strategy:
 
-Prioritize high priority tasks and those with deadlines.
+1. **Learning tasks** (delegation.strategy = "prepare_materials"):
+   - Research and curate learning materials
+   - Store result with prepared content
+   - Notify user that materials are ready
+   - Mark task as "materials_ready"
 
-If there are approved actions ready for execution, execute them and mark complete.
+2. **User-only tasks** (delegation.strategy = "user_only"):
+   - Cannot execute these (physical activity, creative work, personal decisions)
+   - Surface to user via notification with helpful context
+   - Mark task as "surfaced"
 
-Report what you did."""
+3. **Tasks requiring approval** (delegation.requires_approval = true):
+   - Create a pending action with clear summary
+   - Update task status to "awaiting_approval"
+
+4. **Autonomous tasks** (delegation.strategy = "agent_autonomous"):
+   - Execute the task (research, fetch info, etc.)
+   - Store the result
+   - Mark task as "completed"
+
+Also check for projects with upcoming deadlines and create relevant notifications.
+
+If there are approved actions ready for execution, execute them.
+
+Report what you did and what decisions you made."""
 
     result = agent.process(prompt, WORKER_HANDLERS)
     return result
@@ -129,27 +163,31 @@ Report what was executed."""
 
 class AutonomousWorkerAgent(AutonomousAgent):
     """
-    Autonomous Worker Agent that processes the task queue.
+    Autonomous Worker Agent that processes the task queue with delegation.
 
     Checks:
     - Are there pending tasks in the queue?
     - Are there approved actions ready for execution?
+    - Are there projects with upcoming deadlines?
 
     Work:
-    - Process pending tasks
+    - Process pending tasks based on delegation strategy
     - Execute approved actions
+    - Prepare learning materials
+    - Store results
     - Update task statuses
 
     Signals:
     - task_completed: After completing a task
     - action_pending: When an action needs user approval
+    - materials_ready: When learning materials are prepared
     """
 
     def __init__(self):
         super().__init__(
             name="worker",
             persona_name="worker",
-            tools=WORKER_TOOLS,
+            tools=EXTENDED_WORKER_TOOLS,
             tool_handlers=WORKER_HANDLERS,
             check_interval=30,  # Check every 30 seconds
             signals_on_complete=["task_completed"]
@@ -162,10 +200,10 @@ class AutonomousWorkerAgent(AutonomousAgent):
             self.logger.info("Received new_task signal")
             return True
 
-        # Check for pending tasks
-        tasks = get_tasks(status="pending")
-        if "No tasks found" not in tasks:
-            self.logger.debug("Found pending tasks")
+        # Check for pending tasks that the worker can process
+        pending_tasks = get_pending_tasks_for_worker()
+        if pending_tasks:
+            self.logger.debug(f"Found {len(pending_tasks)} pending tasks for worker")
             return True
 
         # Check for approved actions ready for execution
@@ -177,22 +215,28 @@ class AutonomousWorkerAgent(AutonomousAgent):
         return False
 
     def do_work(self) -> str:
-        """Process tasks and execute approved actions."""
+        """Process tasks based on delegation and execute approved actions."""
         results = []
 
-        # First, process any pending tasks
-        tasks = get_tasks(status="pending")
-        if "No tasks found" not in tasks:
-            self.logger.info("Processing pending tasks...")
+        # Process pending tasks with delegation logic
+        pending_tasks = get_pending_tasks_for_worker()
+        if pending_tasks:
+            self.logger.info(f"Processing {len(pending_tasks)} pending tasks...")
             result = process_task_queue()
             results.append(f"Tasks: {result}")
 
-        # Then, execute any approved actions
+        # Execute any approved actions
         actions = get_pending_actions()
         if "approved" in actions.lower():
             self.logger.info("Executing approved actions...")
             result = execute_approved_actions()
             results.append(f"Actions: {result}")
+
+        # Update state
+        state = self.load_state()
+        state["last_work_time"] = __import__('datetime').datetime.now().isoformat()
+        state["work_count"] = state.get("work_count", 0) + 1
+        self.save_state(state)
 
         # Clear context to avoid memory buildup
         self.agent.clear_context()

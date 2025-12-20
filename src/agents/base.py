@@ -23,6 +23,8 @@ from typing import Optional
 from dotenv import load_dotenv
 from anthropic import Anthropic
 
+from ..tools.identity import IDENTITY_TOOLS, IDENTITY_HANDLERS
+
 # Load environment variables from .env file (use explicit path, override existing)
 ENV_FILE = Path(__file__).parent.parent.parent / ".env"
 load_dotenv(ENV_FILE, override=True)
@@ -63,16 +65,18 @@ def create_agent(persona_name: str, tools: list = None, model: str = "claude-son
     # Load identity
     system_prompt = load_identity(persona_name)
 
-    # Add current date context
+    # Add current date context and agent name
     today = datetime.now().strftime('%Y-%m-%d')
     system_prompt += f"\n\n---\n\nToday's date is {today}. Use this when referencing 'today' or recent dates."
+    system_prompt += f"\n\nYour agent name is '{persona_name}'. Use this when reading or proposing changes to your identity."
 
     # Initialize context (messages only, system is separate)
     context = []
 
-    # Tools default to empty list
+    # Tools default to empty list, always include identity tools
     if tools is None:
         tools = []
+    all_tools = tools + IDENTITY_TOOLS
 
     def call():
         """Make an API call to the LLM."""
@@ -82,8 +86,8 @@ def create_agent(persona_name: str, tools: list = None, model: str = "claude-son
             "system": system_prompt,
             "messages": context,
         }
-        if tools:
-            kwargs["tools"] = tools
+        if all_tools:
+            kwargs["tools"] = all_tools
 
         return client.messages.create(**kwargs)
 
@@ -160,6 +164,9 @@ def create_agent(persona_name: str, tools: list = None, model: str = "claude-son
         if tool_handlers is None:
             tool_handlers = {}
 
+        # Merge with identity handlers so identity tools always work
+        all_handlers = {**tool_handlers, **IDENTITY_HANDLERS}
+
         # Add user input to context
         context.append({
             "role": "user",
@@ -173,7 +180,7 @@ def create_agent(persona_name: str, tools: list = None, model: str = "claude-son
         all_text_blocks = []
 
         # Handle tool calls in a loop
-        while handle_tool_calls(response, tool_handlers):
+        while handle_tool_calls(response, all_handlers):
             # Collect any text from this response before processing tools
             text_blocks = [block.text for block in response.content if hasattr(block, 'text')]
             all_text_blocks.extend(text_blocks)

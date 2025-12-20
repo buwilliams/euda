@@ -9,14 +9,19 @@ This agent can:
 - Read user values (current, phase, lifetime)
 - Read discovered opportunities
 - Answer questions about the user's data
+- Create and manage tasks and projects
+- View daily task list and results
 """
 
 from .base import create_agent
 from ..tools.log import LOG_TOOLS, LOG_HANDLERS
+from ..tools.fetch import FETCH_TOOLS, FETCH_HANDLERS
 from ..tools.values import (
     get_current_values, get_phase_values, get_lifetime_values, get_all_values
 )
 from ..tools.world import get_opportunities
+from ..tools.task import TASK_TOOLS, TASK_HANDLERS
+from ..tools.project import PROJECT_TOOLS, PROJECT_HANDLERS
 
 
 # Additional tools for reading values
@@ -70,11 +75,21 @@ WORLD_READ_TOOLS = [
 ]
 
 # Combined tools for the Interaction Agent
-INTERACTION_TOOLS = LOG_TOOLS + VALUES_READ_TOOLS + WORLD_READ_TOOLS
+INTERACTION_TOOLS = (
+    LOG_TOOLS +
+    VALUES_READ_TOOLS +
+    WORLD_READ_TOOLS +
+    FETCH_TOOLS +
+    TASK_TOOLS +
+    PROJECT_TOOLS
+)
 
 # Handlers for tool execution
 INTERACTION_HANDLERS = {
     **LOG_HANDLERS,
+    **FETCH_HANDLERS,
+    **TASK_HANDLERS,
+    **PROJECT_HANDLERS,
     "get_current_values": get_current_values,
     "get_phase_values": get_phase_values,
     "get_lifetime_values": get_lifetime_values,
