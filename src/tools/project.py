@@ -465,6 +465,58 @@ def archive_project(project_id: str) -> str:
     return f"Archived project '{project['title']}'"
 
 
+def delete_project(project_id: str, delete_tasks: bool = True) -> str:
+    """
+    Permanently delete a project.
+
+    Args:
+        project_id: The project ID
+        delete_tasks: Also delete all tasks associated with this project
+
+    Returns:
+        Success message
+    """
+    project_file = PROJECTS_DIR / f"{project_id}.json"
+    archive_file = ARCHIVE_DIR / f"{project_id}.json"
+
+    project = None
+    title = project_id
+
+    # Try to load from active projects
+    if project_file.exists():
+        with open(project_file, 'r') as f:
+            project = json.load(f)
+        title = project.get("title", project_id)
+        project_file.unlink()
+        _update_index(project, remove=True)
+
+    # Also remove from archive if exists
+    if archive_file.exists():
+        if project is None:
+            with open(archive_file, 'r') as f:
+                project = json.load(f)
+            title = project.get("title", project_id)
+        archive_file.unlink()
+
+    if project is None:
+        return f"Project not found: {project_id}"
+
+    # Delete associated tasks if requested
+    deleted_tasks = 0
+    if delete_tasks:
+        from .task import _load_queue, _save_queue
+        queue = _load_queue()
+        original_count = len(queue["tasks"])
+        queue["tasks"] = [t for t in queue["tasks"] if t.get("project_id") != project_id]
+        deleted_tasks = original_count - len(queue["tasks"])
+        if deleted_tasks > 0:
+            _save_queue(queue)
+
+    if deleted_tasks > 0:
+        return f"Deleted project '{title}' and {deleted_tasks} associated task(s)"
+    return f"Deleted project '{title}'"
+
+
 def get_projects_with_deadlines(days: int = 7) -> list:
     """
     Get projects with deadlines in the next N days.
@@ -676,6 +728,24 @@ PROJECT_TOOLS = [
             },
             "required": ["project_id"]
         }
+    },
+    {
+        "name": "delete_project",
+        "description": "Permanently delete a project and optionally its associated tasks. Use for cleanup or removing test projects.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "project_id": {
+                    "type": "string",
+                    "description": "The project ID"
+                },
+                "delete_tasks": {
+                    "type": "boolean",
+                    "description": "Also delete all tasks associated with this project (default: true)"
+                }
+            },
+            "required": ["project_id"]
+        }
     }
 ]
 
@@ -686,4 +756,5 @@ PROJECT_HANDLERS = {
     "update_project": update_project,
     "add_milestone": add_milestone,
     "archive_project": archive_project,
+    "delete_project": delete_project,
 }
