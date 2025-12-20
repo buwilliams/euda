@@ -43,8 +43,7 @@
         /* Header */
         header {
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            justify-content: center;
             margin-bottom: 1rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid #eee;
@@ -53,57 +52,41 @@
         .logo {
             width: 200px;
             height: auto;
-            margin-bottom: 0.75rem;
         }
 
-        .header-toggles {
-            display: flex;
-            gap: 0.5rem;
-        }
-
+        /* Panel toggle icons in input area */
         .panel-toggle {
             background: none;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 0.4rem 0.75rem;
+            border: none;
+            padding: 0.5rem;
             cursor: pointer;
-            font-family: inherit;
-            font-size: 0.85rem;
-            color: #666;
+            font-size: 1.25rem;
+            color: #999;
             transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
+            position: relative;
+            line-height: 1;
         }
 
         .panel-toggle:hover {
-            border-color: #999;
             color: #333;
         }
 
         .panel-toggle.active {
-            background: #000;
-            color: #fff;
-            border-color: #000;
-        }
-
-        .toggle-icon {
-            font-size: 1rem;
+            color: #000;
         }
 
         .toggle-badge {
+            position: absolute;
+            top: 2px;
+            right: 0;
             background: #ef4444;
             color: #fff;
-            font-size: 0.7rem;
-            padding: 0.1rem 0.4rem;
-            border-radius: 10px;
-            min-width: 1.2rem;
+            font-size: 0.6rem;
+            padding: 0.1rem 0.3rem;
+            border-radius: 8px;
+            min-width: 0.9rem;
             text-align: center;
-        }
-
-        .panel-toggle.active .toggle-badge {
-            background: #fff;
-            color: #000;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         /* Notification items in panel */
@@ -699,18 +682,6 @@
         <div class="app">
             <header>
                 <img src="/static/images/meanddus-logo-with-subtitle.png" alt="me·an·dus" class="logo">
-                <div class="header-toggles">
-                    <button class="panel-toggle" id="notifications-toggle" onclick="togglePanel('notifications')">
-                        <span class="toggle-icon">&#128276;</span>
-                        <span>Attention</span>
-                        <span class="toggle-badge" id="notifications-badge" style="display: none;">0</span>
-                    </button>
-                    <button class="panel-toggle" id="tasks-toggle" onclick="togglePanel('tasks')">
-                        <span class="toggle-icon">&#9744;</span>
-                        <span>Tasks</span>
-                        <span class="toggle-badge" id="tasks-badge" style="display: none;">0</span>
-                    </button>
-                </div>
             </header>
 
             <section class="chat">
@@ -723,6 +694,14 @@
                 <div class="chat-input-container">
                     <div class="chat-input">
                         <input type="text" id="chat-input" placeholder="Talk to me..." autofocus>
+                        <button class="panel-toggle" id="notifications-toggle" onclick="togglePanel('notifications')" title="Attention">
+                            &#128276;
+                            <span class="toggle-badge" id="notifications-badge" style="display: none;">0</span>
+                        </button>
+                        <button class="panel-toggle" id="tasks-toggle" onclick="togglePanel('tasks')" title="Tasks">
+                            &#9745;
+                            <span class="toggle-badge" id="tasks-badge" style="display: none;">0</span>
+                        </button>
                         <button id="send-btn" onclick="sendMessage()">Send</button>
                     </div>
                     <div class="hints">
