@@ -548,30 +548,57 @@
             padding: 0.5rem 0;
         }
 
-        /* Quick Add Button */
+        /* Quick Add Input */
         .panel-footer {
-            padding: 1rem;
+            padding: 0.75rem;
             border-top: 1px solid #eee;
             background: #fff;
         }
 
-        .quick-add-btn {
-            width: 100%;
-            padding: 0.625rem 1rem;
-            border: 1px dashed #ccc;
+        .quick-add-form {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .quick-add-input {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #ddd;
             border-radius: 4px;
-            background: transparent;
-            color: #666;
             font-family: inherit;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            transition: border-color 0.2s;
+        }
+
+        .quick-add-input:focus {
+            outline: none;
+            border-color: #666;
+        }
+
+        .quick-add-input::placeholder {
+            color: #999;
+        }
+
+        .quick-add-btn {
+            padding: 0.5rem 0.75rem;
+            border: none;
+            border-radius: 4px;
+            background: #000;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.85rem;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background 0.2s;
+            white-space: nowrap;
         }
 
         .quick-add-btn:hover {
-            border-color: #999;
-            color: #333;
-            background: #f5f5f5;
+            background: #333;
+        }
+
+        .quick-add-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
 
         /* Markdown Styles */
@@ -783,7 +810,10 @@
             </div>
 
             <div class="panel-footer">
-                <button class="quick-add-btn" onclick="quickAddTask()">+ Add task</button>
+                <div class="quick-add-form">
+                    <input type="text" id="quick-add-input" class="quick-add-input" placeholder="Add a task..." onkeypress="if(event.key==='Enter')quickAddTask()">
+                    <button class="quick-add-btn" onclick="quickAddTask()">Add</button>
+                </div>
             </div>
         </aside>
     </div>
@@ -1078,12 +1108,15 @@
 
         // Quick add task
         function quickAddTask() {
-            chatInput.value = 'Create a task to ';
-            chatInput.focus();
+            const quickInput = document.getElementById('quick-add-input');
+            const task = quickInput.value.trim();
 
-            // Position cursor at end
-            const len = chatInput.value.length;
-            chatInput.setSelectionRange(len, len);
+            if (!task || isWaiting) return;
+
+            // Send as chat message
+            chatInput.value = `Create a task to ${task}`;
+            quickInput.value = '';
+            sendMessage();
         }
 
         // Send message
