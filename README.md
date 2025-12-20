@@ -1,6 +1,14 @@
 # me·an·dus
 
-An AI personal assistant that curates my attention to maximize the wonder of being alive. It learns what promotes life for me—joy, growth, connection, contribution—by observing my logged life and forming conjectural values. It proactively explores the world for opportunities, advocates for experiences I might resist, and manages my energy to surface the right things at the right time.
+This project tests a conjecture: that a personal assistant which has access to comprehensive personal data, derives values from that data, proactively filters the world through those values, manages what deserves your attention, and negotiates with other agents on your behalf could be transformatively useful in daily life.
+
+Current AI assistants have memory, but not access to the full texture of a life—photos, documents, calendars, messages, transactions, journals. They are reactive: you ask, they answer. They have no opinion about what should capture your attention—that decision is left to platforms optimizing for engagement, not for what promotes your life. And they cannot represent you to others.
+
+The system works by ingesting whatever you give it and building a continuous life log. From this log, it derives conjectural values: theories about what promotes your flourishing, held tentatively, revised when patterns shift. Autonomous agents filter the world—events, people, places, learning, goals—through those values. The system decides what surfaces and when, reaching out rather than waiting to be asked. When you meet someone, your agent can exchange value cards with theirs, finding common ground and representing who you are.
+
+All knowledge is conjectural, including knowledge of what makes a good life. The system notices gaps between stated values and revealed behavior—not as hypocrisy to expose, but as data for refining the theory.
+
+This is an experiment in what a personal assistant could be. The only way to test the conjecture is to build it and live with it.
 
 ## Table of Contents
 
