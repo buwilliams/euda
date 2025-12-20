@@ -315,6 +315,36 @@ async def run_worker_agent():
         await asyncio.sleep(30)
 ```
 
+### Introspection Agent
+
+Analyzes and documents what the system can do. Maintains a living capabilities document.
+
+```python
+async def run_introspection_agent():
+    agent = create_agent(
+        "data/agents/identity/introspection.identity.md",
+        tools=[list_agents, get_agent_identity, get_core_identity,
+               analyze_agent_code, list_tools_modules, analyze_tools_module,
+               get_system_overview, get_last_introspection, save_capabilities]
+    )
+
+    while True:
+        # Check if capabilities doc needs refresh
+        if capabilities_stale() or signal_received("identity_evolved"):
+            result = agent("""
+                Analyze the system comprehensively:
+                1. Read all agent identities
+                2. Analyze code for tools and triggers
+                3. Generate user-friendly capabilities guide
+                4. Save to data/agents/introspection/capabilities.md
+            """)
+            send_signal("introspection_updated")
+
+        await asyncio.sleep(1800)  # 30 minutes
+```
+
+The capabilities document is accessible to the Interaction Agent, so users can ask "what can you do?" and get accurate, current information.
+
 ## Project and Task Management
 
 The system includes a comprehensive project and task management system that spans the entire year.

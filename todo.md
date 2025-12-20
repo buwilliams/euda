@@ -60,3 +60,4 @@
   - [x] Tools: src/tools/introspection.py (agent/code analysis, capability docs)
   - [x] Agent: src/agents/introspection.py (30-min autonomous loop)
   - [x] Outputs: data/agents/introspection/capabilities.md
+  - [x] Interaction Agent can access capabilities (user asks "what can you do?")

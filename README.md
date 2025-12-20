@@ -266,7 +266,7 @@ The agent has a self-concept:
 - *Purpose:* Converse, listen, adapt, encourage, challenge when needed.
 - *Beliefs:* The user knows themselves best, but may need reflection.
 - *Behavior:* Warm, adaptive, honest. Listen first. Never manipulate.
-- *Capabilities:* Can read/write logs, read values, read opportunities. The single interface to everything.
+- *Capabilities:* Can read/write logs, read values, read opportunities, manage tasks/projects, explain system capabilities. The single interface to everything.
 
 **Worker Agent - The Executor**
 - *Purpose:* Execute tasks on behalf of the user with smart delegation.
