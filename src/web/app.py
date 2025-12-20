@@ -145,20 +145,21 @@ async def app_page():
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """Chat with the Interaction Agent."""
-    from ..tools.conversation import CLEAR_CONVERSATION_MARKER
+    from ..tools.conversation import reset_clear_flag, was_clear_requested
 
     session_id, agent = get_or_create_session(request.session_id)
 
     try:
+        # Reset the clear flag before processing
+        reset_clear_flag()
+
         sessions[session_id]["last_used"] = datetime.now()
         response = agent.process(request.message, INTERACTION_HANDLERS)
 
-        # Check if this is a clear conversation request
-        clear_chat = False
-        if CLEAR_CONVERSATION_MARKER in response:
-            clear_chat = True
-            # Remove the marker from the response
-            response = response.replace(CLEAR_CONVERSATION_MARKER, "").strip()
+        # Check if clear_conversation tool was called during processing
+        clear_chat = was_clear_requested()
+
+        if clear_chat:
             # Clear the agent's context
             agent.clear_context()
             # Create a fresh session

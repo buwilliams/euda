@@ -5,8 +5,8 @@ Tools for managing the conversation state, including clearing
 chat history and starting fresh conversations.
 """
 
-# Marker that indicates a clear request was made
-CLEAR_CONVERSATION_MARKER = "[[CLEAR_CONVERSATION]]"
+# Flag to track if clear was requested during this request
+_clear_requested = False
 
 
 def clear_conversation() -> str:
@@ -14,9 +14,11 @@ def clear_conversation() -> str:
     Clear the current conversation and start fresh.
 
     Returns:
-        A marker string that the API will detect to signal the UI
+        Confirmation message
     """
-    return f"{CLEAR_CONVERSATION_MARKER}Starting fresh! How can I help you today?"
+    global _clear_requested
+    _clear_requested = True
+    return "Chat cleared. Starting a fresh conversation."
 
 
 def start_new_conversation() -> str:
@@ -24,9 +26,23 @@ def start_new_conversation() -> str:
     Start a new conversation (alias for clear_conversation).
 
     Returns:
-        A marker string that the API will detect to signal the UI
+        Confirmation message
     """
     return clear_conversation()
+
+
+def was_clear_requested() -> bool:
+    """Check if clear was requested and reset the flag."""
+    global _clear_requested
+    result = _clear_requested
+    _clear_requested = False
+    return result
+
+
+def reset_clear_flag():
+    """Reset the clear flag (call at start of each request)."""
+    global _clear_requested
+    _clear_requested = False
 
 
 # Tool definitions
