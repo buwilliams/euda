@@ -43,7 +43,7 @@
         /* Header */
         header {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
             margin-bottom: 1rem;
             padding-bottom: 1rem;
@@ -53,18 +53,27 @@
         .logo {
             width: 200px;
             height: auto;
+            margin-bottom: 0.75rem;
+        }
+
+        .header-toggles {
+            display: flex;
+            gap: 0.5rem;
         }
 
         .panel-toggle {
             background: none;
             border: 1px solid #ddd;
             border-radius: 4px;
-            padding: 0.5rem 0.75rem;
+            padding: 0.4rem 0.75rem;
             cursor: pointer;
             font-family: inherit;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: #666;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
         }
 
         .panel-toggle:hover {
@@ -72,83 +81,56 @@
             color: #333;
         }
 
-        .app-container.panel-open .panel-toggle {
+        .panel-toggle.active {
             background: #000;
             color: #fff;
             border-color: #000;
         }
 
-        /* Activity Feed */
-        .activity {
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #eee;
-            margin-bottom: 1rem;
-            min-height: 2.5rem;
+        .toggle-icon {
+            font-size: 1rem;
         }
 
-        .activity-item {
-            display: flex;
-            align-items: center;
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
+        .toggle-badge {
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 10px;
+            min-width: 1.2rem;
+            text-align: center;
         }
 
-        .activity-item:last-child {
-            margin-bottom: 0;
+        .panel-toggle.active .toggle-badge {
+            background: #fff;
+            color: #000;
         }
 
-        .activity-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 0.75rem;
-            flex-shrink: 0;
-        }
-
-        .activity-dot.working {
-            background: #f59e0b;
-            animation: pulse 1.5s infinite;
-        }
-
-        .activity-dot.done {
-            background: #10b981;
-        }
-
-        .activity-dot.idle {
-            background: #d1d5db;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-
-        .activity-quiet {
-            color: #999;
-            font-style: italic;
-        }
-
-        /* Notification items - clickable */
+        /* Notification items in panel */
         .notification-item {
             display: flex;
             align-items: flex-start;
-            padding: 0.5rem 0.75rem;
-            margin: 0.25rem 0;
-            background: #f8f9fa;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: #fff;
             border-radius: 6px;
             cursor: pointer;
             transition: background 0.2s;
+            border: 1px solid #eee;
         }
 
         .notification-item:hover {
-            background: #eef0f2;
+            background: #f5f5f5;
+        }
+
+        .notification-item:last-child {
+            margin-bottom: 0;
         }
 
         .notification-icon {
             margin-right: 0.75rem;
             flex-shrink: 0;
-            font-size: 1rem;
+            font-size: 1.1rem;
         }
 
         .notification-content {
@@ -160,39 +142,63 @@
             font-weight: 500;
             color: #333;
             font-size: 0.9rem;
+            line-height: 1.4;
         }
 
-        .notification-agent {
+        .notification-meta {
             color: #888;
             font-size: 0.8rem;
-            margin-top: 0.15rem;
+            margin-top: 0.25rem;
         }
 
         .notification-item.priority-high {
-            background: #fef3c7;
-            border-left: 3px solid #f59e0b;
+            background: #fffbeb;
+            border-color: #f59e0b;
         }
 
         .notification-item.priority-high:hover {
-            background: #fde68a;
+            background: #fef3c7;
         }
 
         .notification-item.type-approval {
-            background: #dbeafe;
-            border-left: 3px solid #3b82f6;
+            background: #eff6ff;
+            border-color: #3b82f6;
         }
 
         .notification-item.type-approval:hover {
-            background: #bfdbfe;
+            background: #dbeafe;
         }
 
         .notification-item.type-alert {
-            background: #fee2e2;
-            border-left: 3px solid #ef4444;
+            background: #fef2f2;
+            border-color: #ef4444;
         }
 
         .notification-item.type-alert:hover {
-            background: #fecaca;
+            background: #fee2e2;
+        }
+
+        .notifications-empty {
+            color: #999;
+            font-style: italic;
+            font-size: 0.9rem;
+            padding: 1rem 0;
+            text-align: center;
+        }
+
+        .notifications-quiet {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: #999;
+        }
+
+        .notifications-quiet-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .notifications-quiet-text {
+            font-style: italic;
         }
 
         /* Chat Section */
@@ -332,7 +338,7 @@
             color: #666;
         }
 
-        /* ============== Side Panel ============== */
+        /* ============== Side Panels ============== */
         .panel {
             width: 280px;
             height: 100vh;
@@ -343,7 +349,7 @@
             overflow: hidden;
         }
 
-        .app-container.panel-open .panel {
+        .panel.active {
             display: flex;
         }
 
@@ -693,12 +699,19 @@
         <div class="app">
             <header>
                 <img src="/static/images/meanddus-logo-with-subtitle.png" alt="me·an·dus" class="logo">
-                <button class="panel-toggle" onclick="togglePanel()">Tasks</button>
+                <div class="header-toggles">
+                    <button class="panel-toggle" id="notifications-toggle" onclick="togglePanel('notifications')">
+                        <span class="toggle-icon">&#128276;</span>
+                        <span>Attention</span>
+                        <span class="toggle-badge" id="notifications-badge" style="display: none;">0</span>
+                    </button>
+                    <button class="panel-toggle" id="tasks-toggle" onclick="togglePanel('tasks')">
+                        <span class="toggle-icon">&#9744;</span>
+                        <span>Tasks</span>
+                        <span class="toggle-badge" id="tasks-badge" style="display: none;">0</span>
+                    </button>
+                </div>
             </header>
-
-            <section class="activity" id="activity">
-                <div class="activity-quiet">All quiet. Your attention is free.</div>
-            </section>
 
             <section class="chat">
                 <div class="messages" id="messages">
@@ -722,10 +735,24 @@
             </section>
         </div>
 
-        <!-- Side Panel -->
-        <aside class="panel" id="panel">
+        <!-- Notifications Panel -->
+        <aside class="panel" id="notifications-panel">
             <div class="panel-header">
-                <div class="panel-title">Focus</div>
+                <div class="panel-title">Attention</div>
+            </div>
+
+            <div class="panel-content" id="notifications-content">
+                <div class="notifications-quiet">
+                    <div class="notifications-quiet-icon">&#10024;</div>
+                    <div class="notifications-quiet-text">All quiet. Your attention is free.</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Tasks Panel -->
+        <aside class="panel" id="tasks-panel">
+            <div class="panel-header">
+                <div class="panel-title">Tasks</div>
             </div>
 
             <div class="panel-content">
@@ -770,35 +797,65 @@
         // State
         let sessionId = localStorage.getItem('sessionId') || null;
         let isWaiting = false;
-        let panelOpen = localStorage.getItem('panelOpen') === 'true';
+        let activePanel = localStorage.getItem('activePanel') || null;
         let tasksData = [];
         let projectsData = [];
+        let notificationsData = [];
 
         // Elements
         const appContainer = document.getElementById('app-container');
         const messagesEl = document.getElementById('messages');
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
-        const activityEl = document.getElementById('activity');
+        const notificationsPanel = document.getElementById('notifications-panel');
+        const tasksPanel = document.getElementById('tasks-panel');
+        const notificationsToggle = document.getElementById('notifications-toggle');
+        const tasksToggle = document.getElementById('tasks-toggle');
 
         // Initialize panel state
-        if (panelOpen) {
+        if (activePanel) {
             appContainer.classList.add('panel-open');
+            document.getElementById(`${activePanel}-panel`).classList.add('active');
+            document.getElementById(`${activePanel}-toggle`).classList.add('active');
         }
 
         // Panel toggle
-        function togglePanel() {
-            panelOpen = !panelOpen;
-            appContainer.classList.toggle('panel-open', panelOpen);
-            localStorage.setItem('panelOpen', panelOpen);
+        function togglePanel(panelName) {
+            const panel = document.getElementById(`${panelName}-panel`);
+            const toggle = document.getElementById(`${panelName}-toggle`);
 
-            if (panelOpen) {
-                loadPanelData();
+            if (activePanel === panelName) {
+                // Close panel
+                panel.classList.remove('active');
+                toggle.classList.remove('active');
+                appContainer.classList.remove('panel-open');
+                activePanel = null;
+                localStorage.removeItem('activePanel');
+            } else {
+                // Close other panel if open
+                if (activePanel) {
+                    document.getElementById(`${activePanel}-panel`).classList.remove('active');
+                    document.getElementById(`${activePanel}-toggle`).classList.remove('active');
+                }
+
+                // Open this panel
+                panel.classList.add('active');
+                toggle.classList.add('active');
+                appContainer.classList.add('panel-open');
+                activePanel = panelName;
+                localStorage.setItem('activePanel', panelName);
+
+                // Load data for the panel
+                if (panelName === 'tasks') {
+                    loadTasksData();
+                } else if (panelName === 'notifications') {
+                    loadNotificationsData();
+                }
             }
         }
 
-        // Load panel data
-        async function loadPanelData() {
+        // Load tasks data
+        async function loadTasksData() {
             try {
                 const [tasksRes, projectsRes] = await Promise.all([
                     fetch('/api/tasks'),
@@ -813,9 +870,75 @@
 
                 renderTodayTasks();
                 renderProjects();
+                updateTasksBadge();
             } catch (error) {
-                console.error('Failed to load panel data:', error);
+                console.error('Failed to load tasks data:', error);
             }
+        }
+
+        // Load notifications data
+        async function loadNotificationsData() {
+            try {
+                const response = await fetch('/api/notifications');
+                const data = await response.json();
+                notificationsData = data.notifications || [];
+                renderNotifications();
+                updateNotificationsBadge();
+            } catch (error) {
+                console.error('Failed to load notifications:', error);
+            }
+        }
+
+        // Render notifications in panel
+        function renderNotifications() {
+            const container = document.getElementById('notifications-content');
+
+            if (notificationsData.length === 0) {
+                container.innerHTML = `
+                    <div class="notifications-quiet">
+                        <div class="notifications-quiet-icon">&#10024;</div>
+                        <div class="notifications-quiet-text">All quiet. Your attention is free.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = notificationsData.map((n, idx) => {
+                const typeClass = n.type ? `type-${n.type}` : '';
+                const priorityClass = n.priority === 'high' ? 'priority-high' : '';
+                const icon = getNotificationIcon(n.type);
+
+                return `
+                    <div class="notification-item ${typeClass} ${priorityClass}"
+                         onclick="handleNotificationClick(notificationsData[${idx}])">
+                        <span class="notification-icon">${icon}</span>
+                        <div class="notification-content">
+                            <div class="notification-title">${escapeHtml(n.title)}</div>
+                            <div class="notification-meta">from ${escapeHtml(n.agent_name)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update badges
+        function updateNotificationsBadge() {
+            const badge = document.getElementById('notifications-badge');
+            const count = notificationsData.length;
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'inline' : 'none';
+        }
+
+        function updateTasksBadge() {
+            const badge = document.getElementById('tasks-badge');
+            const today = new Date().toISOString().split('T')[0];
+            const count = tasksData.filter(t => {
+                const dueDate = t.scheduling?.due_date;
+                const isToday = dueDate === today || !dueDate;
+                return t.status === 'pending' && isToday;
+            }).length;
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'inline' : 'none';
         }
 
         // Render today's tasks
@@ -935,7 +1058,7 @@
                 addMessage(data.response, 'friend');
 
                 // Refresh panel data
-                loadPanelData();
+                loadTasksData();
             } catch (error) {
                 removeThinking();
                 addMessage('Had trouble updating that task.', 'friend');
@@ -984,8 +1107,8 @@
                 addMessage(data.response, 'friend');
 
                 // Refresh panel if open (in case tasks/projects changed)
-                if (panelOpen) {
-                    setTimeout(loadPanelData, 500);
+                if (activePanel) {
+                    setTimeout(pollData, 500);
                 }
             } catch (error) {
                 removeThinking();
@@ -1055,58 +1178,7 @@
             if (e.key === 'Enter' && !isWaiting) sendMessage();
         });
 
-        // Activity polling
-        let lastAgentStates = {};
-        let notifications = [];
-
-        async function pollActivity() {
-            try {
-                const [agentResponse, notifResponse] = await Promise.all([
-                    fetch('/api/agents/status'),
-                    fetch('/api/notifications')
-                ]);
-
-                const agentData = await agentResponse.json();
-                const notifData = await notifResponse.json();
-
-                const activities = [];
-
-                for (const agent of agentData.agents) {
-                    const key = agent.name;
-                    const prevState = lastAgentStates[key];
-
-                    if (agent.last_active && prevState?.last_active !== agent.last_active) {
-                        if (prevState) {
-                            activities.push({
-                                text: `${agent.name.split(' ')[0]} finished`,
-                                status: 'done'
-                            });
-                        }
-                    }
-
-                    if (agent.status === 'ready') {
-                        const lastActive = new Date(agent.last_active);
-                        const now = new Date();
-                        const secondsAgo = (now - lastActive) / 1000;
-
-                        if (secondsAgo < 30) {
-                            activities.push({
-                                text: `${agent.name.split(' ')[0]} working...`,
-                                status: 'working'
-                            });
-                        }
-                    }
-
-                    lastAgentStates[key] = { ...agent };
-                }
-
-                notifications = notifData.notifications || [];
-                updateActivityFeed(activities, notifications);
-            } catch (error) {
-                // Silent fail
-            }
-        }
-
+        // Notification helpers
         function getNotificationIcon(type) {
             switch (type) {
                 case 'approval': return '👋';
@@ -1126,57 +1198,53 @@
                 chatInput.value = `Tell me about: ${notification.title}`;
                 chatInput.focus();
             }
+
+            // Refresh notifications after marking as seen
+            setTimeout(loadNotificationsData, 500);
         }
 
-        function updateActivityFeed(activities, notifs) {
-            let html = '';
+        // Polling for badge updates
+        async function pollData() {
+            try {
+                // Always fetch both for badge updates
+                const [tasksRes, notifRes] = await Promise.all([
+                    fetch('/api/tasks'),
+                    fetch('/api/notifications')
+                ]);
 
-            if (notifs && notifs.length > 0) {
-                notifs.forEach((n, idx) => {
-                    const typeClass = n.type ? `type-${n.type}` : '';
-                    const priorityClass = n.priority === 'high' ? 'priority-high' : '';
-                    const icon = getNotificationIcon(n.type);
+                const tasksJson = await tasksRes.json();
+                const notifJson = await notifRes.json();
 
-                    html += `<div class="notification-item ${typeClass} ${priorityClass}"
-                                 onclick="handleNotificationClick(notifications[${idx}])">
-                        <span class="notification-icon">${icon}</span>
-                        <div class="notification-content">
-                            <div class="notification-title">${escapeHtml(n.title)}</div>
-                            <div class="notification-agent">from ${escapeHtml(n.agent_name)}</div>
-                        </div>
-                    </div>`;
-                });
+                tasksData = tasksJson.tasks || [];
+                notificationsData = notifJson.notifications || [];
+
+                updateTasksBadge();
+                updateNotificationsBadge();
+
+                // Refresh active panel content
+                if (activePanel === 'tasks') {
+                    const projectsRes = await fetch('/api/projects');
+                    projectsData = (await projectsRes.json()).projects || [];
+                    renderTodayTasks();
+                    renderProjects();
+                } else if (activePanel === 'notifications') {
+                    renderNotifications();
+                }
+            } catch (error) {
+                // Silent fail
             }
-
-            if (activities.length > 0) {
-                activities.forEach(a => {
-                    html += `<div class="activity-item">
-                        <span class="activity-dot ${a.status}"></span>
-                        ${escapeHtml(a.text)}
-                    </div>`;
-                });
-            }
-
-            if (html === '') {
-                html = '<div class="activity-quiet">All quiet. Your attention is free.</div>';
-            }
-
-            activityEl.innerHTML = html;
         }
 
         // Initialize
-        setInterval(pollActivity, 3000);
-        pollActivity();
+        pollData();
+        setInterval(pollData, 5000);
 
-        // Load panel data if open
-        if (panelOpen) {
-            loadPanelData();
+        // Load active panel data if open
+        if (activePanel === 'tasks') {
+            loadTasksData();
+        } else if (activePanel === 'notifications') {
+            loadNotificationsData();
         }
-
-        // Refresh panel data periodically if open
-        setInterval(() => {
-            if (panelOpen) loadPanelData();
-        }, 10000);
 
         chatInput.focus();
     </script>
