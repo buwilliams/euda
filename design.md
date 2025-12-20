@@ -840,6 +840,14 @@ Everything happens through conversation:
 
 No separate screens needed. The friend knows you and can access everything.
 
+**Chat Bubbles:**
+
+Messages display as conversation bubbles:
+- User messages: Black background, white text, right-aligned, rounded corners with tail on right
+- Friend messages: Light gray background, black text, left-aligned, rounded corners with tail on left
+- Messages fade in smoothly with subtle slide-up animation
+- Auto-focus returns to input after each response
+
 **Loading States:**
 
 Never leave the user wondering:

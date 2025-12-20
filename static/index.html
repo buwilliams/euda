@@ -213,20 +213,41 @@
             padding: 1rem;
             border: 1px solid #eee;
             border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
         }
 
         .message {
-            margin-bottom: 1.25rem;
-            line-height: 1.7;
+            line-height: 1.6;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message-friend {
-            padding-left: 1rem;
-            border-left: 2px solid #e5e5e5;
+            align-self: flex-start;
+            background: #f5f5f5;
+            border-radius: 18px 18px 18px 4px;
+            padding: 0.75rem 1rem;
         }
 
         .message-you {
-            color: #333;
+            align-self: flex-end;
+            background: #000;
+            color: #fff;
+            border-radius: 18px 18px 4px 18px;
+            padding: 0.75rem 1rem;
         }
 
         .message-content {
@@ -239,8 +260,11 @@
             font-style: italic;
             display: flex;
             align-items: center;
-            padding-left: 1rem;
-            border-left: 2px solid #e5e5e5;
+            align-self: flex-start;
+            background: #f5f5f5;
+            border-radius: 18px 18px 18px 4px;
+            padding: 0.75rem 1rem;
+            animation: fadeIn 0.3s ease-out;
         }
 
         .thinking-dots {
@@ -691,10 +715,34 @@
             text-decoration: underline;
         }
 
+        /* Links in user messages */
+        .message-you .message-content a {
+            color: #99ccff;
+        }
+
         .message-content hr {
             margin: 1em 0;
             border: none;
-            border-top: 1px solid #eee;
+            border-top: 1px solid #ddd;
+        }
+
+        .message-you .message-content hr {
+            border-top-color: #444;
+        }
+
+        /* Code in user messages */
+        .message-you .message-content code {
+            background: #333;
+        }
+
+        .message-you .message-content pre {
+            background: #333;
+        }
+
+        /* Blockquote in user messages */
+        .message-you .message-content blockquote {
+            border-left-color: #666;
+            color: #ccc;
         }
 
         .message-content table {
@@ -737,7 +785,7 @@
 
             <section class="chat">
                 <div class="messages" id="messages">
-                    <div class="message message-friend">
+                    <div class="message message-friend" style="animation: none;">
                         <div class="message-content">Hey. I'm here when you need me. What's on your mind?</div>
                     </div>
                 </div>
@@ -1098,6 +1146,7 @@
             }
 
             setWaiting(false);
+            chatInput.focus();
         }
 
         // Discuss a task
@@ -1157,6 +1206,9 @@
             }
 
             setWaiting(false);
+
+            // Auto-focus back to input after response
+            chatInput.focus();
         }
 
         function clearMessages() {
