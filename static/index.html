@@ -954,7 +954,7 @@
                 const dueDate = t.scheduling?.due_date;
                 const isToday = dueDate === today || !dueDate;
                 const isPending = t.status === 'pending' || t.status === 'in_progress';
-                return isPending || t.status === 'completed';
+                return isToday && (isPending || t.status === 'completed');
             }).slice(0, 10); // Limit to 10
 
             const pendingCount = todayTasks.filter(t => t.status !== 'completed').length;
@@ -1110,10 +1110,8 @@
                 removeThinking();
                 addMessage(data.response, 'friend');
 
-                // Refresh panel if open (in case tasks/projects changed)
-                if (activePanel) {
-                    setTimeout(pollData, 500);
-                }
+                // Always refresh data after chat (tasks/projects may have changed)
+                setTimeout(pollData, 300);
             } catch (error) {
                 removeThinking();
                 addMessage('I had trouble processing that. Could you try again?', 'friend');

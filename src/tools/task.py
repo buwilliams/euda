@@ -352,6 +352,42 @@ def get_tasks(
     return "\n".join(output)
 
 
+def get_tasks_data(
+    status: Optional[str] = None,
+    project_id: Optional[str] = None,
+    due_date: Optional[str] = None,
+    priority: Optional[str] = None,
+    limit: int = 50
+) -> list:
+    """
+    Get tasks as raw data for API consumption.
+
+    Returns:
+        List of task dictionaries
+    """
+    queue = _load_queue()
+    tasks = queue["tasks"]
+
+    # Apply filters
+    if status:
+        tasks = [t for t in tasks if t["status"] == status]
+    if project_id:
+        tasks = [t for t in tasks if t.get("project_id") == project_id]
+    if due_date:
+        tasks = [t for t in tasks if t.get("scheduling", {}).get("due_date") == due_date]
+    if priority:
+        tasks = [t for t in tasks if t["priority"] == priority]
+
+    # Sort by priority then due date
+    priority_order = {"high": 0, "normal": 1, "low": 2}
+    tasks.sort(key=lambda t: (
+        priority_order.get(t.get("priority", "normal"), 1),
+        t.get("scheduling", {}).get("due_date") or "9999-12-31"
+    ))
+
+    return tasks[:limit]
+
+
 def get_task(task_id: str) -> str:
     """
     Get details of a specific task.

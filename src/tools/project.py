@@ -193,6 +193,50 @@ def get_projects(
     return "\n".join(output)
 
 
+def get_projects_data(
+    status: str = "active",
+    project_type: Optional[str] = None,
+    include_archived: bool = False
+) -> list:
+    """
+    Get projects as raw data for API consumption.
+
+    Returns:
+        List of project dictionaries
+    """
+    index = _load_index()
+    projects = index["projects"]
+
+    # Filter by status
+    if status != "all":
+        projects = [p for p in projects if p["status"] == status]
+
+    # Filter by type
+    if project_type:
+        projects = [p for p in projects if p.get("type") == project_type]
+
+    # Exclude archived unless requested
+    if not include_archived:
+        filtered = []
+        for p in projects:
+            project_file = PROJECTS_DIR / f"{p['id']}.json"
+            if project_file.exists():
+                with open(project_file, 'r') as f:
+                    full = json.load(f)
+                if not full.get("archived", False):
+                    filtered.append(p)
+        projects = filtered
+
+    # Sort by priority then deadline
+    priority_order = {"high": 0, "normal": 1, "low": 2}
+    projects.sort(key=lambda p: (
+        priority_order.get(p.get("priority", "normal"), 1),
+        p.get("deadline") or "9999-12-31"
+    ))
+
+    return projects
+
+
 def get_project(project_id: str) -> str:
     """
     Get details of a specific project.

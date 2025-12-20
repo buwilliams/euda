@@ -466,7 +466,7 @@ async def dismiss_notification_endpoint(notification_id: str):
 # ============== Projects ==============
 
 from ..tools.project import (
-    create_project, get_projects, get_project, update_project,
+    create_project, get_projects, get_projects_data, get_project, update_project,
     add_milestone, archive_project, get_projects_with_deadlines
 )
 
@@ -497,8 +497,8 @@ class MilestoneRequest(BaseModel):
 @app.get("/api/projects")
 async def list_projects(status: str = "active", project_type: Optional[str] = None):
     """Get projects."""
-    content = get_projects(status=status, project_type=project_type)
-    return {"content": content}
+    projects = get_projects_data(status=status, project_type=project_type)
+    return {"projects": projects}
 
 
 @app.get("/api/projects/deadlines")
@@ -561,7 +561,7 @@ async def archive_project_endpoint(project_id: str):
 # ============== Tasks ==============
 
 from ..tools.task import (
-    create_task, create_learning_task, get_tasks, get_task,
+    create_task, create_learning_task, get_tasks, get_tasks_data, get_task,
     get_daily_view, add_quick_task, update_task_status,
     get_recent_results, get_result
 )
@@ -594,13 +594,13 @@ async def list_tasks(
     limit: int = 50
 ):
     """Get tasks with optional filters."""
-    content = get_tasks(
+    tasks = get_tasks_data(
         status=status,
         project_id=project_id,
         priority=priority,
         limit=limit
     )
-    return {"content": content}
+    return {"tasks": tasks}
 
 
 @app.get("/api/tasks/daily")
