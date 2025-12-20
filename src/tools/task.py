@@ -834,9 +834,25 @@ def get_recent_results(project_id: Optional[str] = None, limit: int = 10) -> str
     output = ["## Recent Results\n"]
     for r in results:
         date = r["created"][:10]
-        output.append(f"- **{r['summary']}** ({date})")
+        output.append(f"### {r['summary']} ({date})")
         if r.get("project_id"):
-            output.append(f"  Project: {r['project_id']}")
+            output.append(f"**Project:** {r['project_id']}")
+        output.append(f"**Result ID:** {r['id']}")
+
+        # Include the content details
+        if r.get("content"):
+            content = r["content"]
+            if isinstance(content, dict):
+                output.append("\n**Details:**")
+                output.append(json.dumps(content, indent=2))
+            else:
+                output.append(f"\n**Details:** {content}")
+
+        # Include recommendations if present
+        if r.get("recommendations"):
+            output.append(f"\n**Next Steps:** {r['recommendations']}")
+
+        output.append("")  # Blank line between results
 
     return "\n".join(output)
 
