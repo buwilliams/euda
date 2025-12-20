@@ -634,6 +634,56 @@ def update_task_status(task_id: str, status: str) -> str:
     return f"Task not found: {task_id}"
 
 
+def delete_task(task_id: str) -> str:
+    """
+    Delete a task from the queue.
+
+    Args:
+        task_id: The task ID to delete
+
+    Returns:
+        Success or error message
+    """
+    queue = _load_queue()
+
+    for i, task in enumerate(queue["tasks"]):
+        if task["id"] == task_id:
+            description = task["description"]
+            queue["tasks"].pop(i)
+            _save_queue(queue)
+            return f"Deleted task: {description}"
+
+    return f"Task not found: {task_id}"
+
+
+def delete_tasks_by_description(description_contains: str) -> str:
+    """
+    Delete all tasks whose description contains the given text.
+
+    Args:
+        description_contains: Text to match in task descriptions
+
+    Returns:
+        Success message with count of deleted tasks
+    """
+    queue = _load_queue()
+    original_count = len(queue["tasks"])
+
+    # Filter out matching tasks
+    queue["tasks"] = [
+        t for t in queue["tasks"]
+        if description_contains.lower() not in t["description"].lower()
+    ]
+
+    deleted_count = original_count - len(queue["tasks"])
+
+    if deleted_count > 0:
+        _save_queue(queue)
+        return f"Deleted {deleted_count} task(s) matching '{description_contains}'"
+
+    return f"No tasks found matching '{description_contains}'"
+
+
 def store_result(
     task_id: str,
     summary: str,
@@ -1038,6 +1088,53 @@ TASK_TOOLS = [
                 }
             }
         }
+    },
+    {
+        "name": "update_task_status",
+        "description": "Update a task's status. Use to mark tasks as completed, in progress, or pending.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "string",
+                    "description": "The task ID"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": ["pending", "in_progress", "completed"],
+                    "description": "New status"
+                }
+            },
+            "required": ["task_id", "status"]
+        }
+    },
+    {
+        "name": "delete_task",
+        "description": "Delete a task by its ID.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "string",
+                    "description": "The task ID to delete"
+                }
+            },
+            "required": ["task_id"]
+        }
+    },
+    {
+        "name": "delete_tasks_by_description",
+        "description": "Delete all tasks whose description contains the given text. Use to clean up duplicate or test tasks.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "description_contains": {
+                    "type": "string",
+                    "description": "Text to match in task descriptions (case-insensitive)"
+                }
+            },
+            "required": ["description_contains"]
+        }
     }
 ]
 
@@ -1048,4 +1145,7 @@ TASK_HANDLERS = {
     "get_daily_view": get_daily_view,
     "add_quick_task": add_quick_task,
     "get_recent_results": get_recent_results,
+    "update_task_status": update_task_status,
+    "delete_task": delete_task,
+    "delete_tasks_by_description": delete_tasks_by_description,
 }
