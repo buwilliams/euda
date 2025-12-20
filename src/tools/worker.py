@@ -499,100 +499,8 @@ def get_integration_config(integration: str) -> dict:
 # ============== Tool Definitions ==============
 
 WORKER_TOOLS = [
-    {
-        "name": "create_task",
-        "description": "Create a new task in the worker queue. Use for email, calendar, research, or reminder tasks.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "description": "What needs to be done"
-                },
-                "task_type": {
-                    "type": "string",
-                    "enum": ["email", "calendar", "research", "reminder"],
-                    "description": "Type of task"
-                },
-                "source": {
-                    "type": "string",
-                    "description": "Who created the task (interaction, attention, user)"
-                },
-                "priority": {
-                    "type": "string",
-                    "enum": ["high", "normal", "low"],
-                    "description": "Task priority"
-                },
-                "source_context": {
-                    "type": "string",
-                    "description": "Additional context from the source"
-                },
-                "deadline": {
-                    "type": "string",
-                    "description": "Optional deadline in ISO format"
-                }
-            },
-            "required": ["description", "task_type"]
-        }
-    },
-    {
-        "name": "get_tasks",
-        "description": "Get tasks from the queue, optionally filtered by status or type.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "status": {
-                    "type": "string",
-                    "description": "Filter by status (pending, in_progress, awaiting_approval, completed)"
-                },
-                "task_type": {
-                    "type": "string",
-                    "description": "Filter by type (email, calendar, research, reminder)"
-                },
-                "limit": {
-                    "type": "integer",
-                    "description": "Maximum number of tasks to return"
-                }
-            }
-        }
-    },
-    {
-        "name": "get_task",
-        "description": "Get details of a specific task by ID.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "task_id": {
-                    "type": "string",
-                    "description": "The task ID"
-                }
-            },
-            "required": ["task_id"]
-        }
-    },
-    {
-        "name": "update_task_status",
-        "description": "Update a task's status.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "task_id": {
-                    "type": "string",
-                    "description": "The task ID"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": ["pending", "in_progress", "awaiting_approval", "completed", "failed"],
-                    "description": "New status"
-                },
-                "result": {
-                    "type": "string",
-                    "description": "Optional result message"
-                }
-            },
-            "required": ["task_id", "status"]
-        }
-    },
+    # Note: create_task, get_tasks, get_task, update_task_status are now in TASK_TOOLS
+    # to avoid duplicate tool names when combining lists
     {
         "name": "create_pending_action",
         "description": "Create a pending action for user approval. Actions represent concrete work like sending an email or creating a calendar event.",
@@ -714,11 +622,6 @@ WORKER_TOOLS = [
 ]
 
 WORKER_HANDLERS = {
-    # Legacy task management (for backwards compatibility)
-    "create_task": create_task,
-    "get_tasks": get_tasks,
-    "get_task": get_task,
-    "update_task_status": update_task_status,
     # Action management
     "create_pending_action": create_pending_action,
     "get_pending_actions": get_pending_actions,
@@ -763,22 +666,6 @@ EXTENDED_WORKER_TOOLS = WORKER_TOOLS + TASK_TOOLS + PROJECT_TOOLS + [
             },
             "required": ["task_id", "summary", "content"]
         }
-    },
-    {
-        "name": "get_recent_results",
-        "description": "Get recent completed work results to show what has been accomplished.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "project_id": {
-                    "type": "string",
-                    "description": "Filter by project"
-                },
-                "limit": {
-                    "type": "integer",
-                    "description": "Max results (default 10)"
-                }
-            }
-        }
     }
+    # Note: get_recent_results is already in TASK_TOOLS
 ]
