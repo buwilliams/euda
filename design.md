@@ -122,6 +122,151 @@ async def run_ingestion_agent():
         await asyncio.sleep(300)  # Check every 5 minutes
 ```
 
+### Large-Scale Ingestion Strategy
+
+The Ingestion Agent must handle tens of gigabytes of personal data efficiently. Not every byte should become tokens—the system uses local pre-processing, intelligent filtering, and budget management.
+
+#### The Problem
+
+Naive approach: `File → Read entirely → Send to LLM → Log entry`
+
+This breaks at scale:
+- Large files can't fit in memory (videos, archives)
+- Sending raw bytes as tokens is wasteful (~18B tokens for 72GB raw)
+- No prioritization—everything gets equal treatment
+- No way to defer or skip low-value content
+
+#### Architecture: Pre-Processing Pipeline
+
+```
+File → Classifier → Extractor → Scorer → Budget Queue → AI Processing → Log
+         ↓             ↓           ↓
+      (local)      (local)    (local)
+```
+
+**Phase 1: Local Classification (no AI)**
+- Detect file type by magic bytes, not extension
+- Route to appropriate handler
+- Extract metadata without reading full content
+
+**Phase 2: Local Extraction (no AI)**
+- Pull structured data: EXIF, PDF metadata, mbox headers, video metadata
+- Generate "digest" for each file—what's knowable without AI
+- Estimate processing cost (tokens needed)
+
+**Phase 3: Relevance Scoring (heuristics)**
+- Score based on: recency, file type, source, metadata signals
+- Auto-ignore: duplicates, system files, caches, temp files
+- Metadata-only mode: log existence but skip full processing
+
+**Phase 4: Budget Queue**
+- Daily token budget (configurable, default 1M tokens/day)
+- Priority queue based on relevance score
+- Deferred items roll to next day
+- Emergency burst for high-priority items
+
+**Phase 5: Tiered AI Processing**
+- Tier 1 (cheap): Haiku for simple extractions
+- Tier 2 (standard): Sonnet for most content
+- Tier 3 (expensive): Vision API for key images only
+
+#### File Type Strategies
+
+| Type | Local Extraction | AI Involvement | Memory Strategy |
+|------|-----------------|----------------|-----------------|
+| Images | EXIF, dimensions, histogram | Vision API for selected images; skip generic screenshots | Metadata only, stream pixels only when needed |
+| Videos | ffprobe metadata, keyframes | Transcription (Whisper) for audio track; keyframe selection | Never load; use ffmpeg streaming |
+| Audio | Duration, format, ID3 tags | Chunked Whisper transcription | Stream in chunks |
+| PDFs | Page count, metadata, TOC | Summarize large docs; full text for <10 pages | Page-by-page extraction |
+| mbox | Parse headers: sender, subject, date, thread | Batch summarize threads; skip marketing emails | Stream messages one at a time |
+| Archives | List contents without extracting | Process extracted contents individually | Extract to temp, process, delete |
+| Text/Code | Line count, encoding, language | Full processing for small; summarize large | Chunk if >50KB |
+
+#### What Gets Logged vs. Ignored
+
+**Always Log (full processing):**
+- Personal communications (email from real people)
+- Photos with faces or location data
+- Documents you created
+- Calendar/journal entries
+- Financial records
+
+**Log Metadata Only:**
+- Large media files (movies, music library)
+- Bulk exports (social media archives)
+- Code repositories (log existence, not every file)
+
+**Ignore Entirely:**
+- Duplicates (content hash matching)
+- System files, caches, thumbnails
+- Temp files, .DS_Store, Thumbs.db
+- Spam/marketing emails
+- Auto-generated content
+
+#### Token Budget Economics
+
+At 1M tokens/day (~$1.25/day with Haiku/Sonnet mix):
+- 72GB backlog with aggressive filtering (~10M effective tokens): **10 days**
+- Moderate filtering (~30M tokens): **1 month**
+- Then maintenance mode for new content
+
+#### Directory Structure
+
+```
+data/inbox/
+├── pending/           # Files waiting for processing
+├── processing/        # Currently being processed (prevents double-processing)
+├── processed/         # Successfully processed
+├── failed/            # Processing failed (with .reason.txt)
+├── deferred/          # Low-priority, waiting for budget
+└── metadata/          # Extracted digests (JSON per file)
+    └── {hash}.digest.json
+```
+
+#### Digest Schema
+
+```json
+{
+  "file_hash": "sha256:abc123...",
+  "original_path": "pending/photo.jpg",
+  "file_type": "image/jpeg",
+  "size_bytes": 2456789,
+  "extracted_at": "2025-12-22T10:00:00",
+  "metadata": {
+    "exif": { "date_taken": "2024-06-15T14:30:00", "gps": {...} },
+    "dimensions": [4032, 3024]
+  },
+  "relevance_score": 0.85,
+  "estimated_tokens": 500,
+  "processing_tier": "vision",
+  "status": "queued"
+}
+```
+
+#### Budget Manager
+
+```python
+class TokenBudget:
+    def __init__(self, daily_limit=1_000_000):
+        self.daily_limit = daily_limit
+        self.used_today = 0
+        self.last_reset = date.today()
+
+    def can_spend(self, tokens: int) -> bool:
+        self._maybe_reset()
+        return self.used_today + tokens <= self.daily_limit
+
+    def spend(self, tokens: int):
+        self._maybe_reset()
+        self.used_today += tokens
+        self._persist()
+
+    def _maybe_reset(self):
+        if date.today() > self.last_reset:
+            self.used_today = 0
+            self.last_reset = date.today()
+```
+
 ### Summary Agent
 
 Maintains yearly summaries, triggers on log changes.

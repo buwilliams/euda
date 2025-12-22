@@ -1,13 +1,27 @@
 # Implementation Todo
 
+Keep a simple list: todo and done. Only use one level, not nested todos.
+
 ## Todo
-- [ ] Attention Agent: project awareness (deadlines in morning/evening, rollover trigger)
-- [ ] Integrate proactive surfacing into UI - show real surfaced content in activity area
-- [ ] Poll for attention queue items (morning attention, evening prompts, opportunities)
-- [ ] "All quiet" only appears when there truly is nothing to surface
+- [ ] Ingestion: file classifier with magic byte detection
+- [ ] Ingestion: digest generator (metadata without full file read)
+- [ ] Ingestion: token budget manager with daily limits
+- [ ] Ingestion: priority queue with relevance scoring
+- [ ] Ingestion: duplicate detection via content hashing
+- [ ] Ingestion: video handler (ffprobe metadata, keyframes)
+- [ ] Ingestion: audio handler (duration, ID3, chunked Whisper prep)
+- [ ] Ingestion: mbox parser (stream messages, headers, threads)
+- [ ] Ingestion: archive handler (list contents, safe extraction)
+- [ ] Ingestion: large PDF handler (page-by-page, TOC)
+- [ ] Ingestion: ignore patterns (system files, caches, temp files)
+- [ ] Ingestion: tiered model selection (Haiku/Sonnet/Vision)
+- [ ] Attention Agent: project awareness (deadlines, rollover trigger)
+- [ ] Integrate proactive surfacing into UI
+- [ ] Poll for attention queue items
+- [ ] "All quiet" only when truly nothing to surface
 - [ ] Morning attention: show today's calendar events
-- [ ] Morning/evening notification triggers (email/push)
-- [ ] Weekly review: patterns from past week, upcoming prep
+- [ ] Morning/evening notification triggers
+- [ ] Weekly review: patterns and upcoming prep
 - [ ] File upload support in web UI
 - [ ] Photo/image processing via chat
 - [ ] Filter logs by source/type
@@ -15,10 +29,6 @@
 - [ ] REST endpoint for card exchange
 - [ ] Email notifications
 - [ ] Push notifications (web/mobile)
-- [ ] Image OCR/description
-- [ ] PDF text extraction
-- [ ] Audio transcription
-- [ ] Video processing
 - [ ] Calendar API (Google/Apple)
 - [ ] Theme system (user customizable)
 - [ ] Mobile responsive refinements
