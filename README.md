@@ -73,8 +73,6 @@ Eight specialized agents work together, each with its own persona and purpose:
 | **Worker** | The Executor | Handles tasks autonomously or escalates when needed |
 | **Introspection** | The Mirror | Documents what the system can do |
 
-Agents communicate through flat files, not direct calls—keeping them decoupled and debuggable. Each agent can evolve its own identity over time, proposing changes that you approve.
-
 ## Development Philosophy
 
 Build for yourself first, not "other people." This is not a solution looking for a problem.
