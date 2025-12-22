@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-me·an·dus is an AI personal assistant that manages user attention to maximize life enjoyment through learning, growth, and contribution. The agent builds an understanding of the user and their world to surface personalized activities and recommendations.
+me·an·dus is a personal intelligence that learns to anticipate you: doing tasks for you, curating what helps you thrive, and expanding your horizons.
 
 ## Current State
 
