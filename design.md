@@ -414,6 +414,79 @@ GET  /api/health
 
 ---
 
+## User Interface
+
+### Design Principles
+
+**Attention is sacred.** Every element competes for attention. Therefore:
+
+- **Empty is good** — A blank screen means "you're free, go live"
+- **Push, don't pull** — System reaches out; user doesn't obsessively check
+- **Chat is everything** — No separate screens, ask the friend anything
+
+**Anti-patterns to avoid:**
+- Cards/containers (create illusion of "content to consume")
+- Grids of options (decision fatigue)
+- Tabs (each demands attention)
+- Stats/counts (gamification creates compulsion)
+- Notification badges (anxiety triggers)
+
+### Layout
+
+```
+┌─────────────────────────────────────┐
+│  [logo] me·an·dus                   │  ← Header
+├─────────────────────────────────────┤
+│  All quiet. Your attention is free. │  ← Activity feed
+├─────────────────────────────────────┤
+│                                     │
+│  [friend message]                   │  ← Chat messages
+│                    [user message]   │
+│                                     │
+│  [Talk to me...              ] Send │  ← Input
+│                                     │
+│  Try: "what are my values"          │  ← Hints
+└─────────────────────────────────────┘
+```
+
+### Components
+
+**Activity Feed:**
+- Shows agent status in real-time
+- "All quiet. Your attention is free." when idle
+- "Ingestion working..." with pulsing dot when active
+- Green dot for completed work
+- Never leave user in limbo
+
+**Chat:**
+- User messages: black background, white text, right-aligned
+- Friend messages: light gray background, black text, left-aligned
+- Messages fade in with subtle slide-up animation
+- "Thinking..." with animated dots during processing
+- Input disabled while processing
+
+**Hints:**
+- Subtle suggestions below input
+- Not buttons—conversation starters
+- Click fills input field
+- Examples: "what are my values", "any discoveries", "what did I log today"
+
+**Side Panels:**
+- Notifications panel (bell icon)
+- Tasks panel (list icon)
+- Slide in from right
+- Click notification → fills chat with action_prompt
+
+### Visual Style
+
+- Typography-first: black text on white
+- Generous whitespace
+- No borders, shadows, gradients
+- Logo as only graphical element
+- Plain HTML with minimal CSS
+
+---
+
 ## Running
 
 ```bash
