@@ -6,11 +6,11 @@ A personal intelligence that learns to anticipate you: doing tasks for you, cura
 
 ## What It Does
 
-- **Ingests your life data** — photos, documents, emails, exports from any platform
+- **Reads your life data** — photos, documents, emails, exports from any platform
 - **Maintains a life log** — one unified record of everything, searchable and private
-- **Derives your values** — learns what matters to you from patterns, not just what you say
+- **Learns your values** — discovers what matters to you from patterns, not just what you say
 - **Discovers opportunities** — finds events, people, places, and learning that match your values
-- **Manages your attention** — surfaces the right thing at the right moment, respects your energy
+- **Curates opportunities** — surfaces the right thing at the right moment, respects your energy
 - **Executes tasks** — handles research and routine work autonomously, asks before acting on anything important
 - **Talks like a friend** — not a chatbot, not an assistant—a caring collaborator who knows you
 
