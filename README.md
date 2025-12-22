@@ -26,8 +26,12 @@ The epistemic foundation is unchanging: the promotion of life. Not fatalistic, n
 
 ### The 90/10 Balance
 
-- **~90% safety/predictability**: aligned with your values, goals, beliefs
-- **~10% surprise**: novelty that promotes life, growth you didn't know you wanted
+The 90/10 balance is how the system avoids becoming an echo chamber.
+
+- **~90% safety**: grounded in your values, goals, and beliefs—what makes you feel secure
+- **~10% surprise**: novelty that challenges and expands you
+
+Too much surprise and you become anxious and angry. Too little surprise and you become stiff with low openness. The balance promotes growth without destabilization.
 
 ### Values as Conjectures
 
