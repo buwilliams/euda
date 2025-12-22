@@ -1,4 +1,4 @@
-# me·an·dus
+![me·an·dus](static/images/meandus-logo-with-subtitle.png)
 
 A personal intelligence that learns to anticipate you: doing tasks for you, curating what helps you thrive, and expanding your horizons.
 
