@@ -10,7 +10,9 @@ from datetime import datetime
 from typing import Optional
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+import re
+import aiofiles
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -33,6 +35,7 @@ from ..tools.summary import list_years, get_summary
 # Base paths
 BASE_DIR = Path(__file__).parent.parent.parent
 STATIC_DIR = BASE_DIR / "static"
+INBOX_PENDING_DIR = BASE_DIR / "data" / "inbox" / "pending"
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -726,6 +729,58 @@ async def get_result_details(result_id: str):
     """Get result details."""
     content = get_result(result_id)
     return {"content": content}
+
+
+# ============== File Upload ==============
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...)):
+    """
+    Upload a file to the inbox for processing by the Ingestion Agent.
+
+    Streams file to disk in chunks to handle files of any size without
+    loading them entirely into memory.
+    """
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
+
+    # Ensure inbox directory exists
+    INBOX_PENDING_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Sanitize filename
+    filename = Path(file.filename).name
+    filename = re.sub(r'[^\w\s\-\.]', '_', filename)
+
+    # Handle duplicate filenames by appending timestamp
+    file_path = INBOX_PENDING_DIR / filename
+    if file_path.exists():
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        stem = file_path.stem
+        suffix = file_path.suffix
+        filename = f"{stem}_{timestamp}{suffix}"
+        file_path = INBOX_PENDING_DIR / filename
+
+    # Stream to disk in chunks (64KB)
+    CHUNK_SIZE = 64 * 1024
+    total_bytes = 0
+
+    try:
+        async with aiofiles.open(file_path, 'wb') as out_file:
+            while chunk := await file.read(CHUNK_SIZE):
+                await out_file.write(chunk)
+                total_bytes += len(chunk)
+
+        return {
+            "status": "success",
+            "filename": filename,
+            "size": total_bytes,
+            "message": f"File '{filename}' uploaded successfully. It will be processed by the Archivist shortly."
+        }
+    except Exception as e:
+        # Clean up on error
+        if file_path.exists():
+            file_path.unlink()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============== Health ==============
