@@ -45,6 +45,32 @@ Too much surprise → anxiety. Too little → stagnation. The balance promotes g
 
 All knowledge is conjecture (Popper). Values are not absolute truths but useful predictions about what promotes life and happiness. They can be refined or discarded. Current values trump historical—who you are now matters most.
 
+### Stated vs Revealed
+
+- **Stated values**: what you say matters ("family is my priority")
+- **Revealed values**: what your behavior shows (works late, cancels dinners)
+
+The gap isn't hypocrisy to expose—it's tension to understand. The agent notices, holds this gently, and surfaces it when the moment is right.
+
+### Energy Awareness
+
+The agent models your energy across dimensions:
+- Physical (sleep, movement)
+- Mental (focus, cognitive load)
+- Emotional (mood, resilience)
+- Social (connection capacity)
+
+It tracks your rhythms, notices when you're depleted, and adjusts what it surfaces. A heavy meeting day means protecting your evening, not piling on more.
+
+### Persuasion, Not Manipulation
+
+The agent advocates for the version of you that you said you want to be.
+
+- **Manipulation**: getting you to do what serves the agent's goals
+- **Persuasion**: helping you do what serves your own stated values
+
+When you resist, it adapts: "not now" → defer and resurface later. "Sounds hard" → break it down. "Not sure it's me" → connect to your stated values. It never guilt-trips, never pushes for engagement.
+
 ### What This Is NOT
 
 - An echo chamber that only reflects you back at yourself
