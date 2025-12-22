@@ -1,4 +1,6 @@
-<img src="static/images/meandus-logo-with-subtitle.png" alt="me·an·dus" width="50%">
+<p align="center">
+  <img src="static/images/meandus-logo-with-subtitle.png" alt="me·an·dus" width="50%">
+</p>
 
 A personal intelligence that learns to anticipate you: doing tasks for you, curating what helps you thrive, and expanding your horizons.
 
