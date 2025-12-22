@@ -1,6 +1,6 @@
 # me·an·dus
 
-A personal intelligence that learns to anticipate you: doing tasks for you, curating what helps you thrive, and expands your horizons.
+A personal intelligence that learns to anticipate you: doing tasks for you, curating what helps you thrive, and expanding your horizons.
 
 ## Table of Contents
 
