@@ -1,4 +1,4 @@
-![me·an·dus](static/images/meandus-logo-with-subtitle.png)
+<img src="static/images/meandus-logo-with-subtitle.png" alt="me·an·dus" width="50%">
 
 A personal intelligence that learns to anticipate you: doing tasks for you, curating what helps you thrive, and expanding your horizons.
 
