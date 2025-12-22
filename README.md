@@ -15,6 +15,30 @@ A personal intelligence that learns to anticipate you: doing tasks for you, cura
 - **Executes tasks** — handles research and routine work autonomously, asks before acting on anything important
 - **Talks like a friend** — not a chatbot, not an assistant—a caring collaborator who knows you
 
+## Common Objections
+
+### "What about privacy?"
+
+Your data stays local—files never leave your machine. But processing uses frontier AI APIs, which means trusting those providers with what you send.
+
+Here's the uncomfortable truth: privacy is largely an illusion already. Your phone knows where you sleep, your email is scanned for ads, your photos train someone else's models. The question isn't whether to share data—it's whether *you* get value from it or only corporations do.
+
+This system shifts that balance. Yes, it requires trust in AI providers. But in exchange, you get a personal intelligence working for *your* interests, not an algorithm optimizing for engagement. Technology changes society whether we participate or not. The choice is whether to shape that change or be shaped by it.
+
+### "Won't this create an echo chamber?"
+
+This is a real risk with any personalization system. The 90/10 balance is specifically designed to prevent it—10% of what surfaces is deliberately outside your comfort zone.
+
+But more importantly: the system nudges toward life-promoting activity, not passive consumption. It suggests you call a friend, try a new experience, learn something challenging. Echo chambers make you smaller. This is designed to expand you.
+
+### "Doesn't AI replace human effort?"
+
+This isn't substitution—it's augmentation. Your phone didn't replace your memory; it freed your mind for higher-order thinking. A calculator didn't replace mathematical reasoning; it let you tackle harder problems.
+
+This system handles the cognitive overhead of managing your attention, remembering your values, tracking opportunities. What it gives back is time and mental space for the things only you can do: create, connect, decide, grow.
+
+The agent doesn't live your life. It clears the path so you can.
+
 ## How It Works
 
 ```
