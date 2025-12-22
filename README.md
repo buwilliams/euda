@@ -71,6 +71,20 @@ The agent advocates for the version of you that you said you want to be.
 
 When you resist, it adapts: "not now" → defer and resurface later. "Sounds hard" → break it down. "Not sure it's me" → connect to your stated values. It never guilt-trips, never pushes for engagement.
 
+### Value Cards
+
+When you meet someone new—a collaborator, a date, a potential friend—your agents can exchange value cards to find common ground.
+
+- **Internal card**: What the agent knows about you (private, never shared)
+- **Public card**: What you choose to share with others (you review and approve)
+
+When two agents exchange cards, they analyze both parties' values and surface:
+- What you have in common
+- What each might appreciate about the other
+- Potential friction points to navigate
+
+This turns "getting to know someone" from awkward small talk into meaningful connection. Your agent becomes a bridge-builder, helping people find the best way to work and live together.
+
 ### What This Is NOT
 
 - An echo chamber that only reflects you back at yourself
