@@ -37,6 +37,8 @@ This isn't substitution—it's augmentation. Your phone didn't replace your memo
 
 This system handles the cognitive overhead of managing your attention, remembering your values, tracking opportunities. What it gives back is time and mental space for the things only you can do: create, connect, decide, grow.
 
+There's also a distinction worth making: *work* is not the same as *jobs*. Work—purposeful effort, mastery, contribution—is essential for human happiness. Jobs are how we currently exchange labor for money. AI may disrupt jobs, and new economic structures will need to emerge to ensure people can thrive. But work itself? That's not going anywhere. If anything, AI frees us to do more meaningful work, not less.
+
 The agent doesn't live your life. It clears the path so you can.
 
 ## How It Works
