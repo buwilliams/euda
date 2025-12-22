@@ -110,6 +110,54 @@ def check_signal(name) -> bool:
     return False
 ```
 
+### Identity System
+
+Agents derive behavior from identity files loaded at startup:
+
+```
+data/agents/identity/
+├── _core.identity.md      # Shared by all agents
+├── ingestion.identity.md  # Archivist persona
+├── interaction.identity.md # Caring Friend persona
+└── ...
+```
+
+**Hierarchy:**
+1. **Core Identity** — Shared purpose, values, boundaries (unchanging)
+2. **Agent Persona** — Role-specific beliefs and behaviors
+3. **Current Context** — Job to be done, relevant state
+
+**Core identity contains:**
+- Purpose (promote life, curate attention)
+- Epistemic foundation (knowledge is conjecture)
+- Shared beliefs (honesty builds trust)
+- Universal boundaries (no harm, no manipulation)
+
+**Each persona contains:**
+- Who am I (self-concept)
+- Purpose (why I exist)
+- Beliefs (what I hold true, subject to revision)
+- Behaviors (how I act)
+- Learnings (discovered through experience)
+
+**Identity Evolution:**
+
+Agents can propose changes to their own identity:
+
+```python
+def propose_identity_change(agent_name, new_identity, rationale):
+    proposal = {
+        "agent": agent_name,
+        "proposed": new_identity,
+        "rationale": rationale,
+        "status": "pending"
+    }
+    save_to(f"data/agents/evolution/{timestamp}.proposal.json", proposal)
+    send_signal("identity_proposal")
+```
+
+User reviews proposals via `python main.py evolve`. Approved changes update the identity file.
+
 ---
 
 ## Agent Manager
@@ -269,6 +317,46 @@ class TokenBudget:
     def spend(self, tokens: int):
         self.used_today += tokens
 ```
+
+**Temporal Detection Priority:**
+
+File timestamps are unreliable. Determine actual time in this order:
+
+1. **Content metadata** — EXIF DateTimeOriginal, PDF creation date
+2. **Filename patterns** — `IMG_20240115_093042.jpg`, `Screenshot 2024-01-15`
+3. **Content analysis** — Dates in text, receipt timestamps
+4. **Cross-reference** — Match with existing log entries
+5. **Contextual inference** — Email thread timing, file sequence
+6. **File system timestamp** — Last resort, often wrong
+7. **Ask user** — When confidence is too low
+
+The `temporal_confidence` field in log entries tracks this: `high` (sources 1-2), `medium` (3-5), `low` (6-7).
+
+### Worker Agent Delegation
+
+The Worker Agent decides how to handle each task:
+
+```
+TASK arrives
+    ↓
+Is it a Learning task? ──YES──→ Prepare materials, surface to user
+    ↓ NO
+Is it User-Only? ──YES──→ Surface to user (cannot execute)
+    ↓ NO                   (physical activity, creative work, decisions)
+Is it High-Stakes? ──YES──→ Create pending action, request approval
+    ↓ NO                    (external comms, calendar changes, financial)
+Is it Read-Only/Research? ──YES──→ Execute autonomously, store result
+    ↓ NO
+Within rate limits? ──YES──→ Execute autonomously
+    ↓ NO
+Pause and notify (rate limit hit)
+```
+
+**Delegation strategies:**
+- `agent_autonomous` — Execute without asking
+- `requires_approval` — Create pending action, wait for user
+- `user_only` — Cannot execute, surface to user
+- `prepare_materials` — For learning tasks, curate but don't do
 
 ---
 
