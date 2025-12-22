@@ -10,7 +10,8 @@ A personal intelligence that learns to anticipate you: doing tasks for you, cura
 - **Maintains a life log** — one unified record of everything, searchable and private
 - **Learns your values** — discovers what matters to you from patterns, not just what you say
 - **Discovers opportunities** — finds events, people, places, and learning that match your values
-- **Curates opportunities** — surfaces the right thing at the right moment, respects your energy
+- **Curates content** — surfaces the right thing at the right moment, respects your energy
+- **Finds common ground** — where social media builds walls, this builds bridges between people
 - **Executes tasks** — handles research and routine work autonomously, asks before acting on anything important
 - **Talks like a friend** — not a chatbot, not an assistant—a caring collaborator who knows you
 
