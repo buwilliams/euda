@@ -142,7 +142,7 @@ def create_interaction_agent():
 def run_interactive():
     """Run an interactive session with the Interaction Agent."""
     print("=" * 60)
-    print("me·an·dus - The Caring Friend")
+    print("Euno - The Caring Friend")
     print("=" * 60)
     print("\nHey. I'm here to listen, think with you, or help capture ideas.")
     print("Whatever you need right now.")

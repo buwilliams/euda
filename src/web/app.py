@@ -1,5 +1,5 @@
 """
-me·an·dus - Web API
+Euno - Web API
 
 FastAPI application for the Interaction Agent and other endpoints.
 """
@@ -39,7 +39,7 @@ INBOX_PENDING_DIR = BASE_DIR / "data" / "inbox" / "pending"
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="me·an·dus",
+    title="Euno",
     description="AI Personal Assistant API",
     version="0.1.0"
 )
@@ -129,7 +129,7 @@ async def root():
     if index_file.exists():
         return FileResponse(index_file)
     return {
-        "name": "me·an·dus",
+        "name": "Euno",
         "version": "0.1.0",
         "docs": "/docs"
     }

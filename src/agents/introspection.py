@@ -30,7 +30,7 @@ def create_introspection_agent():
 def run_interactive():
     """Run an interactive session with the Introspection Agent."""
     print("=" * 60)
-    print("me·an·dus - Introspection Agent (The Mirror)")
+    print("Euno - Introspection Agent (The Mirror)")
     print("=" * 60)
     print("\nI understand what this system can do and explain it clearly.")
     print("Commands:")

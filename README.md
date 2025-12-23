@@ -1,8 +1,23 @@
 <p align="center">
-  <img src="static/images/meandus-logo-with-subtitle.png" alt="me·an·dus" width="50%">
+  <img src="static/images/euno-logo-with-subtitle.png" alt="Euno" width="50%">
 </p>
 
-A personal intelligence that learns to anticipate you: doing tasks for you, curating what helps you thrive, and expanding your horizons.
+_Euno, from Eudaimonia, an ancient Greek concept, often translated as "human flourishing" or "living well," representing a deep sense of fulfillment and purpose beyond mere fleeting happiness or pleasure, achieved through virtuous living, developing one's potential, and engaging in meaningful activities._
+
+Meet Euno, a personal intelligence that learns to anticipate you.
+
+Enuo will:
+- proactively do tasks for you, with your permission of course
+- curate what helps you thrive
+- expand your horizons
+
+Euno is a digital mind designed to help you live well in all aspects of your life.
+
+## How Euno Works
+
+1. Learns from your data and behaviors
+2. Builds an understanding of the real you
+3. Provides you with a personal intelligence
 
 ## What It Does
 
@@ -41,7 +56,7 @@ There's also a distinction worth making: *work* is not the same as *jobs*. Work�
 
 The agent doesn't live your life. It clears the path so you can.
 
-## How It Works
+## Under the hood
 
 ```
 1. GATHER    →  Ingest data about your life (files, conversations, exports)

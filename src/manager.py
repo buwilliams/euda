@@ -1,5 +1,5 @@
 """
-Agent Manager - Orchestrates all agents in the me·an·dus system.
+Agent Manager - Orchestrates all agents in the Euno system.
 
 Responsibilities:
 - Spawn and monitor all autonomous agents as async tasks
@@ -166,7 +166,7 @@ class AgentManager:
         self.running = True
 
         logger.info("=" * 60)
-        logger.info("me·an·dus - Agent Manager")
+        logger.info("Euno - Agent Manager")
         logger.info("=" * 60)
 
         # Start file watchers (create signals for agents)

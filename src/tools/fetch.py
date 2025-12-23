@@ -40,7 +40,7 @@ def fetch_url(url: str, max_length: int = 15000) -> str:
     # Fetch the content
     try:
         headers = {
-            "User-Agent": "Mozilla/5.0 (compatible; MeAndUs/1.0; +https://github.com/meandus)"
+            "User-Agent": "Mozilla/5.0 (compatible; Euno/1.0; +https://github.com/buwilliams/Euno)"
         }
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()

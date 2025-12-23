@@ -1,6 +1,6 @@
 # Design
 
-Technical architecture and implementation spec for me·an·dus.
+Technical architecture and implementation spec for Euno.
 
 ## Philosophy
 
@@ -188,7 +188,7 @@ class AgentManager:
 ## Directory Structure
 
 ```
-meandus/
+euno/
 ├── main.py                     # Entry point
 ├── src/
 │   ├── agents/
@@ -523,7 +523,7 @@ GET  /api/health
 
 ```
 ┌─────────────────────────────────────┐
-│  [logo] me·an·dus                   │  ← Header
+│  [logo] Euno                        │  ← Header
 ├─────────────────────────────────────┤
 │  All quiet. Your attention is free. │  ← Activity feed
 ├─────────────────────────────────────┤

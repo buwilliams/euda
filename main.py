@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-me·an·dus - AI Personal Assistant
+Euno - AI Personal Assistant
 
 Entry point for running agents and services.
 """
@@ -41,7 +41,7 @@ def main():
     }
 
     if command in ("help", "-h", "--help"):
-        print("me·an·dus - AI Personal Assistant")
+        print("Euno - AI Personal Assistant")
         print()
         print("Usage: python main.py [command]")
         print()
@@ -96,7 +96,7 @@ def run_server():
     from src.agents.ingestion import AutonomousIngestionAgent
 
     print("=" * 60)
-    print("me·an·dus - Web API Server")
+    print("Euno - Web API Server")
     print("=" * 60)
     print()
     print("Starting server at http://localhost:8000")
@@ -151,7 +151,7 @@ def run_derive_values():
     """Derive values from summaries."""
     from src.agents.values import derive_values
     print("=" * 60)
-    print("me·an·dus - Deriving Values")
+    print("Euno - Deriving Values")
     print("=" * 60)
     print()
     result = derive_values()
@@ -162,7 +162,7 @@ def run_morning():
     """Generate morning attention."""
     from src.agents.attention import morning_attention
     print("=" * 60)
-    print("me·an·dus - Morning Attention")
+    print("Euno - Morning Attention")
     print("=" * 60)
     print()
     result = morning_attention()
@@ -173,7 +173,7 @@ def run_evening():
     """Generate evening reflection."""
     from src.agents.attention import evening_attention
     print("=" * 60)
-    print("me·an·dus - Evening Reflection")
+    print("Euno - Evening Reflection")
     print("=" * 60)
     print()
     result = evening_attention()
@@ -184,7 +184,7 @@ def run_discover():
     """Run a discovery sweep for opportunities."""
     from src.agents.world import run_discovery_sweep
     print("=" * 60)
-    print("me·an·dus - Discovery Sweep")
+    print("Euno - Discovery Sweep")
     print("=" * 60)
     print()
     result = run_discovery_sweep()
@@ -195,7 +195,7 @@ def run_tasks():
     """Process the task queue once."""
     from src.agents.worker import process_task_queue
     print("=" * 60)
-    print("me·an·dus - Task Queue Processing")
+    print("Euno - Task Queue Processing")
     print("=" * 60)
     print()
     result = process_task_queue()
@@ -206,7 +206,7 @@ def run_approvals():
     """Show actions waiting for approval."""
     from src.agents.worker import check_pending_approvals
     print("=" * 60)
-    print("me·an·dus - Pending Approvals")
+    print("Euno - Pending Approvals")
     print("=" * 60)
     print()
     result = check_pending_approvals()
@@ -217,7 +217,7 @@ def run_introspect():
     """Run a full system analysis."""
     from src.agents.introspection import run_analysis
     print("=" * 60)
-    print("me·an·dus - System Introspection")
+    print("Euno - System Introspection")
     print("=" * 60)
     print()
     print("Analyzing system capabilities...")
@@ -237,7 +237,7 @@ def run_evolve():
     EVOLUTION_DIR = Path(__file__).parent / "data" / "agents" / "evolution"
 
     print("=" * 60)
-    print("me·an·dus - Identity Evolution Review")
+    print("Euno - Identity Evolution Review")
     print("=" * 60)
     print()
 

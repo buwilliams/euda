@@ -1,5 +1,5 @@
 """
-Base agent pattern for me·an·dus.
+Base agent pattern for Euno.
 
 An agent is simply:
 - A context (list of messages)

@@ -1,1 +1,1 @@
-# me·an·dus - AI Personal Assistant
+# Euno - AI Personal Assistant

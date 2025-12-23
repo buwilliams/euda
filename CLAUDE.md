@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-me·an·dus is a personal intelligence that learns to anticipate you: doing tasks for you, curating what helps you thrive, and expanding your horizons.
+Euno is a personal intelligence that learns to anticipate you: doing tasks for you, curating what helps you thrive, and expanding your horizons.
 
 ## Current State
 
@@ -38,7 +38,7 @@ Initial implementation with working Ingestion Agent. Key files:
 ## Project Structure
 
 ```
-meandus/
+euno/
 ├── main.py                 # Entry point
 ├── src/
 │   ├── agents/
