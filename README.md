@@ -28,49 +28,18 @@ Euno is a digital mind designed to help you live well in all aspects of your lif
 - **Executes tasks** — handles research and routine work autonomously, asks before acting on anything important
 - **Talks like a friend** — not a chatbot, not an assistant—a caring collaborator who knows you
 
-## Common Objections
-
-### "What about privacy?"
-
-Your data stays local—files never leave your machine. But processing uses frontier AI APIs, which means trusting those providers with what you send.
-
-Here's the uncomfortable truth: privacy is largely an illusion already. Your phone knows where you sleep, your email is scanned for ads, your photos train someone else's models. The question isn't whether to share data—it's whether *you* get value from it or only corporations do.
-
-This system shifts that balance. Yes, it requires trust in AI providers. But in exchange, you get a personal intelligence working for *your* interests, not an algorithm optimizing for engagement. Technology changes society whether we participate or not. The choice is whether to shape that change or be shaped by it.
-
-### "Won't this create an echo chamber?"
-
-This is a real risk with any personalization system. The 90/10 balance is specifically designed to prevent it—10% of what surfaces is deliberately outside your comfort zone.
-
-But more importantly: the system nudges toward life-promoting activity, not passive consumption. It suggests you call a friend, try a new experience, learn something challenging. Echo chambers make you smaller. This is designed to expand you.
-
-### "Doesn't AI replace human effort?"
-
-This isn't substitution—it's augmentation. Your phone didn't replace your memory; it freed your mind for higher-order thinking. A calculator didn't replace mathematical reasoning; it let you tackle harder problems.
-
-This system handles the cognitive overhead of managing your attention, remembering your values, tracking opportunities. What it gives back is time and mental space for the things only you can do: create, connect, decide, grow.
-
-There's also a distinction worth making: *work* is not the same as *jobs*. Work—purposeful effort, mastery, contribution—is essential for human happiness. Jobs are how we currently exchange labor for money. AI may disrupt jobs, and new economic structures will need to emerge to ensure people can thrive. But work itself? That's not going anywhere. If anything, AI frees us to do more meaningful work, not less.
-
-The agent doesn't live your life. It clears the path so you can.
-
-## Under the hood
-
-```
-1. GATHER    →  Ingest data about your life (files, conversations, exports)
-2. LOG       →  Store in local flat files (one log, one life)
-3. SUMMARIZE →  Distill logs into yearly narratives
-4. DERIVE    →  Analyze summaries to form values at three temporal scopes
-5. DISCOVER  →  Explore the world for opportunities matching your values
-6. SURFACE   →  Present the right thing at the right moment
-7. INTERACT  →  Converse, reflect, capture new data → back to step 1
-```
-
 ## Core Concepts
 
 ### The Promotion of Life
 
 The foundation is unchanging: promote life. Not fatalistic, not nihilistic. A life that is safe AND surprising.
+
+### Agent Identity
+
+Agents have three layers of identity:
+1. Core - unchaning values
+2. Persona - evolves based on your data
+3. Context - the situation
 
 ### The 90/10 Balance
 
@@ -153,6 +122,18 @@ Eight specialized agents work together, each with its own persona and purpose:
 | **Worker** | The Executor | Handles tasks autonomously or escalates when needed |
 | **Introspection** | The Mirror | Documents what the system can do |
 
+### Under the hood
+
+```
+1. GATHER    →  Ingest data about your life (files, conversations, exports)
+2. LOG       →  Store in local flat files (one log, one life)
+3. SUMMARIZE →  Distill logs into yearly narratives
+4. DERIVE    →  Analyze summaries to form values at three temporal scopes
+5. DISCOVER  →  Explore the world for opportunities matching your values
+6. SURFACE   →  Present the right thing at the right moment
+7. INTERACT  →  Converse, reflect, capture new data → back to step 1
+```
+
 ## Development Philosophy
 
 Build for yourself first, not "other people." This is not a solution looking for a problem.
@@ -162,3 +143,29 @@ Build for yourself first, not "other people." This is not a solution looking for
 - Release only when it's battle-tested and genuinely wanted
 
 See [design.md](design.md) for technical architecture.
+
+## FAQ
+
+### "What about privacy?"
+
+Your data stays local—files never leave your machine. But processing uses frontier AI APIs, which means trusting those providers with what you send.
+
+Here's the uncomfortable truth: privacy is largely an illusion already. Your phone knows where you sleep, your email is scanned for ads, your photos train someone else's models. The question isn't whether to share data—it's whether *you* get value from it or only corporations do.
+
+This system shifts that balance. Yes, it requires trust in AI providers. But in exchange, you get a personal intelligence working for *your* interests, not an algorithm optimizing for engagement. Technology changes society whether we participate or not. The choice is whether to shape that change or be shaped by it.
+
+### "Won't this create an echo chamber?"
+
+This is a real risk with any personalization system. The 90/10 balance is specifically designed to prevent it—10% of what surfaces is deliberately outside your comfort zone.
+
+But more importantly: the system nudges toward life-promoting activity, not passive consumption. It suggests you call a friend, try a new experience, learn something challenging. Echo chambers make you smaller. This is designed to expand you.
+
+### "Doesn't AI replace human effort?"
+
+This isn't substitution—it's augmentation. Your phone didn't replace your memory; it freed your mind for higher-order thinking. A calculator didn't replace mathematical reasoning; it let you tackle harder problems.
+
+This system handles the cognitive overhead of managing your attention, remembering your values, tracking opportunities. What it gives back is time and mental space for the things only you can do: create, connect, decide, grow.
+
+There's also a distinction worth making: *work* is not the same as *jobs*. Work—purposeful effort, mastery, contribution—is essential for human happiness. Jobs are how we currently exchange labor for money. AI may disrupt jobs, and new economic structures will need to emerge to ensure people can thrive. But work itself? That's not going anywhere. If anything, AI frees us to do more meaningful work, not less.
+
+The agent doesn't live your life. It clears the path so you can.
