@@ -2,10 +2,10 @@
 Agent Activity Logging System.
 
 Provides logging and querying of agent activities. Each agent writes to
-a daily log file tracking their actions, decisions, and outcomes.
+a daily log file in their own data directory.
 
 Log structure:
-data/agents/logs/{agent_name}/{yyyy-mm-dd}.json
+data/{agent_name}/logs/{yyyy-mm-dd}.json
 
 Each log entry contains:
 - timestamp: ISO format datetime
@@ -19,13 +19,16 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
-# Base paths - Agent logs are shared
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
-SHARED_DIR = DATA_DIR / "shared"
-AGENT_LOGS_DIR = SHARED_DIR / "logs"
+# Base paths - Each agent has its own logs directory
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 
-# Ensure directory exists
-AGENT_LOGS_DIR.mkdir(parents=True, exist_ok=True)
+# Known agents for scanning logs
+KNOWN_AGENTS = ["ingestion", "summary", "values", "world", "attention", "interaction", "worker", "introspection"]
+
+
+def _normalize_agent_name(agent_name: str) -> str:
+    """Normalize agent name for directory paths."""
+    return agent_name.lower().replace(" ", "_").replace("(", "").replace(")", "").split("_")[0]
 
 
 def _get_log_path(agent_name: str, date: Optional[str] = None) -> Path:
@@ -33,10 +36,11 @@ def _get_log_path(agent_name: str, date: Optional[str] = None) -> Path:
     if date is None:
         date = datetime.now().strftime("%Y-%m-%d")
 
-    agent_dir = AGENT_LOGS_DIR / agent_name.lower().replace(" ", "_").replace("(", "").replace(")", "")
-    agent_dir.mkdir(parents=True, exist_ok=True)
+    normalized = _normalize_agent_name(agent_name)
+    agent_logs_dir = DATA_DIR / normalized / "logs"
+    agent_logs_dir.mkdir(parents=True, exist_ok=True)
 
-    return agent_dir / f"{date}.json"
+    return agent_logs_dir / f"{date}.json"
 
 
 def _load_log(agent_name: str, date: Optional[str] = None) -> list:
@@ -253,16 +257,12 @@ def get_all_agent_logs(date: Optional[str] = None) -> str:
 
     output = [f"# All Agent Activity ({date})\n"]
 
-    # Find all agent log directories
-    if not AGENT_LOGS_DIR.exists():
-        return "No agent logs found."
-
+    # Check each known agent for logs
     agents_with_logs = []
-    for agent_dir in AGENT_LOGS_DIR.iterdir():
-        if agent_dir.is_dir():
-            log_file = agent_dir / f"{date}.json"
-            if log_file.exists():
-                agents_with_logs.append(agent_dir.name)
+    for agent_name in KNOWN_AGENTS:
+        log_file = DATA_DIR / agent_name / "logs" / f"{date}.json"
+        if log_file.exists():
+            agents_with_logs.append(agent_name)
 
     if not agents_with_logs:
         return f"No agent activity logged for {date}."
@@ -342,18 +342,15 @@ def search_agent_logs(
 
     # Determine which agents to search
     if agent_name:
-        agent_dirs = [AGENT_LOGS_DIR / agent_name.lower().replace(" ", "_")]
+        agents_to_search = [_normalize_agent_name(agent_name)]
     else:
-        agent_dirs = [d for d in AGENT_LOGS_DIR.iterdir() if d.is_dir()]
+        agents_to_search = KNOWN_AGENTS
 
     for _ in range(days_back):
         date_str = date.strftime("%Y-%m-%d")
 
-        for agent_dir in agent_dirs:
-            if not agent_dir.exists():
-                continue
-
-            log_file = agent_dir / f"{date_str}.json"
+        for agent in agents_to_search:
+            log_file = DATA_DIR / agent / "logs" / f"{date_str}.json"
             if not log_file.exists():
                 continue
 
@@ -365,7 +362,7 @@ def search_agent_logs(
                 entry_text = json.dumps(entry).lower()
                 if query_lower in entry_text:
                     matches.append({
-                        "agent": agent_dir.name,
+                        "agent": agent,
                         "date": date_str,
                         "entry": entry
                     })
