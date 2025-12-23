@@ -3,58 +3,47 @@
 Keep a simple list: todo and done. Only use one level, not nested todos.
 
 ## Todo
-- [ ] Ingestion: file classifier with magic byte detection
-- [ ] Ingestion: digest generator (metadata without full file read)
-- [ ] Ingestion: token budget manager with daily limits
-- [ ] Ingestion: priority queue with relevance scoring
-- [ ] Ingestion: duplicate detection via content hashing
 - [ ] Ingestion: video handler (ffprobe metadata, keyframes)
 - [ ] Ingestion: audio handler (duration, ID3, chunked Whisper prep)
 - [ ] Ingestion: mbox parser (stream messages, headers, threads)
 - [ ] Ingestion: archive handler (list contents, safe extraction)
-- [ ] Ingestion: large PDF handler (page-by-page, TOC)
-- [ ] Ingestion: ignore patterns (system files, caches, temp files)
 - [ ] Ingestion: tiered model selection (Haiku/Sonnet/Vision)
-- [ ] Attention Agent: project awareness (deadlines, rollover trigger)
-- [ ] Integrate proactive surfacing into UI
-- [ ] Poll for attention queue items
-- [ ] "All quiet" only when truly nothing to surface
-- [ ] Morning attention: show today's calendar events
-- [ ] Morning/evening notification triggers
-- [ ] Weekly review: patterns and upcoming prep
-- [ ] File upload support in web UI
-- [ ] Photo/image processing via chat
-- [ ] Filter logs by source/type
+- [ ] Attention: project awareness (deadlines, rollover trigger)
+- [ ] Interaction: the responses should be short (default 1 paragraph) unless it is asked to expand
+- [ ] Interaction: Integrate proactive surfacing into UI
 - [ ] Edit public value card via UI
 - [ ] REST endpoint for card exchange
-- [ ] Email notifications
-- [ ] Push notifications (web/mobile)
 - [ ] Calendar API (Google/Apple)
-- [ ] Theme system (user customizable)
-- [ ] Mobile responsive refinements
-- [ ] Keyboard shortcuts
 
 ## Completed
 
+- [x] Ingestion: file classifier with magic byte detection (python-magic)
+- [x] Ingestion: digest generator (metadata extraction per file type)
+- [x] Ingestion: token budget manager with configurable daily limits
+- [x] Ingestion: priority queue with relevance scoring
+- [x] Ingestion: duplicate detection via SHA256 content hashing
+- [x] Ingestion: large PDF handler (page-by-page, TOC extraction)
+- [x] Ingestion: ignore patterns (system files, caches, temp files)
+- [x] Ingestion: handler framework (text, image, PDF handlers)
 - [x] Project and task management system
-  - [x] Project CRUD operations (create, read, update, archive)
-  - [x] Task queue with delegation logic
-  - [x] Daily views and quick tasks
-  - [x] Results storage
-  - [x] Rollover processing
-  - [x] Delegation decision tree (autonomous, approval, user-only, learning)
+- [x] Project CRUD operations (create, read, update, archive)
+- [x] Task queue with delegation logic
+- [x] Daily views and quick tasks
+- [x] Results storage
+- [x] Rollover processing
+- [x] Delegation decision tree (autonomous, approval, user-only, learning)
 - [x] API endpoints for projects, tasks, and results
 - [x] Chat integration - task/project tools in Interaction Agent
 - [x] Frontend hints updated: "tasks today", "my projects", "create task", "results"
 - [x] Notification system for agent-to-user proactive messaging
-  - [x] Notification queue (queue_notification, get_pending, mark_seen, dismiss)
-  - [x] API endpoints for notifications
-  - [x] Frontend polling and display with clickable action prompts
+- [x] Notification queue (queue_notification, get_pending, mark_seen, dismiss)
+- [x] API endpoints for notifications
+- [x] Frontend polling and display with clickable action prompts
 - [x] Agent identity evolution system
-  - [x] Agents can read their identity
-  - [x] Agents can propose restructured identities (not just append)
-  - [x] Approval workflow for identity changes
-  - [x] CLI command: python main.py evolve
+- [x] Agents can read their identity
+- [x] Agents can propose restructured identities (not just append)
+- [x] Approval workflow for identity changes
+- [x] CLI command: python main.py evolve
 - [x] URL fetching: "Read this article and log what's interesting"
 - [x] Render markdown in chat (bold, italic, lists, headers, code blocks)
 - [x] Auto-log conversations to the life log
@@ -66,8 +55,8 @@ Keep a simple list: todo and done. Only use one level, not nested todos.
 - [x] Chat as primary interface with activity feed
 - [x] Add logo and loading states
 - [x] Introspection Agent (The Mirror)
-  - [x] Identity file: data/agents/identity/introspection.identity.md
-  - [x] Tools: src/tools/introspection.py (agent/code analysis, capability docs)
-  - [x] Agent: src/agents/introspection.py (30-min autonomous loop)
-  - [x] Outputs: data/agents/introspection/capabilities.md
-  - [x] Interaction Agent can access capabilities (user asks "what can you do?")
+- [x] Identity file: data/agents/identity/introspection.identity.md
+- [x] Tools: src/tools/introspection.py (agent/code analysis, capability docs)
+- [x] Agent: src/agents/introspection.py (30-min autonomous loop)
+- [x] Outputs: data/agents/introspection/capabilities.md
+- [x] Interaction Agent can access capabilities (user asks "what can you do?")

@@ -64,6 +64,16 @@ Build for yourself first, not "other people." This is not a solution looking for
 - Features get prioritized by real need, rough edges smoothed by real annoyance
 - The agent is its own first user study
 
+### Information Flow
+
+When adding features or content, don't add directly. First examine the system's architecture and capabilities, then design the addition to align with them. If a capability is missing, consider carefully how to organize it alongside existing capabilities.
+
+```
+Architecture → Organization → Capabilities → Features
+```
+
+This hierarchy ensures coherent growth. Features serve capabilities, capabilities fit the organization, organization reflects architecture.
+
 ## Philosophy
 
 The system is grounded in Popperian epistemology: all knowledge is conjecture. Values are not absolute truths but useful generalizations about what promotes life (motion, growth, pleasure, joy, peace, awe). Values are testable and can be refined or discarded.
