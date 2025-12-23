@@ -15,7 +15,7 @@ Euno is a digital mind designed to help you live well in all aspects of your lif
 
 1. Learns from your data and behaviors
 2. Builds an understanding of the real you
-3. Acts as your personal intelligence
+3. Acts as your proactive personal intelligence
 
 ## What It Does
 
