@@ -34,8 +34,8 @@ Every agent follows this pattern:
 ```python
 def create_agent(persona_name, tools=[]):
     # Load core identity + persona-specific identity
-    core = load_file("data/agents/identity/_core.identity.md")
-    persona = load_file(f"data/agents/identity/{persona_name}.identity.md")
+    core = load_file("data/shared/identity/_core.identity.md")
+    persona = load_file(f"data/shared/identity/{persona_name}.identity.md")
 
     context = []
     system_prompt = f"{core}\n\n{persona}"
@@ -102,7 +102,7 @@ def analyze_photo(photo_path):
 Agents communicate via flat files, not direct calls:
 
 ```
-data/agents/signals/
+data/shared/signals/
   logs_updated.signal      # Created by Ingestion, consumed by Summary
   summaries_updated.signal # Created by Summary, consumed by Values
   values_updated.signal    # Created by Values, consumed by World
@@ -112,10 +112,10 @@ Signal files contain a timestamp. Reading a signal deletes it (one-time trigger)
 
 ```python
 def send_signal(name):
-    Path(f"data/agents/signals/{name}.signal").write_text(datetime.now().isoformat())
+    Path(f"data/shared/signals/{name}.signal").write_text(datetime.now().isoformat())
 
 def check_signal(name) -> bool:
-    path = Path(f"data/agents/signals/{name}.signal")
+    path = Path(f"data/shared/signals/{name}.signal")
     if path.exists():
         path.unlink()
         return True
@@ -127,7 +127,7 @@ def check_signal(name) -> bool:
 Agents derive behavior from identity files loaded at startup:
 
 ```
-data/agents/identity/
+data/shared/identity/
 ├── _core.identity.md      # Shared by all agents
 ├── ingestion.identity.md  # Archivist persona
 ├── interaction.identity.md # Caring Friend persona
@@ -164,7 +164,7 @@ def propose_identity_change(agent_name, new_identity, rationale):
         "rationale": rationale,
         "status": "pending"
     }
-    save_to(f"data/agents/evolution/{timestamp}.proposal.json", proposal)
+    save_to(f"data/shared/evolution/{timestamp}.proposal.json", proposal)
     send_signal("identity_proposal")
 ```
 
