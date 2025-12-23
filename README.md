@@ -4,7 +4,7 @@
 
 _Euno, from Eudaimonia, an ancient Greek concept, often translated as "human flourishing" or "living well," representing a deep sense of fulfillment and purpose beyond mere fleeting happiness or pleasure, achieved through virtuous living, developing one's potential, and engaging in meaningful activities._
 
----
+## Overview
 
 Meet Euno, a personal intelligence that learns to anticipate you.
 
