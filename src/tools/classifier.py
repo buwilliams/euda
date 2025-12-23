@@ -19,10 +19,11 @@ try:
 except ImportError:
     HAS_MAGIC = False
 
-# Data paths
-DATA_DIR = Path(__file__).parent.parent.parent / "data" / "ingestion"
-CONFIG_FILE = DATA_DIR / "config.json"
-HASHES_FILE = DATA_DIR / "processed_hashes.json"
+# Data paths - Ingestion agent directory
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
+INGESTION_DIR = DATA_DIR / "ingestion"
+CONFIG_FILE = INGESTION_DIR / "config" / "config.json"
+HASHES_FILE = INGESTION_DIR / "config" / "processed_hashes.json"
 
 # MIME type to handler category mapping
 MIME_TO_CATEGORY = {

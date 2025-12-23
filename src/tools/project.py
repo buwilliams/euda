@@ -10,11 +10,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-# Base paths
+# Base paths - Projects are owned by Worker agent
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
-TASKS_DIR = DATA_DIR / "tasks"
-PROJECTS_DIR = TASKS_DIR / "projects"
-ARCHIVE_DIR = TASKS_DIR / "archive"
+WORKER_DIR = DATA_DIR / "worker"
+PROJECTS_DIR = WORKER_DIR / "projects"
+ARCHIVE_DIR = WORKER_DIR / "archive"
 
 # Ensure directories exist
 PROJECTS_DIR.mkdir(parents=True, exist_ok=True)

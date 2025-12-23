@@ -17,11 +17,13 @@ from .scorer import calculate_score
 from .classifier import compute_file_hash
 
 
-# Data paths
-DATA_DIR = Path(__file__).parent.parent.parent / "data" / "ingestion"
-QUEUE_FILE = DATA_DIR / "queue.json"
+# Data paths - Ingestion agent directory
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
+INGESTION_DIR = DATA_DIR / "ingestion"
+QUEUE_FILE = INGESTION_DIR / "queue" / "queue.json"
 
-INBOX_DIR = Path(__file__).parent.parent.parent / "data" / "inbox"
+# Inbox directories are under ingestion
+INBOX_DIR = INGESTION_DIR / "inbox"
 PENDING_DIR = INBOX_DIR / "pending"
 PROCESSING_DIR = INBOX_DIR / "processing"
 DEFERRED_DIR = INBOX_DIR / "deferred"
@@ -57,7 +59,7 @@ class IngestionQueue:
 
     def _save_queue(self):
         """Persist queue state to file."""
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        QUEUE_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(QUEUE_FILE, 'w') as f:
             json.dump(self.queue, f, indent=2)
 

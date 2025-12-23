@@ -10,10 +10,11 @@ Tools for reading summaries and managing values at different temporal scopes:
 from datetime import datetime
 from pathlib import Path
 
-# Base paths
+# Base paths - Values agent uses shared log and its own output
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
-LOG_DIR = DATA_DIR / "log"
-VALUES_DIR = DATA_DIR / "values"
+SHARED_DIR = DATA_DIR / "shared"
+LOG_DIR = SHARED_DIR / "log"
+VALUES_DIR = DATA_DIR / "values" / "output"
 
 # Ensure values directory exists
 VALUES_DIR.mkdir(parents=True, exist_ok=True)

@@ -16,13 +16,14 @@ from pathlib import Path
 from typing import Optional
 
 
-# Base paths
+# Base paths - Introspection uses shared identity and its own output
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 SRC_DIR = Path(__file__).parent.parent
-IDENTITY_DIR = DATA_DIR / "agents" / "identity"
+SHARED_DIR = DATA_DIR / "shared"
+IDENTITY_DIR = SHARED_DIR / "identity"
 AGENTS_DIR = SRC_DIR / "agents"
 TOOLS_DIR = SRC_DIR / "tools"
-INTROSPECTION_DIR = DATA_DIR / "agents" / "introspection"
+INTROSPECTION_DIR = DATA_DIR / "introspection" / "output"
 
 # Ensure output directory exists
 INTROSPECTION_DIR.mkdir(parents=True, exist_ok=True)

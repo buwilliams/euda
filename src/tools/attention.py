@@ -8,11 +8,12 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import json
 
-# Base paths
+# Base paths - Attention agent uses shared signals and its own queue
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
-AGENTS_DIR = DATA_DIR / "agents"
-SIGNALS_DIR = AGENTS_DIR / "signals"
-QUEUES_DIR = AGENTS_DIR / "queues"
+SHARED_DIR = DATA_DIR / "shared"
+SIGNALS_DIR = SHARED_DIR / "signals"
+ATTENTION_DIR = DATA_DIR / "attention"
+QUEUES_DIR = ATTENTION_DIR / "queue"
 
 # Ensure directories exist
 SIGNALS_DIR.mkdir(parents=True, exist_ok=True)

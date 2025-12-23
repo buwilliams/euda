@@ -19,9 +19,10 @@ from .classifier import classify_file, compute_file_hash
 from .handlers import get_handler
 
 
-# Data paths
-DATA_DIR = Path(__file__).parent.parent.parent / "data" / "ingestion"
-DIGESTS_DIR = DATA_DIR / "digests"
+# Data paths - Ingestion agent directory
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
+INGESTION_DIR = DATA_DIR / "ingestion"
+DIGESTS_DIR = INGESTION_DIR / "digests"
 
 
 def ensure_dirs():

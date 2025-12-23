@@ -38,7 +38,8 @@ client = Anthropic()
 
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
-IDENTITY_DIR = DATA_DIR / "agents" / "identity"
+SHARED_DIR = DATA_DIR / "shared"
+IDENTITY_DIR = SHARED_DIR / "identity"
 
 
 def load_file(path: Path) -> str:
@@ -233,11 +234,9 @@ def create_agent(persona_name: str, tools: list = None, model: str = "claude-son
 
 # ============== Autonomous Agent Base ==============
 
-# Signals directory
-SIGNALS_DIR = DATA_DIR / "agents" / "signals"
-STATE_DIR = DATA_DIR / "agents" / "state"
+# Signals directory (shared across agents)
+SIGNALS_DIR = SHARED_DIR / "signals"
 SIGNALS_DIR.mkdir(parents=True, exist_ok=True)
-STATE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class AutonomousAgent(ABC):
@@ -277,8 +276,10 @@ class AutonomousAgent(ABC):
         # Create the underlying agent
         self.agent = create_agent(persona_name, tools)
 
-        # State file for tracking
-        self.state_file = STATE_DIR / f"{name}.state.json"
+        # State file for tracking - each agent has its own state directory
+        state_dir = DATA_DIR / name / "state"
+        state_dir.mkdir(parents=True, exist_ok=True)
+        self.state_file = state_dir / "state.json"
 
     @abstractmethod
     def check_work_needed(self) -> bool:

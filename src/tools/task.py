@@ -11,9 +11,10 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
-# Base paths
+# Base paths - Tasks are owned by Worker agent
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
-TASKS_DIR = DATA_DIR / "tasks"
+WORKER_DIR = DATA_DIR / "worker"
+TASKS_DIR = WORKER_DIR / "tasks"
 QUEUE_FILE = TASKS_DIR / "queue.json"
 DAILY_DIR = TASKS_DIR / "daily"
 RESULTS_DIR = TASKS_DIR / "results"
@@ -21,6 +22,7 @@ LEARNING_DIR = TASKS_DIR / "learning"
 CONFIG_DIR = TASKS_DIR / "config"
 
 # Ensure directories exist
+TASKS_DIR.mkdir(parents=True, exist_ok=True)
 DAILY_DIR.mkdir(parents=True, exist_ok=True)
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 LEARNING_DIR.mkdir(parents=True, exist_ok=True)

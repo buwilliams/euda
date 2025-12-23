@@ -11,10 +11,11 @@ from pathlib import Path
 from typing import Optional
 
 
-# Data paths
-DATA_DIR = Path(__file__).parent.parent.parent / "data" / "ingestion"
-CONFIG_FILE = DATA_DIR / "config.json"
-BUDGET_FILE = DATA_DIR / "budget.json"
+# Data paths - Ingestion agent directory
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
+INGESTION_DIR = DATA_DIR / "ingestion"
+CONFIG_FILE = INGESTION_DIR / "config" / "config.json"
+BUDGET_FILE = INGESTION_DIR / "state" / "budget.json"
 
 # Default config
 DEFAULT_CONFIG = {
@@ -83,7 +84,7 @@ class TokenBudget:
 
     def _save_state(self):
         """Persist state to file."""
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        BUDGET_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(BUDGET_FILE, 'w') as f:
             json.dump(self.state, f, indent=2)
 

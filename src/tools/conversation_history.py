@@ -12,16 +12,16 @@ from pathlib import Path
 from typing import Optional
 import re
 
-# Base paths
+# Base paths - Conversations are owned by Interaction agent
 BASE_DIR = Path(__file__).parent.parent.parent
-CONVERSATIONS_DIR = BASE_DIR / "data" / "conversations"
+CONVERSATIONS_DIR = BASE_DIR / "data" / "interaction" / "conversations"
 
 
 def _ensure_dirs():
     """Ensure conversation directories exist."""
     CONVERSATIONS_DIR.mkdir(parents=True, exist_ok=True)
-    (CONVERSATIONS_DIR / "sessions").mkdir(exist_ok=True)
-    (CONVERSATIONS_DIR / "daily").mkdir(exist_ok=True)
+    (CONVERSATIONS_DIR / "sessions").mkdir(parents=True, exist_ok=True)
+    (CONVERSATIONS_DIR / "daily").mkdir(parents=True, exist_ok=True)
 
 
 def _get_session_file(session_id: str) -> Path:

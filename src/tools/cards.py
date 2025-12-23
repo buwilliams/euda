@@ -11,9 +11,10 @@ from datetime import datetime
 from pathlib import Path
 import json
 
-# Base paths
+# Base paths - Cards are owned by Interaction agent
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
-CARDS_DIR = DATA_DIR / "cards"
+INTERACTION_DIR = DATA_DIR / "interaction"
+CARDS_DIR = INTERACTION_DIR / "cards"
 RECEIVED_DIR = CARDS_DIR / "received"
 
 # Ensure directories exist

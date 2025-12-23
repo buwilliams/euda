@@ -35,7 +35,7 @@ from ..tools.summary import list_years, get_summary
 # Base paths
 BASE_DIR = Path(__file__).parent.parent.parent
 STATIC_DIR = BASE_DIR / "static"
-INBOX_PENDING_DIR = BASE_DIR / "data" / "inbox" / "pending"
+INBOX_PENDING_DIR = BASE_DIR / "data" / "ingestion" / "inbox" / "pending"
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -383,12 +383,10 @@ AGENT_INFO = {
     "worker": {"display_name": "Worker (Executor)", "description": "Execute approved tasks"},
 }
 
-STATE_DIR = BASE_DIR / "data" / "agents" / "state"
-
-
 def get_agent_state(agent_name: str) -> dict:
     """Load agent state from file if it exists."""
-    state_file = STATE_DIR / f"{agent_name}.state.json"
+    # Each agent now has its own state directory
+    state_file = BASE_DIR / "data" / agent_name / "state" / "state.json"
     if state_file.exists():
         with open(state_file, 'r') as f:
             return json.load(f)

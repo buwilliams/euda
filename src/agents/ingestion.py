@@ -42,9 +42,10 @@ ALL_HANDLERS = {
     **QUEUE_HANDLERS,
 }
 
-# Inbox paths
+# Inbox paths - now under ingestion agent directory
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
-INBOX_DIR = DATA_DIR / "inbox" / "pending"
+INGESTION_DIR = DATA_DIR / "ingestion"
+INBOX_DIR = INGESTION_DIR / "inbox" / "pending"
 
 
 def create_ingestion_agent(include_file_tools: bool = True):

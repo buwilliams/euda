@@ -9,13 +9,12 @@ from datetime import datetime
 from pathlib import Path
 import json
 
-# Base paths
+# Base paths - World agent directory
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 WORLD_DIR = DATA_DIR / "world"
 OPPORTUNITIES_DIR = WORLD_DIR / "opportunities"
 
 # Ensure directories exist
-WORLD_DIR.mkdir(parents=True, exist_ok=True)
 OPPORTUNITIES_DIR.mkdir(parents=True, exist_ok=True)
 
 

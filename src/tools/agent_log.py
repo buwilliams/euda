@@ -19,9 +19,10 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
-# Base paths
+# Base paths - Agent logs are shared
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
-AGENT_LOGS_DIR = DATA_DIR / "agents" / "logs"
+SHARED_DIR = DATA_DIR / "shared"
+AGENT_LOGS_DIR = SHARED_DIR / "logs"
 
 # Ensure directory exists
 AGENT_LOGS_DIR.mkdir(parents=True, exist_ok=True)

@@ -11,10 +11,11 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-# Base paths
+# Base paths - Identity is shared, evolution is part of identity
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
-IDENTITY_DIR = DATA_DIR / "agents" / "identity"
-EVOLUTION_DIR = DATA_DIR / "agents" / "evolution"
+SHARED_DIR = DATA_DIR / "shared"
+IDENTITY_DIR = SHARED_DIR / "identity"
+EVOLUTION_DIR = SHARED_DIR / "evolution"
 EVOLUTION_DIR.mkdir(parents=True, exist_ok=True)
 
 
