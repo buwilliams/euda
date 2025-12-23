@@ -322,7 +322,7 @@ def get_attention_context() -> str:
 """
 
     # Add values summary if available
-    from .values import get_current_values
+    from ..values.values import get_current_values
     values = get_current_values()
     if not values.startswith("No current"):
         output += f"\n### Current Values (for alignment)\n{values[:500]}...\n"
@@ -367,7 +367,7 @@ def generate_evening_attention() -> str:
         Evening attention prompt/content
     """
     # Get today's log entries
-    from .log import read_log_entry
+    from ..shared.log import read_log_entry
     today = datetime.now().strftime('%Y-%m-%d')
     today_log = read_log_entry(today)
 

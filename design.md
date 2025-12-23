@@ -199,69 +199,105 @@ class AgentManager:
 
 ## Directory Structure
 
+Tools are organized by agent concern, data is organized by agent ownership.
+
 ```
 euno/
 ├── main.py                     # Entry point
 ├── src/
 │   ├── agents/
 │   │   ├── base.py             # Agent factory, AutonomousAgent base
-│   │   ├── ingestion.py
-│   │   ├── summary.py
-│   │   ├── values.py
-│   │   ├── world.py
-│   │   ├── attention.py
-│   │   ├── interaction.py
-│   │   ├── worker.py
-│   │   └── introspection.py
-│   ├── tools/
-│   │   ├── log.py              # Life log read/write
-│   │   ├── files.py            # File processing
-│   │   ├── tasks.py            # Project/task management
-│   │   ├── notifications.py
-│   │   └── introspection.py
+│   │   ├── ingestion.py        # The Archivist
+│   │   ├── summary.py          # The Historian
+│   │   ├── values.py           # The Philosopher
+│   │   ├── world.py            # The Scout
+│   │   ├── attention.py        # The Curator
+│   │   ├── interaction.py      # The Caring Friend
+│   │   ├── worker.py           # The Executor
+│   │   └── introspection.py    # The Mirror
+│   │
+│   ├── tools/                  # Organized by agent concern
+│   │   ├── shared/             # Cross-agent tools
+│   │   │   ├── log.py          # Life log read/write
+│   │   │   ├── identity.py     # Identity evolution
+│   │   │   ├── notifications.py
+│   │   │   └── agent_log.py    # Agent activity logging
+│   │   ├── ingestion/          # Ingestion tools
+│   │   │   ├── files.py
+│   │   │   ├── classifier.py
+│   │   │   ├── digest.py
+│   │   │   ├── queue.py
+│   │   │   ├── scorer.py
+│   │   │   ├── token_budget.py
+│   │   │   └── handlers/       # File type handlers
+│   │   ├── values/             # Values + Summary tools
+│   │   │   ├── values.py
+│   │   │   └── summary.py
+│   │   ├── world/              # World tools
+│   │   │   ├── world.py
+│   │   │   └── fetch.py
+│   │   ├── attention/          # Attention tools
+│   │   │   └── attention.py
+│   │   ├── interaction/        # Interaction tools
+│   │   │   ├── conversation.py
+│   │   │   ├── conversation_history.py
+│   │   │   └── cards.py
+│   │   ├── worker/             # Worker tools
+│   │   │   ├── task.py
+│   │   │   ├── project.py
+│   │   │   └── worker.py
+│   │   └── introspection/      # Introspection tools
+│   │       └── introspection.py
+│   │
 │   └── web/
 │       └── app.py              # FastAPI server
 │
-└── data/
-    ├── inbox/
-    │   ├── pending/            # Files awaiting processing
-    │   ├── processing/         # Currently being processed
-    │   ├── processed/          # Successfully processed
-    │   ├── failed/             # Failed (with .reason.txt)
-    │   ├── deferred/           # Low-priority, waiting for budget
-    │   └── metadata/           # Extracted digests
-    │
-    ├── log/
-    │   └── [yyyy]/
-    │       ├── [yyyy-mm-dd].md # Daily entries
-    │       ├── _manifest.md    # Source tracking
-    │       └── _summary.md     # Yearly distillation
-    │
-    ├── agents/
-    │   ├── identity/
+└── data/                       # Agent-oriented data
+    ├── shared/                 # Cross-agent resources
+    │   ├── log/                # Life log (written by ingestion, read by many)
+    │   │   └── [yyyy]/
+    │   │       ├── [yyyy-mm-dd].md
+    │   │       └── _manifest.md
+    │   ├── signals/            # Inter-agent triggers
+    │   ├── identity/           # Agent identity files
     │   │   ├── _core.identity.md
     │   │   └── [agent].identity.md
-    │   ├── state/              # Persisted agent state (JSON)
-    │   ├── signals/            # Inter-agent triggers
-    │   └── introspection/
-    │       └── capabilities.md
+    │   └── notifications/      # User notifications
     │
-    ├── tasks/
-    │   ├── queue.json          # Master task queue
-    │   ├── projects/
-    │   ├── daily/
-    │   └── results/
+    ├── ingestion/              # Ingestion Agent data
+    │   ├── state/              # state.json
+    │   ├── config/             # config.json, processed_hashes.json
+    │   ├── inbox/              # pending/, processing/, processed/, failed/, deferred/
+    │   ├── queue/              # queue.json
+    │   └── digests/            # {hash}.json files
     │
-    ├── values/
-    │   ├── current.values.md
-    │   ├── phase.values.md
-    │   └── lifetime.values.md
+    ├── values/                 # Values Agent data
+    │   ├── state/              # state.json
+    │   └── output/             # current.values.md, phase.values.md, lifetime.values.md
+    │                           # Also: {year}.summary.md (generated by Summary Agent)
     │
-    ├── conversations/
-    │   ├── sessions/
-    │   └── daily/
+    ├── world/                  # World Agent data
+    │   ├── state/              # state.json
+    │   └── opportunities/      # opportunities.json
     │
-    └── notifications/
+    ├── attention/              # Attention Agent data
+    │   ├── state/              # state.json
+    │   ├── config/             # config.json
+    │   └── queue/              # surfacing_queue.json, energy logs
+    │
+    ├── interaction/            # Interaction Agent data
+    │   ├── state/              # state.json
+    │   └── conversations/      # session files
+    │
+    ├── worker/                 # Worker Agent data
+    │   ├── state/              # state.json
+    │   ├── tasks/              # queue.json, daily/, results/
+    │   ├── projects/           # {id}.json files
+    │   └── actions/            # pending/, completed/
+    │
+    └── introspection/          # Introspection Agent data
+        ├── state/              # state.json
+        └── output/             # capabilities.md
 ```
 
 ---

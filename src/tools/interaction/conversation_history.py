@@ -661,9 +661,9 @@ def suggest_activities(context: str = "") -> str:
     Returns:
         Personalized activity suggestions
     """
-    from .values import get_current_values, get_phase_values, get_lifetime_values
-    from .world import get_opportunities
-    from .log import get_recent_entries
+    from ..values.values import get_current_values, get_phase_values, get_lifetime_values
+    from ..world.world import get_opportunities
+    from ..shared.log import get_recent_entries
 
     # Gather context
     sections = []
@@ -736,8 +736,8 @@ def get_personalized_context() -> str:
     Returns:
         Combined context from values, recent activity, and patterns
     """
-    from .values import get_all_values
-    from .log import get_recent_entries
+    from ..values.values import get_all_values
+    from ..shared.log import get_recent_entries
 
     lines = ["## User Context"]
 

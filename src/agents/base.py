@@ -23,8 +23,8 @@ from typing import Optional
 from dotenv import load_dotenv
 from anthropic import Anthropic
 
-from ..tools.identity import IDENTITY_TOOLS, IDENTITY_HANDLERS
-from ..tools.agent_log import (
+from ..tools.shared.identity import IDENTITY_TOOLS, IDENTITY_HANDLERS
+from ..tools.shared.agent_log import (
     log_activity, log_tool_call, log_work_check, log_work_start,
     log_work_complete, log_signal_sent, log_error
 )

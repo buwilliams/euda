@@ -307,7 +307,7 @@ def generate_cards_from_values() -> str:
     Returns:
         Status message with guidance
     """
-    from .values import get_current_values, get_phase_values, get_lifetime_values
+    from ..values.values import get_current_values, get_phase_values, get_lifetime_values
 
     current = get_current_values()
     phase = get_phase_values()

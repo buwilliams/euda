@@ -7,9 +7,9 @@ while occasionally surprising with life-promoting novelty.
 
 from datetime import datetime, timedelta
 from .base import create_agent, AutonomousAgent
-from ..tools.world import WORLD_TOOLS, WORLD_HANDLERS
-from ..tools.values import VALUES_TOOLS, VALUES_HANDLERS
-from ..tools.notifications import queue_notification
+from ..tools.world.world import WORLD_TOOLS, WORLD_HANDLERS
+from ..tools.values.values import VALUES_TOOLS, VALUES_HANDLERS
+from ..tools.shared.notifications import queue_notification
 
 
 # Combined tools - World agent needs access to values
@@ -53,12 +53,12 @@ def run_interactive():
 
             # Handle quick commands
             if user_input.lower() == 'suggest':
-                from ..tools.world import suggest_discoveries
+                from ..tools.world.world import suggest_discoveries
                 print(f"\n{suggest_discoveries()}\n")
                 continue
 
             if user_input.lower() == 'opportunities':
-                from ..tools.world import get_opportunities
+                from ..tools.world.world import get_opportunities
                 print(f"\n{get_opportunities()}\n")
                 continue
 

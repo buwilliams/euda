@@ -10,7 +10,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 
-from .log import write_log_entry
+from ..shared.log import write_log_entry
 
 
 def fetch_url(url: str, max_length: int = 15000) -> str:

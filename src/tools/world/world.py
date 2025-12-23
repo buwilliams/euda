@@ -196,7 +196,7 @@ def get_discovery_context() -> str:
     Returns:
         Current values and constraints for discovery
     """
-    from .values import get_current_values, get_phase_values
+    from ..values.values import get_current_values, get_phase_values
 
     current = get_current_values()
     phase = get_phase_values()

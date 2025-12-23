@@ -10,8 +10,8 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 from .agents.base import create_agent
-from .tools.log import LOG_TOOLS, LOG_HANDLERS
-from .tools.files import FILE_TOOLS, FILE_HANDLERS, PENDING_DIR
+from .tools.shared.log import LOG_TOOLS, LOG_HANDLERS
+from .tools.ingestion.files import FILE_TOOLS, FILE_HANDLERS, PENDING_DIR
 
 
 class InboxHandler(FileSystemEventHandler):

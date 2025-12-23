@@ -7,8 +7,8 @@ values together. Tracks values across temporal scopes.
 
 from pathlib import Path
 from .base import create_agent, AutonomousAgent
-from ..tools.values import VALUES_TOOLS, VALUES_HANDLERS, get_all_values
-from ..tools.summary import get_summary, LOG_DIR
+from ..tools.values.values import VALUES_TOOLS, VALUES_HANDLERS, get_all_values
+from ..tools.values.summary import get_summary, LOG_DIR
 
 
 def create_values_agent():

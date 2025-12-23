@@ -8,7 +8,7 @@ tools, and capabilities to maintain a living reference for the user.
 from datetime import datetime, timedelta
 from pathlib import Path
 from .base import create_agent, AutonomousAgent
-from ..tools.introspection import (
+from ..tools.introspection.introspection import (
     INTROSPECTION_TOOLS, INTROSPECTION_HANDLERS,
     get_last_introspection, INTROSPECTION_DIR
 )

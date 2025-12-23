@@ -7,10 +7,10 @@ energy, and timing. Surfaces the right thing at the right moment.
 
 from datetime import datetime, time
 from .base import create_agent, AutonomousAgent
-from ..tools.attention import ATTENTION_TOOLS, ATTENTION_HANDLERS
-from ..tools.values import VALUES_TOOLS, VALUES_HANDLERS
-from ..tools.log import LOG_TOOLS, LOG_HANDLERS
-from ..tools.notifications import queue_notification
+from ..tools.attention.attention import ATTENTION_TOOLS, ATTENTION_HANDLERS
+from ..tools.values.values import VALUES_TOOLS, VALUES_HANDLERS
+from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
+from ..tools.shared.notifications import queue_notification
 
 
 # Combined tools - Attention agent needs access to values and logs too
@@ -64,7 +64,7 @@ def run_interactive():
                 user_input = "Check my current energy state and ask me about how I'm feeling across the dimensions (physical, mental, emotional, social)."
 
             if user_input.lower() == 'queue':
-                from ..tools.attention import get_queue
+                from ..tools.attention.attention import get_queue
                 print(f"\n{get_queue()}\n")
                 continue
 

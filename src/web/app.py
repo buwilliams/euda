@@ -20,16 +20,16 @@ from pydantic import BaseModel
 
 from ..agents.base import create_agent
 from ..agents.interaction import INTERACTION_TOOLS, INTERACTION_HANDLERS
-from ..tools.log import read_log_entry, search_log, get_recent_entries, write_log_entry
-from ..tools.conversation_history import save_message, get_conversation_data, get_recent_conversations
-from ..tools.values import get_current_values, get_phase_values, get_lifetime_values, get_all_values
-from ..tools.cards import (
+from ..tools.shared.log import read_log_entry, search_log, get_recent_entries, write_log_entry
+from ..tools.interaction.conversation_history import save_message, get_conversation_data, get_recent_conversations
+from ..tools.values.values import get_current_values, get_phase_values, get_lifetime_values, get_all_values
+from ..tools.interaction.cards import (
     get_internal_card, get_public_card, write_public_card,
     get_received_cards, update_received_card_status, approve_public_card
 )
-from ..tools.world import get_opportunities
-from ..tools.attention import get_queue, get_recent_energy, record_energy
-from ..tools.summary import list_years, get_summary
+from ..tools.world.world import get_opportunities
+from ..tools.attention.attention import get_queue, get_recent_energy, record_energy
+from ..tools.values.summary import list_years, get_summary
 
 
 # Base paths
@@ -149,7 +149,7 @@ async def app_page():
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """Chat with the Interaction Agent."""
-    from ..tools.conversation import reset_clear_flag, was_clear_requested
+    from ..tools.interaction.conversation import reset_clear_flag, was_clear_requested
 
     session_id, agent = get_or_create_session(request.session_id)
 
@@ -484,7 +484,7 @@ async def get_history(session_id: str = None, date: str = None):
 
 # ============== Notifications ==============
 
-from ..tools.notifications import (
+from ..tools.shared.notifications import (
     get_pending_notifications, mark_seen, dismiss_notification,
     check_for_pending_approvals
 )
@@ -520,7 +520,7 @@ async def dismiss_notification_endpoint(notification_id: str):
 
 # ============== Projects ==============
 
-from ..tools.project import (
+from ..tools.worker.project import (
     create_project, get_projects, get_projects_data, get_project, update_project,
     add_milestone, archive_project, get_projects_with_deadlines
 )
@@ -615,7 +615,7 @@ async def archive_project_endpoint(project_id: str):
 
 # ============== Tasks ==============
 
-from ..tools.task import (
+from ..tools.worker.task import (
     create_task, create_learning_task, get_tasks, get_tasks_data, get_task,
     get_daily_view, add_quick_task, update_task_status,
     get_recent_results, get_result
@@ -668,7 +668,7 @@ async def get_todays_tasks(date: Optional[str] = None):
 @app.get("/api/tasks/{task_id}")
 async def get_task_details(task_id: str):
     """Get task details."""
-    from ..tools.task import get_task as get_task_detail
+    from ..tools.worker.task import get_task as get_task_detail
     content = get_task_detail(task_id)
     return {"content": content}
 

@@ -8,7 +8,7 @@ Euno is a personal intelligence that learns to anticipate you: doing tasks for y
 
 ## Current State
 
-Initial implementation with working Ingestion Agent. Key files:
+All 8 agents implemented with web UI and API. Key files:
 - `README.md` - Product specification
 - `design.md` - Technical architecture and implementation spec
 - `main.py` - Entry point for running agents
@@ -41,19 +41,31 @@ Initial implementation with working Ingestion Agent. Key files:
 euno/
 ├── main.py                 # Entry point
 ├── src/
-│   ├── agents/
-│   │   ├── base.py         # Core agent pattern
-│   │   └── ingestion.py    # Ingestion Agent (The Archivist)
-│   └── tools/
-│       └── log.py          # Log read/write tools
-└── data/
-    ├── agents/identity/    # Agent identity files
-    │   ├── _core.identity.md
-    │   ├── ingestion.identity.md
-    │   └── ... (8 agent personas)
-    └── log/                # Life log entries
-        └── [yyyy]/[yyyy-mm-dd].md
+│   ├── agents/             # 8 agent modules (ingestion, summary, values, etc.)
+│   │   └── base.py         # Core agent pattern
+│   ├── tools/              # Organized by agent concern
+│   │   ├── shared/         # Cross-agent (log, identity, notifications)
+│   │   ├── ingestion/      # File processing, queue, budget
+│   │   ├── values/         # Values + summaries
+│   │   ├── world/          # Opportunities + fetch
+│   │   ├── attention/      # Energy + surfacing queue
+│   │   ├── interaction/    # Conversations + cards
+│   │   ├── worker/         # Tasks + projects
+│   │   └── introspection/  # Self-analysis
+│   └── web/
+│       └── app.py          # FastAPI server
+└── data/                   # Agent-oriented data
+    ├── shared/             # Cross-agent (log, signals, identity, notifications)
+    ├── ingestion/          # inbox/, queue/, digests/
+    ├── values/             # output/ (values + summaries)
+    ├── world/              # opportunities/
+    ├── attention/          # energy + surfacing queue
+    ├── interaction/        # conversations/
+    ├── worker/             # tasks/, projects/, actions/
+    └── introspection/      # capabilities
 ```
+
+See `design.md` for full directory structure details.
 
 ## Development Philosophy
 
@@ -98,7 +110,8 @@ Each agent has:
 
 ## Adding New Agents
 
-1. Create identity file: `data/agents/identity/[name].identity.md`
+1. Create identity file: `data/shared/identity/[name].identity.md`
 2. Create agent module: `src/agents/[name].py`
-3. Add tools if needed: `src/tools/[name].py`
-4. Register in `main.py`
+3. Add tools if needed: `src/tools/[agent]/[tool].py`
+4. Create data directory: `data/[name]/` with `state/` subdirectory
+5. Register in `main.py`

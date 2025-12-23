@@ -454,7 +454,7 @@ _INTROSPECTION_HANDLERS = {
 }
 
 # Import agent activity log tools
-from .agent_log import AGENT_LOG_TOOLS, AGENT_LOG_HANDLERS
+from ..shared.agent_log import AGENT_LOG_TOOLS, AGENT_LOG_HANDLERS
 
 # Combined tools and handlers (introspection + agent logs)
 INTROSPECTION_TOOLS = INTROSPECTION_TOOLS + AGENT_LOG_TOOLS

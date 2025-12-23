@@ -14,16 +14,16 @@ Delegation Strategy:
 from pathlib import Path
 from datetime import datetime
 from .base import create_agent, AutonomousAgent
-from ..tools.worker import (
+from ..tools.worker.worker import (
     WORKER_TOOLS, WORKER_HANDLERS, EXTENDED_WORKER_TOOLS,
     get_tasks, get_pending_actions, get_action
 )
-from ..tools.task import (
+from ..tools.worker.task import (
     get_pending_tasks_for_worker,
     update_task_status,
     store_result
 )
-from ..tools.notifications import queue_notification
+from ..tools.shared.notifications import queue_notification
 
 
 # Data paths
@@ -131,13 +131,13 @@ def check_pending_approvals() -> str:
 
 def approve_action(action_id: str) -> str:
     """Approve a specific action for execution."""
-    from ..tools.worker import approve_action as do_approve
+    from ..tools.worker.worker import approve_action as do_approve
     return do_approve(action_id)
 
 
 def reject_action(action_id: str, reason: str = "") -> str:
     """Reject a specific action."""
-    from ..tools.worker import reject_action as do_reject
+    from ..tools.worker.worker import reject_action as do_reject
     return do_reject(action_id, reason)
 
 
