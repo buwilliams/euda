@@ -12,7 +12,7 @@ from typing import Optional
 
 
 # Data paths - Ingestion agent directory
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 INGESTION_DIR = DATA_DIR / "ingestion"
 CONFIG_FILE = INGESTION_DIR / "config" / "config.json"
 BUDGET_FILE = INGESTION_DIR / "state" / "budget.json"

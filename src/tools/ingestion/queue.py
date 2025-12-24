@@ -18,7 +18,7 @@ from .classifier import compute_file_hash
 
 
 # Data paths - Ingestion agent directory
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 INGESTION_DIR = DATA_DIR / "ingestion"
 QUEUE_FILE = INGESTION_DIR / "queue" / "queue.json"
 

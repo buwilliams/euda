@@ -17,6 +17,10 @@ Keep a simple list: todo and done. Only use one level, not nested todos.
 
 ## Completed
 
+- [x] Ingestion: stable start/stop/resume with state tracking and crash recovery
+- [x] Ingestion: status tools for Introspection agent (session stats, lifetime totals, history)
+- [x] Ingestion: CLI batch runner with progress display (`python main.py ingest`)
+- [x] Ingestion: External directory support with manifest tracking (`python main.py ingest /path -r`)
 - [x] Ingestion: file classifier with magic byte detection (python-magic)
 - [x] Ingestion: digest generator (metadata extraction per file type)
 - [x] Ingestion: token budget manager with configurable daily limits

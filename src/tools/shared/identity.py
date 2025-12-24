@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 
 # Base paths - Identity is shared, evolution is part of identity
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
 IDENTITY_DIR = SHARED_DIR / "identity"
 EVOLUTION_DIR = SHARED_DIR / "evolution"

@@ -13,6 +13,8 @@ Pipeline:
 6. Repeat until queue empty or budget exhausted
 """
 
+import shutil
+from datetime import datetime, timedelta
 from pathlib import Path
 from .base import create_agent, AutonomousAgent
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
@@ -45,7 +47,9 @@ ALL_HANDLERS = {
 # Inbox paths - now under ingestion agent directory
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 INGESTION_DIR = DATA_DIR / "ingestion"
-INBOX_DIR = INGESTION_DIR / "inbox" / "pending"
+INBOX_DIR = INGESTION_DIR / "inbox"
+PENDING_DIR = INBOX_DIR / "pending"
+PROCESSING_DIR = INBOX_DIR / "processing"
 
 
 def create_ingestion_agent(include_file_tools: bool = True):
@@ -125,9 +129,65 @@ class AutonomousIngestionAgent(AutonomousAgent):
         )
         self.files_processed_this_cycle = 0
         self.files_deferred_this_cycle = 0
+        self._initialize_session()
+
+    def _initialize_session(self):
+        """Initialize a new processing session."""
+        state = self.load_state()
+        state['session'] = {
+            'started_at': datetime.now().isoformat(),
+            'files_processed': 0,
+            'files_failed': 0,
+            'files_deferred': 0,
+            'tokens_used': 0,
+        }
+        # Initialize totals if not present
+        if 'totals' not in state:
+            state['totals'] = {
+                'lifetime_processed': 0,
+                'lifetime_failed': 0,
+                'lifetime_tokens': 0,
+            }
+        self.save_state(state)
+
+    def _recover_stuck_files(self):
+        """Move files stuck in processing/ back to pending/."""
+        if not PROCESSING_DIR.exists():
+            return
+
+        state = self.load_state()
+        current = state.get('current_file')
+
+        for file in PROCESSING_DIR.iterdir():
+            if not file.is_file() or file.name.startswith('.'):
+                continue
+
+            # Check if we were processing this file
+            if current and current.get('name') == file.name:
+                # Check timeout (10 minutes)
+                try:
+                    started = datetime.fromisoformat(current['started_at'])
+                    if datetime.now() - started > timedelta(minutes=10):
+                        self.logger.warning(f"File timed out, recovering: {file.name}")
+                        shutil.move(str(file), str(PENDING_DIR / file.name))
+                        state['current_file'] = None
+                        self.save_state(state)
+                except (KeyError, ValueError):
+                    # Invalid state, recover the file
+                    self.logger.warning(f"Invalid state, recovering: {file.name}")
+                    shutil.move(str(file), str(PENDING_DIR / file.name))
+                    state['current_file'] = None
+                    self.save_state(state)
+            else:
+                # Unknown file in processing - move back to pending
+                self.logger.warning(f"Unknown file in processing, recovering: {file.name}")
+                shutil.move(str(file), str(PENDING_DIR / file.name))
 
     def check_work_needed(self) -> bool:
         """Check if there are files to process."""
+        # Recover any files stuck in processing from a previous crash
+        self._recover_stuck_files()
+
         # Check for explicit signal from file watcher
         if self.check_signal("inbox_changed"):
             self.logger.info("Received inbox_changed signal")
@@ -175,6 +235,16 @@ class AutonomousIngestionAgent(AutonomousAgent):
 
             self.logger.info(f"Processing: {file_name} (score: {item.get('score', 0):.3f})")
 
+            # Track current file in state (for crash recovery)
+            state = self.load_state()
+            state['current_file'] = {
+                'path': file_path,
+                'name': file_name,
+                'hash': file_hash,
+                'started_at': datetime.now().isoformat()
+            }
+            self.save_state(state)
+
             try:
                 # Generate digest for accurate token estimate
                 digest = generate_digest(file_path)
@@ -185,6 +255,12 @@ class AutonomousIngestionAgent(AutonomousAgent):
                     self.logger.info(f"Budget exhausted, deferring: {file_name}")
                     queue.defer(item, "budget_exhausted")
                     self.files_deferred_this_cycle += 1
+
+                    # Update state
+                    state = self.load_state()
+                    state['current_file'] = None
+                    state['session']['files_deferred'] = state.get('session', {}).get('files_deferred', 0) + 1
+                    self.save_state(state)
                     continue
 
                 # Get content for AI processing
@@ -234,12 +310,28 @@ Do NOT read the file again - use the content provided above."""
                 self.files_processed_this_cycle += 1
                 self.logger.info(f"Completed: {file_name}")
 
+                # Update state - success
+                state = self.load_state()
+                state['current_file'] = None
+                state['session']['files_processed'] = state.get('session', {}).get('files_processed', 0) + 1
+                state['session']['tokens_used'] = state.get('session', {}).get('tokens_used', 0) + token_estimate
+                state['totals']['lifetime_processed'] = state.get('totals', {}).get('lifetime_processed', 0) + 1
+                state['totals']['lifetime_tokens'] = state.get('totals', {}).get('lifetime_tokens', 0) + token_estimate
+                self.save_state(state)
+
                 # Clear context after each file to manage memory
                 self.agent.clear_context()
 
             except Exception as e:
                 self.logger.error(f"Error processing {file_name}: {e}")
                 queue.complete(item, success=False, reason=str(e))
+
+                # Update state - failure
+                state = self.load_state()
+                state['current_file'] = None
+                state['session']['files_failed'] = state.get('session', {}).get('files_failed', 0) + 1
+                state['totals']['lifetime_failed'] = state.get('totals', {}).get('lifetime_failed', 0) + 1
+                self.save_state(state)
 
         # Build summary
         stats = queue.stats()

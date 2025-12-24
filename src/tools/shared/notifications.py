@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional
 
 # Base paths - Notifications are shared
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
 NOTIFICATIONS_DIR = SHARED_DIR / "notifications"
 NOTIFICATIONS_DIR.mkdir(parents=True, exist_ok=True)

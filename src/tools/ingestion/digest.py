@@ -20,7 +20,7 @@ from .handlers import get_handler
 
 
 # Data paths - Ingestion agent directory
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 INGESTION_DIR = DATA_DIR / "ingestion"
 DIGESTS_DIR = INGESTION_DIR / "digests"
 

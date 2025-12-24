@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 # Base paths - Ingestion agent owns inbox
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 INGESTION_DIR = DATA_DIR / "ingestion"
 INBOX_DIR = INGESTION_DIR / "inbox"
 PENDING_DIR = INBOX_DIR / "pending"

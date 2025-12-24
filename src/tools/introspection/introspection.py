@@ -456,6 +456,9 @@ _INTROSPECTION_HANDLERS = {
 # Import agent activity log tools
 from ..shared.agent_log import AGENT_LOG_TOOLS, AGENT_LOG_HANDLERS
 
-# Combined tools and handlers (introspection + agent logs)
-INTROSPECTION_TOOLS = INTROSPECTION_TOOLS + AGENT_LOG_TOOLS
-INTROSPECTION_HANDLERS = {**_INTROSPECTION_HANDLERS, **AGENT_LOG_HANDLERS}
+# Import ingestion status tools
+from ..ingestion.status import INGESTION_STATUS_TOOLS, INGESTION_STATUS_HANDLERS
+
+# Combined tools and handlers (introspection + agent logs + ingestion status)
+INTROSPECTION_TOOLS = INTROSPECTION_TOOLS + AGENT_LOG_TOOLS + INGESTION_STATUS_TOOLS
+INTROSPECTION_HANDLERS = {**_INTROSPECTION_HANDLERS, **AGENT_LOG_HANDLERS, **INGESTION_STATUS_HANDLERS}

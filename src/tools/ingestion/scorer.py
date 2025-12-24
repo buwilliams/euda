@@ -18,7 +18,7 @@ from typing import Optional
 
 
 # Data paths
-DATA_DIR = Path(__file__).parent.parent.parent / "data" / "ingestion"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data" / "ingestion"
 CONFIG_FILE = DATA_DIR / "config.json"
 
 # Default type weights (can be overridden in config)

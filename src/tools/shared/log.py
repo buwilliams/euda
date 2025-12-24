@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 # Base paths
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
 LOG_DIR = SHARED_DIR / "log"
 

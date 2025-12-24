@@ -20,7 +20,7 @@ except ImportError:
     HAS_MAGIC = False
 
 # Data paths - Ingestion agent directory
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 INGESTION_DIR = DATA_DIR / "ingestion"
 CONFIG_FILE = INGESTION_DIR / "config" / "config.json"
 HASHES_FILE = INGESTION_DIR / "config" / "processed_hashes.json"
