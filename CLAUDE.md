@@ -45,7 +45,7 @@ euno/
 │   │   └── base.py         # Core agent pattern
 │   ├── tools/              # Organized by agent concern
 │   │   ├── shared/         # Cross-agent (log, identity, notifications)
-│   │   ├── ingestion/      # File processing, queue, budget
+│   │   ├── ingestion/      # File processing, queue, budget, iPhone backup tools
 │   │   ├── values/         # Values + summaries
 │   │   ├── world/          # Opportunities + fetch
 │   │   ├── attention/      # Energy + surfacing queue
@@ -107,6 +107,36 @@ Each agent has:
 - Persona identity (role-specific traits)
 - Tools (functions it can call)
 - Context (conversation history)
+
+## iPhone Backup Extraction
+
+Standalone tools for extracting data from iOS device backups, located in `src/tools/ingestion/iphone/`:
+
+```bash
+# Auto-find backup and export messages + media
+python src/tools/ingestion/iphone/iphone_backup.py
+
+# Export messages only
+python src/tools/ingestion/iphone/iphone_backup.py --messages
+
+# Export media only (photos/videos)
+python src/tools/ingestion/iphone/iphone_backup.py --media
+
+# Specify custom paths
+python src/tools/ingestion/iphone/iphone_backup.py --backup /path/to/backup --output ./export
+
+# Find available backups and databases
+python src/tools/ingestion/iphone/find_backup_db.py
+
+# Export directly from sms.db (without contact name lookup)
+python src/tools/ingestion/iphone/iphone_messages_export.py /path/to/sms.db --output ./export
+```
+
+Key details:
+- Requires unencrypted iPhone backup (created via iTunes/Finder)
+- Auto-detects backup location on macOS, Windows, and WSL
+- Exports messages as markdown files named by contact
+- Preserves DCIM folder structure for photos/videos
 
 ## Adding New Agents
 
