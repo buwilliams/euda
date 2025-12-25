@@ -9,9 +9,9 @@ from pathlib import Path
 import hashlib
 
 # Base paths - Summary agent uses shared log
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-LOG_DIR = SHARED_DIR / "log"
+LOG_DIR = SHARED_DIR / "lifelog"
 
 
 def get_year_logs(year: int) -> str:

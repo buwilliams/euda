@@ -11,9 +11,9 @@ from datetime import datetime
 from pathlib import Path
 
 # Base paths - Values agent uses shared log and its own output
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-LOG_DIR = SHARED_DIR / "log"
+LOG_DIR = SHARED_DIR / "lifelog"
 VALUES_DIR = DATA_DIR / "values" / "output"
 
 # Ensure values directory exists
