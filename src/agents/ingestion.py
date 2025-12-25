@@ -287,12 +287,31 @@ Content:
 {content}
 ---
 
+CRITICAL: First determine what kind of content this is:
+
+**PRESERVE VERBATIM** (human expression):
+- Personal writing: journals, musings, reflections, notes, blog posts
+- Messages from others: texts, emails, letters, conversations
+- Quotes, ideas, thoughts - yours or others'
+→ Record the actual words. Voice and expression matter.
+
+**SUMMARIZE** (data/information):
+- Transactions, receipts, financial records
+- Articles, reports, documentation
+- Lists, logs, system output
+→ Compress to essence. 2-5 sentences max.
+
 Instructions:
-1. Analyze the content to understand what it represents
-2. Write a meaningful log entry using write_log_entry
-3. Use the temporal hint for the timestamp if available (otherwise use current time)
-4. Choose appropriate source and entry_type based on the content
-5. Keep the log entry concise but informative
+1. Determine: Is this human expression or data/information?
+2. If human expression → preserve the actual words, the voice, the meaning
+3. If data/information → summarize briefly (what happened, key numbers, significance)
+4. Use write_log_entry with appropriate entry_type:
+   - "journal" / "reflection" / "thought" for personal writing
+   - "message" / "conversation" for communications
+   - "summary" for compressed data
+5. Use the temporal hint for timestamp if available
+
+The goal: Capture real thoughts and words verbatim. Compress everything else.
 
 Do NOT read the file again - use the content provided above."""
 

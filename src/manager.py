@@ -31,9 +31,9 @@ logger = logging.getLogger('manager')
 
 # Base paths
 DATA_DIR = Path(__file__).parent.parent / "data"
-SIGNALS_DIR = DATA_DIR / "agents" / "signals"
-INBOX_DIR = DATA_DIR / "inbox" / "pending"
-LOG_DIR = DATA_DIR / "log"
+SIGNALS_DIR = DATA_DIR / "shared" / "signals"
+INBOX_DIR = DATA_DIR / "ingestion" / "inbox" / "pending"
+LOG_DIR = DATA_DIR / "shared" / "lifelog"
 
 # Ensure directories exist
 SIGNALS_DIR.mkdir(parents=True, exist_ok=True)

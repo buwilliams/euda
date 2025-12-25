@@ -2,13 +2,14 @@
 Log tools for reading and writing life log entries.
 """
 
+import re
 from datetime import datetime
 from pathlib import Path
 
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-LOG_DIR = SHARED_DIR / "log"
+LOG_DIR = SHARED_DIR / "lifelog"
 
 
 def ensure_year_dir(year: int) -> Path:
@@ -16,6 +17,25 @@ def ensure_year_dir(year: int) -> Path:
     year_dir = LOG_DIR / str(year)
     year_dir.mkdir(parents=True, exist_ok=True)
     return year_dir
+
+
+# Maximum sentences for summarized content (data/information)
+MAX_SENTENCES_SUMMARY = 7
+
+# Entry types that preserve human expression (no length limit)
+VERBATIM_TYPES = {
+    'journal', 'reflection', 'thought', 'musing', 'note',
+    'message', 'conversation', 'email', 'text', 'letter',
+    'quote', 'idea', 'blog', 'writing'
+}
+
+
+def count_sentences(text: str) -> int:
+    """Count sentences in text (approximate)."""
+    # Split on sentence-ending punctuation followed by space or end
+    sentences = re.split(r'[.!?]+(?:\s|$)', text.strip())
+    # Filter out empty strings
+    return len([s for s in sentences if s.strip()])
 
 
 def write_log_entry(
@@ -35,13 +55,29 @@ def write_log_entry(
         timestamp: ISO timestamp (defaults to now)
         source: Data source (e.g., 'manual', 'photo', 'conversation')
         locality: Location if known
-        entry_type: Type of entry (e.g., 'note', 'photo', 'event')
+        entry_type: Type of entry - affects length validation:
+            - Verbatim types (journal, message, etc.): no length limit
+            - Summary types: max 7 sentences
         temporal_confidence: high, medium, or low
         temporal_source: How the timestamp was determined
 
     Returns:
-        Confirmation message with file path
+        Confirmation message with file path, or error if too long
     """
+    # Only validate length for non-verbatim entry types (summaries of data)
+    entry_type_lower = entry_type.lower() if entry_type else ""
+    is_verbatim = any(vtype in entry_type_lower for vtype in VERBATIM_TYPES)
+
+    if not is_verbatim:
+        sentence_count = count_sentences(content)
+        if sentence_count > MAX_SENTENCES_SUMMARY:
+            return (
+                f"Error: Entry too long ({sentence_count} sentences). "
+                f"Maximum is {MAX_SENTENCES_SUMMARY} sentences for summarized content. "
+                f"Either condense the data, or use a verbatim entry_type "
+                f"(journal, reflection, message, etc.) if this is human expression."
+            )
+
     # Default timestamp to now
     if timestamp is None:
         timestamp = datetime.now().isoformat()

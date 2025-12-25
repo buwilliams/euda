@@ -21,8 +21,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
-from anthropic import Anthropic
 
+from ..providers import get_provider, get_provider_config, get_model_for_agent
 from ..tools.shared.identity import IDENTITY_TOOLS, IDENTITY_HANDLERS
 from ..tools.shared.agent_log import (
     log_activity, log_tool_call, log_work_check, log_work_start,
@@ -32,9 +32,6 @@ from ..tools.shared.agent_log import (
 # Load environment variables from .env file (use explicit path, override existing)
 ENV_FILE = Path(__file__).parent.parent.parent / ".env"
 load_dotenv(ENV_FILE, override=True)
-
-# Initialize client
-client = Anthropic()
 
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
@@ -55,18 +52,37 @@ def load_identity(persona_name: str) -> str:
     return f"{core}\n\n---\n\n{persona}"
 
 
-def create_agent(persona_name: str, tools: list = None, model: str = "claude-sonnet-4-20250514"):
+def create_agent(
+    persona_name: str,
+    tools: list = None,
+    model: str = None,
+    provider_name: str = None
+):
     """
     Create an agent with identity loaded from file.
 
     Args:
         persona_name: Name of the persona file (without .identity.md)
         tools: List of tool definitions for the agent
-        model: Model to use (default: claude-sonnet-4-20250514)
+        model: Model to use (default: from config)
+        provider_name: Provider to use (default: from config)
 
     Returns:
         A process function that handles conversations with this agent
     """
+    # Get provider and model from config if not specified
+    if provider_name is None or model is None:
+        config_provider, config_model = get_model_for_agent(persona_name)
+        if provider_name is None:
+            provider_name = config_provider
+        if model is None:
+            model = config_model
+
+    # Get provider instance and config
+    provider = get_provider(provider_name)
+    provider_config = get_provider_config(provider_name)
+    max_tokens = provider_config.get("max_tokens", 8096)
+
     # Load identity
     system_prompt = load_identity(persona_name)
 
@@ -84,79 +100,66 @@ def create_agent(persona_name: str, tools: list = None, model: str = "claude-son
     all_tools = tools + IDENTITY_TOOLS
 
     def call():
-        """Make an API call to the LLM."""
-        kwargs = {
-            "model": model,
-            "max_tokens": 8096,
-            "system": system_prompt,
-            "messages": context,
-        }
-        if all_tools:
-            kwargs["tools"] = all_tools
-
-        return client.messages.create(**kwargs)
+        """Make an API call to the LLM via the provider."""
+        return provider.create_message(
+            model=model,
+            system=system_prompt,
+            messages=context,
+            tools=all_tools if all_tools else None,
+            max_tokens=max_tokens
+        )
 
     def handle_tool_calls(response, tool_handlers: dict):
         """
         Handle any tool calls in the response.
 
         Args:
-            response: The API response
+            response: The LLMResponse (normalized)
             tool_handlers: Dict mapping tool names to handler functions
 
         Returns:
             True if there were tool calls to handle, False otherwise
         """
-        tool_calls = [block for block in response.content if block.type == "tool_use"]
-
-        if not tool_calls:
+        if not response.tool_calls:
             return False
 
         # Add assistant's response with tool calls to context
-        context.append({
-            "role": "assistant",
-            "content": response.content
-        })
+        context.append(provider.format_assistant_message(response))
 
         # Process each tool call
         tool_results = []
-        for tool_call in tool_calls:
+        for tool_call in response.tool_calls:
             tool_name = tool_call.name
             tool_input = tool_call.input
 
             if tool_name in tool_handlers:
                 try:
                     result = tool_handlers[tool_name](**tool_input)
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": tool_call.id,
-                        "content": str(result)
-                    })
+                    tool_results.append(
+                        provider.format_tool_result(tool_call.id, str(result))
+                    )
                     # Log successful tool call
                     log_tool_call(persona_name, tool_name, tool_input, str(result)[:200], success=True)
                 except Exception as e:
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": tool_call.id,
-                        "content": f"Error: {str(e)}",
-                        "is_error": True
-                    })
+                    tool_results.append(
+                        provider.format_tool_result(tool_call.id, str(e), is_error=True)
+                    )
                     # Log failed tool call
                     log_tool_call(persona_name, tool_name, tool_input, str(e), success=False)
             else:
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": tool_call.id,
-                    "content": f"Unknown tool: {tool_name}",
-                    "is_error": True
-                })
+                tool_results.append(
+                    provider.format_tool_result(tool_call.id, f"Unknown tool: {tool_name}", is_error=True)
+                )
                 log_tool_call(persona_name, tool_name, tool_input, f"Unknown tool: {tool_name}", success=False)
 
-        # Add tool results to context
-        context.append({
-            "role": "user",
-            "content": tool_results
-        })
+        # Add tool results to context (format varies by provider)
+        tool_msg = provider.format_tool_results_message(tool_results)
+        if isinstance(tool_msg, list):
+            # OpenAI returns multiple messages (one per tool result)
+            context.extend(tool_msg)
+        else:
+            # Anthropic returns a single user message
+            context.append(tool_msg)
 
         return True
 
@@ -192,13 +195,11 @@ def create_agent(persona_name: str, tools: list = None, model: str = "claude-son
         # Handle tool calls in a loop
         while handle_tool_calls(response, all_handlers):
             # Collect any text from this response before processing tools
-            text_blocks = [block.text for block in response.content if hasattr(block, 'text')]
-            all_text_blocks.extend(text_blocks)
+            all_text_blocks.extend(response.text_blocks)
             response = call()
 
         # Extract text from final response
-        text_blocks = [block.text for block in response.content if hasattr(block, 'text')]
-        all_text_blocks.extend(text_blocks)
+        all_text_blocks.extend(response.text_blocks)
 
         output = "\n".join(all_text_blocks)
 

@@ -96,28 +96,57 @@ def run_ingest():
         python main.py ingest                    # Process inbox
         python main.py ingest /path/to/dir       # Process external directory
         python main.py ingest /path/to/dir --recursive  # Include subdirectories
+        python main.py ingest /path/to/dir --type text  # Filter by content type
+        python main.py ingest /path/to/dir --type text,images  # Multiple types
+        python main.py ingest /path/to/dir -r --type text  # Combined options
+
+    Content types: text, images, video, audio
     """
     import json
     import hashlib
     import time
+    import tempfile
     from datetime import datetime
     from pathlib import Path
     from src.tools.ingestion.queue import get_queue
     from src.tools.ingestion.token_budget import get_budget
     from src.tools.ingestion.digest import generate_digest, get_content_for_ai
     from src.tools.ingestion.classifier import mark_as_processed, should_ignore, compute_file_hash
+    from src.tools.ingestion.content_types import (
+        parse_content_types, matches_content_types, is_archive,
+        VALID_CONTENT_TYPES
+    )
+    from src.tools.ingestion.archive_extractor import (
+        scan_archive_contents, extract_matching_files,
+        get_archive_manifest_key, is_archive_supported, get_unsupported_reason
+    )
     from src.agents.ingestion import create_ingestion_agent, ALL_HANDLERS
 
     # Parse arguments
     source_dir = None
     recursive = False
+    content_types = set()  # Empty = all types
 
     args = sys.argv[2:]  # Skip 'main.py' and 'ingest'
-    for arg in args:
+    i = 0
+    while i < len(args):
+        arg = args[i]
         if arg in ('--recursive', '-r'):
             recursive = True
+        elif arg in ('--type', '-t'):
+            if i + 1 < len(args):
+                try:
+                    content_types = parse_content_types(args[i + 1])
+                    i += 1
+                except ValueError as e:
+                    print(f"Error: {e}")
+                    return
+            else:
+                print("Error: --type requires a value (e.g., --type text,images)")
+                return
         elif not arg.startswith('-'):
             source_dir = arg
+        i += 1
 
     print("=" * 60)
     print("Euno - Batch Ingestion")
@@ -139,6 +168,10 @@ def run_ingest():
 
         print(f"Source: {source_path}")
         print(f"Mode:   {'Recursive' if recursive else 'Top-level only'}")
+        if content_types:
+            print(f"Types:  {', '.join(sorted(content_types))}")
+        else:
+            print(f"Types:  All")
 
         # Load manifest of already-processed files
         manifest_dir = Path(__file__).parent / "data" / "ingestion" / "manifests"
@@ -171,33 +204,108 @@ def run_ingest():
         all_files = [f for f in all_files if f.is_file() and not should_ignore(f.name)[0]]
         print(f"Found {len(all_files)} file(s)")
 
-        # Check which are new or changed
+        # Separate regular files and archives
+        regular_files = []
+        archive_files = []
+        for f in all_files:
+            if is_archive(f):
+                archive_files.append(f)
+            else:
+                regular_files.append(f)
+
+        # Filter regular files by content type
+        if content_types:
+            filtered_files = [f for f in regular_files if matches_content_types(f, content_types)]
+            print(f"After type filter: {len(filtered_files)} file(s) match {', '.join(sorted(content_types))}")
+        else:
+            filtered_files = regular_files
+
+        # Check which regular files are new or changed
         files_to_process = []
-        for file_path in all_files:
+        for file_path in filtered_files:
             rel_path = str(file_path.relative_to(source_path))
             file_hash = compute_file_hash(str(file_path))
 
             prev = manifest["processed"].get(rel_path)
             if prev is None:
                 # New file
-                files_to_process.append((file_path, file_hash, "new"))
+                files_to_process.append((file_path, file_hash, "new", None))  # None = not from archive
             elif prev.get("hash") != file_hash:
                 # Changed file
-                files_to_process.append((file_path, file_hash, "changed"))
+                files_to_process.append((file_path, file_hash, "changed", None))
             # else: unchanged, skip
+
+        # Process archives - scan for matching content
+        archive_contents = []  # List of (archive_path, archive_hash, internal_files)
+        if archive_files and content_types:
+            print(f"\nScanning {len(archive_files)} archive(s) for matching content...")
+            for archive_path in archive_files:
+                if not is_archive_supported(archive_path):
+                    reason = get_unsupported_reason(archive_path)
+                    print(f"  Skipping {archive_path.name}: {reason}")
+                    continue
+
+                archive_rel_path = str(archive_path.relative_to(source_path))
+                archive_hash = compute_file_hash(str(archive_path))
+
+                # Check if archive has changed since last scan
+                prev_archive = manifest.get("archives", {}).get(archive_rel_path)
+                if prev_archive and prev_archive.get("hash") == archive_hash:
+                    # Archive unchanged, check individual files
+                    pass  # Individual file checks happen below
+
+                # Scan archive contents
+                try:
+                    matching_files = scan_archive_contents(archive_path, content_types)
+                    if matching_files:
+                        archive_contents.append((archive_path, archive_hash, matching_files))
+                        print(f"  {archive_path.name}: {len(matching_files)} matching file(s)")
+                except Exception as e:
+                    print(f"  Error scanning {archive_path.name}: {e}")
+
+        # Add archive contents to files_to_process
+        for archive_path, archive_hash, internal_files in archive_contents:
+            archive_rel_path = str(archive_path.relative_to(source_path))
+            for file_info in internal_files:
+                internal_path = file_info['internal_path']
+                manifest_key = get_archive_manifest_key(archive_rel_path, internal_path)
+
+                prev = manifest["processed"].get(manifest_key)
+                prev_archive_hash = prev.get("archive_hash") if prev else None
+
+                if prev is None:
+                    # New file in archive
+                    files_to_process.append((
+                        archive_path,
+                        archive_hash,
+                        "new",
+                        {"internal_path": internal_path, "archive_rel_path": archive_rel_path}
+                    ))
+                elif prev_archive_hash != archive_hash:
+                    # Archive changed, need to re-process
+                    files_to_process.append((
+                        archive_path,
+                        archive_hash,
+                        "changed",
+                        {"internal_path": internal_path, "archive_rel_path": archive_rel_path}
+                    ))
+                # else: unchanged, skip
 
         if not files_to_process:
             print("\nNo new or changed files to process.")
             print(f"Token budget: {budget_status['used']:,} / {budget_status['daily_limit']:,} ({budget_status['percent_used']:.1f}%)")
             return
 
-        new_count = sum(1 for _, _, status in files_to_process if status == "new")
-        changed_count = sum(1 for _, _, status in files_to_process if status == "changed")
+        new_count = sum(1 for _, _, status, _ in files_to_process if status == "new")
+        changed_count = sum(1 for _, _, status, _ in files_to_process if status == "changed")
+        archive_count = sum(1 for _, _, _, archive_info in files_to_process if archive_info is not None)
         print(f"New files: {new_count}, Changed files: {changed_count}")
+        if archive_count > 0:
+            print(f"From archives: {archive_count}")
 
         # Estimate tokens
         total_estimate = 0
-        for file_path, _, _ in files_to_process:
+        for file_path, _, _, archive_info in files_to_process:
             try:
                 digest = generate_digest(str(file_path))
                 total_estimate += digest.get("token_estimate", 0)
@@ -219,32 +327,92 @@ def run_ingest():
         start_time = time.time()
         total_files = len(files_to_process)
 
-        try:
-            for i, (file_path, file_hash, status) in enumerate(files_to_process):
-                rel_path = str(file_path.relative_to(source_path))
-                file_name = file_path.name
+        # Group archive files for batch extraction
+        archive_groups = {}
+        for i, (file_path, file_hash, status, archive_info) in enumerate(files_to_process):
+            if archive_info:
+                key = str(file_path)
+                if key not in archive_groups:
+                    archive_groups[key] = {
+                        'archive_path': file_path,
+                        'archive_hash': file_hash,
+                        'files': []
+                    }
+                archive_groups[key]['files'].append((i, archive_info['internal_path'], status))
 
+        try:
+            # Create temp directory for archive extraction
+            temp_extract_dir = Path(tempfile.mkdtemp(prefix='euno_ingest_'))
+
+            for i, (file_path, file_hash, status, archive_info) in enumerate(files_to_process):
                 # Progress display
                 progress = (i + 1) / total_files * 100
                 budget_status = budget.get_status()
 
+                if archive_info:
+                    # File from archive
+                    internal_path = archive_info['internal_path']
+                    archive_rel_path = archive_info['archive_rel_path']
+                    display_path = f"{archive_rel_path}::{internal_path}"
+                    file_name = Path(internal_path).name
+                    manifest_key = get_archive_manifest_key(archive_rel_path, internal_path)
+                else:
+                    # Regular file
+                    display_path = str(file_path.relative_to(source_path))
+                    file_name = file_path.name
+                    manifest_key = display_path
+
                 status_label = "NEW" if status == "new" else "CHG"
-                print(f"\n[{progress:5.1f}%] [{status_label}] {rel_path}")
+                print(f"\n[{progress:5.1f}%] [{status_label}] {display_path}")
                 print(f"         Tokens: {budget_status['used']:,} / {budget_status['daily_limit']:,} ({budget_status['percent_used']:.1f}%)")
 
                 try:
-                    # Generate digest
-                    digest = generate_digest(str(file_path))
-                    token_estimate = digest.get("token_estimate", 0)
+                    # Get the actual file to process
+                    if archive_info:
+                        # Extract single file from archive
+                        internal_path = archive_info['internal_path']
+                        archive_extract_dir = temp_extract_dir / f"archive_{i}"
+                        archive_extract_dir.mkdir(parents=True, exist_ok=True)
 
-                    # Check budget
-                    if not budget.can_spend(token_estimate):
-                        print(f"         -> DEFERRED (budget exhausted, need {token_estimate:,} tokens)")
-                        deferred += 1
-                        continue
+                        with extract_matching_files(file_path, None, archive_extract_dir) as extracted:
+                            # Find the specific file
+                            actual_file = None
+                            for extracted_path, int_path in extracted:
+                                if int_path == internal_path:
+                                    actual_file = extracted_path
+                                    break
 
-                    # Get content
-                    content = get_content_for_ai(str(file_path), digest)
+                            if not actual_file or not actual_file.exists():
+                                print(f"         -> FAILED: Could not extract {internal_path}")
+                                failed += 1
+                                continue
+
+                            # Generate digest from extracted file
+                            digest = generate_digest(str(actual_file))
+                            token_estimate = digest.get("token_estimate", 0)
+
+                            # Check budget
+                            if not budget.can_spend(token_estimate):
+                                print(f"         -> DEFERRED (budget exhausted, need {token_estimate:,} tokens)")
+                                deferred += 1
+                                continue
+
+                            # Get content
+                            content = get_content_for_ai(str(actual_file), digest)
+                            content_hash = compute_file_hash(str(actual_file))
+                    else:
+                        # Regular file
+                        digest = generate_digest(str(file_path))
+                        token_estimate = digest.get("token_estimate", 0)
+
+                        # Check budget
+                        if not budget.can_spend(token_estimate):
+                            print(f"         -> DEFERRED (budget exhausted, need {token_estimate:,} tokens)")
+                            deferred += 1
+                            continue
+
+                        content = get_content_for_ai(str(file_path), digest)
+                        content_hash = file_hash
 
                     # Get temporal hints
                     temporal = digest.get("temporal_hints", {})
@@ -259,7 +427,7 @@ def run_ingest():
                     prompt = f"""Process this file and write a log entry.
 
 File: {file_name}
-Path: {rel_path}
+Path: {display_path}
 Category: {digest.get('classification', {}).get('category', 'unknown')}
 {temporal_note}
 
@@ -268,12 +436,31 @@ Content:
 {content}
 ---
 
+CRITICAL: First determine what kind of content this is:
+
+**PRESERVE VERBATIM** (human expression):
+- Personal writing: journals, musings, reflections, notes, blog posts
+- Messages from others: texts, emails, letters, conversations
+- Quotes, ideas, thoughts - yours or others'
+→ Record the actual words. Voice and expression matter.
+
+**SUMMARIZE** (data/information):
+- Transactions, receipts, financial records
+- Articles, reports, documentation
+- Lists, logs, system output
+→ Compress to essence. 2-5 sentences max.
+
 Instructions:
-1. Analyze the content to understand what it represents
-2. Write a meaningful log entry using write_log_entry
-3. Use the temporal hint for the timestamp if available (otherwise use current time)
-4. Choose appropriate source and entry_type based on the content
-5. Keep the log entry concise but informative
+1. Determine: Is this human expression or data/information?
+2. If human expression → preserve the actual words, the voice, the meaning
+3. If data/information → summarize briefly (what happened, key numbers, significance)
+4. Use write_log_entry with appropriate entry_type:
+   - "journal" / "reflection" / "thought" for personal writing
+   - "message" / "conversation" for communications
+   - "summary" for compressed data
+5. Use the temporal hint for timestamp if available
+
+The goal: Capture real thoughts and words verbatim. Compress everything else.
 
 Do NOT read the file again - use the content provided above."""
 
@@ -281,14 +468,30 @@ Do NOT read the file again - use the content provided above."""
                     result = agent.process(prompt, ALL_HANDLERS)
 
                     # Record usage
-                    budget.spend(token_estimate, f"Processed: {rel_path}")
+                    budget.spend(token_estimate, f"Processed: {display_path}")
 
                     # Update manifest
-                    manifest["processed"][rel_path] = {
-                        "hash": file_hash,
-                        "processed_at": datetime.now().isoformat(),
-                        "tokens": token_estimate
-                    }
+                    if archive_info:
+                        manifest["processed"][manifest_key] = {
+                            "hash": content_hash,
+                            "archive_hash": file_hash,
+                            "processed_at": datetime.now().isoformat(),
+                            "tokens": token_estimate
+                        }
+                        # Track archive
+                        if "archives" not in manifest:
+                            manifest["archives"] = {}
+                        archive_rel_path = archive_info['archive_rel_path']
+                        manifest["archives"][archive_rel_path] = {
+                            "hash": file_hash,
+                            "scanned_at": datetime.now().isoformat()
+                        }
+                    else:
+                        manifest["processed"][manifest_key] = {
+                            "hash": file_hash,
+                            "processed_at": datetime.now().isoformat(),
+                            "tokens": token_estimate
+                        }
 
                     # Save manifest after each file (in case of crash)
                     manifest["updated"] = datetime.now().isoformat()
@@ -311,6 +514,11 @@ Do NOT read the file again - use the content provided above."""
             manifest["updated"] = datetime.now().isoformat()
             with open(manifest_file, 'w') as f:
                 json.dump(manifest, f, indent=2)
+        finally:
+            # Cleanup temp extraction directory
+            import shutil
+            if temp_extract_dir.exists():
+                shutil.rmtree(temp_extract_dir, ignore_errors=True)
 
         # Final summary
         elapsed = time.time() - start_time
@@ -430,12 +638,31 @@ Content:
 {content}
 ---
 
+CRITICAL: First determine what kind of content this is:
+
+**PRESERVE VERBATIM** (human expression):
+- Personal writing: journals, musings, reflections, notes, blog posts
+- Messages from others: texts, emails, letters, conversations
+- Quotes, ideas, thoughts - yours or others'
+→ Record the actual words. Voice and expression matter.
+
+**SUMMARIZE** (data/information):
+- Transactions, receipts, financial records
+- Articles, reports, documentation
+- Lists, logs, system output
+→ Compress to essence. 2-5 sentences max.
+
 Instructions:
-1. Analyze the content to understand what it represents
-2. Write a meaningful log entry using write_log_entry
-3. Use the temporal hint for the timestamp if available (otherwise use current time)
-4. Choose appropriate source and entry_type based on the content
-5. Keep the log entry concise but informative
+1. Determine: Is this human expression or data/information?
+2. If human expression → preserve the actual words, the voice, the meaning
+3. If data/information → summarize briefly (what happened, key numbers, significance)
+4. Use write_log_entry with appropriate entry_type:
+   - "journal" / "reflection" / "thought" for personal writing
+   - "message" / "conversation" for communications
+   - "summary" for compressed data
+5. Use the temporal hint for timestamp if available
+
+The goal: Capture real thoughts and words verbatim. Compress everything else.
 
 Do NOT read the file again - use the content provided above."""
 
