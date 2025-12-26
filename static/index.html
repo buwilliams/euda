@@ -957,7 +957,7 @@
                                 <line x1="12" y1="3" x2="12" y2="15"/>
                             </svg>
                         </button>
-                        <input type="file" id="file-input" style="display:none" onchange="handleFileSelect(event)">
+                        <input type="file" id="file-input" style="display:none" onchange="handleFileSelect(event)" multiple>
                         <button class="panel-toggle" id="notifications-toggle" onclick="togglePanel('notifications')" title="Attention">
                             <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                             <span class="toggle-badge" id="notifications-badge" style="display: none;">0</span>
@@ -1735,11 +1735,34 @@
             document.getElementById('file-input').click();
         }
 
+        let uploadQueue = [];
+        let uploadTotal = 0;
+        let uploadCurrent = 0;
+
         function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            uploadFile(file);
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
             event.target.value = '';
+            queueUploads(files);
+        }
+
+        function queueUploads(files) {
+            uploadQueue = uploadQueue.concat(files);
+            uploadTotal = uploadQueue.length;
+            uploadCurrent = 0;
+            processUploadQueue();
+        }
+
+        function processUploadQueue() {
+            if (uploadQueue.length === 0) {
+                uploadTotal = 0;
+                uploadCurrent = 0;
+                return;
+            }
+
+            const file = uploadQueue.shift();
+            uploadCurrent++;
+            uploadFile(file);
         }
 
         function uploadFile(file) {
@@ -1750,7 +1773,8 @@
             const statusEl = document.getElementById('upload-status');
             const uploadBtn = document.getElementById('upload-btn');
 
-            filenameEl.textContent = file.name;
+            const queueStatus = uploadTotal > 1 ? ` (${uploadCurrent}/${uploadTotal})` : '';
+            filenameEl.textContent = file.name + queueStatus;
             percentEl.textContent = '0%';
             fillEl.style.width = '0%';
             statusEl.textContent = 'Uploading...';
@@ -1777,8 +1801,6 @@
             };
 
             uploadXhr.onload = function() {
-                uploadBtn.disabled = false;
-
                 if (uploadXhr.status === 200) {
                     try {
                         const response = JSON.parse(uploadXhr.responseText);
@@ -1789,30 +1811,40 @@
                         inlineChat.style.display = 'block';
                         addInlineMessage(`Uploaded: ${file.name}`, 'you');
                         addInlineMessage(response.message || `File "${response.filename}" uploaded.`, 'friend');
-
-                        setTimeout(() => progressEl.classList.remove('active'), 1500);
                     } catch (e) {
                         statusEl.textContent = 'Upload complete';
-                        setTimeout(() => progressEl.classList.remove('active'), 1500);
                     }
                 } else {
                     statusEl.textContent = 'Upload failed';
                     inlineChat.style.display = 'block';
                     addInlineMessage(`Upload failed: ${file.name}`, 'you');
                     addInlineMessage('Sorry, the upload failed. Please try again.', 'friend');
-                    setTimeout(() => progressEl.classList.remove('active'), 2000);
                 }
 
                 uploadXhr = null;
+
+                // Process next file in queue
+                if (uploadQueue.length > 0) {
+                    setTimeout(processUploadQueue, 500);
+                } else {
+                    uploadBtn.disabled = false;
+                    setTimeout(() => progressEl.classList.remove('active'), 1500);
+                }
             };
 
             uploadXhr.onerror = function() {
-                uploadBtn.disabled = false;
                 statusEl.textContent = 'Network error';
                 inlineChat.style.display = 'block';
-                addInlineMessage('Upload failed due to network error.', 'friend');
-                setTimeout(() => progressEl.classList.remove('active'), 2000);
+                addInlineMessage(`Upload failed: ${file.name}`, 'friend');
                 uploadXhr = null;
+
+                // Continue with next file despite error
+                if (uploadQueue.length > 0) {
+                    setTimeout(processUploadQueue, 500);
+                } else {
+                    uploadBtn.disabled = false;
+                    setTimeout(() => progressEl.classList.remove('active'), 2000);
+                }
             };
 
             uploadXhr.open('POST', '/api/upload');
@@ -1890,7 +1922,7 @@
             e.preventDefault();
             appEl.classList.remove('drag-over');
             if (e.dataTransfer.files.length > 0) {
-                uploadFile(e.dataTransfer.files[0]);
+                queueUploads(Array.from(e.dataTransfer.files));
             }
         });
 
