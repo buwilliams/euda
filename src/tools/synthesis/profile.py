@@ -18,7 +18,7 @@ from pathlib import Path
 from .epistemic import get_axioms, get_mental_models, get_epistemic_tools
 from .values import get_current_values, get_phase_values, get_lifetime_values
 from .behaviors import get_behaviors
-from .context import get_biographical, get_relationships
+from .context import get_biographical, get_relationships, get_influences
 
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
@@ -68,6 +68,7 @@ def generate_profile() -> str:
     behaviors = get_behaviors()
     biographical = get_biographical()
     relationships = get_relationships()
+    influences = get_influences()
 
     # Build the profile with epistemic core at the foundation
     sections = []
@@ -132,6 +133,13 @@ def generate_profile() -> str:
     sections.append("\n### Key Relationships\n")
     if not relationships.startswith("No relationships"):
         sections.append(_summarize_relationships(relationships))
+    else:
+        sections.append("(Not yet recorded)\n")
+
+    sections.append("\n### Influences\n")
+    sections.append("*Books, media, thinkers, ideas, places that shaped thinking*\n")
+    if not influences.startswith("No influences"):
+        sections.append(_extract_content(influences))
     else:
         sections.append("(Not yet recorded)\n")
 

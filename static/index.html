@@ -49,9 +49,14 @@
         }
 
         .context-content {
-            flex: 1;
+            flex: 0 0 auto;
             overflow-y: auto;
             padding: 0.5rem 0;
+            max-height: 50vh;
+        }
+
+        .context-content:empty {
+            display: none;
         }
 
         .greeting {
@@ -205,10 +210,11 @@
 
         /* Inline Chat */
         .inline-chat {
+            flex: 1;
             border-top: 1px solid #eee;
             padding: 1rem 0;
-            max-height: 300px;
             overflow-y: auto;
+            min-height: 100px;
         }
 
         .inline-chat-messages {
@@ -381,6 +387,7 @@
 
         /* ============== Chat Input (Bottom Bar) ============== */
         .input-bar {
+            margin-top: auto;
             padding-top: 1rem;
             border-top: 1px solid #eee;
         }
@@ -1203,8 +1210,6 @@
 
             if (schedule.next_event) {
                 html += `<div class="active-next">Next: ${escapeHtml(schedule.next_event.title)} <a onclick="openChat()">See context</a></div>`;
-            } else {
-                html += '<div class="active-next">No upcoming events</div>';
             }
 
             if (surfacedCount > 0) {

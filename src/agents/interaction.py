@@ -28,7 +28,8 @@ from ..tools.synthesis import (
     get_current_values, get_phase_values, get_lifetime_values, get_all_values,
     get_behaviors, get_profile, get_synthesis_summary,
     get_biographical, update_biographical,
-    get_relationships, add_relationship, update_relationship
+    get_relationships, add_relationship, update_relationship,
+    get_influences, update_influences
 )
 from ..tools.world.world import get_opportunities
 from ..tools.worker.task import TASK_TOOLS, TASK_HANDLERS
@@ -89,6 +90,11 @@ IDENTITY_READ_TOOLS = [
         "name": "get_relationships",
         "description": "Get relationship narratives - the people who matter to the user.",
         "input_schema": {"type": "object", "properties": {}}
+    },
+    {
+        "name": "get_influences",
+        "description": "Get influences - books, media, thinkers, ideas, places that shaped the user's thinking.",
+        "input_schema": {"type": "object", "properties": {}}
     }
 ]
 
@@ -135,6 +141,19 @@ IDENTITY_WRITE_TOOLS = [
                 "narrative": {"type": "string", "description": "The updated narrative"}
             },
             "required": ["name", "narrative"]
+        }
+    },
+    {
+        "name": "update_influences",
+        "description": "Record an influence when the user mentions something that shaped their thinking (a book, movie, thinker, idea, place).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "section": {"type": "string", "description": "Category: 'Books', 'Media', 'Thinkers', 'Ideas', 'Places'"},
+                "item": {"type": "string", "description": "The specific item (book title, person name, etc.)"},
+                "impact": {"type": "string", "description": "How it shaped the user's thinking"}
+            },
+            "required": ["section", "item", "impact"]
         }
     }
 ]
@@ -218,6 +237,8 @@ INTERACTION_HANDLERS = {
     "get_relationships": get_relationships,
     "add_relationship": add_relationship,
     "update_relationship": update_relationship,
+    "get_influences": get_influences,
+    "update_influences": update_influences,
     # World tools
     "get_opportunities": get_opportunities,
     "get_system_capabilities": get_last_introspection,

@@ -256,6 +256,92 @@ def update_relationship(name: str, narrative: str) -> str:
 
 
 # =============================================================================
+# INFLUENCES TOOLS
+# =============================================================================
+
+def get_influences() -> str:
+    """
+    Read influences - books, media, thinkers, ideas that shaped the user.
+
+    Returns:
+        Influences content or message if not found
+    """
+    inf_file = CONTEXT_DIR / "influences.md"
+
+    if not inf_file.exists():
+        return "No influences recorded yet."
+
+    with open(inf_file, 'r') as f:
+        return f.read()
+
+
+def update_influences(section: str, item: str, impact: str) -> str:
+    """
+    Add or update an influence.
+
+    Args:
+        section: Category - 'Books', 'Media', 'Thinkers', 'Ideas', 'Places'
+        item: The specific item (book title, person name, etc.)
+        impact: How it shaped the user's thinking
+
+    Returns:
+        Confirmation message
+    """
+    inf_file = CONTEXT_DIR / "influences.md"
+    timestamp = datetime.now().isoformat()
+
+    # Read existing or create new
+    if inf_file.exists():
+        with open(inf_file, 'r') as f:
+            existing = f.read()
+    else:
+        existing = f"""# Influences
+
+*What shaped how I think - books, media, thinkers, ideas, places*
+
+Updated: {timestamp}
+
+## Books
+
+## Media
+
+## Thinkers
+
+## Ideas
+
+## Places
+
+---
+
+*Sources: conversations, log entries*
+"""
+
+    # Update timestamp
+    existing = re.sub(r'Updated: .*', f'Updated: {timestamp}', existing)
+
+    # Check if this item already exists
+    if f"**{item}**" in existing:
+        # Update existing entry
+        pattern = rf'(\*\*{re.escape(item)}\*\*:).*?(?=\n\*\*|\n##|\n---|\Z)'
+        replacement = rf'\1 {impact}'
+        existing = re.sub(pattern, replacement, existing, flags=re.DOTALL)
+    else:
+        # Add new entry to the appropriate section
+        section_pattern = rf'(## {section}\n)'
+        new_entry = f"\n**{item}**: {impact}\n"
+        if re.search(section_pattern, existing):
+            existing = re.sub(section_pattern, rf'\1{new_entry}', existing)
+        else:
+            # Section doesn't exist, add before sources
+            existing = existing.replace("\n---\n\n*Sources:", f"\n## {section}{new_entry}\n---\n\n*Sources:")
+
+    with open(inf_file, 'w') as f:
+        f.write(existing)
+
+    return f"Influence recorded: {item} ({section})"
+
+
+# =============================================================================
 # TOOL DEFINITIONS
 # =============================================================================
 
@@ -349,6 +435,37 @@ CONTEXT_TOOLS = [
             },
             "required": ["name", "narrative"]
         }
+    },
+    # Influences tools
+    {
+        "name": "get_influences",
+        "description": "Read influences - books, media, thinkers, ideas, places that shaped the user's thinking.",
+        "input_schema": {
+            "type": "object",
+            "properties": {}
+        }
+    },
+    {
+        "name": "update_influences",
+        "description": "Record an influence when the user mentions something that shaped their thinking (a book, movie, person, idea, place).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "section": {
+                    "type": "string",
+                    "description": "Category: 'Books', 'Media', 'Thinkers', 'Ideas', 'Places'"
+                },
+                "item": {
+                    "type": "string",
+                    "description": "The specific item (book title, person name, etc.)"
+                },
+                "impact": {
+                    "type": "string",
+                    "description": "How it shaped the user's thinking"
+                }
+            },
+            "required": ["section", "item", "impact"]
+        }
     }
 ]
 
@@ -360,6 +477,8 @@ CONTEXT_HANDLERS = {
     "get_relationship": get_relationship,
     "add_relationship": add_relationship,
     "update_relationship": update_relationship,
+    "get_influences": get_influences,
+    "update_influences": update_influences,
 }
 
 

@@ -171,12 +171,17 @@ def get_enriched_notifications() -> list:
     # Add synthetic ingestion notification showing queue status
     inbox_dir = BASE_DIR / "data" / "ingestion" / "inbox"
     if inbox_dir.exists():
-        # Count files in each status directory (exclude hidden files like .gitkeep)
-        pending_count = len([f for f in (inbox_dir / "pending").iterdir() if f.is_file() and not f.name.startswith('.')]) if (inbox_dir / "pending").exists() else 0
-        processing_count = len([f for f in (inbox_dir / "processing").iterdir() if f.is_file() and not f.name.startswith('.')]) if (inbox_dir / "processing").exists() else 0
-        failed_count = len([f for f in (inbox_dir / "failed").iterdir() if f.is_file() and not f.name.startswith('.')]) if (inbox_dir / "failed").exists() else 0
-        deferred_count = len([f for f in (inbox_dir / "deferred").iterdir() if f.is_file() and not f.name.startswith('.')]) if (inbox_dir / "deferred").exists() else 0
-        processed_count = len([f for f in (inbox_dir / "processed").iterdir() if f.is_file() and not f.name.startswith('.')]) if (inbox_dir / "processed").exists() else 0
+        # Count files in each status directory (exclude hidden files and .reason.txt metadata)
+        def count_files(path):
+            if not path.exists():
+                return 0
+            return len([f for f in path.iterdir() if f.is_file() and not f.name.startswith('.') and not f.name.endswith('.reason.txt')])
+
+        pending_count = count_files(inbox_dir / "pending")
+        processing_count = count_files(inbox_dir / "processing")
+        failed_count = count_files(inbox_dir / "failed")
+        deferred_count = count_files(inbox_dir / "deferred")
+        processed_count = count_files(inbox_dir / "processed")
 
         # Show notification if there's any activity
         if pending_count > 0 or processing_count > 0 or failed_count > 0:

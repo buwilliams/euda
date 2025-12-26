@@ -29,7 +29,8 @@ from .behaviors import (
 from .context import (
     CONTEXT_TOOLS, CONTEXT_HANDLERS,
     get_biographical, update_biographical,
-    get_relationships, get_relationship, add_relationship, update_relationship
+    get_relationships, get_relationship, add_relationship, update_relationship,
+    get_influences, update_influences
 )
 from .profile import (
     PROFILE_TOOLS, PROFILE_HANDLERS,
@@ -89,6 +90,7 @@ __all__ = [
     'CONTEXT_TOOLS', 'CONTEXT_HANDLERS',
     'get_biographical', 'update_biographical',
     'get_relationships', 'get_relationship', 'add_relationship', 'update_relationship',
+    'get_influences', 'update_influences',
     # Profile tools (consolidated)
     'PROFILE_TOOLS', 'PROFILE_HANDLERS',
     'get_profile', 'generate_profile', 'get_synthesis_summary',
