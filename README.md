@@ -117,10 +117,10 @@ Seven specialized agents work together, each with its own persona and purpose:
 | **Summary** | The Historian | Distills daily logs into yearly narratives |
 | **Synthesis** | The Keeper | Synthesizes who you are—epistemic axioms at foundation, values derived, behaviors revealing |
 | **World** | The Scout | Explores external opportunities that match your values |
-| **Attention** | The Curator | Matches opportunities to your energy and timing |
+| **Attention** | The Curator | Matches opportunities to your energy and timing; surfaces proactive questions |
 | **Interaction** | The Caring Friend | Converses, listens, adapts—your single interface to everything |
 | **Worker** | The Executor | Handles tasks autonomously or escalates when needed |
-| **Evolution** | The Evolver | Evolves agent identities based on your synthesis |
+| **Evolution** | The Evolver | Evolves agent identities; assesses system health and steers other agents |
 
 ### Under the hood
 

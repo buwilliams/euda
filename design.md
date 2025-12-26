@@ -106,6 +106,8 @@ data/shared/signals/
   logs_updated.signal        # Created by Ingestion, consumed by Summary
   summaries_updated.signal   # Created by Summary, consumed by Synthesis
   synthesis_updated.signal   # Created by Synthesis, consumed by World, Evolution
+  proactive_gaps.json        # Created by Evolution, consumed by Attention
+  agent_guidance.json        # Created by Evolution, consumed by all agents
 ```
 
 Signal files contain a timestamp. Reading a signal deletes it (one-time trigger).
@@ -121,6 +123,44 @@ def check_signal(name) -> bool:
         return True
     return False
 ```
+
+### Proactive Behavior
+
+The system proactively surfaces questions and guidance to help users configure and understand Euno:
+
+**Evolution Agent Health Assessment:**
+- Runs every 6 hours (or on first startup)
+- Checks data completeness (biographical, relationships, values)
+- Checks configuration (energy baseline, location)
+- Identifies gaps with priorities (high/medium/low)
+- Writes `proactive_gaps.json` for Attention to surface
+- Writes `agent_guidance.json` to steer other agents
+
+**Attention Agent Gap Surfacing:**
+- Reads gaps signal, picks highest priority unsurfaced gap
+- Surfaces as friendly notification ("Hey, I realized I don't know your name yet!")
+- Tracks what's been asked in `surfaced.json` with cooldowns
+- Respects cooldown periods (1 week for biographical, 1 day for energy)
+
+**Agent Steering:**
+- Evolution writes guidance signals for specific agents
+- Interaction reads `learn_name_naturally` hint
+- World reads `skip_location_opportunities` hint
+- Agents adapt behavior without breaking
+
+```json
+// agent_guidance.json
+{
+  "guidance": {
+    "interaction": { "learn_name_naturally": true },
+    "world": { "skip_location_opportunities": true }
+  }
+}
+```
+
+**Tone:** Curious friend—warm and conversational, not corporate:
+- "Hey, I realized I don't know your name yet!"
+- "Quick thought—where are you based?"
 
 ### Identity System
 
@@ -221,7 +261,8 @@ euno/
 │   │   │   ├── log.py          # Life log read/write
 │   │   │   ├── identity.py     # Agent identity evolution
 │   │   │   ├── notifications.py
-│   │   │   └── agent_log.py    # Agent activity logging
+│   │   │   ├── agent_log.py    # Agent activity logging
+│   │   │   └── guidance.py     # Agent steering from Evolution
 │   │   ├── ingestion/          # Ingestion tools
 │   │   │   ├── files.py
 │   │   │   ├── classifier.py
@@ -251,7 +292,8 @@ euno/
 │   │   │   ├── project.py
 │   │   │   └── worker.py
 │   │   └── evolution/          # Evolution tools
-│   │       └── evolution.py
+│   │       ├── evolution.py
+│   │       └── health.py       # System health assessment
 │   │
 │   └── web/
 │       └── app.py              # FastAPI server
@@ -289,8 +331,9 @@ euno/
     │   └── opportunities/      # opportunities.json
     │
     ├── attention/              # Attention Agent data
-    │   ├── state/              # state.json
+    │   ├── state/              # state.json, surfaced.json (tracks asked questions)
     │   ├── config/             # config.json
+    │   ├── prompts/            # proactive.md
     │   └── queue/              # surfacing_queue.json, energy logs
     │
     ├── interaction/            # Interaction Agent data
@@ -305,6 +348,7 @@ euno/
     │
     └── evolution/              # Evolution Agent data
         ├── state/              # state.json
+        ├── prompts/            # assess_health.md
         ├── output/             # capabilities.md
         └── logs/               # Evolution activity logs
 ```
@@ -318,11 +362,11 @@ euno/
 | Ingestion | 30s | `inbox_changed`, pending files | `logs_updated` | read_file, write_log, mark_processed |
 | Summary | 5min | `logs_updated` | `summaries_updated` | read_log, write_summary |
 | Synthesis | 10min | `summaries_updated` | `synthesis_updated` | read_summaries, write_epistemic, write_values |
-| World | 1hr | `synthesis_updated`, 24hr timer | `opportunities_updated` | search_*, write_opportunity |
-| Attention | 5min | time windows (7-9am, 9-11pm) | `attention_delivered` | read_*, queue_notification |
-| Interaction | on-demand | user messages | — | read_*, write_log, update_biographical |
+| World | 1hr | `synthesis_updated`, 24hr timer | `opportunities_updated` | search_*, write_opportunity, get_guidance |
+| Attention | 5min | time windows, `proactive_gaps` | `attention_delivered` | read_*, queue_notification, surface_gaps |
+| Interaction | on-demand | user messages | — | read_*, write_log, update_biographical, get_guidance |
 | Worker | 30s | pending tasks | `task_completed` | execute_task, store_result |
-| Evolution | 30min | `synthesis_updated`, `code_changed` | `evolution_updated` | analyze_*, propose_identity_evolution |
+| Evolution | 30min | `synthesis_updated`, 6hr timer | `proactive_gaps`, `agent_guidance` | analyze_*, health_assessment, steer_agents |
 
 ### Large-Scale Ingestion Strategy
 
