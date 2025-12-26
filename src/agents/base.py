@@ -45,6 +45,36 @@ def load_file(path: Path) -> str:
         return f.read()
 
 
+def load_prompt(agent_name: str, prompt_name: str, **kwargs) -> str:
+    """
+    Load a prompt from an agent's prompts directory.
+
+    Engine loads content from data. Prompts contain the understanding,
+    code contains the mechanics.
+
+    Args:
+        agent_name: Name of the agent (e.g., "ingestion", "summary")
+        prompt_name: Name of the prompt file (without .md extension)
+        **kwargs: Variables to substitute in the prompt using {var} format
+
+    Returns:
+        The prompt content with any variables substituted
+    """
+    prompt_file = DATA_DIR / agent_name / "prompts" / f"{prompt_name}.md"
+
+    if not prompt_file.exists():
+        raise FileNotFoundError(f"Prompt not found: {prompt_file}")
+
+    with open(prompt_file, 'r') as f:
+        content = f.read()
+
+    # Substitute any provided variables
+    if kwargs:
+        content = content.format(**kwargs)
+
+    return content
+
+
 def load_identity(persona_name: str) -> str:
     """Load core identity + agent-specific persona."""
     core = load_file(IDENTITY_DIR / "_core.identity.md")

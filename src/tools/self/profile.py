@@ -1,22 +1,29 @@
 """
-Profile tools for the Identity Agent (The Keeper).
+Profile tools for the Self Agent (The Keeper).
 
-The profile consolidates all identity facets into a single view for other agents.
-It emphasizes VALUES at the core, with behaviors and context as supporting information.
+The profile consolidates all self facets into a single view for other agents.
+It emphasizes EPISTEMIC AXIOMS at the foundation, with values and behaviors derived.
+
+Hierarchy:
+1. Epistemic (foundational) - axioms, mental models, tools (with provenance)
+2. Values (derived from epistemic core)
+3. Behaviors (reveals operative axioms)
+4. Context (supporting) - biographical, relationships
 """
 
 from datetime import datetime
 from pathlib import Path
 
 # Import from sibling modules
+from .epistemic import get_axioms, get_mental_models, get_epistemic_tools
 from .values import get_current_values, get_phase_values, get_lifetime_values
 from .behaviors import get_behaviors
 from .context import get_biographical, get_relationships
 
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
-IDENTITY_DIR = DATA_DIR / "identity"
-DERIVED_DIR = IDENTITY_DIR / "derived"
+SELF_DIR = DATA_DIR / "self"
+DERIVED_DIR = SELF_DIR / "derived"
 
 # Ensure directory exists
 DERIVED_DIR.mkdir(parents=True, exist_ok=True)
@@ -42,8 +49,8 @@ def generate_profile() -> str:
     """
     Generate a consolidated identity profile from all sources.
 
-    The profile emphasizes values at the core, with behaviors and context
-    as supporting information.
+    The profile emphasizes epistemic axioms at the foundation, with values
+    and behaviors derived from them.
 
     Returns:
         Confirmation message with summary
@@ -52,6 +59,9 @@ def generate_profile() -> str:
     timestamp = datetime.now().isoformat()
 
     # Gather all identity data
+    axioms = get_axioms()
+    mental_models = get_mental_models()
+    epistemic_tools = get_epistemic_tools()
     current_values = get_current_values()
     phase_values = get_phase_values()
     lifetime_values = get_lifetime_values()
@@ -59,29 +69,51 @@ def generate_profile() -> str:
     biographical = get_biographical()
     relationships = get_relationships()
 
-    # Build the profile with values at the core
+    # Build the profile with epistemic core at the foundation
     sections = []
 
-    # Core: Values
-    sections.append("## Values (Core Identity)\n")
-    sections.append("*What you believe and care about - the foundation of who you are*\n")
+    # Foundation: Epistemic Core
+    sections.append("## Epistemic Core (Foundation)\n")
+    sections.append("*The beliefs and reasoning patterns that generate values and drive behavior*\n")
+    sections.append("*Each entry includes the behavior that revealed it*\n")
+
+    if not axioms.startswith("No epistemic"):
+        sections.append("\n### Axioms\n")
+        sections.append("*Foundational beliefs about reality*\n")
+        sections.append(_extract_content(axioms))
+
+    if not mental_models.startswith("No mental"):
+        sections.append("\n### Mental Models\n")
+        sections.append("*Frameworks used for thinking*\n")
+        sections.append(_extract_content(mental_models))
+
+    if not epistemic_tools.startswith("No epistemic"):
+        sections.append("\n### Epistemic Tools\n")
+        sections.append("*Reasoning methods employed*\n")
+        sections.append(_extract_content(epistemic_tools))
+
+    if axioms.startswith("No") and mental_models.startswith("No") and epistemic_tools.startswith("No"):
+        sections.append("\n(Not yet derived - run derive to uncover the mind behind behaviors)\n")
+
+    # Derived: Values
+    sections.append("\n---\n\n## Values (Derived from Epistemic Core)\n")
+    sections.append("*What you care about - emergent from foundational beliefs*\n")
 
     if not current_values.startswith("No current"):
-        # Extract just the content, not the full header
         sections.append("\n### Current Focus\n")
         sections.append(_extract_content(current_values))
 
     if not lifetime_values.startswith("No lifetime"):
-        sections.append("\n### Enduring Beliefs\n")
+        sections.append("\n### Enduring Values\n")
         sections.append(_extract_content(lifetime_values))
 
     if not phase_values.startswith("No phase"):
         sections.append("\n### Life Phase Values\n")
         sections.append(_extract_content(phase_values))
 
-    # Derived: Behaviors
-    sections.append("\n---\n\n## Behavioral Patterns (Derived)\n")
-    sections.append("*How you actually act - revealed preferences*\n")
+    # Reveals: Behaviors
+    sections.append("\n---\n\n## Behavioral Patterns (Reveals Operative Axioms)\n")
+    sections.append("*How you actually act - shows which beliefs are truly held*\n")
     if not behaviors.startswith("No behavioral"):
         sections.append(_extract_content(behaviors))
     else:
@@ -106,7 +138,7 @@ def generate_profile() -> str:
     # Assemble final profile
     profile_content = f"""# User Identity Profile
 
-*Consolidated view for agent context - values at the core*
+*Consolidated view for agent context - epistemic core at the foundation*
 
 Auto-generated: {timestamp}
 
@@ -119,15 +151,16 @@ Auto-generated: {timestamp}
     return f"Identity profile generated at {timestamp}"
 
 
-def get_identity_summary() -> str:
+def get_self_summary() -> str:
     """
     Get a quick summary of the user's identity for agent context.
 
-    This is a condensed version focusing on current values and key facts.
+    This is a condensed version focusing on epistemic core and current values.
 
     Returns:
         Brief identity summary
     """
+    axioms = get_axioms()
     current_values = get_current_values()
     biographical = get_biographical()
 
@@ -139,6 +172,10 @@ def get_identity_summary() -> str:
         name_match = re.search(r'\*\*Name\*\*:\s*(.+)', biographical)
         if name_match and name_match.group(1).strip():
             summary_parts.append(f"**Who**: {name_match.group(1).strip()}")
+
+    # Epistemic foundation summary
+    if not axioms.startswith("No epistemic"):
+        summary_parts.append(f"**Epistemic Foundation**: {_get_first_paragraph(axioms)}")
 
     # Core values summary
     if not current_values.startswith("No current"):
@@ -184,7 +221,7 @@ def _get_first_paragraph(text: str) -> str:
                 return p[:200] + "..."
             return p
 
-    return "(See full values)"
+    return "(See full profile)"
 
 
 def _summarize_biographical(bio: str) -> str:
@@ -222,7 +259,7 @@ def _summarize_relationships(rels: str) -> str:
 PROFILE_TOOLS = [
     {
         "name": "get_profile",
-        "description": "Read the consolidated identity profile - values at core, behaviors derived, context supporting.",
+        "description": "Read the consolidated identity profile - epistemic core at foundation, values derived, behaviors revealing.",
         "input_schema": {
             "type": "object",
             "properties": {}
@@ -230,14 +267,14 @@ PROFILE_TOOLS = [
     },
     {
         "name": "generate_profile",
-        "description": "Regenerate the identity profile from all sources. Call after updating values, behaviors, or context.",
+        "description": "Regenerate the identity profile from all sources. Call after updating epistemic, values, behaviors, or context.",
         "input_schema": {
             "type": "object",
             "properties": {}
         }
     },
     {
-        "name": "get_identity_summary",
+        "name": "get_self_summary",
         "description": "Get a quick summary of the user's identity for context. Useful for quick reference.",
         "input_schema": {
             "type": "object",
@@ -250,7 +287,7 @@ PROFILE_TOOLS = [
 PROFILE_HANDLERS = {
     "get_profile": get_profile,
     "generate_profile": generate_profile,
-    "get_identity_summary": get_identity_summary,
+    "get_self_summary": get_self_summary,
 }
 
 

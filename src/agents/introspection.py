@@ -7,7 +7,7 @@ tools, and capabilities to maintain a living reference for the user.
 
 from datetime import datetime, timedelta
 from pathlib import Path
-from .base import create_agent, AutonomousAgent
+from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.introspection.introspection import (
     INTROSPECTION_TOOLS, INTROSPECTION_HANDLERS,
     get_last_introspection, INTROSPECTION_DIR
@@ -87,26 +87,8 @@ def run_analysis() -> str:
         The result of the analysis.
     """
     agent = create_introspection_agent()
-
-    prompt = """Please run a comprehensive system analysis:
-
-1. First, get the system overview to understand the structure
-2. List all agents and read each one's identity to understand their purpose
-3. Analyze the code for each agent to understand their tools and triggers
-4. List all tools modules and analyze the key ones (log, worker, project, task, values, attention, world)
-5. Generate a clear, user-friendly capabilities document that answers:
-   - What can this assistant do for me?
-   - What happens automatically vs. what do I need to ask for?
-   - How do I interact with each capability?
-   - What are the key features organized by category?
-
-6. Save the capabilities document
-
-Write the document for a non-technical user who wants to understand their personal assistant.
-Organize by what they might want to accomplish, not by technical structure."""
-
-    result = agent.process(prompt, INTROSPECTION_HANDLERS)
-    return result
+    prompt = load_prompt("introspection", "analyze_system")
+    return agent.process(prompt, INTROSPECTION_HANDLERS)
 
 
 class AutonomousIntrospectionAgent(AutonomousAgent):
@@ -119,7 +101,7 @@ class AutonomousIntrospectionAgent(AutonomousAgent):
 
     def __init__(self, check_interval: int = 1800):  # 30 minutes default
         super().__init__(
-            name="Introspection Agent (The Mirror)",
+            name="introspection",
             persona_name="introspection",
             tools=INTROSPECTION_TOOLS,
             tool_handlers=INTROSPECTION_HANDLERS,

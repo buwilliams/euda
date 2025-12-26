@@ -23,9 +23,9 @@ This agent can:
 from .base import create_agent
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
 from ..tools.world.fetch import FETCH_TOOLS, FETCH_HANDLERS
-from ..tools.identity import (
+from ..tools.self import (
     get_current_values, get_phase_values, get_lifetime_values, get_all_values,
-    get_behaviors, get_profile, get_identity_summary,
+    get_behaviors, get_profile, get_self_summary,
     get_biographical, update_biographical,
     get_relationships, add_relationship, update_relationship
 )
@@ -74,7 +74,7 @@ IDENTITY_READ_TOOLS = [
         "input_schema": {"type": "object", "properties": {}}
     },
     {
-        "name": "get_identity_summary",
+        "name": "get_self_summary",
         "description": "Get a quick summary of the user's identity for context.",
         "input_schema": {"type": "object", "properties": {}}
     },
@@ -209,7 +209,7 @@ INTERACTION_HANDLERS = {
     "get_all_values": get_all_values,
     "get_behaviors": get_behaviors,
     "get_profile": get_profile,
-    "get_identity_summary": get_identity_summary,
+    "get_self_summary": get_self_summary,
     "get_biographical": get_biographical,
     "update_biographical": update_biographical,
     "get_relationships": get_relationships,

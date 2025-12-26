@@ -321,16 +321,16 @@ def get_system_overview() -> str:
 - **Tools Modules**: {tools_count} available
 
 ## Key Directories
-- `data/agents/identity/` - Agent personas and beliefs
+- `data/shared/identity/` - Agent personas and beliefs
 - `src/agents/` - Agent implementations
 - `src/tools/` - Tool definitions and handlers
-- `data/log/` - Life log entries
-- `data/tasks/` - Project and task management
-- `data/values/` - Derived user values
+- `data/shared/lifelog/` - Life log entries
+- `data/worker/` - Project and task management
+- `data/self/` - User identity (values, epistemic, behaviors, context)
 
 ## Data Flow
 ```
-Inbox → Ingestion → Log → Summary → Values → World → Attention
+Inbox → Ingestion → Log → Summary → Self → World → Attention
                                                     ↓
                                               User (via Interaction)
                                                     ↓

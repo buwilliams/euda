@@ -16,7 +16,7 @@ Pipeline:
 import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
-from .base import create_agent, AutonomousAgent
+from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
 from ..tools.ingestion.files import FILE_TOOLS, FILE_HANDLERS, list_pending_files
 from ..tools.ingestion.token_budget import get_budget, TOKEN_BUDGET_TOOLS, TOKEN_BUDGET_HANDLERS
@@ -273,47 +273,18 @@ class AutonomousIngestionAgent(AutonomousAgent):
                 if timestamp:
                     confidence = temporal.get("confidence", "unknown")
                     source = temporal.get("source", "unknown")
-                    temporal_note = f"\nTemporal hint: {timestamp} (confidence: {confidence}, source: {source})"
+                    temporal_note = f"Temporal hint: {timestamp} (confidence: {confidence}, source: {source})"
 
-                # Build prompt for the AI
-                prompt = f"""Process this file and write a log entry.
-
-File: {file_name}
-Category: {digest.get('classification', {}).get('category', 'unknown')}
-{temporal_note}
-
-Content:
----
-{content}
----
-
-CRITICAL: First determine what kind of content this is:
-
-**PRESERVE VERBATIM** (human expression):
-- Personal writing: journals, musings, reflections, notes, blog posts
-- Messages from others: texts, emails, letters, conversations
-- Quotes, ideas, thoughts - yours or others'
-→ Record the actual words. Voice and expression matter.
-
-**SUMMARIZE** (data/information):
-- Transactions, receipts, financial records
-- Articles, reports, documentation
-- Lists, logs, system output
-→ Compress to essence. 2-5 sentences max.
-
-Instructions:
-1. Determine: Is this human expression or data/information?
-2. If human expression → preserve the actual words, the voice, the meaning
-3. If data/information → summarize briefly (what happened, key numbers, significance)
-4. Use write_log_entry with appropriate entry_type:
-   - "journal" / "reflection" / "thought" for personal writing
-   - "message" / "conversation" for communications
-   - "summary" for compressed data
-5. Use the temporal hint for timestamp if available
-
-The goal: Capture real thoughts and words verbatim. Compress everything else.
-
-Do NOT read the file again - use the content provided above."""
+                # Load prompt from data file
+                category = digest.get('classification', {}).get('category', 'unknown')
+                prompt = load_prompt(
+                    "ingestion",
+                    "process_file",
+                    file_name=file_name,
+                    category=category,
+                    temporal_note=temporal_note,
+                    content=content
+                )
 
                 # Process with AI
                 result = self.agent.process(prompt, ALL_HANDLERS)

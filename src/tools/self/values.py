@@ -1,7 +1,7 @@
 """
-Values tools for the Identity Agent (The Keeper).
+Values tools for the Self Agent (The Keeper).
 
-Values are the CORE of identity - who you ARE.
+Values are derived from epistemic axioms - what you care about.
 
 Tools for reading summaries and managing values at different temporal scopes:
 - Current: Rolling year, what matters now
@@ -12,12 +12,15 @@ Tools for reading summaries and managing values at different temporal scopes:
 from datetime import datetime
 from pathlib import Path
 
-# Base paths - Identity agent uses shared log and identity data
+# Base paths - Self agent uses shared log and self data
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
 LOG_DIR = SHARED_DIR / "lifelog"
-IDENTITY_DIR = DATA_DIR / "identity"
-VALUES_DIR = IDENTITY_DIR / "values"
+SELF_DIR = DATA_DIR / "self"
+VALUES_DIR = SELF_DIR / "values"
+
+# Backwards compatibility
+IDENTITY_DIR = SELF_DIR
 
 # Ensure values directory exists
 VALUES_DIR.mkdir(parents=True, exist_ok=True)

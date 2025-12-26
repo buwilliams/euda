@@ -6,9 +6,9 @@ while occasionally surprising with life-promoting novelty.
 """
 
 from datetime import datetime, timedelta
-from .base import create_agent, AutonomousAgent
+from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.world.world import WORLD_TOOLS, WORLD_HANDLERS
-from ..tools.identity import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
+from ..tools.self import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
 from ..tools.shared.notifications import queue_notification
 
 
@@ -63,14 +63,7 @@ def run_interactive():
                 continue
 
             if user_input.lower() == 'discover':
-                user_input = """Run a discovery sweep. Based on current values:
-1. Use suggest_discoveries to see what directions make sense
-2. Think about what opportunities would align with these values
-3. Record 3-5 opportunities using write_opportunity:
-   - At least one for learning/growth
-   - At least one for connection/people
-   - At least one expansive/surprising opportunity (the 10%)
-4. Share what you found"""
+                user_input = load_prompt("world", "discovery_sweep")
 
             response = agent.process(user_input, ALL_HANDLERS)
             print(f"\nScout: {response}\n")
@@ -90,33 +83,7 @@ def run_discovery_sweep() -> str:
         Summary of discovered opportunities
     """
     agent = create_world_agent()
-
-    prompt = """Time for a discovery sweep.
-
-Your mission:
-1. Use get_discovery_context to understand current values
-2. Use suggest_discoveries to see recommended directions
-3. Based on values, imagine/generate relevant opportunities in these categories:
-   - Events: Gatherings, conferences, meetups that align
-   - People: Interesting individuals or communities
-   - Places: Locations or experiences worth exploring
-   - Learning: Skills, courses, knowledge to pursue
-   - Goals: Meaningful challenges or projects
-
-4. Record 5-8 opportunities using write_opportunity:
-   - ~80% should be "aligned" (clear value match)
-   - ~20% should be "expansive" (life-promoting surprises)
-   - Mix categories for variety
-   - Be specific and actionable
-
-5. Summarize what you found and why each matters
-
-Remember:
-- Popularity doesn't matter, alignment with THIS user does
-- The 10% expansive should still be plausibly life-promoting
-- Be concrete, not generic
-"""
-
+    prompt = load_prompt("world", "discovery_sweep")
     return agent.process(prompt, ALL_HANDLERS)
 
 
@@ -149,8 +116,8 @@ class AutonomousWorldAgent(AutonomousAgent):
     def check_work_needed(self) -> bool:
         """Check if a discovery sweep is needed."""
         # Check for explicit signal (identity includes values at core)
-        if self.check_signal("identity_updated"):
-            self.logger.info("Received identity_updated signal - running discovery")
+        if self.check_signal("self_updated"):
+            self.logger.info("Received self_updated signal - running discovery")
             return True
 
         # Check if enough time has passed since last sweep

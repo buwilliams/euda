@@ -13,7 +13,7 @@ Delegation Strategy:
 
 from pathlib import Path
 from datetime import datetime
-from .base import create_agent, AutonomousAgent
+from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.worker.worker import (
     WORKER_TOOLS, WORKER_HANDLERS, EXTENDED_WORKER_TOOLS,
     get_tasks, get_pending_actions, get_action
@@ -89,39 +89,8 @@ def process_task_queue():
     Returns status of what was done.
     """
     agent = create_worker_agent()
-
-    prompt = """Check the task queue and process pending tasks using appropriate delegation.
-
-For each pending task, check its delegation strategy:
-
-1. **Learning tasks** (delegation.strategy = "prepare_materials"):
-   - Research and curate learning materials
-   - Store result with prepared content
-   - Notify user that materials are ready
-   - Mark task as "materials_ready"
-
-2. **User-only tasks** (delegation.strategy = "user_only"):
-   - Cannot execute these (physical activity, creative work, personal decisions)
-   - Surface to user via notification with helpful context
-   - Mark task as "surfaced"
-
-3. **Tasks requiring approval** (delegation.requires_approval = true):
-   - Create a pending action with clear summary
-   - Update task status to "awaiting_approval"
-
-4. **Autonomous tasks** (delegation.strategy = "agent_autonomous"):
-   - Execute the task (research, fetch info, etc.)
-   - Store the result
-   - Mark task as "completed"
-
-Also check for projects with upcoming deadlines and create relevant notifications.
-
-If there are approved actions ready for execution, execute them.
-
-Report what you did and what decisions you made."""
-
-    result = agent.process(prompt, WORKER_HANDLERS)
-    return result
+    prompt = load_prompt("worker", "process_tasks")
+    return agent.process(prompt, WORKER_HANDLERS)
 
 
 def check_pending_approvals() -> str:
@@ -149,18 +118,8 @@ def execute_approved_actions() -> str:
     For now, marks actions as executed with mock results.
     """
     agent = create_worker_agent()
-
-    prompt = """Check for approved actions that are ready for execution.
-
-For each approved action:
-1. Execute it (or simulate execution in mock mode)
-2. Mark it as executed with the result
-3. Update the associated task status
-
-Report what was executed."""
-
-    result = agent.process(prompt, WORKER_HANDLERS)
-    return result
+    prompt = load_prompt("worker", "execute_actions")
+    return agent.process(prompt, WORKER_HANDLERS)
 
 
 class AutonomousWorkerAgent(AutonomousAgent):

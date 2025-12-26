@@ -11,6 +11,8 @@ data/**/*.signal
 !data/**/.gitkeep
 # And keep identity templates (not personal data)
 !data/shared/identity/*.md
+# And keep prompts (code/configuration, not user data)
+!data/*/prompts/*.md
 
 # Python
 __pycache__/

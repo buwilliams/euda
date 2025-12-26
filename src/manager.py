@@ -41,7 +41,7 @@ SIGNALS_DIR.mkdir(parents=True, exist_ok=True)
 # Import autonomous agents
 from src.agents.ingestion import AutonomousIngestionAgent
 from src.agents.summary import AutonomousSummaryAgent
-from src.agents.identity import AutonomousIdentityAgent
+from src.agents.self import AutonomousSelfAgent
 from src.agents.world import AutonomousWorldAgent
 from src.agents.attention import AutonomousAttentionAgent
 from src.agents.introspection import AutonomousIntrospectionAgent
@@ -214,7 +214,7 @@ class AgentManager:
         agents = [
             AutonomousIngestionAgent(),
             AutonomousSummaryAgent(),
-            AutonomousIdentityAgent(),
+            AutonomousSelfAgent(),
             AutonomousWorldAgent(sweep_interval_hours=24),
             AutonomousAttentionAgent(morning_hour=7, evening_hour=21),
             AutonomousIntrospectionAgent(check_interval=1800),  # 30 minutes

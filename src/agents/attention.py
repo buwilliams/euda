@@ -6,9 +6,9 @@ energy, and timing. Surfaces the right thing at the right moment.
 """
 
 from datetime import datetime, time
-from .base import create_agent, AutonomousAgent
+from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.attention.attention import ATTENTION_TOOLS, ATTENTION_HANDLERS
-from ..tools.identity import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
+from ..tools.self import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
 from ..tools.shared.notifications import queue_notification
 
@@ -86,22 +86,7 @@ def morning_attention() -> str:
         Morning attention message
     """
     agent = create_attention_agent()
-
-    prompt = """It's time for morning attention.
-
-Use generate_morning_attention to get the context, then create a brief,
-actionable morning message that:
-
-1. Acknowledges the current time and day
-2. Highlights 1-3 things that matter today
-3. Considers current energy state (or asks if unknown)
-4. Integrates any high-priority queue items naturally
-5. Includes one thing to look forward to
-6. Maintains the 90/10 balance (mostly value-aligned, with a natural surprise)
-
-Be concise. Don't overwhelm. Start the day right.
-"""
-
+    prompt = load_prompt("attention", "morning")
     return agent.process(prompt, ALL_HANDLERS)
 
 
@@ -113,22 +98,7 @@ def evening_attention() -> str:
         Evening reflection prompt
     """
     agent = create_attention_agent()
-
-    prompt = """It's time for evening reflection.
-
-Use generate_evening_attention to get the context, then create a warm,
-gentle evening journal prompt that:
-
-1. Acknowledges the user is probably tired
-2. Invites reflection without requiring much energy
-3. Asks about subjective experience, not just facts
-4. Notes something that went well (if visible in logs)
-5. Creates space for what's unfinished without pressure
-6. Feels like a caring friend at the end of a long day
-
-Be warm. Be brief. Honor their tiredness.
-"""
-
+    prompt = load_prompt("attention", "evening")
     return agent.process(prompt, ALL_HANDLERS)
 
 
@@ -176,8 +146,8 @@ class AutonomousAttentionAgent(AutonomousAgent):
             self.save_state(state)
 
         # Check for identity signal - values have been updated
-        if self.check_signal("identity_updated"):
-            self.logger.info("Received identity_updated signal")
+        if self.check_signal("self_updated"):
+            self.logger.info("Received self_updated signal")
             state["identity_refreshed"] = True
             self.save_state(state)
 

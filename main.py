@@ -23,10 +23,11 @@ def main():
         "chat": lambda: __import__('src.agents.interaction', fromlist=['run_interactive']).run_interactive(),
         "summary": lambda: __import__('src.agents.summary', fromlist=['run_interactive']).run_interactive(),
         "summarize": run_summarize,
-        "identity": lambda: __import__('src.agents.identity', fromlist=['run_interactive']).run_interactive(),
-        "derive": run_derive_identity,
+        "self": lambda: __import__('src.agents.self', fromlist=['run_interactive']).run_interactive(),
+        "derive": run_derive_self,
         # Backwards compatibility aliases
-        "values": lambda: __import__('src.agents.identity', fromlist=['run_interactive']).run_interactive(),
+        "identity": lambda: __import__('src.agents.self', fromlist=['run_interactive']).run_interactive(),
+        "values": lambda: __import__('src.agents.self', fromlist=['run_interactive']).run_interactive(),
         "attention": lambda: __import__('src.agents.attention', fromlist=['run_interactive']).run_interactive(),
         "morning": run_morning,
         "evening": run_evening,
@@ -55,8 +56,8 @@ def main():
         print("  ingestion  Interactive chat with The Archivist")
         print("  summary    Interactive chat with The Historian")
         print("  summarize  Generate summaries for all years needing updates")
-        print("  identity   Interactive chat with The Keeper (values, behaviors, context)")
-        print("  derive     Derive identity (values + behaviors) from summaries")
+        print("  self       Interactive chat with The Keeper (epistemic, values, behaviors)")
+        print("  derive     Derive self-model from summaries")
         print("  attention  Interactive chat with The Curator")
         print("  morning    Generate morning attention")
         print("  evening    Generate evening reflection")
@@ -779,17 +780,21 @@ def run_summarize():
     check_and_summarize_all()
 
 
-def run_derive_identity():
-    """Derive identity (values + behaviors) from summaries."""
-    from src.agents.identity import derive_identity
+def run_derive_self():
+    """Derive self-model (epistemic, values, behaviors) from summaries."""
+    from src.agents.self import derive_self
     print("=" * 60)
-    print("Euno - Deriving Identity")
+    print("Euno - Deriving Self-Model")
     print("=" * 60)
     print()
-    print("Values are the core of identity. Behaviors are derived from patterns.")
+    print("Epistemic axioms are the foundation. Values and behaviors are derived.")
     print()
-    result = derive_identity()
+    result = derive_self()
     print(f"\n{result}")
+
+
+# Backwards compatibility alias
+run_derive_identity = run_derive_self
 
 
 def run_morning():

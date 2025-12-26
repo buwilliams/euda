@@ -7,7 +7,7 @@ Finds patterns in the noise, tracks entities across time.
 
 from datetime import datetime
 from pathlib import Path
-from .base import create_agent, AutonomousAgent
+from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.values.summary import SUMMARY_TOOLS, SUMMARY_HANDLERS, list_years, check_summary_needed, LOG_DIR
 
 
@@ -80,28 +80,7 @@ def summarize_year(year: int) -> str:
         The generated summary or status message
     """
     agent = create_summary_agent()
-
-    prompt = f"""Please analyze and summarize the logs for {year}.
-
-Steps:
-1. First use list_years to see what's available
-2. Use get_year_logs to read all entries for {year}
-3. Look for patterns:
-   - Key themes and topics
-   - People mentioned frequently
-   - Places and activities
-   - Emotional tones and energy levels
-   - What's present AND what's notably absent
-   - Weekly/monthly rhythms if visible
-4. Write a comprehensive summary using write_summary
-
-The summary should:
-- Stand alone (someone could understand the year from just the summary)
-- Capture both facts and feelings
-- Note patterns and outliers
-- Be honest about gaps in the data
-"""
-
+    prompt = load_prompt("summary", "summarize_year", year=year)
     return agent.process(prompt, SUMMARY_HANDLERS)
 
 
