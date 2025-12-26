@@ -11,7 +11,7 @@ Euno is a personal intelligence that learns to anticipate you: doing tasks for y
 All 8 agents implemented with web UI and API. Key files:
 - `README.md` - Product specification
 - `docs/architecture.md` - Technical architecture and implementation spec
-- `docs/personal-intelligence.md` - Vision for what Euno should become
+- `docs/vision.md` - Vision for what Euno should become
 - `docs/user-experience.md` - UI/UX vision and comparison to current state
 - `main.py` - Entry point for running agents
 

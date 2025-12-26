@@ -40,262 +40,295 @@
             max-width: 480px;
         }
 
-        /* Header */
-        header {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 1rem;
-        }
-
-        .logo {
-            width: 200px;
-            height: auto;
-        }
-
-        /* Panel toggle icons in input area */
-        .panel-toggle {
-            background: none;
-            border: none;
-            padding: 0.5rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-            line-height: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 48px;
-            width: 40px;
-        }
-
-        .panel-toggle svg {
-            width: 20px;
-            height: 20px;
-            stroke: #999;
-            fill: none;
-            stroke-width: 1.5;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .panel-toggle svg rect {
-            fill: none;
-        }
-
-        .panel-toggle:hover svg {
-            stroke: #333;
-        }
-
-        .panel-toggle.active svg {
-            stroke: #000;
-        }
-
-        .toggle-badge {
-            position: absolute;
-            top: 2px;
-            right: 0;
-            background: #ef4444;
-            color: #fff;
-            font-size: 0.6rem;
-            padding: 0.1rem 0.3rem;
-            border-radius: 8px;
-            min-width: 0.9rem;
-            text-align: center;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        /* Notification items in panel */
-        .notification-item {
-            display: flex;
-            align-items: flex-start;
-            padding: 0.75rem;
-            margin-bottom: 0.5rem;
-            background: #fff;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s;
-            border: 1px solid #eee;
-        }
-
-        .notification-item:hover {
-            background: #f5f5f5;
-        }
-
-        .notification-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .notification-icon {
-            margin-right: 0.75rem;
-            flex-shrink: 0;
-            font-size: 1.1rem;
-        }
-
-        .notification-content {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .notification-title {
-            font-weight: 500;
-            color: #333;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        .notification-meta {
-            color: #888;
-            font-size: 0.8rem;
-            margin-top: 0.25rem;
-        }
-
-        .notification-item {
-            flex-direction: column;
-        }
-
-        .notification-header {
-            display: flex;
-            align-items: flex-start;
-            width: 100%;
-            cursor: pointer;
-        }
-
-        .notification-expand-icon {
-            color: #999;
-            font-size: 0.7rem;
-            margin-left: auto;
-            padding: 0.25rem;
-        }
-
-        .notification-agent-badge {
-            font-size: 0.65rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 0.2rem 0.5rem;
-            border-radius: 3px;
-            background: #f0f0f0;
-            color: #666;
-            margin-right: 0.75rem;
-            flex-shrink: 0;
-        }
-
-        .category-discovery .notification-agent-badge {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .category-reminder .notification-agent-badge {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .category-progress .notification-agent-badge {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .category-approval .notification-agent-badge {
-            background: #ede9fe;
-            color: #5b21b6;
-        }
-
-        .notification-details {
-            padding: 0.75rem 0 0 2rem;
-            border-top: 1px solid #eee;
-            margin-top: 0.75rem;
-        }
-
-        .notification-message {
-            font-size: 0.85rem;
-            color: #666;
-            line-height: 1.5;
-            margin-bottom: 0.75rem;
-            white-space: pre-wrap;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .notification-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .notif-action-btn {
-            padding: 0.4rem 0.75rem;
-            font-size: 0.8rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: #fff;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-
-        .notif-action-btn:hover {
-            background: #f5f5f5;
-        }
-
-        .notif-action-btn.ask {
-            border-color: #3b82f6;
-            color: #3b82f6;
-        }
-
-        .notif-action-btn.ask:hover {
-            background: #eff6ff;
-        }
-
-        .notif-action-btn.dismiss {
-            border-color: #999;
-            color: #666;
-        }
-
-        .notif-action-btn.dismiss:hover {
-            background: #f5f5f5;
-            border-color: #666;
-        }
-
-        .notification-item.expanded {
-            background: #fafafa;
-        }
-
-        .notifications-empty {
-            color: #999;
-            font-style: italic;
-            font-size: 0.9rem;
-            padding: 1rem 0;
-            text-align: center;
-        }
-
-        .notifications-quiet {
-            text-align: center;
-            padding: 2rem 1rem;
-            color: #999;
-        }
-
-        .notifications-quiet-icon {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .notifications-quiet-text {
-            font-style: italic;
-        }
-
-        /* Chat Section */
-        .chat {
+        /* ============== Context View (Primary) ============== */
+        .context-view {
             flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
+        .context-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem 0;
+        }
+
+        .greeting {
+            font-size: 1.8rem;
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+
+        .context-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #888;
+            margin-bottom: 0.75rem;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .section-content {
+            padding-left: 0;
+        }
+
+        /* Context items */
+        .context-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 0.5rem 0;
+            line-height: 1.5;
+        }
+
+        .context-item-bullet {
+            color: #999;
+            margin-right: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .context-item-content {
+            flex: 1;
+        }
+
+        .context-item-meta {
+            font-size: 0.85rem;
+            color: #666;
+            margin-left: 1rem;
+        }
+
+        .context-empty {
+            color: #999;
+            font-style: italic;
+            padding: 0.5rem 0;
+        }
+
+        /* Action prompts */
+        .action-prompt {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .action-prompt-text {
+            color: #333;
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+        }
+
+        .action-btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .action-btn:hover {
+            background: #333;
+        }
+
+        /* Noticed patterns */
+        .noticed-item {
+            padding: 0.5rem 0;
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        /* Active Day View (Minimal) */
+        .active-view-minimal {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            text-align: center;
+            color: #666;
+        }
+
+        .active-current {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .active-next {
+            font-size: 1rem;
+            color: #999;
+        }
+
+        .active-next a {
+            color: #666;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .surfaced-notice {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .surfaced-notice-text {
+            margin-bottom: 0.75rem;
+        }
+
+        .surfaced-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .surfaced-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .surfaced-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .focus-message {
+            margin-top: 2rem;
+            color: #ccc;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
+        /* Day Summary (Evening) */
+        .summary-item {
+            display: flex;
+            align-items: center;
+            padding: 0.35rem 0;
+        }
+
+        .summary-check {
+            color: #10b981;
+            margin-right: 0.5rem;
+        }
+
+        .summary-deferred {
+            color: #f59e0b;
+            margin-right: 0.5rem;
+        }
+
+        /* Open threads */
+        .thread-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 0.5rem 0;
+        }
+
+        .thread-urgency {
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 3px;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .thread-urgency.can-wait {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .thread-urgency.soon {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .thread-urgency.do-now {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Tomorrow preview */
+        .tomorrow-preview {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .tomorrow-summary {
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .tomorrow-suggestion {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        /* ============== Chat Overlay ============== */
+        .chat-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #fff;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+        }
+
+        .chat-overlay.active {
+            display: flex;
+        }
+
+        .chat-overlay-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: none;
+            font-family: inherit;
+            font-size: 1rem;
+            color: #666;
+            cursor: pointer;
+            padding: 0.5rem 0;
+        }
+
+        .back-btn:hover {
+            color: #000;
+        }
+
+        .chat-overlay-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 640px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 0 1.5rem;
+            overflow: hidden;
+        }
+
         .messages {
             flex: 1;
             overflow-y: auto;
-            padding: 1rem;
-            border: 1px solid #eee;
-            border-radius: 4px;
+            padding: 1rem 0;
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
@@ -308,14 +341,8 @@
         }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(8px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .message-friend {
@@ -364,31 +391,28 @@
             animation: thinking 1.4s infinite;
         }
 
-        .thinking-dots span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .thinking-dots span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
+        .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
 
         @keyframes thinking {
             0%, 100% { opacity: 0.3; }
             50% { opacity: 1; }
         }
 
-        /* Chat Input */
-        .chat-input-container {
+        /* ============== Chat Input (Bottom Bar) ============== */
+        .input-bar {
             padding-top: 1rem;
+            border-top: 1px solid #eee;
         }
 
-        .chat-input {
+        .input-container {
             display: flex;
             gap: 0.25rem;
             align-items: flex-end;
         }
 
-        .chat-input textarea {
+        .input-container input,
+        .input-container textarea {
             flex: 1;
             padding: 0.875rem 1rem;
             border: 1px solid #ddd;
@@ -403,12 +427,14 @@
             overflow-y: auto;
         }
 
-        .chat-input textarea:focus {
+        .input-container input:focus,
+        .input-container textarea:focus {
             outline: none;
             border-color: #666;
         }
 
-        .chat-input textarea:disabled {
+        .input-container input:disabled,
+        .input-container textarea:disabled {
             background: #fafafa;
             color: #999;
         }
@@ -427,29 +453,51 @@
             margin-right: 0.25rem;
         }
 
-        #send-btn:hover:not(:disabled) {
-            background: #333;
-        }
+        #send-btn:hover:not(:disabled) { background: #333; }
+        #send-btn:disabled { background: #ccc; cursor: not-allowed; }
 
-        #send-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        /* Quick actions - subtle hints, not buttons */
-        .hints {
-            margin-top: 0.75rem;
-            font-size: 0.85rem;
-            color: #999;
-        }
-
-        .hint {
-            display: inline;
+        /* Panel toggle icons */
+        .panel-toggle, .upload-btn {
+            background: none;
+            border: none;
+            padding: 0.5rem;
             cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 48px;
+            width: 40px;
         }
 
-        .hint:hover {
-            color: #666;
+        .panel-toggle svg, .upload-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: #999;
+            fill: none;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .panel-toggle svg rect { fill: none; }
+        .panel-toggle:hover svg, .upload-btn:hover svg { stroke: #333; }
+        .panel-toggle.active svg { stroke: #000; }
+
+        .toggle-badge {
+            position: absolute;
+            top: 2px;
+            right: 0;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.6rem;
+            padding: 0.1rem 0.3rem;
+            border-radius: 8px;
+            min-width: 0.9rem;
+            text-align: center;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         /* ============== Side Panels ============== */
@@ -463,9 +511,7 @@
             overflow: hidden;
         }
 
-        .panel.active {
-            display: flex;
-        }
+        .panel.active { display: flex; }
 
         .panel-header {
             padding: 1.5rem 1rem 1rem;
@@ -487,10 +533,7 @@
             padding: 1rem;
         }
 
-        /* Panel Sections */
-        .panel-section {
-            margin-bottom: 1.5rem;
-        }
+        .panel-section { margin-bottom: 1.5rem; }
 
         .panel-section-header {
             display: flex;
@@ -515,7 +558,7 @@
             border-radius: 10px;
         }
 
-        /* Task Items */
+        /* Task items */
         .task-item {
             display: flex;
             align-items: flex-start;
@@ -532,9 +575,7 @@
             padding-right: 0.5rem;
         }
 
-        .task-item:last-child {
-            border-bottom: none;
-        }
+        .task-item:last-child { border-bottom: none; }
 
         .task-checkbox {
             width: 16px;
@@ -548,9 +589,7 @@
             transition: all 0.15s;
         }
 
-        .task-checkbox:hover {
-            border-color: #666;
-        }
+        .task-checkbox:hover { border-color: #666; }
 
         .task-item.completed .task-checkbox {
             background: #10b981;
@@ -585,22 +624,20 @@
             margin-top: 0.25rem;
         }
 
-        .task-empty {
+        .task-empty, .project-empty {
             color: #999;
             font-style: italic;
             font-size: 0.9rem;
             padding: 0.5rem 0;
         }
 
-        /* Project Items */
+        /* Project items */
         .project-item {
             padding: 0.5rem 0;
             border-bottom: 1px solid #eee;
         }
 
-        .project-item:last-child {
-            border-bottom: none;
-        }
+        .project-item:last-child { border-bottom: none; }
 
         .project-header {
             display: flex;
@@ -609,9 +646,7 @@
             transition: color 0.15s;
         }
 
-        .project-header:hover {
-            color: #000;
-        }
+        .project-header:hover { color: #000; }
 
         .project-toggle {
             font-size: 0.7rem;
@@ -620,9 +655,7 @@
             transition: transform 0.2s;
         }
 
-        .project-item.expanded .project-toggle {
-            transform: rotate(90deg);
-        }
+        .project-item.expanded .project-toggle { transform: rotate(90deg); }
 
         .project-name {
             font-size: 0.9rem;
@@ -644,28 +677,16 @@
             margin-top: 0.5rem;
         }
 
-        .project-item.expanded .project-tasks {
-            display: block;
-        }
+        .project-item.expanded .project-tasks { display: block; }
 
-        .project-empty {
-            color: #999;
-            font-style: italic;
-            font-size: 0.9rem;
-            padding: 0.5rem 0;
-        }
-
-        /* Quick Add Input */
+        /* Quick Add */
         .panel-footer {
             padding: 0.75rem;
             border-top: 1px solid #eee;
             background: #fff;
         }
 
-        .quick-add-form {
-            display: flex;
-            gap: 0.5rem;
-        }
+        .quick-add-form { display: flex; gap: 0.5rem; }
 
         .quick-add-input {
             flex: 1;
@@ -677,14 +698,8 @@
             transition: border-color 0.2s;
         }
 
-        .quick-add-input:focus {
-            outline: none;
-            border-color: #666;
-        }
-
-        .quick-add-input::placeholder {
-            color: #999;
-        }
+        .quick-add-input:focus { outline: none; border-color: #666; }
+        .quick-add-input::placeholder { color: #999; }
 
         .quick-add-btn {
             padding: 0.5rem 0.75rem;
@@ -699,65 +714,134 @@
             white-space: nowrap;
         }
 
-        .quick-add-btn:hover {
-            background: #333;
+        .quick-add-btn:hover { background: #333; }
+        .quick-add-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* Notification items */
+        .notification-item {
+            display: flex;
+            flex-direction: column;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: 1px solid #eee;
         }
 
-        .quick-add-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+        .notification-item:hover { background: #f5f5f5; }
+        .notification-item:last-child { margin-bottom: 0; }
+
+        .notification-header {
+            display: flex;
+            align-items: flex-start;
+            width: 100%;
+            cursor: pointer;
         }
 
-        /* Markdown Styles */
-        .message-content h1,
-        .message-content h2,
-        .message-content h3,
-        .message-content h4 {
+        .notification-content { flex: 1; min-width: 0; }
+
+        .notification-title {
+            font-weight: 500;
+            color: #333;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .notification-expand-icon {
+            color: #999;
+            font-size: 0.7rem;
+            margin-left: auto;
+            padding: 0.25rem;
+        }
+
+        .notification-agent-badge {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            background: #f0f0f0;
+            color: #666;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .category-discovery .notification-agent-badge { background: #dbeafe; color: #1d4ed8; }
+        .category-reminder .notification-agent-badge { background: #fef3c7; color: #92400e; }
+        .category-progress .notification-agent-badge { background: #d1fae5; color: #065f46; }
+        .category-approval .notification-agent-badge { background: #ede9fe; color: #5b21b6; }
+
+        .notification-details {
+            padding: 0.75rem 0 0 2rem;
+            border-top: 1px solid #eee;
+            margin-top: 0.75rem;
+        }
+
+        .notification-message {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .notification-actions { display: flex; gap: 0.5rem; }
+
+        .notif-action-btn {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .notif-action-btn:hover { background: #f5f5f5; }
+        .notif-action-btn.ask { border-color: #3b82f6; color: #3b82f6; }
+        .notif-action-btn.ask:hover { background: #eff6ff; }
+        .notif-action-btn.dismiss { border-color: #999; color: #666; }
+        .notif-action-btn.dismiss:hover { background: #f5f5f5; border-color: #666; }
+
+        .notification-item.expanded { background: #fafafa; }
+
+        .notifications-quiet {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: #999;
+        }
+
+        .notifications-quiet-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .notifications-quiet-text { font-style: italic; }
+
+        /* Markdown styles */
+        .message-content h1, .message-content h2, .message-content h3, .message-content h4 {
             margin: 0.75em 0 0.5em 0;
             line-height: 1.3;
         }
 
-        .message-content h1:first-child,
-        .message-content h2:first-child,
-        .message-content h3:first-child,
-        .message-content h4:first-child {
-            margin-top: 0;
-        }
+        .message-content h1:first-child, .message-content h2:first-child,
+        .message-content h3:first-child, .message-content h4:first-child { margin-top: 0; }
 
         .message-content h1 { font-size: 1.4em; }
         .message-content h2 { font-size: 1.2em; }
         .message-content h3 { font-size: 1.1em; }
         .message-content h4 { font-size: 1em; font-weight: 600; }
 
-        .message-content p {
-            margin: 0.5em 0;
-        }
+        .message-content p { margin: 0.5em 0; }
+        .message-content p:first-child { margin-top: 0; }
+        .message-content p:last-child { margin-bottom: 0; }
+        .message-content strong { font-weight: 600; }
+        .message-content em { font-style: italic; }
 
-        .message-content p:first-child {
-            margin-top: 0;
-        }
-
-        .message-content p:last-child {
-            margin-bottom: 0;
-        }
-
-        .message-content strong {
-            font-weight: 600;
-        }
-
-        .message-content em {
-            font-style: italic;
-        }
-
-        .message-content ul,
-        .message-content ol {
-            margin: 0.5em 0;
-            padding-left: 1.5em;
-        }
-
-        .message-content li {
-            margin: 0.25em 0;
-        }
+        .message-content ul, .message-content ol { margin: 0.5em 0; padding-left: 1.5em; }
+        .message-content li { margin: 0.25em 0; }
 
         .message-content code {
             font-family: 'SF Mono', Monaco, 'Courier New', monospace;
@@ -789,111 +873,20 @@
             color: #666;
         }
 
-        .message-content a {
-            color: #0066cc;
-            text-decoration: none;
-        }
+        .message-content a { color: #0066cc; text-decoration: none; }
+        .message-content a:hover { text-decoration: underline; }
+        .message-you .message-content a { color: #99ccff; }
+        .message-content hr { margin: 1em 0; border: none; border-top: 1px solid #ddd; }
+        .message-you .message-content hr { border-top-color: #444; }
+        .message-you .message-content code { background: #333; }
+        .message-you .message-content pre { background: #333; }
+        .message-you .message-content blockquote { border-left-color: #666; color: #ccc; }
 
-        .message-content a:hover {
-            text-decoration: underline;
-        }
+        .message-content table { margin: 0.75em 0; border-collapse: collapse; width: 100%; }
+        .message-content th, .message-content td { padding: 0.5em 0.75em; border: 1px solid #ddd; text-align: left; }
+        .message-content th { background: #f9f9f9; font-weight: 600; }
 
-        /* Links in user messages */
-        .message-you .message-content a {
-            color: #99ccff;
-        }
-
-        .message-content hr {
-            margin: 1em 0;
-            border: none;
-            border-top: 1px solid #ddd;
-        }
-
-        .message-you .message-content hr {
-            border-top-color: #444;
-        }
-
-        /* Code in user messages */
-        .message-you .message-content code {
-            background: #333;
-        }
-
-        .message-you .message-content pre {
-            background: #333;
-        }
-
-        /* Blockquote in user messages */
-        .message-you .message-content blockquote {
-            border-left-color: #666;
-            color: #ccc;
-        }
-
-        .message-content table {
-            margin: 0.75em 0;
-            border-collapse: collapse;
-            width: 100%;
-        }
-
-        .message-content th,
-        .message-content td {
-            padding: 0.5em 0.75em;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-
-        .message-content th {
-            background: #f9f9f9;
-            font-weight: 600;
-        }
-
-        /* Responsive */
-        @media (max-width: 800px) {
-            .app-container.panel-open .app {
-                display: none;
-            }
-
-            .panel {
-                width: 100%;
-                max-width: 100%;
-            }
-        }
-
-        /* Upload Button */
-        .upload-btn {
-            background: none;
-            border: none;
-            padding: 0.5rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-            line-height: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 48px;
-            width: 40px;
-        }
-
-        .upload-btn svg {
-            width: 20px;
-            height: 20px;
-            stroke: #999;
-            fill: none;
-            stroke-width: 1.5;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .upload-btn:hover svg {
-            stroke: #333;
-        }
-
-        .upload-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Upload Progress Overlay */
+        /* Upload progress */
         .upload-progress {
             display: none;
             position: fixed;
@@ -909,80 +902,44 @@
             min-width: 280px;
         }
 
-        .upload-progress.active {
-            display: block;
-            animation: fadeIn 0.2s ease-out;
+        .upload-progress.active { display: block; animation: fadeIn 0.2s ease-out; }
+
+        .upload-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .upload-progress-filename { font-size: 0.9rem; color: #333; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+        .upload-progress-percent { font-size: 0.85rem; color: #666; }
+        .upload-progress-bar { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
+        .upload-progress-fill { height: 100%; background: #000; border-radius: 3px; transition: width 0.1s ease; width: 0%; }
+        .upload-progress-status { font-size: 0.8rem; color: #999; margin-top: 0.5rem; }
+
+        /* Drag and drop */
+        .app.drag-over { background: #f5f5f5; outline: 2px dashed #999; outline-offset: -10px; }
+
+        /* Responsive */
+        @media (max-width: 800px) {
+            .app-container.panel-open .app { display: none; }
+            .panel { width: 100%; max-width: 100%; }
         }
 
-        .upload-progress-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-
-        .upload-progress-filename {
-            font-size: 0.9rem;
-            color: #333;
-            font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            max-width: 200px;
-        }
-
-        .upload-progress-percent {
-            font-size: 0.85rem;
-            color: #666;
-        }
-
-        .upload-progress-bar {
-            height: 6px;
-            background: #eee;
-            border-radius: 3px;
-            overflow: hidden;
-        }
-
-        .upload-progress-fill {
-            height: 100%;
-            background: #000;
-            border-radius: 3px;
-            transition: width 0.1s ease;
-            width: 0%;
-        }
-
-        .upload-progress-status {
-            font-size: 0.8rem;
+        /* Loading state */
+        .loading-spinner {
+            text-align: center;
+            padding: 2rem;
             color: #999;
-            margin-top: 0.5rem;
-        }
-
-        /* Drag and drop overlay */
-        .app.drag-over {
-            background: #f5f5f5;
-            outline: 2px dashed #999;
-            outline-offset: -10px;
         }
     </style>
 </head>
 <body>
     <div class="app-container" id="app-container">
         <div class="app">
-            <header>
-                <img src="/static/images/euno-logo-with-subtitle.png" alt="Euno" class="logo">
-            </header>
-
-            <section class="chat">
-                <div class="messages" id="messages">
-                    <div class="message message-friend" style="animation: none;">
-                        <div class="message-content">Hey. I'm here when you need me. What's on your mind?</div>
-                    </div>
+            <!-- Context View (Primary) -->
+            <section class="context-view" id="context-view">
+                <div class="context-content" id="context-content">
+                    <div class="loading-spinner">Loading...</div>
                 </div>
 
-                <div class="chat-input-container">
-                    <div class="chat-input">
-                        <textarea id="chat-input" placeholder="Talk to me..." rows="1" autofocus></textarea>
-                        <button id="send-btn" onclick="sendMessage()">Send</button>
+                <div class="input-bar">
+                    <div class="input-container">
+                        <input type="text" id="context-input" placeholder="Talk to me..." onclick="openChat()" readonly>
                         <button class="upload-btn" id="upload-btn" onclick="triggerUpload()" title="Upload file">
                             <svg viewBox="0 0 24 24">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -1000,14 +957,30 @@
                             <span class="toggle-badge" id="tasks-badge" style="display: none;">0</span>
                         </button>
                     </div>
-                    <div class="hints">
-                        Try: <span class="hint" onclick="askAbout('what tasks do I have today')">"tasks today"</span> ·
-                        <span class="hint" onclick="askAbout('show my projects')">"my projects"</span> ·
-                        <span class="hint" onclick="askAbout('create a task to')">"create task"</span> ·
-                        <span class="hint" onclick="askAbout('what has the agent completed for me')">"results"</span>
-                    </div>
                 </div>
             </section>
+        </div>
+
+        <!-- Chat Overlay -->
+        <div class="chat-overlay" id="chat-overlay">
+            <div class="chat-overlay-header">
+                <button class="back-btn" onclick="closeChat()">
+                    <span>&#8592;</span> Back to overview
+                </button>
+            </div>
+            <div class="chat-overlay-content">
+                <div class="messages" id="messages">
+                    <div class="message message-friend" style="animation: none;">
+                        <div class="message-content">Hey. I'm here when you need me. What's on your mind?</div>
+                    </div>
+                </div>
+                <div class="input-bar">
+                    <div class="input-container">
+                        <textarea id="chat-input" placeholder="Talk to me..." rows="1"></textarea>
+                        <button id="send-btn" onclick="sendMessage()">Send</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Notifications Panel -->
@@ -1015,7 +988,6 @@
             <div class="panel-header">
                 <div class="panel-title">Attention</div>
             </div>
-
             <div class="panel-content" id="notifications-content">
                 <div class="notifications-quiet">
                     <div class="notifications-quiet-icon">&#10024;</div>
@@ -1029,9 +1001,7 @@
             <div class="panel-header">
                 <div class="panel-title">Tasks</div>
             </div>
-
             <div class="panel-content">
-                <!-- Today's Tasks -->
                 <div class="panel-section">
                     <div class="panel-section-header">
                         <span class="panel-section-title">Today</span>
@@ -1041,8 +1011,6 @@
                         <div class="task-empty">No tasks for today</div>
                     </div>
                 </div>
-
-                <!-- Projects -->
                 <div class="panel-section">
                     <div class="panel-section-header">
                         <span class="panel-section-title">Projects</span>
@@ -1053,7 +1021,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="panel-footer">
                 <div class="quick-add-form">
                     <input type="text" id="quick-add-input" class="quick-add-input" placeholder="Add a task..." onkeypress="if(event.key==='Enter')quickAddTask()">
@@ -1062,7 +1029,7 @@
             </div>
         </aside>
 
-        <!-- Upload Progress Overlay -->
+        <!-- Upload Progress -->
         <div class="upload-progress" id="upload-progress">
             <div class="upload-progress-header">
                 <span class="upload-progress-filename" id="upload-filename">filename.pdf</span>
@@ -1076,13 +1043,8 @@
     </div>
 
     <script>
-        // Configure marked for security
-        marked.setOptions({
-            breaks: true,
-            gfm: true,
-            headerIds: false,
-            mangle: false
-        });
+        // Configure marked
+        marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
 
         // State
         let sessionId = localStorage.getItem('sessionId') || null;
@@ -1091,359 +1053,300 @@
         let tasksData = [];
         let projectsData = [];
         let notificationsData = [];
+        let contextData = null;
+        let chatOpen = false;
         let uploadXhr = null;
 
         // Elements
         const appContainer = document.getElementById('app-container');
+        const contextContent = document.getElementById('context-content');
+        const chatOverlay = document.getElementById('chat-overlay');
         const messagesEl = document.getElementById('messages');
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
-        const notificationsPanel = document.getElementById('notifications-panel');
-        const tasksPanel = document.getElementById('tasks-panel');
-        const notificationsToggle = document.getElementById('notifications-toggle');
-        const tasksToggle = document.getElementById('tasks-toggle');
 
-        // Initialize panel state
-        if (activePanel) {
-            appContainer.classList.add('panel-open');
-            document.getElementById(`${activePanel}-panel`).classList.add('active');
-            document.getElementById(`${activePanel}-toggle`).classList.add('active');
-        }
+        // Initialize
+        async function init() {
+            // Load context data
+            await loadContext();
 
-        // Panel toggle
-        function togglePanel(panelName) {
-            const panel = document.getElementById(`${panelName}-panel`);
-            const toggle = document.getElementById(`${panelName}-toggle`);
-
-            if (activePanel === panelName) {
-                // Close panel
-                panel.classList.remove('active');
-                toggle.classList.remove('active');
-                appContainer.classList.remove('panel-open');
-                activePanel = null;
-                localStorage.removeItem('activePanel');
-            } else {
-                // Close other panel if open
-                if (activePanel) {
-                    document.getElementById(`${activePanel}-panel`).classList.remove('active');
-                    document.getElementById(`${activePanel}-toggle`).classList.remove('active');
-                }
-
-                // Open this panel
-                panel.classList.add('active');
-                toggle.classList.add('active');
-                appContainer.classList.add('panel-open');
-                activePanel = panelName;
-                localStorage.setItem('activePanel', panelName);
-
-                // Load data for the panel
-                if (panelName === 'tasks') {
-                    loadTasksData();
-                } else if (panelName === 'notifications') {
-                    loadNotificationsData();
-                }
-            }
-        }
-
-        // Load tasks data
-        async function loadTasksData() {
-            try {
-                const [tasksRes, projectsRes] = await Promise.all([
-                    fetch('/api/tasks'),
-                    fetch('/api/projects')
-                ]);
-
-                const tasksJson = await tasksRes.json();
-                const projectsJson = await projectsRes.json();
-
-                tasksData = tasksJson.tasks || [];
-                projectsData = projectsJson.projects || [];
-
-                renderTodayTasks();
-                renderProjects();
-                updateTasksBadge();
-            } catch (error) {
-                console.error('Failed to load tasks data:', error);
-            }
-        }
-
-        // Load notifications data
-        async function loadNotificationsData() {
-            try {
-                const response = await fetch('/api/notifications');
-                const data = await response.json();
-                notificationsData = data.notifications || [];
-                renderNotifications();
-                updateNotificationsBadge();
-            } catch (error) {
-                console.error('Failed to load notifications:', error);
-            }
-        }
-
-        // Render notifications in panel
-        function renderNotifications() {
-            const container = document.getElementById('notifications-content');
-
-            if (notificationsData.length === 0) {
-                container.innerHTML = `
-                    <div class="notifications-quiet">
-                        <div class="notifications-quiet-icon">&#10024;</div>
-                        <div class="notifications-quiet-text">All quiet. Your attention is free.</div>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = notificationsData.map((n, idx) => {
-                const typeClass = n.type ? `type-${n.type}` : '';
-                const priorityClass = n.priority === 'high' ? 'priority-high' : '';
-                const categoryClass = n.category ? `category-${n.category}` : '';
-                const icon = getNotificationIcon(n.type);
-                const agentName = n.agent || n.agent_name || 'system';
-                const agentLabel = agentName.charAt(0).toUpperCase() + agentName.slice(1);
-
-                return `
-                    <div class="notification-item ${typeClass} ${priorityClass} ${categoryClass}" data-id="${n.id}">
-                        <div class="notification-header" onclick="toggleNotificationExpand('${n.id}')">
-                            <span class="notification-agent-badge">${escapeHtml(agentLabel)}</span>
-                            <div class="notification-content">
-                                <div class="notification-title">${escapeHtml(n.title)}</div>
-                            </div>
-                            <span class="notification-expand-icon">▼</span>
-                        </div>
-                        <div class="notification-details" id="notif-details-${n.id}" style="display: none;">
-                            <div class="notification-message">${escapeHtml(n.message || '')}</div>
-                            <div class="notification-actions">
-                                <button class="notif-action-btn ask" onclick="askAboutNotification('${n.id}', ${idx})">
-                                    💬 Discuss
-                                </button>
-                                <button class="notif-action-btn dismiss" onclick="dismissNotification('${n.id}')">
-                                    ✕ Dismiss
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Toggle notification expand/collapse
-        function toggleNotificationExpand(notifId) {
-            const details = document.getElementById(`notif-details-${notifId}`);
-            const item = details.closest('.notification-item');
-            const icon = item.querySelector('.notification-expand-icon');
-
-            if (details.style.display === 'none') {
-                details.style.display = 'block';
-                icon.textContent = '▲';
-                item.classList.add('expanded');
-            } else {
-                details.style.display = 'none';
-                icon.textContent = '▼';
-                item.classList.remove('expanded');
-            }
-        }
-
-        // Ask about a notification (bring into chat and auto-submit)
-        function askAboutNotification(notifId, idx) {
-            const notification = notificationsData[idx];
-            if (!notification) return;
-
-            // Mark as seen
-            fetch(`/api/notifications/${notifId}/seen`, { method: 'POST' });
-
-            // Use action_prompt if available, otherwise generate one
-            const prompt = notification.action_prompt || `Tell me more about: ${notification.title}`;
-            chatInput.value = prompt;
-
-            // Close panel and auto-submit
+            // Initialize panel state
             if (activePanel) {
-                togglePanel(activePanel);
+                appContainer.classList.add('panel-open');
+                document.getElementById(`${activePanel}-panel`).classList.add('active');
+                document.getElementById(`${activePanel}-toggle`).classList.add('active');
             }
 
-            // Auto-submit the message
-            sendMessage();
+            // Connect SSE
+            connectSSE();
+
+            // Load tasks data for badge
+            loadTasksData();
         }
 
-        // Dismiss a notification
-        function dismissNotification(notifId) {
-            fetch(`/api/notifications/${notifId}/dismiss`, { method: 'POST' })
-                .then(() => {
-                    // Remove from local data
-                    notificationsData = notificationsData.filter(n => n.id !== notifId);
-                    renderNotifications();
-                    updateNotificationsBadge();
-                })
-                .catch(err => console.error('Failed to dismiss:', err));
-        }
+        // ============== Context Loading & Rendering ==============
 
-        // Update badges
-        function updateNotificationsBadge() {
-            const badge = document.getElementById('notifications-badge');
-            const count = notificationsData.length;
-            badge.textContent = count;
-            badge.style.display = count > 0 ? 'inline' : 'none';
-        }
-
-        function updateTasksBadge() {
-            const badge = document.getElementById('tasks-badge');
-            const today = new Date().toISOString().split('T')[0];
-            const count = tasksData.filter(t => {
-                const dueDate = t.scheduling?.due_date;
-                const isToday = dueDate === today || !dueDate;
-                return t.status === 'pending' && isToday;
-            }).length;
-            badge.textContent = count;
-            badge.style.display = count > 0 ? 'inline' : 'none';
-        }
-
-        // Render today's tasks
-        function renderTodayTasks() {
-            const container = document.getElementById('today-tasks');
-            const countEl = document.getElementById('today-count');
-
-            const today = new Date().toISOString().split('T')[0];
-            const todayTasks = tasksData.filter(t => {
-                const dueDate = t.scheduling?.due_date;
-                const isToday = dueDate === today || !dueDate;
-                const isPending = t.status === 'pending' || t.status === 'in_progress';
-                return isToday && (isPending || t.status === 'completed');
-            }).slice(0, 10); // Limit to 10
-
-            const pendingCount = todayTasks.filter(t => t.status !== 'completed').length;
-            countEl.textContent = pendingCount;
-
-            if (todayTasks.length === 0) {
-                container.innerHTML = '<div class="task-empty">No tasks for today</div>';
-                return;
-            }
-
-            container.innerHTML = todayTasks.map((task, idx) => `
-                <div class="task-item ${task.status === 'completed' ? 'completed' : ''}" data-task-id="${task.id}">
-                    <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
-                    <div class="task-info" onclick="discussTask('${escapeHtml(task.description)}')">
-                        <div class="task-description">${escapeHtml(task.description)}</div>
-                        ${task.project_id ? `<div class="task-meta">in project</div>` : ''}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Render projects
-        function renderProjects() {
-            const container = document.getElementById('projects-list');
-            const countEl = document.getElementById('projects-count');
-
-            const activeProjects = projectsData.filter(p => p.status === 'active');
-            countEl.textContent = activeProjects.length;
-
-            if (activeProjects.length === 0) {
-                container.innerHTML = '<div class="project-empty">No active projects</div>';
-                return;
-            }
-
-            container.innerHTML = activeProjects.map(project => {
-                const projectTasks = tasksData.filter(t => t.project_id === project.id && t.status !== 'completed');
-                const taskCount = projectTasks.length;
-
-                return `
-                    <div class="project-item" data-project-id="${project.id}">
-                        <div class="project-header" onclick="toggleProject('${project.id}')">
-                            <span class="project-toggle">▶</span>
-                            <span class="project-name">${escapeHtml(project.title)}</span>
-                            <span class="project-badge">${taskCount}</span>
-                        </div>
-                        <div class="project-tasks">
-                            ${projectTasks.length === 0
-                                ? '<div class="task-empty">No pending tasks</div>'
-                                : projectTasks.map(task => `
-                                    <div class="task-item ${task.status === 'completed' ? 'completed' : ''}" data-task-id="${task.id}">
-                                        <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
-                                        <div class="task-description" onclick="discussTask('${escapeHtml(task.description)}')">${escapeHtml(task.description)}</div>
-                                    </div>
-                                `).join('')
-                            }
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Toggle project expansion
-        function toggleProject(projectId) {
-            const projectEl = document.querySelector(`[data-project-id="${projectId}"]`);
-            if (projectEl) {
-                projectEl.classList.toggle('expanded');
-            }
-        }
-
-        // Toggle task completion
-        async function toggleTask(event, taskId) {
-            event.stopPropagation();
-
-            const task = tasksData.find(t => t.id === taskId);
-            if (!task) return;
-
-            const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-
-            // Optimistic update
-            task.status = newStatus;
-            renderTodayTasks();
-            renderProjects();
-
-            // Update via chat (let the agent handle it)
-            const action = newStatus === 'completed' ? 'completed' : 'reopened';
-            addMessage(`Mark task "${task.description}" as ${action}`, 'you');
-            setWaiting(true);
-
+        async function loadContext() {
             try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: `Mark the task "${task.description}" as ${action}`,
-                        session_id: sessionId
-                    })
+                const response = await fetch('/api/context');
+                contextData = await response.json();
+                renderContext();
+            } catch (error) {
+                console.error('Failed to load context:', error);
+                contextContent.innerHTML = '<div class="context-empty">Unable to load context.</div>';
+            }
+        }
+
+        function renderContext() {
+            if (!contextData) return;
+
+            const viewMode = contextData.view_mode;
+
+            switch (viewMode) {
+                case 'morning':
+                    renderMorningView();
+                    break;
+                case 'active':
+                    renderActiveView();
+                    break;
+                case 'evening':
+                    renderEveningView();
+                    break;
+                case 'weekly':
+                    renderWeeklyView();
+                    break;
+                default:
+                    renderMorningView();
+            }
+        }
+
+        function renderMorningView() {
+            const ctx = contextData;
+            const tc = ctx.time_context;
+            const tasks = ctx.tasks || {};
+            const onYourMind = ctx.on_your_mind || {};
+            const noticed = ctx.noticed || {};
+
+            let html = `<h1 class="greeting">${tc.greeting}</h1>`;
+
+            // TODAY section
+            html += '<div class="context-section">';
+            html += '<div class="section-title">Today</div>';
+            html += '<div class="section-content">';
+
+            const dueTasks = tasks.due_today || [];
+            const highPriority = tasks.high_priority || [];
+            const allTodayTasks = [...dueTasks, ...highPriority.filter(t => !dueTasks.find(d => d.id === t.id))];
+
+            if (allTodayTasks.length === 0) {
+                html += '<div class="context-empty">No tasks scheduled for today.</div>';
+            } else {
+                allTodayTasks.slice(0, 5).forEach(task => {
+                    html += `<div class="context-item">
+                        <span class="context-item-bullet">•</span>
+                        <span class="context-item-content">${escapeHtml(task.description)}</span>
+                    </div>`;
+                });
+            }
+
+            // Check for overdue
+            const overdue = tasks.overdue || [];
+            if (overdue.length > 0) {
+                html += `<div class="context-item" style="color: #dc2626;">
+                    <span class="context-item-bullet">!</span>
+                    <span class="context-item-content">${overdue.length} overdue task${overdue.length > 1 ? 's' : ''}</span>
+                </div>`;
+            }
+
+            html += '</div></div>';
+
+            // ON YOUR MIND section
+            const topics = onYourMind.topics || [];
+            if (topics.length > 0 || onYourMind.action_prompt) {
+                html += '<div class="context-section">';
+                html += '<div class="section-title">On Your Mind</div>';
+                html += '<div class="section-content">';
+
+                if (topics.length > 0) {
+                    topics.slice(0, 3).forEach(topic => {
+                        html += `<div class="context-item">
+                            <span class="context-item-bullet">•</span>
+                            <span class="context-item-content">${escapeHtml(topic.topic)}</span>
+                            <span class="context-item-meta">${topic.mention_count}x this week</span>
+                        </div>`;
+                    });
+                }
+
+                if (onYourMind.action_prompt) {
+                    html += `<div class="action-prompt">
+                        <div class="action-prompt-text">${escapeHtml(onYourMind.action_prompt)}</div>
+                        <button class="action-btn" onclick="openChatWith('${escapeHtml(onYourMind.action_prompt)}')">Let's talk</button>
+                    </div>`;
+                }
+
+                html += '</div></div>';
+            }
+
+            // NOTICED section
+            const relationshipNeglect = noticed.relationship_neglect || [];
+            const energyPatterns = noticed.energy_patterns || [];
+            const hasNoticed = relationshipNeglect.length > 0 || energyPatterns.length > 0;
+
+            if (hasNoticed) {
+                html += '<div class="context-section">';
+                html += '<div class="section-title">Noticed</div>';
+                html += '<div class="section-content">';
+
+                relationshipNeglect.forEach(item => {
+                    html += `<div class="noticed-item">${escapeHtml(item.observation || `You haven't contacted ${item.name} in ${item.gap_days} days.`)}</div>`;
                 });
 
-                const data = await response.json();
-                sessionId = data.session_id;
-                localStorage.setItem('sessionId', sessionId);
+                energyPatterns.forEach(item => {
+                    html += `<div class="noticed-item">${escapeHtml(item.observation)}</div>`;
+                });
 
-                removeThinking();
-                addMessage(data.response, 'friend');
-
-                // Refresh panel data
-                loadTasksData();
-            } catch (error) {
-                removeThinking();
-                addMessage('Had trouble updating that task.', 'friend');
+                html += '</div></div>';
             }
 
-            setWaiting(false);
+            contextContent.innerHTML = html;
+        }
+
+        function renderActiveView() {
+            const ctx = contextData;
+            const schedule = ctx.schedule || {};
+            const surfacedCount = ctx.surfaced_count || 0;
+
+            let html = '<div class="active-view-minimal">';
+
+            html += `<div class="active-current">Now: ${schedule.current_activity || 'Deep work'}</div>`;
+
+            if (schedule.next_event) {
+                html += `<div class="active-next">Next: ${escapeHtml(schedule.next_event.title)} <a onclick="openChat()">See context</a></div>`;
+            } else {
+                html += '<div class="active-next">No upcoming events</div>';
+            }
+
+            if (surfacedCount > 0) {
+                html += `<div class="surfaced-notice">
+                    <div class="surfaced-notice-text">${surfacedCount} thing${surfacedCount > 1 ? 's' : ''} surfaced while you worked</div>
+                    <div class="surfaced-actions">
+                        <button class="surfaced-btn" onclick="togglePanel('notifications')">See</button>
+                        <button class="surfaced-btn" onclick="dismissSurfaced()">Later</button>
+                    </div>
+                </div>`;
+            }
+
+            html += '<div class="focus-message">[Minimal - protecting your focus]</div>';
+            html += '</div>';
+
+            contextContent.innerHTML = html;
+        }
+
+        function renderEveningView() {
+            const ctx = contextData;
+            const tc = ctx.time_context;
+            const daySummary = ctx.day_summary || {};
+            const openThreads = ctx.open_threads || [];
+            const tomorrow = ctx.tomorrow || {};
+
+            let html = `<h1 class="greeting">Winding down</h1>`;
+
+            // TODAY summary
+            html += '<div class="context-section">';
+            html += '<div class="section-title">Today</div>';
+            html += '<div class="section-content">';
+
+            const completed = daySummary.completed_tasks || [];
+            if (completed.length > 0) {
+                completed.forEach(task => {
+                    html += `<div class="summary-item">
+                        <span class="summary-check">✓</span>
+                        <span>${escapeHtml(task.description)}</span>
+                    </div>`;
+                });
+            }
+
+            if (daySummary.logged_entries > 0) {
+                html += `<div class="summary-item">
+                    <span class="summary-check">✓</span>
+                    <span>${daySummary.logged_entries} log entries today</span>
+                </div>`;
+            }
+
+            if (completed.length === 0 && !daySummary.logged_entries) {
+                html += '<div class="context-empty">No activity recorded today.</div>';
+            }
+
+            html += '</div></div>';
+
+            // OPEN THREADS
+            if (openThreads.length > 0) {
+                html += '<div class="context-section">';
+                html += '<div class="section-title">Open Threads</div>';
+                html += '<div class="section-content">';
+
+                openThreads.slice(0, 5).forEach(thread => {
+                    const urgencyClass = thread.urgency.replace(' ', '-');
+                    html += `<div class="thread-item">
+                        <span class="thread-urgency ${urgencyClass}">${thread.urgency}</span>
+                        <span>${escapeHtml(thread.description)}</span>
+                    </div>`;
+                });
+
+                html += '</div></div>';
+            }
+
+            // TOMORROW
+            if (tomorrow.task_count > 0 || tomorrow.suggestion) {
+                html += '<div class="context-section">';
+                html += '<div class="section-title">Tomorrow</div>';
+                html += '<div class="tomorrow-preview">';
+
+                if (tomorrow.task_count > 0) {
+                    html += `<div class="tomorrow-summary">${tomorrow.task_count} task${tomorrow.task_count > 1 ? 's' : ''} scheduled`;
+                    if (tomorrow.high_priority_count > 0) {
+                        html += ` (${tomorrow.high_priority_count} high priority)`;
+                    }
+                    html += '</div>';
+                }
+
+                if (tomorrow.suggestion) {
+                    html += `<div class="tomorrow-suggestion">${escapeHtml(tomorrow.suggestion)}</div>`;
+                }
+
+                html += '</div></div>';
+            }
+
+            contextContent.innerHTML = html;
+        }
+
+        function renderWeeklyView() {
+            // For now, render similar to morning view
+            renderMorningView();
+        }
+
+        // ============== Chat Overlay ==============
+
+        function openChat() {
+            chatOpen = true;
+            chatOverlay.classList.add('active');
             chatInput.focus();
         }
 
-        // Discuss a task
-        function discussTask(description) {
-            chatInput.value = `Tell me about the task: ${description}`;
-            chatInput.focus();
+        function openChatWith(message) {
+            openChat();
+            chatInput.value = message;
         }
 
-        // Quick add task
-        function quickAddTask() {
-            const quickInput = document.getElementById('quick-add-input');
-            const task = quickInput.value.trim();
-
-            if (!task || isWaiting) return;
-
-            // Send as chat message
-            chatInput.value = `Create a task to ${task}`;
-            quickInput.value = '';
-            sendMessage();
+        function closeChat() {
+            chatOpen = false;
+            chatOverlay.classList.remove('active');
+            // Refresh context when returning
+            loadContext();
         }
 
-        // Send message
+        // ============== Chat Functions ==============
+
         async function sendMessage() {
             const message = chatInput.value.trim();
             if (!message || isWaiting) return;
@@ -1462,7 +1365,6 @@
 
                 const data = await response.json();
 
-                // Check for server error
                 if (!response.ok) {
                     console.error('Server error:', data.detail || data);
                     removeThinking();
@@ -1476,7 +1378,6 @@
 
                 removeThinking();
 
-                // Check if we should clear the chat
                 if (data.clear_chat) {
                     clearMessages();
                 }
@@ -1489,13 +1390,10 @@
             }
 
             setWaiting(false);
-
-            // Auto-focus back to input after response
             chatInput.focus();
         }
 
         function clearMessages() {
-            // Clear all messages except keep the container
             messagesEl.innerHTML = '';
         }
 
@@ -1503,23 +1401,13 @@
             isWaiting = waiting;
             chatInput.disabled = waiting;
             sendBtn.disabled = waiting;
-
-            if (waiting) {
-                addThinking();
-            }
+            if (waiting) addThinking();
         }
 
         function addMessage(content, role) {
             const div = document.createElement('div');
             div.className = `message message-${role}`;
-
-            let html;
-            if (role === 'friend') {
-                html = marked.parse(content);
-            } else {
-                html = escapeHtml(content);
-            }
-
+            const html = role === 'friend' ? marked.parse(content) : escapeHtml(content);
             div.innerHTML = `<div class="message-content">${html}</div>`;
             messagesEl.appendChild(div);
             scrollToBottom();
@@ -1549,9 +1437,311 @@
             return div.innerHTML;
         }
 
-        function askAbout(query) {
-            chatInput.value = query;
+        // Auto-expand textarea
+        chatInput.addEventListener('input', () => {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 200) + 'px';
+        });
+
+        // Enter to send
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !isWaiting) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // ============== Panel Functions ==============
+
+        function togglePanel(panelName) {
+            const panel = document.getElementById(`${panelName}-panel`);
+            const toggle = document.getElementById(`${panelName}-toggle`);
+
+            if (activePanel === panelName) {
+                panel.classList.remove('active');
+                toggle.classList.remove('active');
+                appContainer.classList.remove('panel-open');
+                activePanel = null;
+                localStorage.removeItem('activePanel');
+            } else {
+                if (activePanel) {
+                    document.getElementById(`${activePanel}-panel`).classList.remove('active');
+                    document.getElementById(`${activePanel}-toggle`).classList.remove('active');
+                }
+
+                panel.classList.add('active');
+                toggle.classList.add('active');
+                appContainer.classList.add('panel-open');
+                activePanel = panelName;
+                localStorage.setItem('activePanel', panelName);
+
+                if (panelName === 'tasks') loadTasksData();
+                else if (panelName === 'notifications') loadNotificationsData();
+            }
+        }
+
+        // ============== Tasks ==============
+
+        async function loadTasksData() {
+            try {
+                const [tasksRes, projectsRes] = await Promise.all([
+                    fetch('/api/tasks'),
+                    fetch('/api/projects')
+                ]);
+
+                const tasksJson = await tasksRes.json();
+                const projectsJson = await projectsRes.json();
+
+                tasksData = tasksJson.tasks || [];
+                projectsData = projectsJson.projects || [];
+
+                renderTodayTasks();
+                renderProjects();
+                updateTasksBadge();
+            } catch (error) {
+                console.error('Failed to load tasks data:', error);
+            }
+        }
+
+        function renderTodayTasks() {
+            const container = document.getElementById('today-tasks');
+            const countEl = document.getElementById('today-count');
+
+            const today = new Date().toISOString().split('T')[0];
+            const todayTasks = tasksData.filter(t => {
+                const dueDate = t.scheduling?.due_date;
+                const isToday = dueDate === today || !dueDate;
+                const isPending = t.status === 'pending' || t.status === 'in_progress';
+                return isToday && (isPending || t.status === 'completed');
+            }).slice(0, 10);
+
+            const pendingCount = todayTasks.filter(t => t.status !== 'completed').length;
+            countEl.textContent = pendingCount;
+
+            if (todayTasks.length === 0) {
+                container.innerHTML = '<div class="task-empty">No tasks for today</div>';
+                return;
+            }
+
+            container.innerHTML = todayTasks.map(task => `
+                <div class="task-item ${task.status === 'completed' ? 'completed' : ''}" data-task-id="${task.id}">
+                    <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
+                    <div class="task-info" onclick="discussTask('${escapeHtml(task.description)}')">
+                        <div class="task-description">${escapeHtml(task.description)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderProjects() {
+            const container = document.getElementById('projects-list');
+            const countEl = document.getElementById('projects-count');
+
+            const activeProjects = projectsData.filter(p => p.status === 'active');
+            countEl.textContent = activeProjects.length;
+
+            if (activeProjects.length === 0) {
+                container.innerHTML = '<div class="project-empty">No active projects</div>';
+                return;
+            }
+
+            container.innerHTML = activeProjects.map(project => {
+                const projectTasks = tasksData.filter(t => t.project_id === project.id && t.status !== 'completed');
+                return `
+                    <div class="project-item" data-project-id="${project.id}">
+                        <div class="project-header" onclick="toggleProject('${project.id}')">
+                            <span class="project-toggle">▶</span>
+                            <span class="project-name">${escapeHtml(project.title)}</span>
+                            <span class="project-badge">${projectTasks.length}</span>
+                        </div>
+                        <div class="project-tasks">
+                            ${projectTasks.length === 0
+                                ? '<div class="task-empty">No pending tasks</div>'
+                                : projectTasks.map(task => `
+                                    <div class="task-item ${task.status === 'completed' ? 'completed' : ''}" data-task-id="${task.id}">
+                                        <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
+                                        <div class="task-description" onclick="discussTask('${escapeHtml(task.description)}')">${escapeHtml(task.description)}</div>
+                                    </div>
+                                `).join('')
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleProject(projectId) {
+            const el = document.querySelector(`[data-project-id="${projectId}"]`);
+            if (el) el.classList.toggle('expanded');
+        }
+
+        async function toggleTask(event, taskId) {
+            event.stopPropagation();
+            const task = tasksData.find(t => t.id === taskId);
+            if (!task) return;
+
+            const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+            task.status = newStatus;
+            renderTodayTasks();
+            renderProjects();
+
+            const action = newStatus === 'completed' ? 'completed' : 'reopened';
+            openChat();
+            addMessage(`Mark task "${task.description}" as ${action}`, 'you');
+            setWaiting(true);
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: `Mark the task "${task.description}" as ${action}`,
+                        session_id: sessionId
+                    })
+                });
+
+                const data = await response.json();
+                sessionId = data.session_id;
+                localStorage.setItem('sessionId', sessionId);
+                removeThinking();
+                addMessage(data.response, 'friend');
+                loadTasksData();
+            } catch (error) {
+                removeThinking();
+                addMessage('Had trouble updating that task.', 'friend');
+            }
+
+            setWaiting(false);
             chatInput.focus();
+        }
+
+        function discussTask(description) {
+            openChatWith(`Tell me about the task: ${description}`);
+        }
+
+        function quickAddTask() {
+            const quickInput = document.getElementById('quick-add-input');
+            const task = quickInput.value.trim();
+            if (!task || isWaiting) return;
+
+            openChatWith(`Create a task to ${task}`);
+            quickInput.value = '';
+            sendMessage();
+        }
+
+        function updateTasksBadge() {
+            const badge = document.getElementById('tasks-badge');
+            const today = new Date().toISOString().split('T')[0];
+            const count = tasksData.filter(t => {
+                const dueDate = t.scheduling?.due_date;
+                return t.status === 'pending' && (dueDate === today || !dueDate);
+            }).length;
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'inline' : 'none';
+        }
+
+        // ============== Notifications ==============
+
+        async function loadNotificationsData() {
+            try {
+                const response = await fetch('/api/notifications');
+                const data = await response.json();
+                notificationsData = data.notifications || [];
+                renderNotifications();
+                updateNotificationsBadge();
+            } catch (error) {
+                console.error('Failed to load notifications:', error);
+            }
+        }
+
+        function renderNotifications() {
+            const container = document.getElementById('notifications-content');
+
+            if (notificationsData.length === 0) {
+                container.innerHTML = `
+                    <div class="notifications-quiet">
+                        <div class="notifications-quiet-icon">&#10024;</div>
+                        <div class="notifications-quiet-text">All quiet. Your attention is free.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = notificationsData.map((n, idx) => {
+                const categoryClass = n.category ? `category-${n.category}` : '';
+                const agentName = n.agent || n.agent_name || 'system';
+                const agentLabel = agentName.charAt(0).toUpperCase() + agentName.slice(1);
+
+                return `
+                    <div class="notification-item ${categoryClass}" data-id="${n.id}">
+                        <div class="notification-header" onclick="toggleNotificationExpand('${n.id}')">
+                            <span class="notification-agent-badge">${escapeHtml(agentLabel)}</span>
+                            <div class="notification-content">
+                                <div class="notification-title">${escapeHtml(n.title)}</div>
+                            </div>
+                            <span class="notification-expand-icon">▼</span>
+                        </div>
+                        <div class="notification-details" id="notif-details-${n.id}" style="display: none;">
+                            <div class="notification-message">${escapeHtml(n.message || '')}</div>
+                            <div class="notification-actions">
+                                <button class="notif-action-btn ask" onclick="askAboutNotification('${n.id}', ${idx})">Discuss</button>
+                                <button class="notif-action-btn dismiss" onclick="dismissNotification('${n.id}')">Dismiss</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleNotificationExpand(notifId) {
+            const details = document.getElementById(`notif-details-${notifId}`);
+            const item = details.closest('.notification-item');
+            const icon = item.querySelector('.notification-expand-icon');
+
+            if (details.style.display === 'none') {
+                details.style.display = 'block';
+                icon.textContent = '▲';
+                item.classList.add('expanded');
+            } else {
+                details.style.display = 'none';
+                icon.textContent = '▼';
+                item.classList.remove('expanded');
+            }
+        }
+
+        function askAboutNotification(notifId, idx) {
+            const notification = notificationsData[idx];
+            if (!notification) return;
+
+            fetch(`/api/notifications/${notifId}/seen`, { method: 'POST' });
+
+            const prompt = notification.action_prompt || `Tell me more about: ${notification.title}`;
+            if (activePanel) togglePanel(activePanel);
+            openChatWith(prompt);
+            sendMessage();
+        }
+
+        function dismissNotification(notifId) {
+            fetch(`/api/notifications/${notifId}/dismiss`, { method: 'POST' })
+                .then(() => {
+                    notificationsData = notificationsData.filter(n => n.id !== notifId);
+                    renderNotifications();
+                    updateNotificationsBadge();
+                })
+                .catch(err => console.error('Failed to dismiss:', err));
+        }
+
+        function updateNotificationsBadge() {
+            const badge = document.getElementById('notifications-badge');
+            const count = notificationsData.length;
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'inline' : 'none';
+        }
+
+        function dismissSurfaced() {
+            // For now, just hide - could mark as "later" in backend
+            contextData.surfaced_count = 0;
+            renderContext();
         }
 
         // ============== File Upload ==============
@@ -1575,7 +1765,6 @@
             const statusEl = document.getElementById('upload-status');
             const uploadBtn = document.getElementById('upload-btn');
 
-            // Show progress UI
             filenameEl.textContent = file.name;
             percentEl.textContent = '0%';
             fillEl.style.width = '0%';
@@ -1583,21 +1772,17 @@
             progressEl.classList.add('active');
             uploadBtn.disabled = true;
 
-            // Create FormData
             const formData = new FormData();
             formData.append('file', file);
 
-            // Use XMLHttpRequest for progress tracking (fetch doesn't support upload progress)
             uploadXhr = new XMLHttpRequest();
 
-            // Progress handler
             uploadXhr.upload.onprogress = function(e) {
                 if (e.lengthComputable) {
                     const percent = Math.round((e.loaded / e.total) * 100);
                     percentEl.textContent = percent + '%';
                     fillEl.style.width = percent + '%';
 
-                    // Show bytes for large files
                     if (e.total > 1024 * 1024) {
                         const loadedMB = (e.loaded / (1024 * 1024)).toFixed(1);
                         const totalMB = (e.total / (1024 * 1024)).toFixed(1);
@@ -1606,7 +1791,6 @@
                 }
             };
 
-            // Complete handler
             uploadXhr.onload = function() {
                 uploadBtn.disabled = false;
 
@@ -1617,86 +1801,46 @@
                         fillEl.style.width = '100%';
                         percentEl.textContent = '100%';
 
-                        // Add success message to chat
+                        openChat();
                         addMessage(`Uploaded: ${file.name}`, 'you');
-                        addMessage(response.message || `File "${response.filename}" uploaded. It will be processed by the Archivist shortly.`, 'friend');
+                        addMessage(response.message || `File "${response.filename}" uploaded.`, 'friend');
 
-                        // Hide progress after delay
-                        setTimeout(() => {
-                            progressEl.classList.remove('active');
-                        }, 1500);
+                        setTimeout(() => progressEl.classList.remove('active'), 1500);
                     } catch (e) {
                         statusEl.textContent = 'Upload complete';
-                        setTimeout(() => {
-                            progressEl.classList.remove('active');
-                        }, 1500);
+                        setTimeout(() => progressEl.classList.remove('active'), 1500);
                     }
                 } else {
                     statusEl.textContent = 'Upload failed';
+                    openChat();
                     addMessage(`Upload failed: ${file.name}`, 'you');
                     addMessage('Sorry, the upload failed. Please try again.', 'friend');
-
-                    setTimeout(() => {
-                        progressEl.classList.remove('active');
-                    }, 2000);
+                    setTimeout(() => progressEl.classList.remove('active'), 2000);
                 }
 
                 uploadXhr = null;
             };
 
-            // Error handler
             uploadXhr.onerror = function() {
                 uploadBtn.disabled = false;
                 statusEl.textContent = 'Network error';
-                addMessage('Upload failed due to network error. Please check your connection.', 'friend');
-
-                setTimeout(() => {
-                    progressEl.classList.remove('active');
-                }, 2000);
-
+                openChat();
+                addMessage('Upload failed due to network error.', 'friend');
+                setTimeout(() => progressEl.classList.remove('active'), 2000);
                 uploadXhr = null;
             };
 
-            // Send request
             uploadXhr.open('POST', '/api/upload');
             uploadXhr.send(formData);
         }
 
-        // Auto-expand textarea as user types
-        function autoExpand(textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
-        }
-
-        chatInput.addEventListener('input', () => autoExpand(chatInput));
-
-        // Enter to send (Shift+Enter for newline)
-        chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !isWaiting) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-
-        // Notification helpers
-        function getNotificationIcon(type) {
-            switch (type) {
-                case 'approval': return '👋';
-                case 'question': return '❓';
-                case 'alert': return '⚠️';
-                default: return '💬';
-            }
-        }
-
-        // ============== Server-Sent Events for Real-Time Updates ==============
+        // ============== SSE ==============
 
         let eventSource = null;
         let reconnectAttempts = 0;
 
         function connectSSE() {
-            if (eventSource) {
-                eventSource.close();
-            }
+            if (eventSource) eventSource.close();
 
             eventSource = new EventSource('/api/events');
 
@@ -1706,84 +1850,44 @@
                 tasksData = data.tasks || [];
                 updateTasksBadge();
                 updateNotificationsBadge();
-                if (activePanel === 'notifications') {
-                    renderNotifications();
-                } else if (activePanel === 'tasks') {
-                    renderTodayTasks();
-                }
+                if (activePanel === 'notifications') renderNotifications();
+                else if (activePanel === 'tasks') renderTodayTasks();
                 reconnectAttempts = 0;
-                console.log('SSE connected, initial data loaded');
             });
 
             eventSource.addEventListener('notification_update', (e) => {
                 const notification = JSON.parse(e.data);
-                // Update or add notification
                 const idx = notificationsData.findIndex(n => n.id === notification.id);
-                if (idx >= 0) {
-                    notificationsData[idx] = notification;
-                } else {
-                    notificationsData.unshift(notification);
-                }
+                if (idx >= 0) notificationsData[idx] = notification;
+                else notificationsData.unshift(notification);
                 updateNotificationsBadge();
-                if (activePanel === 'notifications') {
-                    renderNotifications();
-                }
+                if (activePanel === 'notifications') renderNotifications();
             });
 
             eventSource.addEventListener('notification_removed', (e) => {
                 const data = JSON.parse(e.data);
                 notificationsData = notificationsData.filter(n => n.id !== data.id);
                 updateNotificationsBadge();
-                if (activePanel === 'notifications') {
-                    renderNotifications();
-                }
-            });
-
-            eventSource.addEventListener('status_update', (e) => {
-                const data = JSON.parse(e.data);
-                // Update ingestion status if available
-                if (data.agents && data.agents.ingestion) {
-                    const ingestion = data.agents.ingestion;
-                    // Could display this somewhere in the UI
-                    console.log('Ingestion status:', ingestion.pending_files, 'files pending');
-                }
+                if (activePanel === 'notifications') renderNotifications();
             });
 
             eventSource.addEventListener('tasks_update', (e) => {
                 const data = JSON.parse(e.data);
                 tasksData = data.tasks || [];
-                if (activePanel === 'tasks') {
-                    renderTodayTasks();
-                }
+                if (activePanel === 'tasks') renderTodayTasks();
             });
 
-            eventSource.addEventListener('ping', () => {
-                // Keepalive, do nothing
-            });
+            eventSource.addEventListener('ping', () => {});
 
             eventSource.onerror = () => {
                 eventSource.close();
-                // Exponential backoff reconnect
                 const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
                 reconnectAttempts++;
-                console.log(`SSE disconnected, reconnecting in ${delay}ms...`);
                 setTimeout(connectSSE, delay);
             };
         }
 
-        // Initialize SSE connection
-        connectSSE();
-
-        // Load active panel data if open (for projects which aren't in SSE yet)
-        if (activePanel === 'tasks') {
-            loadTasksData();
-        } else if (activePanel === 'notifications') {
-            // Already loaded via SSE init
-        }
-
-        chatInput.focus();
-
-        // ============== Drag and Drop Upload ==============
+        // ============== Drag and Drop ==============
 
         const appEl = document.querySelector('.app');
 
@@ -1800,12 +1904,13 @@
         appEl.addEventListener('drop', (e) => {
             e.preventDefault();
             appEl.classList.remove('drag-over');
-
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                uploadFile(files[0]);
+            if (e.dataTransfer.files.length > 0) {
+                uploadFile(e.dataTransfer.files[0]);
             }
         });
+
+        // Initialize
+        init();
     </script>
 </body>
 </html>

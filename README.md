@@ -2,175 +2,70 @@
   <img src="static/images/euno-logo-with-subtitle.png" alt="Euno" width="50%">
 </p>
 
-_Euno [U-no], from Eudaimonia, an ancient Greek concept, often translated as "human flourishing" or "living well," representing a deep sense of fulfillment and purpose beyond mere fleeting happiness or pleasure, achieved through virtuous living, developing one's potential, and engaging in meaningful activities._
+_Euno [U-no], from Eudaimonia—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities._
 
-**Meet Euno**, a personal intelligence that learns to anticipate you. Enuo will:
-- proactively do tasks for you
-- curate what helps you thrive
-- expand your horizons
+**Euno is a personal intelligence that learns to anticipate you.** It proactively does tasks for you, curates what helps you thrive, and expands your horizons.
 
-Euno is a digital mind designed to help you live well in all aspects of your life.
+## How It Works
 
-## How Euno Works
-
-1. Learns from your data and behaviors
-2. Builds an understanding of the real you
-3. Acts as your proactive personal intelligence
+1. **Learns** from your data and behaviors
+2. **Understands** who you really are—values, patterns, rhythms
+3. **Anticipates** what you need before you ask
 
 ## What It Does
 
-*Some capabilities are fully implemented, others are being built toward the [personal intelligence vision](docs/personal-intelligence.md).*
-
-- **Reads your life data** — photos, documents, exports from any platform *(currently: manual file ingestion; planned: calendar, email, browsing)*
+- **Reads your life data** — photos, documents, exports from any platform
 - **Maintains a life log** — one unified record of everything, searchable and private
-- **Learns your values** — discovers what matters to you from patterns, not just what you say
-- **Discovers opportunities** — surfaces events, people, places, and learning that match your values *(currently: LLM-generated suggestions; planned: real discovery from web/APIs)*
-- **Curates content** — surfaces the right thing at the right moment, respects your energy *(currently: morning/evening check-ins; planned: context-aware surfacing)*
-- **Finds common ground** — where social media builds walls, this builds bridges between people *(planned: value cards for relationship matching)*
-- **Executes tasks** — handles research and routine work autonomously, asks before acting on anything important *(currently: task tracking; planned: autonomous execution)*
+- **Learns your values** — discovers what matters from patterns, not just what you say
+- **Surfaces what matters** — the right thing at the right moment, respecting your energy
+- **Executes tasks** — handles work autonomously, asks before acting on anything important
 - **Talks like a friend** — not a chatbot, not an assistant—a caring collaborator who knows you
 
-## Core Concepts
+## Core Ideas
 
-### The Promotion of Life
+**Promotion of Life** — The foundation: promote life. Not fatalistic, not nihilistic. A life that is safe AND surprising.
 
-The foundation is unchanging: promote life. Not fatalistic, not nihilistic. A life that is safe AND surprising.
+**90/10 Balance** — ~90% grounded in your values; ~10% novelty that challenges and expands. Too much surprise → anxiety. Too little → stagnation.
 
-### Agent Identity
+**Stated vs Revealed** — What you say matters vs what your behavior shows. The gap isn't hypocrisy—it's tension to understand.
 
-Agents have three layers of identity:
-1. Core - unchaning values
-2. Persona - evolves based on your data
-3. Context - the situation
-
-### The 90/10 Balance
-
-This is how the system avoids becoming an echo chamber:
-
-- **~90% safety**: grounded in your values, goals, and beliefs
-- **~10% surprise**: novelty that challenges and expands you
-
-Too much surprise → anxiety. Too little → stagnation. The balance promotes growth without destabilization.
-
-### Values as Conjectures
-
-All knowledge is conjecture (Popper). Values are not absolute truths but useful predictions about what promotes life and happiness. They can be refined or discarded. Current values trump historical—who you are now matters most.
-
-### Stated vs Revealed
-
-- **Stated values**: what you say matters ("family is my priority")
-- **Revealed values**: what your behavior shows (works late, cancels dinners)
-
-The gap isn't hypocrisy to expose—it's tension to understand. The agent notices, holds this gently, and surfaces it when the moment is right.
-
-### Energy Awareness
-
-The agent models your energy across dimensions:
-- Physical (sleep, movement)
-- Mental (focus, cognitive load)
-- Emotional (mood, resilience)
-- Social (connection capacity)
-
-It tracks your rhythms, notices when you're depleted, and adjusts what it surfaces. A heavy meeting day means protecting your evening, not piling on more.
-
-### Persuasion, Not Manipulation
-
-The agent advocates for the version of you that you said you want to be.
-
-- **Manipulation**: getting you to do what serves the agent's goals
-- **Persuasion**: helping you do what serves your own stated values
-
-When you resist, it adapts: "not now" → defer and resurface later. "Sounds hard" → break it down. "Not sure it's me" → connect to your stated values. It never guilt-trips, never pushes for engagement.
-
-### Value Cards *(Planned)*
-
-When you meet someone new—a collaborator, a date, a potential friend—your agents can exchange value cards to find common ground.
-
-- **Internal card**: What the agent knows about you (private, never shared)
-- **Public card**: What you choose to share with others (you review and approve)
-
-When two agents exchange cards, they analyze both parties' values and surface:
-- What you have in common
-- What each might appreciate about the other
-- Potential friction points to navigate
-
-This turns "getting to know someone" from awkward small talk into meaningful connection. Your agent becomes a bridge-builder, helping people find the best way to work and live together.
-
-### What This Is NOT
-
-- An echo chamber that only reflects you back at yourself
-- Another algorithm deciding your attention for someone else's benefit
-- A comfort machine that optimizes for ease
-
-### What This IS
-
-- Taking back your attention from platforms that exploit it
-- Curating for YOUR life, not engagement metrics
-- A bridge-builder between people
-- A source of encouragement and gratitude
+**Energy Awareness** — Models your energy (physical, mental, emotional, social). Adjusts what it surfaces based on your capacity.
 
 ## Agents
 
-Eight specialized agents work together, each with its own persona and purpose:
+Eight specialized agents work together:
 
-| Agent | Role | What It Does |
-|-------|------|--------------|
-| **Ingestion** | The Archivist | Transforms messy data into clean log entries |
-| **Summary** | The Historian | Distills daily logs into yearly narratives |
-| **Synthesis** | The Keeper | Synthesizes who you are—epistemic axioms at foundation, values derived, behaviors revealing |
-| **World** | The Scout | Explores external opportunities that match your values |
-| **Attention** | The Curator | Matches opportunities to your energy and timing; surfaces proactive questions |
-| **Interaction** | The Caring Friend | Converses, listens, adapts—your single interface to everything |
-| **Worker** | The Executor | Handles tasks autonomously or escalates when needed |
-| **Evolution** | The Evolver | Evolves agent identities; assesses system health and steers other agents |
+| Agent | Role |
+|-------|------|
+| **Ingestion** | Transforms messy data into clean log entries |
+| **Summary** | Distills daily logs into narratives |
+| **Synthesis** | Builds understanding of who you are |
+| **World** | Explores opportunities matching your values |
+| **Attention** | Surfaces the right thing at the right time |
+| **Interaction** | Your interface—converses, listens, adapts |
+| **Worker** | Handles tasks autonomously or escalates |
+| **Evolution** | Evolves agent identities, steers the system |
 
-### Under the hood
+## Documentation
 
+- **[Vision](docs/vision.md)** — What Euno should become
+- **[Architecture](docs/architecture.md)** — Technical design and implementation
+- **[User Experience](docs/user-experience.md)** — UI/UX philosophy
+- **[Todo](docs/todo.md)** — Implementation roadmap
+
+## Development
+
+Build for yourself first. This is not a solution looking for a problem.
+
+```bash
+# Setup
+cp .env.example .env  # Add your ANTHROPIC_API_KEY
+pip install -r requirements.txt
+
+# Run
+python main.py        # Start the web UI and agents
 ```
-1. GATHER    →  Ingest data about your life (files, conversations, exports)
-2. LOG       →  Store in local flat files (one log, one life)
-3. SUMMARIZE →  Distill logs into yearly narratives
-4. DERIVE    →  Analyze summaries to form values at three temporal scopes
-5. DISCOVER  →  Explore the world for opportunities matching your values
-6. SURFACE   →  Present the right thing at the right moment
-7. INTERACT  →  Converse, reflect, capture new data → back to step 1
-```
 
-## Development Philosophy
+## Privacy
 
-Build for yourself first, not "other people." This is not a solution looking for a problem.
-
-- Build the best agent for my own daily use
-- Refine through lived experience, not hypothetical users
-- Release only when it's battle-tested and genuinely wanted
-
-See also:
-- [docs/architecture.md](docs/architecture.md) - Technical architecture
-- [docs/personal-intelligence.md](docs/personal-intelligence.md) - Vision for what Euno should become
-- [docs/user-experience.md](docs/user-experience.md) - UI/UX vision
-
-## FAQ
-
-### "What about privacy?"
-
-Your data stays local—files never leave your machine. But processing uses frontier AI APIs, which means trusting those providers with what you send.
-
-Here's the uncomfortable truth: privacy is largely an illusion already. Your phone knows where you sleep, your email is scanned for ads, your photos train someone else's models. The question isn't whether to share data—it's whether *you* get value from it or only corporations do.
-
-This system shifts that balance. Yes, it requires trust in AI providers. But in exchange, you get a personal intelligence working for *your* interests, not an algorithm optimizing for engagement. Technology changes society whether we participate or not. The choice is whether to shape that change or be shaped by it.
-
-### "Won't this create an echo chamber?"
-
-This is a real risk with any personalization system. The 90/10 balance is specifically designed to prevent it—10% of what surfaces is deliberately outside your comfort zone.
-
-But more importantly: the system nudges toward life-promoting activity, not passive consumption. It suggests you call a friend, try a new experience, learn something challenging. Echo chambers make you smaller. This is designed to expand you.
-
-### "Doesn't AI replace human effort?"
-
-This isn't substitution—it's augmentation. Your phone didn't replace your memory; it freed your mind for higher-order thinking. A calculator didn't replace mathematical reasoning; it let you tackle harder problems.
-
-This system handles the cognitive overhead of managing your attention, remembering your values, tracking opportunities. What it gives back is time and mental space for the things only you can do: create, connect, decide, grow.
-
-There's also a distinction worth making: *work* is not the same as *jobs*. Work—purposeful effort, mastery, contribution—is essential for human happiness. Jobs are how we currently exchange labor for money. AI may disrupt jobs, and new economic structures will need to emerge to ensure people can thrive. But work itself? That's not going anywhere. If anything, AI frees us to do more meaningful work, not less.
-
-The agent doesn't live your life. It clears the path so you can.
+Your data stays local. Processing uses AI APIs (requires trusting those providers). The tradeoff: you get a personal intelligence working for *your* interests, not an algorithm optimizing for engagement.

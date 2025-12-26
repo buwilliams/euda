@@ -38,6 +38,7 @@ from ..tools.interaction.cards import (
 )
 from ..tools.world.world import get_opportunities
 from ..tools.attention.attention import get_queue, get_recent_energy, record_energy
+from ..tools.attention.context import get_context_for_view, get_view_mode
 from ..tools.synthesis.summary import list_years, get_summary
 
 
@@ -787,6 +788,50 @@ async def get_attention_queue():
     """Get surfacing queue."""
     content = get_queue()
     return {"content": content}
+
+
+# ============== Context (Context-First UI) ==============
+
+@app.get("/api/context")
+async def get_context(view: Optional[str] = None):
+    """
+    Get aggregated context for the context-first UI.
+
+    Auto-detects appropriate view mode based on time of day:
+    - morning (7-10am): Full briefing with schedule, tasks, on-your-mind, noticed
+    - active (10am-6pm): Minimal, focus-protecting
+    - evening (6-10pm): Reflection with day summary, open threads, tomorrow preview
+    - weekly (Sunday): Weekly review
+
+    Args:
+        view: Optional override for view mode
+    """
+    context = get_context_for_view(view)
+    return context
+
+
+@app.get("/api/context/morning")
+async def get_morning_context():
+    """Get morning briefing context."""
+    return get_context_for_view("morning")
+
+
+@app.get("/api/context/active")
+async def get_active_context():
+    """Get active day (minimal, focus-protecting) context."""
+    return get_context_for_view("active")
+
+
+@app.get("/api/context/evening")
+async def get_evening_context():
+    """Get evening reflection context."""
+    return get_context_for_view("evening")
+
+
+@app.get("/api/context/weekly")
+async def get_weekly_context():
+    """Get weekly review context."""
+    return get_context_for_view("weekly")
 
 
 # ============== Summaries ==============

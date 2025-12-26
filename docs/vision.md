@@ -1,6 +1,6 @@
-# Personal Intelligence
+# Vision
 
-*A vision for what Euno should become*
+*What Euno should become: a personal intelligence that knows you deeply and anticipates your needs.*
 
 ## The Essence
 
