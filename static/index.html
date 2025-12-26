@@ -203,11 +203,40 @@
             background: #f5f5f5;
         }
 
-        .focus-message {
-            margin-top: 2rem;
-            color: #ccc;
-            font-style: italic;
-            font-size: 0.9rem;
+        /* Inline Chat */
+        .inline-chat {
+            border-top: 1px solid #eee;
+            padding: 1rem 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .inline-chat-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .inline-message {
+            line-height: 1.6;
+            max-width: 90%;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .inline-message-you {
+            align-self: flex-end;
+            background: #f5f5f5;
+            border-radius: 12px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .inline-message-friend {
+            align-self: flex-start;
+        }
+
+        .inline-message-friend .message-content {
+            color: #333;
         }
 
         /* Day Summary (Evening) */
@@ -275,56 +304,7 @@
             font-size: 0.9rem;
         }
 
-        /* ============== Chat Overlay ============== */
-        .chat-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: #fff;
-            z-index: 100;
-            display: none;
-            flex-direction: column;
-        }
-
-        .chat-overlay.active {
-            display: flex;
-        }
-
-        .chat-overlay-header {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #eee;
-        }
-
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: none;
-            border: none;
-            font-family: inherit;
-            font-size: 1rem;
-            color: #666;
-            cursor: pointer;
-            padding: 0.5rem 0;
-        }
-
-        .back-btn:hover {
-            color: #000;
-        }
-
-        .chat-overlay-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            max-width: 640px;
-            margin: 0 auto;
-            width: 100%;
-            padding: 0 1.5rem;
-            overflow: hidden;
-        }
-
+        /* ============== Messages (for panels and inline) ============== */
         .messages {
             flex: 1;
             overflow-y: auto;
@@ -937,9 +917,15 @@
                     <div class="loading-spinner">Loading...</div>
                 </div>
 
+                <!-- Inline conversation area -->
+                <div class="inline-chat" id="inline-chat" style="display: none;">
+                    <div class="inline-chat-messages" id="inline-messages"></div>
+                </div>
+
                 <div class="input-bar">
                     <div class="input-container">
-                        <input type="text" id="context-input" placeholder="Talk to me..." onclick="openChat()" readonly>
+                        <textarea id="context-input" placeholder="Talk to me..." rows="1"></textarea>
+                        <button id="context-send-btn" onclick="sendContextMessage()">Send</button>
                         <button class="upload-btn" id="upload-btn" onclick="triggerUpload()" title="Upload file">
                             <svg viewBox="0 0 24 24">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -959,28 +945,6 @@
                     </div>
                 </div>
             </section>
-        </div>
-
-        <!-- Chat Overlay -->
-        <div class="chat-overlay" id="chat-overlay">
-            <div class="chat-overlay-header">
-                <button class="back-btn" onclick="closeChat()">
-                    <span>&#8592;</span> Back to overview
-                </button>
-            </div>
-            <div class="chat-overlay-content">
-                <div class="messages" id="messages">
-                    <div class="message message-friend" style="animation: none;">
-                        <div class="message-content">Hey. I'm here when you need me. What's on your mind?</div>
-                    </div>
-                </div>
-                <div class="input-bar">
-                    <div class="input-container">
-                        <textarea id="chat-input" placeholder="Talk to me..." rows="1"></textarea>
-                        <button id="send-btn" onclick="sendMessage()">Send</button>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Notifications Panel -->
@@ -1060,10 +1024,6 @@
         // Elements
         const appContainer = document.getElementById('app-container');
         const contextContent = document.getElementById('context-content');
-        const chatOverlay = document.getElementById('chat-overlay');
-        const messagesEl = document.getElementById('messages');
-        const chatInput = document.getElementById('chat-input');
-        const sendBtn = document.getElementById('send-btn');
 
         // Initialize
         async function init() {
@@ -1075,13 +1035,17 @@
                 appContainer.classList.add('panel-open');
                 document.getElementById(`${activePanel}-panel`).classList.add('active');
                 document.getElementById(`${activePanel}-toggle`).classList.add('active');
+
+                // Load data for the active panel
+                if (activePanel === 'tasks') loadTasksData();
+                else if (activePanel === 'notifications') loadNotificationsData();
             }
 
             // Connect SSE
             connectSSE();
 
-            // Load tasks data for badge
-            loadTasksData();
+            // Load tasks data for badge (even if not active panel)
+            if (activePanel !== 'tasks') loadTasksData();
         }
 
         // ============== Context Loading & Rendering ==============
@@ -1180,7 +1144,7 @@
                 if (onYourMind.action_prompt) {
                     html += `<div class="action-prompt">
                         <div class="action-prompt-text">${escapeHtml(onYourMind.action_prompt)}</div>
-                        <button class="action-btn" onclick="openChatWith('${escapeHtml(onYourMind.action_prompt)}')">Let's talk</button>
+                        <button class="action-btn" onclick="sendPrompt('${escapeHtml(onYourMind.action_prompt).replace(/'/g, "\\'")}')">Let's talk</button>
                     </div>`;
                 }
 
@@ -1236,7 +1200,6 @@
                 </div>`;
             }
 
-            html += '<div class="focus-message">[Minimal - protecting your focus]</div>';
             html += '</div>';
 
             contextContent.innerHTML = html;
@@ -1325,36 +1288,25 @@
             renderMorningView();
         }
 
-        // ============== Chat Overlay ==============
+        // ============== Inline Chat ==============
 
-        function openChat() {
-            chatOpen = true;
-            chatOverlay.classList.add('active');
-            chatInput.focus();
-        }
+        const contextInput = document.getElementById('context-input');
+        const contextSendBtn = document.getElementById('context-send-btn');
+        const inlineChat = document.getElementById('inline-chat');
+        const inlineMessages = document.getElementById('inline-messages');
 
-        function openChatWith(message) {
-            openChat();
-            chatInput.value = message;
-        }
-
-        function closeChat() {
-            chatOpen = false;
-            chatOverlay.classList.remove('active');
-            // Refresh context when returning
-            loadContext();
-        }
-
-        // ============== Chat Functions ==============
-
-        async function sendMessage() {
-            const message = chatInput.value.trim();
+        async function sendContextMessage() {
+            const message = contextInput.value.trim();
             if (!message || isWaiting) return;
 
-            addMessage(message, 'you');
-            chatInput.value = '';
-            chatInput.style.height = 'auto';
-            setWaiting(true);
+            // Show inline chat area
+            inlineChat.style.display = 'block';
+
+            // Add user message
+            addInlineMessage(message, 'you');
+            contextInput.value = '';
+            contextInput.style.height = 'auto';
+            setContextWaiting(true);
 
             try {
                 const response = await fetch('/api/chat', {
@@ -1366,90 +1318,99 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    console.error('Server error:', data.detail || data);
-                    removeThinking();
-                    addMessage(`Something went wrong: ${data.detail || 'Unknown error'}`, 'friend');
-                    setWaiting(false);
+                    removeInlineThinking();
+                    addInlineMessage(`Something went wrong: ${data.detail || 'Unknown error'}`, 'friend');
+                    setContextWaiting(false);
                     return;
                 }
 
                 sessionId = data.session_id;
                 localStorage.setItem('sessionId', sessionId);
 
-                removeThinking();
-
-                if (data.clear_chat) {
-                    clearMessages();
-                }
-
-                addMessage(data.response, 'friend');
+                removeInlineThinking();
+                addInlineMessage(data.response, 'friend');
             } catch (error) {
                 console.error('Chat error:', error);
-                removeThinking();
-                addMessage('I had trouble processing that. Could you try again?', 'friend');
+                removeInlineThinking();
+                addInlineMessage('I had trouble processing that. Could you try again?', 'friend');
             }
 
-            setWaiting(false);
-            chatInput.focus();
+            setContextWaiting(false);
+            contextInput.focus();
         }
 
-        function clearMessages() {
-            messagesEl.innerHTML = '';
-        }
-
-        function setWaiting(waiting) {
-            isWaiting = waiting;
-            chatInput.disabled = waiting;
-            sendBtn.disabled = waiting;
-            if (waiting) addThinking();
-        }
-
-        function addMessage(content, role) {
+        function addInlineMessage(content, role) {
             const div = document.createElement('div');
-            div.className = `message message-${role}`;
+            div.className = `inline-message inline-message-${role}`;
             const html = role === 'friend' ? marked.parse(content) : escapeHtml(content);
             div.innerHTML = `<div class="message-content">${html}</div>`;
-            messagesEl.appendChild(div);
-            scrollToBottom();
+            inlineMessages.appendChild(div);
+            inlineChat.scrollTop = inlineChat.scrollHeight;
         }
 
-        function addThinking() {
+        function addInlineThinking() {
             const div = document.createElement('div');
-            div.className = 'message-thinking';
-            div.id = 'thinking';
-            div.innerHTML = `Thinking<div class="thinking-dots"><span></span><span></span><span></span></div>`;
-            messagesEl.appendChild(div);
-            scrollToBottom();
+            div.className = 'inline-message inline-message-friend';
+            div.id = 'inline-thinking';
+            div.innerHTML = `<div class="message-content" style="color: #999; font-style: italic;">Thinking<span class="thinking-dots"><span></span><span></span><span></span></span></div>`;
+            inlineMessages.appendChild(div);
+            inlineChat.scrollTop = inlineChat.scrollHeight;
         }
 
-        function removeThinking() {
-            const el = document.getElementById('thinking');
+        function removeInlineThinking() {
+            const el = document.getElementById('inline-thinking');
             if (el) el.remove();
         }
 
-        function scrollToBottom() {
-            messagesEl.scrollTop = messagesEl.scrollHeight;
+        function setContextWaiting(waiting) {
+            isWaiting = waiting;
+            contextInput.disabled = waiting;
+            contextSendBtn.disabled = waiting;
+            if (waiting) addInlineThinking();
         }
+
+        // Auto-expand context textarea
+        contextInput.addEventListener('input', () => {
+            contextInput.style.height = 'auto';
+            contextInput.style.height = Math.min(contextInput.scrollHeight, 200) + 'px';
+        });
+
+        // Enter to send in context input
+        contextInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !isWaiting) {
+                e.preventDefault();
+                sendContextMessage();
+            }
+        });
+
+        // ============== Chat Overlay (Legacy) ==============
+
+        function openChat() {
+            // Now just focus the inline input
+            contextInput.focus();
+        }
+
+        function openChatWith(message) {
+            contextInput.value = message;
+            contextInput.focus();
+        }
+
+        function sendPrompt(message) {
+            contextInput.value = message;
+            sendContextMessage();
+        }
+
+        function closeChat() {
+            // No-op now
+        }
+
+        // ============== Utility Functions ==============
 
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-
-        // Auto-expand textarea
-        chatInput.addEventListener('input', () => {
-            chatInput.style.height = 'auto';
-            chatInput.style.height = Math.min(chatInput.scrollHeight, 200) + 'px';
-        });
-
-        // Enter to send
-        chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !isWaiting) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
 
         // ============== Panel Functions ==============
 
@@ -1586,9 +1547,9 @@
             renderProjects();
 
             const action = newStatus === 'completed' ? 'completed' : 'reopened';
-            openChat();
-            addMessage(`Mark task "${task.description}" as ${action}`, 'you');
-            setWaiting(true);
+            inlineChat.style.display = 'block';
+            addInlineMessage(`Mark task "${task.description}" as ${action}`, 'you');
+            setContextWaiting(true);
 
             try {
                 const response = await fetch('/api/chat', {
@@ -1603,20 +1564,22 @@
                 const data = await response.json();
                 sessionId = data.session_id;
                 localStorage.setItem('sessionId', sessionId);
-                removeThinking();
-                addMessage(data.response, 'friend');
+                removeInlineThinking();
+                addInlineMessage(data.response, 'friend');
                 loadTasksData();
             } catch (error) {
-                removeThinking();
-                addMessage('Had trouble updating that task.', 'friend');
+                removeInlineThinking();
+                addInlineMessage('Had trouble updating that task.', 'friend');
             }
 
-            setWaiting(false);
-            chatInput.focus();
+            setContextWaiting(false);
+            contextInput.focus();
         }
 
         function discussTask(description) {
-            openChatWith(`Tell me about the task: ${description}`);
+            contextInput.value = `Tell me about the task: ${description}`;
+            inlineChat.style.display = 'block';
+            sendContextMessage();
         }
 
         function quickAddTask() {
@@ -1624,9 +1587,9 @@
             const task = quickInput.value.trim();
             if (!task || isWaiting) return;
 
-            openChatWith(`Create a task to ${task}`);
+            contextInput.value = `Create a task to ${task}`;
             quickInput.value = '';
-            sendMessage();
+            sendContextMessage();
         }
 
         function updateTasksBadge() {
@@ -1717,8 +1680,8 @@
 
             const prompt = notification.action_prompt || `Tell me more about: ${notification.title}`;
             if (activePanel) togglePanel(activePanel);
-            openChatWith(prompt);
-            sendMessage();
+            contextInput.value = prompt;
+            sendContextMessage();
         }
 
         function dismissNotification(notifId) {
@@ -1801,9 +1764,9 @@
                         fillEl.style.width = '100%';
                         percentEl.textContent = '100%';
 
-                        openChat();
-                        addMessage(`Uploaded: ${file.name}`, 'you');
-                        addMessage(response.message || `File "${response.filename}" uploaded.`, 'friend');
+                        inlineChat.style.display = 'block';
+                        addInlineMessage(`Uploaded: ${file.name}`, 'you');
+                        addInlineMessage(response.message || `File "${response.filename}" uploaded.`, 'friend');
 
                         setTimeout(() => progressEl.classList.remove('active'), 1500);
                     } catch (e) {
@@ -1812,9 +1775,9 @@
                     }
                 } else {
                     statusEl.textContent = 'Upload failed';
-                    openChat();
-                    addMessage(`Upload failed: ${file.name}`, 'you');
-                    addMessage('Sorry, the upload failed. Please try again.', 'friend');
+                    inlineChat.style.display = 'block';
+                    addInlineMessage(`Upload failed: ${file.name}`, 'you');
+                    addInlineMessage('Sorry, the upload failed. Please try again.', 'friend');
                     setTimeout(() => progressEl.classList.remove('active'), 2000);
                 }
 
@@ -1824,8 +1787,8 @@
             uploadXhr.onerror = function() {
                 uploadBtn.disabled = false;
                 statusEl.textContent = 'Network error';
-                openChat();
-                addMessage('Upload failed due to network error.', 'friend');
+                inlineChat.style.display = 'block';
+                addInlineMessage('Upload failed due to network error.', 'friend');
                 setTimeout(() => progressEl.classList.remove('active'), 2000);
                 uploadXhr = null;
             };
