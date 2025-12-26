@@ -1,9 +1,9 @@
 """
-Self Agent - The Keeper
+Synthesis Agent - The Keeper
 
-Maintains a comprehensive model of who the user is, with EPISTEMIC AXIOMS at the foundation.
+Synthesizes a comprehensive model of who the user is, with EPISTEMIC AXIOMS at the foundation.
 
-Self hierarchy:
+Synthesis hierarchy:
 1. Epistemic Axioms (foundational) - the beliefs that drive decisions
 2. Mental Models & Tools (foundational) - how you reason and process reality
 3. Values (derived) - what you care about, emergent from epistemic core
@@ -14,8 +14,8 @@ Each epistemic entry includes PROVENANCE: the behavior that revealed it.
 """
 
 from .base import create_agent, AutonomousAgent, load_prompt
-from ..tools.self import (
-    ALL_SELF_TOOLS, ALL_SELF_HANDLERS,
+from ..tools.synthesis import (
+    ALL_SYNTHESIS_TOOLS, ALL_SYNTHESIS_HANDLERS,
     EPISTEMIC_TOOLS, EPISTEMIC_HANDLERS,
     VALUES_TOOLS, VALUES_HANDLERS,
     BEHAVIOR_TOOLS, BEHAVIOR_HANDLERS,
@@ -24,30 +24,30 @@ from ..tools.self import (
 )
 
 
-def create_self_agent():
-    """Create a Self Agent instance."""
+def create_synthesis_agent():
+    """Create a Synthesis Agent instance."""
     return create_agent(
-        persona_name="self",
-        tools=ALL_SELF_TOOLS
+        persona_name="synthesis",
+        tools=ALL_SYNTHESIS_TOOLS
     )
 
 
 def run_interactive():
-    """Run an interactive session with the Self Agent."""
+    """Run an interactive session with the Synthesis Agent."""
     print("=" * 60)
-    print("Euno - Self Agent (The Keeper)")
+    print("Euno - Synthesis Agent (The Keeper)")
     print("=" * 60)
-    print("\nI maintain who you are. Epistemic axioms are at the foundation.")
+    print("\nI synthesize who you are. Epistemic axioms are at the foundation.")
     print("Commands:")
     print("  - 'epistemic' - Display epistemic core (axioms, models, tools)")
     print("  - 'values' - Display values (derived from epistemic core)")
     print("  - 'behaviors' - Display behavioral patterns")
-    print("  - 'derive' - Derive full self-model from summaries")
+    print("  - 'derive' - Derive full model from summaries")
     print("  - 'profile' - Generate consolidated profile")
     print("  - Or ask me anything about yourself")
     print("\nType 'quit' to exit.\n")
 
-    agent = create_self_agent()
+    agent = create_synthesis_agent()
 
     while True:
         try:
@@ -57,7 +57,7 @@ def run_interactive():
                 continue
 
             if user_input.lower() in ('quit', 'exit', 'q'):
-                print("\nThe self evolves. So do we.")
+                print("\nThe synthesis evolves. So do we.")
                 break
 
             # Handle quick commands
@@ -78,9 +78,9 @@ def run_interactive():
                 continue
 
             if user_input.lower() == 'derive':
-                user_input = "Please analyze the yearly summaries and derive the full self-model: epistemic axioms, mental models, epistemic tools, values at all three temporal scopes, and behavioral patterns."
+                user_input = "Please analyze the yearly summaries and derive the full model: epistemic axioms, mental models, epistemic tools, values at all three temporal scopes, and behavioral patterns."
 
-            response = agent.process(user_input, ALL_SELF_HANDLERS)
+            response = agent.process(user_input, ALL_SYNTHESIS_HANDLERS)
             print(f"\nKeeper: {response}\n")
 
         except KeyboardInterrupt:
@@ -90,38 +90,43 @@ def run_interactive():
             print(f"\nError: {e}\n")
 
 
-def derive_self() -> str:
+def derive_synthesis() -> str:
     """
-    Analyze summaries and derive/update self-model.
+    Analyze summaries and derive/update synthesis model.
 
-    Loads the derive prompt from data/self/prompts/derive.md
+    Loads the derive prompt from data/synthesis/prompts/derive.md
     and uses it to guide the agent.
 
     Returns:
         Result of the derivation process
     """
-    agent = create_self_agent()
-    prompt = load_prompt("self", "derive")
-    return agent.process(prompt, ALL_SELF_HANDLERS)
+    agent = create_synthesis_agent()
+    prompt = load_prompt("synthesis", "derive")
+    return agent.process(prompt, ALL_SYNTHESIS_HANDLERS)
 
 
 # Backwards compatibility aliases
+def derive_self() -> str:
+    """Alias for derive_synthesis. Deprecated."""
+    return derive_synthesis()
+
+
 def derive_identity() -> str:
-    """Alias for derive_self. Deprecated."""
-    return derive_self()
+    """Alias for derive_synthesis. Deprecated."""
+    return derive_synthesis()
 
 
 def derive_values() -> str:
-    """Alias for derive_self. Deprecated."""
-    return derive_self()
+    """Alias for derive_synthesis. Deprecated."""
+    return derive_synthesis()
 
 
-class AutonomousSelfAgent(AutonomousAgent):
+class AutonomousSynthesisAgent(AutonomousAgent):
     """
-    Autonomous Self Agent that maintains user's self-model.
+    Autonomous Synthesis Agent that maintains user's identity model.
 
     Checks:
-    - Signal: summaries_updated (derive self-model)
+    - Signal: summaries_updated (derive model)
 
     Work:
     - Derive epistemic axioms from summaries (foundational)
@@ -130,40 +135,41 @@ class AutonomousSelfAgent(AutonomousAgent):
     - Generate consolidated profile
 
     Signals:
-    - self_updated: After deriving self-model
+    - synthesis_updated: After deriving model
     """
 
     def __init__(self):
         super().__init__(
-            name="self",
-            persona_name="self",
-            tools=ALL_SELF_TOOLS,
-            tool_handlers=ALL_SELF_HANDLERS,
+            name="synthesis",
+            persona_name="synthesis",
+            tools=ALL_SYNTHESIS_TOOLS,
+            tool_handlers=ALL_SYNTHESIS_HANDLERS,
             check_interval=600,  # Check every 10 minutes
-            signals_on_complete=["self_updated"]
+            signals_on_complete=["synthesis_updated"]
         )
 
     def check_work_needed(self) -> bool:
-        """Check if self-model needs updating."""
+        """Check if synthesis model needs updating."""
         # Check for explicit signal
         if self.check_signal("summaries_updated"):
             self.logger.info("Received summaries_updated signal")
             return True
 
-        # Could also check if summaries are newer than self files
+        # Could also check if summaries are newer than synthesis files
         # For now, just respond to signals
         return False
 
     def do_work(self) -> str:
-        """Derive self-model from summaries."""
-        result = derive_self()
+        """Derive synthesis model from summaries."""
+        result = derive_synthesis()
         self.agent.clear_context()
-        return "Self-model derived from summaries"
+        return "Synthesis model derived from summaries"
 
 
 # Backwards compatibility aliases
-AutonomousIdentityAgent = AutonomousSelfAgent
-AutonomousValuesAgent = AutonomousSelfAgent
+AutonomousSelfAgent = AutonomousSynthesisAgent
+AutonomousIdentityAgent = AutonomousSynthesisAgent
+AutonomousValuesAgent = AutonomousSynthesisAgent
 
 
 if __name__ == "__main__":

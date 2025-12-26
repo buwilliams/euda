@@ -1,5 +1,7 @@
 """
-Values tools for the Values Agent (The Philosopher).
+Values tools for the Synthesis Agent (The Keeper).
+
+Values are derived from epistemic axioms - what you care about.
 
 Tools for reading summaries and managing values at different temporal scopes:
 - Current: Rolling year, what matters now
@@ -10,11 +12,16 @@ Tools for reading summaries and managing values at different temporal scopes:
 from datetime import datetime
 from pathlib import Path
 
-# Base paths - Values agent uses shared log and its own output
+# Base paths - Synthesis agent uses shared log and synthesis data
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
 LOG_DIR = SHARED_DIR / "lifelog"
-VALUES_DIR = DATA_DIR / "values" / "output"
+SYNTHESIS_DIR = DATA_DIR / "synthesis"
+VALUES_DIR = SYNTHESIS_DIR / "values"
+
+# Backwards compatibility
+SELF_DIR = SYNTHESIS_DIR
+IDENTITY_DIR = SYNTHESIS_DIR
 
 # Ensure values directory exists
 VALUES_DIR.mkdir(parents=True, exist_ok=True)

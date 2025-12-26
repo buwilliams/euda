@@ -2,7 +2,7 @@
 Ingestion Status Tools - Progress and state reporting
 
 Provides comprehensive status information about the ingestion process
-for the Introspection Agent and other consumers. Includes:
+for the Evolution Agent and other consumers. Includes:
 - Current processing state
 - Queue statistics
 - Session and lifetime progress

@@ -8,7 +8,7 @@ while occasionally surprising with life-promoting novelty.
 from datetime import datetime, timedelta
 from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.world.world import WORLD_TOOLS, WORLD_HANDLERS
-from ..tools.self import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
+from ..tools.synthesis import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
 from ..tools.shared.notifications import queue_notification
 
 
@@ -116,8 +116,8 @@ class AutonomousWorldAgent(AutonomousAgent):
     def check_work_needed(self) -> bool:
         """Check if a discovery sweep is needed."""
         # Check for explicit signal (identity includes values at core)
-        if self.check_signal("self_updated"):
-            self.logger.info("Received self_updated signal - running discovery")
+        if self.check_signal("synthesis_updated"):
+            self.logger.info("Received synthesis_updated signal - running discovery")
             return True
 
         # Check if enough time has passed since last sweep

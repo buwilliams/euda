@@ -1,4 +1,4 @@
-"""Self tools - epistemic axioms at the foundation, values derived from them.
+"""Synthesis tools - epistemic axioms at the foundation, values derived from them.
 
 Hierarchy:
 1. Epistemic (foundational) - axioms, mental models, reasoning tools
@@ -20,7 +20,7 @@ from .values import (
     get_current_values, get_phase_values, get_lifetime_values, get_all_values,
     write_current_values, write_phase_values, write_lifetime_values,
     get_all_summaries, note_value_tension, get_value_tensions,
-    SELF_DIR, VALUES_DIR
+    SYNTHESIS_DIR, VALUES_DIR
 )
 from .behaviors import (
     BEHAVIOR_TOOLS, BEHAVIOR_HANDLERS,
@@ -33,7 +33,7 @@ from .context import (
 )
 from .profile import (
     PROFILE_TOOLS, PROFILE_HANDLERS,
-    get_profile, generate_profile, get_self_summary
+    get_profile, generate_profile, get_synthesis_summary
 )
 from .summary import (
     SUMMARY_TOOLS, SUMMARY_HANDLERS,
@@ -42,8 +42,8 @@ from .summary import (
 )
 
 # Combined tools for convenience - epistemic first (foundational)
-ALL_SELF_TOOLS = EPISTEMIC_TOOLS + VALUES_TOOLS + BEHAVIOR_TOOLS + CONTEXT_TOOLS + PROFILE_TOOLS
-ALL_SELF_HANDLERS = {
+ALL_SYNTHESIS_TOOLS = EPISTEMIC_TOOLS + VALUES_TOOLS + BEHAVIOR_TOOLS + CONTEXT_TOOLS + PROFILE_TOOLS
+ALL_SYNTHESIS_HANDLERS = {
     **EPISTEMIC_HANDLERS,
     **VALUES_HANDLERS,
     **BEHAVIOR_HANDLERS,
@@ -52,18 +52,25 @@ ALL_SELF_HANDLERS = {
 }
 
 # Backwards compatibility aliases
-ALL_IDENTITY_TOOLS = ALL_SELF_TOOLS
-ALL_IDENTITY_HANDLERS = ALL_SELF_HANDLERS
-IDENTITY_DIR = SELF_DIR
-get_identity_summary = get_self_summary
+ALL_SELF_TOOLS = ALL_SYNTHESIS_TOOLS
+ALL_SELF_HANDLERS = ALL_SYNTHESIS_HANDLERS
+ALL_IDENTITY_TOOLS = ALL_SYNTHESIS_TOOLS
+ALL_IDENTITY_HANDLERS = ALL_SYNTHESIS_HANDLERS
+SELF_DIR = SYNTHESIS_DIR
+IDENTITY_DIR = SYNTHESIS_DIR
+get_self_summary = get_synthesis_summary
+get_identity_summary = get_synthesis_summary
 
 __all__ = [
-    # Self paths
-    'SELF_DIR', 'VALUES_DIR', 'EPISTEMIC_DIR',
+    # Synthesis paths
+    'SYNTHESIS_DIR', 'VALUES_DIR', 'EPISTEMIC_DIR',
     # Combined
-    'ALL_SELF_TOOLS', 'ALL_SELF_HANDLERS',
+    'ALL_SYNTHESIS_TOOLS', 'ALL_SYNTHESIS_HANDLERS',
     # Backwards compatibility
-    'ALL_IDENTITY_TOOLS', 'ALL_IDENTITY_HANDLERS', 'IDENTITY_DIR', 'get_identity_summary',
+    'ALL_SELF_TOOLS', 'ALL_SELF_HANDLERS',
+    'ALL_IDENTITY_TOOLS', 'ALL_IDENTITY_HANDLERS',
+    'SELF_DIR', 'IDENTITY_DIR',
+    'get_self_summary', 'get_identity_summary',
     # Epistemic tools (foundational)
     'EPISTEMIC_TOOLS', 'EPISTEMIC_HANDLERS',
     'get_axioms', 'write_axioms',
@@ -84,7 +91,7 @@ __all__ = [
     'get_relationships', 'get_relationship', 'add_relationship', 'update_relationship',
     # Profile tools (consolidated)
     'PROFILE_TOOLS', 'PROFILE_HANDLERS',
-    'get_profile', 'generate_profile', 'get_self_summary',
+    'get_profile', 'generate_profile', 'get_synthesis_summary',
     # Summary tools
     'SUMMARY_TOOLS', 'SUMMARY_HANDLERS',
     'get_year_logs', 'get_manifest', 'get_summary', 'write_summary',

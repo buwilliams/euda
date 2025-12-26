@@ -1,5 +1,5 @@
 """
-Epistemic tools for the Self Agent (The Keeper).
+Epistemic tools for the Synthesis Agent (The Keeper).
 
 Epistemic axioms are the FOUNDATIONAL layer - the beliefs that generate values.
 
@@ -22,8 +22,8 @@ from pathlib import Path
 
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
-SELF_DIR = DATA_DIR / "self"
-EPISTEMIC_DIR = SELF_DIR / "epistemic"
+SYNTHESIS_DIR = DATA_DIR / "synthesis"
+EPISTEMIC_DIR = SYNTHESIS_DIR / "epistemic"
 
 # Ensure directory exists
 EPISTEMIC_DIR.mkdir(parents=True, exist_ok=True)

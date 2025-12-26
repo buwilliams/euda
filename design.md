@@ -103,9 +103,9 @@ Agents communicate via flat files, not direct calls:
 
 ```
 data/shared/signals/
-  logs_updated.signal      # Created by Ingestion, consumed by Summary
-  summaries_updated.signal # Created by Summary, consumed by Identity
-  identity_updated.signal  # Created by Identity, consumed by World
+  logs_updated.signal        # Created by Ingestion, consumed by Summary
+  summaries_updated.signal   # Created by Summary, consumed by Synthesis
+  synthesis_updated.signal   # Created by Synthesis, consumed by World, Evolution
 ```
 
 Signal files contain a timestamp. Reading a signal deletes it (one-time trigger).
@@ -209,17 +209,17 @@ euno/
 │   │   ├── base.py             # Agent factory, AutonomousAgent base
 │   │   ├── ingestion.py        # The Archivist
 │   │   ├── summary.py          # The Historian
-│   │   ├── identity.py         # The Keeper (values at core)
+│   │   ├── synthesis.py        # The Keeper (epistemic axioms at foundation)
 │   │   ├── world.py            # The Scout
 │   │   ├── attention.py        # The Curator
 │   │   ├── interaction.py      # The Caring Friend
 │   │   ├── worker.py           # The Executor
-│   │   └── introspection.py    # The Mirror
+│   │   └── evolution.py        # The Evolver
 │   │
 │   ├── tools/                  # Organized by agent concern
 │   │   ├── shared/             # Cross-agent tools
 │   │   │   ├── log.py          # Life log read/write
-│   │   │   ├── identity.py     # Identity evolution
+│   │   │   ├── identity.py     # Agent identity evolution
 │   │   │   ├── notifications.py
 │   │   │   └── agent_log.py    # Agent activity logging
 │   │   ├── ingestion/          # Ingestion tools
@@ -230,11 +230,12 @@ euno/
 │   │   │   ├── scorer.py
 │   │   │   ├── token_budget.py
 │   │   │   └── handlers/       # File type handlers
-│   │   ├── identity/           # Identity tools (values at core)
-│   │   │   ├── values.py       # Core values (current, phase, lifetime)
-│   │   │   ├── behaviors.py    # Derived behavioral patterns
-│   │   │   ├── context.py      # Supporting context (biographical, relationships)
-│   │   │   ├── profile.py      # Consolidated identity profile
+│   │   ├── synthesis/          # Synthesis tools (epistemic at foundation)
+│   │   │   ├── epistemic.py    # Foundational: axioms, mental models, tools
+│   │   │   ├── values.py       # Derived: current, phase, lifetime values
+│   │   │   ├── behaviors.py    # Reveals: behavioral patterns
+│   │   │   ├── context.py      # Supporting: biographical, relationships
+│   │   │   ├── profile.py      # Consolidated profile
 │   │   │   └── summary.py      # Summary tools
 │   │   ├── world/              # World tools
 │   │   │   ├── world.py
@@ -249,15 +250,15 @@ euno/
 │   │   │   ├── task.py
 │   │   │   ├── project.py
 │   │   │   └── worker.py
-│   │   └── introspection/      # Introspection tools
-│   │       └── introspection.py
+│   │   └── evolution/          # Evolution tools
+│   │       └── evolution.py
 │   │
 │   └── web/
 │       └── app.py              # FastAPI server
 │
 └── data/                       # Agent-oriented data
     ├── shared/                 # Cross-agent resources
-    │   ├── log/                # Life log (written by ingestion, read by many)
+    │   ├── lifelog/            # Life log (written by ingestion, read by many)
     │   │   └── [yyyy]/
     │   │       ├── [yyyy-mm-dd].md
     │   │       └── _manifest.md
@@ -265,6 +266,7 @@ euno/
     │   ├── identity/           # Agent identity files
     │   │   ├── _core.identity.md
     │   │   └── [agent].identity.md
+    │   ├── evolution/          # Identity evolution proposals
     │   └── notifications/      # User notifications
     │
     ├── ingestion/              # Ingestion Agent data
@@ -274,10 +276,11 @@ euno/
     │   ├── queue/              # queue.json
     │   └── digests/            # {hash}.json files
     │
-    ├── identity/               # Identity Agent data (values at core)
+    ├── synthesis/              # Synthesis Agent data (epistemic at foundation)
     │   ├── state/              # state.json
-    │   ├── values/             # Core: current.values.md, phase.values.md, lifetime.values.md
-    │   ├── behaviors/          # Derived: patterns.md
+    │   ├── epistemic/          # Foundational: axioms.md, mental_models.md, tools.md
+    │   ├── values/             # Derived: current.values.md, phase.values.md, lifetime.values.md
+    │   ├── behaviors/          # Reveals: patterns.md
     │   ├── context/            # Supporting: biographical.md, relationships.md
     │   └── derived/            # profile.md (consolidated view)
     │
@@ -300,9 +303,10 @@ euno/
     │   ├── projects/           # {id}.json files
     │   └── actions/            # pending/, completed/
     │
-    └── introspection/          # Introspection Agent data
+    └── evolution/              # Evolution Agent data
         ├── state/              # state.json
-        └── output/             # capabilities.md
+        ├── output/             # capabilities.md
+        └── logs/               # Evolution activity logs
 ```
 
 ---
@@ -313,12 +317,12 @@ euno/
 |-------|---------------|----------|-------------|-----------|
 | Ingestion | 30s | `inbox_changed`, pending files | `logs_updated` | read_file, write_log, mark_processed |
 | Summary | 5min | `logs_updated` | `summaries_updated` | read_log, write_summary |
-| Identity | 10min | `summaries_updated` | `identity_updated` | read_summaries, write_values, write_behaviors |
-| World | 1hr | `identity_updated`, 24hr timer | `opportunities_updated` | search_*, write_opportunity |
+| Synthesis | 10min | `summaries_updated` | `synthesis_updated` | read_summaries, write_epistemic, write_values |
+| World | 1hr | `synthesis_updated`, 24hr timer | `opportunities_updated` | search_*, write_opportunity |
 | Attention | 5min | time windows (7-9am, 9-11pm) | `attention_delivered` | read_*, queue_notification |
 | Interaction | on-demand | user messages | — | read_*, write_log, update_biographical |
 | Worker | 30s | pending tasks | `task_completed` | execute_task, store_result |
-| Introspection | 30min | `identity_evolved` | `introspection_updated` | analyze_*, save_capabilities |
+| Evolution | 30min | `synthesis_updated`, `code_changed` | `evolution_updated` | analyze_*, propose_identity_evolution |
 
 ### Large-Scale Ingestion Strategy
 

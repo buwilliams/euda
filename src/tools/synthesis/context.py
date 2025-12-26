@@ -1,9 +1,9 @@
 """
-Context tools for the Self Agent (The Keeper).
+Context tools for the Synthesis Agent (The Keeper).
 
 Context provides SUPPORTING data - biographical facts and relationships.
-These are data points that help agents anticipate the user, but do NOT define self.
-Epistemic axioms and values remain the core of self.
+These are data points that help agents anticipate the user, but do NOT define identity.
+Epistemic axioms and values remain the core of identity.
 """
 
 from datetime import datetime
@@ -12,8 +12,8 @@ import re
 
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
-SELF_DIR = DATA_DIR / "self"
-CONTEXT_DIR = SELF_DIR / "context"
+SYNTHESIS_DIR = DATA_DIR / "synthesis"
+CONTEXT_DIR = SYNTHESIS_DIR / "context"
 
 # Ensure directory exists
 CONTEXT_DIR.mkdir(parents=True, exist_ok=True)

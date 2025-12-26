@@ -23,16 +23,16 @@ This agent can:
 from .base import create_agent
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
 from ..tools.world.fetch import FETCH_TOOLS, FETCH_HANDLERS
-from ..tools.self import (
+from ..tools.synthesis import (
     get_current_values, get_phase_values, get_lifetime_values, get_all_values,
-    get_behaviors, get_profile, get_self_summary,
+    get_behaviors, get_profile, get_synthesis_summary,
     get_biographical, update_biographical,
     get_relationships, add_relationship, update_relationship
 )
 from ..tools.world.world import get_opportunities
 from ..tools.worker.task import TASK_TOOLS, TASK_HANDLERS
 from ..tools.worker.project import PROJECT_TOOLS, PROJECT_HANDLERS
-from ..tools.introspection.introspection import get_last_introspection, get_system_overview
+from ..tools.evolution.evolution import get_last_introspection, get_system_overview
 from ..tools.shared.agent_log import AGENT_LOG_TOOLS, AGENT_LOG_HANDLERS
 from ..tools.interaction.conversation import CONVERSATION_TOOLS, CONVERSATION_HANDLERS
 from ..tools.interaction.conversation_history import CONVERSATION_HISTORY_TOOLS, CONVERSATION_HISTORY_HANDLERS
@@ -74,7 +74,7 @@ IDENTITY_READ_TOOLS = [
         "input_schema": {"type": "object", "properties": {}}
     },
     {
-        "name": "get_self_summary",
+        "name": "get_synthesis_summary",
         "description": "Get a quick summary of the user's identity for context.",
         "input_schema": {"type": "object", "properties": {}}
     },
@@ -209,7 +209,7 @@ INTERACTION_HANDLERS = {
     "get_all_values": get_all_values,
     "get_behaviors": get_behaviors,
     "get_profile": get_profile,
-    "get_self_summary": get_self_summary,
+    "get_synthesis_summary": get_synthesis_summary,
     "get_biographical": get_biographical,
     "update_biographical": update_biographical,
     "get_relationships": get_relationships,

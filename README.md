@@ -109,18 +109,18 @@ This turns "getting to know someone" from awkward small talk into meaningful con
 
 ## Agents
 
-Eight specialized agents work together, each with its own persona and purpose:
+Seven specialized agents work together, each with its own persona and purpose:
 
 | Agent | Role | What It Does |
 |-------|------|--------------|
 | **Ingestion** | The Archivist | Transforms messy data into clean log entries |
 | **Summary** | The Historian | Distills daily logs into yearly narratives |
-| **Identity** | The Keeper | Maintains who you are—values at the core, behaviors derived, context supporting |
+| **Synthesis** | The Keeper | Synthesizes who you are—epistemic axioms at foundation, values derived, behaviors revealing |
 | **World** | The Scout | Explores external opportunities that match your values |
 | **Attention** | The Curator | Matches opportunities to your energy and timing |
 | **Interaction** | The Caring Friend | Converses, listens, adapts—your single interface to everything |
 | **Worker** | The Executor | Handles tasks autonomously or escalates when needed |
-| **Introspection** | The Mirror | Documents what the system can do |
+| **Evolution** | The Evolver | Evolves agent identities based on your synthesis |
 
 ### Under the hood
 

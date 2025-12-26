@@ -23,7 +23,7 @@ from typing import Optional
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 
 # Known agents for scanning logs
-KNOWN_AGENTS = ["ingestion", "summary", "values", "world", "attention", "interaction", "worker", "introspection"]
+KNOWN_AGENTS = ["ingestion", "summary", "synthesis", "world", "attention", "interaction", "worker", "evolution"]
 
 
 def _normalize_agent_name(agent_name: str) -> str:

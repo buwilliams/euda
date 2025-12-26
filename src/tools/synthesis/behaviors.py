@@ -1,5 +1,5 @@
 """
-Behaviors tools for the Self Agent (The Keeper).
+Behaviors tools for the Synthesis Agent (The Keeper).
 
 Behaviors are DERIVED from patterns - how you actually act (revealed preferences).
 These patterns are extracted from life log summaries and daily entries.
@@ -10,8 +10,8 @@ from pathlib import Path
 
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
-SELF_DIR = DATA_DIR / "self"
-BEHAVIORS_DIR = SELF_DIR / "behaviors"
+SYNTHESIS_DIR = DATA_DIR / "synthesis"
+BEHAVIORS_DIR = SYNTHESIS_DIR / "behaviors"
 
 # Ensure directory exists
 BEHAVIORS_DIR.mkdir(parents=True, exist_ok=True)

@@ -8,7 +8,7 @@ energy, and timing. Surfaces the right thing at the right moment.
 from datetime import datetime, time
 from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.attention.attention import ATTENTION_TOOLS, ATTENTION_HANDLERS
-from ..tools.self import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
+from ..tools.synthesis import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
 from ..tools.shared.notifications import queue_notification
 
@@ -146,8 +146,8 @@ class AutonomousAttentionAgent(AutonomousAgent):
             self.save_state(state)
 
         # Check for identity signal - values have been updated
-        if self.check_signal("self_updated"):
-            self.logger.info("Received self_updated signal")
+        if self.check_signal("synthesis_updated"):
+            self.logger.info("Received synthesis_updated signal")
             state["identity_refreshed"] = True
             self.save_state(state)
 

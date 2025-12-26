@@ -1,7 +1,7 @@
 """
-Profile tools for the Self Agent (The Keeper).
+Profile tools for the Synthesis Agent (The Keeper).
 
-The profile consolidates all self facets into a single view for other agents.
+The profile consolidates all identity facets into a single view for other agents.
 It emphasizes EPISTEMIC AXIOMS at the foundation, with values and behaviors derived.
 
 Hierarchy:
@@ -22,8 +22,8 @@ from .context import get_biographical, get_relationships
 
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
-SELF_DIR = DATA_DIR / "self"
-DERIVED_DIR = SELF_DIR / "derived"
+SYNTHESIS_DIR = DATA_DIR / "synthesis"
+DERIVED_DIR = SYNTHESIS_DIR / "derived"
 
 # Ensure directory exists
 DERIVED_DIR.mkdir(parents=True, exist_ok=True)
@@ -151,7 +151,7 @@ Auto-generated: {timestamp}
     return f"Identity profile generated at {timestamp}"
 
 
-def get_self_summary() -> str:
+def get_synthesis_summary() -> str:
     """
     Get a quick summary of the user's identity for agent context.
 
@@ -274,7 +274,7 @@ PROFILE_TOOLS = [
         }
     },
     {
-        "name": "get_self_summary",
+        "name": "get_synthesis_summary",
         "description": "Get a quick summary of the user's identity for context. Useful for quick reference.",
         "input_schema": {
             "type": "object",
@@ -287,8 +287,11 @@ PROFILE_TOOLS = [
 PROFILE_HANDLERS = {
     "get_profile": get_profile,
     "generate_profile": generate_profile,
-    "get_self_summary": get_self_summary,
+    "get_synthesis_summary": get_synthesis_summary,
 }
+
+# Backwards compatibility
+get_self_summary = get_synthesis_summary
 
 
 # Test

@@ -1,9 +1,10 @@
 """
-Introspection Tools - System self-awareness
+Evolution Tools - System self-awareness and identity evolution
 
 Tools for analyzing agent identities, capabilities, tools, and activity.
-Used by the Introspection Agent to maintain a living document
-of what the system can do and what it is currently doing.
+Used by the Evolution Agent to:
+1. Maintain a living document of what the system can do
+2. Evolve agent identities based on user synthesis
 
 Also provides agent activity log access for querying what agents
 have been doing, checking task status, and understanding system behavior.
@@ -16,17 +17,20 @@ from pathlib import Path
 from typing import Optional
 
 
-# Base paths - Introspection uses shared identity and its own output
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
-SRC_DIR = Path(__file__).parent.parent
+# Base paths - Evolution uses shared identity and its own output
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
+SRC_DIR = Path(__file__).parent.parent.parent
 SHARED_DIR = DATA_DIR / "shared"
 IDENTITY_DIR = SHARED_DIR / "identity"
 AGENTS_DIR = SRC_DIR / "agents"
 TOOLS_DIR = SRC_DIR / "tools"
-INTROSPECTION_DIR = DATA_DIR / "introspection" / "output"
+EVOLUTION_DIR = DATA_DIR / "evolution" / "output"
 
 # Ensure output directory exists
-INTROSPECTION_DIR.mkdir(parents=True, exist_ok=True)
+EVOLUTION_DIR.mkdir(parents=True, exist_ok=True)
+
+# Backwards compatibility
+INTROSPECTION_DIR = EVOLUTION_DIR
 
 
 def list_agents() -> str:
@@ -264,10 +268,10 @@ def get_last_introspection() -> str:
     Returns:
         The previous capabilities document or message if none exists.
     """
-    capabilities_file = INTROSPECTION_DIR / "capabilities.md"
+    capabilities_file = EVOLUTION_DIR / "capabilities.md"
 
     if not capabilities_file.exists():
-        return "No previous introspection found. This is the first run."
+        return "No previous analysis found. This is the first run."
 
     return capabilities_file.read_text()
 
@@ -282,7 +286,7 @@ def save_capabilities(content: str) -> str:
     Returns:
         Confirmation message with timestamp.
     """
-    capabilities_file = INTROSPECTION_DIR / "capabilities.md"
+    capabilities_file = EVOLUTION_DIR / "capabilities.md"
 
     # Add generation timestamp if not present
     if "Last updated:" not in content:
@@ -326,11 +330,11 @@ def get_system_overview() -> str:
 - `src/tools/` - Tool definitions and handlers
 - `data/shared/lifelog/` - Life log entries
 - `data/worker/` - Project and task management
-- `data/self/` - User identity (values, epistemic, behaviors, context)
+- `data/synthesis/` - User identity (values, epistemic, behaviors, context)
 
 ## Data Flow
 ```
-Inbox → Ingestion → Log → Summary → Self → World → Attention
+Inbox → Ingestion → Log → Summary → Synthesis → World → Attention
                                                     ↓
                                               User (via Interaction)
                                                     ↓
@@ -341,7 +345,7 @@ Inbox → Ingestion → Log → Summary → Self → World → Attention
 
 
 # Tool definitions for the agent
-INTROSPECTION_TOOLS = [
+_BASE_EVOLUTION_TOOLS = [
     {
         "name": "list_agents",
         "description": "List all agents in the system with their names and titles. Use this first to understand what agents exist.",
@@ -440,8 +444,8 @@ INTROSPECTION_TOOLS = [
     }
 ]
 
-# Handler mapping for introspection-specific tools
-_INTROSPECTION_HANDLERS = {
+# Handler mapping for evolution-specific tools
+_EVOLUTION_HANDLERS = {
     "list_agents": list_agents,
     "get_agent_identity": get_agent_identity,
     "get_core_identity": get_core_identity,
@@ -459,6 +463,11 @@ from ..shared.agent_log import AGENT_LOG_TOOLS, AGENT_LOG_HANDLERS
 # Import ingestion status tools
 from ..ingestion.status import INGESTION_STATUS_TOOLS, INGESTION_STATUS_HANDLERS
 
-# Combined tools and handlers (introspection + agent logs + ingestion status)
-INTROSPECTION_TOOLS = INTROSPECTION_TOOLS + AGENT_LOG_TOOLS + INGESTION_STATUS_TOOLS
-INTROSPECTION_HANDLERS = {**_INTROSPECTION_HANDLERS, **AGENT_LOG_HANDLERS, **INGESTION_STATUS_HANDLERS}
+# Combined tools and handlers (evolution + agent logs + ingestion status)
+EVOLUTION_TOOLS = _BASE_EVOLUTION_TOOLS + AGENT_LOG_TOOLS + INGESTION_STATUS_TOOLS
+EVOLUTION_HANDLERS = {**_EVOLUTION_HANDLERS, **AGENT_LOG_HANDLERS, **INGESTION_STATUS_HANDLERS}
+
+# Backwards compatibility aliases
+INTROSPECTION_TOOLS = EVOLUTION_TOOLS
+INTROSPECTION_HANDLERS = EVOLUTION_HANDLERS
+_INTROSPECTION_HANDLERS = _EVOLUTION_HANDLERS

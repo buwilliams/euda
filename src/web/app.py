@@ -22,9 +22,9 @@ from ..agents.base import create_agent
 from ..agents.interaction import INTERACTION_TOOLS, INTERACTION_HANDLERS
 from ..tools.shared.log import read_log_entry, search_log, get_recent_entries, write_log_entry
 from ..tools.interaction.conversation_history import save_message, get_conversation_data, get_recent_conversations
-from ..tools.self import (
+from ..tools.synthesis import (
     get_current_values, get_phase_values, get_lifetime_values, get_all_values,
-    get_behaviors, get_profile, get_self_summary,
+    get_behaviors, get_profile, get_synthesis_summary,
     get_biographical, get_relationships
 )
 from ..tools.interaction.cards import (
@@ -33,7 +33,7 @@ from ..tools.interaction.cards import (
 )
 from ..tools.world.world import get_opportunities
 from ..tools.attention.attention import get_queue, get_recent_energy, record_energy
-from ..tools.self.summary import list_years, get_summary
+from ..tools.synthesis.summary import list_years, get_summary
 
 
 # Base paths
@@ -252,9 +252,9 @@ async def get_identity():
 
 
 @app.get("/api/identity/summary")
-async def get_self_summary_endpoint():
-    """Get quick self summary."""
-    return {"content": get_self_summary()}
+async def get_synthesis_summary_endpoint():
+    """Get quick synthesis summary."""
+    return {"content": get_synthesis_summary()}
 
 
 @app.get("/api/identity/behaviors")

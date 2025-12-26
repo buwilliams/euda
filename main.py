@@ -23,11 +23,12 @@ def main():
         "chat": lambda: __import__('src.agents.interaction', fromlist=['run_interactive']).run_interactive(),
         "summary": lambda: __import__('src.agents.summary', fromlist=['run_interactive']).run_interactive(),
         "summarize": run_summarize,
-        "self": lambda: __import__('src.agents.self', fromlist=['run_interactive']).run_interactive(),
-        "derive": run_derive_self,
+        "synthesis": lambda: __import__('src.agents.synthesis', fromlist=['run_interactive']).run_interactive(),
+        "derive": run_derive_synthesis,
         # Backwards compatibility aliases
-        "identity": lambda: __import__('src.agents.self', fromlist=['run_interactive']).run_interactive(),
-        "values": lambda: __import__('src.agents.self', fromlist=['run_interactive']).run_interactive(),
+        "self": lambda: __import__('src.agents.synthesis', fromlist=['run_interactive']).run_interactive(),
+        "identity": lambda: __import__('src.agents.synthesis', fromlist=['run_interactive']).run_interactive(),
+        "values": lambda: __import__('src.agents.synthesis', fromlist=['run_interactive']).run_interactive(),
         "attention": lambda: __import__('src.agents.attention', fromlist=['run_interactive']).run_interactive(),
         "morning": run_morning,
         "evening": run_evening,
@@ -36,8 +37,10 @@ def main():
         "worker": lambda: __import__('src.agents.worker', fromlist=['run_interactive']).run_interactive(),
         "tasks": run_tasks,
         "approvals": run_approvals,
-        "introspection": lambda: __import__('src.agents.introspection', fromlist=['run_interactive']).run_interactive(),
+        "evolution": lambda: __import__('src.agents.evolution', fromlist=['run_interactive']).run_interactive(),
         "introspect": run_introspect,
+        # Backwards compatibility
+        "introspection": lambda: __import__('src.agents.evolution', fromlist=['run_interactive']).run_interactive(),
         "evolve": run_evolve,
         "watch": lambda: __import__('src.watcher', fromlist=['watch_inbox']).watch_inbox(),
         "process": lambda: __import__('src.watcher', fromlist=['process_pending']).process_pending(),
@@ -56,8 +59,8 @@ def main():
         print("  ingestion  Interactive chat with The Archivist")
         print("  summary    Interactive chat with The Historian")
         print("  summarize  Generate summaries for all years needing updates")
-        print("  self       Interactive chat with The Keeper (epistemic, values, behaviors)")
-        print("  derive     Derive self-model from summaries")
+        print("  synthesis  Interactive chat with The Keeper (epistemic, values, behaviors)")
+        print("  derive     Derive synthesis model from summaries")
         print("  attention  Interactive chat with The Curator")
         print("  morning    Generate morning attention")
         print("  evening    Generate evening reflection")
@@ -66,7 +69,7 @@ def main():
         print("  worker     Interactive chat with The Executor")
         print("  tasks      Process the task queue once")
         print("  approvals  Show actions waiting for approval")
-        print("  introspection  Interactive chat with The Mirror")
+        print("  evolution  Interactive chat with The Evolver")
         print("  introspect Run a full system analysis")
         print("  evolve     Review pending identity evolution proposals")
         print("  watch      Watch inbox for new files to process")
@@ -780,21 +783,22 @@ def run_summarize():
     check_and_summarize_all()
 
 
-def run_derive_self():
-    """Derive self-model (epistemic, values, behaviors) from summaries."""
-    from src.agents.self import derive_self
+def run_derive_synthesis():
+    """Derive synthesis model (epistemic, values, behaviors) from summaries."""
+    from src.agents.synthesis import derive_synthesis
     print("=" * 60)
-    print("Euno - Deriving Self-Model")
+    print("Euno - Deriving Synthesis Model")
     print("=" * 60)
     print()
     print("Epistemic axioms are the foundation. Values and behaviors are derived.")
     print()
-    result = derive_self()
+    result = derive_synthesis()
     print(f"\n{result}")
 
 
-# Backwards compatibility alias
-run_derive_identity = run_derive_self
+# Backwards compatibility aliases
+run_derive_self = run_derive_synthesis
+run_derive_identity = run_derive_synthesis
 
 
 def run_morning():
@@ -854,9 +858,9 @@ def run_approvals():
 
 def run_introspect():
     """Run a full system analysis."""
-    from src.agents.introspection import run_analysis
+    from src.agents.evolution import run_analysis
     print("=" * 60)
-    print("Euno - System Introspection")
+    print("Euno - System Analysis")
     print("=" * 60)
     print()
     print("Analyzing system capabilities...")
