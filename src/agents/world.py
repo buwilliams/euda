@@ -10,11 +10,12 @@ from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.world.world import WORLD_TOOLS, WORLD_HANDLERS
 from ..tools.synthesis import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
 from ..tools.shared.notifications import queue_notification
+from ..tools.shared.guidance import GUIDANCE_TOOLS, GUIDANCE_HANDLERS, should_skip_location_opportunities
 
 
-# Combined tools - World agent needs access to identity (values at core)
-ALL_TOOLS = WORLD_TOOLS + VALUES_TOOLS + PROFILE_TOOLS
-ALL_HANDLERS = {**WORLD_HANDLERS, **VALUES_HANDLERS, **PROFILE_HANDLERS}
+# Combined tools - World agent needs access to identity (values at core) and guidance
+ALL_TOOLS = WORLD_TOOLS + VALUES_TOOLS + PROFILE_TOOLS + GUIDANCE_TOOLS
+ALL_HANDLERS = {**WORLD_HANDLERS, **VALUES_HANDLERS, **PROFILE_HANDLERS, **GUIDANCE_HANDLERS}
 
 
 def create_world_agent():

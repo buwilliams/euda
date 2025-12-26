@@ -3,14 +3,25 @@ Attention Agent - The Curator
 
 Decides what deserves attention right now. Matches opportunities to values,
 energy, and timing. Surfaces the right thing at the right moment.
+
+Also handles proactive attention - surfacing questions and guidance to help
+the user configure and understand the system.
 """
 
-from datetime import datetime, time
+import json
+from datetime import datetime, time, timedelta
+from pathlib import Path
 from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.attention.attention import ATTENTION_TOOLS, ATTENTION_HANDLERS
 from ..tools.synthesis import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
 from ..tools.shared.notifications import queue_notification
+
+# Paths for proactive attention
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
+SIGNALS_DIR = DATA_DIR / "shared" / "signals"
+ATTENTION_STATE_DIR = DATA_DIR / "attention" / "state"
+ATTENTION_STATE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # Combined tools - Attention agent needs access to identity (values core) and logs
@@ -109,16 +120,26 @@ class AutonomousAttentionAgent(AutonomousAgent):
     Checks:
     - Signal: opportunities_updated
     - Time: morning window (7-9am), evening window (8-10pm)
+    - Proactive gaps: questions to ask the user
     - Has morning/evening attention been delivered today?
 
     Work:
     - Generate morning attention
     - Generate evening reflection
     - Surface high-priority opportunities
+    - Surface proactive questions (one at a time, with cooldowns)
 
     Signals:
     - attention_delivered: After generating attention content
     """
+
+    # Cooldown hours for each gap type
+    GAP_COOLDOWNS = {
+        "biographical.name": 168,      # 1 week
+        "biographical.location": 168,  # 1 week
+        "biographical.relationships": 336,  # 2 weeks
+        "config.energy_baseline": 24,  # 1 day
+    }
 
     def __init__(self, morning_hour: int = 7, evening_hour: int = 21):
         super().__init__(
@@ -132,8 +153,97 @@ class AutonomousAttentionAgent(AutonomousAgent):
         self.morning_hour = morning_hour
         self.evening_hour = evening_hour
 
+    def _load_surfaced_state(self) -> dict:
+        """Load state tracking what's been surfaced to user."""
+        surfaced_file = ATTENTION_STATE_DIR / "surfaced.json"
+        if surfaced_file.exists():
+            try:
+                return json.loads(surfaced_file.read_text())
+            except:
+                pass
+        return {"questions_asked": {}, "capabilities_explained": [], "progress_shown_at": None}
+
+    def _save_surfaced_state(self, surfaced: dict):
+        """Save surfaced state."""
+        surfaced_file = ATTENTION_STATE_DIR / "surfaced.json"
+        surfaced_file.write_text(json.dumps(surfaced, indent=2))
+
+    def _get_gap_to_surface(self) -> dict | None:
+        """
+        Check gaps signal and find one to surface (respecting cooldowns).
+
+        Returns:
+            Gap dict to surface, or None if nothing should be surfaced.
+        """
+        gaps_file = SIGNALS_DIR / "proactive_gaps.json"
+        if not gaps_file.exists():
+            return None
+
+        try:
+            data = json.loads(gaps_file.read_text())
+            gaps = data.get("gaps", [])
+        except:
+            return None
+
+        if not gaps:
+            return None
+
+        surfaced = self._load_surfaced_state()
+        questions_asked = surfaced.get("questions_asked", {})
+
+        # Sort by priority
+        priority_order = {"high": 0, "medium": 1, "low": 2}
+        gaps.sort(key=lambda g: priority_order.get(g.get("priority", "low"), 2))
+
+        now = datetime.now()
+
+        for gap in gaps:
+            gap_id = gap.get("id")
+            if not gap_id:
+                continue
+
+            # Check if this gap was recently surfaced
+            asked_info = questions_asked.get(gap_id, {})
+            last_asked = asked_info.get("last_asked")
+
+            if last_asked:
+                try:
+                    last_asked_dt = datetime.fromisoformat(last_asked)
+                    cooldown_hours = self.GAP_COOLDOWNS.get(gap_id, 72)  # Default 3 days
+                    if now - last_asked_dt < timedelta(hours=cooldown_hours):
+                        continue  # Still in cooldown
+                except:
+                    pass
+
+            # This gap can be surfaced
+            return gap
+
+        return None
+
+    def _mark_gap_surfaced(self, gap_id: str, answered: bool = False):
+        """Mark a gap as having been surfaced."""
+        surfaced = self._load_surfaced_state()
+        questions_asked = surfaced.get("questions_asked", {})
+
+        now = datetime.now().isoformat()
+        if gap_id not in questions_asked:
+            questions_asked[gap_id] = {
+                "first_asked": now,
+                "last_asked": now,
+                "times_asked": 1,
+                "answered": answered
+            }
+        else:
+            questions_asked[gap_id]["last_asked"] = now
+            questions_asked[gap_id]["times_asked"] = questions_asked[gap_id].get("times_asked", 0) + 1
+            if answered:
+                questions_asked[gap_id]["answered"] = True
+
+        surfaced["questions_asked"] = questions_asked
+        self._save_surfaced_state(surfaced)
+
     def check_work_needed(self) -> bool:
-        """Check if attention is needed based on time or signals."""
+        """Check if attention is needed based on time, signals, or proactive gaps."""
         now = datetime.now()
         today = now.date().isoformat()
         state = self.load_state()
@@ -169,15 +279,46 @@ class AutonomousAttentionAgent(AutonomousAgent):
                 self.save_state(state)
                 return True
 
+        # Check for proactive gaps to surface
+        gap = self._get_gap_to_surface()
+        if gap:
+            self.logger.info(f"Found gap to surface: {gap.get('id')}")
+            state["pending_type"] = "proactive"
+            state["pending_gap"] = gap
+            self.save_state(state)
+            return True
+
         return False
 
     def do_work(self) -> str:
-        """Generate morning or evening attention."""
+        """Generate morning/evening attention or surface proactive question."""
         state = self.load_state()
         pending_type = state.get("pending_type", "morning")
         today = datetime.now().date().isoformat()
 
-        if pending_type == "morning":
+        if pending_type == "proactive":
+            # Surface a proactive question
+            gap = state.get("pending_gap")
+            if gap:
+                queue_notification(
+                    agent_name="attention",
+                    title=gap.get("question", "Quick question"),
+                    message=gap.get("context", ""),
+                    notification_type="question",
+                    action_prompt=gap.get("action_prompt", gap.get("question")),
+                    priority="normal",
+                    data={"gap_id": gap.get("id")}
+                )
+                self._mark_gap_surfaced(gap.get("id"))
+                self.logger.info(f"Surfaced proactive question: {gap.get('id')}")
+
+            # Clear flags
+            state["pending_type"] = None
+            state["pending_gap"] = None
+            self.save_state(state)
+            return "Proactive question surfaced"
+
+        elif pending_type == "morning":
             result = morning_attention()
             state["last_morning_date"] = today
             state["last_morning_content"] = result

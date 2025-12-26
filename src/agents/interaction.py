@@ -22,6 +22,7 @@ This agent can:
 
 from .base import create_agent
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
+from ..tools.shared.guidance import GUIDANCE_TOOLS, GUIDANCE_HANDLERS, get_interaction_hints
 from ..tools.world.fetch import FETCH_TOOLS, FETCH_HANDLERS
 from ..tools.synthesis import (
     get_current_values, get_phase_values, get_lifetime_values, get_all_values,
@@ -190,7 +191,8 @@ INTERACTION_TOOLS = (
     INTROSPECTION_TOOLS +
     AGENT_LOG_TOOLS +
     CONVERSATION_TOOLS +
-    CONVERSATION_HISTORY_TOOLS
+    CONVERSATION_HISTORY_TOOLS +
+    GUIDANCE_TOOLS
 )
 
 # Handlers for tool execution
@@ -202,6 +204,7 @@ INTERACTION_HANDLERS = {
     **AGENT_LOG_HANDLERS,
     **CONVERSATION_HANDLERS,
     **CONVERSATION_HISTORY_HANDLERS,
+    **GUIDANCE_HANDLERS,
     # Identity tools - values at core
     "get_current_values": get_current_values,
     "get_phase_values": get_phase_values,
