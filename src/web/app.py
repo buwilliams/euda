@@ -431,10 +431,11 @@ AGENT_INFO = {
     "ingestion": {"display_name": "Ingestion (Archivist)", "description": "Transforms data into log entries"},
     "interaction": {"display_name": "Interaction (Caring Friend)", "description": "User-facing conversations"},
     "summary": {"display_name": "Summary (Historian)", "description": "Yearly summaries from logs"},
-    "identity": {"display_name": "Identity (Keeper)", "description": "Maintain identity - values at core"},
+    "synthesis": {"display_name": "Synthesis (Keeper)", "description": "Synthesizes user identity from patterns"},
     "attention": {"display_name": "Attention (Curator)", "description": "Surface the right thing at the right time"},
     "world": {"display_name": "World (Scout)", "description": "Discover opportunities"},
     "worker": {"display_name": "Worker (Executor)", "description": "Execute approved tasks"},
+    "evolution": {"display_name": "Evolution (Evolver)", "description": "Evolves agent identities based on synthesis"},
 }
 
 def get_agent_state(agent_name: str) -> dict:
@@ -455,10 +456,17 @@ async def get_agent_status():
     for agent_name, info in AGENT_INFO.items():
         state = get_agent_state(agent_name)
 
+        # Determine status more accurately
+        status = "idle"
+        if state.get("updated"):
+            status = "ready"
+        if state.get("currently_processing"):
+            status = "working"
+
         agent_data = {
             "name": info["display_name"],
             "description": info["description"],
-            "status": "ready" if state.get("updated") else "idle",
+            "status": status,
         }
 
         # Add state details if available
@@ -468,6 +476,17 @@ async def get_agent_status():
         # Special handling for interaction agent - show active sessions
         if agent_name == "interaction":
             agent_data["active_sessions"] = len(sessions)
+
+        # Special handling for ingestion - show queue info
+        if agent_name == "ingestion":
+            pending_dir = BASE_DIR / "data" / "ingestion" / "inbox" / "pending"
+            if pending_dir.exists():
+                pending_count = len([f for f in pending_dir.iterdir() if f.is_file()])
+                agent_data["pending_files"] = pending_count
+                if pending_count > 0:
+                    agent_data["status"] = "working"
+            if state.get("current_file"):
+                agent_data["current_file"] = state["current_file"]
 
         # Show last work time if available
         if state.get("last_work_time"):

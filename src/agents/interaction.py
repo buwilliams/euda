@@ -164,16 +164,16 @@ WORLD_READ_TOOLS = [
     }
 ]
 
-# Tools for system self-awareness
+# Tools for system self-awareness (Euno = the collective system)
 INTROSPECTION_TOOLS = [
     {
         "name": "get_system_capabilities",
-        "description": "Get a comprehensive guide of what this assistant can do. Use when the user asks 'what can you do?', 'what are your capabilities?', 'help me understand this system', or similar questions about the assistant's features.",
+        "description": "Get a comprehensive guide of what Euno (this assistant system) can do. Use when the user asks about 'Euno', 'what can you do?', 'what are your capabilities?', 'what features do you have?', or similar questions. Returns a user-friendly capabilities document.",
         "input_schema": {"type": "object", "properties": {}}
     },
     {
         "name": "get_system_overview",
-        "description": "Get a quick technical overview of the system structure (agents, tools, data flow). Use for technical questions about how the system works.",
+        "description": "Get a technical overview of Euno's architecture - the 7 agents, how they communicate, data flow, and system structure. Use when the user asks 'what is Euno?', 'how does this work?', 'what agents are there?', or wants to understand the system design.",
         "input_schema": {"type": "object", "properties": {}}
     }
 ]
