@@ -490,9 +490,19 @@ temporal_source: explicit
   "message": "Here's what to focus on...",
   "type": "info",
   "action_prompt": "Tell me more",
-  "status": "pending"
+  "priority": "normal",
+  "status": "pending",
+  "seen": false,
+  "created_at": "2025-12-22T09:30:00"
 }
 ```
+
+Notifications are enriched by the web layer with additional UI fields:
+- `panel`: "status" or "tasks" (where to display)
+- `category`: "progress", "discovery", "reminder", "approval", "alert"
+- `actions`: Available UI actions like "expand", "ask", "dismiss"
+
+**Synthetic notifications** (like ingestion queue status) are generated at runtime from system state, not stored as files. They update in real-time as the underlying state changes.
 
 ### Digest (Ingestion)
 
@@ -553,9 +563,25 @@ GET  /api/notifications
 POST /api/notifications/{id}/seen
 POST /api/notifications/{id}/dismiss
 
+GET  /api/events            # SSE stream for real-time updates
+
 GET  /api/agents/status
 GET  /api/health
 ```
+
+### Real-Time Updates (SSE)
+
+The `/api/events` endpoint provides Server-Sent Events for real-time updates:
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `init` | `{notifications, tasks}` | Initial state on connection |
+| `notification_update` | notification object | New or updated notification |
+| `notification_removed` | `{id}` | Notification dismissed/deleted |
+
+The server watches:
+- `data/shared/notifications/` for notification file changes
+- `data/ingestion/inbox/` for queue status changes (synthetic notifications)
 
 ---
 
@@ -617,10 +643,14 @@ GET  /api/health
 - Examples: "what are my values", "any discoveries", "what did I log today"
 
 **Side Panels:**
-- Notifications panel (bell icon)
-- Tasks panel (list icon)
+- Notifications panel (bell icon) — real-time agent activity
+- Tasks panel (list icon) — user tasks and action items
 - Slide in from right
-- Click notification → fills chat with action_prompt
+- Updates via SSE (no polling)
+- Notifications are expandable with details
+- "Discuss" button fills chat with action_prompt and auto-submits
+- "Dismiss" button removes notification (deletes file)
+- Ingestion queue shows live status: pending, processing, failed counts
 
 ### Visual Style
 
