@@ -170,12 +170,12 @@ def get_enriched_notifications() -> list:
     # Add synthetic ingestion notification showing queue status
     inbox_dir = BASE_DIR / "data" / "ingestion" / "inbox"
     if inbox_dir.exists():
-        # Count files in each status directory
-        pending_count = len([f for f in (inbox_dir / "pending").iterdir() if f.is_file()]) if (inbox_dir / "pending").exists() else 0
-        processing_count = len([f for f in (inbox_dir / "processing").iterdir() if f.is_file()]) if (inbox_dir / "processing").exists() else 0
-        failed_count = len([f for f in (inbox_dir / "failed").iterdir() if f.is_file()]) if (inbox_dir / "failed").exists() else 0
-        deferred_count = len([f for f in (inbox_dir / "deferred").iterdir() if f.is_file()]) if (inbox_dir / "deferred").exists() else 0
-        processed_count = len([f for f in (inbox_dir / "processed").iterdir() if f.is_file()]) if (inbox_dir / "processed").exists() else 0
+        # Count files in each status directory (exclude hidden files like .gitkeep)
+        pending_count = len([f for f in (inbox_dir / "pending").iterdir() if f.is_file() and not f.name.startswith('.')]) if (inbox_dir / "pending").exists() else 0
+        processing_count = len([f for f in (inbox_dir / "processing").iterdir() if f.is_file() and not f.name.startswith('.')]) if (inbox_dir / "processing").exists() else 0
+        failed_count = len([f for f in (inbox_dir / "failed").iterdir() if f.is_file() and not f.name.startswith('.')]) if (inbox_dir / "failed").exists() else 0
+        deferred_count = len([f for f in (inbox_dir / "deferred").iterdir() if f.is_file() and not f.name.startswith('.')]) if (inbox_dir / "deferred").exists() else 0
+        processed_count = len([f for f in (inbox_dir / "processed").iterdir() if f.is_file() and not f.name.startswith('.')]) if (inbox_dir / "processed").exists() else 0
 
         # Show notification if there's any activity
         if pending_count > 0 or processing_count > 0 or failed_count > 0:
@@ -288,7 +288,7 @@ async def watch_ingestion_queue():
         for status_name in current_counts.keys():
             status_dir = inbox_dir / status_name
             if status_dir.exists():
-                current_counts[status_name] = len([f for f in status_dir.iterdir() if f.is_file()])
+                current_counts[status_name] = len([f for f in status_dir.iterdir() if f.is_file() and not f.name.startswith('.')])
 
         # Only broadcast if counts changed
         if current_counts != last_counts:
@@ -836,7 +836,7 @@ async def get_agent_status():
         if agent_name == "ingestion":
             pending_dir = BASE_DIR / "data" / "ingestion" / "inbox" / "pending"
             if pending_dir.exists():
-                pending_count = len([f for f in pending_dir.iterdir() if f.is_file()])
+                pending_count = len([f for f in pending_dir.iterdir() if f.is_file() and not f.name.startswith('.')])
                 agent_data["pending_files"] = pending_count
                 if pending_count > 0:
                     agent_data["status"] = "working"
