@@ -48,8 +48,7 @@ def run_interactive():
     print("  - 'behaviors' - Display behavioral patterns")
     print("  - 'temporal' - List temporal profiles (who you were each year)")
     print("  - 'evolution' - Show how you evolved over time")
-    print("  - 'derive' - Derive full model from summaries")
-    print("  - 'derive-temporal' - Generate temporal profiles for all years")
+    print("  - 'derive' - Derive temporal profiles and evolution narrative")
     print("  - 'profile' - Generate current profile from temporal data")
     print("  - Or ask me anything about yourself")
     print("\nType 'quit' to exit.\n")
@@ -93,11 +92,8 @@ def run_interactive():
                 continue
 
             if user_input.lower() == 'derive':
-                user_input = "Please analyze the yearly summaries and derive the full model: epistemic axioms, mental models, epistemic tools, values at all three temporal scopes, and behavioral patterns."
-
-            if user_input.lower() == 'derive-temporal':
-                print("\nGenerating temporal profiles for all years...")
-                result = derive_temporal()
+                print("\nDeriving temporal profiles and evolution narrative...")
+                result = derive_synthesis()
                 print(f"\n{result}\n")
                 continue
 
@@ -113,28 +109,12 @@ def run_interactive():
 
 def derive_synthesis() -> str:
     """
-    Analyze summaries and derive/update synthesis model.
+    Derive synthesis model with temporal profiles (default).
 
-    Loads the derive prompt from data/synthesis/prompts/derive.md
-    and uses it to guide the agent.
+    Creates year-by-year profiles showing who the user was at each point,
+    synthesizes an evolution narrative, and generates the current profile.
 
-    Returns:
-        Result of the derivation process
-    """
-    agent = create_synthesis_agent()
-    prompt = load_prompt("synthesis", "derive")
-    return agent.process(prompt, ALL_SYNTHESIS_HANDLERS)
-
-
-def derive_temporal() -> str:
-    """
-    Generate temporal profiles for all years with summaries.
-
-    Creates a profile for each year showing who the user was at that time,
-    then synthesizes an evolution narrative and generates the current profile.
-
-    Loads the temporal prompt from data/synthesis/prompts/temporal.md
-    and uses it to guide the agent.
+    Loads the temporal prompt from data/synthesis/prompts/temporal.md.
 
     Returns:
         Result of the temporal derivation process
@@ -142,6 +122,10 @@ def derive_temporal() -> str:
     agent = create_synthesis_agent()
     prompt = load_prompt("synthesis", "temporal")
     return agent.process(prompt, ALL_SYNTHESIS_HANDLERS)
+
+
+# Alias for backwards compatibility
+derive_temporal = derive_synthesis
 
 
 # Backwards compatibility aliases
@@ -162,16 +146,16 @@ def derive_values() -> str:
 
 class AutonomousSynthesisAgent(AutonomousAgent):
     """
-    Autonomous Synthesis Agent that maintains user's identity model.
+    Autonomous Synthesis Agent that maintains user's identity model over time.
 
     Checks:
     - Signal: summaries_updated (derive model)
 
     Work:
-    - Derive epistemic axioms from summaries (foundational)
-    - Derive values from summaries (derived)
-    - Derive behaviors from summaries (reveals axioms)
-    - Generate consolidated profile
+    - Generate temporal profiles for each year with data
+    - Track evolution of values, beliefs, influences over time
+    - Synthesize evolution narrative
+    - Generate current profile from temporal data
 
     Signals:
     - synthesis_updated: After deriving model
@@ -199,10 +183,10 @@ class AutonomousSynthesisAgent(AutonomousAgent):
         return False
 
     def do_work(self) -> str:
-        """Derive synthesis model from summaries."""
+        """Derive temporal profiles and evolution narrative from summaries."""
         result = derive_synthesis()
         self.agent.clear_context()
-        return "Synthesis model derived from summaries"
+        return "Temporal profiles and evolution narrative derived from summaries"
 
 
 # Backwards compatibility aliases
