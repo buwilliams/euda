@@ -39,7 +39,7 @@ Eight specialized agents work together:
 |-------|------|
 | **Ingestion** | Transforms messy data into clean log entries |
 | **Summary** | Distills daily logs into narratives |
-| **Synthesis** | Builds understanding of who you are |
+| **Synthesis** | Builds understanding of who you are, tracked over time |
 | **World** | Explores opportunities matching your values |
 | **Attention** | Surfaces the right thing at the right time |
 | **Interaction** | Your interface—converses, listens, adapts |

@@ -275,7 +275,8 @@ euno/
 │   │   │   ├── epistemic.py    # Foundational: axioms, mental models, tools
 │   │   │   ├── values.py       # Derived: current, phase, lifetime values
 │   │   │   ├── behaviors.py    # Reveals: behavioral patterns
-│   │   │   ├── context.py      # Supporting: biographical, relationships
+│   │   │   ├── context.py      # Supporting: biographical, relationships, influences
+│   │   │   ├── temporal.py     # Evolution: year profiles, influence timeline
 │   │   │   ├── profile.py      # Consolidated profile
 │   │   │   └── summary.py      # Summary tools
 │   │   ├── world/              # World tools
@@ -323,8 +324,10 @@ euno/
     │   ├── epistemic/          # Foundational: axioms.md, mental_models.md, tools.md
     │   ├── values/             # Derived: current.values.md, phase.values.md, lifetime.values.md
     │   ├── behaviors/          # Reveals: patterns.md
-    │   ├── context/            # Supporting: biographical.md, relationships.md
-    │   └── derived/            # profile.md (consolidated view)
+    │   ├── context/            # Supporting: biographical.md, relationships.md, influences.md
+    │   ├── temporal/           # Evolution: {year}.profile.md, evolution.md, influences_timeline.md
+    │   ├── derived/            # current_profile.md (synthesized from temporal)
+    │   └── prompts/            # derive.md, temporal.md
     │
     ├── world/                  # World Agent data
     │   ├── state/              # state.json

@@ -4,7 +4,8 @@ Hierarchy:
 1. Epistemic (foundational) - axioms, mental models, reasoning tools
 2. Values (derived) - what you care about, emergent from epistemic core
 3. Behaviors (reveals) - how you act, shows which axioms are operative
-4. Context (supporting) - biographical facts and relationships
+4. Context (supporting) - biographical facts, relationships, influences
+5. Temporal (evolution) - who you were over time, how you changed
 """
 
 from .epistemic import (
@@ -41,14 +42,22 @@ from .summary import (
     get_year_logs, get_manifest, get_summary, write_summary,
     check_summary_needed, list_years
 )
+from .temporal import (
+    TEMPORAL_TOOLS, TEMPORAL_HANDLERS,
+    get_temporal_profile, write_temporal_profile, list_temporal_profiles,
+    get_evolution, write_evolution,
+    get_influence_timeline, add_influence_to_timeline,
+    generate_current_profile
+)
 
 # Combined tools for convenience - epistemic first (foundational)
-ALL_SYNTHESIS_TOOLS = EPISTEMIC_TOOLS + VALUES_TOOLS + BEHAVIOR_TOOLS + CONTEXT_TOOLS + PROFILE_TOOLS
+ALL_SYNTHESIS_TOOLS = EPISTEMIC_TOOLS + VALUES_TOOLS + BEHAVIOR_TOOLS + CONTEXT_TOOLS + TEMPORAL_TOOLS + PROFILE_TOOLS
 ALL_SYNTHESIS_HANDLERS = {
     **EPISTEMIC_HANDLERS,
     **VALUES_HANDLERS,
     **BEHAVIOR_HANDLERS,
     **CONTEXT_HANDLERS,
+    **TEMPORAL_HANDLERS,
     **PROFILE_HANDLERS
 }
 
@@ -98,4 +107,10 @@ __all__ = [
     'SUMMARY_TOOLS', 'SUMMARY_HANDLERS',
     'get_year_logs', 'get_manifest', 'get_summary', 'write_summary',
     'check_summary_needed', 'list_years',
+    # Temporal tools (evolution over time)
+    'TEMPORAL_TOOLS', 'TEMPORAL_HANDLERS',
+    'get_temporal_profile', 'write_temporal_profile', 'list_temporal_profiles',
+    'get_evolution', 'write_evolution',
+    'get_influence_timeline', 'add_influence_to_timeline',
+    'generate_current_profile',
 ]
