@@ -1461,6 +1461,16 @@
                 });
 
                 const data = await response.json();
+
+                // Check for server error
+                if (!response.ok) {
+                    console.error('Server error:', data.detail || data);
+                    removeThinking();
+                    addMessage(`Something went wrong: ${data.detail || 'Unknown error'}`, 'friend');
+                    setWaiting(false);
+                    return;
+                }
+
                 sessionId = data.session_id;
                 localStorage.setItem('sessionId', sessionId);
 
@@ -1472,10 +1482,8 @@
                 }
 
                 addMessage(data.response, 'friend');
-
-                // Always refresh data after chat (tasks/projects may have changed)
-                setTimeout(pollData, 300);
             } catch (error) {
+                console.error('Chat error:', error);
                 removeThinking();
                 addMessage('I had trouble processing that. Could you try again?', 'friend');
             }
@@ -1738,6 +1746,14 @@
                     const ingestion = data.agents.ingestion;
                     // Could display this somewhere in the UI
                     console.log('Ingestion status:', ingestion.pending_files, 'files pending');
+                }
+            });
+
+            eventSource.addEventListener('tasks_update', (e) => {
+                const data = JSON.parse(e.data);
+                tasksData = data.tasks || [];
+                if (activePanel === 'tasks') {
+                    renderTodayTasks();
                 }
             });
 

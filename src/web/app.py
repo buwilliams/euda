@@ -377,6 +377,30 @@ async def cleanup_stale_notifications():
                 pass
 
 
+async def watch_tasks():
+    """Watch tasks queue and broadcast changes via SSE."""
+    tasks_dir = BASE_DIR / "data" / "worker" / "tasks"
+    queue_file = tasks_dir / "queue.json"
+
+    if not tasks_dir.exists():
+        tasks_dir.mkdir(parents=True, exist_ok=True)
+
+    last_mtime = None
+
+    async for changes in awatch(tasks_dir):
+        # Check if queue.json was modified
+        if queue_file.exists():
+            current_mtime = queue_file.stat().st_mtime
+            if current_mtime != last_mtime:
+                last_mtime = current_mtime
+                # Broadcast task update
+                tasks = get_tasks_for_panel()
+                await sse_manager.broadcast({
+                    "event": "tasks_update",
+                    "data": {"tasks": tasks}
+                })
+
+
 # ============== Lifespan Management ==============
 
 @asynccontextmanager
@@ -385,6 +409,7 @@ async def lifespan(app: FastAPI):
     # Start background tasks
     watcher_task = asyncio.create_task(watch_notifications())
     ingestion_watcher_task = asyncio.create_task(watch_ingestion_queue())
+    tasks_watcher_task = asyncio.create_task(watch_tasks())
     cleanup_task = asyncio.create_task(cleanup_stale_notifications())
 
     yield
@@ -392,6 +417,7 @@ async def lifespan(app: FastAPI):
     # Cancel tasks on shutdown
     watcher_task.cancel()
     ingestion_watcher_task.cancel()
+    tasks_watcher_task.cancel()
     cleanup_task.cancel()
 
 
