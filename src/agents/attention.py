@@ -8,14 +8,14 @@ energy, and timing. Surfaces the right thing at the right moment.
 from datetime import datetime, time
 from .base import create_agent, AutonomousAgent
 from ..tools.attention.attention import ATTENTION_TOOLS, ATTENTION_HANDLERS
-from ..tools.values.values import VALUES_TOOLS, VALUES_HANDLERS
+from ..tools.identity import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
 from ..tools.shared.notifications import queue_notification
 
 
-# Combined tools - Attention agent needs access to values and logs too
-ALL_TOOLS = ATTENTION_TOOLS + VALUES_TOOLS + LOG_TOOLS
-ALL_HANDLERS = {**ATTENTION_HANDLERS, **VALUES_HANDLERS, **LOG_HANDLERS}
+# Combined tools - Attention agent needs access to identity (values core) and logs
+ALL_TOOLS = ATTENTION_TOOLS + VALUES_TOOLS + PROFILE_TOOLS + LOG_TOOLS
+ALL_HANDLERS = {**ATTENTION_HANDLERS, **VALUES_HANDLERS, **PROFILE_HANDLERS, **LOG_HANDLERS}
 
 
 def create_attention_agent():
@@ -173,6 +173,12 @@ class AutonomousAttentionAgent(AutonomousAgent):
             self.logger.info("Received opportunities_updated signal")
             # Don't immediately act, but note it for next attention window
             state["new_opportunities"] = True
+            self.save_state(state)
+
+        # Check for identity signal - values have been updated
+        if self.check_signal("identity_updated"):
+            self.logger.info("Received identity_updated signal")
+            state["identity_refreshed"] = True
             self.save_state(state)
 
         # Check morning window (7-9am)

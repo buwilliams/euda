@@ -8,13 +8,13 @@ while occasionally surprising with life-promoting novelty.
 from datetime import datetime, timedelta
 from .base import create_agent, AutonomousAgent
 from ..tools.world.world import WORLD_TOOLS, WORLD_HANDLERS
-from ..tools.values.values import VALUES_TOOLS, VALUES_HANDLERS
+from ..tools.identity import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
 from ..tools.shared.notifications import queue_notification
 
 
-# Combined tools - World agent needs access to values
-ALL_TOOLS = WORLD_TOOLS + VALUES_TOOLS
-ALL_HANDLERS = {**WORLD_HANDLERS, **VALUES_HANDLERS}
+# Combined tools - World agent needs access to identity (values at core)
+ALL_TOOLS = WORLD_TOOLS + VALUES_TOOLS + PROFILE_TOOLS
+ALL_HANDLERS = {**WORLD_HANDLERS, **VALUES_HANDLERS, **PROFILE_HANDLERS}
 
 
 def create_world_agent():
@@ -148,9 +148,9 @@ class AutonomousWorldAgent(AutonomousAgent):
 
     def check_work_needed(self) -> bool:
         """Check if a discovery sweep is needed."""
-        # Check for explicit signal
-        if self.check_signal("values_updated"):
-            self.logger.info("Received values_updated signal - running discovery")
+        # Check for explicit signal (identity includes values at core)
+        if self.check_signal("identity_updated"):
+            self.logger.info("Received identity_updated signal - running discovery")
             return True
 
         # Check if enough time has passed since last sweep

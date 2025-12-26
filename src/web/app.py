@@ -22,14 +22,18 @@ from ..agents.base import create_agent
 from ..agents.interaction import INTERACTION_TOOLS, INTERACTION_HANDLERS
 from ..tools.shared.log import read_log_entry, search_log, get_recent_entries, write_log_entry
 from ..tools.interaction.conversation_history import save_message, get_conversation_data, get_recent_conversations
-from ..tools.values.values import get_current_values, get_phase_values, get_lifetime_values, get_all_values
+from ..tools.identity import (
+    get_current_values, get_phase_values, get_lifetime_values, get_all_values,
+    get_behaviors, get_profile, get_identity_summary,
+    get_biographical, get_relationships
+)
 from ..tools.interaction.cards import (
     get_internal_card, get_public_card, write_public_card,
     get_received_cards, update_received_card_status, approve_public_card
 )
 from ..tools.world.world import get_opportunities
 from ..tools.attention.attention import get_queue, get_recent_energy, record_energy
-from ..tools.values.summary import list_years, get_summary
+from ..tools.identity.summary import list_years, get_summary
 
 
 # Base paths
@@ -227,11 +231,61 @@ async def get_recent(days: int = 7):
     return {"days": days, "content": content}
 
 
-# ============== Values ==============
+# ============== Identity ==============
+
+@app.get("/api/identity")
+async def get_identity():
+    """Get full identity (values at core, behaviors derived, context supporting)."""
+    return {
+        "values": {
+            "current": get_current_values(),
+            "phase": get_phase_values(),
+            "lifetime": get_lifetime_values()
+        },
+        "behaviors": get_behaviors(),
+        "context": {
+            "biographical": get_biographical(),
+            "relationships": get_relationships()
+        },
+        "profile": get_profile()
+    }
+
+
+@app.get("/api/identity/summary")
+async def get_identity_summary_endpoint():
+    """Get quick identity summary."""
+    return {"content": get_identity_summary()}
+
+
+@app.get("/api/identity/behaviors")
+async def get_identity_behaviors():
+    """Get behavioral patterns (derived from logs)."""
+    return {"content": get_behaviors()}
+
+
+@app.get("/api/identity/biographical")
+async def get_identity_biographical():
+    """Get biographical context (supporting data)."""
+    return {"content": get_biographical()}
+
+
+@app.get("/api/identity/relationships")
+async def get_identity_relationships():
+    """Get relationship narratives (supporting data)."""
+    return {"content": get_relationships()}
+
+
+@app.get("/api/identity/profile")
+async def get_identity_profile():
+    """Get consolidated identity profile."""
+    return {"content": get_profile()}
+
+
+# ============== Values (kept for compatibility) ==============
 
 @app.get("/api/values")
 async def get_values():
-    """Get all values."""
+    """Get all values (compatibility endpoint - use /api/identity for full view)."""
     return {
         "current": get_current_values(),
         "phase": get_phase_values(),
@@ -377,7 +431,7 @@ AGENT_INFO = {
     "ingestion": {"display_name": "Ingestion (Archivist)", "description": "Transforms data into log entries"},
     "interaction": {"display_name": "Interaction (Caring Friend)", "description": "User-facing conversations"},
     "summary": {"display_name": "Summary (Historian)", "description": "Yearly summaries from logs"},
-    "values": {"display_name": "Values (Philosopher)", "description": "Derive and refine values"},
+    "identity": {"display_name": "Identity (Keeper)", "description": "Maintain identity - values at core"},
     "attention": {"display_name": "Attention (Curator)", "description": "Surface the right thing at the right time"},
     "world": {"display_name": "World (Scout)", "description": "Discover opportunities"},
     "worker": {"display_name": "Worker (Executor)", "description": "Execute approved tasks"},

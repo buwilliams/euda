@@ -115,7 +115,7 @@ Eight specialized agents work together, each with its own persona and purpose:
 |-------|------|--------------|
 | **Ingestion** | The Archivist | Transforms messy data into clean log entries |
 | **Summary** | The Historian | Distills daily logs into yearly narratives |
-| **Values** | The Philosopher | Derives and refines values from life patterns |
+| **Identity** | The Keeper | Maintains who you are—values at the core, behaviors derived, context supporting |
 | **World** | The Scout | Explores external opportunities that match your values |
 | **Attention** | The Curator | Matches opportunities to your energy and timing |
 | **Interaction** | The Caring Friend | Converses, listens, adapts—your single interface to everything |

@@ -41,12 +41,12 @@ All 8 agents implemented with web UI and API. Key files:
 euno/
 ├── main.py                 # Entry point
 ├── src/
-│   ├── agents/             # 8 agent modules (ingestion, summary, values, etc.)
+│   ├── agents/             # 8 agent modules (ingestion, summary, identity, etc.)
 │   │   └── base.py         # Core agent pattern
 │   ├── tools/              # Organized by agent concern
-│   │   ├── shared/         # Cross-agent (log, identity, notifications)
+│   │   ├── shared/         # Cross-agent (log, agent identity, notifications)
 │   │   ├── ingestion/      # File processing, queue, budget, iPhone backup tools
-│   │   ├── values/         # Values + summaries
+│   │   ├── identity/       # User identity (values at core, behaviors, context)
 │   │   ├── world/          # Opportunities + fetch
 │   │   ├── attention/      # Energy + surfacing queue
 │   │   ├── interaction/    # Conversations + cards
@@ -57,7 +57,7 @@ euno/
 └── data/                   # Agent-oriented data
     ├── shared/             # Cross-agent (log, signals, identity, notifications)
     ├── ingestion/          # inbox/, queue/, digests/
-    ├── values/             # output/ (values + summaries)
+    ├── identity/           # values/, behaviors/, context/, derived/
     ├── world/              # opportunities/
     ├── attention/          # energy + surfacing queue
     ├── interaction/        # conversations/
@@ -95,12 +95,22 @@ The system is grounded in Popperian epistemology: all knowledge is conjecture. V
 Eight agents communicate via shared flat files:
 1. **Ingestion Agent (The Archivist)** - Transforms messy data into clean log entries
 2. **Summary Agent (The Historian)** - Distills patterns from the life log
-3. **Values Agent (The Philosopher)** - Derives and refines user values
+3. **Identity Agent (The Keeper)** - Maintains user identity (values at core, behaviors, context)
 4. **World Agent (The Scout)** - Explores external opportunities
 5. **Attention Agent (The Curator)** - Orchestrates what surfaces when
 6. **Interaction Agent (The Caring Friend)** - User-facing conversations
 7. **Worker Agent (The Executor)** - Executes tasks with smart delegation
 8. **Introspection Agent (The Mirror)** - Documents system capabilities
+
+### Identity Hierarchy
+
+The Identity Agent maintains a comprehensive model of who the user is:
+1. **Values & Beliefs** (core) - Who you ARE
+2. **Behaviors** (derived) - How you actually act
+3. **Relationships** (context) - Who matters to you
+4. **Biographical facts** (context) - Background information
+
+Values are the PRIMARY definition of identity. Biographical facts and relationships are supporting context that helps agents anticipate the user, but do not define identity.
 
 Each agent has:
 - Core identity (shared beliefs and behaviors)

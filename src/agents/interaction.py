@@ -6,9 +6,10 @@ Detects intent and responds appropriately.
 
 This agent can:
 - Read and write to the life log
-- Read user values (current, phase, lifetime)
+- Read user identity (values, behaviors, biographical context, relationships)
 - Read discovered opportunities
 - Answer questions about the user's data
+- Record identity facts when user shares them (name, family, friends, etc.)
 - Create and manage tasks and projects
 - View daily task list and results
 - Explain system capabilities
@@ -22,8 +23,11 @@ This agent can:
 from .base import create_agent
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
 from ..tools.world.fetch import FETCH_TOOLS, FETCH_HANDLERS
-from ..tools.values.values import (
-    get_current_values, get_phase_values, get_lifetime_values, get_all_values
+from ..tools.identity import (
+    get_current_values, get_phase_values, get_lifetime_values, get_all_values,
+    get_behaviors, get_profile, get_identity_summary,
+    get_biographical, update_biographical,
+    get_relationships, add_relationship, update_relationship
 )
 from ..tools.world.world import get_opportunities
 from ..tools.worker.task import TASK_TOOLS, TASK_HANDLERS
@@ -34,8 +38,9 @@ from ..tools.interaction.conversation import CONVERSATION_TOOLS, CONVERSATION_HA
 from ..tools.interaction.conversation_history import CONVERSATION_HISTORY_TOOLS, CONVERSATION_HISTORY_HANDLERS
 
 
-# Additional tools for reading values
-VALUES_READ_TOOLS = [
+# Identity tools - values at the core, context as support
+IDENTITY_READ_TOOLS = [
+    # Values (core identity)
     {
         "name": "get_current_values",
         "description": "Get the user's current values (rolling year focus). Use when they ask about their values or what matters to them now.",
@@ -53,8 +58,83 @@ VALUES_READ_TOOLS = [
     },
     {
         "name": "get_all_values",
-        "description": "Get all values at once (current, phase, lifetime). Use when they want a comprehensive view.",
+        "description": "Get all values at once (current, phase, lifetime). Use when they want a comprehensive view of what matters to them.",
         "input_schema": {"type": "object", "properties": {}}
+    },
+    # Behaviors (derived)
+    {
+        "name": "get_behaviors",
+        "description": "Get behavioral patterns - how the user actually acts based on observed evidence.",
+        "input_schema": {"type": "object", "properties": {}}
+    },
+    # Profile (consolidated)
+    {
+        "name": "get_profile",
+        "description": "Get the full identity profile - values at core, behaviors derived, context supporting.",
+        "input_schema": {"type": "object", "properties": {}}
+    },
+    {
+        "name": "get_identity_summary",
+        "description": "Get a quick summary of the user's identity for context.",
+        "input_schema": {"type": "object", "properties": {}}
+    },
+    # Context (supporting, not defining)
+    {
+        "name": "get_biographical",
+        "description": "Get biographical context (name, birth info, background). This is supporting data, not core identity.",
+        "input_schema": {"type": "object", "properties": {}}
+    },
+    {
+        "name": "get_relationships",
+        "description": "Get relationship narratives - the people who matter to the user.",
+        "input_schema": {"type": "object", "properties": {}}
+    }
+]
+
+# Tools for recording identity facts from conversations
+IDENTITY_WRITE_TOOLS = [
+    {
+        "name": "update_biographical",
+        "description": "Record biographical information when the user shares it (name, birth date, location, background). Use when they mention facts about themselves.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "section": {
+                    "type": "string",
+                    "description": "Section to update: 'Name', 'Birth Date', 'Birth Place', 'Current Location', 'Background', or new"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "The content for that section"
+                }
+            },
+            "required": ["section", "content"]
+        }
+    },
+    {
+        "name": "add_relationship",
+        "description": "Record a relationship when the user mentions someone important (family, friends). Use when they talk about people in their life.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "The person's name"},
+                "relationship_type": {"type": "string", "description": "Type: Partner, Mother, Father, Sister, Brother, Child, Friend, Colleague, etc."},
+                "narrative": {"type": "string", "description": "Narrative description of this relationship"}
+            },
+            "required": ["name", "relationship_type", "narrative"]
+        }
+    },
+    {
+        "name": "update_relationship",
+        "description": "Update the narrative for an existing relationship.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "The person's name"},
+                "narrative": {"type": "string", "description": "The updated narrative"}
+            },
+            "required": ["name", "narrative"]
+        }
     }
 ]
 
@@ -101,7 +181,8 @@ INTROSPECTION_TOOLS = [
 # Combined tools for the Interaction Agent
 INTERACTION_TOOLS = (
     LOG_TOOLS +
-    VALUES_READ_TOOLS +
+    IDENTITY_READ_TOOLS +
+    IDENTITY_WRITE_TOOLS +
     WORLD_READ_TOOLS +
     FETCH_TOOLS +
     TASK_TOOLS +
@@ -121,10 +202,20 @@ INTERACTION_HANDLERS = {
     **AGENT_LOG_HANDLERS,
     **CONVERSATION_HANDLERS,
     **CONVERSATION_HISTORY_HANDLERS,
+    # Identity tools - values at core
     "get_current_values": get_current_values,
     "get_phase_values": get_phase_values,
     "get_lifetime_values": get_lifetime_values,
     "get_all_values": get_all_values,
+    "get_behaviors": get_behaviors,
+    "get_profile": get_profile,
+    "get_identity_summary": get_identity_summary,
+    "get_biographical": get_biographical,
+    "update_biographical": update_biographical,
+    "get_relationships": get_relationships,
+    "add_relationship": add_relationship,
+    "update_relationship": update_relationship,
+    # World tools
     "get_opportunities": get_opportunities,
     "get_system_capabilities": get_last_introspection,
     "get_system_overview": get_system_overview,

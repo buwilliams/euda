@@ -23,8 +23,10 @@ def main():
         "chat": lambda: __import__('src.agents.interaction', fromlist=['run_interactive']).run_interactive(),
         "summary": lambda: __import__('src.agents.summary', fromlist=['run_interactive']).run_interactive(),
         "summarize": run_summarize,
-        "values": lambda: __import__('src.agents.values', fromlist=['run_interactive']).run_interactive(),
-        "derive": run_derive_values,
+        "identity": lambda: __import__('src.agents.identity', fromlist=['run_interactive']).run_interactive(),
+        "derive": run_derive_identity,
+        # Backwards compatibility aliases
+        "values": lambda: __import__('src.agents.identity', fromlist=['run_interactive']).run_interactive(),
         "attention": lambda: __import__('src.agents.attention', fromlist=['run_interactive']).run_interactive(),
         "morning": run_morning,
         "evening": run_evening,
@@ -53,8 +55,8 @@ def main():
         print("  ingestion  Interactive chat with The Archivist")
         print("  summary    Interactive chat with The Historian")
         print("  summarize  Generate summaries for all years needing updates")
-        print("  values     Interactive chat with The Philosopher")
-        print("  derive     Derive values from summaries")
+        print("  identity   Interactive chat with The Keeper (values, behaviors, context)")
+        print("  derive     Derive identity (values + behaviors) from summaries")
         print("  attention  Interactive chat with The Curator")
         print("  morning    Generate morning attention")
         print("  evening    Generate evening reflection")
@@ -777,14 +779,16 @@ def run_summarize():
     check_and_summarize_all()
 
 
-def run_derive_values():
-    """Derive values from summaries."""
-    from src.agents.values import derive_values
+def run_derive_identity():
+    """Derive identity (values + behaviors) from summaries."""
+    from src.agents.identity import derive_identity
     print("=" * 60)
-    print("Euno - Deriving Values")
+    print("Euno - Deriving Identity")
     print("=" * 60)
     print()
-    result = derive_values()
+    print("Values are the core of identity. Behaviors are derived from patterns.")
+    print()
+    result = derive_identity()
     print(f"\n{result}")
 
 
@@ -858,7 +862,7 @@ def run_introspect():
 
 def run_evolve():
     """Interactive review of identity evolution proposals."""
-    from src.tools.identity import (
+    from src.tools.shared.identity import (
         get_pending_evolutions, review_evolution,
         approve_evolution, reject_evolution
     )
