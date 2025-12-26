@@ -149,31 +149,114 @@
             margin-top: 0.25rem;
         }
 
-        .notification-item.priority-high {
-            background: #fffbeb;
-            border-color: #f59e0b;
+        .notification-item {
+            flex-direction: column;
         }
 
-        .notification-item.priority-high:hover {
-            background: #fef3c7;
+        .notification-header {
+            display: flex;
+            align-items: flex-start;
+            width: 100%;
+            cursor: pointer;
         }
 
-        .notification-item.type-approval {
-            background: #eff6ff;
-            border-color: #3b82f6;
+        .notification-expand-icon {
+            color: #999;
+            font-size: 0.7rem;
+            margin-left: auto;
+            padding: 0.25rem;
         }
 
-        .notification-item.type-approval:hover {
+        .notification-agent-badge {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            background: #f0f0f0;
+            color: #666;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .category-discovery .notification-agent-badge {
             background: #dbeafe;
+            color: #1d4ed8;
         }
 
-        .notification-item.type-alert {
-            background: #fef2f2;
-            border-color: #ef4444;
+        .category-reminder .notification-agent-badge {
+            background: #fef3c7;
+            color: #92400e;
         }
 
-        .notification-item.type-alert:hover {
-            background: #fee2e2;
+        .category-progress .notification-agent-badge {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .category-approval .notification-agent-badge {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+
+        .notification-details {
+            padding: 0.75rem 0 0 2rem;
+            border-top: 1px solid #eee;
+            margin-top: 0.75rem;
+        }
+
+        .notification-message {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .notif-action-btn {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .notif-action-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .notif-action-btn.ask {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .notif-action-btn.ask:hover {
+            background: #eff6ff;
+        }
+
+        .notif-action-btn.dismiss {
+            border-color: #999;
+            color: #666;
+        }
+
+        .notif-action-btn.dismiss:hover {
+            background: #f5f5f5;
+            border-color: #666;
+        }
+
+        .notification-item.expanded {
+            background: #fafafa;
         }
 
         .notifications-empty {
@@ -1114,19 +1197,84 @@
             container.innerHTML = notificationsData.map((n, idx) => {
                 const typeClass = n.type ? `type-${n.type}` : '';
                 const priorityClass = n.priority === 'high' ? 'priority-high' : '';
+                const categoryClass = n.category ? `category-${n.category}` : '';
                 const icon = getNotificationIcon(n.type);
+                const agentName = n.agent || n.agent_name || 'system';
+                const agentLabel = agentName.charAt(0).toUpperCase() + agentName.slice(1);
 
                 return `
-                    <div class="notification-item ${typeClass} ${priorityClass}"
-                         onclick="handleNotificationClick(notificationsData[${idx}])">
-                        <span class="notification-icon">${icon}</span>
-                        <div class="notification-content">
-                            <div class="notification-title">${escapeHtml(n.title)}</div>
-                            <div class="notification-meta">from ${escapeHtml(n.agent_name)}</div>
+                    <div class="notification-item ${typeClass} ${priorityClass} ${categoryClass}" data-id="${n.id}">
+                        <div class="notification-header" onclick="toggleNotificationExpand('${n.id}')">
+                            <span class="notification-agent-badge">${escapeHtml(agentLabel)}</span>
+                            <div class="notification-content">
+                                <div class="notification-title">${escapeHtml(n.title)}</div>
+                            </div>
+                            <span class="notification-expand-icon">▼</span>
+                        </div>
+                        <div class="notification-details" id="notif-details-${n.id}" style="display: none;">
+                            <div class="notification-message">${escapeHtml(n.message || '')}</div>
+                            <div class="notification-actions">
+                                <button class="notif-action-btn ask" onclick="askAboutNotification('${n.id}', ${idx})">
+                                    💬 Discuss
+                                </button>
+                                <button class="notif-action-btn dismiss" onclick="dismissNotification('${n.id}')">
+                                    ✕ Dismiss
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        // Toggle notification expand/collapse
+        function toggleNotificationExpand(notifId) {
+            const details = document.getElementById(`notif-details-${notifId}`);
+            const item = details.closest('.notification-item');
+            const icon = item.querySelector('.notification-expand-icon');
+
+            if (details.style.display === 'none') {
+                details.style.display = 'block';
+                icon.textContent = '▲';
+                item.classList.add('expanded');
+            } else {
+                details.style.display = 'none';
+                icon.textContent = '▼';
+                item.classList.remove('expanded');
+            }
+        }
+
+        // Ask about a notification (bring into chat and auto-submit)
+        function askAboutNotification(notifId, idx) {
+            const notification = notificationsData[idx];
+            if (!notification) return;
+
+            // Mark as seen
+            fetch(`/api/notifications/${notifId}/seen`, { method: 'POST' });
+
+            // Use action_prompt if available, otherwise generate one
+            const prompt = notification.action_prompt || `Tell me more about: ${notification.title}`;
+            chatInput.value = prompt;
+
+            // Close panel and auto-submit
+            if (activePanel) {
+                togglePanel(activePanel);
+            }
+
+            // Auto-submit the message
+            sendMessage();
+        }
+
+        // Dismiss a notification
+        function dismissNotification(notifId) {
+            fetch(`/api/notifications/${notifId}/dismiss`, { method: 'POST' })
+                .then(() => {
+                    // Remove from local data
+                    notificationsData = notificationsData.filter(n => n.id !== notifId);
+                    renderNotifications();
+                    updateNotificationsBadge();
+                })
+                .catch(err => console.error('Failed to dismiss:', err));
         }
 
         // Update badges
@@ -1532,62 +1680,89 @@
             }
         }
 
-        function handleNotificationClick(notification) {
-            fetch(`/api/notifications/${notification.id}/seen`, { method: 'POST' });
+        // ============== Server-Sent Events for Real-Time Updates ==============
 
-            if (notification.action_prompt) {
-                chatInput.value = notification.action_prompt;
-                chatInput.focus();
-            } else {
-                chatInput.value = `Tell me about: ${notification.title}`;
-                chatInput.focus();
+        let eventSource = null;
+        let reconnectAttempts = 0;
+
+        function connectSSE() {
+            if (eventSource) {
+                eventSource.close();
             }
 
-            // Refresh notifications after marking as seen
-            setTimeout(loadNotificationsData, 500);
-        }
+            eventSource = new EventSource('/api/events');
 
-        // Polling for badge updates
-        async function pollData() {
-            try {
-                // Always fetch both for badge updates
-                const [tasksRes, notifRes] = await Promise.all([
-                    fetch('/api/tasks'),
-                    fetch('/api/notifications')
-                ]);
-
-                const tasksJson = await tasksRes.json();
-                const notifJson = await notifRes.json();
-
-                tasksData = tasksJson.tasks || [];
-                notificationsData = notifJson.notifications || [];
-
+            eventSource.addEventListener('init', (e) => {
+                const data = JSON.parse(e.data);
+                notificationsData = data.notifications || [];
+                tasksData = data.tasks || [];
                 updateTasksBadge();
                 updateNotificationsBadge();
-
-                // Refresh active panel content
-                if (activePanel === 'tasks') {
-                    const projectsRes = await fetch('/api/projects');
-                    projectsData = (await projectsRes.json()).projects || [];
+                if (activePanel === 'notifications') {
+                    renderNotifications();
+                } else if (activePanel === 'tasks') {
                     renderTodayTasks();
-                    renderProjects();
-                } else if (activePanel === 'notifications') {
+                }
+                reconnectAttempts = 0;
+                console.log('SSE connected, initial data loaded');
+            });
+
+            eventSource.addEventListener('notification_update', (e) => {
+                const notification = JSON.parse(e.data);
+                // Update or add notification
+                const idx = notificationsData.findIndex(n => n.id === notification.id);
+                if (idx >= 0) {
+                    notificationsData[idx] = notification;
+                } else {
+                    notificationsData.unshift(notification);
+                }
+                updateNotificationsBadge();
+                if (activePanel === 'notifications') {
                     renderNotifications();
                 }
-            } catch (error) {
-                // Silent fail
-            }
+            });
+
+            eventSource.addEventListener('notification_removed', (e) => {
+                const data = JSON.parse(e.data);
+                notificationsData = notificationsData.filter(n => n.id !== data.id);
+                updateNotificationsBadge();
+                if (activePanel === 'notifications') {
+                    renderNotifications();
+                }
+            });
+
+            eventSource.addEventListener('status_update', (e) => {
+                const data = JSON.parse(e.data);
+                // Update ingestion status if available
+                if (data.agents && data.agents.ingestion) {
+                    const ingestion = data.agents.ingestion;
+                    // Could display this somewhere in the UI
+                    console.log('Ingestion status:', ingestion.pending_files, 'files pending');
+                }
+            });
+
+            eventSource.addEventListener('ping', () => {
+                // Keepalive, do nothing
+            });
+
+            eventSource.onerror = () => {
+                eventSource.close();
+                // Exponential backoff reconnect
+                const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                reconnectAttempts++;
+                console.log(`SSE disconnected, reconnecting in ${delay}ms...`);
+                setTimeout(connectSSE, delay);
+            };
         }
 
-        // Initialize
-        pollData();
-        setInterval(pollData, 5000);
+        // Initialize SSE connection
+        connectSSE();
 
-        // Load active panel data if open
+        // Load active panel data if open (for projects which aren't in SSE yet)
         if (activePanel === 'tasks') {
             loadTasksData();
         } else if (activePanel === 'notifications') {
-            loadNotificationsData();
+            // Already loaded via SSE init
         }
 
         chatInput.focus();

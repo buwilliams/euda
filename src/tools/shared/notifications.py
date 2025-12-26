@@ -115,16 +115,14 @@ def mark_seen(notification_id: str) -> str:
 
 
 def dismiss_notification(notification_id: str) -> str:
-    """Dismiss/complete a notification."""
+    """Dismiss/complete a notification by deleting the file."""
     for f in NOTIFICATIONS_DIR.glob("*.json"):
         with open(f, 'r') as file:
             notification = json.load(file)
 
         if notification.get("id") == notification_id:
-            notification["status"] = "dismissed"
-            notification["dismissed_at"] = datetime.now().isoformat()
-            with open(f, 'w') as file:
-                json.dump(notification, file, indent=2)
+            # Delete the file - file watcher will broadcast removal
+            f.unlink()
             return "Notification dismissed"
 
     return "Notification not found"
