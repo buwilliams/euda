@@ -19,13 +19,15 @@ Euno is a digital mind designed to help you live well in all aspects of your lif
 
 ## What It Does
 
-- **Reads your life data** — photos, documents, emails, exports from any platform
+*Some capabilities are fully implemented, others are being built toward the [personal intelligence vision](docs/personal-intelligence.md).*
+
+- **Reads your life data** — photos, documents, exports from any platform *(currently: manual file ingestion; planned: calendar, email, browsing)*
 - **Maintains a life log** — one unified record of everything, searchable and private
 - **Learns your values** — discovers what matters to you from patterns, not just what you say
-- **Discovers opportunities** — finds events, people, places, and learning that match your values
-- **Curates content** — surfaces the right thing at the right moment, respects your energy
-- **Finds common ground** — where social media builds walls, this builds bridges between people
-- **Executes tasks** — handles research and routine work autonomously, asks before acting on anything important
+- **Discovers opportunities** — surfaces events, people, places, and learning that match your values *(currently: LLM-generated suggestions; planned: real discovery from web/APIs)*
+- **Curates content** — surfaces the right thing at the right moment, respects your energy *(currently: morning/evening check-ins; planned: context-aware surfacing)*
+- **Finds common ground** — where social media builds walls, this builds bridges between people *(planned: value cards for relationship matching)*
+- **Executes tasks** — handles research and routine work autonomously, asks before acting on anything important *(currently: task tracking; planned: autonomous execution)*
 - **Talks like a friend** — not a chatbot, not an assistant—a caring collaborator who knows you
 
 ## Core Concepts
@@ -80,7 +82,7 @@ The agent advocates for the version of you that you said you want to be.
 
 When you resist, it adapts: "not now" → defer and resurface later. "Sounds hard" → break it down. "Not sure it's me" → connect to your stated values. It never guilt-trips, never pushes for engagement.
 
-### Value Cards
+### Value Cards *(Planned)*
 
 When you meet someone new—a collaborator, a date, a potential friend—your agents can exchange value cards to find common ground.
 
@@ -109,7 +111,7 @@ This turns "getting to know someone" from awkward small talk into meaningful con
 
 ## Agents
 
-Seven specialized agents work together, each with its own persona and purpose:
+Eight specialized agents work together, each with its own persona and purpose:
 
 | Agent | Role | What It Does |
 |-------|------|--------------|
@@ -142,7 +144,10 @@ Build for yourself first, not "other people." This is not a solution looking for
 - Refine through lived experience, not hypothetical users
 - Release only when it's battle-tested and genuinely wanted
 
-See [design.md](design.md) for technical architecture.
+See also:
+- [docs/architecture.md](docs/architecture.md) - Technical architecture
+- [docs/personal-intelligence.md](docs/personal-intelligence.md) - Vision for what Euno should become
+- [docs/user-experience.md](docs/user-experience.md) - UI/UX vision
 
 ## FAQ
 

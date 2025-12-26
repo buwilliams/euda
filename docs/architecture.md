@@ -1,4 +1,4 @@
-# Design
+# Architecture
 
 Technical architecture and implementation spec for Euno.
 
@@ -631,13 +631,17 @@ The server watches:
 
 ## User Interface
 
-### Design Principles
+*This section describes the current implementation. See [user-experience.md](user-experience.md) for the vision of a context-first, anticipatory interface.*
 
-**Attention is sacred.** Every element competes for attention. Therefore:
+### Current Design (Chat-First)
+
+The current UI is chat-centric with notification panels. This was the initial approach but is being reconsidered. The [user-experience vision](user-experience.md) describes a shift toward ambient, context-aware interfaces.
+
+**Current principles:**
 
 - **Empty is good** — A blank screen means "you're free, go live"
 - **Push, don't pull** — System reaches out; user doesn't obsessively check
-- **Chat is everything** — No separate screens, ask the friend anything
+- **Chat is primary** — Conversation as the main interface
 
 **Anti-patterns to avoid:**
 - Cards/containers (create illusion of "content to consume")

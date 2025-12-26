@@ -8,9 +8,11 @@ Euno is a personal intelligence that learns to anticipate you: doing tasks for y
 
 ## Current State
 
-All 7 agents implemented with web UI and API. Key files:
+All 8 agents implemented with web UI and API. Key files:
 - `README.md` - Product specification
-- `design.md` - Technical architecture and implementation spec
+- `docs/architecture.md` - Technical architecture and implementation spec
+- `docs/personal-intelligence.md` - Vision for what Euno should become
+- `docs/user-experience.md` - UI/UX vision and comparison to current state
 - `main.py` - Entry point for running agents
 
 ## Setup
@@ -65,7 +67,7 @@ euno/
     └── evolution/          # capabilities, evolution logs
 ```
 
-See `design.md` for full directory structure details.
+See `docs/architecture.md` for full directory structure details.
 
 ## Development Philosophy
 
