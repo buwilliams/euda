@@ -50,9 +50,11 @@ Content shows what you say. Behavior shows what you do.
 
 **Your follow-through** - What commitments do you keep? Which ones slip? What's the difference?
 
-**Your energy** - When are you sharp? When depleted? What drains you? What restores you?
+**Your energy** - When are you sharp? When depleted? What drains you? What restores you? The intelligence models your energy across dimensions: physical (sleep, movement), mental (focus, cognitive load), emotional (mood, resilience), and social (connection capacity). It tracks your rhythms and adjusts what it surfaces based on your current state.
 
 **Your choices** - When given options, what do you choose? What does that reveal about unstated preferences?
+
+**Stated vs. revealed** - There's often a gap between what you say matters ("family is my priority") and what your behavior shows (working late, cancelling dinners). This isn't hypocrisy to expose—it's tension to understand. The intelligence notices, holds this gently, and surfaces it when the moment is right. Not as judgment, but as clarity.
 
 ### The Model It Builds
 
@@ -190,6 +192,19 @@ Not surveillance of your past - stewardship of your continuity.
 
 ## The Philosophy
 
+### The 90/10 Balance
+
+The intelligence walks a line between safety and surprise:
+
+- **~90% safety**: grounded in your values, goals, and beliefs
+- **~10% surprise**: novelty that challenges and expands you
+
+Too much surprise creates anxiety. Too little creates stagnation. The balance promotes growth without destabilization.
+
+This is how it avoids becoming an echo chamber. It doesn't just reflect you back at yourself. It occasionally surfaces what's outside your comfort zone—a perspective you wouldn't seek, an opportunity that stretches you, a question that challenges an assumption.
+
+But it earns the right to surprise you by first demonstrating that it knows you. The 10% works because the 90% has built trust.
+
 ### Know, Don't Assume
 
 The intelligence is always learning, always updating. It doesn't lock you into a past version of yourself. It notices when you're changing and adapts its model.
@@ -217,6 +232,41 @@ The goal is not to make you more productive. It's to help you live well.
 Sometimes that means getting more done. Sometimes it means doing less. Sometimes it means working harder. Sometimes it means resting.
 
 The intelligence serves your life - all of it - not just the parts that produce output.
+
+### When It's Wrong
+
+The intelligence will be wrong. It will misread your mood. It will surface the wrong thing at the wrong time. It will build a model of you that's incomplete or outdated.
+
+What matters is how it handles being wrong:
+
+**It notices.** When you dismiss something repeatedly, it updates. When you correct it, it learns. When your behavior contradicts its model, it pays attention.
+
+**It asks.** When uncertain, it doesn't forge ahead. "I thought this might matter to you—does it?" is better than assuming.
+
+**It doesn't defend.** It has no ego to protect. Being wrong is information, not failure. The goal is accuracy, not being right.
+
+**It recovers gracefully.** A bad recommendation doesn't cascade. The intelligence can say "I missed that one" and move on. Trust is built through honest recovery, not false perfection.
+
+**It forgets when asked.** Some things shouldn't persist. If you tell it to drop something, it drops it. Your control over the model is absolute.
+
+The intelligence earns trust not by being perfect, but by being honest about its limitations and responsive to correction.
+
+## Future: Connection Between People
+
+One day, personal intelligences could help people find common ground.
+
+When you meet someone new—a collaborator, a potential friend, a partner—your intelligence could share what you choose to share. Not surveillance data. A curated card: your values, what you're open to, how you prefer to connect.
+
+When two intelligences exchange cards, they could surface:
+- What you have in common
+- What each might appreciate about the other
+- Potential friction points to navigate
+
+This turns "getting to know someone" from awkward small talk into meaningful connection. Not by replacing human interaction, but by preparing the ground for it.
+
+Where social media builds walls between tribes, this builds bridges between individuals. Your intelligence becomes a matchmaker—not for romance, but for resonance.
+
+This requires deep trust, careful consent, and thoughtful design. It's not immediate. But it's part of the long-term vision: personal intelligence that doesn't just help you live well, but helps people live well together.
 
 ## The North Star
 

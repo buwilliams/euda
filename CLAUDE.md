@@ -94,7 +94,7 @@ The system is grounded in Popperian epistemology: all knowledge is conjecture. V
 
 ## Agent Architecture
 
-Seven agents communicate via shared flat files:
+Eight agents communicate via shared flat files:
 1. **Ingestion Agent (The Archivist)** - Transforms messy data into clean log entries
 2. **Summary Agent (The Historian)** - Distills patterns from the life log
 3. **Synthesis Agent (The Keeper)** - Synthesizes user identity with epistemic axioms at the foundation

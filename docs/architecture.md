@@ -631,82 +631,80 @@ The server watches:
 
 ## User Interface
 
-*This section describes the current implementation. See [user-experience.md](user-experience.md) for the vision of a context-first, anticipatory interface.*
+*See [user-experience.md](user-experience.md) for detailed UI/UX philosophy.*
 
-### Current Design (Chat-First)
+### Current Design (Context-First)
 
-The current UI is chat-centric with notification panels. This was the initial approach but is being reconsidered. The [user-experience vision](user-experience.md) describes a shift toward ambient, context-aware interfaces.
+The UI is context-first: it surfaces what matters before you ask. Chat is available for depth, but the primary value is delivered through time-aware contextual views.
 
-**Current principles:**
+**Principles:**
 
-- **Empty is good** — A blank screen means "you're free, go live"
-- **Push, don't pull** — System reaches out; user doesn't obsessively check
-- **Chat is primary** — Conversation as the main interface
+- **Ambient over interactive** — Value delivered before you interact
+- **Context-appropriate** — UI morphs based on time of day, energy, what's coming
+- **Anticipatory** — Surfaces what's relevant now, what you might have forgotten
+- **Progressive disclosure** — Glance (2s) → Scan (10s) → Engage (unlimited)
+- **Conversation is depth** — Chat for thinking through, not for commands
 
-**Anti-patterns to avoid:**
-- Cards/containers (create illusion of "content to consume")
-- Grids of options (decision fatigue)
-- Tabs (each demands attention)
-- Stats/counts (gamification creates compulsion)
-- Notification badges (anxiety triggers)
+### Time-Aware Views
 
-### Layout
+The `/api/context` endpoint auto-detects the appropriate view:
+
+| Time | View | Purpose |
+|------|------|---------|
+| 7-10am | Morning | Full briefing: schedule, tasks, "on your mind", noticed patterns |
+| 10am-6pm | Active | Minimal, focus-protecting: current/next activity, surfaced count |
+| 6-10pm | Evening | Reflection: day summary, open threads, tomorrow preview |
+| Sunday | Weekly | Patterns, time analysis, relationships, next week |
+
+### Layout (Morning View)
 
 ```
 ┌─────────────────────────────────────┐
-│  [logo] Euno                        │  ← Header
+│  Good morning                       │
+│                                     │
+│  TODAY                              │
+│  • Deep work window until 11am      │
+│  • 11:30 Call with Sarah            │
+│                                     │
+│  ON YOUR MIND                       │
+│  You've mentioned X three times...  │
+│  [Let's talk]                       │
+│                                     │
+│  NOTICED                            │
+│  Energy has been low since Tuesday  │
+│                                     │
 ├─────────────────────────────────────┤
-│  All quiet. Your attention is free. │  ← Activity feed
-├─────────────────────────────────────┤
-│                                     │
-│  [friend message]                   │  ← Chat messages
-│                    [user message]   │
-│                                     │
-│  [Talk to me...              ] Send │  ← Input
-│                                     │
-│  Try: "what are my values"          │  ← Hints
+│  [Talk to me...]        [📎] [🔔] [✓]│
 └─────────────────────────────────────┘
 ```
 
 ### Components
 
-**Activity Feed:**
-- Shows agent status in real-time
-- "All quiet. Your attention is free." when idle
-- "Ingestion working..." with pulsing dot when active
-- Green dot for completed work
-- Never leave user in limbo
+**Context View (Primary):**
+- Time-aware content sections
+- "On Your Mind" — recurring topics from recent logs
+- "Noticed" — patterns, relationship neglect, energy observations
+- Action prompts to engage deeper
 
-**Chat:**
-- User messages: black background, white text, right-aligned
-- Friend messages: light gray background, black text, left-aligned
-- Messages fade in with subtle slide-up animation
-- "Thinking..." with animated dots during processing
-- Input disabled while processing
-
-**Hints:**
-- Subtle suggestions below input
-- Not buttons—conversation starters
-- Click fills input field
-- Examples: "what are my values", "any discoveries", "what did I log today"
+**Chat Overlay:**
+- Opens when clicking input or action buttons
+- Full conversation capability
+- "← Back to overview" returns to context view
+- Preserves all existing chat functionality
 
 **Side Panels:**
-- Notifications panel (bell icon) — real-time agent activity
-- Tasks panel (list icon) — user tasks and action items
-- Slide in from right
-- Updates via SSE (no polling)
-- Notifications are expandable with details
-- "Discuss" button fills chat with action_prompt and auto-submits
-- "Dismiss" button removes notification (deletes file)
-- Ingestion queue shows live status: pending, processing, failed counts
+- Notifications panel (bell icon) — agent activity, proactive surfaces
+- Tasks panel (list icon) — today's tasks, projects
+- Slide in from right, updates via SSE
+- Quick-add task input
 
 ### Visual Style
 
 - Typography-first: black text on white
 - Generous whitespace
-- No borders, shadows, gradients
-- Logo as only graphical element
-- Plain HTML with minimal CSS
+- Minimal UI chrome
+- Context sections with subtle hierarchy
+- Chat as overlay, not primary surface
 
 ---
 
