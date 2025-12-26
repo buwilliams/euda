@@ -128,22 +128,6 @@ def derive_synthesis() -> str:
 derive_temporal = derive_synthesis
 
 
-# Backwards compatibility aliases
-def derive_self() -> str:
-    """Alias for derive_synthesis. Deprecated."""
-    return derive_synthesis()
-
-
-def derive_identity() -> str:
-    """Alias for derive_synthesis. Deprecated."""
-    return derive_synthesis()
-
-
-def derive_values() -> str:
-    """Alias for derive_synthesis. Deprecated."""
-    return derive_synthesis()
-
-
 class AutonomousSynthesisAgent(AutonomousAgent):
     """
     Autonomous Synthesis Agent that maintains user's identity model over time.
@@ -187,12 +171,6 @@ class AutonomousSynthesisAgent(AutonomousAgent):
         result = derive_synthesis()
         self.agent.clear_context()
         return "Temporal profiles and evolution narrative derived from summaries"
-
-
-# Backwards compatibility aliases
-AutonomousSelfAgent = AutonomousSynthesisAgent
-AutonomousIdentityAgent = AutonomousSynthesisAgent
-AutonomousValuesAgent = AutonomousSynthesisAgent
 
 
 if __name__ == "__main__":

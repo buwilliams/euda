@@ -19,10 +19,6 @@ LOG_DIR = SHARED_DIR / "lifelog"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
 VALUES_DIR = SYNTHESIS_DIR / "values"
 
-# Backwards compatibility
-SELF_DIR = SYNTHESIS_DIR
-IDENTITY_DIR = SYNTHESIS_DIR
-
 # Ensure values directory exists
 VALUES_DIR.mkdir(parents=True, exist_ok=True)
 

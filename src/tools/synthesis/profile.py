@@ -298,10 +298,6 @@ PROFILE_HANDLERS = {
     "get_synthesis_summary": get_synthesis_summary,
 }
 
-# Backwards compatibility
-get_self_summary = get_synthesis_summary
-
-
 # Test
 if __name__ == "__main__":
     print("Generating profile...")

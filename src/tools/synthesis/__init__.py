@@ -61,26 +61,11 @@ ALL_SYNTHESIS_HANDLERS = {
     **PROFILE_HANDLERS
 }
 
-# Backwards compatibility aliases
-ALL_SELF_TOOLS = ALL_SYNTHESIS_TOOLS
-ALL_SELF_HANDLERS = ALL_SYNTHESIS_HANDLERS
-ALL_IDENTITY_TOOLS = ALL_SYNTHESIS_TOOLS
-ALL_IDENTITY_HANDLERS = ALL_SYNTHESIS_HANDLERS
-SELF_DIR = SYNTHESIS_DIR
-IDENTITY_DIR = SYNTHESIS_DIR
-get_self_summary = get_synthesis_summary
-get_identity_summary = get_synthesis_summary
-
 __all__ = [
     # Synthesis paths
     'SYNTHESIS_DIR', 'VALUES_DIR', 'EPISTEMIC_DIR',
     # Combined
     'ALL_SYNTHESIS_TOOLS', 'ALL_SYNTHESIS_HANDLERS',
-    # Backwards compatibility
-    'ALL_SELF_TOOLS', 'ALL_SELF_HANDLERS',
-    'ALL_IDENTITY_TOOLS', 'ALL_IDENTITY_HANDLERS',
-    'SELF_DIR', 'IDENTITY_DIR',
-    'get_self_summary', 'get_identity_summary',
     # Epistemic tools (foundational)
     'EPISTEMIC_TOOLS', 'EPISTEMIC_HANDLERS',
     'get_axioms', 'write_axioms',
