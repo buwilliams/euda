@@ -50,7 +50,8 @@ Eight specialized agents work together:
 
 - **[Vision](docs/vision.md)** — What Euno should become
 - **[Architecture](docs/architecture.md)** — Technical design and implementation
-- **[User Experience](docs/user-experience.md)** — UI/UX philosophy
+- **[User Experience](docs/user-experience.md)** — UI/UX philosophy and vision
+- **[User Interface](docs/user-interface.md)** — Current UI components and layout
 - **[Todo](docs/todo.md)** — Implementation roadmap
 
 ## Development

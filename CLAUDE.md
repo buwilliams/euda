@@ -12,7 +12,8 @@ All 8 agents implemented with web UI and API. Key files:
 - `README.md` - Product specification
 - `docs/architecture.md` - Technical architecture and implementation spec
 - `docs/vision.md` - Vision for what Euno should become
-- `docs/user-experience.md` - UI/UX vision and comparison to current state
+- `docs/user-experience.md` - UI/UX vision and philosophy
+- `docs/user-interface.md` - Current UI components and layout reference
 - `main.py` - Entry point for running agents
 
 ## Setup
