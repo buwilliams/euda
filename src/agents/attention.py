@@ -161,6 +161,10 @@ class AutonomousAttentionAgent(AutonomousAgent):
     EXPIRING_SOON_DAYS = 7  # Surface time-sensitive opportunities expiring within this window
     MAX_EXPANSIVE_PER_WEEK = 2  # Limit expansive (surprise) opportunities to avoid overwhelm
 
+    # Profile mining settings
+    SEMANTIC_ANALYSIS_INTERVAL = 24 * 60 * 60  # Run semantic analysis once per day
+    STALLED_PROJECT_DAYS = 14  # Projects with no activity for this long are considered stalled
+
     def __init__(self, morning_hour: int = 7, evening_hour: int = 21):
         super().__init__(
             name="attention",
@@ -510,6 +514,345 @@ class AutonomousAttentionAgent(AutonomousAgent):
         self.logger.info(f"Surfaced {opp_type} opportunity: {title}")
         return f"Surfaced opportunity: {title}"
 
+    def _get_recent_lifelog_content(self, days: int = 7) -> str:
+        """Get recent lifelog content for analysis."""
+        content_parts = []
+        now = datetime.now()
+
+        for i in range(days):
+            date = now - timedelta(days=i)
+            year_dir = LIFELOG_DIR / str(date.year)
+            log_file = year_dir / f"{date.strftime('%Y-%m-%d')}.md"
+
+            if log_file.exists():
+                try:
+                    content_parts.append(f"## {date.strftime('%Y-%m-%d')}\n{log_file.read_text()}")
+                except:
+                    pass
+
+        return "\n\n".join(content_parts) if content_parts else ""
+
+    def _check_failure_mode_triggers(self) -> dict | None:
+        """
+        Check if recent lifelog entries match known failure modes.
+
+        Compares recent behavior against the synthesis profile's failure modes
+        section to detect early warning signs and suggest interventions.
+        """
+        try:
+            from ..tools.synthesis.private_profile import get_profile_section
+
+            # Get failure modes from profile
+            failure_modes = get_profile_section("Failure Modes")
+            if not failure_modes or failure_modes.startswith("Section"):
+                return None
+
+            # Get recent lifelog
+            recent_logs = self._get_recent_lifelog_content(days=7)
+            if not recent_logs:
+                return None
+
+            # Check cooldown - only run once per day
+            surfaced = self._load_surfaced_state()
+            last_check = surfaced.get("last_failure_mode_check")
+            if last_check:
+                last_check_dt = datetime.fromisoformat(last_check)
+                if (datetime.now() - last_check_dt).total_seconds() < self.SEMANTIC_ANALYSIS_INTERVAL:
+                    return None
+
+            # Use the agent's LLM to analyze
+            prompt = f"""Analyze whether recent lifelog entries show signs of the known failure modes.
+
+## Known Failure Modes (from synthesis profile)
+{failure_modes}
+
+## Recent Lifelog (last 7 days)
+{recent_logs[:8000]}
+
+## Task
+1. Identify if any failure mode patterns are currently active or emerging
+2. If a pattern is detected, suggest a specific, reversible intervention
+3. Consider the user's epistemic style: prefer systems/environment design over willpower
+
+Respond in JSON format:
+{{
+    "detected": true/false,
+    "failure_mode": "which failure mode is triggered (if any)",
+    "evidence": "specific quotes or patterns from the lifelog",
+    "severity": "early_warning" | "active" | "crisis",
+    "intervention": "specific, reversible suggestion aligned with their behavioral attractors"
+}}
+
+If no failure modes are detected, respond with {{"detected": false}}"""
+
+            response = self.agent.process(prompt, {})
+
+            # Parse response
+            try:
+                # Extract JSON from response
+                import re
+                json_match = re.search(r'\{[^{}]*\}', response, re.DOTALL)
+                if json_match:
+                    result = json.loads(json_match.group())
+                    if result.get("detected"):
+                        # Update last check time
+                        surfaced["last_failure_mode_check"] = datetime.now().isoformat()
+                        self._save_surfaced_state(surfaced)
+                        return result
+            except json.JSONDecodeError:
+                pass
+
+            # Update last check time even if nothing found
+            surfaced["last_failure_mode_check"] = datetime.now().isoformat()
+            self._save_surfaced_state(surfaced)
+
+        except Exception as e:
+            self.logger.error(f"Error checking failure modes: {e}")
+
+        return None
+
+    def _surface_failure_mode_intervention(self, analysis: dict) -> str:
+        """Create an intervention task based on failure mode detection."""
+        from ..tools.shared.profile_signals import emit_profile_observation
+
+        failure_mode = analysis.get("failure_mode", "Unknown pattern")
+        severity = analysis.get("severity", "early_warning")
+        intervention = analysis.get("intervention", "Consider reviewing your current situation")
+        evidence = analysis.get("evidence", "")
+
+        # Set priority based on severity
+        priority_map = {"early_warning": "low", "active": "normal", "crisis": "high"}
+        priority = priority_map.get(severity, "normal")
+
+        # Create intervention task
+        title = f"🔔 Pattern noticed: {failure_mode[:50]}"
+        message = f"**Detected**: {failure_mode}\n\n"
+        if evidence:
+            message += f"**Evidence**: {evidence[:200]}...\n\n"
+        message += f"**Suggested action**: {intervention}"
+
+        create_euno_task(
+            agent_name="attention",
+            title=title,
+            message=message,
+            task_type="intervention",
+            priority=priority
+        )
+
+        # Emit observation for Synthesis Agent
+        emit_profile_observation(
+            agent="attention",
+            signal_type="failure_mode_trigger",
+            observation=f"Failure mode triggered: {failure_mode}",
+            evidence=evidence[:500] if evidence else None,
+            confidence="medium" if severity == "early_warning" else "high",
+            suggested_section="Failure Modes",
+            suggested_action="strengthen"
+        )
+
+        self.logger.info(f"Surfaced intervention for failure mode: {failure_mode}")
+        return f"Intervention surfaced: {failure_mode}"
+
+    def _check_stalled_projects(self) -> dict | None:
+        """
+        Check for projects that have stalled (no activity in STALLED_PROJECT_DAYS).
+
+        Returns info about the most stalled project to nudge about.
+        """
+        try:
+            from ..tools.worker.project import get_projects_data
+
+            # Check cooldown
+            surfaced = self._load_surfaced_state()
+            last_check = surfaced.get("last_stalled_check")
+            if last_check:
+                last_check_dt = datetime.fromisoformat(last_check)
+                # Only check once per day
+                if (datetime.now() - last_check_dt).total_seconds() < self.SEMANTIC_ANALYSIS_INTERVAL:
+                    return None
+
+            # Get active projects
+            projects = get_projects_data(status="active")
+            if not projects:
+                return None
+
+            now = datetime.now()
+            stalled_cutoff = now - timedelta(days=self.STALLED_PROJECT_DAYS)
+
+            stalled_projects = []
+            for project in projects:
+                updated = project.get("updated")
+                if updated:
+                    try:
+                        updated_dt = datetime.fromisoformat(updated)
+                        if updated_dt < stalled_cutoff:
+                            days_stalled = (now - updated_dt).days
+                            stalled_projects.append({
+                                "project": project,
+                                "days_stalled": days_stalled
+                            })
+                    except:
+                        pass
+
+            # Update check time
+            surfaced["last_stalled_check"] = datetime.now().isoformat()
+            self._save_surfaced_state(surfaced)
+
+            if stalled_projects:
+                # Return the most stalled one
+                stalled_projects.sort(key=lambda x: x["days_stalled"], reverse=True)
+                return stalled_projects[0]
+
+        except Exception as e:
+            self.logger.error(f"Error checking stalled projects: {e}")
+
+        return None
+
+    def _surface_stalled_project(self, stalled_data: dict) -> str:
+        """Create a nudge task for a stalled project."""
+        project = stalled_data.get("project", {})
+        days_stalled = stalled_data.get("days_stalled", 0)
+
+        title = project.get("title", "Unknown project")
+        project_id = project.get("id", "")
+
+        task_title = f"📋 Stalled: {title}"
+        message = f"This project hasn't had activity in **{days_stalled} days**.\n\n"
+        message += "Consider:\n"
+        message += "- Making one small step to restart momentum\n"
+        message += "- Archiving if it's no longer relevant\n"
+        message += "- Breaking it into smaller tasks"
+
+        create_euno_task(
+            agent_name="attention",
+            title=task_title,
+            message=message,
+            task_type="nudge",
+            priority="low"
+        )
+
+        self.logger.info(f"Surfaced stalled project nudge: {title}")
+        return f"Stalled project nudged: {title}"
+
+    def _run_semantic_analysis(self) -> dict | None:
+        """
+        Use LLM to semantically analyze recent lifelog for patterns.
+
+        Detects:
+        - Emotional patterns and stress buildup
+        - Recurring frustrations
+        - Implicit needs not yet articulated
+        - Value-behavior divergence
+        """
+        try:
+            from ..tools.synthesis.private_profile import get_private_profile
+
+            # Check cooldown
+            surfaced = self._load_surfaced_state()
+            last_analysis = surfaced.get("last_semantic_analysis")
+            if last_analysis:
+                last_dt = datetime.fromisoformat(last_analysis)
+                if (datetime.now() - last_dt).total_seconds() < self.SEMANTIC_ANALYSIS_INTERVAL:
+                    return None
+
+            # Get profile and recent logs
+            profile = get_private_profile()
+            if not profile or profile.startswith("No private"):
+                return None
+
+            recent_logs = self._get_recent_lifelog_content(days=7)
+            if not recent_logs or len(recent_logs) < 200:
+                return None
+
+            # Use agent's LLM for semantic analysis
+            prompt = f"""Analyze recent lifelog entries for patterns the user might not have noticed.
+
+## User's Identity Profile
+{profile[:4000]}
+
+## Recent Lifelog (last 7 days)
+{recent_logs[:6000]}
+
+## Task
+Look for ONE of the following (pick the most significant):
+
+1. **Emotional patterns**: Recurring moods, stress buildup, energy trends
+2. **Recurring frustrations**: Things that keep coming up as problems
+3. **Implicit needs**: Things the user seems to want but hasn't articulated
+4. **Value-behavior gap**: Stated values vs actual behavior divergence
+
+Respond in JSON format:
+{{
+    "pattern_type": "emotional" | "frustration" | "implicit_need" | "value_gap",
+    "observation": "what you noticed (be specific, cite evidence)",
+    "insight": "why this matters or what it might mean",
+    "suggestion": "one gentle, reversible action they could consider",
+    "confidence": "high" | "medium" | "low"
+}}
+
+Only respond if you find something genuinely useful. If nothing significant, respond: {{"pattern_type": null}}"""
+
+            response = self.agent.process(prompt, {})
+
+            # Parse response
+            try:
+                import re
+                json_match = re.search(r'\{[^{}]*\}', response, re.DOTALL)
+                if json_match:
+                    result = json.loads(json_match.group())
+                    if result.get("pattern_type"):
+                        surfaced["last_semantic_analysis"] = datetime.now().isoformat()
+                        self._save_surfaced_state(surfaced)
+                        return result
+            except json.JSONDecodeError:
+                pass
+
+            # Update time even if nothing found
+            surfaced["last_semantic_analysis"] = datetime.now().isoformat()
+            self._save_surfaced_state(surfaced)
+
+        except Exception as e:
+            self.logger.error(f"Error in semantic analysis: {e}")
+
+        return None
+
+    def _surface_semantic_insight(self, analysis: dict) -> str:
+        """Create a task to surface a semantic insight."""
+        pattern_type = analysis.get("pattern_type", "pattern")
+        observation = analysis.get("observation", "")
+        insight = analysis.get("insight", "")
+        suggestion = analysis.get("suggestion", "")
+        confidence = analysis.get("confidence", "medium")
+
+        type_labels = {
+            "emotional": "💭 Noticed",
+            "frustration": "🔄 Recurring",
+            "implicit_need": "💡 Might want",
+            "value_gap": "⚖️ Consider"
+        }
+        label = type_labels.get(pattern_type, "💭 Noticed")
+
+        title = f"{label}: {observation[:50]}..."
+        message = f"**Observation**: {observation}\n\n"
+        if insight:
+            message += f"**Why it matters**: {insight}\n\n"
+        if suggestion:
+            message += f"**Consider**: {suggestion}"
+
+        # Lower priority for lower confidence
+        priority = "low" if confidence == "low" else "normal"
+
+        create_euno_task(
+            agent_name="attention",
+            title=title,
+            message=message,
+            task_type="insight",
+            priority=priority
+        )
+
+        self.logger.info(f"Surfaced semantic insight: {pattern_type}")
+        return f"Insight surfaced: {pattern_type}"
+
     def _create_proactive_item(self, pattern: dict) -> str:
         """Create a project or task from a detected pattern and notify user."""
         item_type = pattern.get("type", "task")
@@ -622,6 +965,33 @@ class AutonomousAttentionAgent(AutonomousAgent):
             self.save_state(state)
             return True
 
+        # Check for failure mode triggers (profile mining)
+        failure_mode = self._check_failure_mode_triggers()
+        if failure_mode:
+            self.logger.info(f"Detected failure mode: {failure_mode.get('failure_mode')}")
+            state["pending_type"] = "failure_mode"
+            state["pending_failure_mode"] = failure_mode
+            self.save_state(state)
+            return True
+
+        # Check for stalled projects
+        stalled = self._check_stalled_projects()
+        if stalled:
+            self.logger.info(f"Found stalled project: {stalled.get('project', {}).get('title')}")
+            state["pending_type"] = "stalled_project"
+            state["pending_stalled"] = stalled
+            self.save_state(state)
+            return True
+
+        # Run semantic analysis for patterns
+        semantic = self._run_semantic_analysis()
+        if semantic:
+            self.logger.info(f"Detected semantic pattern: {semantic.get('pattern_type')}")
+            state["pending_type"] = "semantic_insight"
+            state["pending_semantic"] = semantic
+            self.save_state(state)
+            return True
+
         # Check if cleanup is needed (once per day during evening window)
         if self.evening_hour <= now.hour < self.evening_hour + 2:
             last_cleanup = state.get("last_task_cleanup")
@@ -682,6 +1052,45 @@ class AutonomousAttentionAgent(AutonomousAgent):
             # Clear flags
             state["pending_type"] = None
             state["pending_opportunity"] = None
+            self.save_state(state)
+            return result
+
+        elif pending_type == "failure_mode":
+            # Surface a failure mode intervention
+            failure_data = state.get("pending_failure_mode")
+            result = "No failure mode data"
+            if failure_data:
+                result = self._surface_failure_mode_intervention(failure_data)
+
+            # Clear flags
+            state["pending_type"] = None
+            state["pending_failure_mode"] = None
+            self.save_state(state)
+            return result
+
+        elif pending_type == "stalled_project":
+            # Surface a stalled project nudge
+            stalled_data = state.get("pending_stalled")
+            result = "No stalled project data"
+            if stalled_data:
+                result = self._surface_stalled_project(stalled_data)
+
+            # Clear flags
+            state["pending_type"] = None
+            state["pending_stalled"] = None
+            self.save_state(state)
+            return result
+
+        elif pending_type == "semantic_insight":
+            # Surface a semantic pattern insight
+            semantic_data = state.get("pending_semantic")
+            result = "No semantic data"
+            if semantic_data:
+                result = self._surface_semantic_insight(semantic_data)
+
+            # Clear flags
+            state["pending_type"] = None
+            state["pending_semantic"] = None
             self.save_state(state)
             return result
 
