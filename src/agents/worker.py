@@ -9,6 +9,9 @@ Delegation Strategy:
 - User-only tasks: Surface to user (cannot execute)
 - High-stakes tasks: Create pending action (require approval)
 - Read-only/research: Execute autonomously, store result
+
+Can emit profile observations for Synthesis Agent to integrate (behavioral
+patterns around task completion, work preferences, constraint violations).
 """
 
 from pathlib import Path
@@ -24,6 +27,7 @@ from ..tools.worker.task import (
     store_result
 )
 from ..tools.shared.notifications import queue_notification
+from ..tools.shared.profile_signals import PROFILE_SIGNAL_TOOLS, PROFILE_SIGNAL_HANDLERS
 
 
 # Data paths
@@ -31,12 +35,16 @@ DATA_DIR = Path(__file__).parent.parent.parent / "data"
 WORKER_DIR = DATA_DIR / "worker"
 TASKS_DIR = DATA_DIR / "tasks"
 
+# Combined tools and handlers with profile signals
+ALL_WORKER_TOOLS = EXTENDED_WORKER_TOOLS + PROFILE_SIGNAL_TOOLS
+ALL_WORKER_HANDLERS = {**WORKER_HANDLERS, **PROFILE_SIGNAL_HANDLERS}
+
 
 def create_worker_agent():
     """Create a Worker Agent instance with extended tools."""
     return create_agent(
         persona_name="worker",
-        tools=EXTENDED_WORKER_TOOLS
+        tools=ALL_WORKER_TOOLS
     )
 
 
@@ -66,7 +74,7 @@ def run_interactive():
                 print("\nGoodbye! Tasks will be here when you return.")
                 break
 
-            response = agent.process(user_input, WORKER_HANDLERS)
+            response = agent.process(user_input, ALL_WORKER_HANDLERS)
             print(f"\nExecutor: {response}\n")
 
         except KeyboardInterrupt:
@@ -90,7 +98,7 @@ def process_task_queue():
     """
     agent = create_worker_agent()
     prompt = load_prompt("worker", "process_tasks")
-    return agent.process(prompt, WORKER_HANDLERS)
+    return agent.process(prompt, ALL_WORKER_HANDLERS)
 
 
 def check_pending_approvals() -> str:
@@ -119,7 +127,7 @@ def execute_approved_actions() -> str:
     """
     agent = create_worker_agent()
     prompt = load_prompt("worker", "execute_actions")
-    return agent.process(prompt, WORKER_HANDLERS)
+    return agent.process(prompt, ALL_WORKER_HANDLERS)
 
 
 class AutonomousWorkerAgent(AutonomousAgent):
@@ -148,8 +156,8 @@ class AutonomousWorkerAgent(AutonomousAgent):
         super().__init__(
             name="worker",
             persona_name="worker",
-            tools=EXTENDED_WORKER_TOOLS,
-            tool_handlers=WORKER_HANDLERS,
+            tools=ALL_WORKER_TOOLS,
+            tool_handlers=ALL_WORKER_HANDLERS,
             check_interval=30,  # Check every 30 seconds
             signals_on_complete=["task_completed"]
         )

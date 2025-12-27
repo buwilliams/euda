@@ -6,6 +6,9 @@ energy, and timing. Surfaces the right thing at the right moment.
 
 Also handles proactive attention - surfacing questions and guidance to help
 the user configure and understand the system.
+
+Can emit profile observations for Synthesis Agent to integrate (behavioral
+patterns around attention, energy, and engagement).
 """
 
 import json
@@ -16,6 +19,7 @@ from ..tools.attention.attention import ATTENTION_TOOLS, ATTENTION_HANDLERS
 from ..tools.synthesis import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
 from ..tools.shared.notifications import queue_notification
+from ..tools.shared.profile_signals import PROFILE_SIGNAL_TOOLS, PROFILE_SIGNAL_HANDLERS
 
 # Paths for proactive attention
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
@@ -25,8 +29,8 @@ ATTENTION_STATE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # Combined tools - Attention agent needs access to identity (values core) and logs
-ALL_TOOLS = ATTENTION_TOOLS + VALUES_TOOLS + PROFILE_TOOLS + LOG_TOOLS
-ALL_HANDLERS = {**ATTENTION_HANDLERS, **VALUES_HANDLERS, **PROFILE_HANDLERS, **LOG_HANDLERS}
+ALL_TOOLS = ATTENTION_TOOLS + VALUES_TOOLS + PROFILE_TOOLS + LOG_TOOLS + PROFILE_SIGNAL_TOOLS
+ALL_HANDLERS = {**ATTENTION_HANDLERS, **VALUES_HANDLERS, **PROFILE_HANDLERS, **LOG_HANDLERS, **PROFILE_SIGNAL_HANDLERS}
 
 
 def create_attention_agent():
