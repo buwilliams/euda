@@ -731,6 +731,34 @@ def delete_tasks_by_description(description_contains: str) -> str:
     return f"No tasks found matching '{description_contains}'"
 
 
+def delete_tasks_by_project(project_id: str) -> str:
+    """
+    Delete all tasks in a specific project.
+
+    Args:
+        project_id: The project ID (e.g., 'project-euno' for From Euno tasks)
+
+    Returns:
+        Success message with count of deleted tasks
+    """
+    queue = _load_queue()
+    original_count = len(queue["tasks"])
+
+    # Filter out tasks from the specified project
+    queue["tasks"] = [
+        t for t in queue["tasks"]
+        if t.get("project_id") != project_id
+    ]
+
+    deleted_count = original_count - len(queue["tasks"])
+
+    if deleted_count > 0:
+        _save_queue(queue)
+        return f"Deleted {deleted_count} task(s) from project '{project_id}'"
+
+    return f"No tasks found in project '{project_id}'"
+
+
 def archive_task(
     task_id: str,
     reason: str = "",
@@ -1399,6 +1427,20 @@ TASK_TOOLS = [
         }
     },
     {
+        "name": "delete_tasks_by_project",
+        "description": "Delete all tasks in a specific project. Use 'project-euno' to delete all 'From Euno' system tasks, or other project IDs for user projects.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "project_id": {
+                    "type": "string",
+                    "description": "The project ID (e.g., 'project-euno' for From Euno tasks, 'project-general' for General tasks)"
+                }
+            },
+            "required": ["project_id"]
+        }
+    },
+    {
         "name": "archive_task",
         "description": "Archive a task with behavioral context. Use when a task won't be completed but should be preserved for pattern analysis.",
         "input_schema": {
@@ -1433,10 +1475,12 @@ TASK_HANDLERS = {
     "update_task_status": update_task_status,
     "delete_task": delete_task,
     "delete_tasks_by_description": delete_tasks_by_description,
+    "delete_tasks_by_project": delete_tasks_by_project,
     "archive_task": archive_task,
 }
 
 # Safe tools for autonomous Worker agent (excludes bulk delete which can cause data loss)
-# The delete_tasks_by_description tool is only available via interactive chat
-AUTONOMOUS_TASK_TOOLS = [t for t in TASK_TOOLS if t["name"] != "delete_tasks_by_description"]
-AUTONOMOUS_TASK_HANDLERS = {k: v for k, v in TASK_HANDLERS.items() if k != "delete_tasks_by_description"}
+# Bulk delete tools are only available via interactive chat
+BULK_DELETE_TOOLS = {"delete_tasks_by_description", "delete_tasks_by_project"}
+AUTONOMOUS_TASK_TOOLS = [t for t in TASK_TOOLS if t["name"] not in BULK_DELETE_TOOLS]
+AUTONOMOUS_TASK_HANDLERS = {k: v for k, v in TASK_HANDLERS.items() if k not in BULK_DELETE_TOOLS}

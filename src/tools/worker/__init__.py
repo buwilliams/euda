@@ -5,7 +5,8 @@ from .task import (
     create_task, create_learning_task, get_tasks, get_task, get_tasks_data,
     get_daily_view, add_quick_task, update_task_status,
     store_result, get_recent_results, get_result,
-    get_pending_tasks_for_worker, process_rollover, determine_delegation
+    get_pending_tasks_for_worker, process_rollover, determine_delegation,
+    delete_task, delete_tasks_by_description, delete_tasks_by_project
 )
 from .project import (
     PROJECT_TOOLS, PROJECT_HANDLERS,
@@ -27,6 +28,7 @@ __all__ = [
     'get_daily_view', 'add_quick_task', 'update_task_status',
     'store_result', 'get_recent_results', 'get_result',
     'get_pending_tasks_for_worker', 'process_rollover', 'determine_delegation',
+    'delete_task', 'delete_tasks_by_description', 'delete_tasks_by_project',
     # Project tools
     'PROJECT_TOOLS', 'PROJECT_HANDLERS',
     'create_project', 'get_projects', 'get_projects_data', 'get_project', 'update_project',
