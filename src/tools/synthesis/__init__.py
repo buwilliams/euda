@@ -49,16 +49,31 @@ from .temporal import (
     get_influence_timeline, add_influence_to_timeline,
     generate_current_profile
 )
+from .private_profile import (
+    PRIVATE_PROFILE_TOOLS, PRIVATE_PROFILE_HANDLERS,
+    get_private_profile, write_private_profile, get_profile_section,
+    get_handlers_for_agent
+)
+from ..shared.profile_signals import (
+    SYNTHESIS_SIGNAL_TOOLS, SYNTHESIS_SIGNAL_HANDLERS,
+    get_pending_observations, consume_observations
+)
 
 # Combined tools for convenience - epistemic first (foundational)
-ALL_SYNTHESIS_TOOLS = EPISTEMIC_TOOLS + VALUES_TOOLS + BEHAVIOR_TOOLS + CONTEXT_TOOLS + TEMPORAL_TOOLS + PROFILE_TOOLS
+# Includes private profile and signal consumption tools for governance compliance
+ALL_SYNTHESIS_TOOLS = (
+    EPISTEMIC_TOOLS + VALUES_TOOLS + BEHAVIOR_TOOLS + CONTEXT_TOOLS +
+    TEMPORAL_TOOLS + PROFILE_TOOLS + PRIVATE_PROFILE_TOOLS + SYNTHESIS_SIGNAL_TOOLS
+)
 ALL_SYNTHESIS_HANDLERS = {
     **EPISTEMIC_HANDLERS,
     **VALUES_HANDLERS,
     **BEHAVIOR_HANDLERS,
     **CONTEXT_HANDLERS,
     **TEMPORAL_HANDLERS,
-    **PROFILE_HANDLERS
+    **PROFILE_HANDLERS,
+    **PRIVATE_PROFILE_HANDLERS,
+    **SYNTHESIS_SIGNAL_HANDLERS,
 }
 
 __all__ = [
@@ -98,4 +113,11 @@ __all__ = [
     'get_evolution', 'write_evolution',
     'get_influence_timeline', 'add_influence_to_timeline',
     'generate_current_profile',
+    # Private profile tools (governance-controlled)
+    'PRIVATE_PROFILE_TOOLS', 'PRIVATE_PROFILE_HANDLERS',
+    'get_private_profile', 'write_private_profile', 'get_profile_section',
+    'get_handlers_for_agent',
+    # Signal consumption tools (for Synthesis)
+    'SYNTHESIS_SIGNAL_TOOLS', 'SYNTHESIS_SIGNAL_HANDLERS',
+    'get_pending_observations', 'consume_observations',
 ]

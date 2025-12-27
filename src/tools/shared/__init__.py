@@ -19,6 +19,12 @@ from .agent_log import (
     log_work_complete, log_signal_sent, log_error, get_agent_log,
     get_all_agent_logs, get_recent_agent_activity
 )
+from .profile_signals import (
+    PROFILE_SIGNAL_TOOLS, PROFILE_SIGNAL_HANDLERS,
+    SYNTHESIS_SIGNAL_TOOLS, SYNTHESIS_SIGNAL_HANDLERS,
+    emit_profile_observation, get_pending_observations, consume_observations,
+    count_pending_observations
+)
 
 __all__ = [
     # Log tools
@@ -36,4 +42,9 @@ __all__ = [
     'log_activity', 'log_tool_call', 'log_work_check', 'log_work_start',
     'log_work_complete', 'log_signal_sent', 'log_error', 'get_agent_log',
     'get_all_agent_logs', 'get_recent_agent_activity',
+    # Profile signals (for contributing to profile updates)
+    'PROFILE_SIGNAL_TOOLS', 'PROFILE_SIGNAL_HANDLERS',
+    'SYNTHESIS_SIGNAL_TOOLS', 'SYNTHESIS_SIGNAL_HANDLERS',
+    'emit_profile_observation', 'get_pending_observations', 'consume_observations',
+    'count_pending_observations',
 ]

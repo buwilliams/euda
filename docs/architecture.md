@@ -319,8 +319,18 @@ euno/
     │   ├── identity/           # Agent identity files
     │   │   ├── _core.identity.md
     │   │   └── [agent].identity.md
+    │   ├── profile/            # Profile contract and policy
+    │   │   ├── profile.contract.md
+    │   │   └── redaction.policy.md
     │   ├── evolution/          # Identity evolution proposals
     │   └── notifications/      # User notifications
+    │
+    ├── profile/                # User profile data (governance-controlled)
+    │   ├── profile.current.md  # Current private profile (Synthesis writes)
+    │   ├── profile.YYYY.md     # Annual private snapshots
+    │   ├── profile.public.current.md  # Current public profile
+    │   ├── profile.public.YYYY.md     # Annual public snapshots
+    │   └── share.prefs.current.md     # User sharing preferences
     │
     ├── ingestion/              # Ingestion Agent data
     │   ├── state/              # state.json
@@ -365,6 +375,53 @@ euno/
         ├── output/             # capabilities.md
         └── logs/               # Evolution activity logs
 ```
+
+---
+
+## Profile Governance
+
+Profiles are authoritative artifacts representing user identity. To prevent corruption and leakage, strict governance applies.
+
+### Profile Types
+
+| Type | Location | Authority | Purpose |
+|------|----------|-----------|---------|
+| Private | `data/profile/profile.current.md` | Synthesis Agent | Internal identity model |
+| Public | `data/profile/profile.public.current.md` | Public Profile Generator | Safe external sharing |
+
+### Write Authority
+
+- **Synthesis Agent**: Sole authority for private profiles
+- **Public Profile Generator**: Sole authority for public profiles (`python -m src.profile make-public`)
+- **All other agents**: May read profiles and emit observation signals, but never write
+
+### Signal-Based Contributions
+
+Agents contribute to profile updates by emitting observations to `profile_observations.json`:
+
+```json
+{
+  "agent": "interaction",
+  "type": "behavioral_pattern",
+  "observation": "User declined social event citing need for rest",
+  "confidence": "medium",
+  "suggested_update": {
+    "section": "Failure Modes",
+    "action": "strengthen"
+  }
+}
+```
+
+Synthesis reads and integrates these signals. Signals are suggestions, not commands.
+
+### Profile Contract
+
+All profiles must comply with `data/shared/profile/profile.contract.md`:
+- JSON frontmatter
+- Canonical section order (Identity Constraints → Failure Modes → Behavioral Attractors → Utility Tradeoffs → Epistemic Style → Narrative Identity)
+- Profile item microformat with evidence pointers
+
+See `docs/governance.md` for complete governance specification.
 
 ---
 
