@@ -30,17 +30,17 @@ CONFIG_FILE = CONFIG_DIR / "llm.json"
 
 # Default configuration
 DEFAULT_CONFIG = {
-    "default_provider": "anthropic",
+    "default_provider": "openai",
     "providers": {
         "anthropic": {
             "enabled": True,
             "default_model": "claude-sonnet-4-20250514",
-            "max_tokens": 8096
+            "max_tokens": 8192
         },
         "openai": {
             "enabled": True,
-            "default_model": "gpt-4o",
-            "max_tokens": 4096
+            "default_model": "gpt-5.2",
+            "max_tokens": 8192
         }
     },
     "agent_overrides": {}

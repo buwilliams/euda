@@ -30,6 +30,47 @@ class LLMResponse:
 class LLMProvider(ABC):
     """Abstract base class for LLM providers."""
 
+    def complete(
+        self,
+        messages: list[dict],
+        system_prompt: str = "",
+        max_tokens: Optional[int] = None
+    ) -> str:
+        """
+        Simple completion without tools - returns text only.
+
+        This is a convenience method for batch processing and simple completions
+        where tool calling isn't needed.
+
+        Args:
+            messages: Conversation messages
+            system_prompt: System prompt
+            max_tokens: Max tokens (uses config default if None)
+
+        Returns:
+            Response text as string
+        """
+        # Import here to avoid circular imports
+        from . import get_provider_config, load_config
+
+        config = load_config()
+        provider_config = get_provider_config()
+        model = provider_config.get("default_model")
+
+        if max_tokens is None:
+            max_tokens = provider_config.get("max_tokens", 8192)
+
+        response = self.create_message(
+            model=model,
+            system=system_prompt,
+            messages=messages,
+            tools=None,
+            max_tokens=max_tokens
+        )
+
+        # Return combined text blocks
+        return "\n".join(response.text_blocks) if response.text_blocks else ""
+
     @abstractmethod
     def create_message(
         self,
@@ -37,7 +78,7 @@ class LLMProvider(ABC):
         system: str,
         messages: list[dict],
         tools: list[dict] = None,
-        max_tokens: int = 8096
+        max_tokens: int = 8192
     ) -> LLMResponse:
         """
         Make an API call and return a normalized response.

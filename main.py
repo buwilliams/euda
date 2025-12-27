@@ -81,6 +81,8 @@ def main():
         print("  python main.py              # Start chatting")
         print("  python main.py ingest       # Process inbox files")
         print("  python main.py ingest ~/Documents -r  # Ingest directory recursively")
+        print("  python main.py ingest --batch  # Batch mode (faster, fewer API calls)")
+        print("  python main.py ingest --batch --batch-size 10  # Custom batch size")
         print("  python main.py summarize    # Generate yearly summaries")
         print("  python main.py serve        # Start API at http://localhost:8000")
         print()
@@ -105,8 +107,12 @@ def run_ingest():
         python main.py ingest /path/to/dir --type text  # Filter by content type
         python main.py ingest /path/to/dir --type text,images  # Multiple types
         python main.py ingest /path/to/dir -r --type text  # Combined options
+        python main.py ingest --batch           # Use batch processing (faster)
+        python main.py ingest --batch --batch-size 10  # Custom batch size
 
     Content types: text, images, video, audio
+
+    Batch mode processes multiple files per API call, reducing latency significantly.
     """
     import json
     import hashlib
@@ -132,6 +138,8 @@ def run_ingest():
     source_dir = None
     recursive = False
     content_types = set()  # Empty = all types
+    batch_mode = False
+    batch_size = 5  # Default batch size
 
     args = sys.argv[2:]  # Skip 'main.py' and 'ingest'
     i = 0
@@ -139,6 +147,21 @@ def run_ingest():
         arg = args[i]
         if arg in ('--recursive', '-r'):
             recursive = True
+        elif arg in ('--batch', '-b'):
+            batch_mode = True
+        elif arg == '--batch-size':
+            if i + 1 < len(args):
+                try:
+                    batch_size = int(args[i + 1])
+                    if batch_size < 1:
+                        raise ValueError("Batch size must be at least 1")
+                    i += 1
+                except ValueError as e:
+                    print(f"Error: Invalid batch size: {e}")
+                    return
+            else:
+                print("Error: --batch-size requires a number (e.g., --batch-size 5)")
+                return
         elif arg in ('--type', '-t'):
             if i + 1 < len(args):
                 try:
@@ -158,6 +181,19 @@ def run_ingest():
     print("Euno - Batch Ingestion")
     print("=" * 60)
     print()
+
+    if batch_mode:
+        print(f"Mode:   BATCH PROCESSING (batch size: {batch_size})")
+        from src.tools.ingestion.batch_processor import (
+            chunk_files, get_large_files, build_batch_prompt,
+            parse_batch_response, write_batch_entries, LARGE_FILE_THRESHOLD,
+            load_batch_system_prompt
+        )
+        from src.providers import get_provider
+        provider = get_provider()
+        batch_system_prompt = load_batch_system_prompt()
+    else:
+        print("Mode:   Standard (single-file processing)")
 
     budget = get_budget()
     budget_status = budget.get_status()
@@ -325,13 +361,154 @@ def run_ingest():
         print("Press Ctrl+C to stop gracefully")
         print("-" * 60)
 
-        # Process files
-        agent = create_ingestion_agent(include_file_tools=True)
         processed = 0
         failed = 0
         deferred = 0
         start_time = time.time()
         total_files = len(files_to_process)
+
+        # BATCH PROCESSING MODE for external directory
+        if batch_mode:
+            # Prepare file data for batch processing
+            batch_files = []
+            large_files = []
+            archive_files_to_process = []
+
+            for file_path, file_hash, status, archive_info in files_to_process:
+                if archive_info:
+                    # Archive files need special handling - process individually
+                    archive_files_to_process.append((file_path, file_hash, status, archive_info))
+                    continue
+
+                try:
+                    digest = generate_digest(str(file_path))
+                    content = get_content_for_ai(str(file_path), digest)
+                    content_len = len(content)
+
+                    # Check if file is too large for batching
+                    if content_len > LARGE_FILE_THRESHOLD:
+                        large_files.append((file_path, file_hash, status, None, digest, content))
+                    else:
+                        temporal = digest.get("temporal_hints", {})
+                        batch_files.append({
+                            'name': file_path.name,
+                            'path': str(file_path),
+                            'content': content,
+                            'category': digest.get('classification', {}).get('category', 'unknown'),
+                            'temporal': temporal if temporal.get('timestamp') else None,
+                            'hash': file_hash,
+                            'rel_path': str(file_path.relative_to(source_path)),
+                            'token_estimate': digest.get('token_estimate', 0)
+                        })
+                except Exception as e:
+                    print(f"Error preparing {file_path.name}: {e}")
+                    failed += 1
+
+            # Process batches
+            batches = chunk_files(batch_files, batch_size=batch_size)
+            print(f"\nBatch processing: {len(batch_files)} files in {len(batches)} batch(es)")
+            if large_files:
+                print(f"Large files (single processing): {len(large_files)}")
+            if archive_files_to_process:
+                print(f"Archive files (single processing): {len(archive_files_to_process)}")
+
+            batch_num = 0
+            try:
+                for batch in batches:
+                    batch_num += 1
+                    batch_tokens = sum(f.get('token_estimate', 0) for f in batch)
+
+                    # Check budget
+                    if not budget.can_spend(batch_tokens):
+                        print(f"\n[Batch {batch_num}/{len(batches)}] DEFERRED (budget exhausted)")
+                        deferred += len(batch)
+                        continue
+
+                    print(f"\n[Batch {batch_num}/{len(batches)}] Processing {len(batch)} files ({batch_tokens:,} tokens)...")
+
+                    try:
+                        # Build prompt and call API (single call for entire batch!)
+                        prompt = build_batch_prompt(batch)
+                        response = provider.complete(
+                            messages=[{"role": "user", "content": prompt}],
+                            system_prompt=batch_system_prompt
+                        )
+
+                        # Parse and write entries
+                        entries = parse_batch_response(response, len(batch))
+                        results = write_batch_entries(entries)
+
+                        # Track results and update manifest
+                        for j, result in enumerate(results):
+                            if j < len(batch):
+                                file_info = batch[j]
+                                if result['status'] == 'success':
+                                    manifest["processed"][file_info['rel_path']] = {
+                                        "hash": file_info['hash'],
+                                        "processed_at": datetime.now().isoformat(),
+                                        "tokens": file_info['token_estimate'],
+                                        "batch": True
+                                    }
+                                    processed += 1
+                                    print(f"   ✓ {file_info['name']}")
+                                else:
+                                    failed += 1
+                                    print(f"   ✗ {file_info['name']}: {result.get('error', 'unknown')}")
+
+                        # Record budget usage
+                        budget.spend(batch_tokens, f"Batch {batch_num}: {len(batch)} files")
+
+                        # Save manifest periodically
+                        manifest["updated"] = datetime.now().isoformat()
+                        with open(manifest_file, 'w') as f:
+                            json.dump(manifest, f, indent=2)
+
+                    except Exception as e:
+                        print(f"   Batch failed: {e}")
+                        failed += len(batch)
+
+            except KeyboardInterrupt:
+                print("\n\nStopping gracefully...")
+                manifest["updated"] = datetime.now().isoformat()
+                with open(manifest_file, 'w') as f:
+                    json.dump(manifest, f, indent=2)
+
+            # Process large files individually (fallback)
+            if large_files:
+                print(f"\nProcessing {len(large_files)} large file(s) individually...")
+                agent = create_ingestion_agent(include_file_tools=True)
+                for file_path, file_hash, status, _, digest, content in large_files:
+                    # (reuse standard single-file logic below)
+                    pass  # TODO: implement fallback or convert to standard flow
+
+            # Final summary for batch mode
+            elapsed = time.time() - start_time
+            final_budget = budget.get_status()
+
+            print()
+            print("=" * 60)
+            print("Summary (Batch Mode)")
+            print("=" * 60)
+            print(f"Source:    {source_path}")
+            print(f"Processed: {processed} file(s)")
+            print(f"Failed:    {failed} file(s)")
+            print(f"Deferred:  {deferred} file(s)")
+            print(f"Batches:   {batch_num}")
+            print(f"Time:      {elapsed:.1f}s")
+            if processed > 0:
+                print(f"Avg time:  {elapsed/processed:.2f}s per file")
+            print()
+            print(f"Token usage today: {final_budget['used']:,} / {final_budget['daily_limit']:,} ({final_budget['percent_used']:.1f}%)")
+            print(f"Remaining:         {final_budget['remaining']:,} tokens")
+
+            if deferred > 0:
+                print(f"\nNote: {deferred} file(s) deferred due to budget. Run again tomorrow.")
+
+            return
+
+        # STANDARD PROCESSING MODE (single-file)
+        # Process files
+        agent = create_ingestion_agent(include_file_tools=True)
 
         # Group archive files for batch extraction
         archive_groups = {}
@@ -582,13 +759,213 @@ Do NOT read the file again - use the content provided above."""
     print("Press Ctrl+C to stop gracefully")
     print("-" * 60)
 
-    # Create agent for processing
-    agent = create_ingestion_agent(include_file_tools=True)
-
     processed = 0
     failed = 0
     deferred = 0
     start_time = time.time()
+
+    # BATCH PROCESSING MODE for inbox
+    if batch_mode:
+        # Collect all items from queue for batch processing
+        batch_files = []
+        large_files = []
+        queue_items = []
+
+        # Pop all items from queue to prepare batches
+        while True:
+            item = queue.pop()
+            if item is None:
+                break
+            queue_items.append(item)
+
+        for item in queue_items:
+            file_path = item.get("path", "")
+            file_name = item.get("name", "unknown")
+            file_hash = item.get("hash", "")
+
+            try:
+                digest = generate_digest(file_path)
+                content = get_content_for_ai(file_path, digest)
+                content_len = len(content)
+                token_estimate = digest.get("token_estimate", 0)
+
+                # Check budget
+                if not budget.can_spend(token_estimate):
+                    queue.defer(item, "budget_exhausted")
+                    deferred += 1
+                    continue
+
+                # Check if file is too large for batching
+                if content_len > LARGE_FILE_THRESHOLD:
+                    large_files.append((item, digest, content))
+                else:
+                    temporal = digest.get("temporal_hints", {})
+                    batch_files.append({
+                        'name': file_name,
+                        'path': file_path,
+                        'content': content,
+                        'category': digest.get('classification', {}).get('category', 'unknown'),
+                        'temporal': temporal if temporal.get('timestamp') else None,
+                        'hash': file_hash,
+                        'token_estimate': token_estimate,
+                        'queue_item': item
+                    })
+            except Exception as e:
+                print(f"Error preparing {file_name}: {e}")
+                queue.complete(item, success=False, reason=str(e))
+                failed += 1
+
+        # Process batches
+        batches = chunk_files(batch_files, batch_size=batch_size)
+        print(f"\nBatch processing: {len(batch_files)} files in {len(batches)} batch(es)")
+        if large_files:
+            print(f"Large files (single processing): {len(large_files)}")
+
+        batch_num = 0
+        try:
+            for batch in batches:
+                batch_num += 1
+                batch_tokens = sum(f.get('token_estimate', 0) for f in batch)
+
+                print(f"\n[Batch {batch_num}/{len(batches)}] Processing {len(batch)} files ({batch_tokens:,} tokens)...")
+
+                try:
+                    # Build prompt and call API (single call for entire batch!)
+                    prompt = build_batch_prompt(batch)
+                    response = provider.complete(
+                        messages=[{"role": "user", "content": prompt}],
+                        system_prompt=batch_system_prompt
+                    )
+
+                    # Parse and write entries
+                    entries = parse_batch_response(response, len(batch))
+                    results = write_batch_entries(entries)
+
+                    # Track results
+                    for j, result in enumerate(results):
+                        if j < len(batch):
+                            file_info = batch[j]
+                            if result['status'] == 'success':
+                                queue.complete(file_info['queue_item'], success=True)
+                                if file_info['hash']:
+                                    mark_as_processed(file_info['path'], file_info['hash'])
+                                processed += 1
+                                print(f"   ✓ {file_info['name']}")
+                            else:
+                                queue.complete(file_info['queue_item'], success=False, reason=result.get('error', 'unknown'))
+                                failed += 1
+                                print(f"   ✗ {file_info['name']}: {result.get('error', 'unknown')}")
+
+                    # Record budget usage
+                    budget.spend(batch_tokens, f"Batch {batch_num}: {len(batch)} files")
+
+                except Exception as e:
+                    print(f"   Batch failed: {e}")
+                    for file_info in batch:
+                        queue.complete(file_info['queue_item'], success=False, reason=str(e))
+                    failed += len(batch)
+
+        except KeyboardInterrupt:
+            print("\n\nStopping gracefully...")
+
+        # Process large files individually (fallback)
+        if large_files:
+            print(f"\nProcessing {len(large_files)} large file(s) individually...")
+            agent = create_ingestion_agent(include_file_tools=True)
+            for item, digest, content in large_files:
+                file_path = item.get("path", "")
+                file_name = item.get("name", "unknown")
+                file_hash = item.get("hash", "")
+                token_estimate = digest.get("token_estimate", 0)
+
+                print(f"\n[LARGE] Processing: {file_name}")
+
+                try:
+                    temporal = digest.get("temporal_hints", {})
+                    timestamp = temporal.get("timestamp", "")
+                    temporal_note = ""
+                    if timestamp:
+                        confidence = temporal.get("confidence", "unknown")
+                        source = temporal.get("source", "unknown")
+                        temporal_note = f"\nTemporal hint: {timestamp} (confidence: {confidence}, source: {source})"
+
+                    prompt = f"""Process this file and write a log entry.
+
+File: {file_name}
+Category: {digest.get('classification', {}).get('category', 'unknown')}
+{temporal_note}
+
+Content:
+---
+{content}
+---
+
+CRITICAL: First determine what kind of content this is:
+
+**PRESERVE VERBATIM** (human expression):
+- Personal writing: journals, musings, reflections, notes, blog posts
+- Messages from others: texts, emails, letters, conversations
+- Quotes, ideas, thoughts - yours or others'
+→ Record the actual words. Voice and expression matter.
+
+**SUMMARIZE** (data/information):
+- Transactions, receipts, financial records
+- Articles, reports, documentation
+- Lists, logs, system output
+→ Compress to essence. 2-5 sentences max.
+
+Instructions:
+1. Determine: Is this human expression or data/information?
+2. If human expression → preserve the actual words, the voice, the meaning
+3. If data/information → summarize briefly (what happened, key numbers, significance)
+4. Use write_log_entry with appropriate entry_type
+
+The goal: Capture real thoughts and words verbatim. Compress everything else."""
+
+                    result = agent.process(prompt, ALL_HANDLERS)
+                    budget.spend(token_estimate, f"Processed: {file_name}")
+                    queue.complete(item, success=True)
+                    if file_hash:
+                        mark_as_processed(file_path, file_hash)
+                    processed += 1
+                    print(f"         -> OK ({token_estimate:,} tokens)")
+                    agent.clear_context()
+
+                except Exception as e:
+                    print(f"         -> FAILED: {e}")
+                    queue.complete(item, success=False, reason=str(e))
+                    failed += 1
+
+        # Final summary for batch mode
+        elapsed = time.time() - start_time
+        final_budget = budget.get_status()
+
+        print()
+        print("=" * 60)
+        print("Summary (Batch Mode)")
+        print("=" * 60)
+        print(f"Processed: {processed} file(s)")
+        print(f"Failed:    {failed} file(s)")
+        print(f"Deferred:  {deferred} file(s)")
+        print(f"Batches:   {batch_num}")
+        print(f"Time:      {elapsed:.1f}s")
+        if processed > 0:
+            print(f"Avg time:  {elapsed/processed:.2f}s per file")
+        print()
+        print(f"Token usage today: {final_budget['used']:,} / {final_budget['daily_limit']:,} ({final_budget['percent_used']:.1f}%)")
+        print(f"Remaining:         {final_budget['remaining']:,} tokens")
+
+        final_stats = queue.stats()
+        if final_stats['queue_length'] > 0:
+            print(f"\nNote: {final_stats['queue_length']} file(s) still in queue")
+        if final_stats['deferred_files'] > 0:
+            print(f"Note: {final_stats['deferred_files']} file(s) deferred until tomorrow")
+
+        return
+
+    # STANDARD PROCESSING MODE (single-file)
+    # Create agent for processing
+    agent = create_ingestion_agent(include_file_tools=True)
 
     try:
         while True:

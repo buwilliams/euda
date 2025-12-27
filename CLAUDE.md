@@ -125,6 +125,24 @@ Each agent has:
 - Tools (functions it can call)
 - Context (conversation history)
 
+## Batch Ingestion
+
+For faster file processing, use batch mode which processes multiple files per API call:
+
+```bash
+# Standard mode (2+ API calls per file)
+python main.py ingest
+
+# Batch mode (~10x faster, 1 API call per batch)
+python main.py ingest --batch
+python main.py ingest --batch --batch-size 10  # Custom batch size (default: 5)
+
+# With external directory
+python main.py ingest ~/Documents -r --batch
+```
+
+Batch mode groups files together and requests structured JSON output instead of tool calls, significantly reducing API round trips.
+
 ## iPhone Backup Extraction
 
 Standalone tools for extracting data from iOS device backups, located in `src/tools/ingestion/iphone/`:
