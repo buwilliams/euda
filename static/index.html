@@ -1289,7 +1289,7 @@
         // State
         let sessionId = localStorage.getItem('sessionId') || null;
         let isWaiting = false;
-        let activePanel = localStorage.getItem('activePanel') || null;
+        let activePanel = null;  // Always start collapsed
         let tasksData = [];
         let projectsData = [];
         let projectNotesData = {};
@@ -1306,22 +1306,11 @@
             // Load daily quote
             loadDailyQuote();
 
-            // Initialize panel state
-            if (activePanel) {
-                appContainer.classList.add('panel-open');
-                document.getElementById(`${activePanel}-panel`).classList.add('active');
-                document.getElementById(`${activePanel}-toggle`).classList.add('active');
-
-                // Load data for the active panel
-                if (activePanel === 'tasks') loadTasksData();
-                else if (activePanel === 'notifications') loadNotificationsData();
-            }
-
             // Connect SSE
             connectSSE();
 
-            // Load tasks data for badge (even if not active panel)
-            if (activePanel !== 'tasks') loadTasksData();
+            // Load tasks data for badge
+            loadTasksData();
         }
 
         // ============== Daily Quote ==============
