@@ -321,11 +321,11 @@ def get_attention_context() -> str:
 {get_queue()}
 """
 
-    # Add values summary if available
-    from ..values.values import get_current_values
-    values = get_current_values()
-    if not values.startswith("No current"):
-        output += f"\n### Current Values (for alignment)\n{values[:500]}...\n"
+    # Add identity summary if available
+    from ..synthesis.profile import get_synthesis_summary
+    summary = get_synthesis_summary()
+    if not summary.startswith("No identity"):
+        output += f"\n### Identity Context\n{summary}\n"
 
     return output
 
