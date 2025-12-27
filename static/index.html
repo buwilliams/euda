@@ -605,9 +605,23 @@
 
         .panel-section-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
             margin-bottom: 0.75rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .panel-section-header:hover { opacity: 0.8; }
+
+        .section-toggle {
+            font-size: 0.7rem;
+            color: #999;
+            margin-right: 0.5rem;
+            transition: transform 0.2s;
+        }
+
+        .panel-section.collapsed .section-toggle {
+            transform: rotate(-90deg);
         }
 
         .panel-section-title {
@@ -616,6 +630,7 @@
             color: #333;
             text-transform: uppercase;
             letter-spacing: 0.03em;
+            flex: 1;
         }
 
         .panel-section-count {
@@ -624,6 +639,14 @@
             background: #eee;
             padding: 0.1rem 0.4rem;
             border-radius: 10px;
+        }
+
+        .panel-section-content {
+            transition: max-height 0.2s ease-out, opacity 0.2s ease-out;
+        }
+
+        .panel-section.collapsed .panel-section-content {
+            display: none;
         }
 
         /* Task items */
@@ -1118,30 +1141,33 @@
                 <div class="panel-title">Focus</div>
             </div>
             <div class="panel-content">
-                <div class="panel-section">
-                    <div class="panel-section-header">
+                <div class="panel-section" id="section-today">
+                    <div class="panel-section-header" onclick="toggleSection('today')">
+                        <span class="section-toggle">▼</span>
                         <span class="panel-section-title">Today</span>
                         <span class="panel-section-count" id="today-count">0</span>
                     </div>
-                    <div id="today-tasks">
+                    <div class="panel-section-content" id="today-tasks">
                         <div class="task-empty">No tasks for today</div>
                     </div>
                 </div>
-                <div class="panel-section">
-                    <div class="panel-section-header">
+                <div class="panel-section" id="section-projects">
+                    <div class="panel-section-header" onclick="toggleSection('projects')">
+                        <span class="section-toggle">▼</span>
                         <span class="panel-section-title">Projects</span>
                         <span class="panel-section-count" id="projects-count">0</span>
                     </div>
-                    <div id="projects-list">
+                    <div class="panel-section-content" id="projects-list">
                         <div class="project-empty">No active projects</div>
                     </div>
                 </div>
-                <div class="panel-section">
-                    <div class="panel-section-header">
+                <div class="panel-section collapsed" id="section-completed">
+                    <div class="panel-section-header" onclick="toggleSection('completed')">
+                        <span class="section-toggle">▼</span>
                         <span class="panel-section-title">Completed</span>
                         <span class="panel-section-count" id="completed-count">0</span>
                     </div>
-                    <div id="completed-tasks">
+                    <div class="panel-section-content" id="completed-tasks">
                         <div class="task-empty">No completed tasks</div>
                     </div>
                 </div>
@@ -1181,6 +1207,9 @@
 
         // Initialize
         async function init() {
+            // Restore section collapse states
+            restoreSectionStates();
+
             // Load daily quote
             loadDailyQuote();
 
@@ -1373,6 +1402,31 @@
                 localStorage.setItem('activePanel', panelName);
 
                 if (panelName === 'tasks') loadTasksData();
+            }
+        }
+
+        function toggleSection(sectionName) {
+            const section = document.getElementById(`section-${sectionName}`);
+            if (section) {
+                section.classList.toggle('collapsed');
+                // Save state to localStorage
+                const collapsed = JSON.parse(localStorage.getItem('collapsedSections') || '{}');
+                collapsed[sectionName] = section.classList.contains('collapsed');
+                localStorage.setItem('collapsedSections', JSON.stringify(collapsed));
+            }
+        }
+
+        function restoreSectionStates() {
+            const collapsed = JSON.parse(localStorage.getItem('collapsedSections') || '{}');
+            for (const [sectionName, isCollapsed] of Object.entries(collapsed)) {
+                const section = document.getElementById(`section-${sectionName}`);
+                if (section) {
+                    if (isCollapsed) {
+                        section.classList.add('collapsed');
+                    } else {
+                        section.classList.remove('collapsed');
+                    }
+                }
             }
         }
 
