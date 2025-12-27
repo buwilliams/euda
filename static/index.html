@@ -1544,7 +1544,7 @@
                                 : projectTasks.map(task => `
                                     <div class="task-item" data-task-id="${task.id}">
                                         <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
-                                        <div class="task-description" onclick="showTaskFullContent('${escapeHtml(task.description).replace(/'/g, "\\'")}', '${escapeHtml(project.title).replace(/'/g, "\\'")}')" title="Click to view full text">${escapeHtml(task.description)}</div>
+                                        <div class="task-description" onclick="showTaskById('${task.id}')" title="Click to view full text">${escapeHtml(task.description)}</div>
                                         <button class="task-snooze" onclick="snoozeTask(event, '${task.id}')" title="Snooze until tomorrow">💤</button>
                                         <button class="task-archive" onclick="archiveTask(event, '${task.id}')" title="Archive">📦</button>
                                         <button class="task-delete" onclick="deleteTask(event, '${task.id}')" title="Delete">×</button>

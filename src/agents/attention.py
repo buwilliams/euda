@@ -482,7 +482,7 @@ class AutonomousAttentionAgent(AutonomousAgent):
             create_euno_task(
                 agent_name="attention",
                 title="Good morning",
-                message=result[:200] + "..." if len(result) > 200 else result,
+                message=result,
                 task_type="notification",
                 priority="normal"
             )
@@ -496,7 +496,7 @@ class AutonomousAttentionAgent(AutonomousAgent):
             create_euno_task(
                 agent_name="attention",
                 title="Evening reflection",
-                message=result[:200] + "..." if len(result) > 200 else result,
+                message=result,
                 task_type="notification",
                 priority="normal"
             )

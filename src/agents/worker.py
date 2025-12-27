@@ -266,7 +266,7 @@ SOURCES:
             create_euno_task(
                 agent_name="worker",
                 title=f"Research complete: {description[:40]}...",
-                message=f"I've finished researching and saved the results to your project notes. {summary[:100]}",
+                message=f"I've finished researching and saved the results to your project notes.\n\n{summary}",
                 task_type="notification",
                 priority="normal"
             )
@@ -356,7 +356,7 @@ SOURCES:
             create_euno_task(
                 agent_name="worker",
                 title=f"Executed {actions_executed} approved action(s)",
-                message=f"I've executed actions you approved. {'; '.join(results)}"[:200],
+                message=f"I've executed actions you approved.\n\n{chr(10).join(results)}",
                 task_type="notification",
                 priority="low"
             )
