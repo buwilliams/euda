@@ -916,8 +916,8 @@
 
         .project-add-btn:hover { background: #333; }
 
-        /* Task Archive */
-        .task-archive {
+        /* Task Snooze & Archive */
+        .task-snooze, .task-archive {
             opacity: 0;
             background: none;
             border: none;
@@ -928,92 +928,21 @@
             transition: opacity 0.15s, color 0.15s;
         }
 
+        .task-item:hover .task-snooze,
         .task-item:hover .task-archive { opacity: 1; }
+        .task-snooze:hover { color: #6366f1; }
         .task-archive:hover { color: #f59e0b; }
 
-        /* Notification items */
-        .notification-item {
-            display: flex;
-            flex-direction: column;
-            padding: 0.75rem;
-            margin-bottom: 0.5rem;
-            background: #fff;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s;
-            border: 1px solid #eee;
+        /* Euno task styling */
+        .euno-badge {
+            background: linear-gradient(135deg, #818cf8, #6366f1) !important;
+            color: #fff !important;
         }
 
-        .notification-item:hover { background: #f5f5f5; }
-        .notification-item:last-child { margin-bottom: 0; }
-
-        .notification-header {
-            display: flex;
-            align-items: flex-start;
-            width: 100%;
-            cursor: pointer;
+        .euno-task {
+            border-left: 3px solid #6366f1;
+            background: linear-gradient(to right, rgba(99, 102, 241, 0.05), transparent);
         }
-
-        .notification-content {
-            flex: 1;
-            min-width: 0;
-            cursor: pointer;
-        }
-
-        .notification-content:hover .notification-title {
-            color: #000;
-        }
-
-        .notification-title {
-            font-weight: 500;
-            color: #333;
-            font-size: 0.9rem;
-            line-height: 1.4;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .notification-agent-badge {
-            font-size: 0.65rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 0.2rem 0.5rem;
-            border-radius: 3px;
-            background: #f0f0f0;
-            color: #666;
-            margin-right: 0.75rem;
-            flex-shrink: 0;
-        }
-
-        .category-discovery .notification-agent-badge { background: #dbeafe; color: #1d4ed8; }
-        .category-reminder .notification-agent-badge { background: #fef3c7; color: #92400e; }
-        .category-progress .notification-agent-badge { background: #d1fae5; color: #065f46; }
-        .category-approval .notification-agent-badge { background: #ede9fe; color: #5b21b6; }
-
-        .notif-dismiss-btn {
-            background: none;
-            border: none;
-            color: #999;
-            cursor: pointer;
-            font-size: 1.1rem;
-            padding: 0 0.25rem;
-            margin-left: 0.5rem;
-            transition: color 0.15s;
-            flex-shrink: 0;
-        }
-
-        .notif-dismiss-btn:hover { color: #e74c3c; }
-
-        .notifications-quiet {
-            text-align: center;
-            padding: 2rem 1rem;
-            color: #999;
-        }
-
-        .notifications-quiet-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-        .notifications-quiet-text { font-style: italic; }
 
         /* Markdown styles */
         .message-content h1, .message-content h2, .message-content h3, .message-content h4 {
@@ -1179,10 +1108,6 @@
                             </svg>
                         </button>
                         <input type="file" id="file-input" style="display:none" onchange="handleFileSelect(event)" multiple>
-                        <button class="panel-toggle" id="notifications-toggle" onclick="togglePanel('notifications')" title="Attention">
-                            <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                            <span class="toggle-badge" id="notifications-badge" style="display: none;">0</span>
-                        </button>
                         <button class="panel-toggle" id="tasks-toggle" onclick="togglePanel('tasks')" title="Tasks">
                             <svg viewBox="0 0 24 24"><rect x="3" y="5" width="4" height="4" rx="1"/><line x1="10" y1="7" x2="21" y2="7"/><rect x="3" y="15" width="4" height="4" rx="1"/><line x1="10" y1="17" x2="21" y2="17"/></svg>
                             <span class="toggle-badge" id="tasks-badge" style="display: none;">0</span>
@@ -1191,19 +1116,6 @@
                 </div>
             </section>
         </div>
-
-        <!-- Notifications Panel -->
-        <aside class="panel" id="notifications-panel">
-            <div class="panel-header">
-                <div class="panel-title">Attention</div>
-            </div>
-            <div class="panel-content" id="notifications-content">
-                <div class="notifications-quiet">
-                    <div class="notifications-quiet-icon">&#10024;</div>
-                    <div class="notifications-quiet-text">All quiet. Your attention is free.</div>
-                </div>
-            </div>
-        </aside>
 
         <!-- Tasks Panel -->
         <aside class="panel" id="tasks-panel">
@@ -1265,7 +1177,6 @@
         let tasksData = [];
         let projectsData = [];
         let projectNotesData = {};
-        let notificationsData = [];
         let chatOpen = false;
         let uploadXhr = null;
 
@@ -1467,7 +1378,6 @@
                 localStorage.setItem('activePanel', panelName);
 
                 if (panelName === 'tasks') loadTasksData();
-                else if (panelName === 'notifications') loadNotificationsData();
             }
         }
 
@@ -1524,25 +1434,35 @@
                 const isToday = dueDate === today || !dueDate;
                 const isPending = t.status === 'pending' || t.status === 'in_progress';
                 return isToday && isPending;
-            }).slice(0, 10);
+            });
 
-            countEl.textContent = todayTasks.length;
+            // Separate From Euno tasks and show them first
+            const eunoTasks = todayTasks.filter(t => t.project_id === 'project-euno');
+            const otherTasks = todayTasks.filter(t => t.project_id !== 'project-euno');
+            const sortedTasks = [...eunoTasks, ...otherTasks].slice(0, 15);
 
-            if (todayTasks.length === 0) {
+            countEl.textContent = sortedTasks.length;
+
+            if (sortedTasks.length === 0) {
                 container.innerHTML = '<div class="task-empty">No tasks for today</div>';
                 return;
             }
 
-            container.innerHTML = todayTasks.map(task => `
-                <div class="task-item" data-task-id="${task.id}">
+            container.innerHTML = sortedTasks.map(task => {
+                const isEuno = task.project_id === 'project-euno';
+                const badgeClass = isEuno ? 'task-project-badge euno-badge' : 'task-project-badge';
+                const badgeText = isEuno ? 'Euno' : (task.project_title || 'General');
+                return `
+                <div class="task-item ${isEuno ? 'euno-task' : ''}" data-task-id="${task.id}">
                     <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
                     <div class="task-info">
-                        <span class="task-project-badge" title="${escapeHtml(task.project_title || 'General')}">${escapeHtml(task.project_title || 'General')}</span>
+                        <span class="${badgeClass}" title="${escapeHtml(task.project_title || 'General')}">${escapeHtml(badgeText)}</span>
                         <div class="task-description" onclick="showTaskFullContent('${escapeHtml(task.description).replace(/'/g, "\\'")}', '${escapeHtml(task.project_title || 'General').replace(/'/g, "\\'")}')" title="Click to view full text">${escapeHtml(task.description)}</div>
                     </div>
+                    <button class="task-snooze" onclick="snoozeTask(event, '${task.id}')" title="Snooze until tomorrow">💤</button>
                     <button class="task-delete" onclick="deleteTask(event, '${task.id}')" title="Delete">×</button>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function renderProjects() {
@@ -1575,6 +1495,7 @@
                                     <div class="task-item" data-task-id="${task.id}">
                                         <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
                                         <div class="task-description" onclick="showTaskFullContent('${escapeHtml(task.description).replace(/'/g, "\\'")}', '${escapeHtml(project.title).replace(/'/g, "\\'")}')" title="Click to view full text">${escapeHtml(task.description)}</div>
+                                        <button class="task-snooze" onclick="snoozeTask(event, '${task.id}')" title="Snooze until tomorrow">💤</button>
                                         <button class="task-archive" onclick="archiveTask(event, '${task.id}')" title="Archive">📦</button>
                                         <button class="task-delete" onclick="deleteTask(event, '${task.id}')" title="Delete">×</button>
                                     </div>
@@ -1622,6 +1543,24 @@
             } catch (error) {
                 console.error('Failed to load notes:', error);
                 showProjectNotes(projectName, null);
+            }
+        }
+
+        async function snoozeTask(event, taskId) {
+            event.stopPropagation();
+
+            try {
+                const response = await fetch(`/api/tasks/${taskId}/snooze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})  // Default: snooze until tomorrow
+                });
+
+                if (response.ok) {
+                    await loadTasksData();
+                }
+            } catch (error) {
+                console.error('Failed to snooze task:', error);
             }
         }
 
@@ -1842,99 +1781,6 @@
             badge.style.display = count > 0 ? 'inline' : 'none';
         }
 
-        // ============== Notifications ==============
-
-        async function loadNotificationsData() {
-            try {
-                const response = await fetch('/api/notifications');
-                const data = await response.json();
-                notificationsData = data.notifications || [];
-                renderNotifications();
-                updateNotificationsBadge();
-            } catch (error) {
-                console.error('Failed to load notifications:', error);
-            }
-        }
-
-        function renderNotifications() {
-            const container = document.getElementById('notifications-content');
-
-            if (notificationsData.length === 0) {
-                container.innerHTML = `
-                    <div class="notifications-quiet">
-                        <div class="notifications-quiet-icon">&#10024;</div>
-                        <div class="notifications-quiet-text">All quiet. Your attention is free.</div>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = notificationsData.map((n, idx) => {
-                const categoryClass = n.category ? `category-${n.category}` : '';
-                const agentName = n.agent || n.agent_name || 'system';
-                const agentLabel = agentName.charAt(0).toUpperCase() + agentName.slice(1);
-
-                return `
-                    <div class="notification-item ${categoryClass}" data-id="${n.id}">
-                        <div class="notification-header">
-                            <span class="notification-agent-badge">${escapeHtml(agentLabel)}</span>
-                            <div class="notification-content" onclick="showNotificationFullContent(${idx})" title="Click to view details">
-                                <div class="notification-title">${escapeHtml(n.title)}</div>
-                            </div>
-                            <button class="notif-dismiss-btn" onclick="dismissNotification('${n.id}')" title="Dismiss">×</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function showNotificationFullContent(idx) {
-            const n = notificationsData[idx];
-            if (!n) return;
-
-            // Mark as seen
-            fetch(`/api/notifications/${n.id}/seen`, { method: 'POST' });
-
-            const agentName = n.agent || n.agent_name || 'system';
-            const agentLabel = agentName.charAt(0).toUpperCase() + agentName.slice(1);
-
-            // Show in chat area
-            inlineChat.style.display = 'block';
-
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message message-system';
-            messageDiv.innerHTML = `
-                <div class="message-system-header">
-                    <span class="message-system-title">${escapeHtml(agentLabel)} Notification</span>
-                    <button class="message-system-close" onclick="this.closest('.message-system').remove()">×</button>
-                </div>
-                <div class="message-system-body">
-                    <p><strong>${escapeHtml(n.title)}</strong></p>
-                    ${n.message ? `<p>${escapeHtml(n.message)}</p>` : ''}
-                </div>
-            `;
-
-            inlineMessages.appendChild(messageDiv);
-            inlineChat.scrollTop = inlineChat.scrollHeight;
-        }
-
-        function dismissNotification(notifId) {
-            fetch(`/api/notifications/${notifId}/dismiss`, { method: 'POST' })
-                .then(() => {
-                    notificationsData = notificationsData.filter(n => n.id !== notifId);
-                    renderNotifications();
-                    updateNotificationsBadge();
-                })
-                .catch(err => console.error('Failed to dismiss:', err));
-        }
-
-        function updateNotificationsBadge() {
-            const badge = document.getElementById('notifications-badge');
-            const count = notificationsData.length;
-            badge.textContent = count;
-            badge.style.display = count > 0 ? 'inline' : 'none';
-        }
-
         // ============== File Upload ==============
 
         function triggerUpload() {
@@ -2069,34 +1915,15 @@
 
             eventSource.addEventListener('init', (e) => {
                 const data = JSON.parse(e.data);
-                notificationsData = data.notifications || [];
                 tasksData = data.tasks || [];
                 projectsData = data.projects || [];
                 updateTasksBadge();
-                updateNotificationsBadge();
-                if (activePanel === 'notifications') renderNotifications();
-                else if (activePanel === 'tasks') {
+                if (activePanel === 'tasks') {
                     renderTodayTasks();
                     renderProjects();
                     renderCompletedTasks();
                 }
                 reconnectAttempts = 0;
-            });
-
-            eventSource.addEventListener('notification_update', (e) => {
-                const notification = JSON.parse(e.data);
-                const idx = notificationsData.findIndex(n => n.id === notification.id);
-                if (idx >= 0) notificationsData[idx] = notification;
-                else notificationsData.unshift(notification);
-                updateNotificationsBadge();
-                if (activePanel === 'notifications') renderNotifications();
-            });
-
-            eventSource.addEventListener('notification_removed', (e) => {
-                const data = JSON.parse(e.data);
-                notificationsData = notificationsData.filter(n => n.id !== data.id);
-                updateNotificationsBadge();
-                if (activePanel === 'notifications') renderNotifications();
             });
 
             eventSource.addEventListener('tasks_update', (e) => {

@@ -18,7 +18,7 @@ from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.attention.attention import ATTENTION_TOOLS, ATTENTION_HANDLERS
 from ..tools.synthesis import PROFILE_TOOLS, PROFILE_HANDLERS
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
-from ..tools.shared.notifications import queue_notification
+from ..tools.shared.notifications import create_euno_task
 from ..tools.shared.profile_signals import PROFILE_SIGNAL_TOOLS, PROFILE_SIGNAL_HANDLERS
 
 # Paths for proactive attention
@@ -341,15 +341,13 @@ class AutonomousAttentionAgent(AutonomousAgent):
             # Track the creation
             self._track_proactive_creation(item_type, title)
 
-            # Notify user
-            queue_notification(
+            # Notify user via From Euno project task
+            create_euno_task(
                 agent_name="attention",
                 title=f"Created: {title}",
                 message=f"I noticed you've been thinking about this. {description}",
-                notification_type="info",
-                action_prompt=f"Tell me about the new {item_type}: {title}",
-                priority="normal",
-                data={"type": item_type, "title": title, "auto_created": True}
+                task_type="notification",
+                priority="normal"
             )
 
             self.logger.info(f"Proactively created {item_type}: {title}")
@@ -432,17 +430,15 @@ class AutonomousAttentionAgent(AutonomousAgent):
         today = datetime.now().date().isoformat()
 
         if pending_type == "proactive":
-            # Surface a proactive question
+            # Surface a proactive question via From Euno project task
             gap = state.get("pending_gap")
             if gap:
-                queue_notification(
+                create_euno_task(
                     agent_name="attention",
                     title=gap.get("question", "Quick question"),
                     message=gap.get("context", ""),
-                    notification_type="question",
-                    action_prompt=gap.get("action_prompt", gap.get("question")),
-                    priority="normal",
-                    data={"gap_id": gap.get("id")}
+                    task_type="question",
+                    priority="normal"
                 )
                 self._mark_gap_surfaced(gap.get("id"))
                 self.logger.info(f"Surfaced proactive question: {gap.get('id')}")
@@ -482,13 +478,12 @@ class AutonomousAttentionAgent(AutonomousAgent):
             state["last_morning_content"] = result
             self.logger.info("Morning attention generated")
 
-            # Send notification to user
-            queue_notification(
+            # Send notification via From Euno project task
+            create_euno_task(
                 agent_name="attention",
                 title="Good morning",
                 message=result[:200] + "..." if len(result) > 200 else result,
-                notification_type="info",
-                action_prompt="Tell me more about what I should focus on today",
+                task_type="notification",
                 priority="normal"
             )
         else:
@@ -497,13 +492,12 @@ class AutonomousAttentionAgent(AutonomousAgent):
             state["last_evening_content"] = result
             self.logger.info("Evening attention generated")
 
-            # Send notification to user
-            queue_notification(
+            # Send notification via From Euno project task
+            create_euno_task(
                 agent_name="attention",
                 title="Evening reflection",
                 message=result[:200] + "..." if len(result) > 200 else result,
-                notification_type="info",
-                action_prompt="Let's reflect on the day",
+                task_type="notification",
                 priority="normal"
             )
 

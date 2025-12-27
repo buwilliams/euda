@@ -26,7 +26,7 @@ from ..tools.worker.task import (
     store_result
 )
 from ..tools.worker.project import append_research_result
-from ..tools.shared.notifications import queue_notification
+from ..tools.shared.notifications import create_euno_task
 from ..tools.shared.profile_signals import PROFILE_SIGNAL_TOOLS, PROFILE_SIGNAL_HANDLERS
 from ..tools.world.fetch import fetch_url, FETCH_TOOLS, FETCH_HANDLERS
 
@@ -262,13 +262,12 @@ SOURCES:
             # Mark completed
             update_task_status(task_id, "completed")
 
-            # Notify user
-            queue_notification(
+            # Notify user via From Euno project task
+            create_euno_task(
                 agent_name="worker",
                 title=f"Research complete: {description[:40]}...",
                 message=f"I've finished researching and saved the results to your project notes. {summary[:100]}",
-                notification_type="info",
-                action_prompt=f"Show me the research results for {description[:30]}",
+                task_type="notification",
                 priority="normal"
             )
 
@@ -352,12 +351,11 @@ SOURCES:
 
         # Notify user about completed work (only for non-research, as research has its own notification)
         if tasks_processed > 0 or actions_executed > 0:
-            queue_notification(
+            create_euno_task(
                 agent_name="worker",
                 title=f"Completed {tasks_processed} task(s)",
                 message=f"I've been working on your tasks. {'; '.join(results)}"[:200],
-                notification_type="info",
-                action_prompt="Show me what you completed",
+                task_type="notification",
                 priority="low"
             )
 

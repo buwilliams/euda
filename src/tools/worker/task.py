@@ -196,7 +196,8 @@ def create_task(
             "scheduled_for": None,
             "time_estimate_minutes": time_estimate_minutes,
             "energy_level": energy_level,
-            "best_window": best_window
+            "best_window": best_window,
+            "snoozed_until": None
         },
         "rollover": {
             "original_date": None,
@@ -372,7 +373,8 @@ def get_tasks_data(
     due_date: Optional[str] = None,
     priority: Optional[str] = None,
     limit: int = 50,
-    include_project_title: bool = True
+    include_project_title: bool = True,
+    exclude_snoozed: bool = False
 ) -> list:
     """
     Get tasks as raw data for API consumption.
@@ -384,6 +386,7 @@ def get_tasks_data(
         priority: Filter by priority
         limit: Maximum tasks to return
         include_project_title: Add project_title field to each task
+        exclude_snoozed: Exclude tasks snoozed until a future date
 
     Returns:
         List of task dictionaries
@@ -400,6 +403,11 @@ def get_tasks_data(
         tasks = [t for t in tasks if t.get("scheduling", {}).get("due_date") == due_date]
     if priority:
         tasks = [t for t in tasks if t["priority"] == priority]
+
+    # Exclude snoozed tasks (snoozed_until is in the future)
+    if exclude_snoozed:
+        today = datetime.now().strftime("%Y-%m-%d")
+        tasks = [t for t in tasks if not t.get("scheduling", {}).get("snoozed_until") or t.get("scheduling", {}).get("snoozed_until") <= today]
 
     # Sort by priority then due date
     priority_order = {"high": 0, "normal": 1, "low": 2}
@@ -788,6 +796,62 @@ def get_archived_tasks_data(days: int = 90, limit: int = 100) -> list:
     tasks.sort(key=lambda t: t.get("archived_at") or "", reverse=True)
 
     return tasks[:limit]
+
+
+def snooze_task(task_id: str, until_date: Optional[str] = None) -> str:
+    """
+    Snooze a task until a specific date (default: tomorrow).
+
+    Snoozed tasks won't appear in the Today view until the snooze date.
+
+    Args:
+        task_id: The task ID to snooze
+        until_date: Date to snooze until (ISO format YYYY-MM-DD, default: tomorrow)
+
+    Returns:
+        Success message or error
+    """
+    if not until_date:
+        until_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    queue = _load_queue()
+
+    for task in queue["tasks"]:
+        if task["id"] == task_id:
+            if task["status"] not in ["pending", "in_progress"]:
+                return f"Cannot snooze task with status '{task['status']}'"
+
+            # Set snoozed_until in scheduling
+            if "scheduling" not in task:
+                task["scheduling"] = {}
+            task["scheduling"]["snoozed_until"] = until_date
+
+            _save_queue(queue)
+            return f"Task snoozed until {until_date}"
+
+    return f"Task not found: {task_id}"
+
+
+def unsnooze_task(task_id: str) -> str:
+    """
+    Remove snooze from a task, making it visible again.
+
+    Args:
+        task_id: The task ID to unsnooze
+
+    Returns:
+        Success message or error
+    """
+    queue = _load_queue()
+
+    for task in queue["tasks"]:
+        if task["id"] == task_id:
+            if "scheduling" in task:
+                task["scheduling"]["snoozed_until"] = None
+            _save_queue(queue)
+            return "Task unsnooze - now visible"
+
+    return f"Task not found: {task_id}"
 
 
 def cleanup_old_completed_tasks(retention_days: int = 30) -> str:

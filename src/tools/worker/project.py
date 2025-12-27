@@ -25,6 +25,9 @@ NOTES_DIR.mkdir(parents=True, exist_ok=True)
 # The General project for miscellaneous tasks
 GENERAL_PROJECT_ID = "project-general"
 
+# The From Euno project for agent-generated notifications/tasks
+EUNO_PROJECT_ID = "project-euno"
+
 
 def _generate_id() -> str:
     """Generate a unique project ID."""
@@ -115,6 +118,54 @@ def ensure_general_project() -> str:
 
     _update_index(project)
     return GENERAL_PROJECT_ID
+
+
+def ensure_euno_project() -> str:
+    """
+    Ensure the From Euno project exists for agent-generated tasks.
+
+    Returns:
+        The From Euno project ID
+    """
+    project_file = PROJECTS_DIR / f"{EUNO_PROJECT_ID}.json"
+
+    if project_file.exists():
+        return EUNO_PROJECT_ID
+
+    # Create the From Euno project
+    now = datetime.now().isoformat()
+    project = {
+        "id": EUNO_PROJECT_ID,
+        "created": now,
+        "updated": now,
+        "title": "From Euno",
+        "description": "Tasks and notifications from Euno agents",
+        "type": "system",
+        "status": "active",
+        "priority": "normal",
+        "source": {
+            "agent": "system",
+            "context": "System project for agent-generated items"
+        },
+        "milestones": [],
+        "values_alignment": [],
+        "deadline": None,
+        "review_frequency": "daily",
+        "last_reviewed": None,
+        "archived": False,
+        "meta": {
+            "total_tasks_created": 0,
+            "tasks_completed": 0,
+            "estimated_hours": 0,
+            "logged_hours": 0
+        }
+    }
+
+    with open(project_file, 'w') as f:
+        json.dump(project, f, indent=2)
+
+    _update_index(project)
+    return EUNO_PROJECT_ID
 
 
 def get_project_title(project_id: str) -> str:

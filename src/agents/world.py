@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.world.world import WORLD_TOOLS, WORLD_HANDLERS
 from ..tools.synthesis import PROFILE_TOOLS, PROFILE_HANDLERS
-from ..tools.shared.notifications import queue_notification
+from ..tools.shared.notifications import create_euno_task
 from ..tools.shared.guidance import GUIDANCE_TOOLS, GUIDANCE_HANDLERS, should_skip_location_opportunities
 
 
@@ -141,13 +141,12 @@ class AutonomousWorldAgent(AutonomousAgent):
         self.save_state({"last_sweep": datetime.now().isoformat()})
         self.agent.clear_context()
 
-        # Notify user about new discoveries
-        queue_notification(
+        # Notify user via From Euno project task
+        create_euno_task(
             agent_name="world",
             title="New opportunities discovered",
             message="I've found some new opportunities that might interest you based on your values.",
-            notification_type="info",
-            action_prompt="Show me the opportunities you discovered",
+            task_type="notification",
             priority="normal"
         )
 

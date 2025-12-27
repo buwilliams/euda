@@ -2,7 +2,7 @@
 Euno - Web API
 
 FastAPI application for the Interaction Agent and other endpoints.
-WebSocket support for real-time notifications.
+SSE support for real-time updates.
 """
 
 import uuid
@@ -42,7 +42,6 @@ from ..tools.synthesis.summary import list_years, get_summary
 BASE_DIR = Path(__file__).parent.parent.parent
 STATIC_DIR = BASE_DIR / "static"
 INBOX_PENDING_DIR = BASE_DIR / "data" / "ingestion" / "state" / "inbox" / "pending"
-NOTIFICATIONS_DIR = BASE_DIR / "data" / "shared" / "state" / "notifications"
 
 
 # ============== SSE Event Manager ==============
@@ -77,307 +76,7 @@ class SSEManager:
 sse_manager = SSEManager()
 
 
-# ============== Notification Enrichment ==============
-
-def enrich_notification(notification: dict) -> dict:
-    """
-    Add panel/category/actions to existing notifications for UI.
-    Maps existing agent notifications to the new UI model.
-    """
-    n = notification.copy()
-
-    # Add updated_at if missing
-    if "updated_at" not in n:
-        n["updated_at"] = n.get("created_at", datetime.now().isoformat())
-
-    # Normalize agent_name to agent
-    if "agent_name" in n and "agent" not in n:
-        n["agent"] = n["agent_name"]
-
-    # Infer panel from notification type
-    if "panel" not in n:
-        if n.get("type") == "approval":
-            n["panel"] = "tasks"
-        elif n.get("agent") == "attention":
-            n["panel"] = "tasks"
-        else:
-            n["panel"] = "status"
-
-    # Infer category from agent + type
-    if "category" not in n:
-        agent = n.get("agent", "")
-        ntype = n.get("type", "info")
-
-        if ntype == "approval":
-            n["category"] = "approval"
-        elif ntype == "alert":
-            n["category"] = "alert"
-        elif agent == "ingestion":
-            n["category"] = "progress"
-        elif agent == "world":
-            n["category"] = "discovery"
-        elif agent == "worker":
-            n["category"] = "progress"
-        elif agent == "attention":
-            n["category"] = "reminder"
-        else:
-            n["category"] = "insight"
-
-    # Add default actions if missing
-    if "actions" not in n:
-        if n.get("category") == "approval":
-            n["actions"] = ["expand", "approve", "reject"]
-        else:
-            n["actions"] = ["expand", "ask", "dismiss"]
-
-    # Improve generic messages with more helpful content
-    agent = n.get("agent", "")
-    if agent == "world" and "opportunities" in n.get("title", "").lower():
-        # Fetch actual opportunity summary for world agent
-        try:
-            from ..tools.world.world import get_opportunities
-            opps = get_opportunities()
-            if opps and "No opportunities" not in opps:
-                # Count opportunities by type
-                lines = opps.split('\n')
-                n["message"] = "Click 'Discuss' to explore these discoveries and see what aligns with your values."
-        except Exception:
-            pass
-
-    return n
-
-
-def get_enriched_notifications() -> list:
-    """Get all active notifications with enrichment applied and deduplicated."""
-    notifications = []
-    if not NOTIFICATIONS_DIR.exists():
-        return notifications
-
-    for f in sorted(NOTIFICATIONS_DIR.glob("*.json"), reverse=True):
-        try:
-            with open(f, 'r') as file:
-                notification = json.load(file)
-            if notification.get("status") == "dismissed":
-                continue
-            notification["filename"] = f.name
-            notifications.append(enrich_notification(notification))
-        except Exception:
-            pass
-
-    # Add synthetic ingestion notification showing queue status
-    inbox_dir = BASE_DIR / "data" / "ingestion" / "state" / "inbox"
-    if inbox_dir.exists():
-        # Count files in each status directory (exclude hidden files and .reason.txt metadata)
-        def count_files(path):
-            if not path.exists():
-                return 0
-            return len([f for f in path.iterdir() if f.is_file() and not f.name.startswith('.') and not f.name.endswith('.reason.txt')])
-
-        pending_count = count_files(inbox_dir / "pending")
-        processing_count = count_files(inbox_dir / "processing")
-        failed_count = count_files(inbox_dir / "failed")
-        deferred_count = count_files(inbox_dir / "deferred")
-        processed_count = count_files(inbox_dir / "processed")
-
-        # Show notification if there's any activity
-        if pending_count > 0 or processing_count > 0 or failed_count > 0:
-            # Build status message
-            status_parts = []
-            if pending_count > 0:
-                status_parts.append(f"{pending_count} pending")
-            if processing_count > 0:
-                status_parts.append(f"{processing_count} processing")
-            if failed_count > 0:
-                status_parts.append(f"{failed_count} failed")
-            if deferred_count > 0:
-                status_parts.append(f"{deferred_count} deferred")
-
-            status_line = " • ".join(status_parts)
-
-            # Determine priority based on failed count
-            priority = "high" if failed_count > 0 else "normal"
-            ntype = "alert" if failed_count > 0 else "info"
-
-            # Build detailed message
-            if failed_count > 0:
-                message = f"Queue: {status_line}\n\n{failed_count} file(s) failed processing and may need attention. {processed_count} files processed successfully."
-                title = f"Ingestion: {failed_count} failed"
-            else:
-                message = f"Queue: {status_line}\n\n{processed_count} files processed so far."
-                title = f"Ingestion: {pending_count + processing_count} remaining"
-
-            ingestion_notif = {
-                "id": "ingestion_progress",
-                "agent": "ingestion",
-                "agent_name": "ingestion",
-                "title": title,
-                "message": message,
-                "type": ntype,
-                "category": "progress",
-                "panel": "status",
-                "priority": priority,
-                "actions": ["expand", "ask"],
-                "action_prompt": "What's the status of file ingestion? Are there any failed files that need attention?",
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat(),
-                "synthetic": True,
-                "data": {
-                    "pending": pending_count,
-                    "processing": processing_count,
-                    "failed": failed_count,
-                    "deferred": deferred_count,
-                    "processed": processed_count
-                }
-            }
-            notifications.insert(0, ingestion_notif)
-
-    # Deduplicate: keep only the most recent notification per agent+title combo
-    seen = {}
-    deduplicated = []
-    for n in notifications:
-        # Skip dedup for synthetic notifications
-        if n.get("synthetic"):
-            deduplicated.append(n)
-            continue
-        key = (n.get("agent") or n.get("agent_name"), n.get("title"))
-        if key not in seen:
-            seen[key] = True
-            deduplicated.append(n)
-
-    return deduplicated
-
-
 # ============== Background Tasks ==============
-
-async def watch_notifications():
-    """Watch notifications directory and broadcast changes via SSE."""
-    if not NOTIFICATIONS_DIR.exists():
-        NOTIFICATIONS_DIR.mkdir(parents=True, exist_ok=True)
-
-    async for changes in awatch(NOTIFICATIONS_DIR):
-        for change_type, path in changes:
-            path = Path(path)
-            if path.suffix != '.json':
-                continue
-
-            if change_type in (Change.added, Change.modified):
-                try:
-                    with open(path, 'r') as f:
-                        notification = json.load(f)
-                    notification["filename"] = path.name
-                    enriched = enrich_notification(notification)
-                    await sse_manager.broadcast("notification_update", enriched)
-                except Exception:
-                    pass
-
-            elif change_type == Change.deleted:
-                notification_id = path.stem
-                await sse_manager.broadcast("notification_removed", {"id": notification_id})
-
-
-async def watch_ingestion_queue():
-    """Watch ingestion inbox directories and broadcast synthetic notification updates."""
-    inbox_dir = BASE_DIR / "data" / "ingestion" / "state" / "inbox"
-    if not inbox_dir.exists():
-        return
-
-    last_counts = {}
-
-    # Watch all subdirectories of inbox
-    async for changes in awatch(inbox_dir):
-        # Get current counts
-        current_counts = {"pending": 0, "processing": 0, "failed": 0, "deferred": 0, "processed": 0}
-        for status_name in current_counts.keys():
-            status_dir = inbox_dir / status_name
-            if status_dir.exists():
-                current_counts[status_name] = len([f for f in status_dir.iterdir() if f.is_file() and not f.name.startswith('.')])
-
-        # Only broadcast if counts changed
-        if current_counts != last_counts:
-            last_counts = current_counts.copy()
-
-            pending = current_counts["pending"]
-            processing = current_counts["processing"]
-            failed = current_counts["failed"]
-            deferred = current_counts["deferred"]
-            processed = current_counts["processed"]
-
-            if pending > 0 or processing > 0 or failed > 0:
-                # Build status message
-                status_parts = []
-                if pending > 0:
-                    status_parts.append(f"{pending} pending")
-                if processing > 0:
-                    status_parts.append(f"{processing} processing")
-                if failed > 0:
-                    status_parts.append(f"{failed} failed")
-                if deferred > 0:
-                    status_parts.append(f"{deferred} deferred")
-
-                status_line = " • ".join(status_parts)
-                priority = "high" if failed > 0 else "normal"
-                ntype = "alert" if failed > 0 else "info"
-
-                if failed > 0:
-                    message = f"Queue: {status_line}\n\n{failed} file(s) failed processing and may need attention. {processed} files processed successfully."
-                    title = f"Ingestion: {failed} failed"
-                else:
-                    message = f"Queue: {status_line}\n\n{processed} files processed so far."
-                    title = f"Ingestion: {pending + processing} remaining"
-
-                ingestion_notif = {
-                    "id": "ingestion_progress",
-                    "agent": "ingestion",
-                    "agent_name": "ingestion",
-                    "title": title,
-                    "message": message,
-                    "type": ntype,
-                    "category": "progress",
-                    "panel": "status",
-                    "priority": priority,
-                    "actions": ["expand", "ask"],
-                    "action_prompt": "What's the status of file ingestion? Are there any failed files that need attention?",
-                    "created_at": datetime.now().isoformat(),
-                    "updated_at": datetime.now().isoformat(),
-                    "synthetic": True,
-                    "data": current_counts
-                }
-                await sse_manager.broadcast("notification_update", ingestion_notif)
-            else:
-                # Queue is empty - remove the synthetic notification
-                await sse_manager.broadcast("notification_removed", {"id": "ingestion_progress"})
-
-
-async def cleanup_stale_notifications():
-    """Periodically clean up old dismissed/seen notifications."""
-    while True:
-        await asyncio.sleep(3600)  # Every hour
-
-        if not NOTIFICATIONS_DIR.exists():
-            continue
-
-        now = datetime.now()
-        for f in NOTIFICATIONS_DIR.glob("*.json"):
-            try:
-                with open(f, 'r') as file:
-                    n = json.load(file)
-
-                # Remove if dismissed
-                if n.get("status") == "dismissed":
-                    f.unlink()
-                    continue
-
-                # Remove if seen and older than 24 hours
-                if n.get("seen"):
-                    updated_str = n.get("updated_at", n.get("created_at"))
-                    if updated_str:
-                        updated = datetime.fromisoformat(updated_str.replace('Z', '+00:00'))
-                        age_hours = (now - updated.replace(tzinfo=None)).total_seconds() / 3600
-                        if age_hours > 24:
-                            f.unlink()
-            except Exception:
-                pass
-
 
 async def watch_tasks():
     """Watch tasks queue and broadcast changes via SSE."""
@@ -419,20 +118,14 @@ async def watch_projects():
 async def lifespan(app: FastAPI):
     """Manage background tasks on startup/shutdown."""
     # Start background tasks
-    watcher_task = asyncio.create_task(watch_notifications())
-    ingestion_watcher_task = asyncio.create_task(watch_ingestion_queue())
     tasks_watcher_task = asyncio.create_task(watch_tasks())
     projects_watcher_task = asyncio.create_task(watch_projects())
-    cleanup_task = asyncio.create_task(cleanup_stale_notifications())
 
     yield
 
     # Cancel tasks on shutdown
-    watcher_task.cancel()
-    ingestion_watcher_task.cancel()
     tasks_watcher_task.cancel()
     projects_watcher_task.cancel()
-    cleanup_task.cancel()
 
 
 # Initialize FastAPI app with lifespan
@@ -946,48 +639,6 @@ async def get_history(session_id: str = None, date: str = None):
     return data
 
 
-# ============== Notifications ==============
-
-from ..tools.shared.notifications import (
-    get_pending_notifications, mark_seen, dismiss_notification,
-    check_for_pending_approvals
-)
-
-
-@app.get("/api/notifications")
-async def get_notifications(include_seen: bool = True):
-    """Get pending notifications for the user with enrichment and synthetic notifications."""
-    # First, sync approval queues with notifications
-    check_for_pending_approvals()
-
-    # Use enriched notifications (includes synthetic ingestion status + deduplication)
-    notifications = get_enriched_notifications()
-
-    # Filter by seen status if requested
-    if not include_seen:
-        notifications = [n for n in notifications if not n.get("seen") or n.get("synthetic")]
-
-    return {
-        "notifications": notifications,
-        "count": len(notifications),
-        "timestamp": datetime.now().isoformat()
-    }
-
-
-@app.post("/api/notifications/{notification_id}/seen")
-async def mark_notification_seen(notification_id: str):
-    """Mark a notification as seen."""
-    result = mark_seen(notification_id)
-    return {"status": "success", "message": result}
-
-
-@app.post("/api/notifications/{notification_id}/dismiss")
-async def dismiss_notification_endpoint(notification_id: str):
-    """Dismiss a notification."""
-    result = dismiss_notification(notification_id)
-    return {"status": "success", "message": result}
-
-
 # ============== Server-Sent Events ==============
 
 def get_tasks_for_panel() -> list:
@@ -1003,21 +654,16 @@ async def sse_endpoint():
 
     Event types:
     - init: Initial state on connection
-    - notification_update: New or updated notification
-    - notification_removed: Notification deleted
-    - status_update: Agent status updates
-
-    Client actions (dismiss, seen) use regular POST endpoints.
+    - tasks_update: Task list updated
+    - projects_update: Project list updated
     """
     async def event_generator():
         queue = sse_manager.subscribe()
         try:
             # Send initial state
-            notifications = get_enriched_notifications()
             tasks = get_tasks_for_panel()
             projects = get_projects_data(status="active")
             init_data = {
-                "notifications": notifications,
                 "tasks": tasks,
                 "projects": projects,
                 "timestamp": datetime.now().isoformat()
@@ -1232,14 +878,16 @@ async def list_tasks(
     status: Optional[str] = None,
     project_id: Optional[str] = None,
     priority: Optional[str] = None,
-    limit: int = 50
+    limit: int = 50,
+    exclude_snoozed: bool = True
 ):
     """Get tasks with optional filters."""
     tasks = get_tasks_data(
         status=status,
         project_id=project_id,
         priority=priority,
-        limit=limit
+        limit=limit,
+        exclude_snoozed=exclude_snoozed
     )
     return {"tasks": tasks}
 
@@ -1320,6 +968,19 @@ async def archive_task_endpoint(task_id: str, request: TaskArchiveRequest = None
         result = archive_task(task_id, reason=request.reason, outcome=request.outcome)
     else:
         result = archive_task(task_id)
+    return {"status": "success", "message": result}
+
+
+class TaskSnoozeRequest(BaseModel):
+    until_date: Optional[str] = None  # ISO format YYYY-MM-DD, default: tomorrow
+
+
+@app.post("/api/tasks/{task_id}/snooze")
+async def snooze_task_endpoint(task_id: str, request: TaskSnoozeRequest = None):
+    """Snooze a task until a specific date (default: tomorrow)."""
+    from ..tools.worker.task import snooze_task
+    until_date = request.until_date if request else None
+    result = snooze_task(task_id, until_date)
     return {"status": "success", "message": result}
 
 

@@ -31,7 +31,7 @@ from ..tools.shared.identity import (
     read_own_identity, read_core_identity,
     propose_identity_evolution, get_pending_evolutions
 )
-from ..tools.shared.notifications import queue_notification
+from ..tools.shared.notifications import create_euno_task
 
 
 # State file for tracking
@@ -311,14 +311,12 @@ class AutonomousEvolutionAgent(AutonomousAgent):
             high_gaps = [g for g in gaps if g.get("priority") == "high"]
             if high_gaps:
                 gap = high_gaps[0]
-                queue_notification(
+                create_euno_task(
                     agent_name="evolution",
                     title=gap["question"],
                     message=gap["context"],
-                    notification_type="question",
-                    action_prompt=gap["action_prompt"],
-                    priority="normal",
-                    data={"gap_id": gap["id"]}
+                    task_type="question",
+                    priority="normal"
                 )
         except Exception as e:
             self.logger.error(f"Failed to notify about gaps: {e}")
