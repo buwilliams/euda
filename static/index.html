@@ -954,20 +954,24 @@
             cursor: pointer;
         }
 
-        .notification-content { flex: 1; min-width: 0; }
+        .notification-content {
+            flex: 1;
+            min-width: 0;
+            cursor: pointer;
+        }
+
+        .notification-content:hover .notification-title {
+            color: #000;
+        }
 
         .notification-title {
             font-weight: 500;
             color: #333;
             font-size: 0.9rem;
             line-height: 1.4;
-        }
-
-        .notification-expand-icon {
-            color: #999;
-            font-size: 0.7rem;
-            margin-left: auto;
-            padding: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .notification-agent-badge {
@@ -988,42 +992,19 @@
         .category-progress .notification-agent-badge { background: #d1fae5; color: #065f46; }
         .category-approval .notification-agent-badge { background: #ede9fe; color: #5b21b6; }
 
-        .notification-details {
-            padding: 0.75rem 0 0 2rem;
-            border-top: 1px solid #eee;
-            margin-top: 0.75rem;
-        }
-
-        .notification-message {
-            font-size: 0.85rem;
-            color: #666;
-            line-height: 1.5;
-            margin-bottom: 0.75rem;
-            white-space: pre-wrap;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .notification-actions { display: flex; gap: 0.5rem; }
-
-        .notif-action-btn {
-            padding: 0.4rem 0.75rem;
-            font-size: 0.8rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: #fff;
+        .notif-dismiss-btn {
+            background: none;
+            border: none;
+            color: #999;
             cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
+            font-size: 1.1rem;
+            padding: 0 0.25rem;
+            margin-left: 0.5rem;
+            transition: color 0.15s;
+            flex-shrink: 0;
         }
 
-        .notif-action-btn:hover { background: #f5f5f5; }
-        .notif-action-btn.ask { border-color: #3b82f6; color: #3b82f6; }
-        .notif-action-btn.ask:hover { background: #eff6ff; }
-        .notif-action-btn.dismiss { border-color: #999; color: #666; }
-        .notif-action-btn.dismiss:hover { background: #f5f5f5; border-color: #666; }
-
-        .notification-item.expanded { background: #fafafa; }
+        .notif-dismiss-btn:hover { color: #e74c3c; }
 
         .notifications-quiet {
             text-align: center;
@@ -1895,51 +1876,46 @@
 
                 return `
                     <div class="notification-item ${categoryClass}" data-id="${n.id}">
-                        <div class="notification-header" onclick="toggleNotificationExpand('${n.id}')">
+                        <div class="notification-header">
                             <span class="notification-agent-badge">${escapeHtml(agentLabel)}</span>
-                            <div class="notification-content">
+                            <div class="notification-content" onclick="showNotificationFullContent(${idx})" title="Click to view details">
                                 <div class="notification-title">${escapeHtml(n.title)}</div>
                             </div>
-                            <span class="notification-expand-icon">▼</span>
-                        </div>
-                        <div class="notification-details" id="notif-details-${n.id}" style="display: none;">
-                            <div class="notification-message">${escapeHtml(n.message || '')}</div>
-                            <div class="notification-actions">
-                                <button class="notif-action-btn ask" onclick="askAboutNotification('${n.id}', ${idx})">Discuss</button>
-                                <button class="notif-action-btn dismiss" onclick="dismissNotification('${n.id}')">Dismiss</button>
-                            </div>
+                            <button class="notif-dismiss-btn" onclick="dismissNotification('${n.id}')" title="Dismiss">×</button>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        function toggleNotificationExpand(notifId) {
-            const details = document.getElementById(`notif-details-${notifId}`);
-            const item = details.closest('.notification-item');
-            const icon = item.querySelector('.notification-expand-icon');
+        function showNotificationFullContent(idx) {
+            const n = notificationsData[idx];
+            if (!n) return;
 
-            if (details.style.display === 'none') {
-                details.style.display = 'block';
-                icon.textContent = '▲';
-                item.classList.add('expanded');
-            } else {
-                details.style.display = 'none';
-                icon.textContent = '▼';
-                item.classList.remove('expanded');
-            }
-        }
+            // Mark as seen
+            fetch(`/api/notifications/${n.id}/seen`, { method: 'POST' });
 
-        function askAboutNotification(notifId, idx) {
-            const notification = notificationsData[idx];
-            if (!notification) return;
+            const agentName = n.agent || n.agent_name || 'system';
+            const agentLabel = agentName.charAt(0).toUpperCase() + agentName.slice(1);
 
-            fetch(`/api/notifications/${notifId}/seen`, { method: 'POST' });
+            // Show in chat area
+            inlineChat.style.display = 'block';
 
-            const prompt = notification.action_prompt || `Tell me more about: ${notification.title}`;
-            if (activePanel) togglePanel(activePanel);
-            contextInput.value = prompt;
-            sendContextMessage();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message message-system';
+            messageDiv.innerHTML = `
+                <div class="message-system-header">
+                    <span class="message-system-title">${escapeHtml(agentLabel)} Notification</span>
+                    <button class="message-system-close" onclick="this.closest('.message-system').remove()">×</button>
+                </div>
+                <div class="message-system-body">
+                    <p><strong>${escapeHtml(n.title)}</strong></p>
+                    ${n.message ? `<p>${escapeHtml(n.message)}</p>` : ''}
+                </div>
+            `;
+
+            inlineMessages.appendChild(messageDiv);
+            inlineChat.scrollTop = inlineChat.scrollHeight;
         }
 
         function dismissNotification(notifId) {
