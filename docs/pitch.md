@@ -48,14 +48,14 @@ The building blocks exist. What's missing is software that puts them together in
 
 Euno is a working system with specialized agents that handle different aspects of your life:
 
-- **Ingestion** — Reads your life data (photos, documents, exports) and preserves it with high fidelity
-- **Memory** — Maintains a unified, searchable life log across everything you've shared
-- **Identity modeling** — Builds a predictive model of who you are: values, patterns, failure modes, rhythms
-- **World scanning** — Explores opportunities that fit you; filters out noise
-- **Attention management** — Decides what deserves your attention based on your energy and capacity
-- **Conversation** — Talks with you like someone who actually knows you
-- **Task execution** — Handles work autonomously; asks before acting on anything important
-- **Self-improvement** — Continuously refines itself to serve you better
+- **The Archivist** — Reads your life data (photos, documents, exports) and preserves it with high fidelity
+- **The Historian** — Maintains a unified, searchable life log across everything you've shared
+- **The Keeper** — Builds a predictive model of who you are: values, patterns, failure modes, rhythms
+- **The Scout** — Explores opportunities that fit you; filters out noise
+- **The Curator** — Decides what deserves your attention based on your energy and capacity
+- **The Caring Friend** — Talks with you like someone who actually knows you
+- **The Executor** — Handles work autonomously; asks before acting on anything important
+- **The Evolver** — Continuously refines the system to serve you better
 
 ---
 
