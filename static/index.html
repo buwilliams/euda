@@ -526,7 +526,7 @@
         #context-send-btn:disabled { background: #ccc; border-color: #ccc; cursor: not-allowed; }
 
         /* Panel toggle icons */
-        .panel-toggle, .upload-btn {
+        .panel-toggle, .upload-btn, .reset-btn {
             background: none;
             border: none;
             padding: 0.5rem;
@@ -541,7 +541,7 @@
             width: 40px;
         }
 
-        .panel-toggle svg, .upload-btn svg {
+        .panel-toggle svg, .upload-btn svg, .reset-btn svg {
             width: 20px;
             height: 20px;
             stroke: #999;
@@ -552,7 +552,7 @@
         }
 
         .panel-toggle svg rect { fill: none; }
-        .panel-toggle:hover svg, .upload-btn:hover svg { stroke: #333; }
+        .panel-toggle:hover svg, .upload-btn:hover svg, .reset-btn:hover svg { stroke: #333; }
         .panel-toggle.active svg { stroke: #000; }
 
         .toggle-badge {
@@ -882,6 +882,80 @@
             padding: 0.5rem 0;
         }
 
+        /* Note Cards */
+        .notes-list-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .note-card {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 0.75rem;
+        }
+
+        .note-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+        }
+
+        .note-card-date {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .note-card-type {
+            font-size: 0.7rem;
+            color: #666;
+            background: #f0f0f0;
+            padding: 0.1rem 0.4rem;
+            border-radius: 8px;
+        }
+
+        .note-card-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .note-card-preview {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 0.5rem;
+        }
+
+        .note-card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .note-action-btn {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            background: #fff;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .note-action-btn:hover {
+            border-color: #999;
+            color: #333;
+        }
+
+        .note-action-btn.delete:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
         /* Project Actions */
         .project-actions {
             display: flex;
@@ -1119,6 +1193,12 @@
                     <div class="input-container">
                         <textarea id="context-input" placeholder="Talk to me..." rows="1"></textarea>
                         <button id="context-send-btn" onclick="sendContextMessage()">Send</button>
+                        <button class="reset-btn" id="reset-btn" onclick="resetUI()" title="Clear chat">
+                            <svg viewBox="0 0 24 24">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
                         <button class="upload-btn" id="upload-btn" onclick="triggerUpload()" title="Upload file">
                             <svg viewBox="0 0 24 24">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -1370,6 +1450,19 @@
             // No-op now
         }
 
+        function resetUI() {
+            // Clear all messages
+            inlineMessages.innerHTML = '';
+            // Hide chat area
+            inlineChat.style.display = 'none';
+            // Close panel if open
+            if (activePanel) {
+                togglePanel(activePanel);
+            }
+            // Reload the quote
+            loadDailyQuote();
+        }
+
         // ============== Utility Functions ==============
 
         function escapeHtml(text) {
@@ -1582,17 +1675,18 @@
             const projectName = project ? project.title : 'Project';
 
             try {
-                const response = await fetch(`/api/projects/${projectId}/notes`);
+                // Use the new structured notes list endpoint
+                const response = await fetch(`/api/projects/${projectId}/notes/list`);
                 const data = await response.json();
 
-                // Show notes in chat area
-                showProjectNotes(projectName, data.notes);
+                // Show notes as list in chat area
+                showProjectNotesList(projectId, projectName, data.notes);
 
                 // Update cached count
                 projectNotesData[projectId] = { count: data.count };
             } catch (error) {
                 console.error('Failed to load notes:', error);
-                showProjectNotes(projectName, null);
+                showProjectNotesList(projectId, projectName, []);
             }
         }
 
@@ -1782,22 +1876,104 @@
             inlineChat.scrollTop = inlineChat.scrollHeight;
         }
 
-        function showProjectNotes(projectName, notes) {
-            // Show project notes in chat area as a system message
+        function showProjectNotesList(projectId, projectName, notes) {
+            // Show project notes as a list of note cards
             inlineChat.style.display = 'block';
 
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message message-system';
+            messageDiv.id = `notes-list-${projectId}`;
+
+            let notesHtml;
+            if (!notes || notes.length === 0) {
+                notesHtml = '<em>No notes yet</em>';
+            } else {
+                notesHtml = notes.map(note => `
+                    <div class="note-card" data-note-filename="${note.filename}">
+                        <div class="note-card-header">
+                            <span class="note-card-date">${escapeHtml(note.date)}</span>
+                            <span class="note-card-type">${escapeHtml(note.type)}</span>
+                        </div>
+                        <div class="note-card-title">${escapeHtml(note.title)}</div>
+                        <div class="note-card-preview">${escapeHtml(note.preview)}</div>
+                        <div class="note-card-actions">
+                            <button class="note-action-btn" onclick="viewNoteDetail('${projectId}', '${note.filename}')">View</button>
+                            <button class="note-action-btn" onclick="bringNoteToChat('${escapeHtml(projectName).replace(/'/g, "\\'")}', '${escapeHtml(note.title).replace(/'/g, "\\'")}', '${escapeHtml(note.preview).replace(/'/g, "\\'")}')">Chat</button>
+                            <button class="note-action-btn delete" onclick="deleteProjectNote('${projectId}', '${note.filename}')">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
             messageDiv.innerHTML = `
                 <div class="message-system-header">
-                    <span class="message-system-title">${escapeHtml(projectName)} - Notes</span>
+                    <span class="message-system-title">${escapeHtml(projectName)} - Notes (${notes.length})</span>
                     <button class="message-system-close" onclick="this.closest('.message-system').remove()">×</button>
                 </div>
-                <div class="message-system-body">${notes ? marked.parse(notes) : '<em>No notes yet</em>'}</div>
+                <div class="message-system-body notes-list-body">
+                    ${notesHtml}
+                </div>
             `;
 
             inlineMessages.appendChild(messageDiv);
             inlineChat.scrollTop = inlineChat.scrollHeight;
+        }
+
+        async function viewNoteDetail(projectId, filename) {
+            // Fetch note details and show full content
+            try {
+                const response = await fetch(`/api/projects/${projectId}/notes/list`);
+                const data = await response.json();
+                const note = data.notes.find(n => n.filename === filename);
+
+                if (note) {
+                    inlineChat.style.display = 'block';
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message message-system';
+                    messageDiv.innerHTML = `
+                        <div class="message-system-header">
+                            <span class="message-system-title">${escapeHtml(note.date)} - ${escapeHtml(note.title)}</span>
+                            <button class="message-system-close" onclick="this.closest('.message-system').remove()">×</button>
+                        </div>
+                        <div class="message-system-body">${marked.parse(note.content || '*No content*')}</div>
+                    `;
+                    inlineMessages.appendChild(messageDiv);
+                    inlineChat.scrollTop = inlineChat.scrollHeight;
+                }
+            } catch (error) {
+                console.error('Failed to load note detail:', error);
+            }
+        }
+
+        function bringNoteToChat(projectName, noteTitle, notePreview) {
+            // Quote note and ask what user wants to do
+            const message = `Regarding this note from "${projectName}":\n\n> **${noteTitle}**\n> ${notePreview}\n\nWhat would you like to do with this?`;
+            contextInput.value = message;
+            contextInput.focus();
+            // Auto-expand textarea
+            contextInput.style.height = 'auto';
+            contextInput.style.height = Math.min(contextInput.scrollHeight, 200) + 'px';
+        }
+
+        async function deleteProjectNote(projectId, filename) {
+            if (!confirm('Delete this note?')) return;
+
+            try {
+                const response = await fetch(`/api/projects/${projectId}/notes/${filename}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    // Refresh the notes list
+                    const existingList = document.getElementById(`notes-list-${projectId}`);
+                    if (existingList) existingList.remove();
+                    await toggleProjectNotes(projectId);
+                    // Update cached count
+                    await loadTasksData();
+                }
+            } catch (error) {
+                console.error('Failed to delete note:', error);
+            }
         }
 
         async function addTaskToProject(projectId, inputEl) {

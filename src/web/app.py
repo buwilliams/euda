@@ -698,7 +698,8 @@ async def sse_endpoint():
 from ..tools.worker.project import (
     create_project, get_projects, get_projects_data, get_project, update_project,
     add_milestone, archive_project, delete_project, get_projects_with_deadlines,
-    get_project_notes, get_project_notes_count, prepend_project_note
+    get_project_notes, get_project_notes_count, prepend_project_note,
+    parse_notes_list, delete_note
 )
 
 
@@ -809,6 +810,22 @@ async def get_project_notes_endpoint(project_id: str):
     notes = get_project_notes(project_id)
     count = get_project_notes_count(project_id)
     return {"project_id": project_id, "notes": notes, "count": count}
+
+
+@app.get("/api/projects/{project_id}/notes/list")
+async def get_project_notes_list_endpoint(project_id: str):
+    """Get project notes as structured list for UI."""
+    notes = parse_notes_list(project_id)
+    return {"project_id": project_id, "notes": notes, "count": len(notes)}
+
+
+@app.delete("/api/projects/{project_id}/notes/{filename}")
+async def delete_project_note_endpoint(project_id: str, filename: str):
+    """Delete a specific note by filename."""
+    result = delete_note(project_id, filename)
+    if "not found" in result.lower():
+        raise HTTPException(status_code=404, detail=result)
+    return {"status": "success", "message": result}
 
 
 @app.post("/api/projects/{project_id}/notes")

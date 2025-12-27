@@ -194,20 +194,32 @@ def get_project_title(project_id: str) -> str:
     return "Unknown"
 
 
+def _get_project_notes_dir(project_id: str) -> Path:
+    """Get the notes directory for a project."""
+    return NOTES_DIR / project_id
+
+
 def get_project_notes(project_id: str) -> str:
     """
-    Get all notes for a project.
+    Get all notes for a project as combined markdown.
 
     Args:
         project_id: The project ID
 
     Returns:
-        The contents of the notes file, or empty string if none exist
+        Combined notes content, or empty string if none exist
     """
-    notes_file = NOTES_DIR / f"{project_id}.md"
-    if notes_file.exists():
-        return notes_file.read_text()
-    return ""
+    notes = parse_notes_list(project_id)
+    if not notes:
+        return ""
+
+    # Combine notes into markdown format
+    parts = []
+    for note in notes:
+        header = f"## {note['date']} - {note['type']}: {note['title']}"
+        parts.append(f"{header}\n\n{note['content']}")
+
+    return "\n\n---\n\n".join(parts)
 
 
 def get_project_notes_count(project_id: str) -> int:
@@ -218,23 +230,118 @@ def get_project_notes_count(project_id: str) -> int:
         project_id: The project ID
 
     Returns:
-        Number of note entries (counted by ## headers)
+        Number of note files
     """
-    notes = get_project_notes(project_id)
-    if not notes:
+    notes_dir = _get_project_notes_dir(project_id)
+    if not notes_dir.exists():
         return 0
-    # Count ## headers as note entries
-    return notes.count("\n## ") + (1 if notes.startswith("## ") else 0)
+    return len([f for f in notes_dir.iterdir() if f.suffix == '.md'])
 
 
-def prepend_project_note(
+def parse_notes_list(project_id: str) -> list:
+    """
+    Get project notes as a structured list.
+
+    Args:
+        project_id: The project ID
+
+    Returns:
+        List of note dictionaries with filename, date, title, content, preview
+    """
+    import re
+
+    notes_dir = _get_project_notes_dir(project_id)
+    if not notes_dir.exists():
+        return []
+
+    notes = []
+    # Sort by filename descending (newest first since filenames are timestamps)
+    note_files = sorted(notes_dir.glob("*.md"), reverse=True)
+
+    for note_file in note_files:
+        content = note_file.read_text()
+
+        # Parse YAML frontmatter
+        if content.startswith('---'):
+            parts = content.split('---', 2)
+            if len(parts) >= 3:
+                frontmatter = parts[1].strip()
+                body = parts[2].strip()
+
+                # Parse frontmatter fields
+                date = ""
+                note_type = "Note"
+                title = note_file.stem
+
+                for line in frontmatter.split('\n'):
+                    if line.startswith('date:'):
+                        date = line[5:].strip()
+                    elif line.startswith('type:'):
+                        note_type = line[5:].strip()
+                    elif line.startswith('title:'):
+                        title = line[6:].strip()
+            else:
+                body = content
+                date = ""
+                note_type = "Note"
+                title = note_file.stem
+        else:
+            body = content
+            date = ""
+            note_type = "Note"
+            title = note_file.stem
+
+        # Generate preview (first 150 chars of body)
+        preview = body[:150].replace('\n', ' ').strip()
+        if len(body) > 150:
+            preview += "..."
+
+        notes.append({
+            "filename": note_file.name,
+            "date": date,
+            "type": note_type,
+            "title": title,
+            "content": body,
+            "preview": preview
+        })
+
+    return notes
+
+
+def delete_note(project_id: str, filename: str) -> str:
+    """
+    Delete a note by its filename.
+
+    Args:
+        project_id: The project ID
+        filename: The note filename (e.g., "20251227-143900.md")
+
+    Returns:
+        Success or error message
+    """
+    notes_dir = _get_project_notes_dir(project_id)
+    note_file = notes_dir / filename
+
+    if not note_file.exists():
+        return f"Note not found: {filename}"
+
+    note_file.unlink()
+
+    # Remove directory if empty
+    if notes_dir.exists() and not any(notes_dir.iterdir()):
+        notes_dir.rmdir()
+
+    return "Note deleted successfully"
+
+
+def add_project_note(
     project_id: str,
     title: str,
     content: str,
     note_type: str = "note"
 ) -> str:
     """
-    Prepend a new note entry to project notes file.
+    Add a new note to a project.
 
     Args:
         project_id: The project ID
@@ -245,23 +352,39 @@ def prepend_project_note(
     Returns:
         Success message
     """
-    notes_file = NOTES_DIR / f"{project_id}.md"
+    notes_dir = _get_project_notes_dir(project_id)
+    notes_dir.mkdir(parents=True, exist_ok=True)
+
     now = datetime.now()
     timestamp = now.strftime("%Y-%m-%d %H:%M")
+    filename = now.strftime("%Y%m%d-%H%M%S.md")
 
-    # Format the new entry
+    # Format with YAML frontmatter
     type_label = note_type.title() if note_type != "note" else "Note"
-    new_entry = f"## {timestamp} - {type_label}: {title}\n\n{content}\n\n---\n\n"
+    note_content = f"""---
+date: {timestamp}
+type: {type_label}
+title: {title}
+---
 
-    # Read existing notes
-    existing = ""
-    if notes_file.exists():
-        existing = notes_file.read_text()
+{content}
+"""
 
-    # Prepend new entry
-    notes_file.write_text(new_entry + existing)
+    note_file = notes_dir / filename
+    note_file.write_text(note_content)
 
     return f"Added note to project: {title}"
+
+
+# Backwards compatibility alias
+def prepend_project_note(
+    project_id: str,
+    title: str,
+    content: str,
+    note_type: str = "note"
+) -> str:
+    """Alias for add_project_note (backwards compatibility)."""
+    return add_project_note(project_id, title, content, note_type)
 
 
 def append_research_result(
