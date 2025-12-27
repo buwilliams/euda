@@ -8,10 +8,9 @@ Clears ALL generated data and user content while preserving only:
 Everything else is wiped clean, including:
 - Inbox (processed, pending, failed, deferred)
 - Lifelogs, signals, notifications
-- All synthesis data (values, behaviors, epistemic, context)
+- All synthesis data (profile, summaries)
 - All agent state and conversation history
 - Tasks, projects, opportunities
-- User profile preferences
 
 Usage:
     python -m src.tools.admin.fresh_start --help

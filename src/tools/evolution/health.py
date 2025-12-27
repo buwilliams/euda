@@ -147,76 +147,71 @@ def assess_data_completeness() -> dict:
     """
     Check what user data exists vs what's missing.
 
+    The unified profile system stores all identity data in:
+    - synthesis/state/profile/profile.YYYY.md (yearly profiles)
+    - synthesis/state/profile/profile.current.md (current profile)
+
     Returns:
-        Dict with completeness status for each data category.
+        Dict with completeness status for profile sections.
     """
     results = {
-        "biographical": {"complete": False, "missing": []},
-        "relationships": {"complete": False, "missing": []},
-        "values": {"complete": False, "missing": []},
-        "epistemic": {"complete": False, "missing": []},
-        "behaviors": {"complete": False, "missing": []},
+        "profile": {"complete": False, "missing": []},
+        "identity_constraints": {"complete": False, "missing": []},
+        "failure_modes": {"complete": False, "missing": []},
+        "behavioral_attractors": {"complete": False, "missing": []},
+        "narrative_identity": {"complete": False, "missing": []},
     }
 
-    # Check biographical context
-    bio_file = SYNTHESIS_DIR / "state" / "context" / "biographical.md"
-    if bio_file.exists():
-        content = bio_file.read_text().strip()
-        # Check if it has actual content beyond template
-        if len(content) > 100 and "Name:" in content:
-            results["biographical"]["complete"] = True
-        else:
-            results["biographical"]["missing"] = ["name", "location", "birth_date"]
+    # Check for current profile
+    profile_dir = SYNTHESIS_DIR / "state" / "profile"
+    current_profile = profile_dir / "profile.current.md"
+
+    if not current_profile.exists():
+        # Check for any yearly profiles
+        yearly_profiles = list(profile_dir.glob("profile.*.md"))
+        yearly_profiles = [p for p in yearly_profiles if p.stem != "profile.current" and not p.stem.startswith("profile.public")]
+        if not yearly_profiles:
+            results["profile"]["missing"] = ["No profile data exists yet"]
+            return results
+
+    # Read profile content
+    profile_content = ""
+    if current_profile.exists():
+        profile_content = current_profile.read_text()
     else:
-        results["biographical"]["missing"] = ["name", "location", "birth_date", "background"]
+        # Fall back to most recent yearly profile
+        yearly_profiles = sorted(profile_dir.glob("profile.*.md"), reverse=True)
+        for p in yearly_profiles:
+            if p.stem != "profile.current" and not p.stem.startswith("profile.public"):
+                profile_content = p.read_text()
+                break
 
-    # Check relationships
-    rel_file = SYNTHESIS_DIR / "state" / "context" / "relationships.md"
-    if rel_file.exists():
-        content = rel_file.read_text().strip()
-        if len(content) > 100:
-            results["relationships"]["complete"] = True
-        else:
-            results["relationships"]["missing"] = ["family", "close_friends", "community"]
+    if len(profile_content) < 100:
+        results["profile"]["missing"] = ["Profile content is minimal"]
+        return results
+
+    results["profile"]["complete"] = True
+
+    # Check for Identity Stack sections
+    if "Identity Constraints" in profile_content or "## Identity Constraints" in profile_content:
+        results["identity_constraints"]["complete"] = True
     else:
-        results["relationships"]["missing"] = ["family", "close_friends", "community"]
+        results["identity_constraints"]["missing"] = ["identity_constraints"]
 
-    # Check values
-    values_dir = SYNTHESIS_DIR / "state" / "values"
-    if values_dir.exists():
-        current = (values_dir / "current.values.md").exists()
-        lifetime = (values_dir / "lifetime.values.md").exists()
-        if current and lifetime:
-            results["values"]["complete"] = True
-        else:
-            if not current:
-                results["values"]["missing"].append("current_values")
-            if not lifetime:
-                results["values"]["missing"].append("lifetime_values")
+    if "Failure Modes" in profile_content or "## Failure Modes" in profile_content:
+        results["failure_modes"]["complete"] = True
     else:
-        results["values"]["missing"] = ["current_values", "lifetime_values"]
+        results["failure_modes"]["missing"] = ["failure_modes"]
 
-    # Check epistemic
-    epistemic_dir = SYNTHESIS_DIR / "state" / "epistemic"
-    if epistemic_dir.exists():
-        axioms = (epistemic_dir / "axioms.md").exists()
-        if axioms:
-            content = (epistemic_dir / "axioms.md").read_text()
-            if len(content) > 100:
-                results["epistemic"]["complete"] = True
-    if not results["epistemic"]["complete"]:
-        results["epistemic"]["missing"] = ["axioms", "mental_models"]
+    if "Behavioral Attractors" in profile_content or "## Behavioral Attractors" in profile_content:
+        results["behavioral_attractors"]["complete"] = True
+    else:
+        results["behavioral_attractors"]["missing"] = ["behavioral_attractors"]
 
-    # Check behaviors
-    behaviors_dir = SYNTHESIS_DIR / "state" / "behaviors"
-    if behaviors_dir.exists():
-        patterns = (behaviors_dir / "patterns.md").exists()
-        if patterns:
-            content = (behaviors_dir / "patterns.md").read_text()
-            if len(content) > 100:
-                results["behaviors"]["complete"] = True
-    if not results["behaviors"]["complete"]:
-        results["behaviors"]["missing"] = ["patterns"]
+    if "Narrative Identity" in profile_content or "## Narrative Identity" in profile_content:
+        results["narrative_identity"]["complete"] = True
+    else:
+        results["narrative_identity"]["missing"] = ["narrative_identity"]
 
     return results
 

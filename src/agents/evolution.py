@@ -91,7 +91,7 @@ def run_interactive():
             elif user_input.lower() == 'evolve':
                 user_input = """Please analyze the user's synthesis and consider agent evolutions:
                 1. Read the user's identity profile (get_profile)
-                2. Review the user's epistemic axioms and values
+                2. Review the identity stack (constraints, failure modes, attractors, tradeoffs)
                 3. For each agent, read their current identity
                 4. Determine if any agent identities should evolve to better serve this user
                 5. If yes, propose specific identity evolutions with clear rationale"""

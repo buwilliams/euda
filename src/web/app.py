@@ -631,57 +631,10 @@ async def get_synthesis_summary_endpoint():
     return {"content": get_synthesis_summary()}
 
 
-@app.get("/api/identity/behaviors")
-async def get_identity_behaviors():
-    """Get behavioral patterns - now part of unified profile."""
-    return {"content": get_profile(), "note": "Behaviors are now integrated into the unified profile"}
-
-
-@app.get("/api/identity/biographical")
-async def get_identity_biographical():
-    """Get biographical context - now part of unified profile."""
-    return {"content": get_profile(), "note": "Biographical context is now integrated into the unified profile"}
-
-
-@app.get("/api/identity/relationships")
-async def get_identity_relationships():
-    """Get relationship narratives - now part of unified profile."""
-    return {"content": get_profile(), "note": "Relationships are now integrated into the unified profile"}
-
-
 @app.get("/api/identity/profile")
 async def get_identity_profile():
-    """Get consolidated identity profile."""
+    """Get the unified identity profile."""
     return {"content": get_profile()}
-
-
-# ============== Values (deprecated - use /api/identity) ==============
-
-@app.get("/api/values")
-async def get_values():
-    """Get values - now part of unified profile. Use /api/identity instead."""
-    return {
-        "profile": get_profile(),
-        "note": "Values are now integrated into the unified identity profile. Use /api/identity for full view."
-    }
-
-
-@app.get("/api/values/current")
-async def get_current():
-    """Get current values - now part of unified profile."""
-    return {"content": get_synthesis_summary(), "note": "Use /api/identity for unified profile"}
-
-
-@app.get("/api/values/phase")
-async def get_phase():
-    """Get phase values - now part of unified profile."""
-    return {"content": get_profile(), "note": "Phase values are now integrated into the unified profile"}
-
-
-@app.get("/api/values/lifetime")
-async def get_lifetime():
-    """Get lifetime values - now part of unified profile."""
-    return {"content": get_profile(), "note": "Lifetime values are now integrated into the unified profile"}
 
 
 # ============== Cards ==============

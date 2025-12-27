@@ -330,7 +330,7 @@ def get_system_overview() -> str:
 - `src/tools/` - Tool definitions and handlers
 - `data/shared/state/lifelog/` - Life log entries
 - `data/worker/` - Project and task management
-- `data/synthesis/` - User identity (values, epistemic, behaviors, context)
+- `data/synthesis/` - User identity profile and summaries
 
 ## Data Flow
 ```
