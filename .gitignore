@@ -7,6 +7,9 @@ data/**/*.json
 data/**/*.md
 data/**/*.txt
 data/**/*.signal
+data/**/*.hash
+# Lifelog directories (personal data)
+data/shared/state/lifelog/
 # Inbox files (ingested content)
 data/ingestion/state/inbox/**/*
 # But keep .gitkeep files (for directory structure)
