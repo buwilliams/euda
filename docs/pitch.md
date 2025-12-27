@@ -1,10 +1,8 @@
 # Euno
 
-*Pronounced "you-know"*
-
 **A personal intelligence that learns to anticipate you.**
 
-*Built for its creator first—refined through lived experience, not hypothetical users.*
+*Pronounced "you-know." Built for its creator first—refined through lived experience, not hypothetical users.*
 
 ---
 
@@ -63,38 +61,32 @@ As Euno learns more about you, the capabilities deepen:
 
 ### For Parents
 - Understand your child's current season of life and surface age-appropriate guidance
-- Notice patterns in family dynamics and suggest adjustments
 - Remember what worked (and didn't) with older children
 - Coordinate logistics between family members who also use Euno
 
 ### For Your Wellbeing
 - Detect early patterns of burnout or depression before you recognize them
 - Gently guide you toward activities that historically restore your energy
-- Notice when you're avoiding something important and surface it carefully
 - Track what actually makes you feel better versus what you think does
 
 ### For Daily Life
 - Order medication for your dog before you remember to
-- Notice recurring expenses and update your budget automatically
 - Prepare you for tomorrow's conversation with context you've forgotten
 - Handle routine logistics so your attention stays on what matters
 
 ### For Your Finances
 - Learn your actual spending patterns (not your aspirational budget)
-- Surface financial decisions at the right time with relevant context
 - Notice when spending doesn't align with stated priorities
 - Manage recurring tasks like bill reviews and subscription audits
 
 ### For Your Relationships
-- Detect complicated dynamics and help you navigate them
 - Notice when you're neglecting relationships that matter to you
-- Remember what you committed to and surface follow-ups
+- Detect complicated dynamics and help you navigate them
 - If others use Euno, exchange "public profiles" to find genuine connection points
 
 ### For Personal Growth
 - Surface opportunities that stretch you just enough (90% safe, 10% surprising)
 - Notice recurring interests you haven't acted on
-- Connect current curiosities to past explorations
 - Track what you're actually learning versus what you planned to learn
 
 ---
@@ -115,7 +107,7 @@ As Euno learns more about you, the capabilities deepen:
 
 ## The Name
 
-Euno [U-no], from *Eudaimonia*—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities.
+From *Eudaimonia*—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities.
 
 ---
 
