@@ -11,6 +11,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
+from .project import EUNO_PROJECT_ID
+
 # Base paths - Tasks are owned by Worker agent
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 WORKER_DIR = DATA_DIR / "worker"
@@ -1197,6 +1199,10 @@ def get_pending_tasks_for_worker() -> list:
     pending = []
     for task in queue["tasks"]:
         if task["status"] != "pending":
+            continue
+
+        # Skip Euno project tasks (these are agent notifications, not work items)
+        if task.get("project_id") == EUNO_PROJECT_ID:
             continue
 
         delegation = task.get("delegation", {})

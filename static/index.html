@@ -939,11 +939,6 @@
             color: #fff !important;
         }
 
-        .euno-task {
-            border-left: 3px solid #6366f1;
-            background: linear-gradient(to right, rgba(99, 102, 241, 0.05), transparent);
-        }
-
         /* Markdown styles */
         .message-content h1, .message-content h2, .message-content h3, .message-content h4 {
             margin: 0.75em 0 0.5em 0;
@@ -1453,11 +1448,11 @@
                 const badgeClass = isEuno ? 'task-project-badge euno-badge' : 'task-project-badge';
                 const badgeText = isEuno ? 'Euno' : (task.project_title || 'General');
                 return `
-                <div class="task-item ${isEuno ? 'euno-task' : ''}" data-task-id="${task.id}">
+                <div class="task-item" data-task-id="${task.id}">
                     <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
                     <div class="task-info">
                         <span class="${badgeClass}" title="${escapeHtml(task.project_title || 'General')}">${escapeHtml(badgeText)}</span>
-                        <div class="task-description" onclick="showTaskFullContent('${escapeHtml(task.description).replace(/'/g, "\\'")}', '${escapeHtml(task.project_title || 'General').replace(/'/g, "\\'")}')" title="Click to view full text">${escapeHtml(task.description)}</div>
+                        <div class="task-description" onclick="showTaskById('${task.id}')" title="Click to view full text">${escapeHtml(task.description)}</div>
                     </div>
                     <button class="task-snooze" onclick="snoozeTask(event, '${task.id}')" title="Snooze until tomorrow">💤</button>
                     <button class="task-delete" onclick="deleteTask(event, '${task.id}')" title="Delete">×</button>
@@ -1676,7 +1671,7 @@
                     <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
                     <div class="task-info">
                         <span class="task-project-badge" title="${escapeHtml(task.project_title || 'General')}">${escapeHtml(task.project_title || 'General')}</span>
-                        <div class="task-description" onclick="showTaskFullContent('${escapeHtml(task.description).replace(/'/g, "\\'")}', '${escapeHtml(task.project_title || 'General').replace(/'/g, "\\'")}')" title="Click to view full text">${escapeHtml(task.description)}</div>
+                        <div class="task-description" onclick="showTaskById('${task.id}')" title="Click to view full text">${escapeHtml(task.description)}</div>
                     </div>
                     <button class="task-delete" onclick="deleteTask(event, '${task.id}')" title="Delete">×</button>
                 </div>
@@ -1705,6 +1700,13 @@
 
             inlineMessages.appendChild(messageDiv);
             inlineChat.scrollTop = inlineChat.scrollHeight;
+        }
+
+        function showTaskById(taskId) {
+            // Look up task in tasksData or completedTasksData and show in chat
+            const task = tasksData.find(t => t.id === taskId) || completedTasksData.find(t => t.id === taskId);
+            if (!task) return;
+            showTaskFullContent(task.description, task.project_title || 'General');
         }
 
         function showTaskFullContent(description, projectName) {
