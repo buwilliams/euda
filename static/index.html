@@ -881,6 +881,41 @@
         .project-action-btn:hover { border-color: #999; color: #333; }
         .project-action-btn.archive:hover { border-color: #f59e0b; color: #92400e; }
 
+        /* Project Add Task */
+        .project-add-task {
+            display: flex;
+            gap: 0.25rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+        }
+
+        .project-add-input {
+            flex: 1;
+            padding: 0.35rem 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 0.8rem;
+        }
+
+        .project-add-input:focus {
+            outline: none;
+            border-color: #999;
+        }
+
+        .project-add-btn {
+            padding: 0.35rem 0.6rem;
+            border: none;
+            background: #000;
+            color: #fff;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .project-add-btn:hover { background: #333; }
+
         /* Task Archive */
         .task-archive {
             opacity: 0;
@@ -895,44 +930,6 @@
 
         .task-item:hover .task-archive { opacity: 1; }
         .task-archive:hover { color: #f59e0b; }
-
-        /* Quick Add */
-        .panel-footer {
-            padding: 0.75rem;
-            border-top: 1px solid #eee;
-            background: #fff;
-        }
-
-        .quick-add-form { display: flex; gap: 0.5rem; }
-
-        .quick-add-input {
-            flex: 1;
-            padding: 0.5rem 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: inherit;
-            font-size: 0.85rem;
-            transition: border-color 0.2s;
-        }
-
-        .quick-add-input:focus { outline: none; border-color: #666; }
-        .quick-add-input::placeholder { color: #999; }
-
-        .quick-add-btn {
-            padding: 0.5rem 0.75rem;
-            border: none;
-            border-radius: 4px;
-            background: #000;
-            color: #fff;
-            font-family: inherit;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: background 0.2s;
-            white-space: nowrap;
-        }
-
-        .quick-add-btn:hover { background: #333; }
-        .quick-add-btn:disabled { background: #ccc; cursor: not-allowed; }
 
         /* Notification items */
         .notification-item {
@@ -1259,12 +1256,6 @@
                     <div id="completed-tasks">
                         <div class="task-empty">No completed tasks</div>
                     </div>
-                </div>
-            </div>
-            <div class="panel-footer">
-                <div class="quick-add-form">
-                    <input type="text" id="quick-add-input" class="quick-add-input" placeholder="Add a task..." onkeypress="if(event.key==='Enter')quickAddTask()">
-                    <button class="quick-add-btn" onclick="quickAddTask()">Add</button>
                 </div>
             </div>
         </aside>
@@ -1608,6 +1599,10 @@
                                     </div>
                                 `).join('')
                             }
+                            <div class="project-add-task">
+                                <input type="text" class="project-add-input" id="add-task-${project.id}" placeholder="Add task..." onkeypress="if(event.key==='Enter')addTaskToProject('${project.id}', this)">
+                                <button class="project-add-btn" onclick="addTaskToProject('${project.id}', document.getElementById('add-task-${project.id}'))">+</button>
+                            </div>
                             <div class="project-notes-toggle" onclick="toggleProjectNotes('${project.id}')" title="Click to view notes">
                                 <span class="project-notes-icon">📝</span>
                                 <span>${noteCount} note${noteCount !== 1 ? 's' : ''}</span>
@@ -1831,14 +1826,28 @@
             inlineChat.scrollTop = inlineChat.scrollHeight;
         }
 
-        function quickAddTask() {
-            const quickInput = document.getElementById('quick-add-input');
-            const task = quickInput.value.trim();
-            if (!task || isWaiting) return;
+        async function addTaskToProject(projectId, inputEl) {
+            const description = inputEl.value.trim();
+            if (!description) return;
 
-            contextInput.value = `Create a task to ${task}`;
-            quickInput.value = '';
-            sendContextMessage();
+            try {
+                const response = await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        description: description,
+                        project_id: projectId,
+                        priority: 'medium'
+                    })
+                });
+
+                if (response.ok) {
+                    inputEl.value = '';
+                    await loadTasksData();
+                }
+            } catch (error) {
+                console.error('Failed to add task:', error);
+            }
         }
 
         function updateTasksBadge() {
