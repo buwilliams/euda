@@ -177,17 +177,22 @@ The interface adapts to the rhythm of your day.
 
 ## Conversation Mode
 
-When you engage in chat, the conversation has depth.
+Chat expands and collapses in place - no screen switching. The context view remains visible, and conversation appears alongside or below it.
 
 ```
 ┌─────────────────────────────────────────┐
-│  ← Back to overview                     │
+│  Good morning                           │
+│                                         │
+│  TODAY                                  │
+│  ─────                                  │
+│  • Deep work window until 11am          │
+│  • 11:30 Call with Sarah                │
+│                                         │
+├─────────────────────────────────────────┤
+│  ▼ Chat                                 │
 │                                         │
 │  You: I'm feeling stuck on the          │
-│       product launch. Not sure where    │
-│       to start.                         │
-│                                         │
-│  ───                                    │
+│       product launch.                   │
 │                                         │
 │  You've mentioned this a few times.     │
 │  Last week you said the scope felt      │
@@ -197,19 +202,15 @@ When you engage in chat, the conversation has depth.
 │  the smallest piece that would feel     │
 │  like real progress?                    │
 │                                         │
-│  [Just thinking out loud]               │
-│  [Help me break this down]              │
-│  [I want to commit to something]        │
-│                                         │
-├─────────────────────────────────────────┤
 │  [Continue...]                          │
 └─────────────────────────────────────────┘
 ```
 
 **Experience:**
+- Context and conversation coexist
+- No jarring screen transitions
+- Expand to talk, collapse when done
 - "I remember what you've said"
-- "I'm connecting dots for you"
-- "You control what happens with this"
 - Conversation has depth, not just Q&A
 
 ## Design Principles
