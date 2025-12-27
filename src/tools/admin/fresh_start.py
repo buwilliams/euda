@@ -13,14 +13,10 @@ Everything else is wiped clean, including:
 - Tasks, projects, opportunities
 - User profile preferences
 
-Test core files are stored separately in test_core/ (project root) and can be
-copied back to inbox/pending/ with --with-test-core flag.
-
 Usage:
     python -m src.tools.admin.fresh_start --help
     python -m src.tools.admin.fresh_start --dry-run
-    python -m src.tools.admin.fresh_start --with-test-core
-    python -m src.tools.admin.fresh_start --with-test-core --dry-run
+    python -m src.tools.admin.fresh_start
 """
 
 import argparse
@@ -31,27 +27,6 @@ from pathlib import Path
 # Base paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
-TEST_CORE_DIR = PROJECT_ROOT / "test_core"  # Stored outside data/ to survive fresh-start
-
-# Test core: files that provide meaningful content for synthesis testing
-# These are stored in test_core/ at project root, copied to inbox/pending/ when needed
-TEST_CORE_FILES = [
-    # Personal writings (philosophy essays - reveal thinking patterns)
-    "A Primer on Logic.txt",
-    "AI Economics - The Time Traveler_s Gift.txt",
-    "Cyclic Rationality.txt",
-    "Economics in the Intelligence Age.txt",
-    "Technohumanism.txt",
-    "The Rise of the Outcome Economy.txt",
-    "Utility of Truth.txt",
-    "Why Hypotheticals Matter.txt",
-    # Dated personal notes
-    "2024-12-23_meeting.txt",
-    "2024-12-24_holiday_note.txt",
-    "2024-12-24_idea.txt",
-    "2025-12-19_idea.txt",
-    "2025-12-24_dev_note.txt",
-]
 
 # Directories to PRESERVE (not cleared) - only system config, not user data
 PRESERVE_DIRS = [
@@ -147,48 +122,11 @@ def ensure_gitkeep(dir_path: Path, dry_run: bool = False):
         gitkeep.touch()
 
 
-def copy_test_core_to_pending(dry_run: bool = False) -> int:
-    """
-    Copy test core files from test_core/ to inbox/pending/ for processing.
-
-    Test core files are stored outside data/ to survive fresh-start.
-
-    Returns count of files copied.
-    """
-    pending_dir = DATA_DIR / "ingestion" / "state" / "inbox" / "pending"
-
-    if not TEST_CORE_DIR.exists():
-        print(f"  Error: Test core directory not found: {TEST_CORE_DIR}")
-        print(f"  Please ensure test files exist in {TEST_CORE_DIR}")
-        return 0
-
-    if not dry_run:
-        pending_dir.mkdir(parents=True, exist_ok=True)
-
-    count = 0
-    for filename in TEST_CORE_FILES:
-        src = TEST_CORE_DIR / filename
-        dst = pending_dir / filename
-
-        if not src.exists():
-            print(f"  Warning: Test core file not found: {filename}")
-            continue
-
-        if dry_run:
-            print(f"  [DRY-RUN] Would copy: {filename}")
-        else:
-            shutil.copy2(src, dst)
-        count += 1
-
-    return count
-
-
-def fresh_start(with_test_core: bool = False, dry_run: bool = False):
+def fresh_start(dry_run: bool = False):
     """
     Perform a fresh start of Euno.
 
     Args:
-        with_test_core: If True, copy test core files to pending for reprocessing
         dry_run: If True, only show what would be done
     """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -222,14 +160,8 @@ def fresh_start(with_test_core: bool = False, dry_run: bool = False):
         if not dry_run:
             print(f"   ✓ {rel_path}")
 
-    # Step 3: Optionally copy test core to pending
-    if with_test_core:
-        print("\n3. Copying test core for processing...")
-        count = copy_test_core_to_pending(dry_run)
-        print(f"\n   Test core files copied: {count}")
-
-    # Step 4: Clear ingestion processed hashes (so files can be reprocessed)
-    print("\n4. Resetting ingestion tracking...")
+    # Step 3: Clear ingestion processed hashes (so files can be reprocessed)
+    print("\n3. Resetting ingestion tracking...")
     config_dir = DATA_DIR / "ingestion" / "config"
     hashes_file = config_dir / "processed_hashes.json"
     if hashes_file.exists():
@@ -252,9 +184,6 @@ def fresh_start(with_test_core: bool = False, dry_run: bool = False):
         print("DRY RUN complete. No changes were made.")
     else:
         print("Fresh start complete!")
-        if with_test_core:
-            print(f"\nTest core ({len(TEST_CORE_FILES)} files) ready in inbox/pending/")
-            print("Run the ingestion agent to process them.")
     print("=" * 60)
 
 
@@ -267,29 +196,9 @@ def main():
         action="store_true",
         help="Show what would be done without making changes"
     )
-    parser.add_argument(
-        "--with-test-core",
-        action="store_true",
-        help="Copy test core files from test_core/ to inbox/pending/ for processing"
-    )
-    parser.add_argument(
-        "--list-test-core",
-        action="store_true",
-        help="List test core files and exit"
-    )
 
     args = parser.parse_args()
-
-    if args.list_test_core:
-        print(f"Test Core Location: {TEST_CORE_DIR}")
-        print(f"Test Core Files ({len(TEST_CORE_FILES)} total):")
-        for f in TEST_CORE_FILES:
-            path = TEST_CORE_DIR / f
-            status = "✓" if path.exists() else "✗ MISSING"
-            print(f"  {status} {f}")
-        return
-
-    fresh_start(with_test_core=args.with_test_core, dry_run=args.dry_run)
+    fresh_start(dry_run=args.dry_run)
 
 
 if __name__ == "__main__":

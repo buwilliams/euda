@@ -1,3 +1,0 @@
-I had this idea while on a walk today: what if the AI assistant could learn not just from what I tell it, but from observing patterns in the timestamps of when I do things? Like if I always journal in the evening, it could gently suggest that when I haven't done it by a certain time.
-
-The key insight is that behavior reveals preferences more accurately than stated intentions. The assistant should be a careful observer, not just a command executor.

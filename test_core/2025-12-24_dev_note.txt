@@ -1,1 +1,0 @@
-2025-12-24: Completed the ingestion stability feature with state tracking, crash recovery, and status reporting via the Introspection agent.

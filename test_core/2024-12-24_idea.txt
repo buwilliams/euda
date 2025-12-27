@@ -1,1 +1,0 @@
-Idea: Build a CLI progress display for batch processing. Show % complete and token usage.
