@@ -4,7 +4,9 @@
 
 ## The Essence
 
-A personal intelligence is not an assistant. It's not a helper or a tool. It's an entity that knows you - deeply, intimately, comprehensively - and uses that knowledge to anticipate your needs, surface what matters, and act on your behalf.
+Today's AI can remember facts about you. Your dog's name, your meeting preferences, your favorite restaurant. But it doesn't actually *know* you. It can't anticipate what you need because it hasn't studied your life deeply enough to understand who you are.
+
+A personal intelligence is different. It's not an assistant. It's not a helper or a tool. It's an entity that knows you - deeply, intimately, comprehensively - and uses that knowledge to anticipate your needs, surface what matters, and act on your behalf.
 
 It learns from everything: your writing, your messages, your photos, your calendar, your browsing, your purchases, your movements, your conversations. Not to surveil, but to understand. Not to judge, but to serve.
 
@@ -16,7 +18,7 @@ And it uses all of this to anticipate what you need before you know you need it.
 
 This isn't a transactional relationship. It's not "I ask, it answers." It's more like having a second mind - one that's always working in the background, thinking about your life, noticing what matters, preparing what's needed.
 
-**It knows you the way a lifelong friend knows you** - but with perfect memory and infinite patience. It remembers that conversation you had three years ago. It notices that you always get restless in February. It sees that you say family matters most but your calendar tells a different story.
+**It knows you the way a lifelong friend knows you** - but with perfect memory, infinite patience, and the ability to go deep on any topic that matters to you. It remembers that conversation you had three years ago. It notices that you always get restless in February. It sees that you say family matters most but your calendar tells a different story.
 
 **It anticipates you the way you anticipate yourself** - but better. It knows what you'll need for tomorrow's conversation before you think to prepare. It senses when you're about to overcommit. It recognizes the early signs of burnout before you do.
 
@@ -60,6 +62,8 @@ Content shows what you say. Behavior shows what you do.
 
 Over time, a rich model emerges:
 
+- **Your identity constraints** - What you'd rather suffer than violate; the non-negotiables revealed by sacrifice and refusal
+- **Your failure modes** - How you break down under stress; predictable patterns that derail you
 - **Your values** - Not just what you claim, but what your behavior reveals
 - **Your rhythms** - Daily, weekly, seasonal patterns of energy and attention
 - **Your relationships** - Who matters, how you connect, what you give and receive
@@ -126,9 +130,9 @@ When something needs your attention, it surfaces - but thoughtfully:
 
 ### Acts Appropriately
 
-Some things it does autonomously - low stakes, clear value, aligned with your preferences.
+Some things it does autonomously - low stakes, clear value, aligned with your preferences. Ordering medication for your dog before you remember to. Rescheduling a meeting when it sees a conflict. Following up on something you committed to.
 
-Some things it prepares for your decision - higher stakes, multiple options, your judgment needed.
+Some things it prepares for your decision - higher stakes, multiple options, your judgment needed. Research for a purchase you're considering. Options for that conversation you've been putting off. A draft response to a difficult email.
 
 Some things it only does when asked - sensitive areas, uncertain situations, your explicit direction required.
 
@@ -221,9 +225,11 @@ Your autonomy is sacred. The intelligence enhances your agency, never replaces i
 
 ### Protect, Don't Exploit
 
-Your attention is finite and precious. The intelligence protects it - filtering noise, batching interruptions, guarding focus.
+Your attention is finite and precious. Engagement algorithms are designed to hijack it—infinite feeds engineered for clicks, not your wellbeing. The intelligence stands between you and that.
 
-It's not optimizing for engagement. It's not trying to maximize your time with it. Success is measured by your flourishing, not by its usage.
+It reads your feeds so you don't have to. It surfaces what actually matters and shields you from the rest. It can post on your behalf when you want to share without getting sucked in. Less screen time, less brain-rot, without disconnecting entirely.
+
+More broadly, the intelligence protects your attention—filtering noise, batching interruptions, guarding focus. It's not optimizing for engagement. It's not trying to maximize your time with it. Success is measured by your flourishing, not by its usage.
 
 ### Promote Life, Not Productivity
 
