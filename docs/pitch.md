@@ -126,3 +126,17 @@ Euno [U-no], from *Eudaimonia*—ancient Greek for "human flourishing." A deep s
 - [Vision](vision.md) — The full philosophy and long-term direction
 - [Architecture](architecture.md) — Technical implementation details
 - [User Experience](user-experience.md) — UI/UX philosophy
+
+---
+
+## Elevator Pitch (1 minute)
+
+> Today's AI can remember facts about you—your dog's name, your meeting preferences. But it doesn't actually know you. It can't anticipate what you need because it hasn't studied your life deeply enough to understand who you are.
+>
+> Euno is different. It's a personal intelligence that ingests your writing, photos, messages, and behaviors to build a real model of your identity—your values, your patterns, your failure modes. Not who you say you are. Who you actually are.
+>
+> And it doesn't wait for you to ask. It works proactively—surfacing what matters, noticing what you're avoiding, and actually doing tasks for you. Research, scheduling, ordering, follow-ups. Real work, off your plate, before you think to ask.
+>
+> The goal isn't productivity. It's flourishing. A caring collaborator that knows you deeply and gets better at anticipating you over years, not just sessions.
+>
+> That's Euno.
