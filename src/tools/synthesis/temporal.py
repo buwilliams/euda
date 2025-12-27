@@ -21,13 +21,14 @@ import json
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
-TEMPORAL_DIR = SYNTHESIS_DIR / "state" / "temporal"  # For evolution, timeline
-PROFILE_DIR = SYNTHESIS_DIR / "state" / "profile"    # For profiles (contract-compliant)
+PROFILE_DIR = SYNTHESIS_DIR / "state" / "profile"    # All profile content here
 SHARED_PROFILE_DIR = DATA_DIR / "shared" / "state" / "profile"  # For other agents
 LOG_DIR = DATA_DIR / "shared" / "state" / "lifelog"
 
+# Legacy path for migration
+TEMPORAL_DIR = SYNTHESIS_DIR / "state" / "temporal"
+
 # Ensure directories exist
-TEMPORAL_DIR.mkdir(parents=True, exist_ok=True)
 PROFILE_DIR.mkdir(parents=True, exist_ok=True)
 SHARED_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -165,7 +166,13 @@ def get_evolution() -> str:
     Returns:
         Evolution content or message if not found
     """
-    evolution_file = TEMPORAL_DIR / "evolution.md"
+    evolution_file = PROFILE_DIR / "evolution.md"
+
+    # Fall back to legacy location
+    if not evolution_file.exists():
+        legacy_file = TEMPORAL_DIR / "evolution.md"
+        if legacy_file.exists():
+            evolution_file = legacy_file
 
     if not evolution_file.exists():
         return "No evolution document exists yet. Use write_evolution to create one."
@@ -191,7 +198,7 @@ def write_evolution(content: str) -> str:
     Returns:
         Confirmation message
     """
-    evolution_file = TEMPORAL_DIR / "evolution.md"
+    evolution_file = PROFILE_DIR / "evolution.md"
     timestamp = datetime.now().isoformat()
 
     full_content = f"""# How I've Evolved
@@ -205,6 +212,11 @@ Generated: {timestamp}
 
     with open(evolution_file, 'w') as f:
         f.write(full_content)
+
+    # Clean up legacy location
+    legacy_file = TEMPORAL_DIR / "evolution.md"
+    if legacy_file.exists():
+        legacy_file.unlink()
 
     return "Evolution document written"
 
@@ -220,7 +232,13 @@ def get_influence_timeline() -> str:
     Returns:
         Timeline content or message if not found
     """
-    timeline_file = TEMPORAL_DIR / "influences_timeline.md"
+    timeline_file = PROFILE_DIR / "influences_timeline.md"
+
+    # Fall back to legacy location
+    if not timeline_file.exists():
+        legacy_file = TEMPORAL_DIR / "influences_timeline.md"
+        if legacy_file.exists():
+            timeline_file = legacy_file
 
     if not timeline_file.exists():
         return "No influence timeline exists yet."
@@ -242,14 +260,20 @@ def add_influence_to_timeline(year: int, category: str, item: str, impact: str) 
     Returns:
         Confirmation message
     """
-    timeline_file = TEMPORAL_DIR / "influences_timeline.md"
+    timeline_file = PROFILE_DIR / "influences_timeline.md"
+    legacy_file = TEMPORAL_DIR / "influences_timeline.md"
     timestamp = datetime.now().isoformat()
 
-    # Read existing or create new
+    # Read existing from either location or create new
+    content = None
     if timeline_file.exists():
         with open(timeline_file, 'r') as f:
             content = f.read()
-    else:
+    elif legacy_file.exists():
+        with open(legacy_file, 'r') as f:
+            content = f.read()
+
+    if content is None:
         content = f"""# Influence Timeline
 
 *When influences appeared and their impact*
@@ -267,6 +291,10 @@ Updated: {timestamp}
 
     with open(timeline_file, 'w') as f:
         f.write(content)
+
+    # Clean up legacy location
+    if legacy_file.exists():
+        legacy_file.unlink()
 
     return f"Added to timeline: {item} ({year})"
 
@@ -318,16 +346,20 @@ def generate_current_profile() -> str:
     if not profiles:
         return "No temporal profiles exist. Cannot generate current profile."
 
-    # Get evolution if it exists
+    # Get evolution if it exists (check new location first, then legacy)
     evolution = ""
-    evolution_file = TEMPORAL_DIR / "evolution.md"
+    evolution_file = PROFILE_DIR / "evolution.md"
+    if not evolution_file.exists():
+        evolution_file = TEMPORAL_DIR / "evolution.md"
     if evolution_file.exists():
         with open(evolution_file, 'r') as f:
             evolution = f.read()
 
-    # Get influence timeline if it exists
+    # Get influence timeline if it exists (check new location first, then legacy)
     timeline = ""
-    timeline_file = TEMPORAL_DIR / "influences_timeline.md"
+    timeline_file = PROFILE_DIR / "influences_timeline.md"
+    if not timeline_file.exists():
+        timeline_file = TEMPORAL_DIR / "influences_timeline.md"
     if timeline_file.exists():
         with open(timeline_file, 'r') as f:
             timeline = f.read()
