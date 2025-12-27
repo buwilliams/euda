@@ -1,14 +1,11 @@
 """
-Temporal Profile tools for the Synthesis Agent (The Keeper).
+Profile tools for the Synthesis Agent (The Keeper).
 
-Tracks who the user is OVER TIME - not just a static snapshot.
+Manages yearly profiles and evolution tracking.
 
-Each year produces a temporal profile card capturing:
-- Values at that time
-- Influences active/discovered that year
-- Key beliefs and mental models
-- Key relationships and their state
-- What changed from the previous year
+Each year produces a profile capturing:
+- Behavioral model (identity constraints, failure modes, attractors, tradeoffs, epistemic style)
+- Biographical context (values, influences, beliefs, relationships)
 
 The evolution view shows how the user has changed across all years.
 """
@@ -16,17 +13,13 @@ The evolution view shows how the user has changed across all years.
 from datetime import datetime
 from pathlib import Path
 import re
-import json
 
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
-PROFILE_DIR = SYNTHESIS_DIR / "state" / "profile"    # All profile content here
-SHARED_PROFILE_DIR = DATA_DIR / "shared" / "state" / "profile"  # For other agents
+PROFILE_DIR = SYNTHESIS_DIR / "state" / "profile"
+SHARED_PROFILE_DIR = DATA_DIR / "shared" / "state" / "profile"
 LOG_DIR = DATA_DIR / "shared" / "state" / "lifelog"
-
-# Legacy path for migration
-TEMPORAL_DIR = SYNTHESIS_DIR / "state" / "temporal"
 
 # Ensure directories exist
 PROFILE_DIR.mkdir(parents=True, exist_ok=True)
@@ -34,12 +27,12 @@ SHARED_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # =============================================================================
-# TEMPORAL PROFILE TOOLS
+# YEARLY PROFILE TOOLS
 # =============================================================================
 
 def get_temporal_profile(year: int) -> str:
     """
-    Read the temporal profile for a specific year.
+    Read the profile for a specific year.
 
     Args:
         year: The year to read profile for
@@ -47,92 +40,64 @@ def get_temporal_profile(year: int) -> str:
     Returns:
         Profile content or message if not found
     """
-    # Check new location first (profile.YYYY.md in profile/)
     profile_file = PROFILE_DIR / f"profile.{year}.md"
 
-    # Fall back to old location for migration (YYYY.profile.md in temporal/)
     if not profile_file.exists():
-        old_file = TEMPORAL_DIR / f"{year}.profile.md"
-        if old_file.exists():
-            profile_file = old_file
+        return f"No profile exists for {year}."
 
-    if not profile_file.exists():
-        return f"No temporal profile exists for {year}. Use write_temporal_profile to create one."
-
-    with open(profile_file, 'r') as f:
-        return f.read()
+    return profile_file.read_text()
 
 
 def write_temporal_profile(year: int, content: str) -> str:
     """
-    Write the temporal profile for a specific year.
+    Write biographical content for a specific year.
 
-    The profile should capture who the user was THAT YEAR:
-    - Values they held
-    - Influences (books, media, thinkers, ideas) discovered or active
-    - Key beliefs and mental models
-    - Important relationships and their state
-    - Major themes and patterns
-    - What changed from the previous year
+    This captures raw biographical data that will be synthesized into
+    the full profile by the extraction step.
 
     Args:
         year: The year this profile is for
-        content: The profile content in markdown format
+        content: The biographical content in markdown format
 
     Returns:
         Confirmation message
     """
-    # Write to contract-compliant location: profile/profile.YYYY.md
     profile_file = PROFILE_DIR / f"profile.{year}.md"
     timestamp = datetime.now().isoformat()
 
-    full_content = f"""# Who I Was in {year}
+    full_content = f"""# Profile {year}
 
-*Temporal profile card - capturing identity at this point in time*
+*Who I was in {year}*
 
 Generated: {timestamp}
 
 {content}
 """
 
-    with open(profile_file, 'w') as f:
-        f.write(full_content)
-
-    # Clean up old location if it exists
-    old_file = TEMPORAL_DIR / f"{year}.profile.md"
-    if old_file.exists():
-        old_file.unlink()
-
-    return f"Temporal profile written for {year}"
+    profile_file.write_text(full_content)
+    return f"Profile written for {year}"
 
 
 def list_temporal_profiles() -> str:
     """
-    List all years that have temporal profiles.
+    List all years that have profiles.
 
     Returns:
         List of years with profiles
     """
     profiles = set()
 
-    # Check new location (profile/profile.YYYY.md)
     for profile_file in PROFILE_DIR.glob("profile.*.md"):
         stem = profile_file.stem
-        if stem.startswith("profile.") and not stem.startswith("profile.public"):
+        if stem.startswith("profile.") and not stem.startswith("profile.public") and stem != "profile.current":
             year_str = stem.split('.')[1]
             if year_str.isdigit():
                 profiles.add(int(year_str))
 
-    # Check old location for migration (temporal/YYYY.profile.md)
-    for profile_file in TEMPORAL_DIR.glob("*.profile.md"):
-        year_str = profile_file.stem.split('.')[0]
-        if year_str.isdigit():
-            profiles.add(int(year_str))
-
     if not profiles:
-        return "No temporal profiles exist yet."
+        return "No profiles exist yet."
 
-    # Also check which years have summaries but no profile
+    # Check which years have summaries but no profile
     years_with_summaries = []
     if LOG_DIR.exists():
         for year_dir in LOG_DIR.iterdir():
@@ -143,7 +108,7 @@ def list_temporal_profiles() -> str:
 
     missing = set(years_with_summaries) - profiles
 
-    result = "**Temporal profiles:**\n"
+    result = "**Profiles:**\n"
     for year in sorted(profiles):
         result += f"- {year}: ✓ profile exists\n"
 
@@ -168,24 +133,17 @@ def get_evolution() -> str:
     """
     evolution_file = PROFILE_DIR / "evolution.md"
 
-    # Fall back to legacy location
     if not evolution_file.exists():
-        legacy_file = TEMPORAL_DIR / "evolution.md"
-        if legacy_file.exists():
-            evolution_file = legacy_file
+        return "No evolution document exists yet."
 
-    if not evolution_file.exists():
-        return "No evolution document exists yet. Use write_evolution to create one."
-
-    with open(evolution_file, 'r') as f:
-        return f.read()
+    return evolution_file.read_text()
 
 
 def write_evolution(content: str) -> str:
     """
     Write the evolution document tracking changes over time.
 
-    This should synthesize all temporal profiles into a narrative of change:
+    This should synthesize all profiles into a narrative of change:
     - How values evolved (what emerged, what faded, what stayed constant)
     - When key influences appeared and their lasting impact
     - How beliefs and mental models shifted
@@ -210,14 +168,7 @@ Generated: {timestamp}
 {content}
 """
 
-    with open(evolution_file, 'w') as f:
-        f.write(full_content)
-
-    # Clean up legacy location
-    legacy_file = TEMPORAL_DIR / "evolution.md"
-    if legacy_file.exists():
-        legacy_file.unlink()
-
+    evolution_file.write_text(full_content)
     return "Evolution document written"
 
 
@@ -234,17 +185,10 @@ def get_influence_timeline() -> str:
     """
     timeline_file = PROFILE_DIR / "influences_timeline.md"
 
-    # Fall back to legacy location
-    if not timeline_file.exists():
-        legacy_file = TEMPORAL_DIR / "influences_timeline.md"
-        if legacy_file.exists():
-            timeline_file = legacy_file
-
     if not timeline_file.exists():
         return "No influence timeline exists yet."
 
-    with open(timeline_file, 'r') as f:
-        return f.read()
+    return timeline_file.read_text()
 
 
 def add_influence_to_timeline(year: int, category: str, item: str, impact: str) -> str:
@@ -261,19 +205,12 @@ def add_influence_to_timeline(year: int, category: str, item: str, impact: str) 
         Confirmation message
     """
     timeline_file = PROFILE_DIR / "influences_timeline.md"
-    legacy_file = TEMPORAL_DIR / "influences_timeline.md"
     timestamp = datetime.now().isoformat()
 
-    # Read existing from either location or create new
-    content = None
     if timeline_file.exists():
-        with open(timeline_file, 'r') as f:
-            content = f.read()
-    elif legacy_file.exists():
-        with open(legacy_file, 'r') as f:
-            content = f.read()
-
-    if content is None:
+        content = timeline_file.read_text()
+        content = re.sub(r'Updated: .*', f'Updated: {timestamp}', content)
+    else:
         content = f"""# Influence Timeline
 
 *When influences appeared and their impact*
@@ -282,131 +219,81 @@ Updated: {timestamp}
 
 """
 
-    # Update timestamp
-    content = re.sub(r'Updated: .*', f'Updated: {timestamp}', content)
-
-    # Add the influence entry
     entry = f"\n## {year}: {item} ({category})\n\n{impact}\n"
     content += entry
 
-    with open(timeline_file, 'w') as f:
-        f.write(content)
-
-    # Clean up legacy location
-    if legacy_file.exists():
-        legacy_file.unlink()
-
+    timeline_file.write_text(content)
     return f"Added to timeline: {item} ({year})"
 
 
 # =============================================================================
-# CURRENT PROFILE (from temporal data)
+# CURRENT PROFILE
 # =============================================================================
 
 def generate_current_profile() -> str:
     """
-    Generate the current profile by synthesizing all temporal data.
+    Generate the current profile from yearly profiles.
 
-    Reads all temporal profiles and evolution to create a current snapshot
-    that is grounded in the full history. Writes to contract-compliant
-    locations and syncs to shared state for other agents.
+    Reads the most recent profile.YYYY.md and uses it as the current profile.
+    For multi-year data, includes evolution narrative.
+
+    Writes to profile.current.md and syncs to shared state.
 
     Returns:
         The generated current profile content
     """
-    # Gather all temporal profiles from both old and new locations
-    profiles = []
-    years_seen = set()
+    timestamp = datetime.now().isoformat()
 
-    # Check new location first (profile/profile.YYYY.md)
+    # Gather all yearly profiles
+    profiles = []
+
     for profile_file in sorted(PROFILE_DIR.glob("profile.*.md")):
         stem = profile_file.stem
-        if stem.startswith("profile.") and not stem.startswith("profile.public"):
+        if stem.startswith("profile.") and not stem.startswith("profile.public") and stem != "profile.current":
             year_str = stem.split('.')[1]
             if year_str.isdigit():
                 year = int(year_str)
-                if year not in years_seen:
-                    years_seen.add(year)
-                    with open(profile_file, 'r') as f:
-                        profiles.append((year, f.read()))
+                profiles.append((year, profile_file.read_text()))
 
-    # Check old location for migration (temporal/YYYY.profile.md)
-    for profile_file in sorted(TEMPORAL_DIR.glob("*.profile.md")):
-        year_str = profile_file.stem.split('.')[0]
-        if year_str.isdigit():
-            year = int(year_str)
-            if year not in years_seen:
-                years_seen.add(year)
-                with open(profile_file, 'r') as f:
-                    profiles.append((year, f.read()))
-
-    # Sort by year
     profiles.sort(key=lambda x: x[0])
 
     if not profiles:
-        return "No temporal profiles exist. Cannot generate current profile."
+        return "No profiles exist. Run 'derive' to generate profiles."
 
-    # Get evolution if it exists (check new location first, then legacy)
+    # Get evolution if exists
     evolution = ""
     evolution_file = PROFILE_DIR / "evolution.md"
-    if not evolution_file.exists():
-        evolution_file = TEMPORAL_DIR / "evolution.md"
     if evolution_file.exists():
-        with open(evolution_file, 'r') as f:
-            evolution = f.read()
+        evolution = evolution_file.read_text()
 
-    # Get influence timeline if it exists (check new location first, then legacy)
-    timeline = ""
-    timeline_file = PROFILE_DIR / "influences_timeline.md"
-    if not timeline_file.exists():
-        timeline_file = TEMPORAL_DIR / "influences_timeline.md"
-    if timeline_file.exists():
-        with open(timeline_file, 'r') as f:
-            timeline = f.read()
-
-    # The most recent year's profile is the foundation
+    # Build current profile from most recent year
     latest_year, latest_profile = profiles[-1]
-    timestamp = datetime.now().isoformat()
 
     result = f"""# Current Profile
 
-*Who I am now - synthesized from {len(profiles)} years of temporal data*
+*Who I am now - based on {len(profiles)} year(s) of data*
 
 Generated: {timestamp}
 
-## Foundation: {latest_year} Profile
-
 {latest_profile}
-
 """
 
-    if evolution:
+    if evolution and len(profiles) > 1:
         result += f"""
 ---
 
-## How I Got Here
+## Evolution
 
 {evolution}
 """
 
-    if timeline:
-        result += f"""
----
-
-## Influence Timeline
-
-{timeline}
-"""
-
-    # Save to contract-compliant location: profile/profile.current.md
+    # Save to profile directory
     current_file = PROFILE_DIR / "profile.current.md"
-    with open(current_file, 'w') as f:
-        f.write(result)
+    current_file.write_text(result)
 
     # Sync to shared state for other agents
     shared_file = SHARED_PROFILE_DIR / "profile.current.md"
-    with open(shared_file, 'w') as f:
-        f.write(result)
+    shared_file.write_text(result)
 
     return result
 
@@ -416,29 +303,21 @@ def generate_public_profile() -> str:
     Generate a public profile following redaction.policy.md guidelines.
 
     Public profiles are structural, not narrative. They describe patterns,
-    not events. They point to evidence, never reproduce it. They generalize,
-    abstract, and omit rather than expose.
+    not events. They point to evidence, never reproduce it.
 
     Returns:
         The generated public profile content
     """
-    # First ensure we have a current private profile
     private_file = PROFILE_DIR / "profile.current.md"
     if not private_file.exists():
-        # Try to generate it
         generate_current_profile()
 
     if not private_file.exists():
         return "No private profile exists. Cannot generate public profile."
 
-    with open(private_file, 'r') as f:
-        private_content = f.read()
-
     timestamp = datetime.now().isoformat()
     current_year = datetime.now().year
 
-    # Generate public profile with structural patterns only
-    # This is a template - the synthesis agent should refine this
     public_content = f'''```json
 {{
   "profile_version": "1.0",
@@ -483,17 +362,13 @@ Generated: {timestamp}
 *This public profile follows redaction.policy.md guidelines: structural over narrative, patterns over events, omission over exposure.*
 '''
 
-    # Save to profile directory
     public_file = PROFILE_DIR / "profile.public.current.md"
-    with open(public_file, 'w') as f:
-        f.write(public_content)
+    public_file.write_text(public_content)
 
-    # Also save yearly version
     year_file = PROFILE_DIR / f"profile.public.{current_year}.md"
-    with open(year_file, 'w') as f:
-        f.write(public_content)
+    year_file.write_text(public_content)
 
-    return f"Public profile template generated. The synthesis agent should refine this with actual structural patterns derived from the private profile."
+    return "Public profile template generated."
 
 
 def get_public_profile() -> str:
@@ -506,10 +381,9 @@ def get_public_profile() -> str:
     public_file = PROFILE_DIR / "profile.public.current.md"
 
     if not public_file.exists():
-        return "No public profile exists yet. Use generate_public_profile to create one."
+        return "No public profile exists yet."
 
-    with open(public_file, 'r') as f:
-        return f.read()
+    return public_file.read_text()
 
 
 # =============================================================================
@@ -517,10 +391,9 @@ def get_public_profile() -> str:
 # =============================================================================
 
 TEMPORAL_TOOLS = [
-    # Temporal profile tools
     {
         "name": "get_temporal_profile",
-        "description": "Read the temporal profile for a specific year - who the user was at that point in time.",
+        "description": "Read the profile for a specific year.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -534,7 +407,7 @@ TEMPORAL_TOOLS = [
     },
     {
         "name": "write_temporal_profile",
-        "description": "Write the temporal profile for a specific year. Should capture values, influences, beliefs, relationships, and changes from previous year.",
+        "description": "Write the profile for a specific year. Should capture values, influences, beliefs, relationships, and changes from previous year.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -552,13 +425,12 @@ TEMPORAL_TOOLS = [
     },
     {
         "name": "list_temporal_profiles",
-        "description": "List all years that have temporal profiles and identify gaps.",
+        "description": "List all years that have profiles and identify gaps.",
         "input_schema": {
             "type": "object",
             "properties": {}
         }
     },
-    # Evolution tools
     {
         "name": "get_evolution",
         "description": "Read the evolution document showing how the user changed over time.",
@@ -569,7 +441,7 @@ TEMPORAL_TOOLS = [
     },
     {
         "name": "write_evolution",
-        "description": "Write the evolution narrative synthesizing all temporal profiles into a story of change.",
+        "description": "Write the evolution narrative synthesizing all profiles into a story of change.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -581,7 +453,6 @@ TEMPORAL_TOOLS = [
             "required": ["content"]
         }
     },
-    # Influence timeline tools
     {
         "name": "get_influence_timeline",
         "description": "Read the influence timeline showing when books, media, thinkers, ideas, places appeared.",
@@ -616,19 +487,17 @@ TEMPORAL_TOOLS = [
             "required": ["year", "category", "item", "impact"]
         }
     },
-    # Current profile
     {
         "name": "generate_current_profile",
-        "description": "Generate the current profile by synthesizing all temporal data. Saves to profile/ and syncs to shared/state/profile/ for other agents.",
+        "description": "Generate the current profile from yearly profiles. Syncs to shared state for other agents.",
         "input_schema": {
             "type": "object",
             "properties": {}
         }
     },
-    # Public profile
     {
         "name": "generate_public_profile",
-        "description": "Generate a public profile following redaction.policy.md guidelines. Creates a template that the synthesis agent should refine.",
+        "description": "Generate a public profile following redaction.policy.md guidelines.",
         "input_schema": {
             "type": "object",
             "properties": {}
@@ -644,7 +513,6 @@ TEMPORAL_TOOLS = [
     }
 ]
 
-# Tool handlers mapping
 TEMPORAL_HANDLERS = {
     "get_temporal_profile": get_temporal_profile,
     "write_temporal_profile": write_temporal_profile,
@@ -657,8 +525,3 @@ TEMPORAL_HANDLERS = {
     "generate_public_profile": generate_public_profile,
     "get_public_profile": get_public_profile,
 }
-
-
-# Test
-if __name__ == "__main__":
-    print(list_temporal_profiles())

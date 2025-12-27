@@ -1,30 +1,31 @@
 """
 Synthesis Agent - The Keeper
 
-Synthesizes a comprehensive model of who the user is, with EPISTEMIC AXIOMS at the foundation.
-Tracks identity OVER TIME through temporal profiles.
+Constructs a PREDICTIVE IDENTITY MODEL to anticipate user behavior,
+especially under stress, uncertainty, or change.
 
-Synthesis hierarchy:
-1. Epistemic Axioms (foundational) - the beliefs that drive decisions
-2. Mental Models & Tools (foundational) - how you reason and process reality
-3. Values (derived) - what you care about, emergent from epistemic core
-4. Behaviors (reveals) - how you act, shows which axioms are operative
-5. Context (supporting) - relationships, biographical facts, influences
-6. Temporal (evolution) - who you were at each point in time
+Models HOW THE USER WILL ACT, not how they wish to be seen.
 
-Each epistemic entry includes PROVENANCE: the behavior that revealed it.
-Temporal profiles track how identity evolved year by year.
+Identity Stack (ordered by predictive power):
+1. Identity Constraints (primary) - Non-negotiable rules revealed by sacrifice/refusal
+2. Failure Modes (primary) - Predictable breakdowns under stress
+3. Behavioral Attractors - Stable patterns across contexts
+4. Utility Tradeoff Curves - What gets sacrificed first when goals conflict
+5. Epistemic Style (supporting) - How uncertainty, revision, authority handled
+6. Narrative Identity (supporting) - Self-concept, aspirational framing
+
+Prime question: What would this person rather suffer than violate?
+
+Temporal profiles provide biographical source data from which behavioral
+patterns are extracted into the contract-compliant private profile.
 """
 
 from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.synthesis import (
     ALL_SYNTHESIS_TOOLS, ALL_SYNTHESIS_HANDLERS,
-    EPISTEMIC_TOOLS, EPISTEMIC_HANDLERS,
-    VALUES_TOOLS, VALUES_HANDLERS,
-    BEHAVIOR_TOOLS, BEHAVIOR_HANDLERS,
     PROFILE_HANDLERS,
-    get_all_epistemic, get_all_values, get_behaviors, generate_profile,
-    list_temporal_profiles, get_evolution, generate_current_profile
+    list_temporal_profiles, get_evolution, generate_current_profile,
+    get_profile, get_private_profile
 )
 
 
@@ -41,15 +42,14 @@ def run_interactive():
     print("=" * 60)
     print("Euno - Synthesis Agent (The Keeper)")
     print("=" * 60)
-    print("\nI synthesize who you are. Epistemic axioms at the foundation, tracked over time.")
+    print("\nI construct a predictive model of who you are. Behavior over belief.")
     print("Commands:")
-    print("  - 'epistemic' - Display epistemic core (axioms, models, tools)")
-    print("  - 'values' - Display values (derived from epistemic core)")
-    print("  - 'behaviors' - Display behavioral patterns")
-    print("  - 'temporal' - List temporal profiles (who you were each year)")
+    print("  - 'private' - Display private behavioral profile (constraints, failure modes)")
+    print("  - 'temporal' - List temporal profiles (biographical source data)")
     print("  - 'evolution' - Show how you evolved over time")
-    print("  - 'derive' - Derive temporal profiles and evolution narrative")
-    print("  - 'profile' - Generate current profile from temporal data")
+    print("  - 'derive' - Full pipeline: temporal profiles + behavioral extraction")
+    print("  - 'extract' - Extract behavioral profile from existing temporal data")
+    print("  - 'profile' - Generate current profile for other agents")
     print("  - Or ask me anything about yourself")
     print("\nType 'quit' to exit.\n")
 
@@ -67,16 +67,8 @@ def run_interactive():
                 break
 
             # Handle quick commands
-            if user_input.lower() == 'epistemic':
-                print(f"\n{get_all_epistemic()}\n")
-                continue
-
-            if user_input.lower() == 'values':
-                print(f"\n{get_all_values()}\n")
-                continue
-
-            if user_input.lower() == 'behaviors':
-                print(f"\n{get_behaviors()}\n")
+            if user_input.lower() == 'private':
+                print(f"\n{get_private_profile()}\n")
                 continue
 
             if user_input.lower() == 'temporal':
@@ -92,8 +84,14 @@ def run_interactive():
                 continue
 
             if user_input.lower() == 'derive':
-                print("\nDeriving temporal profiles and evolution narrative...")
+                print("\nDeriving temporal profiles and extracting behavioral model...")
                 result = derive_synthesis()
+                print(f"\n{result}\n")
+                continue
+
+            if user_input.lower() == 'extract':
+                print("\nExtracting behavioral profile from temporal data...")
+                result = extract_behavioral_profile()
                 print(f"\n{result}\n")
                 continue
 
@@ -109,18 +107,47 @@ def run_interactive():
 
 def derive_synthesis() -> str:
     """
-    Derive synthesis model with temporal profiles (default).
+    Derive synthesis model with temporal profiles and behavioral extraction.
 
-    Creates year-by-year profiles showing who the user was at each point,
-    synthesizes an evolution narrative, and generates the current profile.
-
-    Loads the temporal prompt from data/synthesis/prompts/temporal.md.
+    Two-phase process:
+    1. Generate temporal profiles (biographical data for each year)
+    2. Extract behavioral profile (predictive model from biographical data)
 
     Returns:
-        Result of the temporal derivation process
+        Result of the derivation and extraction process
     """
     agent = create_synthesis_agent()
-    prompt = load_prompt("synthesis", "temporal")
+
+    # Phase 1: Generate temporal profiles from summaries
+    temporal_prompt = load_prompt("synthesis", "temporal")
+    temporal_result = agent.process(temporal_prompt, ALL_SYNTHESIS_HANDLERS)
+
+    # Phase 2: Extract behavioral profile from temporal data
+    extraction_prompt = load_prompt("synthesis", "extract_behavioral")
+    extraction_result = agent.process(extraction_prompt, ALL_SYNTHESIS_HANDLERS)
+
+    return f"Temporal profiles generated. Behavioral profile extracted.\n\n{extraction_result}"
+
+
+def extract_behavioral_profile() -> str:
+    """
+    Extract behavioral profile from existing temporal data.
+
+    Reads temporal profiles and evolution narrative, then extracts:
+    - Identity constraints (revealed by sacrifice/refusal)
+    - Failure modes (stress → response patterns)
+    - Behavioral attractors (stable patterns)
+    - Utility tradeoff curves (sacrifice ordering)
+    - Epistemic style (uncertainty handling)
+    - Narrative identity (self-concept)
+
+    Writes to contract-compliant private profile via write_private_profile().
+
+    Returns:
+        Result of extraction process
+    """
+    agent = create_synthesis_agent()
+    prompt = load_prompt("synthesis", "extract_behavioral")
     return agent.process(prompt, ALL_SYNTHESIS_HANDLERS)
 
 
