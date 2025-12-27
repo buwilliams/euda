@@ -6,6 +6,10 @@
 
 Check the task queue and process pending tasks using appropriate delegation.
 
+## IMPORTANT: Do NOT Create Duplicate Tasks
+
+**NEVER create new tasks that duplicate existing ones.** If a task already exists, update its status instead of creating a new task. Each task should only exist once in the queue.
+
 ## Delegation Strategy
 
 For each pending task, check its delegation strategy:
@@ -18,12 +22,13 @@ For each pending task, check its delegation strategy:
 
 ### 2. User-only tasks (delegation.strategy = "user_only")
 - Cannot execute these (physical activity, creative work, personal decisions)
-- Surface to user via notification with helpful context
-- Mark task as "surfaced"
+- **Do NOT create a new task.** Just update the existing task's status to "surfaced"
+- The task will appear in the user's task list for them to complete
 
 ### 3. Tasks requiring approval (delegation.requires_approval = true)
-- Create a pending action with clear summary
-- Update task status to "awaiting_approval"
+- Create a pending action with clear summary (this auto-creates an approval task in From Euno)
+- Update the ORIGINAL task status to "awaiting_approval"
+- **Do NOT create another task** - the approval task is created automatically
 
 ### 4. Autonomous tasks (delegation.strategy = "agent_autonomous")
 - Execute the task (research, fetch info, etc.)

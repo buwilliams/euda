@@ -1827,9 +1827,12 @@
         function updateTasksBadge() {
             const badge = document.getElementById('tasks-badge');
             const today = new Date().toISOString().split('T')[0];
+            // Match the same logic as renderTodayTasks - pending OR in_progress
             const count = tasksData.filter(t => {
                 const dueDate = t.scheduling?.due_date;
-                return t.status === 'pending' && (dueDate === today || !dueDate);
+                const isToday = dueDate === today || !dueDate;
+                const isPending = t.status === 'pending' || t.status === 'in_progress';
+                return isToday && isPending;
             }).length;
             badge.textContent = count;
             badge.style.display = count > 0 ? 'inline' : 'none';
