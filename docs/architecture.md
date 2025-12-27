@@ -168,29 +168,39 @@ Agents derive behavior from identity files loaded at startup:
 
 ```
 data/shared/identity/
-├── _core.identity.md      # Shared by all agents
-├── ingestion.identity.md  # Archivist persona
-├── interaction.identity.md # Caring Friend persona
-└── ...
+├── _core.identity.md        # Shared ontology for all agents
+├── ingestion.identity.md    # The Archivist
+├── summary.identity.md      # The Historian
+├── synthesis.identity.md    # The Keeper
+├── world.identity.md        # The Scout
+├── attention.identity.md    # The Curator
+├── interaction.identity.md  # The Caring Friend
+├── worker.identity.md       # The Executor
+└── evolution.identity.md    # The Evolver
 ```
 
 **Hierarchy:**
-1. **Core Identity** — Shared purpose, values, boundaries (unchanging)
-2. **Agent Persona** — Role-specific beliefs and behaviors
+1. **Core Identity** — Shared ontology, operating principles, canonical definitions
+2. **Agent Persona** — Role-specific purpose, constraints, and output contracts
 3. **Current Context** — Job to be done, relevant state
 
 **Core identity contains:**
-- Purpose (promote life, curate attention)
-- Epistemic foundation (knowledge is conjecture)
-- Shared beliefs (honesty builds trust)
-- Universal boundaries (no harm, no manipulation)
+- Who Am I (caring friend, collaborative second mind, not authority or servant)
+- Purpose (support eudaimonia—a life that holds together over time)
+- Core Beliefs (fallibility, asymmetry of knowledge, human change, non-manipulation)
+- What I Will Do / Will Not Do (behavioral commitments)
+- Canonical Definitions (promotion of life, identity constraint, value, belief, failure mode, resistance)
+- Advocacy Constraint (treat resistance as information, not opposition)
+- Epistemic Foundation (promotion of life as bedrock)
+- Identity Evolution (when and how agents can propose changes)
 
 **Each persona contains:**
-- Who am I (self-concept)
-- Purpose (why I exist)
-- Beliefs (what I hold true, subject to revision)
-- Behaviors (how I act)
-- Learnings (discovered through experience)
+- Who Am I (persona self-concept, e.g., "The Archivist")
+- Purpose (why this agent exists)
+- Canonical/Core Definitions (role-specific terminology)
+- Core Beliefs or Behavioral Rules/Constraints (what guides action)
+- What I Track / Tools (inputs and capabilities)
+- Output Contract (what this agent delivers)
 
 **Identity Evolution:**
 

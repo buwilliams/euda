@@ -43,7 +43,7 @@ All 8 agents implemented with web UI and API. Key files:
 euno/
 ├── main.py                 # Entry point
 ├── src/
-│   ├── agents/             # 7 agent modules (ingestion, summary, synthesis, etc.)
+│   ├── agents/             # 8 agent modules (ingestion, summary, synthesis, etc.)
 │   │   └── base.py         # Core agent pattern
 │   ├── tools/              # Organized by agent concern
 │   │   ├── shared/         # Cross-agent (log, agent identity, notifications)
@@ -95,29 +95,30 @@ The system is grounded in Popperian epistemology: all knowledge is conjecture. V
 ## Agent Architecture
 
 Eight agents communicate via shared flat files:
-1. **Ingestion Agent (The Archivist)** - Transforms messy data into clean log entries
-2. **Summary Agent (The Historian)** - Distills patterns from the life log
-3. **Synthesis Agent (The Keeper)** - Synthesizes user identity with epistemic axioms at the foundation
-4. **World Agent (The Scout)** - Explores external opportunities
-5. **Attention Agent (The Curator)** - Orchestrates what surfaces when
-6. **Interaction Agent (The Caring Friend)** - User-facing conversations
-7. **Worker Agent (The Executor)** - Executes tasks with smart delegation
-8. **Evolution Agent (The Evolver)** - Evolves agent identities based on user synthesis
+1. **Ingestion Agent (The Archivist)** - Preserves irreversible human signal with high fidelity; memory, not meaning
+2. **Summary Agent (The Historian)** - Compresses time without collapsing structure; preserves patterns, tensions, change signals
+3. **Synthesis Agent (The Keeper)** - Constructs predictive identity model; anticipates behavior, not aspirations
+4. **World Agent (The Scout)** - Explores integrable external opportunities; filters through identity constraints
+5. **Attention Agent (The Curator)** - Allocates scarce attention; respects capacity, introduces surprise safely
+6. **Interaction Agent (The Caring Friend)** - Supports thinking without threatening identity coherence
+7. **Worker Agent (The Executor)** - Executes tasks without undermining agency; checks constraints before irreversible actions
+8. **Evolution Agent (The Evolver)** - Refines agent identities to serve this specific user; proposes, never forces
 
-### Synthesis Hierarchy
+### Identity Stack (Ordered by Predictive Power)
 
-The Synthesis Agent maintains a comprehensive model of who the user is:
-1. **Epistemic Axioms** (foundational) - The beliefs that drive decisions
-2. **Mental Models & Tools** (foundational) - How they reason and process reality
-3. **Values** (derived from axioms) - What they care about, emergent from epistemic core
-4. **Behaviors** (reveals operative axioms) - How they actually act
-5. **Context** (supporting) - Relationships, biographical facts
+The Synthesis Agent maintains a predictive model of who the user is:
+1. **Identity Constraints** (primary) - Non-negotiable rules revealed by sacrifice and refusal; rarely change
+2. **Failure Modes** (primary) - Predictable breakdowns under stress; strongest behavior predictors
+3. **Behavioral Attractors** - Stable patterns the user returns to across contexts
+4. **Utility Tradeoff Curves** - What they sacrifice first when goals conflict (truth vs belonging, comfort vs dignity)
+5. **Epistemic Style** (supporting) - How they handle uncertainty, revision, authority
+6. **Narrative Identity** (supporting) - Self-concept and aspirational framing; useful for alignment, unreliable for prediction
 
-Epistemic axioms are the deepest layer of identity - they generate values and behaviors.
+The prime question: *What would this person rather suffer than violate?*
 
 Each agent has:
-- Core identity (shared beliefs and behaviors)
-- Persona identity (role-specific traits)
+- Core identity (shared ontology and operating principles)
+- Persona identity (role-specific purpose, constraints, output contract)
 - Tools (functions it can call)
 - Context (conversation history)
 

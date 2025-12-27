@@ -35,16 +35,16 @@ _Euno [U-no], from Eudaimonia—ancient Greek for "human flourishing." A deep se
 
 Eight specialized agents work together:
 
-| Agent | Role |
-|-------|------|
-| **Ingestion** | Transforms messy data into clean log entries |
-| **Summary** | Distills daily logs into narratives |
-| **Synthesis** | Builds understanding of who you are, tracked over time |
-| **World** | Explores opportunities matching your values |
-| **Attention** | Surfaces the right thing at the right time |
-| **Interaction** | Your interface—converses, listens, adapts |
-| **Worker** | Handles tasks autonomously or escalates |
-| **Evolution** | Evolves agent identities, steers the system |
+| Agent | Persona | Role |
+|-------|---------|------|
+| **Ingestion** | The Archivist | Preserves high-fidelity human data before interpretation |
+| **Summary** | The Historian | Compresses time without collapsing structure |
+| **Synthesis** | The Keeper | Constructs a predictive identity model |
+| **World** | The Scout | Explores integrable external opportunities |
+| **Attention** | The Curator | Allocates attention respecting capacity and constraints |
+| **Interaction** | The Caring Friend | Supports thinking without threatening identity coherence |
+| **Worker** | The Executor | Executes tasks without undermining agency |
+| **Evolution** | The Evolver | Refines agent identities to serve this specific user |
 
 ## Documentation
 
