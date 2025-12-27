@@ -7,6 +7,7 @@ to proactively steer the system toward better user service.
 """
 
 import json
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -17,9 +18,125 @@ DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
 SIGNALS_DIR = SHARED_DIR / "state" / "signals"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
+LIFELOG_DIR = SHARED_DIR / "state" / "lifelog"
 
 # Ensure directories exist
 SIGNALS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def mine_lifelog_for_info() -> dict:
+    """
+    Mine the lifelog for user information before asking questions.
+
+    Searches all log entries for biographical data that may already exist.
+
+    Returns:
+        Dict with discovered information: name, location, relationships, etc.
+    """
+    discovered = {
+        "name": None,
+        "location": None,
+        "relationships": [],
+        "occupation": None,
+    }
+
+    if not LIFELOG_DIR.exists():
+        return discovered
+
+    # Collect all log content
+    all_content = []
+    for year_dir in LIFELOG_DIR.iterdir():
+        if not year_dir.is_dir():
+            continue
+        for log_file in year_dir.glob("*.md"):
+            if log_file.name.startswith("_"):
+                continue
+            try:
+                content = log_file.read_text()
+                all_content.append(content)
+            except:
+                pass
+
+    if not all_content:
+        return discovered
+
+    combined = "\n".join(all_content)
+
+    # Mine for name patterns - look for explicit name declarations
+    name_patterns = [
+        r"(?:^|\n)Name:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)",  # "Name: John Smith"
+        r"[Mm]y name is ([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)",  # "my name is John" or "My name is Buddy"
+        r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)['\u2019]s?\s+my name",  # "Buddy Williams' my name"
+        r"(?:I'm called|call me)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)",  # "call me John"
+        r"(?:^|\n)([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+is my name",  # "John Smith is my name"
+    ]
+    for pattern in name_patterns:
+        match = re.search(pattern, combined, re.MULTILINE)
+        if match:
+            name = match.group(1).strip()
+            # Filter out common false positives and require reasonable length
+            if (name.lower() not in ["i", "the", "a", "my", "this", "that", "here", "it", "well"]
+                and len(name) >= 2 and len(name) <= 50):
+                discovered["name"] = name
+                break
+
+    # Mine for location patterns - look for explicit location statements
+    location_patterns = [
+        r"(?:^|\n)(?:Location|City|Based in|Live in|Located in):\s*([A-Z][a-z]+(?:,?\s*[A-Z]{2})?)",
+        r"(?:I live in|I'm based in|I'm from|I reside in|located in)\s+([A-Z][a-z]+(?:,?\s*[A-Z]{2})?)",
+        r"\b(Atlanta|Smyrna|Georgia|New York|San Francisco|Los Angeles|Chicago|Seattle|Austin|Denver|Boston|Miami|Dallas|Houston|Phoenix|Philadelphia)\b",
+    ]
+    for pattern in location_patterns:
+        match = re.search(pattern, combined, re.IGNORECASE)
+        if match:
+            location = match.group(1) if match.lastindex else match.group(0)
+            location = location.strip()
+            # Filter out very short matches
+            if len(location) >= 4:
+                discovered["location"] = location
+                break
+
+    # Mine for relationship mentions - require proper name to follow (capitalized, not a verb)
+    relationship_patterns = [
+        r"my\s+(wife|husband|partner|spouse),?\s+([A-Z][a-z]{2,})",
+        r"my\s+(mom|mother|dad|father),?\s+([A-Z][a-z]{2,})",
+        r"my\s+(brother|sister),?\s+([A-Z][a-z]{2,})",
+        r"my\s+(son|daughter),?\s+([A-Z][a-z]{2,})",
+    ]
+    # Common verbs/words to filter out as false positive names
+    not_names = {"showed", "said", "told", "gave", "was", "is", "has", "had", "went", "came", "made", "took", "got"}
+    seen_relationships = set()
+    for pattern in relationship_patterns:
+        matches = re.findall(pattern, combined, re.IGNORECASE)
+        for match in matches:
+            rel_type = match[0].lower()
+            rel_name = match[1] if len(match) > 1 else ""
+            if rel_type and rel_name and rel_name.lower() not in not_names:
+                key = f"{rel_type}:{rel_name}"
+                if key not in seen_relationships:
+                    seen_relationships.add(key)
+                    discovered["relationships"].append({
+                        "type": rel_type,
+                        "name": rel_name
+                    })
+
+    # Mine for occupation - look for explicit job/role statements
+    occupation_patterns = [
+        r"(?:^|\n)(?:Occupation|Job|Role|Title|Position):\s*([A-Za-z\s]+?)(?:\n|$)",
+        r"(?:I am a|I'm a|I work as a?)\s+([a-z][a-z\s]{3,30})(?:\.|,|\s+at|\s+for|$)",
+        r"\b(software engineer|software developer|web developer|data scientist|product manager|designer|consultant|entrepreneur|founder|CEO|CTO)\b",
+    ]
+    for pattern in occupation_patterns:
+        match = re.search(pattern, combined, re.IGNORECASE)
+        if match:
+            occupation = match.group(1) if match.lastindex else match.group(0)
+            occupation = occupation.strip()
+            # Filter out very long or very short matches
+            if 3 <= len(occupation) <= 50:
+                discovered["occupation"] = occupation
+                break
+
+    return discovered
 
 
 def assess_data_completeness() -> dict:
@@ -251,41 +368,55 @@ def identify_gaps() -> list:
     """
     Identify all gaps that should be surfaced to the user.
 
+    IMPORTANT: This function first mines the lifelog for existing information
+    before creating gaps. It only asks questions when data truly doesn't exist.
+
     Returns:
         List of gap dictionaries with type, priority, and question.
     """
     gaps = []
 
+    # First, mine the lifelog for existing information
+    mined = mine_lifelog_for_info()
+
     data = assess_data_completeness()
     config = assess_configuration()
 
-    # High priority: Name (most personal)
+    # High priority: Name (most personal) - but check lifelog first
     if "name" in data["biographical"].get("missing", []):
-        gaps.append({
-            "id": "biographical.name",
-            "type": "missing_data",
-            "category": "biographical",
-            "field": "name",
-            "priority": "high",
-            "question": "Hey, I realized I don't know your name yet!",
-            "context": "I'd love to address you personally instead of generically.",
-            "action_prompt": "I'd like to get to know you better. What should I call you?"
-        })
+        if mined["name"]:
+            # Found name in lifelog - don't ask, but could store it
+            pass
+        else:
+            gaps.append({
+                "id": "biographical.name",
+                "type": "missing_data",
+                "category": "biographical",
+                "field": "name",
+                "priority": "high",
+                "question": "Hey, I realized I don't know your name yet!",
+                "context": "I'd love to address you personally instead of generically.",
+                "action_prompt": "I'd like to get to know you better. What should I call you?"
+            })
 
-    # Medium priority: Location
+    # Medium priority: Location - but check lifelog first
     if not config["location"]["configured"]:
-        gaps.append({
-            "id": "biographical.location",
-            "type": "missing_config",
-            "category": "location",
-            "field": "location",
-            "priority": "medium",
-            "question": "Quick thought - where are you based?",
-            "context": "This helps me find relevant local events and opportunities for you.",
-            "action_prompt": "I'm curious - where are you located? This helps me find relevant local opportunities."
-        })
+        if mined["location"]:
+            # Found location in lifelog - don't ask
+            pass
+        else:
+            gaps.append({
+                "id": "biographical.location",
+                "type": "missing_config",
+                "category": "location",
+                "field": "location",
+                "priority": "medium",
+                "question": "Quick thought - where are you based?",
+                "context": "This helps me find relevant local events and opportunities for you.",
+                "action_prompt": "I'm curious - where are you located? This helps me find relevant local opportunities."
+            })
 
-    # Low priority: Energy baseline
+    # Low priority: Energy baseline - this one always needs asking (it's about current state)
     if not config["energy_baseline"]["configured"]:
         gaps.append({
             "id": "config.energy_baseline",
@@ -298,18 +429,22 @@ def identify_gaps() -> list:
             "action_prompt": "I'd like to understand your energy patterns better. How are you feeling today - physically, mentally, emotionally?"
         })
 
-    # Check if relationships empty
+    # Check if relationships empty - but check lifelog first
     if data["relationships"].get("missing"):
-        gaps.append({
-            "id": "biographical.relationships",
-            "type": "missing_data",
-            "category": "relationships",
-            "field": "relationships",
-            "priority": "low",
-            "question": "I've been learning about you, but I don't know much about the people in your life yet.",
-            "context": "Understanding your relationships helps me be more helpful.",
-            "action_prompt": "Tell me about the important people in your life - family, close friends, community."
-        })
+        if mined["relationships"]:
+            # Found relationships in lifelog - don't ask
+            pass
+        else:
+            gaps.append({
+                "id": "biographical.relationships",
+                "type": "missing_data",
+                "category": "relationships",
+                "field": "relationships",
+                "priority": "low",
+                "question": "I've been learning about you, but I don't know much about the people in your life yet.",
+                "context": "Understanding your relationships helps me be more helpful.",
+                "action_prompt": "Tell me about the important people in your life - family, close friends, community."
+            })
 
     return gaps
 
@@ -407,12 +542,15 @@ def run_health_assessment() -> str:
     Returns:
         Summary of assessment results.
     """
+    # First, mine the lifelog for existing information
+    mined = mine_lifelog_for_info()
+
     # Gather all assessments
     data_status = assess_data_completeness()
     config_status = assess_configuration()
     activity_status = assess_agent_activity()
     progress = get_progress_metrics()
-    gaps = identify_gaps()
+    gaps = identify_gaps()  # This also mines, but we want to report what was found
 
     # Generate and write signals
     guidance = generate_agent_guidance(gaps)
@@ -422,7 +560,20 @@ def run_health_assessment() -> str:
     # Build summary
     summary = "# System Health Assessment\n\n"
 
-    summary += "## Data Completeness\n"
+    # Report what was mined from lifelog
+    summary += "## Mined from Lifelog\n"
+    if mined["name"]:
+        summary += f"- **Name found**: {mined['name']}\n"
+    if mined["location"]:
+        summary += f"- **Location found**: {mined['location']}\n"
+    if mined["occupation"]:
+        summary += f"- **Occupation found**: {mined['occupation']}\n"
+    if mined["relationships"]:
+        summary += f"- **Relationships found**: {len(mined['relationships'])} mentioned\n"
+    if not any([mined["name"], mined["location"], mined["occupation"], mined["relationships"]]):
+        summary += "- No biographical information found in lifelog yet\n"
+
+    summary += "\n## Data Completeness\n"
     for category, status in data_status.items():
         icon = "complete" if status["complete"] else "incomplete"
         summary += f"- **{category}**: {icon}\n"
@@ -449,14 +600,25 @@ def run_health_assessment() -> str:
     summary += f"- Patterns identified: {progress['patterns_identified']}\n"
 
     summary += f"\n## Gaps Identified: {len(gaps)}\n"
-    for gap in gaps:
-        summary += f"- [{gap['priority']}] {gap['question']}\n"
+    if gaps:
+        for gap in gaps:
+            summary += f"- [{gap['priority']}] {gap['question']}\n"
+    else:
+        summary += "- No gaps - information was found in lifelog!\n"
 
     return summary
 
 
 # Tool definitions
 HEALTH_TOOLS = [
+    {
+        "name": "mine_lifelog_for_info",
+        "description": "Mine the lifelog for user information (name, location, relationships, occupation) before asking questions. Always call this first to check if data already exists.",
+        "input_schema": {
+            "type": "object",
+            "properties": {}
+        }
+    },
     {
         "name": "assess_data_completeness",
         "description": "Check what user data exists vs what's missing (biographical, relationships, values, etc.)",
@@ -508,6 +670,7 @@ HEALTH_TOOLS = [
 ]
 
 HEALTH_HANDLERS = {
+    "mine_lifelog_for_info": mine_lifelog_for_info,
     "assess_data_completeness": assess_data_completeness,
     "assess_configuration": assess_configuration,
     "assess_agent_activity": assess_agent_activity,
