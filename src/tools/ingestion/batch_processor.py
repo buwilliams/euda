@@ -67,9 +67,6 @@ DEFAULT_BATCH_SIZE = 5
 # Maximum total content size per batch (characters)
 MAX_BATCH_CONTENT_SIZE = 100_000
 
-# Large file threshold - files above this go to single-file processing
-LARGE_FILE_THRESHOLD = 50_000
-
 
 def chunk_files(
     files: list[dict],
@@ -94,11 +91,6 @@ def chunk_files(
     for file_info in files:
         content_len = len(file_info.get('content', ''))
 
-        # Skip files that are too large for batch processing
-        if content_len > LARGE_FILE_THRESHOLD:
-            # These will be handled by single-file processing
-            continue
-
         # Check if adding this file exceeds limits
         if current_batch and (
             len(current_batch) >= batch_size or
@@ -116,14 +108,6 @@ def chunk_files(
         batches.append(current_batch)
 
     return batches
-
-
-def get_large_files(files: list[dict]) -> list[dict]:
-    """Return files that are too large for batch processing."""
-    return [
-        f for f in files
-        if len(f.get('content', '')) > LARGE_FILE_THRESHOLD
-    ]
 
 
 def build_batch_prompt(files: list[dict]) -> str:

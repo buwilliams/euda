@@ -517,26 +517,20 @@ class TokenBudget:
         self.used_today += tokens
 ```
 
-**Batch Processing Mode:**
+**Batch Processing:**
 
-For faster ingestion, use `--batch` flag to process multiple files per API call:
+Ingestion uses batch processing to minimize API calls:
 
 ```bash
-python main.py ingest --batch              # Default batch size (5 files)
-python main.py ingest --batch --batch-size 10  # Custom batch size
-python main.py ingest ~/Documents -r --batch   # With external directory
+python main.py ingest                      # Default batch size (5 files)
+python main.py ingest --batch-size 10      # Custom batch size
+python main.py ingest ~/Documents -r       # External directory
 ```
-
-| Mode | API Calls per File | 10 Files | Speedup |
-|------|-------------------|----------|---------|
-| Standard | 2+ (prompt → tool → result) | ~20 calls | baseline |
-| Batch | ~0.2 (single call per batch) | ~2 calls | ~10x |
 
 Batch processing:
 - Groups files by size/count for optimal API efficiency
 - Requests structured JSON output instead of tool calls
-- Falls back to single-file processing for large files (>50KB)
-- Handles archive files individually (require extraction)
+- Large files become single-file batches (still efficient - no tool call overhead)
 
 **Temporal Detection Priority:**
 
@@ -839,8 +833,7 @@ python main.py chat
 # Batch ingestion
 python main.py ingest                    # Process inbox
 python main.py ingest ~/Documents -r     # Process directory recursively
-python main.py ingest --batch            # Batch mode (faster, fewer API calls)
-python main.py ingest --batch --batch-size 10  # Custom batch size
+python main.py ingest --batch-size 10    # Custom batch size (default: 5)
 
 # Individual commands
 python main.py morning      # Morning attention

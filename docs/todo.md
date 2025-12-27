@@ -17,7 +17,7 @@ Keep a simple list: todo and done. Only use one level, not nested todos.
 
 ## Completed
 
-- [x] Ingestion: batch processing mode for faster ingestion (`--batch` flag, ~10x fewer API calls)
+- [x] Ingestion: batch processing for faster ingestion (~10x fewer API calls, now default)
 - [x] Ingestion: stable start/stop/resume with state tracking and crash recovery
 - [x] Ingestion: status tools for Introspection agent (session stats, lifetime totals, history)
 - [x] Ingestion: CLI batch runner with progress display (`python main.py ingest`)

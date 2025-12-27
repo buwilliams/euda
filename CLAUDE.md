@@ -127,21 +127,15 @@ Each agent has:
 
 ## Batch Ingestion
 
-For faster file processing, use batch mode which processes multiple files per API call:
+Ingestion uses batch processing to minimize API calls:
 
 ```bash
-# Standard mode (2+ API calls per file)
-python main.py ingest
-
-# Batch mode (~10x faster, 1 API call per batch)
-python main.py ingest --batch
-python main.py ingest --batch --batch-size 10  # Custom batch size (default: 5)
-
-# With external directory
-python main.py ingest ~/Documents -r --batch
+python main.py ingest                      # Process inbox (default batch size: 5)
+python main.py ingest --batch-size 10      # Custom batch size
+python main.py ingest ~/Documents -r       # External directory
 ```
 
-Batch mode groups files together and requests structured JSON output instead of tool calls, significantly reducing API round trips.
+Batch processing groups files together and requests structured JSON output instead of tool calls, significantly reducing API round trips.
 
 ## iPhone Backup Extraction
 
