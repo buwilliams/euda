@@ -1,8 +1,4 @@
-# Euno
-
-<p align="center">
-  <img src="../static/images/euno-logo-with-subtitle.png" alt="Euno - Personal Intelligence" width="50%">
-</p>
+# Euno (pronounced "you-know")
 
 **A personal intelligence that learns to anticipate you.**
 
