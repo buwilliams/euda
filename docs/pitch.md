@@ -1,4 +1,6 @@
-# Euno (pronounced "you-know")
+# Euno
+
+*Pronounced "you-know"*
 
 **A personal intelligence that learns to anticipate you.**
 
