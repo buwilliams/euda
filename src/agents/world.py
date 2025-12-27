@@ -10,7 +10,6 @@ from pathlib import Path
 from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.world.world import WORLD_TOOLS, WORLD_HANDLERS
 from ..tools.synthesis import PROFILE_TOOLS, PROFILE_HANDLERS
-from ..tools.shared.notifications import create_euno_task
 from ..tools.shared.guidance import GUIDANCE_TOOLS, GUIDANCE_HANDLERS, should_skip_location_opportunities
 from ..tools.shared.content_hash import (
     compute_directory_hash, load_cached_hash, save_cached_hash
@@ -187,14 +186,8 @@ class AutonomousWorldAgent(AutonomousAgent):
         self._save_profile_hash()
         self.agent.clear_context()
 
-        # Notify user via From Euno project task
-        create_euno_task(
-            agent_name="world",
-            title="New opportunities discovered",
-            message="I've found some new opportunities that might interest you based on your values.",
-            task_type="notification",
-            priority="normal"
-        )
+        # Note: Individual opportunities now create their own suggested tasks
+        # via write_opportunity(), so no need for a generic notification here
 
         return "Discovery sweep complete"
 

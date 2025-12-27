@@ -35,6 +35,9 @@ def write_opportunity(
     """
     Record a discovered opportunity.
 
+    For aligned opportunities, also creates a suggested task so the user
+    is proactively notified about opportunities matching their values.
+
     Args:
         title: Brief title of the opportunity
         description: What it is and why it might matter
@@ -50,6 +53,8 @@ def write_opportunity(
     Returns:
         Confirmation message
     """
+    from ..shared.notifications import create_euno_task
+
     timestamp = datetime.now().isoformat()
 
     opportunity = {
@@ -82,6 +87,29 @@ def write_opportunity(
 
     with open(category_file, 'w') as f:
         json.dump(opportunities, f, indent=2)
+
+    # For aligned opportunities, create a suggested task
+    # This makes Euno proactive - surfacing opportunities without waiting for user to ask
+    if alignment == "aligned":
+        # Build task message with relevant details
+        task_message = f"**{category.title()}**: {description[:200]}"
+        if url:
+            task_message += f"\n\nLink: {url}"
+        if time_sensitive and expires:
+            task_message += f"\n\n⏰ Expires: {expires}"
+        elif time_sensitive:
+            task_message += "\n\n⏰ Time-sensitive"
+
+        # Higher priority for time-sensitive opportunities
+        priority = "normal" if time_sensitive else "low"
+
+        create_euno_task(
+            agent_name="world",
+            title=f"Consider: {title}",
+            message=task_message,
+            task_type="suggestion",
+            priority=priority
+        )
 
     return f"Opportunity recorded: {title}"
 
