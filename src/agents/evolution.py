@@ -32,11 +32,19 @@ from ..tools.shared.identity import (
     propose_identity_evolution, get_pending_evolutions
 )
 from ..tools.shared.notifications import create_euno_task
+from ..tools.shared.content_hash import (
+    compute_directory_hash, load_cached_hash, save_cached_hash
+)
 
 
-# State file for tracking
-STATE_DIR = Path(__file__).parent.parent.parent / "data" / "agents" / "state"
+# Paths for state and hash tracking
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
+STATE_DIR = DATA_DIR / "agents" / "state"
 CAPABILITIES_FILE = EVOLUTION_DIR / "capabilities.md"
+SYNTHESIS_DIR = DATA_DIR / "synthesis" / "state"
+EVOLUTION_STATE_DIR = DATA_DIR / "evolution" / "state"
+# Tracks which version of the synthesis the Evolution Agent last processed
+PROCESSED_SYNTHESIS_HASH_FILE = EVOLUTION_STATE_DIR / "processed_synthesis.hash"
 
 
 def create_evolution_agent():
@@ -169,25 +177,83 @@ class AutonomousEvolutionAgent(AutonomousAgent):
         self._pending_synthesis_check = False
         self._pending_health_check = False
 
+    def _has_synthesis_changed(self) -> bool:
+        """Check if synthesis profile content has changed since last check."""
+        if not SYNTHESIS_DIR.exists():
+            return False
+
+        # Hash the profile and temporal directories
+        profile_dir = SYNTHESIS_DIR / "profile"
+        temporal_dir = SYNTHESIS_DIR / "temporal"
+
+        # Compute combined hash
+        import hashlib
+        hasher = hashlib.md5()
+
+        for dir_path in [profile_dir, temporal_dir]:
+            if dir_path.exists():
+                for file_path in sorted(dir_path.glob("*.md")):
+                    if not file_path.name.startswith('_'):
+                        with open(file_path, 'rb') as f:
+                            hasher.update(f.read())
+
+        current_hash = hasher.hexdigest()
+        cached_hash = load_cached_hash(PROCESSED_SYNTHESIS_HASH_FILE)
+
+        if cached_hash is None:
+            self.logger.debug("No cached synthesis hash - first run")
+            return True
+
+        changed = current_hash != cached_hash
+        if changed:
+            self.logger.debug(f"Synthesis hash changed: {cached_hash[:8]}... -> {current_hash[:8]}...")
+        return changed
+
+    def _save_synthesis_hash(self):
+        """Save current synthesis hash after successful processing."""
+        if not SYNTHESIS_DIR.exists():
+            return
+
+        import hashlib
+        hasher = hashlib.md5()
+
+        profile_dir = SYNTHESIS_DIR / "profile"
+        temporal_dir = SYNTHESIS_DIR / "temporal"
+
+        for dir_path in [profile_dir, temporal_dir]:
+            if dir_path.exists():
+                for file_path in sorted(dir_path.glob("*.md")):
+                    if not file_path.name.startswith('_'):
+                        with open(file_path, 'rb') as f:
+                            hasher.update(f.read())
+
+        current_hash = hasher.hexdigest()
+        EVOLUTION_STATE_DIR.mkdir(parents=True, exist_ok=True)
+        save_cached_hash(PROCESSED_SYNTHESIS_HASH_FILE, current_hash)
+        self.logger.debug(f"Saved synthesis hash: {current_hash[:8]}...")
+
     def check_work_needed(self) -> bool:
         """
         Check if evolution work is needed.
 
         Triggers:
         1. synthesis_updated signal - User identity changed, check for evolution opportunities
+           (verified by hash check to avoid redundant work)
         2. code_changed signal - Code changed, update capabilities
         3. identity_evolved signal - An identity was evolved, update capabilities
         4. No capabilities document exists
-        5. 1+ hours since last analysis
-        6. 6+ hours since last health assessment (or first run)
+        5. 6+ hours since last health assessment (or first run)
         """
         state = self.load_state()
 
         # PRIMARY: Check for synthesis update - trigger evolution analysis
         if self.check_signal("synthesis_updated"):
-            self.logger.info("Synthesis updated - checking if agents should evolve")
-            self._pending_synthesis_check = True
-            return True
+            self.logger.info("Synthesis updated signal received")
+            # Verify synthesis actually changed
+            if self._has_synthesis_changed():
+                self._pending_synthesis_check = True
+                return True
+            self.logger.debug("Signal received but synthesis unchanged - skipping")
 
         # Check for code/identity change signals - update capabilities
         if self.check_signal("code_changed") or self.check_signal("identity_evolved"):
@@ -216,17 +282,10 @@ class AutonomousEvolutionAgent(AutonomousAgent):
             self._pending_health_check = True
             return True
 
-        # Check file age - refresh if older than 1 hour
-        if CAPABILITIES_FILE.exists():
-            mtime = datetime.fromtimestamp(CAPABILITIES_FILE.stat().st_mtime)
-            age = datetime.now() - mtime
-
-            if age > timedelta(hours=1):
-                self.logger.info(f"Capabilities file is {age} old, refresh needed")
-                return True
-
-        # First run
-        if self.last_analysis_time is None:
+        # Fallback: check if synthesis changed without signal
+        if self._has_synthesis_changed():
+            self.logger.info("Synthesis changed (no signal) - evolution check needed")
+            self._pending_synthesis_check = True
             return True
 
         return False
@@ -268,6 +327,8 @@ class AutonomousEvolutionAgent(AutonomousAgent):
             try:
                 result = run_evolution_check()
                 self.last_evolution_check = datetime.now()
+                # Save hash so we don't re-process unchanged synthesis
+                self._save_synthesis_hash()
                 results.append(f"Evolution check complete. {len(result)} chars.")
             except Exception as e:
                 self.logger.error(f"Evolution check failed: {e}")

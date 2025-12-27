@@ -757,6 +757,13 @@ def update_task_status(task_id: str, status: str) -> str:
 
             if status == "in_progress":
                 task["assigned_at"] = datetime.now().isoformat()
+            elif status == "awaiting_approval":
+                task["awaiting_approval_at"] = datetime.now().isoformat()
+            elif status == "pending":
+                # User moved task back to pending - clear evaluation so agent re-checks
+                task["worker_evaluated"] = False
+                task["needs_user_action"] = False
+                task["modified_at"] = datetime.now().isoformat()
             elif status == "completed":
                 task["completed_at"] = datetime.now().isoformat()
 
@@ -996,6 +1003,66 @@ def unsnooze_task(task_id: str) -> str:
                 task["scheduling"]["snoozed_until"] = None
             _save_queue(queue)
             return "Task unsnooze - now visible"
+
+    return f"Task not found: {task_id}"
+
+
+def update_task(
+    task_id: str,
+    description: Optional[str] = None,
+    priority: Optional[str] = None,
+    due_date: Optional[str] = None,
+    task_type: Optional[str] = None
+) -> str:
+    """
+    Update task properties. Triggers re-evaluation by the Worker Agent.
+
+    Args:
+        task_id: The task ID to update
+        description: New description (optional)
+        priority: New priority (optional)
+        due_date: New due date (optional)
+        task_type: New task type (optional)
+
+    Returns:
+        Success message
+    """
+    queue = _load_queue()
+
+    for task in queue["tasks"]:
+        if task["id"] == task_id:
+            updated = []
+
+            if description is not None:
+                task["description"] = description
+                updated.append("description")
+
+            if priority is not None:
+                task["priority"] = priority
+                updated.append("priority")
+
+            if due_date is not None:
+                if "scheduling" not in task:
+                    task["scheduling"] = {}
+                task["scheduling"]["due_date"] = due_date
+                updated.append("due_date")
+
+            if task_type is not None:
+                task["type"] = task_type
+                # Re-determine delegation based on new type
+                task["delegation"] = determine_delegation(task_type, task.get("learning", {}).get("objectives") is not None)
+                updated.append("type")
+
+            if updated:
+                # Mark as modified to trigger re-evaluation
+                task["modified_at"] = datetime.now().isoformat()
+                # Clear evaluation flags so agent will re-check
+                task["worker_evaluated"] = False
+                task["needs_user_action"] = False
+                _save_queue(queue)
+                return f"Updated task: {', '.join(updated)}"
+
+            return "No changes made"
 
     return f"Task not found: {task_id}"
 
@@ -1335,6 +1402,16 @@ def get_pending_tasks_for_worker() -> list:
     """
     Get pending tasks that the Worker Agent should process.
 
+    Returns tasks that:
+    - Have status "pending"
+    - Are not in the Euno project (those are notifications)
+    - Are not marked as user_only delegation
+    - Have not been evaluated and determined to need user action
+
+    The Worker Agent uses LLM to evaluate each task and determine if it can
+    act on it. If not, it marks the task as needing user action so it won't
+    be re-evaluated.
+
     Returns:
         List of tasks ready for processing
     """
@@ -1351,9 +1428,18 @@ def get_pending_tasks_for_worker() -> list:
 
         delegation = task.get("delegation", {})
 
-        # Skip user-only tasks
+        # Skip user-only tasks (known upfront)
         if delegation.get("strategy") == "user_only":
             continue
+
+        # Skip tasks already evaluated as needing user action
+        # BUT re-evaluate if task was modified since last evaluation
+        if task.get("worker_evaluated") and task.get("needs_user_action"):
+            evaluated_at = task.get("evaluated_at", "")
+            modified_at = task.get("modified_at", "")
+            # Re-evaluate if task was modified after evaluation
+            if not modified_at or modified_at <= evaluated_at:
+                continue
 
         pending.append(task)
 
@@ -1362,6 +1448,59 @@ def get_pending_tasks_for_worker() -> list:
     pending.sort(key=lambda t: priority_order.get(t.get("priority", "normal"), 1))
 
     return pending
+
+
+def mark_task_needs_user_action(task_id: str, reason: str = "") -> str:
+    """
+    Mark a task as needing user action (agent cannot act on it).
+
+    This prevents the Worker Agent from re-evaluating the task every cycle.
+    The task stays pending but won't be picked up by get_pending_tasks_for_worker().
+
+    Args:
+        task_id: The task ID
+        reason: Why the agent cannot act on this task
+
+    Returns:
+        Success message
+    """
+    queue = _load_queue()
+
+    for task in queue["tasks"]:
+        if task["id"] == task_id:
+            task["worker_evaluated"] = True
+            task["needs_user_action"] = True
+            task["needs_user_action_reason"] = reason
+            task["evaluated_at"] = datetime.now().isoformat()
+            _save_queue(queue)
+            return f"Task marked as needing user action: {reason}"
+
+    return f"Task not found: {task_id}"
+
+
+def mark_task_evaluated(task_id: str) -> str:
+    """
+    Mark a task as evaluated by the Worker Agent.
+
+    Called when the agent has processed the task (created action, executed, etc.)
+    to track that evaluation happened.
+
+    Args:
+        task_id: The task ID
+
+    Returns:
+        Success message
+    """
+    queue = _load_queue()
+
+    for task in queue["tasks"]:
+        if task["id"] == task_id:
+            task["worker_evaluated"] = True
+            task["evaluated_at"] = datetime.now().isoformat()
+            _save_queue(queue)
+            return f"Task marked as evaluated"
+
+    return f"Task not found: {task_id}"
 
 
 # Tool definitions for agents
@@ -1434,7 +1573,7 @@ TASK_TOOLS = [
             "properties": {
                 "status": {
                     "type": "string",
-                    "enum": ["pending", "in_progress", "completed", "stale"]
+                    "enum": ["pending", "in_progress", "awaiting_approval", "completed", "stale"]
                 },
                 "project_id": {"type": "string"},
                 "priority": {
@@ -1501,11 +1640,43 @@ TASK_TOOLS = [
                 },
                 "status": {
                     "type": "string",
-                    "enum": ["pending", "in_progress", "completed"],
+                    "enum": ["pending", "in_progress", "awaiting_approval", "completed"],
                     "description": "New status"
                 }
             },
             "required": ["task_id", "status"]
+        }
+    },
+    {
+        "name": "update_task",
+        "description": "Update task properties like description, priority, due date, or type. This triggers re-evaluation by the Worker Agent.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "string",
+                    "description": "The task ID to update"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "New task description"
+                },
+                "priority": {
+                    "type": "string",
+                    "enum": ["high", "normal", "low"],
+                    "description": "New priority"
+                },
+                "due_date": {
+                    "type": "string",
+                    "description": "New due date (YYYY-MM-DD)"
+                },
+                "task_type": {
+                    "type": "string",
+                    "enum": ["general", "research", "email_send", "calendar_create", "reminder", "physical_activity", "creative_work", "learning"],
+                    "description": "New task type"
+                }
+            },
+            "required": ["task_id"]
         }
     },
     {
@@ -1572,6 +1743,24 @@ TASK_TOOLS = [
             },
             "required": ["task_id"]
         }
+    },
+    {
+        "name": "mark_task_needs_user_action",
+        "description": "Mark a task as needing user action when the agent cannot act on it. Use this when you evaluate a task and determine it requires the user to do something (physical activity, creative work, decision-making, etc.). This prevents re-evaluation of the same task.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "string",
+                    "description": "The task ID"
+                },
+                "reason": {
+                    "type": "string",
+                    "description": "Why the agent cannot act on this task (e.g., 'requires physical presence', 'needs user creativity', 'requires user decision')"
+                }
+            },
+            "required": ["task_id", "reason"]
+        }
     }
 ]
 
@@ -1583,10 +1772,12 @@ TASK_HANDLERS = {
     "add_quick_task": add_quick_task,
     "get_recent_results": get_recent_results,
     "update_task_status": update_task_status,
+    "update_task": update_task,
     "delete_task": delete_task,
     "delete_tasks_by_description": delete_tasks_by_description,
     "delete_tasks_by_project": delete_tasks_by_project,
     "archive_task": archive_task,
+    "mark_task_needs_user_action": mark_task_needs_user_action,
 }
 
 # Safe tools for autonomous Worker agent (excludes bulk delete which can cause data loss)

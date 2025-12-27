@@ -20,11 +20,16 @@ from ..tools.synthesis import PROFILE_TOOLS, PROFILE_HANDLERS
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
 from ..tools.shared.notifications import create_euno_task
 from ..tools.shared.profile_signals import PROFILE_SIGNAL_TOOLS, PROFILE_SIGNAL_HANDLERS
+from ..tools.shared.content_hash import (
+    compute_directory_hash, load_cached_hash, save_cached_hash
+)
 
 # Paths for proactive attention
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 SIGNALS_DIR = DATA_DIR / "shared" / "state" / "signals"
 ATTENTION_STATE_DIR = DATA_DIR / "attention" / "state"
+LIFELOG_DIR = DATA_DIR / "shared" / "state" / "lifelog"
+PATTERNS_CACHE_FILE = ATTENTION_STATE_DIR / "patterns.cache.json"
 ATTENTION_STATE_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -292,14 +297,77 @@ class AutonomousAttentionAgent(AutonomousAgent):
         surfaced["proactive_creations"] = creations[-10:]
         self._save_surfaced_state(surfaced)
 
+    def _get_lifelog_hash(self) -> str:
+        """Get hash of recent lifelog entries for cache validation."""
+        # Hash recent log files (last 14 days would be in recent year dirs)
+        import hashlib
+        hasher = hashlib.md5()
+
+        if LIFELOG_DIR.exists():
+            # Get logs from last 14 days
+            cutoff = datetime.now() - timedelta(days=14)
+            for year_dir in sorted(LIFELOG_DIR.iterdir(), reverse=True):
+                if not year_dir.is_dir() or not year_dir.name.isdigit():
+                    continue
+                for log_file in sorted(year_dir.glob("*.md")):
+                    if log_file.name.startswith('_'):
+                        continue
+                    # Check if file is recent enough
+                    try:
+                        file_date = datetime.strptime(log_file.stem, "%Y-%m-%d")
+                        if file_date.date() >= cutoff.date():
+                            with open(log_file, 'rb') as f:
+                                hasher.update(f.read())
+                    except:
+                        continue
+
+        return hasher.hexdigest()
+
+    def _load_patterns_cache(self) -> dict | None:
+        """Load cached patterns if still valid."""
+        if not PATTERNS_CACHE_FILE.exists():
+            return None
+
+        try:
+            cache = json.loads(PATTERNS_CACHE_FILE.read_text())
+            cached_hash = cache.get("lifelog_hash")
+            current_hash = self._get_lifelog_hash()
+
+            if cached_hash == current_hash:
+                # Cache is valid
+                return cache.get("patterns", [])
+        except:
+            pass
+
+        return None
+
+    def _save_patterns_cache(self, patterns: list):
+        """Save patterns to cache with current lifelog hash."""
+        cache = {
+            "lifelog_hash": self._get_lifelog_hash(),
+            "cached_at": datetime.now().isoformat(),
+            "patterns": patterns
+        }
+        PATTERNS_CACHE_FILE.write_text(json.dumps(cache, indent=2))
+
     def _get_actionable_pattern(self) -> dict | None:
         """Get an actionable pattern to create proactively."""
         if not self._can_create_proactively():
             return None
 
         try:
-            from ..tools.attention.context import detect_actionable_patterns
-            patterns = detect_actionable_patterns(days=14, min_mentions=3)
+            # Check cache first
+            cached_patterns = self._load_patterns_cache()
+
+            if cached_patterns is not None:
+                self.logger.debug("Using cached actionable patterns")
+                patterns = cached_patterns
+            else:
+                # Cache miss - detect patterns and cache result
+                from ..tools.attention.context import detect_actionable_patterns
+                patterns = detect_actionable_patterns(days=14, min_mentions=3)
+                self._save_patterns_cache(patterns or [])
+                self.logger.debug(f"Detected and cached {len(patterns or [])} patterns")
 
             if patterns:
                 # Return the highest confidence pattern

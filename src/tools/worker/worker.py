@@ -266,6 +266,10 @@ def create_pending_action(
     data["actions"].append(action)
     _save_json(PENDING_FILE, data)
 
+    # Update the original task status to prevent reprocessing
+    if task_id and requires_approval:
+        new_update_task_status(task_id, "awaiting_approval")
+
     # If approval is required, create an approval task in From Euno project
     # User can approve by completing the task, or reject by deleting it
     if requires_approval:

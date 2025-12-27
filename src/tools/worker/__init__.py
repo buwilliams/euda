@@ -3,10 +3,11 @@
 from .task import (
     TASK_TOOLS, TASK_HANDLERS,
     create_task, create_learning_task, get_tasks, get_task, get_tasks_data,
-    get_daily_view, add_quick_task, update_task_status,
+    get_daily_view, add_quick_task, update_task_status, update_task,
     store_result, get_recent_results, get_result,
     get_pending_tasks_for_worker, process_rollover, determine_delegation,
-    delete_task, delete_tasks_by_description, delete_tasks_by_project
+    delete_task, delete_tasks_by_description, delete_tasks_by_project,
+    mark_task_needs_user_action, mark_task_evaluated
 )
 from .project import (
     PROJECT_TOOLS, PROJECT_HANDLERS,
@@ -25,10 +26,11 @@ __all__ = [
     # Task tools
     'TASK_TOOLS', 'TASK_HANDLERS',
     'create_task', 'create_learning_task', 'get_tasks', 'get_task', 'get_tasks_data',
-    'get_daily_view', 'add_quick_task', 'update_task_status',
+    'get_daily_view', 'add_quick_task', 'update_task_status', 'update_task',
     'store_result', 'get_recent_results', 'get_result',
     'get_pending_tasks_for_worker', 'process_rollover', 'determine_delegation',
     'delete_task', 'delete_tasks_by_description', 'delete_tasks_by_project',
+    'mark_task_needs_user_action', 'mark_task_evaluated',
     # Project tools
     'PROJECT_TOOLS', 'PROJECT_HANDLERS',
     'create_project', 'get_projects', 'get_projects_data', 'get_project', 'update_project',

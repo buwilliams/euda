@@ -124,6 +124,48 @@ def check_signal(name) -> bool:
     return False
 ```
 
+### Hash-Based Change Detection
+
+Signals alone can cause redundant work—an agent might receive a signal but the underlying data hasn't actually changed since its last run. Agents use content hashes to verify changes before processing:
+
+```python
+# Each agent tracks what version of input data it last processed
+def check_work_needed(self) -> bool:
+    if self.check_signal("summaries_updated"):
+        # Signal received, but verify data actually changed
+        if self._have_summaries_changed():
+            return True
+        self.logger.debug("Signal received but content unchanged - skipping")
+    return False
+
+def _have_summaries_changed(self) -> bool:
+    current_hash = compute_files_hash(summary_files)
+    cached_hash = load_cached_hash(PROCESSED_SUMMARIES_HASH_FILE)
+    return cached_hash is None or current_hash != cached_hash
+
+def do_work(self):
+    # ... do the work ...
+    # Save hash so we know what we processed
+    save_cached_hash(PROCESSED_SUMMARIES_HASH_FILE, current_hash)
+```
+
+**Hash file locations** (each agent tracks its own "last processed" version):
+
+```
+data/shared/state/lifelog/{year}/_summary.hash    # Summary Agent: logs hash for this year
+data/synthesis/state/processed_summaries.hash     # Synthesis Agent: summaries it last processed
+data/evolution/state/processed_synthesis.hash     # Evolution Agent: synthesis it last processed
+data/world/state/processed_profile.hash           # World Agent: profile it last processed
+data/attention/state/patterns.cache.json          # Attention Agent: cached pattern detection
+```
+
+**Why per-agent tracking?** Each agent independently tracks what *it* has processed. If the Synthesis Agent processes the summaries, the Evolution Agent still needs to know whether *it* has processed the resulting synthesis. Shared hashes wouldn't work—each downstream agent needs its own record.
+
+**Utility module:** `src/tools/shared/content_hash.py` provides:
+- `compute_file_hash()`, `compute_directory_hash()`, `compute_files_hash()`
+- `load_cached_hash()`, `save_cached_hash()`
+- `has_content_changed()`, `has_files_changed()`
+
 ### Proactive Behavior
 
 The system proactively surfaces questions and guidance to help users configure and understand Euno:
@@ -272,7 +314,8 @@ euno/
 │   │   │   ├── identity.py     # Agent identity evolution
 │   │   │   ├── notifications.py
 │   │   │   ├── agent_log.py    # Agent activity logging
-│   │   │   └── guidance.py     # Agent steering from Evolution
+│   │   │   ├── guidance.py     # Agent steering from Evolution
+│   │   │   └── content_hash.py # Hash-based change detection
 │   │   ├── ingestion/          # Ingestion tools
 │   │   │   ├── files.py
 │   │   │   ├── classifier.py
@@ -354,21 +397,24 @@ euno/
     │   ├── logs/
     │   ├── prompts/            # temporal.md, extract_behavioral.md
     │   └── state/
-    │       └── profile/        # profile.YYYY.md, profile.current.md, evolution.md, influences_timeline.md
+    │       ├── profile/        # profile.YYYY.md, profile.current.md, evolution.md, influences_timeline.md
+    │       └── processed_summaries.hash  # Hash of summaries last processed
     │
     ├── world/                  # World Agent (The Scout)
     │   ├── config/
     │   ├── logs/
     │   ├── prompts/            # discovery_sweep.md
     │   └── state/
-    │       └── opportunities/  # opportunities.json
+    │       ├── opportunities/  # opportunities.json
+    │       └── processed_profile.hash    # Hash of profile last processed
     │
     ├── attention/              # Attention Agent (The Curator)
     │   ├── config/
     │   ├── logs/
     │   ├── prompts/            # morning.md, evening.md, proactive.md
     │   └── state/
-    │       └── queue/          # surfacing_queue.json, energy logs
+    │       ├── queue/          # surfacing_queue.json, energy logs
+    │       └── patterns.cache.json       # Cached pattern detection results
     │
     ├── interaction/            # Interaction Agent (The Caring Friend)
     │   ├── config/
@@ -394,7 +440,8 @@ euno/
         ├── logs/
         ├── prompts/            # assess_health.md, analyze_system.md, check_evolution.md
         └── state/
-            └── output/         # capabilities.md
+            ├── output/         # capabilities.md
+            └── processed_synthesis.hash  # Hash of synthesis last processed
 ```
 
 ---
@@ -448,16 +495,18 @@ See `docs/governance.md` for complete governance specification.
 
 ## Agents Reference
 
-| Agent | Check Interval | Triggers | Signals Out | Key Tools |
-|-------|---------------|----------|-------------|-----------|
-| Ingestion | 30s | `inbox_changed`, pending files | `logs_updated` | read_file, write_log, mark_processed |
-| Summary | 5min | `logs_updated` | `summaries_updated` | read_log, write_summary |
-| Synthesis | 10min | `summaries_updated` | `synthesis_updated` | read_summaries, write_profile, extract_behavioral, get_project_task_patterns |
-| World | 1hr | `synthesis_updated`, 24hr timer | `opportunities_updated` | search_*, write_opportunity, get_guidance |
-| Attention | 5min | time windows, `proactive_gaps` | `attention_delivered` | read_*, queue_notification, surface_gaps, detect_actionable_patterns |
-| Interaction | on-demand | user messages | — | read_*, write_log, update_biographical, get_guidance |
-| Worker | 30s | pending tasks, research tasks | `task_completed`, `research_completed` | execute_task, store_result, fetch_url, append_research_result |
-| Evolution | 30min | `synthesis_updated`, 6hr timer | `proactive_gaps`, `agent_guidance` | analyze_*, health_assessment, steer_agents |
+| Agent | Check Interval | Triggers | Signals Out | Hash Verification |
+|-------|---------------|----------|-------------|-------------------|
+| Ingestion | 30s | `inbox_changed`, pending files | `logs_updated` | Per-file digests |
+| Summary | 5min | `logs_updated` | `summaries_updated` | `_summary.hash` per year |
+| Synthesis | 10min | `summaries_updated` | `synthesis_updated` | `processed_summaries.hash` |
+| World | 1hr | `synthesis_updated`, 24hr timer | `opportunities_updated` | `processed_profile.hash` |
+| Attention | 5min | time windows, `proactive_gaps` | `attention_delivered` | `patterns.cache.json` |
+| Interaction | on-demand | user messages | — | — |
+| Worker | 30s | pending tasks, research tasks | `task_completed` | Task evaluation tracking |
+| Evolution | 30min | `synthesis_updated`, 6hr timer | `proactive_gaps`, `agent_guidance` | `processed_synthesis.hash` |
+
+**Hash verification prevents redundant work:** Agents verify that input data actually changed since their last run before processing, even when a signal is received. This prevents cascading unnecessary API calls when signals fire but underlying data is unchanged.
 
 ### Large-Scale Ingestion Strategy
 

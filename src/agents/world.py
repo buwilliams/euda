@@ -6,12 +6,23 @@ while occasionally surprising with life-promoting novelty.
 """
 
 from datetime import datetime, timedelta
+from pathlib import Path
 from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.world.world import WORLD_TOOLS, WORLD_HANDLERS
 from ..tools.synthesis import PROFILE_TOOLS, PROFILE_HANDLERS
 from ..tools.shared.notifications import create_euno_task
 from ..tools.shared.guidance import GUIDANCE_TOOLS, GUIDANCE_HANDLERS, should_skip_location_opportunities
+from ..tools.shared.content_hash import (
+    compute_directory_hash, load_cached_hash, save_cached_hash
+)
 
+
+# Paths for hash tracking
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
+SYNTHESIS_PROFILE_DIR = DATA_DIR / "synthesis" / "state" / "profile"
+WORLD_STATE_DIR = DATA_DIR / "world" / "state"
+# Tracks which version of the synthesis profile the World Agent last processed
+PROCESSED_PROFILE_HASH_FILE = WORLD_STATE_DIR / "processed_profile.hash"
 
 # Combined tools - World agent needs access to profile (identity) and guidance
 ALL_TOOLS = WORLD_TOOLS + PROFILE_TOOLS + GUIDANCE_TOOLS
@@ -114,12 +125,40 @@ class AutonomousWorldAgent(AutonomousAgent):
         )
         self.sweep_interval = timedelta(hours=sweep_interval_hours)
 
+    def _has_profile_changed(self) -> bool:
+        """Check if user profile has changed since last sweep."""
+        if not SYNTHESIS_PROFILE_DIR.exists():
+            return False
+
+        current_hash = compute_directory_hash(SYNTHESIS_PROFILE_DIR, "*.md", exclude_prefix="_")
+        cached_hash = load_cached_hash(PROCESSED_PROFILE_HASH_FILE)
+
+        if cached_hash is None:
+            self.logger.debug("No cached profile hash - first run")
+            return True
+
+        changed = current_hash != cached_hash
+        if changed:
+            self.logger.debug(f"Profile hash changed: {cached_hash[:8]}... -> {current_hash[:8]}...")
+        return changed
+
+    def _save_profile_hash(self):
+        """Save current profile hash after successful sweep."""
+        if SYNTHESIS_PROFILE_DIR.exists():
+            current_hash = compute_directory_hash(SYNTHESIS_PROFILE_DIR, "*.md", exclude_prefix="_")
+            WORLD_STATE_DIR.mkdir(parents=True, exist_ok=True)
+            save_cached_hash(PROCESSED_PROFILE_HASH_FILE, current_hash)
+            self.logger.debug(f"Saved profile hash: {current_hash[:8]}...")
+
     def check_work_needed(self) -> bool:
         """Check if a discovery sweep is needed."""
         # Check for explicit signal (identity includes values at core)
         if self.check_signal("synthesis_updated"):
-            self.logger.info("Received synthesis_updated signal - running discovery")
-            return True
+            self.logger.info("Received synthesis_updated signal")
+            # Verify profile actually changed
+            if self._has_profile_changed():
+                return True
+            self.logger.debug("Signal received but profile unchanged - skipping early sweep")
 
         # Check if enough time has passed since last sweep
         state = self.load_state()
@@ -130,15 +169,22 @@ class AutonomousWorldAgent(AutonomousAgent):
             if datetime.now() - last_time < self.sweep_interval:
                 return False
 
-        # Time for a sweep
+        # Time for a sweep - also verify profile changed since last sweep
+        if not self._has_profile_changed():
+            self.logger.debug("Sweep interval elapsed but profile unchanged - skipping")
+            # Still update last_sweep to avoid checking again
+            self.save_state({"last_sweep": datetime.now().isoformat()})
+            return False
+
         return True
 
     def do_work(self) -> str:
         """Run a discovery sweep."""
         result = run_discovery_sweep()
 
-        # Save state
+        # Save state and hash so we don't re-process unchanged profile
         self.save_state({"last_sweep": datetime.now().isoformat()})
+        self._save_profile_hash()
         self.agent.clear_context()
 
         # Notify user via From Euno project task

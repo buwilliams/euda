@@ -115,6 +115,9 @@ Generated: {timestamp}
     # Update manifest to record summary generation
     _update_manifest_summary(year)
 
+    # Save the logs hash so we know when summary is up to date
+    _save_logs_hash(year)
+
     return f"Summary written for {year}"
 
 

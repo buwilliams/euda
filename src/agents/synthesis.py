@@ -20,6 +20,8 @@ Temporal profiles provide biographical source data from which behavioral
 patterns are extracted into the contract-compliant private profile.
 """
 
+from pathlib import Path
+
 from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.synthesis import (
     ALL_SYNTHESIS_TOOLS, ALL_SYNTHESIS_HANDLERS,
@@ -27,6 +29,16 @@ from ..tools.synthesis import (
     list_temporal_profiles, get_evolution, generate_current_profile,
     get_profile, get_private_profile
 )
+from ..tools.shared.content_hash import (
+    compute_files_hash, load_cached_hash, save_cached_hash
+)
+
+# Paths for hash-based change detection
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
+LIFELOG_DIR = DATA_DIR / "shared" / "state" / "lifelog"
+SYNTHESIS_STATE_DIR = DATA_DIR / "synthesis" / "state"
+# Tracks which version of the summaries the Synthesis Agent last processed
+PROCESSED_SUMMARIES_HASH_FILE = SYNTHESIS_STATE_DIR / "processed_summaries.hash"
 
 
 def create_synthesis_agent():
@@ -182,20 +194,69 @@ class AutonomousSynthesisAgent(AutonomousAgent):
             signals_on_complete=["synthesis_updated"]
         )
 
+    def _get_summary_files(self) -> list[Path]:
+        """Get all summary files across years."""
+        summary_files = []
+        if LIFELOG_DIR.exists():
+            for year_dir in LIFELOG_DIR.iterdir():
+                if year_dir.is_dir() and year_dir.name.isdigit():
+                    summary_file = year_dir / "_summary.md"
+                    if summary_file.exists():
+                        summary_files.append(summary_file)
+        return sorted(summary_files)
+
+    def _have_summaries_changed(self) -> bool:
+        """Check if any summary files have changed since last synthesis."""
+        summary_files = self._get_summary_files()
+        if not summary_files:
+            return False
+
+        current_hash = compute_files_hash(summary_files)
+        cached_hash = load_cached_hash(PROCESSED_SUMMARIES_HASH_FILE)
+
+        if cached_hash is None:
+            self.logger.debug("No cached summaries hash - first run")
+            return True
+
+        changed = current_hash != cached_hash
+        if changed:
+            self.logger.debug(f"Summaries hash changed: {cached_hash[:8]}... -> {current_hash[:8]}...")
+        return changed
+
+    def _save_summaries_hash(self):
+        """Save current summaries hash after successful synthesis."""
+        summary_files = self._get_summary_files()
+        if summary_files:
+            current_hash = compute_files_hash(summary_files)
+            SYNTHESIS_STATE_DIR.mkdir(parents=True, exist_ok=True)
+            save_cached_hash(PROCESSED_SUMMARIES_HASH_FILE, current_hash)
+            self.logger.debug(f"Saved summaries hash: {current_hash[:8]}...")
+
     def check_work_needed(self) -> bool:
         """Check if synthesis model needs updating."""
         # Check for explicit signal
         if self.check_signal("summaries_updated"):
             self.logger.info("Received summaries_updated signal")
+            # Verify summaries actually changed (signal might be stale)
+            if self._have_summaries_changed():
+                return True
+            self.logger.debug("Signal received but summaries unchanged - skipping")
+            return False
+
+        # Fallback: check if summaries changed without signal
+        if self._have_summaries_changed():
+            self.logger.info("Summaries changed (no signal) - synthesis needed")
             return True
 
-        # Could also check if summaries are newer than synthesis files
-        # For now, just respond to signals
         return False
 
     def do_work(self) -> str:
         """Derive temporal profiles and evolution narrative from summaries."""
         result = derive_synthesis()
+
+        # Save hash so we don't re-process unchanged summaries
+        self._save_summaries_hash()
+
         self.agent.clear_context()
         return "Temporal profiles and evolution narrative derived from summaries"
 

@@ -22,6 +22,11 @@ from .profile_signals import (
     emit_profile_observation, get_pending_observations, consume_observations,
     count_pending_observations
 )
+from .content_hash import (
+    compute_file_hash, compute_directory_hash, compute_multi_directory_hash,
+    compute_files_hash, load_cached_hash, save_cached_hash,
+    has_content_changed, has_files_changed, update_hash_if_changed
+)
 
 __all__ = [
     # Log tools
@@ -43,4 +48,8 @@ __all__ = [
     'SYNTHESIS_SIGNAL_TOOLS', 'SYNTHESIS_SIGNAL_HANDLERS',
     'emit_profile_observation', 'get_pending_observations', 'consume_observations',
     'count_pending_observations',
+    # Content hash utilities (for change detection)
+    'compute_file_hash', 'compute_directory_hash', 'compute_multi_directory_hash',
+    'compute_files_hash', 'load_cached_hash', 'save_cached_hash',
+    'has_content_changed', 'has_files_changed', 'update_hash_if_changed',
 ]
