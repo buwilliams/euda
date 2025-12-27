@@ -1,6 +1,6 @@
 # Process File Prompt
 
-*Instructions for processing a file and creating a log entry*
+*Instructions for processing a file and creating log entries*
 
 ## Context
 
@@ -32,22 +32,32 @@ CRITICAL: First determine what kind of content this is:
 
 ## Instructions
 
-1. Determine: Is this human expression or data/information?
-2. If human expression → preserve the actual words, the voice, the meaning
-3. If data/information → summarize briefly (what happened, key numbers, significance)
-4. **DETERMINE THE CORRECT TIMESTAMP:**
+1. **CHECK FOR MULTIPLE DATES**: Does this file contain content from different dates?
+   - Journal files often have entries like "January 15, 2016: ..." then "January 20, 2016: ..."
+   - Message exports may span multiple days
+   - **If content spans multiple dates → create SEPARATE entries for each date**
+   - Call write_log_entry once per distinct date
+
+2. Determine: Is this human expression or data/information?
+3. If human expression → preserve the actual words, the voice, the meaning
+4. If data/information → summarize briefly (what happened, key numbers, significance)
+
+5. **DETERMINE THE CORRECT TIMESTAMP FOR EACH ENTRY:**
    - If temporal hint is provided with high confidence → use it
    - If content mentions dates (e.g., "January 15, 2016", "2016-01-15") → extract and use that date
    - If low confidence hint (file_mtime) but content clearly from another time → use content date
    - The timestamp should be when the content was CREATED, not when uploaded
-5. Use write_log_entry with:
+
+6. For EACH date's content, use write_log_entry with:
    - **timestamp**: The determined date (REQUIRED for historical content)
    - **entry_type**: "journal"/"reflection"/"thought" for personal writing, "message"/"conversation" for communications, "summary" for compressed data
    - **temporal_confidence**: "high" if from content/filename, "medium" if inferred, "low" if uncertain
    - **temporal_source**: How you determined the date (e.g., "content", "filename", "temporal_hint")
 
-**IMPORTANT**: Historical content must be stored with its original date, not today's date.
-If the content is clearly from 2016, the timestamp MUST be a 2016 date.
+**IMPORTANT**:
+- Historical content must be stored with its original date, not today's date
+- If content spans multiple dates, make MULTIPLE write_log_entry calls
+- Each entry goes to its own date file in the lifelog
 
 The goal: Capture real thoughts and words verbatim. Compress everything else.
 

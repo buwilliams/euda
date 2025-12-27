@@ -140,18 +140,23 @@ Content:
 
 For EACH file, determine:
 
-1. **Content type:**
+1. **CHECK FOR MULTIPLE DATES**: Does this file contain content from different dates?
+   - Journal files often have entries like "January 15: ..." then "January 20: ..."
+   - Message exports may span multiple days
+   - **If content spans multiple dates → create SEPARATE entries for each date**
+
+2. **Content type:**
    - PRESERVE VERBATIM (human expression): journals, musings, reflections, notes, messages, emails, conversations, quotes, ideas, blog posts
      → Record the actual words. Voice and expression matter.
    - SUMMARIZE (data/information): transactions, receipts, articles, reports, lists, logs
      → Compress to essence. 2-5 sentences max.
 
-2. **Appropriate entry_type:**
+3. **Appropriate entry_type:**
    - "journal" / "reflection" / "thought" for personal writing
    - "message" / "conversation" / "email" for communications
    - "summary" for compressed data
 
-3. **Timestamp (CRITICAL for historical content):**
+4. **Timestamp (CRITICAL for historical content):**
    - If temporal hint has HIGH confidence → use it
    - If content contains dates (e.g., "January 15, 2016", "2016-01-15") → extract and use that date
    - If temporal hint has LOW confidence (file_mtime) but content is clearly from another time → use the content's actual date
@@ -162,9 +167,18 @@ Return ONLY valid JSON in this exact format (no other text):
 {{
   "entries": [
     {{
-      "file_name": "example.txt",
-      "content": "The log entry content...",
+      "file_name": "journal_2016.txt",
+      "content": "January 15 entry content...",
       "timestamp": "2016-01-15T10:00:00",
+      "source": "text_file",
+      "entry_type": "journal",
+      "temporal_confidence": "high",
+      "temporal_source": "content"
+    }},
+    {{
+      "file_name": "journal_2016.txt",
+      "content": "January 20 entry content...",
+      "timestamp": "2016-01-20T10:00:00",
       "source": "text_file",
       "entry_type": "journal",
       "temporal_confidence": "high",
@@ -174,10 +188,10 @@ Return ONLY valid JSON in this exact format (no other text):
 }}
 
 IMPORTANT:
-- Include one entry per file, in the same order as the files below
+- **One file can produce MULTIPLE entries if it contains content from different dates**
 - For verbatim content, preserve the exact words
 - For data, summarize in 2-5 sentences
-- **timestamp is REQUIRED for historical content** - extract dates from content if needed
+- **timestamp is REQUIRED for historical content** - extract dates from content
 - timestamp can only be null if absolutely no date can be determined
 - temporal_confidence: "high" (from content/filename), "medium" (inferred), "low" (uncertain)
 - temporal_source: how you determined the timestamp (e.g., "filename", "content", "metadata", "temporal_hint")
