@@ -21,11 +21,15 @@ import json
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
-TEMPORAL_DIR = SYNTHESIS_DIR / "state" / "temporal"
+TEMPORAL_DIR = SYNTHESIS_DIR / "state" / "temporal"  # For evolution, timeline
+PROFILE_DIR = SYNTHESIS_DIR / "state" / "profile"    # For profiles (contract-compliant)
+SHARED_PROFILE_DIR = DATA_DIR / "shared" / "state" / "profile"  # For other agents
 LOG_DIR = DATA_DIR / "shared" / "state" / "lifelog"
 
-# Ensure directory exists
+# Ensure directories exist
 TEMPORAL_DIR.mkdir(parents=True, exist_ok=True)
+PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+SHARED_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # =============================================================================
@@ -42,7 +46,14 @@ def get_temporal_profile(year: int) -> str:
     Returns:
         Profile content or message if not found
     """
-    profile_file = TEMPORAL_DIR / f"{year}.profile.md"
+    # Check new location first (profile.YYYY.md in profile/)
+    profile_file = PROFILE_DIR / f"profile.{year}.md"
+
+    # Fall back to old location for migration (YYYY.profile.md in temporal/)
+    if not profile_file.exists():
+        old_file = TEMPORAL_DIR / f"{year}.profile.md"
+        if old_file.exists():
+            profile_file = old_file
 
     if not profile_file.exists():
         return f"No temporal profile exists for {year}. Use write_temporal_profile to create one."
@@ -70,7 +81,8 @@ def write_temporal_profile(year: int, content: str) -> str:
     Returns:
         Confirmation message
     """
-    profile_file = TEMPORAL_DIR / f"{year}.profile.md"
+    # Write to contract-compliant location: profile/profile.YYYY.md
+    profile_file = PROFILE_DIR / f"profile.{year}.md"
     timestamp = datetime.now().isoformat()
 
     full_content = f"""# Who I Was in {year}
@@ -85,6 +97,11 @@ Generated: {timestamp}
     with open(profile_file, 'w') as f:
         f.write(full_content)
 
+    # Clean up old location if it exists
+    old_file = TEMPORAL_DIR / f"{year}.profile.md"
+    if old_file.exists():
+        old_file.unlink()
+
     return f"Temporal profile written for {year}"
 
 
@@ -95,11 +112,21 @@ def list_temporal_profiles() -> str:
     Returns:
         List of years with profiles
     """
-    profiles = []
+    profiles = set()
 
-    for profile_file in sorted(TEMPORAL_DIR.glob("*.profile.md")):
-        year = int(profile_file.stem.split('.')[0])
-        profiles.append(year)
+    # Check new location (profile/profile.YYYY.md)
+    for profile_file in PROFILE_DIR.glob("profile.*.md"):
+        stem = profile_file.stem
+        if stem.startswith("profile.") and not stem.startswith("profile.public"):
+            year_str = stem.split('.')[1]
+            if year_str.isdigit():
+                profiles.add(int(year_str))
+
+    # Check old location for migration (temporal/YYYY.profile.md)
+    for profile_file in TEMPORAL_DIR.glob("*.profile.md"):
+        year_str = profile_file.stem.split('.')[0]
+        if year_str.isdigit():
+            profiles.add(int(year_str))
 
     if not profiles:
         return "No temporal profiles exist yet."
@@ -113,7 +140,7 @@ def list_temporal_profiles() -> str:
                 if summary_file.exists():
                     years_with_summaries.append(int(year_dir.name))
 
-    missing = set(years_with_summaries) - set(profiles)
+    missing = set(years_with_summaries) - profiles
 
     result = "**Temporal profiles:**\n"
     for year in sorted(profiles):
@@ -253,17 +280,40 @@ def generate_current_profile() -> str:
     Generate the current profile by synthesizing all temporal data.
 
     Reads all temporal profiles and evolution to create a current snapshot
-    that is grounded in the full history.
+    that is grounded in the full history. Writes to contract-compliant
+    locations and syncs to shared state for other agents.
 
     Returns:
         The generated current profile content
     """
-    # Gather all temporal profiles
+    # Gather all temporal profiles from both old and new locations
     profiles = []
+    years_seen = set()
+
+    # Check new location first (profile/profile.YYYY.md)
+    for profile_file in sorted(PROFILE_DIR.glob("profile.*.md")):
+        stem = profile_file.stem
+        if stem.startswith("profile.") and not stem.startswith("profile.public"):
+            year_str = stem.split('.')[1]
+            if year_str.isdigit():
+                year = int(year_str)
+                if year not in years_seen:
+                    years_seen.add(year)
+                    with open(profile_file, 'r') as f:
+                        profiles.append((year, f.read()))
+
+    # Check old location for migration (temporal/YYYY.profile.md)
     for profile_file in sorted(TEMPORAL_DIR.glob("*.profile.md")):
-        year = int(profile_file.stem.split('.')[0])
-        with open(profile_file, 'r') as f:
-            profiles.append((year, f.read()))
+        year_str = profile_file.stem.split('.')[0]
+        if year_str.isdigit():
+            year = int(year_str)
+            if year not in years_seen:
+                years_seen.add(year)
+                with open(profile_file, 'r') as f:
+                    profiles.append((year, f.read()))
+
+    # Sort by year
+    profiles.sort(key=lambda x: x[0])
 
     if not profiles:
         return "No temporal profiles exist. Cannot generate current profile."
@@ -284,12 +334,13 @@ def generate_current_profile() -> str:
 
     # The most recent year's profile is the foundation
     latest_year, latest_profile = profiles[-1]
+    timestamp = datetime.now().isoformat()
 
     result = f"""# Current Profile
 
 *Who I am now - synthesized from {len(profiles)} years of temporal data*
 
-Generated: {datetime.now().isoformat()}
+Generated: {timestamp}
 
 ## Foundation: {latest_year} Profile
 
@@ -315,13 +366,123 @@ Generated: {datetime.now().isoformat()}
 {timeline}
 """
 
-    # Save the current profile
-    current_file = SYNTHESIS_DIR / "state" / "derived" / "current_profile.md"
-    current_file.parent.mkdir(parents=True, exist_ok=True)
+    # Save to contract-compliant location: profile/profile.current.md
+    current_file = PROFILE_DIR / "profile.current.md"
     with open(current_file, 'w') as f:
         f.write(result)
 
+    # Sync to shared state for other agents
+    shared_file = SHARED_PROFILE_DIR / "profile.current.md"
+    with open(shared_file, 'w') as f:
+        f.write(result)
+
+    # Clean up old location if it exists
+    old_file = SYNTHESIS_DIR / "state" / "derived" / "current_profile.md"
+    if old_file.exists():
+        old_file.unlink()
+
     return result
+
+
+def generate_public_profile() -> str:
+    """
+    Generate a public profile following redaction.policy.md guidelines.
+
+    Public profiles are structural, not narrative. They describe patterns,
+    not events. They point to evidence, never reproduce it. They generalize,
+    abstract, and omit rather than expose.
+
+    Returns:
+        The generated public profile content
+    """
+    # First ensure we have a current private profile
+    private_file = PROFILE_DIR / "profile.current.md"
+    if not private_file.exists():
+        # Try to generate it
+        generate_current_profile()
+
+    if not private_file.exists():
+        return "No private profile exists. Cannot generate public profile."
+
+    with open(private_file, 'r') as f:
+        private_content = f.read()
+
+    timestamp = datetime.now().isoformat()
+    current_year = datetime.now().year
+
+    # Generate public profile with structural patterns only
+    # This is a template - the synthesis agent should refine this
+    public_content = f'''```json
+{{
+  "profile_version": "1.0",
+  "scope": "public",
+  "generated_at": "{timestamp}",
+  "source_profile": "profile/profile.current.md"
+}}
+```
+
+# Public Profile
+
+*Structural patterns for alignment and collaboration*
+
+Generated: {timestamp}
+
+## Identity Constraints
+
+*Non-negotiable rules revealed by sacrifice and refusal*
+
+(To be derived from private profile by synthesis agent)
+
+## Behavioral Attractors
+
+*Stable patterns across contexts*
+
+(To be derived from private profile by synthesis agent)
+
+## Epistemic Style
+
+*How uncertainty, revision, and authority are handled*
+
+(To be derived from private profile by synthesis agent)
+
+## Narrative Identity
+
+*Self-concept and aspirational framing*
+
+(To be derived from private profile by synthesis agent)
+
+---
+
+*This public profile follows redaction.policy.md guidelines: structural over narrative, patterns over events, omission over exposure.*
+'''
+
+    # Save to profile directory
+    public_file = PROFILE_DIR / "profile.public.current.md"
+    with open(public_file, 'w') as f:
+        f.write(public_content)
+
+    # Also save yearly version
+    year_file = PROFILE_DIR / f"profile.public.{current_year}.md"
+    with open(year_file, 'w') as f:
+        f.write(public_content)
+
+    return f"Public profile template generated. The synthesis agent should refine this with actual structural patterns derived from the private profile."
+
+
+def get_public_profile() -> str:
+    """
+    Read the current public profile.
+
+    Returns:
+        Public profile content or message if not found
+    """
+    public_file = PROFILE_DIR / "profile.public.current.md"
+
+    if not public_file.exists():
+        return "No public profile exists yet. Use generate_public_profile to create one."
+
+    with open(public_file, 'r') as f:
+        return f.read()
 
 
 # =============================================================================
@@ -431,7 +592,24 @@ TEMPORAL_TOOLS = [
     # Current profile
     {
         "name": "generate_current_profile",
-        "description": "Generate the current profile by synthesizing all temporal data.",
+        "description": "Generate the current profile by synthesizing all temporal data. Saves to profile/ and syncs to shared/state/profile/ for other agents.",
+        "input_schema": {
+            "type": "object",
+            "properties": {}
+        }
+    },
+    # Public profile
+    {
+        "name": "generate_public_profile",
+        "description": "Generate a public profile following redaction.policy.md guidelines. Creates a template that the synthesis agent should refine.",
+        "input_schema": {
+            "type": "object",
+            "properties": {}
+        }
+    },
+    {
+        "name": "get_public_profile",
+        "description": "Read the current public profile.",
         "input_schema": {
             "type": "object",
             "properties": {}
@@ -449,6 +627,8 @@ TEMPORAL_HANDLERS = {
     "get_influence_timeline": get_influence_timeline,
     "add_influence_to_timeline": add_influence_to_timeline,
     "generate_current_profile": generate_current_profile,
+    "generate_public_profile": generate_public_profile,
+    "get_public_profile": get_public_profile,
 }
 
 

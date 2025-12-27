@@ -123,8 +123,12 @@ def mine_lifelog_for_info() -> dict:
     # Mine for occupation - look for explicit job/role statements
     occupation_patterns = [
         r"(?:^|\n)(?:Occupation|Job|Role|Title|Position):\s*([A-Za-z\s]+?)(?:\n|$)",
+        # Match "Chief X Officer" patterns (CAIO, CEO, CTO, CFO, etc.)
+        r"\b(Chief\s+[A-Z][A-Za-z\s]+?\s+Officer)\b",
+        # Match C-level abbreviations
+        r"\b(C[A-Z]{1,3}O|CAIO|CEO|CTO|CFO|COO|CMO|CIO|CPO)\b",
         r"(?:I am a|I'm a|I work as a?)\s+([a-z][a-z\s]{3,30})(?:\.|,|\s+at|\s+for|$)",
-        r"\b(software engineer|software developer|web developer|data scientist|product manager|designer|consultant|entrepreneur|founder|CEO|CTO)\b",
+        r"\b(software engineer|software developer|web developer|data scientist|product manager|designer|consultant|entrepreneur|founder)\b",
     ]
     for pattern in occupation_patterns:
         match = re.search(pattern, combined, re.IGNORECASE)

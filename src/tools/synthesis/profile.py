@@ -23,10 +23,15 @@ from .context import get_biographical, get_relationships, get_influences
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
+PROFILE_DIR = SYNTHESIS_DIR / "state" / "profile"
+SHARED_PROFILE_DIR = DATA_DIR / "shared" / "state" / "profile"
+
+# Legacy path (for migration)
 DERIVED_DIR = SYNTHESIS_DIR / "state" / "derived"
 
-# Ensure directory exists
-DERIVED_DIR.mkdir(parents=True, exist_ok=True)
+# Ensure directories exist
+PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+SHARED_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def get_profile() -> str:
@@ -36,7 +41,14 @@ def get_profile() -> str:
     Returns:
         Profile content or message if not found
     """
-    profile_file = DERIVED_DIR / "profile.md"
+    # Check new location first
+    profile_file = PROFILE_DIR / "profile.md"
+
+    # Fall back to legacy location
+    if not profile_file.exists():
+        legacy_file = DERIVED_DIR / "profile.md"
+        if legacy_file.exists():
+            profile_file = legacy_file
 
     if not profile_file.exists():
         return "No identity profile generated yet. Run generate_profile() to create one."
@@ -50,12 +62,13 @@ def generate_profile() -> str:
     Generate a consolidated identity profile from all sources.
 
     The profile emphasizes epistemic axioms at the foundation, with values
-    and behaviors derived from them.
+    and behaviors derived from them. Writes to profile/ and syncs to
+    shared/state/profile/ for other agents.
 
     Returns:
         Confirmation message with summary
     """
-    profile_file = DERIVED_DIR / "profile.md"
+    profile_file = PROFILE_DIR / "profile.md"
     timestamp = datetime.now().isoformat()
 
     # Gather all identity data
@@ -155,6 +168,16 @@ Auto-generated: {timestamp}
 
     with open(profile_file, 'w') as f:
         f.write(profile_content)
+
+    # Sync to shared state for other agents
+    shared_file = SHARED_PROFILE_DIR / "profile.md"
+    with open(shared_file, 'w') as f:
+        f.write(profile_content)
+
+    # Clean up legacy location if it exists
+    legacy_file = DERIVED_DIR / "profile.md"
+    if legacy_file.exists():
+        legacy_file.unlink()
 
     return f"Identity profile generated at {timestamp}"
 
