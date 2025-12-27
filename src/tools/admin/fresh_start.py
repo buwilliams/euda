@@ -85,7 +85,7 @@ CLEAR_DIRS = [
 
 def clear_directory(dir_path: Path, dry_run: bool = False) -> int:
     """
-    Clear contents of a directory, preserving .gitkeep files.
+    Clear contents of a directory, preserving .gitkeep files and directory structure.
 
     Returns count of items removed.
     """
@@ -97,14 +97,15 @@ def clear_directory(dir_path: Path, dry_run: bool = False) -> int:
         if item.name == ".gitkeep":
             continue
 
-        if dry_run:
-            print(f"  [DRY-RUN] Would remove: {item}")
+        if item.is_dir():
+            # Recursively clear subdirectory, preserving structure
+            count += clear_directory(item, dry_run)
         else:
-            if item.is_dir():
-                shutil.rmtree(item)
+            if dry_run:
+                print(f"  [DRY-RUN] Would remove: {item}")
             else:
                 item.unlink()
-        count += 1
+            count += 1
 
     return count
 
