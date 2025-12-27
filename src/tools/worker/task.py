@@ -456,6 +456,7 @@ def get_tasks(
         icon = status_icon.get(t["status"], " ")
 
         output.append(f"- [{icon}] {t['description']}{priority_str}{due_str}")
+        output.append(f"    ID: {t['id']}")
         if t.get("project_id"):
             output.append(f"    Project: {t['project_id']}")
 
@@ -610,17 +611,20 @@ def get_daily_view(date: Optional[str] = None) -> str:
             status_icon = {"pending": " ", "in_progress": ">", "completed": "x"}
             icon = status_icon.get(t["status"], " ")
             output.append(f"- [{icon}] {t['description']}{priority_str}")
+            output.append(f"    ID: {t['id']}")
 
     if daily_data.get("ad_hoc_tasks"):
         output.append("\n## Quick Tasks")
         for t in daily_data["ad_hoc_tasks"]:
             icon = "x" if t.get("status") == "completed" else " "
             output.append(f"- [{icon}] {t['description']}")
+            output.append(f"    ID: {t['id']}")
 
     if pending_no_date:
         output.append("\n## Could Do Today")
         for t in pending_no_date:
             output.append(f"- {t['description']}")
+            output.append(f"    ID: {t['id']}")
 
     if len(output) == 1:
         output.append("No tasks scheduled for today. Enjoy the freedom!")
