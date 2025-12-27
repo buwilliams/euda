@@ -360,8 +360,7 @@ euno/
     │       ├── values/         # current.values.md, phase.values.md, lifetime.values.md
     │       ├── behaviors/      # patterns.md
     │       ├── epistemic/      # axioms.md, mental_models.md, tools.md
-    │       ├── context/        # biographical.md, relationships.md, influences.md
-    │       └── derived/        # (legacy, migrated to profile/)
+    │       └── context/        # biographical.md, relationships.md, influences.md
     │
     ├── world/                  # World Agent (The Scout)
     │   ├── config/

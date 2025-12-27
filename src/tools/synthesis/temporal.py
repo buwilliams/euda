@@ -408,11 +408,6 @@ Generated: {timestamp}
     with open(shared_file, 'w') as f:
         f.write(result)
 
-    # Clean up old location if it exists
-    old_file = SYNTHESIS_DIR / "state" / "derived" / "current_profile.md"
-    if old_file.exists():
-        old_file.unlink()
-
     return result
 
 

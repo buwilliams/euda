@@ -26,9 +26,6 @@ SYNTHESIS_DIR = DATA_DIR / "synthesis"
 PROFILE_DIR = SYNTHESIS_DIR / "state" / "profile"
 SHARED_PROFILE_DIR = DATA_DIR / "shared" / "state" / "profile"
 
-# Legacy path (for migration)
-DERIVED_DIR = SYNTHESIS_DIR / "state" / "derived"
-
 # Ensure directories exist
 PROFILE_DIR.mkdir(parents=True, exist_ok=True)
 SHARED_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
@@ -41,14 +38,7 @@ def get_profile() -> str:
     Returns:
         Profile content or message if not found
     """
-    # Check new location first
     profile_file = PROFILE_DIR / "profile.md"
-
-    # Fall back to legacy location
-    if not profile_file.exists():
-        legacy_file = DERIVED_DIR / "profile.md"
-        if legacy_file.exists():
-            profile_file = legacy_file
 
     if not profile_file.exists():
         return "No identity profile generated yet. Run generate_profile() to create one."
@@ -173,11 +163,6 @@ Auto-generated: {timestamp}
     shared_file = SHARED_PROFILE_DIR / "profile.md"
     with open(shared_file, 'w') as f:
         f.write(profile_content)
-
-    # Clean up legacy location if it exists
-    legacy_file = DERIVED_DIR / "profile.md"
-    if legacy_file.exists():
-        legacy_file.unlink()
 
     return f"Identity profile generated at {timestamp}"
 
