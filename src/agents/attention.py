@@ -157,6 +157,10 @@ class AutonomousAttentionAgent(AutonomousAgent):
     PROACTIVE_CREATION_COOLDOWN = 24 * 60 * 60  # 24 hours between creations
     MAX_PROACTIVE_PER_WEEK = 3  # Maximum proactive items per week
 
+    # Opportunity surfacing settings
+    EXPIRING_SOON_DAYS = 7  # Surface time-sensitive opportunities expiring within this window
+    MAX_EXPANSIVE_PER_WEEK = 2  # Limit expansive (surprise) opportunities to avoid overwhelm
+
     def __init__(self, morning_hour: int = 7, evening_hour: int = 21):
         super().__init__(
             name="attention",
@@ -379,6 +383,133 @@ class AutonomousAttentionAgent(AutonomousAgent):
 
         return None
 
+    def _get_opportunity_to_surface(self) -> dict | None:
+        """
+        Check World Agent opportunities for ones needing attention.
+
+        Surfaces:
+        1. Time-sensitive opportunities expiring within EXPIRING_SOON_DAYS
+        2. Expansive (surprise) opportunities when user has capacity
+
+        Note: Aligned opportunities already create tasks via World Agent,
+        so we focus on expansive ones and deadline reminders here.
+        """
+        try:
+            from ..tools.world.world import get_opportunities, OPPORTUNITIES_DIR
+            import json
+
+            surfaced = self._load_surfaced_state()
+            expansive_surfaced = surfaced.get("expansive_surfaced_this_week", [])
+
+            # Clean up old entries (older than 7 days)
+            now = datetime.now()
+            week_ago = now - timedelta(days=7)
+            expansive_surfaced = [
+                e for e in expansive_surfaced
+                if datetime.fromisoformat(e.get("date", "2000-01-01")) > week_ago
+            ]
+            surfaced["expansive_surfaced_this_week"] = expansive_surfaced
+            self._save_surfaced_state(surfaced)
+
+            # Check all opportunity categories
+            for category in ["event", "person", "place", "learning", "goal", "other"]:
+                cat_file = OPPORTUNITIES_DIR / f"{category}.json"
+                if not cat_file.exists():
+                    continue
+
+                with open(cat_file, 'r') as f:
+                    opportunities = json.load(f)
+
+                for opp in opportunities:
+                    # Skip already surfaced
+                    if opp.get("surfaced"):
+                        continue
+
+                    opp_id = opp.get("id")
+
+                    # Check for expiring time-sensitive opportunities
+                    if opp.get("time_sensitive") and opp.get("expires"):
+                        try:
+                            expires_date = datetime.fromisoformat(opp["expires"].replace("Z", "+00:00"))
+                            # Handle date-only strings
+                            if expires_date.tzinfo is None and len(opp["expires"]) == 10:
+                                expires_date = datetime.strptime(opp["expires"], "%Y-%m-%d")
+
+                            days_until = (expires_date - now).days
+                            if 0 < days_until <= self.EXPIRING_SOON_DAYS:
+                                return {
+                                    "type": "expiring",
+                                    "opportunity": opp,
+                                    "category": category,
+                                    "days_until": days_until
+                                }
+                        except (ValueError, TypeError):
+                            pass
+
+                    # Check for expansive opportunities (if under weekly limit)
+                    if opp.get("alignment") == "expansive":
+                        if len(expansive_surfaced) < self.MAX_EXPANSIVE_PER_WEEK:
+                            return {
+                                "type": "expansive",
+                                "opportunity": opp,
+                                "category": category
+                            }
+
+        except Exception as e:
+            self.logger.error(f"Error checking opportunities: {e}")
+
+        return None
+
+    def _surface_opportunity(self, opp_data: dict) -> str:
+        """Surface an opportunity to the user via a task."""
+        from ..tools.world.world import mark_opportunity_surfaced
+
+        opp = opp_data.get("opportunity", {})
+        opp_type = opp_data.get("type")
+        category = opp_data.get("category", "opportunity")
+
+        title = opp.get("title", "Opportunity")
+        description = opp.get("description", "")
+        url = opp.get("url", "")
+
+        if opp_type == "expiring":
+            days = opp_data.get("days_until", "?")
+            task_title = f"⏰ Expiring soon: {title}"
+            message = f"**{category.title()}** - Expires in {days} days\n\n{description[:300]}"
+            priority = "high" if days <= 3 else "normal"
+        else:  # expansive
+            task_title = f"✨ Something different: {title}"
+            message = f"**{category.title()}** - Outside your usual scope, but might be interesting\n\n{description[:300]}"
+            priority = "low"
+
+        if url:
+            message += f"\n\nLink: {url}"
+
+        create_euno_task(
+            agent_name="attention",
+            title=task_title,
+            message=message,
+            task_type="suggestion",
+            priority=priority
+        )
+
+        # Mark as surfaced in World Agent data
+        mark_opportunity_surfaced(opp.get("id", ""), "surfaced_by_attention")
+
+        # Track expansive surfacing for weekly limit
+        if opp_type == "expansive":
+            surfaced = self._load_surfaced_state()
+            expansive_list = surfaced.get("expansive_surfaced_this_week", [])
+            expansive_list.append({
+                "id": opp.get("id"),
+                "date": datetime.now().isoformat()
+            })
+            surfaced["expansive_surfaced_this_week"] = expansive_list
+            self._save_surfaced_state(surfaced)
+
+        self.logger.info(f"Surfaced {opp_type} opportunity: {title}")
+        return f"Surfaced opportunity: {title}"
+
     def _create_proactive_item(self, pattern: dict) -> str:
         """Create a project or task from a detected pattern and notify user."""
         item_type = pattern.get("type", "task")
@@ -480,6 +611,17 @@ class AutonomousAttentionAgent(AutonomousAgent):
             self.save_state(state)
             return True
 
+        # Check for opportunities needing attention (expiring or expansive)
+        opportunity = self._get_opportunity_to_surface()
+        if opportunity:
+            opp_type = opportunity.get("type", "unknown")
+            opp_title = opportunity.get("opportunity", {}).get("title", "unknown")
+            self.logger.info(f"Found {opp_type} opportunity to surface: {opp_title}")
+            state["pending_type"] = "opportunity"
+            state["pending_opportunity"] = opportunity
+            self.save_state(state)
+            return True
+
         # Check if cleanup is needed (once per day during evening window)
         if self.evening_hour <= now.hour < self.evening_hour + 2:
             last_cleanup = state.get("last_task_cleanup")
@@ -527,6 +669,19 @@ class AutonomousAttentionAgent(AutonomousAgent):
             # Clear flags
             state["pending_type"] = None
             state["pending_pattern"] = None
+            self.save_state(state)
+            return result
+
+        elif pending_type == "opportunity":
+            # Surface an opportunity (expiring or expansive)
+            opp_data = state.get("pending_opportunity")
+            result = "No opportunity found"
+            if opp_data:
+                result = self._surface_opportunity(opp_data)
+
+            # Clear flags
+            state["pending_type"] = None
+            state["pending_opportunity"] = None
             self.save_state(state)
             return result
 
