@@ -9,10 +9,7 @@ from .identity import (
     read_own_identity, read_core_identity, propose_identity_evolution,
     get_pending_evolutions, approve_evolution, reject_evolution
 )
-from .notifications import (
-    NOTIFICATION_TOOLS, NOTIFICATION_HANDLERS,
-    queue_notification, get_pending_notifications, mark_seen, dismiss_notification
-)
+from .notifications import create_euno_task
 from .agent_log import (
     AGENT_LOG_TOOLS, AGENT_LOG_HANDLERS,
     log_activity, log_tool_call, log_work_check, log_work_start,
@@ -34,9 +31,8 @@ __all__ = [
     'IDENTITY_TOOLS', 'IDENTITY_HANDLERS',
     'read_own_identity', 'read_core_identity', 'propose_identity_evolution',
     'get_pending_evolutions', 'approve_evolution', 'reject_evolution',
-    # Notification tools
-    'NOTIFICATION_TOOLS', 'NOTIFICATION_HANDLERS',
-    'queue_notification', 'get_pending_notifications', 'mark_seen', 'dismiss_notification',
+    # Euno task creation (for agent-to-user communication)
+    'create_euno_task',
     # Agent logging
     'AGENT_LOG_TOOLS', 'AGENT_LOG_HANDLERS',
     'log_activity', 'log_tool_call', 'log_work_check', 'log_work_start',

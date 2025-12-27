@@ -46,7 +46,7 @@ euno/
 │   ├── agents/             # 8 agent modules (ingestion, summary, synthesis, etc.)
 │   │   └── base.py         # Core agent pattern
 │   ├── tools/              # Organized by agent concern
-│   │   ├── shared/         # Cross-agent (log, agent identity, notifications)
+│   │   ├── shared/         # Cross-agent (log, agent identity, signals)
 │   │   ├── ingestion/      # File processing, queue, budget, iPhone backup tools
 │   │   ├── synthesis/      # User synthesis (epistemic, values, behaviors, context)
 │   │   ├── world/          # Opportunities + fetch
@@ -59,7 +59,7 @@ euno/
 └── data/                   # Agent-oriented data
     │                       # Standard pattern: config/, logs/, prompts/, state/
     ├── shared/             # Cross-agent resources
-    │   └── state/          # identity/, profile/, lifelog/, signals/, notifications/
+    │   └── state/          # identity/, profile/, lifelog/, signals/
     ├── ingestion/          # state/inbox/, state/digests/
     ├── summary/            # state/
     ├── synthesis/          # state/values/, state/behaviors/, state/profile/, etc.

@@ -2,13 +2,13 @@
 Tools package for Euno agents.
 
 Tools are organized by agent concern:
-- shared: Cross-agent tools (log, identity, notifications)
+- shared: Cross-agent tools (log, identity, signals)
 - ingestion: File processing and classification
 - synthesis: User identity profile (from temporal profiles)
 - world: Opportunity discovery
 - attention: Surfacing queue and energy tracking
 - interaction: Conversations and cards
-- worker: Tasks and projects
+- worker: Tasks and projects (including From Euno agent communication)
 - evolution: System analysis and identity evolution
 """
 
@@ -17,9 +17,9 @@ from .shared import (
     LOG_TOOLS, LOG_HANDLERS,
     write_log_entry, read_log_entry, search_log, get_recent_entries,
     IDENTITY_TOOLS, IDENTITY_HANDLERS,
-    NOTIFICATION_TOOLS, NOTIFICATION_HANDLERS,
     AGENT_LOG_TOOLS, AGENT_LOG_HANDLERS,
     log_activity, get_agent_log, get_all_agent_logs,
+    create_euno_task,
 )
 
 from .ingestion import (
