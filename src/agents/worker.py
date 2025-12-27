@@ -309,7 +309,6 @@ SOURCES:
     def do_work(self) -> str:
         """Process tasks based on delegation and execute approved actions."""
         results = []
-        tasks_processed = 0
         research_completed = 0
         actions_executed = 0
 
@@ -321,13 +320,15 @@ SOURCES:
             research_completed += 1
 
         # Process other pending tasks with delegation logic
+        # Note: Most tasks require approval or are user-only, so they won't be
+        # completed - they'll just have actions created. Don't create notifications
+        # for simply processing the queue since it creates noise.
         pending_tasks = [
             t for t in get_pending_tasks_for_worker()
             if t.get("type") != "research" or t.get("delegation", {}).get("strategy") != "agent_autonomous"
         ]
         if pending_tasks:
-            tasks_processed = len(pending_tasks)
-            self.logger.info(f"Processing {tasks_processed} pending tasks...")
+            self.logger.info(f"Processing {len(pending_tasks)} pending tasks...")
             result = process_task_queue()
             results.append(f"Tasks: {result}")
 
@@ -349,12 +350,13 @@ SOURCES:
         # Clear context to avoid memory buildup
         self.agent.clear_context()
 
-        # Notify user about completed work (only for non-research, as research has its own notification)
-        if tasks_processed > 0 or actions_executed > 0:
+        # Only notify user when actual autonomous work was completed
+        # Research tasks have their own notifications, so only notify for actions
+        if actions_executed > 0:
             create_euno_task(
                 agent_name="worker",
-                title=f"Completed {tasks_processed} task(s)",
-                message=f"I've been working on your tasks. {'; '.join(results)}"[:200],
+                title=f"Executed {actions_executed} approved action(s)",
+                message=f"I've executed actions you approved. {'; '.join(results)}"[:200],
                 task_type="notification",
                 priority="low"
             )

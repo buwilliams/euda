@@ -232,6 +232,93 @@ def create_task(
     return f"Created task: '{description}'{strategy_msg} (ID: {task_id})"
 
 
+def create_task_with_action(
+    description: str,
+    action_id: str,
+    task_type: str = "approval",
+    project_id: Optional[str] = None,
+    priority: str = "normal",
+    source_agent: str = "worker",
+    source_context: str = ""
+) -> str:
+    """
+    Create a task linked to an action for approval workflow.
+
+    When the task is completed, the linked action is approved.
+    When the task is deleted, the linked action is rejected.
+
+    Args:
+        description: Full description (supports markdown)
+        action_id: The action ID this task controls
+        task_type: Type of task (usually "approval")
+        project_id: Project to add to (usually project-euno)
+        priority: high, normal, or low
+        source_agent: Which agent created this
+        source_context: Why it was created
+
+    Returns:
+        Success message with task ID
+    """
+    from .project import EUNO_PROJECT_ID, ensure_euno_project
+
+    if not project_id:
+        ensure_euno_project()
+        project_id = EUNO_PROJECT_ID
+
+    task_id = _generate_task_id()
+    now = datetime.now().isoformat()
+
+    task = {
+        "id": task_id,
+        "created": now,
+        "description": description,
+        "type": task_type,
+        "status": "pending",
+        "priority": priority,
+        "source": {
+            "agent": source_agent,
+            "context": source_context
+        },
+        "project_id": project_id,
+        "action_id": action_id,  # Link to the action
+        "delegation": {
+            "strategy": "user_approval",
+            "requires_approval": True,
+            "learning_task": False,
+            "rationale": "User must approve or reject this action"
+        },
+        "scheduling": {
+            "due_date": None,
+            "scheduled_for": None,
+            "time_estimate_minutes": None,
+            "energy_level": "low",
+            "best_window": "any",
+            "snoozed_until": None
+        },
+        "rollover": {
+            "original_date": None,
+            "times_rolled": 0,
+            "rollover_decision": None
+        },
+        "assigned_at": None,
+        "completed_at": None,
+        "result": None,
+        "result_id": None
+    }
+
+    # Add to queue
+    queue = _load_queue()
+    queue["tasks"].append(task)
+    _save_queue(queue)
+
+    # Update project task count
+    if project_id:
+        from .project import increment_task_count
+        increment_task_count(project_id)
+
+    return f"Created approval task for action {action_id} (Task ID: {task_id})"
+
+
 def create_learning_task(
     description: str,
     project_id: Optional[str] = None,
@@ -652,6 +739,9 @@ def update_task_status(task_id: str, status: str) -> str:
     """
     Update task status.
 
+    If the task has an action_id and status is 'completed', the linked
+    action will be approved and queued for execution.
+
     Args:
         task_id: The task ID
         status: New status (pending, in_progress, completed, etc.)
@@ -675,6 +765,14 @@ def update_task_status(task_id: str, status: str) -> str:
                     from .project import increment_task_count
                     increment_task_count(task["project_id"], completed=True)
 
+                # If this task is linked to an action, approve it
+                action_id = task.get("action_id")
+                if action_id:
+                    from .worker import approve_action
+                    approve_result = approve_action(action_id)
+                    _save_queue(queue)
+                    return f"Action approved: {approve_result}"
+
             _save_queue(queue)
             return f"Updated task status to {status}"
 
@@ -684,6 +782,8 @@ def update_task_status(task_id: str, status: str) -> str:
 def delete_task(task_id: str) -> str:
     """
     Delete a task from the queue.
+
+    If the task has an action_id, the linked action will be rejected.
 
     Args:
         task_id: The task ID to delete
@@ -696,9 +796,19 @@ def delete_task(task_id: str) -> str:
     for i, task in enumerate(queue["tasks"]):
         if task["id"] == task_id:
             description = task["description"]
+            action_id = task.get("action_id")
+
+            # If this task is linked to an action, reject it
+            if action_id:
+                from .worker import reject_action
+                reject_result = reject_action(action_id, reason="User deleted the approval task")
+
             queue["tasks"].pop(i)
             _save_queue(queue)
-            return f"Deleted task: {description}"
+
+            if action_id:
+                return f"Action rejected and task deleted"
+            return f"Deleted task: {description[:50]}..."
 
     return f"Task not found: {task_id}"
 

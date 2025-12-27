@@ -644,7 +644,8 @@ async def get_history(session_id: str = None, date: str = None):
 def get_tasks_for_panel() -> list:
     """Get tasks for the task panel."""
     from ..tools.worker.task import get_tasks_data
-    return get_tasks_data(status="pending", limit=50)
+    # Don't filter by status - return all tasks so SSE updates include completed ones
+    return get_tasks_data(limit=100)
 
 
 @app.get("/api/events")

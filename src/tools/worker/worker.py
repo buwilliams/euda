@@ -228,6 +228,9 @@ def create_pending_action(
     """
     Create a pending action for user approval.
 
+    When requires_approval=True, also creates an approval task in "From Euno"
+    project. User can approve by completing the task, or reject by deleting it.
+
     Args:
         task_id: Associated task ID
         action_type: Type of action (email_send, calendar_create, etc.)
@@ -263,7 +266,26 @@ def create_pending_action(
     data["actions"].append(action)
     _save_json(PENDING_FILE, data)
 
-    status_msg = "awaiting approval" if requires_approval else "auto-approved (read-only)"
+    # If approval is required, create an approval task in From Euno project
+    # User can approve by completing the task, or reject by deleting it
+    if requires_approval:
+        from ..shared.notifications import create_approval_task
+
+        # Format details for display
+        details_str = details if isinstance(details, str) else "\n".join(
+            f"- **{k}:** {v}" for k, v in details.items()
+        )
+
+        create_approval_task(
+            agent_name="worker",
+            action_id=action_id,
+            action_type=action_type,
+            summary=summary,
+            details=details_str,
+            priority="normal"
+        )
+
+    status_msg = "awaiting approval (check From Euno)" if requires_approval else "auto-approved"
     return f"Action created: {action_id}\nType: {action_type}\nSummary: {summary}\nStatus: {status_msg}"
 
 

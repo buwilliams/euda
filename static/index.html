@@ -1765,20 +1765,17 @@
         }
 
         function showTaskFullContent(description, projectName) {
-            // Show task with project name in chat area
+            // Show task with project name in chat area, rendering markdown
             inlineChat.style.display = 'block';
 
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message message-system';
             messageDiv.innerHTML = `
                 <div class="message-system-header">
-                    <span class="message-system-title">Task</span>
+                    <span class="message-system-title">${escapeHtml(projectName)}</span>
                     <button class="message-system-close" onclick="this.closest('.message-system').remove()">×</button>
                 </div>
-                <div class="message-system-body">
-                    <p><strong>Project:</strong> ${escapeHtml(projectName)}</p>
-                    <p><strong>Task:</strong> ${escapeHtml(description)}</p>
-                </div>
+                <div class="message-system-body">${marked.parse(description)}</div>
             `;
 
             inlineMessages.appendChild(messageDiv);
@@ -1972,7 +1969,12 @@
 
             eventSource.addEventListener('init', (e) => {
                 const data = JSON.parse(e.data);
-                tasksData = data.tasks || [];
+                const allTasks = data.tasks || [];
+                // Split tasks into pending and completed
+                tasksData = allTasks.filter(t => t.status !== 'completed');
+                completedTasksData = allTasks.filter(t => t.status === 'completed')
+                    .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
+                    .slice(0, 20);
                 projectsData = data.projects || [];
                 updateTasksBadge();
                 if (activePanel === 'tasks') {
@@ -1985,7 +1987,12 @@
 
             eventSource.addEventListener('tasks_update', (e) => {
                 const data = JSON.parse(e.data);
-                tasksData = data.tasks || [];
+                const allTasks = data.tasks || [];
+                // Split tasks into pending and completed
+                tasksData = allTasks.filter(t => t.status !== 'completed');
+                completedTasksData = allTasks.filter(t => t.status === 'completed')
+                    .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
+                    .slice(0, 20);
                 if (activePanel === 'tasks') {
                     renderTodayTasks();
                     renderProjects();
