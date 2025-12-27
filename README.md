@@ -4,7 +4,9 @@
 
 _Euno [U-no], from Eudaimonia—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities._
 
-**Euno is a personal intelligence that learns to anticipate you.** It proactively does tasks for you, curates what helps you thrive, and expands your horizons.
+**Euno is a personal intelligence that learns to anticipate you.** It understands who you are, proactively does tasks for you, and curates what deserves your attention.
+
+Today's AI remembers facts about you. Euno understands who you are—your values, your failure modes, your patterns, what you'd rather suffer than violate.
 
 ## How It Works
 
@@ -16,10 +18,11 @@ _Euno [U-no], from Eudaimonia—ancient Greek for "human flourishing." A deep se
 
 - **Reads your life data** — photos, documents, exports from any platform
 - **Maintains a life log** — one unified record of everything, searchable and private
-- **Learns your values** — discovers what matters from patterns, not just what you say
+- **Learns who you are** — values, failure modes, patterns—discovered from behavior, not just what you say
 - **Surfaces what matters** — the right thing at the right moment, respecting your energy
+- **Guards your attention** — reads your feeds, shields you from engagement algorithms, less screen time without losing touch
 - **Executes tasks** — handles work autonomously, asks before acting on anything important
-- **Talks like a friend** — not a chatbot, not an assistant—a caring collaborator who knows you
+- **Talks like a friend** — not a chatbot, not an assistant—a caring collaborator who knows you and goes deep when you need it
 
 ## Core Ideas
 
@@ -41,7 +44,7 @@ Eight specialized agents work together:
 | **Summary** | The Historian | Compresses time without collapsing structure |
 | **Synthesis** | The Keeper | Constructs a predictive identity model |
 | **World** | The Scout | Explores integrable external opportunities |
-| **Attention** | The Curator | Allocates attention respecting capacity and constraints |
+| **Attention** | The Curator | Guards your attention; reads feeds, delivers what counts |
 | **Interaction** | The Caring Friend | Supports thinking without threatening identity coherence |
 | **Worker** | The Executor | Executes tasks without undermining agency |
 | **Evolution** | The Evolver | Refines agent identities to serve this specific user |
