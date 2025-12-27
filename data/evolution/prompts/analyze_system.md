@@ -22,5 +22,5 @@ Run a comprehensive system analysis and generate capabilities documentation.
 
 ## Audience
 
-Write the document for a non-technical user who wants to understand their personal assistant.
+Write the document for a non-technical user who wants to understand their personal intelligence.
 Organize by what they might want to accomplish, not by technical structure.
