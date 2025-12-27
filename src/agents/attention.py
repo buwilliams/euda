@@ -16,7 +16,7 @@ from datetime import datetime, time, timedelta
 from pathlib import Path
 from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.attention.attention import ATTENTION_TOOLS, ATTENTION_HANDLERS
-from ..tools.synthesis import VALUES_TOOLS, VALUES_HANDLERS, PROFILE_TOOLS, PROFILE_HANDLERS
+from ..tools.synthesis import PROFILE_TOOLS, PROFILE_HANDLERS
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
 from ..tools.shared.notifications import queue_notification
 from ..tools.shared.profile_signals import PROFILE_SIGNAL_TOOLS, PROFILE_SIGNAL_HANDLERS
@@ -28,9 +28,9 @@ ATTENTION_STATE_DIR = DATA_DIR / "attention" / "state"
 ATTENTION_STATE_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# Combined tools - Attention agent needs access to identity (values core) and logs
-ALL_TOOLS = ATTENTION_TOOLS + VALUES_TOOLS + PROFILE_TOOLS + LOG_TOOLS + PROFILE_SIGNAL_TOOLS
-ALL_HANDLERS = {**ATTENTION_HANDLERS, **VALUES_HANDLERS, **PROFILE_HANDLERS, **LOG_HANDLERS, **PROFILE_SIGNAL_HANDLERS}
+# Combined tools - Attention agent needs access to profile (identity) and logs
+ALL_TOOLS = ATTENTION_TOOLS + PROFILE_TOOLS + LOG_TOOLS + PROFILE_SIGNAL_TOOLS
+ALL_HANDLERS = {**ATTENTION_HANDLERS, **PROFILE_HANDLERS, **LOG_HANDLERS, **PROFILE_SIGNAL_HANDLERS}
 
 
 def create_attention_agent():

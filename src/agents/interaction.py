@@ -27,13 +27,7 @@ from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
 from ..tools.shared.guidance import GUIDANCE_TOOLS, GUIDANCE_HANDLERS, get_interaction_hints
 from ..tools.shared.profile_signals import PROFILE_SIGNAL_TOOLS, PROFILE_SIGNAL_HANDLERS
 from ..tools.world.fetch import FETCH_TOOLS, FETCH_HANDLERS
-from ..tools.synthesis import (
-    get_current_values, get_phase_values, get_lifetime_values, get_all_values,
-    get_behaviors, get_profile, get_synthesis_summary,
-    get_biographical, update_biographical,
-    get_relationships, add_relationship, update_relationship,
-    get_influences, update_influences
-)
+from ..tools.synthesis import get_profile, get_synthesis_summary
 from ..tools.world.world import get_opportunities
 from ..tools.worker.task import TASK_TOOLS, TASK_HANDLERS
 from ..tools.worker.project import PROJECT_TOOLS, PROJECT_HANDLERS
@@ -43,123 +37,23 @@ from ..tools.interaction.conversation import CONVERSATION_TOOLS, CONVERSATION_HA
 from ..tools.interaction.conversation_history import CONVERSATION_HISTORY_TOOLS, CONVERSATION_HISTORY_HANDLERS
 
 
-# Identity tools - values at the core, context as support
+# Identity tools - unified behavioral profile
 IDENTITY_READ_TOOLS = [
-    # Values (core identity)
-    {
-        "name": "get_current_values",
-        "description": "Get the user's current values (rolling year focus). Use when they ask about their values or what matters to them now.",
-        "input_schema": {"type": "object", "properties": {}}
-    },
-    {
-        "name": "get_phase_values",
-        "description": "Get the user's life phase values (the chapter they're in).",
-        "input_schema": {"type": "object", "properties": {}}
-    },
-    {
-        "name": "get_lifetime_values",
-        "description": "Get the user's lifetime values (persistent patterns).",
-        "input_schema": {"type": "object", "properties": {}}
-    },
-    {
-        "name": "get_all_values",
-        "description": "Get all values at once (current, phase, lifetime). Use when they want a comprehensive view of what matters to them.",
-        "input_schema": {"type": "object", "properties": {}}
-    },
-    # Behaviors (derived)
-    {
-        "name": "get_behaviors",
-        "description": "Get behavioral patterns - how the user actually acts based on observed evidence.",
-        "input_schema": {"type": "object", "properties": {}}
-    },
-    # Profile (consolidated)
     {
         "name": "get_profile",
-        "description": "Get the full identity profile - values at core, behaviors derived, context supporting.",
+        "description": "Get the full identity profile - behavioral model including identity constraints, failure modes, attractors, tradeoffs, epistemic style, and narrative identity. Use when user asks about who they are, their values, or patterns.",
         "input_schema": {"type": "object", "properties": {}}
     },
     {
         "name": "get_synthesis_summary",
-        "description": "Get a quick summary of the user's identity for context.",
-        "input_schema": {"type": "object", "properties": {}}
-    },
-    # Context (supporting, not defining)
-    {
-        "name": "get_biographical",
-        "description": "Get biographical context (name, birth info, background). This is supporting data, not core identity.",
-        "input_schema": {"type": "object", "properties": {}}
-    },
-    {
-        "name": "get_relationships",
-        "description": "Get relationship narratives - the people who matter to the user.",
-        "input_schema": {"type": "object", "properties": {}}
-    },
-    {
-        "name": "get_influences",
-        "description": "Get influences - books, media, thinkers, ideas, places that shaped the user's thinking.",
+        "description": "Get a quick summary of the user's identity for context. Good for getting a brief overview.",
         "input_schema": {"type": "object", "properties": {}}
     }
 ]
 
-# Tools for recording identity facts from conversations
-IDENTITY_WRITE_TOOLS = [
-    {
-        "name": "update_biographical",
-        "description": "Record biographical information when the user shares it (name, birth date, location, background). Use when they mention facts about themselves.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "section": {
-                    "type": "string",
-                    "description": "Section to update: 'Name', 'Birth Date', 'Birth Place', 'Current Location', 'Background', or new"
-                },
-                "content": {
-                    "type": "string",
-                    "description": "The content for that section"
-                }
-            },
-            "required": ["section", "content"]
-        }
-    },
-    {
-        "name": "add_relationship",
-        "description": "Record a relationship when the user mentions someone important (family, friends). Use when they talk about people in their life.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string", "description": "The person's name"},
-                "relationship_type": {"type": "string", "description": "Type: Partner, Mother, Father, Sister, Brother, Child, Friend, Colleague, etc."},
-                "narrative": {"type": "string", "description": "Narrative description of this relationship"}
-            },
-            "required": ["name", "relationship_type", "narrative"]
-        }
-    },
-    {
-        "name": "update_relationship",
-        "description": "Update the narrative for an existing relationship.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string", "description": "The person's name"},
-                "narrative": {"type": "string", "description": "The updated narrative"}
-            },
-            "required": ["name", "narrative"]
-        }
-    },
-    {
-        "name": "update_influences",
-        "description": "Record an influence when the user mentions something that shaped their thinking (a book, movie, thinker, idea, place).",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "section": {"type": "string", "description": "Category: 'Books', 'Media', 'Thinkers', 'Ideas', 'Places'"},
-                "item": {"type": "string", "description": "The specific item (book title, person name, etc.)"},
-                "impact": {"type": "string", "description": "How it shaped the user's thinking"}
-            },
-            "required": ["section", "item", "impact"]
-        }
-    }
-]
+# Identity write tools removed - profile facts are now captured via profile signals
+# The emit_profile_observation tool allows recording insights that flow to Synthesis Agent
+IDENTITY_WRITE_TOOLS = []
 
 # Tools for reading opportunities
 WORLD_READ_TOOLS = [
@@ -229,21 +123,9 @@ INTERACTION_HANDLERS = {
     **CONVERSATION_HISTORY_HANDLERS,
     **GUIDANCE_HANDLERS,
     **PROFILE_SIGNAL_HANDLERS,  # For emitting profile observations
-    # Identity tools - values at core
-    "get_current_values": get_current_values,
-    "get_phase_values": get_phase_values,
-    "get_lifetime_values": get_lifetime_values,
-    "get_all_values": get_all_values,
-    "get_behaviors": get_behaviors,
+    # Identity tools - unified profile
     "get_profile": get_profile,
     "get_synthesis_summary": get_synthesis_summary,
-    "get_biographical": get_biographical,
-    "update_biographical": update_biographical,
-    "get_relationships": get_relationships,
-    "add_relationship": add_relationship,
-    "update_relationship": update_relationship,
-    "get_influences": get_influences,
-    "update_influences": update_influences,
     # World tools
     "get_opportunities": get_opportunities,
     "get_system_capabilities": get_last_introspection,

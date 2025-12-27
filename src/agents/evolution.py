@@ -23,7 +23,7 @@ from ..tools.evolution.health import (
     run_health_assessment
 )
 from ..tools.synthesis import (
-    get_profile, get_synthesis_summary, get_axioms, get_all_values,
+    get_profile, get_synthesis_summary,
     PROFILE_TOOLS, PROFILE_HANDLERS
 )
 from ..tools.shared.identity import (

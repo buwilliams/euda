@@ -27,11 +27,7 @@ from ..agents.base import create_agent
 from ..agents.interaction import INTERACTION_TOOLS, INTERACTION_HANDLERS
 from ..tools.shared.log import read_log_entry, search_log, get_recent_entries, write_log_entry
 from ..tools.interaction.conversation_history import save_message, get_conversation_data, get_recent_conversations
-from ..tools.synthesis import (
-    get_current_values, get_phase_values, get_lifetime_values, get_all_values,
-    get_behaviors, get_profile, get_synthesis_summary,
-    get_biographical, get_relationships
-)
+from ..tools.synthesis import get_profile, get_synthesis_summary
 from ..tools.interaction.cards import (
     get_internal_card, get_public_card, write_public_card,
     get_received_cards, update_received_card_status, approve_public_card
@@ -622,19 +618,10 @@ async def get_recent(days: int = 7):
 
 @app.get("/api/identity")
 async def get_identity():
-    """Get full identity (values at core, behaviors derived, context supporting)."""
+    """Get full identity profile (unified behavioral model)."""
     return {
-        "values": {
-            "current": get_current_values(),
-            "phase": get_phase_values(),
-            "lifetime": get_lifetime_values()
-        },
-        "behaviors": get_behaviors(),
-        "context": {
-            "biographical": get_biographical(),
-            "relationships": get_relationships()
-        },
-        "profile": get_profile()
+        "profile": get_profile(),
+        "summary": get_synthesis_summary()
     }
 
 
@@ -646,20 +633,20 @@ async def get_synthesis_summary_endpoint():
 
 @app.get("/api/identity/behaviors")
 async def get_identity_behaviors():
-    """Get behavioral patterns (derived from logs)."""
-    return {"content": get_behaviors()}
+    """Get behavioral patterns - now part of unified profile."""
+    return {"content": get_profile(), "note": "Behaviors are now integrated into the unified profile"}
 
 
 @app.get("/api/identity/biographical")
 async def get_identity_biographical():
-    """Get biographical context (supporting data)."""
-    return {"content": get_biographical()}
+    """Get biographical context - now part of unified profile."""
+    return {"content": get_profile(), "note": "Biographical context is now integrated into the unified profile"}
 
 
 @app.get("/api/identity/relationships")
 async def get_identity_relationships():
-    """Get relationship narratives (supporting data)."""
-    return {"content": get_relationships()}
+    """Get relationship narratives - now part of unified profile."""
+    return {"content": get_profile(), "note": "Relationships are now integrated into the unified profile"}
 
 
 @app.get("/api/identity/profile")
@@ -668,34 +655,33 @@ async def get_identity_profile():
     return {"content": get_profile()}
 
 
-# ============== Values (kept for compatibility) ==============
+# ============== Values (deprecated - use /api/identity) ==============
 
 @app.get("/api/values")
 async def get_values():
-    """Get all values (compatibility endpoint - use /api/identity for full view)."""
+    """Get values - now part of unified profile. Use /api/identity instead."""
     return {
-        "current": get_current_values(),
-        "phase": get_phase_values(),
-        "lifetime": get_lifetime_values()
+        "profile": get_profile(),
+        "note": "Values are now integrated into the unified identity profile. Use /api/identity for full view."
     }
 
 
 @app.get("/api/values/current")
 async def get_current():
-    """Get current values."""
-    return {"content": get_current_values()}
+    """Get current values - now part of unified profile."""
+    return {"content": get_synthesis_summary(), "note": "Use /api/identity for unified profile"}
 
 
 @app.get("/api/values/phase")
 async def get_phase():
-    """Get phase values."""
-    return {"content": get_phase_values()}
+    """Get phase values - now part of unified profile."""
+    return {"content": get_profile(), "note": "Phase values are now integrated into the unified profile"}
 
 
 @app.get("/api/values/lifetime")
 async def get_lifetime():
-    """Get lifetime values."""
-    return {"content": get_lifetime_values()}
+    """Get lifetime values - now part of unified profile."""
+    return {"content": get_profile(), "note": "Lifetime values are now integrated into the unified profile"}
 
 
 # ============== Cards ==============
