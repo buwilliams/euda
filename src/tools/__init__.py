@@ -4,7 +4,7 @@ Tools package for Euno agents.
 Tools are organized by agent concern:
 - shared: Cross-agent tools (log, identity, notifications)
 - ingestion: File processing and classification
-- synthesis: User identity model (epistemic, values, behaviors, context, summaries)
+- synthesis: User identity profile (from temporal profiles)
 - world: Opportunity discovery
 - attention: Surfacing queue and energy tracking
 - interaction: Conversations and cards
@@ -37,17 +37,13 @@ from .ingestion import (
 )
 
 from .synthesis import (
-    VALUES_TOOLS, VALUES_HANDLERS,
-    get_current_values, get_phase_values, get_lifetime_values, get_all_values,
-    write_current_values, write_phase_values, write_lifetime_values,
     SUMMARY_TOOLS, SUMMARY_HANDLERS,
     get_year_logs, get_manifest, get_summary, write_summary,
     check_summary_needed, list_years,
-    # Synthesis-specific exports
-    EPISTEMIC_TOOLS, EPISTEMIC_HANDLERS,
-    BEHAVIOR_TOOLS, BEHAVIOR_HANDLERS,
-    CONTEXT_TOOLS, CONTEXT_HANDLERS,
     PROFILE_TOOLS, PROFILE_HANDLERS,
+    get_profile, get_synthesis_summary,
+    TEMPORAL_TOOLS, TEMPORAL_HANDLERS,
+    generate_current_profile,
     ALL_SYNTHESIS_TOOLS, ALL_SYNTHESIS_HANDLERS,
 )
 

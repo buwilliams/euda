@@ -356,11 +356,7 @@ euno/
     │   ├── logs/
     │   ├── prompts/            # temporal.md
     │   └── state/
-    │       ├── profile/        # profile.current.md, profile.YYYY.md, evolution.md, influences_timeline.md
-    │       ├── values/         # current.values.md, phase.values.md, lifetime.values.md
-    │       ├── behaviors/      # patterns.md
-    │       ├── epistemic/      # axioms.md, mental_models.md, tools.md
-    │       └── context/        # biographical.md, relationships.md, influences.md
+    │       └── profile/        # profile.current.md, profile.YYYY.md, evolution.md, influences_timeline.md
     │
     ├── world/                  # World Agent (The Scout)
     │   ├── config/

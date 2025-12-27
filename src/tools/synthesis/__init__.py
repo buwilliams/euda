@@ -1,41 +1,14 @@
-"""Synthesis tools - epistemic axioms at the foundation, values derived from them.
+"""Synthesis tools - profile generation and identity management.
 
-Hierarchy:
-1. Epistemic (foundational) - axioms, mental models, reasoning tools
-2. Values (derived) - what you care about, emergent from epistemic core
-3. Behaviors (reveals) - how you act, shows which axioms are operative
-4. Context (supporting) - biographical facts, relationships, influences
-5. Temporal (evolution) - who you were over time, how you changed
+The profile is generated from temporal profiles (yearly snapshots) and
+stored in synthesis/state/profile/. The profile is synced to
+shared/state/profile/ for other agents to access.
 """
 
-from .epistemic import (
-    EPISTEMIC_TOOLS, EPISTEMIC_HANDLERS,
-    get_axioms, write_axioms,
-    get_mental_models, write_mental_models,
-    get_epistemic_tools, write_epistemic_tools,
-    get_all_epistemic, note_epistemic_shift, get_epistemic_shifts,
-    EPISTEMIC_DIR
-)
-from .values import (
-    VALUES_TOOLS, VALUES_HANDLERS,
-    get_current_values, get_phase_values, get_lifetime_values, get_all_values,
-    write_current_values, write_phase_values, write_lifetime_values,
-    get_all_summaries, note_value_tension, get_value_tensions,
-    SYNTHESIS_DIR, VALUES_DIR
-)
-from .behaviors import (
-    BEHAVIOR_TOOLS, BEHAVIOR_HANDLERS,
-    get_behaviors, write_behaviors, note_behavior_pattern
-)
-from .context import (
-    CONTEXT_TOOLS, CONTEXT_HANDLERS,
-    get_biographical, update_biographical,
-    get_relationships, get_relationship, add_relationship, update_relationship,
-    get_influences, update_influences
-)
 from .profile import (
     PROFILE_TOOLS, PROFILE_HANDLERS,
-    get_profile, generate_profile, get_synthesis_summary
+    get_profile, get_synthesis_summary,
+    PROFILE_DIR
 )
 from .summary import (
     SUMMARY_TOOLS, SUMMARY_HANDLERS,
@@ -47,7 +20,7 @@ from .temporal import (
     get_temporal_profile, write_temporal_profile, list_temporal_profiles,
     get_evolution, write_evolution,
     get_influence_timeline, add_influence_to_timeline,
-    generate_current_profile
+    generate_current_profile, generate_public_profile, get_public_profile
 )
 from .private_profile import (
     PRIVATE_PROFILE_TOOLS, PRIVATE_PROFILE_HANDLERS,
@@ -59,65 +32,42 @@ from ..shared.profile_signals import (
     get_pending_observations, consume_observations
 )
 
-# Combined tools for convenience - epistemic first (foundational)
-# Includes private profile and signal consumption tools for governance compliance
+# Combined tools for convenience
 ALL_SYNTHESIS_TOOLS = (
-    EPISTEMIC_TOOLS + VALUES_TOOLS + BEHAVIOR_TOOLS + CONTEXT_TOOLS +
-    TEMPORAL_TOOLS + PROFILE_TOOLS + PRIVATE_PROFILE_TOOLS + SYNTHESIS_SIGNAL_TOOLS
+    TEMPORAL_TOOLS + PROFILE_TOOLS + PRIVATE_PROFILE_TOOLS +
+    SUMMARY_TOOLS + SYNTHESIS_SIGNAL_TOOLS
 )
 ALL_SYNTHESIS_HANDLERS = {
-    **EPISTEMIC_HANDLERS,
-    **VALUES_HANDLERS,
-    **BEHAVIOR_HANDLERS,
-    **CONTEXT_HANDLERS,
     **TEMPORAL_HANDLERS,
     **PROFILE_HANDLERS,
     **PRIVATE_PROFILE_HANDLERS,
+    **SUMMARY_HANDLERS,
     **SYNTHESIS_SIGNAL_HANDLERS,
 }
 
 __all__ = [
-    # Synthesis paths
-    'SYNTHESIS_DIR', 'VALUES_DIR', 'EPISTEMIC_DIR',
+    # Paths
+    'PROFILE_DIR',
     # Combined
     'ALL_SYNTHESIS_TOOLS', 'ALL_SYNTHESIS_HANDLERS',
-    # Epistemic tools (foundational)
-    'EPISTEMIC_TOOLS', 'EPISTEMIC_HANDLERS',
-    'get_axioms', 'write_axioms',
-    'get_mental_models', 'write_mental_models',
-    'get_epistemic_tools', 'write_epistemic_tools',
-    'get_all_epistemic', 'note_epistemic_shift', 'get_epistemic_shifts',
-    # Values tools (derived from epistemic core)
-    'VALUES_TOOLS', 'VALUES_HANDLERS',
-    'get_current_values', 'get_phase_values', 'get_lifetime_values', 'get_all_values',
-    'write_current_values', 'write_phase_values', 'write_lifetime_values',
-    'get_all_summaries', 'note_value_tension', 'get_value_tensions',
-    # Behavior tools (reveals operative axioms)
-    'BEHAVIOR_TOOLS', 'BEHAVIOR_HANDLERS',
-    'get_behaviors', 'write_behaviors', 'note_behavior_pattern',
-    # Context tools (supporting)
-    'CONTEXT_TOOLS', 'CONTEXT_HANDLERS',
-    'get_biographical', 'update_biographical',
-    'get_relationships', 'get_relationship', 'add_relationship', 'update_relationship',
-    'get_influences', 'update_influences',
-    # Profile tools (consolidated)
+    # Profile tools
     'PROFILE_TOOLS', 'PROFILE_HANDLERS',
-    'get_profile', 'generate_profile', 'get_synthesis_summary',
+    'get_profile', 'get_synthesis_summary',
     # Summary tools
     'SUMMARY_TOOLS', 'SUMMARY_HANDLERS',
     'get_year_logs', 'get_manifest', 'get_summary', 'write_summary',
     'check_summary_needed', 'list_years',
-    # Temporal tools (evolution over time)
+    # Temporal tools
     'TEMPORAL_TOOLS', 'TEMPORAL_HANDLERS',
     'get_temporal_profile', 'write_temporal_profile', 'list_temporal_profiles',
     'get_evolution', 'write_evolution',
     'get_influence_timeline', 'add_influence_to_timeline',
-    'generate_current_profile',
-    # Private profile tools (governance-controlled)
+    'generate_current_profile', 'generate_public_profile', 'get_public_profile',
+    # Private profile tools
     'PRIVATE_PROFILE_TOOLS', 'PRIVATE_PROFILE_HANDLERS',
     'get_private_profile', 'write_private_profile', 'get_profile_section',
     'get_handlers_for_agent',
-    # Signal consumption tools (for Synthesis)
+    # Signal consumption tools
     'SYNTHESIS_SIGNAL_TOOLS', 'SYNTHESIS_SIGNAL_HANDLERS',
     'get_pending_observations', 'consume_observations',
 ]

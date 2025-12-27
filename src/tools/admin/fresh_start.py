@@ -62,7 +62,7 @@ CLEAR_DIRS = [
     # Summary
     "summary/state",
     "summary/logs",
-    # Synthesis (state includes values, behaviors, epistemic, context, profile)
+    # Synthesis (state includes profile/)
     "synthesis/state",
     "synthesis/logs",
     # World (state includes opportunities)
