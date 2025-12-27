@@ -34,8 +34,8 @@ Every agent follows this pattern:
 ```python
 def create_agent(persona_name, tools=[]):
     # Load core identity + persona-specific identity
-    core = load_file("data/shared/identity/_core.identity.md")
-    persona = load_file(f"data/shared/identity/{persona_name}.identity.md")
+    core = load_file("data/shared/state/identity/_core.identity.md")
+    persona = load_file(f"data/shared/state/identity/{persona_name}.identity.md")
 
     context = []
     system_prompt = f"{core}\n\n{persona}"
@@ -102,7 +102,7 @@ def analyze_photo(photo_path):
 Agents communicate via flat files, not direct calls:
 
 ```
-data/shared/signals/
+data/shared/state/signals/
   logs_updated.signal        # Created by Ingestion, consumed by Summary
   summaries_updated.signal   # Created by Summary, consumed by Synthesis
   synthesis_updated.signal   # Created by Synthesis, consumed by World, Evolution
@@ -114,10 +114,10 @@ Signal files contain a timestamp. Reading a signal deletes it (one-time trigger)
 
 ```python
 def send_signal(name):
-    Path(f"data/shared/signals/{name}.signal").write_text(datetime.now().isoformat())
+    Path(f"data/shared/state/signals/{name}.signal").write_text(datetime.now().isoformat())
 
 def check_signal(name) -> bool:
-    path = Path(f"data/shared/signals/{name}.signal")
+    path = Path(f"data/shared/state/signals/{name}.signal")
     if path.exists():
         path.unlink()
         return True
@@ -167,7 +167,7 @@ The system proactively surfaces questions and guidance to help users configure a
 Agents derive behavior from identity files loaded at startup:
 
 ```
-data/shared/identity/
+data/shared/state/identity/
 ├── _core.identity.md        # Shared ontology for all agents
 ├── ingestion.identity.md    # The Archivist
 ├── summary.identity.md      # The Historian
@@ -214,7 +214,7 @@ def propose_identity_change(agent_name, new_identity, rationale):
         "rationale": rationale,
         "status": "pending"
     }
-    save_to(f"data/shared/evolution/{timestamp}.proposal.json", proposal)
+    save_to(f"data/shared/state/evolution/{timestamp}.proposal.json", proposal)
     send_signal("identity_proposal")
 ```
 
@@ -444,7 +444,7 @@ Synthesis reads and integrates these signals. Signals are suggestions, not comma
 
 ### Profile Contract
 
-All profiles must comply with `data/shared/profile/profile.contract.md`:
+All profiles must comply with `data/shared/state/profile/profile.contract.md`:
 - JSON frontmatter
 - Canonical section order (Identity Constraints → Failure Modes → Behavioral Attractors → Utility Tradeoffs → Epistemic Style → Narrative Identity)
 - Profile item microformat with evidence pointers
@@ -722,8 +722,8 @@ The `/api/events` endpoint provides Server-Sent Events for real-time updates:
 | `notification_removed` | `{id}` | Notification dismissed/deleted |
 
 The server watches:
-- `data/shared/notifications/` for notification file changes
-- `data/ingestion/inbox/` for queue status changes (synthetic notifications)
+- `data/shared/state/notifications/` for notification file changes
+- `data/ingestion/state/inbox/` for queue status changes (synthetic notifications)
 
 ---
 

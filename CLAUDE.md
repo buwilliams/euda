@@ -157,7 +157,7 @@ Key details:
 
 ## Adding New Agents
 
-1. Create identity file: `data/shared/identity/[name].identity.md`
+1. Create identity file: `data/shared/state/identity/[name].identity.md`
 2. Create agent module: `src/agents/[name].py`
 3. Add tools if needed: `src/tools/[agent]/[tool].py`
 4. Create data directory: `data/[name]/` with `state/` subdirectory

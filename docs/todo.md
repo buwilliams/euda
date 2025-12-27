@@ -58,9 +58,9 @@ Keep a simple list: todo and done. Only use one level, not nested todos.
 - [x] Design and build new minimal UI (black text, white background, typography-first)
 - [x] Chat as primary interface with activity feed
 - [x] Add logo and loading states
-- [x] Introspection Agent (The Mirror)
-- [x] Identity file: data/agents/identity/introspection.identity.md
-- [x] Tools: src/tools/introspection.py (agent/code analysis, capability docs)
-- [x] Agent: src/agents/introspection.py (30-min autonomous loop)
-- [x] Outputs: data/agents/introspection/capabilities.md
+- [x] Evolution Agent (The Evolver) - formerly Introspection Agent
+- [x] Identity file: data/shared/state/identity/evolution.identity.md
+- [x] Tools: src/tools/evolution/ (agent/code analysis, capability docs)
+- [x] Agent: src/agents/evolution.py (30-min autonomous loop)
+- [x] Outputs: data/evolution/state/output/
 - [x] Interaction Agent can access capabilities (user asks "what can you do?")

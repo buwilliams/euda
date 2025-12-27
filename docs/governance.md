@@ -111,7 +111,7 @@ Agents contribute to profile updates indirectly by emitting **signals**.
 Signals are short, structured observations written to a shared signal file:
 
 ```json
-// data/shared/signals/profile_observations.json
+// data/shared/state/signals/profile_observations.json
 {
   "observations": [
     {
@@ -257,7 +257,7 @@ Prior years are immutable history.
 
 ## References
 
-- `data/shared/profile/profile.contract.md` — Profile structure contract
-- `data/shared/profile/redaction.policy.md` — Public sharing principles
-- `data/profile/share.prefs.current.md` — User sharing preferences
-- `data/shared/identity/synthesis.identity.md` — Synthesis Agent identity
+- `data/shared/state/profile/profile.contract.md` — Profile structure contract
+- `data/shared/state/profile/redaction.policy.md` — Public sharing principles
+- `data/synthesis/state/profile/share.prefs.current.md` — User sharing preferences
+- `data/shared/state/identity/synthesis.identity.md` — Synthesis Agent identity
