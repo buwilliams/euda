@@ -15,10 +15,15 @@ DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 WORKER_DIR = DATA_DIR / "worker"
 PROJECTS_DIR = WORKER_DIR / "state" / "projects"
 ARCHIVE_DIR = WORKER_DIR / "state" / "archive"
+NOTES_DIR = PROJECTS_DIR / "notes"
 
 # Ensure directories exist
 PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
 ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
+NOTES_DIR.mkdir(parents=True, exist_ok=True)
+
+# The General project for miscellaneous tasks
+GENERAL_PROJECT_ID = "project-general"
 
 
 def _generate_id() -> str:
@@ -62,6 +67,197 @@ def _update_index(project: dict, remove: bool = False):
         })
 
     _save_index(index)
+
+
+def ensure_general_project() -> str:
+    """
+    Ensure the General project exists for miscellaneous tasks.
+
+    Returns:
+        The General project ID
+    """
+    project_file = PROJECTS_DIR / f"{GENERAL_PROJECT_ID}.json"
+
+    if project_file.exists():
+        return GENERAL_PROJECT_ID
+
+    # Create the General project
+    now = datetime.now().isoformat()
+    project = {
+        "id": GENERAL_PROJECT_ID,
+        "created": now,
+        "updated": now,
+        "title": "General",
+        "description": "Miscellaneous tasks not associated with a specific goal",
+        "type": "maintenance",
+        "status": "active",
+        "priority": "normal",
+        "source": {
+            "agent": "system",
+            "context": "Auto-created for orphan tasks"
+        },
+        "milestones": [],
+        "values_alignment": [],
+        "deadline": None,
+        "review_frequency": "weekly",
+        "last_reviewed": None,
+        "archived": False,
+        "meta": {
+            "total_tasks_created": 0,
+            "tasks_completed": 0,
+            "estimated_hours": 0,
+            "logged_hours": 0
+        }
+    }
+
+    with open(project_file, 'w') as f:
+        json.dump(project, f, indent=2)
+
+    _update_index(project)
+    return GENERAL_PROJECT_ID
+
+
+def get_project_title(project_id: str) -> str:
+    """
+    Get the title of a project by ID.
+
+    Args:
+        project_id: The project ID
+
+    Returns:
+        Project title or "Unknown" if not found
+    """
+    if not project_id:
+        return "General"
+
+    project_file = PROJECTS_DIR / f"{project_id}.json"
+    if not project_file.exists():
+        # Try archive
+        project_file = ARCHIVE_DIR / f"{project_id}.json"
+
+    if project_file.exists():
+        with open(project_file, 'r') as f:
+            project = json.load(f)
+        return project.get("title", "Unknown")
+
+    return "Unknown"
+
+
+def get_project_notes(project_id: str) -> str:
+    """
+    Get all notes for a project.
+
+    Args:
+        project_id: The project ID
+
+    Returns:
+        The contents of the notes file, or empty string if none exist
+    """
+    notes_file = NOTES_DIR / f"{project_id}.md"
+    if notes_file.exists():
+        return notes_file.read_text()
+    return ""
+
+
+def get_project_notes_count(project_id: str) -> int:
+    """
+    Get the number of notes for a project.
+
+    Args:
+        project_id: The project ID
+
+    Returns:
+        Number of note entries (counted by ## headers)
+    """
+    notes = get_project_notes(project_id)
+    if not notes:
+        return 0
+    # Count ## headers as note entries
+    return notes.count("\n## ") + (1 if notes.startswith("## ") else 0)
+
+
+def prepend_project_note(
+    project_id: str,
+    title: str,
+    content: str,
+    note_type: str = "note"
+) -> str:
+    """
+    Prepend a new note entry to project notes file.
+
+    Args:
+        project_id: The project ID
+        title: Note title/subject
+        content: Note content (markdown supported)
+        note_type: Type of note - note, research, update, decision
+
+    Returns:
+        Success message
+    """
+    notes_file = NOTES_DIR / f"{project_id}.md"
+    now = datetime.now()
+    timestamp = now.strftime("%Y-%m-%d %H:%M")
+
+    # Format the new entry
+    type_label = note_type.title() if note_type != "note" else "Note"
+    new_entry = f"## {timestamp} - {type_label}: {title}\n\n{content}\n\n---\n\n"
+
+    # Read existing notes
+    existing = ""
+    if notes_file.exists():
+        existing = notes_file.read_text()
+
+    # Prepend new entry
+    notes_file.write_text(new_entry + existing)
+
+    return f"Added note to project: {title}"
+
+
+def append_research_result(
+    project_id: str,
+    task_description: str,
+    summary: str,
+    details: str,
+    sources: Optional[list] = None
+) -> str:
+    """
+    Append research result as structured note entry.
+
+    This is specifically for Worker agent research tasks that are
+    auto-executed and need structured formatting.
+
+    Args:
+        project_id: The project ID
+        task_description: The original task that was researched
+        summary: Brief summary of findings
+        details: Detailed findings
+        sources: List of source URLs or references
+
+    Returns:
+        Success message
+    """
+    # Build the content
+    content_parts = [
+        "[Auto-generated by Worker Agent]\n",
+        "### Summary\n",
+        summary + "\n",
+        "\n### Details\n",
+        details
+    ]
+
+    if sources:
+        content_parts.append("\n\n### Sources\n")
+        for source in sources:
+            content_parts.append(f"- {source}\n")
+
+    content = "".join(content_parts)
+
+    return prepend_project_note(
+        project_id=project_id,
+        title=task_description[:80],  # Truncate long task descriptions
+        content=content,
+        note_type="research"
+    )
 
 
 def create_project(
@@ -429,12 +625,18 @@ def complete_milestone(project_id: str, milestone_id: str) -> str:
     return f"Completed milestone"
 
 
-def archive_project(project_id: str) -> str:
+def archive_project(
+    project_id: str,
+    reason: str = "",
+    outcome: str = "completed"
+) -> str:
     """
-    Archive a project (completed or abandoned).
+    Archive a project with behavioral context.
 
     Args:
         project_id: The project ID
+        reason: Optional reason for archiving
+        outcome: Outcome type - completed, abandoned, paused, superseded
 
     Returns:
         Success message
@@ -447,9 +649,36 @@ def archive_project(project_id: str) -> str:
     with open(project_file, 'r') as f:
         project = json.load(f)
 
+    # Calculate behavioral metadata
+    meta = project.get("meta", {})
+    tasks_completed = meta.get("tasks_completed", 0)
+    total_tasks = meta.get("total_tasks_created", 0)
+
+    # Count incomplete tasks
+    from .task import _load_queue
+    queue = _load_queue()
+    incomplete_tasks = len([
+        t for t in queue["tasks"]
+        if t.get("project_id") == project_id and t.get("status") != "completed"
+    ])
+
+    # Calculate age
+    created = datetime.fromisoformat(project["created"])
+    age_days = (datetime.now() - created).days
+
     project["archived"] = True
     project["archived_at"] = datetime.now().isoformat()
     project["updated"] = datetime.now().isoformat()
+
+    # Add behavioral archive metadata
+    project["archive_metadata"] = {
+        "archived_at": datetime.now().isoformat(),
+        "outcome": outcome,
+        "reason": reason,
+        "completion_rate": tasks_completed / total_tasks if total_tasks > 0 else 0,
+        "tasks_abandoned": incomplete_tasks,
+        "age_days": age_days
+    }
 
     # Move to archive directory
     archive_file = ARCHIVE_DIR / f"{project_id}.json"
@@ -462,7 +691,8 @@ def archive_project(project_id: str) -> str:
     # Update index
     _update_index(project, remove=True)
 
-    return f"Archived project '{project['title']}'"
+    outcome_label = outcome.title()
+    return f"Archived project '{project['title']}' (outcome: {outcome_label})"
 
 
 def delete_project(project_id: str, delete_tasks: bool = True) -> str:
@@ -717,13 +947,22 @@ PROJECT_TOOLS = [
     },
     {
         "name": "archive_project",
-        "description": "Archive a completed or abandoned project.",
+        "description": "Archive a project with behavioral context tracking.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "project_id": {
                     "type": "string",
                     "description": "The project ID"
+                },
+                "reason": {
+                    "type": "string",
+                    "description": "Optional reason for archiving"
+                },
+                "outcome": {
+                    "type": "string",
+                    "enum": ["completed", "abandoned", "paused", "superseded"],
+                    "description": "Outcome type (default: completed)"
                 }
             },
             "required": ["project_id"]

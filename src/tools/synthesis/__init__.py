@@ -27,6 +27,11 @@ from .private_profile import (
     get_private_profile, write_private_profile, get_profile_section,
     get_handlers_for_agent
 )
+from .project_patterns import (
+    PROJECT_PATTERN_TOOLS, PROJECT_PATTERN_HANDLERS,
+    get_project_task_patterns, get_values_actualization_analysis,
+    get_abandonment_patterns
+)
 from ..shared.profile_signals import (
     SYNTHESIS_SIGNAL_TOOLS, SYNTHESIS_SIGNAL_HANDLERS,
     get_pending_observations, consume_observations
@@ -35,7 +40,7 @@ from ..shared.profile_signals import (
 # Combined tools for convenience
 ALL_SYNTHESIS_TOOLS = (
     TEMPORAL_TOOLS + PROFILE_TOOLS + PRIVATE_PROFILE_TOOLS +
-    SUMMARY_TOOLS + SYNTHESIS_SIGNAL_TOOLS
+    SUMMARY_TOOLS + SYNTHESIS_SIGNAL_TOOLS + PROJECT_PATTERN_TOOLS
 )
 ALL_SYNTHESIS_HANDLERS = {
     **TEMPORAL_HANDLERS,
@@ -43,6 +48,7 @@ ALL_SYNTHESIS_HANDLERS = {
     **PRIVATE_PROFILE_HANDLERS,
     **SUMMARY_HANDLERS,
     **SYNTHESIS_SIGNAL_HANDLERS,
+    **PROJECT_PATTERN_HANDLERS,
 }
 
 __all__ = [
@@ -67,6 +73,10 @@ __all__ = [
     'PRIVATE_PROFILE_TOOLS', 'PRIVATE_PROFILE_HANDLERS',
     'get_private_profile', 'write_private_profile', 'get_profile_section',
     'get_handlers_for_agent',
+    # Project pattern tools
+    'PROJECT_PATTERN_TOOLS', 'PROJECT_PATTERN_HANDLERS',
+    'get_project_task_patterns', 'get_values_actualization_analysis',
+    'get_abandonment_patterns',
     # Signal consumption tools
     'SYNTHESIS_SIGNAL_TOOLS', 'SYNTHESIS_SIGNAL_HANDLERS',
     'get_pending_observations', 'consume_observations',

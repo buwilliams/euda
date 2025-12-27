@@ -125,6 +125,7 @@ class AutonomousAttentionAgent(AutonomousAgent):
     - Signal: opportunities_updated
     - Time: morning window (7-9am), evening window (8-10pm)
     - Proactive gaps: questions to ask the user
+    - Actionable patterns: recurring intents that could become projects/tasks
     - Has morning/evening attention been delivered today?
 
     Work:
@@ -132,6 +133,8 @@ class AutonomousAttentionAgent(AutonomousAgent):
     - Generate evening reflection
     - Surface high-priority opportunities
     - Surface proactive questions (one at a time, with cooldowns)
+    - Proactively create projects/tasks from detected patterns
+    - Clean up old completed tasks
 
     Signals:
     - attention_delivered: After generating attention content
@@ -144,6 +147,10 @@ class AutonomousAttentionAgent(AutonomousAgent):
         "biographical.relationships": 336,  # 2 weeks
         "config.energy_baseline": 24,  # 1 day
     }
+
+    # Proactive creation throttling
+    PROACTIVE_CREATION_COOLDOWN = 24 * 60 * 60  # 24 hours between creations
+    MAX_PROACTIVE_PER_WEEK = 3  # Maximum proactive items per week
 
     def __init__(self, morning_hour: int = 7, evening_hour: int = 21):
         super().__init__(
@@ -246,6 +253,112 @@ class AutonomousAttentionAgent(AutonomousAgent):
         surfaced["questions_asked"] = questions_asked
         self._save_surfaced_state(surfaced)
 
+    def _can_create_proactively(self) -> bool:
+        """Check if proactive creation is allowed (respecting throttling)."""
+        surfaced = self._load_surfaced_state()
+        creations = surfaced.get("proactive_creations", [])
+
+        now = datetime.now()
+
+        # Check cooldown since last creation
+        if creations:
+            last_creation = datetime.fromisoformat(creations[-1].get("created_at", "2000-01-01"))
+            if (now - last_creation).total_seconds() < self.PROACTIVE_CREATION_COOLDOWN:
+                return False
+
+        # Check weekly limit
+        week_ago = now - timedelta(days=7)
+        recent_creations = [
+            c for c in creations
+            if datetime.fromisoformat(c.get("created_at", "2000-01-01")) > week_ago
+        ]
+        if len(recent_creations) >= self.MAX_PROACTIVE_PER_WEEK:
+            return False
+
+        return True
+
+    def _track_proactive_creation(self, item_type: str, title: str):
+        """Track a proactive creation for throttling."""
+        surfaced = self._load_surfaced_state()
+        creations = surfaced.get("proactive_creations", [])
+
+        creations.append({
+            "created_at": datetime.now().isoformat(),
+            "type": item_type,
+            "title": title
+        })
+
+        # Keep only last 10 for cleanup
+        surfaced["proactive_creations"] = creations[-10:]
+        self._save_surfaced_state(surfaced)
+
+    def _get_actionable_pattern(self) -> dict | None:
+        """Get an actionable pattern to create proactively."""
+        if not self._can_create_proactively():
+            return None
+
+        try:
+            from ..tools.attention.context import detect_actionable_patterns
+            patterns = detect_actionable_patterns(days=14, min_mentions=3)
+
+            if patterns:
+                # Return the highest confidence pattern
+                for pattern in patterns:
+                    if pattern.get("confidence") in ("high", "medium"):
+                        return pattern
+        except Exception as e:
+            self.logger.error(f"Error detecting actionable patterns: {e}")
+
+        return None
+
+    def _create_proactive_item(self, pattern: dict) -> str:
+        """Create a project or task from a detected pattern and notify user."""
+        item_type = pattern.get("type", "task")
+        title = pattern.get("title", "Untitled")
+        description = pattern.get("description", "")
+        evidence = pattern.get("evidence", [])
+
+        evidence_text = evidence[0] if evidence else ""
+
+        try:
+            if item_type == "project":
+                from ..tools.worker.project import create_project
+                result = create_project(
+                    title=title,
+                    description=f"Auto-created from pattern: {description}. Context: {evidence_text}",
+                    project_type="goal",
+                    source_agent="attention",
+                    source_context=f"Detected recurring intent: {description}"
+                )
+            else:
+                from ..tools.worker.task import create_task
+                result = create_task(
+                    description=title,
+                    source_agent="attention",
+                    source_context=f"Detected recurring intent: {description}"
+                )
+
+            # Track the creation
+            self._track_proactive_creation(item_type, title)
+
+            # Notify user
+            queue_notification(
+                agent_name="attention",
+                title=f"Created: {title}",
+                message=f"I noticed you've been thinking about this. {description}",
+                notification_type="info",
+                action_prompt=f"Tell me about the new {item_type}: {title}",
+                priority="normal",
+                data={"type": item_type, "title": title, "auto_created": True}
+            )
+
+            self.logger.info(f"Proactively created {item_type}: {title}")
+            return result
+
+        except Exception as e:
+            self.logger.error(f"Error creating proactive item: {e}")
+            return f"Error creating {item_type}: {e}"
+
     def check_work_needed(self) -> bool:
         """Check if attention is needed based on time, signals, or proactive gaps."""
         now = datetime.now()
@@ -292,10 +405,28 @@ class AutonomousAttentionAgent(AutonomousAgent):
             self.save_state(state)
             return True
 
+        # Check for actionable patterns to create proactively
+        pattern = self._get_actionable_pattern()
+        if pattern:
+            self.logger.info(f"Found actionable pattern: {pattern.get('title')}")
+            state["pending_type"] = "proactive_create"
+            state["pending_pattern"] = pattern
+            self.save_state(state)
+            return True
+
+        # Check if cleanup is needed (once per day during evening window)
+        if self.evening_hour <= now.hour < self.evening_hour + 2:
+            last_cleanup = state.get("last_task_cleanup")
+            if last_cleanup != today:
+                self.logger.info("Task cleanup needed")
+                state["pending_type"] = "cleanup"
+                self.save_state(state)
+                return True
+
         return False
 
     def do_work(self) -> str:
-        """Generate morning/evening attention or surface proactive question."""
+        """Generate morning/evening attention, surface proactive question, or create items."""
         state = self.load_state()
         pending_type = state.get("pending_type", "morning")
         today = datetime.now().date().isoformat()
@@ -321,6 +452,29 @@ class AutonomousAttentionAgent(AutonomousAgent):
             state["pending_gap"] = None
             self.save_state(state)
             return "Proactive question surfaced"
+
+        elif pending_type == "proactive_create":
+            # Create a project or task from detected pattern
+            pattern = state.get("pending_pattern")
+            result = "No pattern found"
+            if pattern:
+                result = self._create_proactive_item(pattern)
+
+            # Clear flags
+            state["pending_type"] = None
+            state["pending_pattern"] = None
+            self.save_state(state)
+            return result
+
+        elif pending_type == "cleanup":
+            # Clean up old completed tasks
+            from ..tools.worker.task import cleanup_old_completed_tasks
+            result = cleanup_old_completed_tasks(retention_days=30)
+            state["last_task_cleanup"] = today
+            state["pending_type"] = None
+            self.save_state(state)
+            self.logger.info(f"Task cleanup completed: {result}")
+            return result
 
         elif pending_type == "morning":
             result = morning_attention()

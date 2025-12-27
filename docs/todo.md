@@ -65,3 +65,11 @@ Keep a simple list: todo and done. Only use one level, not nested todos.
 - [x] Agent: src/agents/evolution.py (30-min autonomous loop)
 - [x] Outputs: data/evolution/state/output/
 - [x] Interaction Agent can access capabilities (user asks "what can you do?")
+- [x] Project notes system (prepend-style markdown per project)
+- [x] Task and project archiving with behavioral metadata
+- [x] Worker Agent auto-executes research tasks (fetch_url + store to notes)
+- [x] Synthesis project patterns (completion rates, abandonment analysis, values actualization)
+- [x] SSE real-time updates for tasks and projects
+- [x] UI: project notes viewer, archive controls, complete/delete buttons
+- [x] All tasks belong to a project (General project for orphan tasks)
+- [x] Attention Agent proactive task/project creation from lifelog patterns

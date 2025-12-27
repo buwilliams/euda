@@ -153,7 +153,7 @@ def create_task(
     Args:
         description: What needs to be done
         task_type: Type of task (research, email_send, reminder, etc.)
-        project_id: Optional project to associate with
+        project_id: Project to associate with (defaults to General project)
         priority: high, normal, or low
         due_date: When it should be done (ISO format)
         time_estimate_minutes: Estimated time to complete
@@ -166,6 +166,12 @@ def create_task(
     Returns:
         Success message with task ID
     """
+    # Ensure task has a project - use General if not specified
+    from .project import GENERAL_PROJECT_ID, ensure_general_project
+    if not project_id:
+        ensure_general_project()
+        project_id = GENERAL_PROJECT_ID
+
     task_id = _generate_task_id()
     now = datetime.now().isoformat()
 
@@ -230,7 +236,7 @@ def create_learning_task(
 
     Args:
         description: What the user wants to learn
-        project_id: Optional learning project
+        project_id: Learning project (defaults to General project)
         learning_objectives: Specific goals for this learning session
         preferred_format: video, reading, interactive, mixed
         priority: high, normal, or low
@@ -239,6 +245,12 @@ def create_learning_task(
     Returns:
         Success message
     """
+    # Ensure task has a project - use General if not specified
+    from .project import GENERAL_PROJECT_ID, ensure_general_project
+    if not project_id:
+        ensure_general_project()
+        project_id = GENERAL_PROJECT_ID
+
     task_id = _generate_task_id()
     now = datetime.now().isoformat()
 
@@ -359,10 +371,19 @@ def get_tasks_data(
     project_id: Optional[str] = None,
     due_date: Optional[str] = None,
     priority: Optional[str] = None,
-    limit: int = 50
+    limit: int = 50,
+    include_project_title: bool = True
 ) -> list:
     """
     Get tasks as raw data for API consumption.
+
+    Args:
+        status: Filter by status
+        project_id: Filter by project
+        due_date: Filter by due date
+        priority: Filter by priority
+        limit: Maximum tasks to return
+        include_project_title: Add project_title field to each task
 
     Returns:
         List of task dictionaries
@@ -387,7 +408,15 @@ def get_tasks_data(
         t.get("scheduling", {}).get("due_date") or "9999-12-31"
     ))
 
-    return tasks[:limit]
+    result = tasks[:limit]
+
+    # Add project titles if requested
+    if include_project_title:
+        from .project import get_project_title
+        for task in result:
+            task["project_title"] = get_project_title(task.get("project_id"))
+
+    return result
 
 
 def get_task(task_id: str) -> str:
@@ -684,6 +713,145 @@ def delete_tasks_by_description(description_contains: str) -> str:
         return f"Deleted {deleted_count} task(s) matching '{description_contains}'"
 
     return f"No tasks found matching '{description_contains}'"
+
+
+def archive_task(
+    task_id: str,
+    reason: str = "",
+    outcome: str = "abandoned"
+) -> str:
+    """
+    Archive a task with behavioral context.
+
+    This preserves the task for behavioral analysis (e.g., understanding
+    patterns of abandonment) while removing it from active views.
+
+    Args:
+        task_id: The task ID
+        reason: Optional reason for archiving
+        outcome: Outcome type - completed, abandoned, deferred, superseded
+
+    Returns:
+        Success message
+    """
+    queue = _load_queue()
+
+    for i, task in enumerate(queue["tasks"]):
+        if task["id"] == task_id:
+            # Calculate behavioral metadata
+            created = datetime.fromisoformat(task["created"])
+            age_days = (datetime.now() - created).days
+            times_rolled = task.get("rollover", {}).get("times_rolled", 0)
+
+            # Update task status and add archive metadata
+            task["status"] = "archived"
+            task["archived_at"] = datetime.now().isoformat()
+            task["archive_metadata"] = {
+                "archived_at": datetime.now().isoformat(),
+                "outcome": outcome,
+                "reason": reason,
+                "times_rolled": times_rolled,
+                "age_days": age_days,
+                "original_priority": task.get("priority", "normal"),
+                "was_scheduled": bool(task.get("scheduling", {}).get("due_date"))
+            }
+
+            _save_queue(queue)
+
+            outcome_label = outcome.title()
+            return f"Archived task: '{task['description']}' (outcome: {outcome_label})"
+
+    return f"Task not found: {task_id}"
+
+
+def get_archived_tasks_data(days: int = 90, limit: int = 100) -> list:
+    """
+    Get archived tasks for behavioral analysis.
+
+    Args:
+        days: Only return tasks archived within this many days
+        limit: Maximum tasks to return
+
+    Returns:
+        List of archived task dictionaries
+    """
+    queue = _load_queue()
+    cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+
+    # Filter to archived tasks within time window
+    tasks = [
+        t for t in queue["tasks"]
+        if t["status"] == "archived" and (t.get("archived_at") or "") > cutoff
+    ]
+
+    # Sort by archive date (most recent first)
+    tasks.sort(key=lambda t: t.get("archived_at") or "", reverse=True)
+
+    return tasks[:limit]
+
+
+def cleanup_old_completed_tasks(retention_days: int = 30) -> str:
+    """
+    Remove completed tasks older than the retention period.
+
+    Args:
+        retention_days: Days to keep completed tasks (default 30)
+
+    Returns:
+        Summary of cleanup
+    """
+    queue = _load_queue()
+    cutoff = (datetime.now() - timedelta(days=retention_days)).isoformat()
+
+    original_count = len(queue["tasks"])
+
+    # Keep tasks that are:
+    # - Not completed, OR
+    # - Completed but within retention period
+    queue["tasks"] = [
+        t for t in queue["tasks"]
+        if t["status"] != "completed" or (t.get("completed_at") or "") > cutoff
+    ]
+
+    removed_count = original_count - len(queue["tasks"])
+
+    if removed_count > 0:
+        _save_queue(queue)
+
+    return f"Removed {removed_count} completed task(s) older than {retention_days} days"
+
+
+def get_completed_tasks_data(days: int = 30, limit: int = 50) -> list:
+    """
+    Get recently completed tasks for UI display.
+
+    Args:
+        days: Only return tasks completed within this many days
+        limit: Maximum tasks to return
+
+    Returns:
+        List of completed task dictionaries with project titles
+    """
+    queue = _load_queue()
+    cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+
+    # Filter to completed tasks within time window
+    tasks = [
+        t for t in queue["tasks"]
+        if t["status"] == "completed" and (t.get("completed_at") or "") > cutoff
+    ]
+
+    # Sort by completion date (most recent first)
+    tasks.sort(key=lambda t: t.get("completed_at") or "", reverse=True)
+
+    result = tasks[:limit]
+
+    # Add project titles
+    from .project import get_project_title
+    for task in result:
+        task["project_title"] = get_project_title(task.get("project_id"))
+
+    return result
 
 
 def store_result(
@@ -1153,6 +1321,29 @@ TASK_TOOLS = [
             },
             "required": ["description_contains"]
         }
+    },
+    {
+        "name": "archive_task",
+        "description": "Archive a task with behavioral context. Use when a task won't be completed but should be preserved for pattern analysis.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "string",
+                    "description": "The task ID to archive"
+                },
+                "reason": {
+                    "type": "string",
+                    "description": "Optional reason for archiving"
+                },
+                "outcome": {
+                    "type": "string",
+                    "enum": ["completed", "abandoned", "deferred", "superseded"],
+                    "description": "Outcome type (default: abandoned)"
+                }
+            },
+            "required": ["task_id"]
+        }
     }
 ]
 
@@ -1166,4 +1357,10 @@ TASK_HANDLERS = {
     "update_task_status": update_task_status,
     "delete_task": delete_task,
     "delete_tasks_by_description": delete_tasks_by_description,
+    "archive_task": archive_task,
 }
+
+# Safe tools for autonomous Worker agent (excludes bulk delete which can cause data loss)
+# The delete_tasks_by_description tool is only available via interactive chat
+AUTONOMOUS_TASK_TOOLS = [t for t in TASK_TOOLS if t["name"] != "delete_tasks_by_description"]
+AUTONOMOUS_TASK_HANDLERS = {k: v for k, v in TASK_HANDLERS.items() if k != "delete_tasks_by_description"}

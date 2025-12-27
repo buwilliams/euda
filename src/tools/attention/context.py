@@ -236,6 +236,134 @@ def compute_noticed_patterns() -> dict:
     return result
 
 
+# ============== Actionable Patterns (for Proactive Creation) ==============
+
+def detect_actionable_patterns(days: int = 14, min_mentions: int = 3) -> list:
+    """
+    Analyze lifelog for patterns suggesting needed projects/tasks.
+
+    Looks for:
+    - Topics mentioned 5+ times across 7+ days without existing project
+    - Intent phrases ("need to", "should", "want to", "planning to")
+    - Repeated goals or intentions
+
+    Args:
+        days: Number of days to look back
+        min_mentions: Minimum times a topic/intent must appear
+
+    Returns:
+        List of dicts with: type, title, description, confidence, evidence
+    """
+    from ..worker.project import get_projects_data
+
+    # Get existing project titles to avoid duplicates
+    existing_projects = get_projects_data(status="all")
+    existing_titles = {p.get("title", "").lower() for p in existing_projects}
+
+    # Intent phrases that suggest actionable items
+    intent_phrases = [
+        (r"need to\s+(\w+(?:\s+\w+){0,4})", "task"),
+        (r"should\s+(\w+(?:\s+\w+){0,4})", "task"),
+        (r"want to\s+(\w+(?:\s+\w+){0,4})", "project"),
+        (r"planning to\s+(\w+(?:\s+\w+){0,4})", "project"),
+        (r"going to\s+(\w+(?:\s+\w+){0,4})", "task"),
+        (r"have to\s+(\w+(?:\s+\w+){0,4})", "task"),
+        (r"would like to\s+(\w+(?:\s+\w+){0,4})", "project"),
+        (r"thinking about\s+(\w+(?:\s+\w+){0,4})", "project"),
+    ]
+
+    # Collect all content from logs
+    today = datetime.now()
+    all_content = []
+
+    for i in range(days):
+        date = today - timedelta(days=i)
+        date_str = date.strftime('%Y-%m-%d')
+        log_file = LOG_DIR / str(date.year) / f"{date_str}.md"
+
+        if log_file.exists():
+            with open(log_file, 'r') as f:
+                content = f.read()
+            # Remove metadata blocks
+            content = re.sub(r'---[\s\S]*?---', '', content)
+            all_content.append((date_str, content))
+
+    if not all_content:
+        return []
+
+    # Track intent patterns
+    intent_counts = {}  # intent_phrase -> {dates: set, type: str, examples: list}
+
+    for date_str, content in all_content:
+        content_lower = content.lower()
+
+        for pattern, item_type in intent_phrases:
+            matches = re.findall(pattern, content_lower)
+            for match in matches:
+                # Clean up the match
+                intent = match.strip()
+                if len(intent) < 4 or len(intent) > 50:
+                    continue
+
+                # Skip if it looks like an existing project
+                if any(title in intent or intent in title for title in existing_titles):
+                    continue
+
+                if intent not in intent_counts:
+                    intent_counts[intent] = {
+                        "dates": set(),
+                        "type": item_type,
+                        "examples": []
+                    }
+
+                intent_counts[intent]["dates"].add(date_str)
+
+                # Store context example
+                if len(intent_counts[intent]["examples"]) < 2:
+                    # Find the full sentence
+                    sentences = re.split(r'[.!?\n]', content)
+                    for sentence in sentences:
+                        if intent in sentence.lower() and len(sentence.strip()) > 20:
+                            intent_counts[intent]["examples"].append(sentence.strip()[:150])
+                            break
+
+    # Find actionable patterns
+    patterns = []
+
+    for intent, data in intent_counts.items():
+        mention_count = len(data["dates"])
+
+        if mention_count >= min_mentions:
+            # Determine confidence
+            if mention_count >= 5:
+                confidence = "high"
+            elif mention_count >= 3:
+                confidence = "medium"
+            else:
+                confidence = "low"
+
+            # Generate a proper title
+            title = intent.title()
+            if len(title) > 40:
+                title = title[:37] + "..."
+
+            patterns.append({
+                "type": data["type"],
+                "title": title,
+                "description": f"Mentioned {mention_count} times over {days} days",
+                "confidence": confidence,
+                "evidence": data["examples"],
+                "mention_count": mention_count,
+                "last_mentioned": max(data["dates"])
+            })
+
+    # Sort by mention count (highest first)
+    patterns.sort(key=lambda x: x["mention_count"], reverse=True)
+
+    # Return top 3 actionable patterns
+    return patterns[:3]
+
+
 # ============== Schedule & Tasks ==============
 
 def get_schedule_context() -> dict:

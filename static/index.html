@@ -211,7 +211,6 @@
         /* Inline Chat */
         .inline-chat {
             flex: 1;
-            border-top: 1px solid #eee;
             padding: 1rem 0;
             overflow-y: auto;
             min-height: 100px;
@@ -349,6 +348,7 @@
         .message-content {
             word-wrap: break-word;
             overflow-wrap: break-word;
+            overflow: visible;
         }
 
         .message-thinking {
@@ -362,6 +362,70 @@
             padding: 0.75rem 1rem;
             animation: fadeIn 0.3s ease-out;
         }
+
+        .message-system {
+            align-self: stretch;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            max-width: 100%;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .message-system-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .message-system-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .message-system-close {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: #999;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .message-system-close:hover {
+            color: #333;
+        }
+
+        .message-system-body {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .message-system-body h2 {
+            font-size: 1rem;
+            margin: 1rem 0 0.5rem;
+            color: #333;
+        }
+
+        .message-system-body h2:first-child { margin-top: 0; }
+
+        .message-system-body h3 {
+            font-size: 0.95rem;
+            margin: 0.75rem 0 0.25rem;
+            color: #444;
+        }
+
+        .message-system-body p { margin: 0.5rem 0; }
+        .message-system-body ul, .message-system-body ol { margin: 0.5rem 0; padding-left: 1.5rem; }
+        .message-system-body li { margin: 0.25rem 0; }
+        .message-system-body hr { border: none; border-top: 1px dashed #ddd; margin: 1rem 0; }
 
         .thinking-dots {
             display: inline-flex;
@@ -620,6 +684,16 @@
             color: #333;
             line-height: 1.4;
             flex: 1;
+            /* Truncation */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+            cursor: pointer;
+        }
+
+        .task-description:hover {
+            color: #000;
         }
 
         .task-meta {
@@ -633,6 +707,49 @@
             font-style: italic;
             font-size: 0.9rem;
             padding: 0.5rem 0;
+        }
+
+        .task-project-badge {
+            font-size: 0.7rem;
+            color: #666;
+            background: #f0f0f0;
+            padding: 0.1rem 0.4rem;
+            border-radius: 8px;
+            margin-right: 0.5rem;
+            /* Truncation */
+            max-width: 80px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 0;
+        }
+
+        .task-delete {
+            opacity: 0;
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0 0.25rem;
+            margin-left: 0.25rem;
+            transition: opacity 0.15s, color 0.15s;
+            flex-shrink: 0;
+        }
+
+        .task-item:hover .task-delete {
+            opacity: 1;
+        }
+
+        .task-delete:hover {
+            color: #e74c3c;
+        }
+
+        .task-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            min-width: 0;
         }
 
         /* Project items */
@@ -665,6 +782,16 @@
             font-size: 0.9rem;
             color: #333;
             flex: 1;
+            /* Truncation */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+            cursor: pointer;
+        }
+
+        .project-name:hover {
+            color: #000;
         }
 
         .project-badge {
@@ -682,6 +809,92 @@
         }
 
         .project-item.expanded .project-tasks { display: block; }
+
+        /* Project Notes */
+        .project-notes-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: #666;
+            cursor: pointer;
+            padding: 0.25rem 0;
+            margin-top: 0.5rem;
+        }
+
+        .project-notes-toggle:hover { color: #333; }
+
+        .project-notes-icon { font-size: 0.85rem; }
+
+        .project-notes-content {
+            background: #f9f9f9;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            display: none;
+        }
+
+        .project-notes-content.visible { display: block; }
+
+        .project-notes-content h2 {
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+            color: #333;
+        }
+
+        .project-notes-content h2:first-child { margin-top: 0; }
+
+        .project-notes-content h3 { font-size: 0.85rem; margin: 0.5rem 0; color: #444; }
+        .project-notes-content p { margin: 0.25rem 0; }
+        .project-notes-content hr { border: none; border-top: 1px dashed #ddd; margin: 0.75rem 0; }
+
+        .project-notes-empty {
+            color: #999;
+            font-style: italic;
+            padding: 0.5rem 0;
+        }
+
+        /* Project Actions */
+        .project-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px dashed #eee;
+        }
+
+        .project-action-btn {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            background: #fff;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .project-action-btn:hover { border-color: #999; color: #333; }
+        .project-action-btn.archive:hover { border-color: #f59e0b; color: #92400e; }
+
+        /* Task Archive */
+        .task-archive {
+            opacity: 0;
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0 0.25rem;
+            transition: opacity 0.15s, color 0.15s;
+        }
+
+        .task-item:hover .task-archive { opacity: 1; }
+        .task-archive:hover { color: #f59e0b; }
 
         /* Quick Add */
         .panel-footer {
@@ -860,7 +1073,8 @@
             padding: 0.75em 1em;
             background: #f5f5f5;
             border-radius: 4px;
-            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
 
         .message-content pre code {
@@ -929,6 +1143,35 @@
             text-align: center;
             padding: 2rem;
             color: #999;
+        }
+
+        /* Daily quote */
+        .quote-container {
+            padding: 2rem 1rem;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .quote-text {
+            font-size: 1.1rem;
+            font-style: italic;
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .quote-author {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .quote-loading {
+            color: #999;
+            font-style: italic;
         }
     </style>
 </head>
@@ -1008,6 +1251,15 @@
                         <div class="project-empty">No active projects</div>
                     </div>
                 </div>
+                <div class="panel-section">
+                    <div class="panel-section-header">
+                        <span class="panel-section-title">Completed</span>
+                        <span class="panel-section-count" id="completed-count">0</span>
+                    </div>
+                    <div id="completed-tasks">
+                        <div class="task-empty">No completed tasks</div>
+                    </div>
+                </div>
             </div>
             <div class="panel-footer">
                 <div class="quick-add-form">
@@ -1040,8 +1292,8 @@
         let activePanel = localStorage.getItem('activePanel') || null;
         let tasksData = [];
         let projectsData = [];
+        let projectNotesData = {};
         let notificationsData = [];
-        let contextData = null;
         let chatOpen = false;
         let uploadXhr = null;
 
@@ -1051,8 +1303,8 @@
 
         // Initialize
         async function init() {
-            // Load context data
-            await loadContext();
+            // Load daily quote
+            loadDailyQuote();
 
             // Initialize panel state
             if (activePanel) {
@@ -1072,242 +1324,37 @@
             if (activePanel !== 'tasks') loadTasksData();
         }
 
-        // ============== Context Loading & Rendering ==============
+        // ============== Daily Quote ==============
 
-        async function loadContext() {
+        async function loadDailyQuote() {
+            // Show loading state
+            contextContent.innerHTML = `
+                <div class="quote-container">
+                    <div class="quote-loading">Loading today's reflection...</div>
+                </div>
+            `;
+
             try {
-                const response = await fetch('/api/context');
-                contextData = await response.json();
-                renderContext();
+                const response = await fetch('/api/daily-quote');
+                const data = await response.json();
+                renderQuote(data);
             } catch (error) {
-                console.error('Failed to load context:', error);
-                contextContent.innerHTML = '<div class="context-empty">Unable to load context.</div>';
+                console.error('Failed to load daily quote:', error);
+                // Fallback
+                renderQuote({
+                    quote: "The only way to do great work is to love what you do.",
+                    author: "Steve Jobs"
+                });
             }
         }
 
-        function renderContext() {
-            if (!contextData) return;
-
-            const viewMode = contextData.view_mode;
-
-            switch (viewMode) {
-                case 'morning':
-                    renderMorningView();
-                    break;
-                case 'active':
-                    renderActiveView();
-                    break;
-                case 'evening':
-                    renderEveningView();
-                    break;
-                case 'weekly':
-                    renderWeeklyView();
-                    break;
-                default:
-                    renderMorningView();
-            }
-        }
-
-        function renderMorningView() {
-            const ctx = contextData;
-            const tc = ctx.time_context;
-            const tasks = ctx.tasks || {};
-            const onYourMind = ctx.on_your_mind || {};
-            const noticed = ctx.noticed || {};
-
-            let html = `<h1 class="greeting">${tc.greeting}</h1>`;
-
-            // TODAY section
-            html += '<div class="context-section">';
-            html += '<div class="section-title">Today</div>';
-            html += '<div class="section-content">';
-
-            const dueTasks = tasks.due_today || [];
-            const highPriority = tasks.high_priority || [];
-            const allTodayTasks = [...dueTasks, ...highPriority.filter(t => !dueTasks.find(d => d.id === t.id))];
-
-            if (allTodayTasks.length === 0) {
-                html += '<div class="context-empty">No tasks scheduled for today.</div>';
-            } else {
-                allTodayTasks.slice(0, 5).forEach(task => {
-                    html += `<div class="context-item">
-                        <span class="context-item-bullet">•</span>
-                        <span class="context-item-content">${escapeHtml(task.description)}</span>
-                    </div>`;
-                });
-            }
-
-            // Check for overdue
-            const overdue = tasks.overdue || [];
-            if (overdue.length > 0) {
-                html += `<div class="context-item" style="color: #dc2626;">
-                    <span class="context-item-bullet">!</span>
-                    <span class="context-item-content">${overdue.length} overdue task${overdue.length > 1 ? 's' : ''}</span>
-                </div>`;
-            }
-
-            html += '</div></div>';
-
-            // ON YOUR MIND section
-            const topics = onYourMind.topics || [];
-            if (topics.length > 0 || onYourMind.action_prompt) {
-                html += '<div class="context-section">';
-                html += '<div class="section-title">On Your Mind</div>';
-                html += '<div class="section-content">';
-
-                if (topics.length > 0) {
-                    topics.slice(0, 3).forEach(topic => {
-                        html += `<div class="context-item">
-                            <span class="context-item-bullet">•</span>
-                            <span class="context-item-content">${escapeHtml(topic.topic)}</span>
-                            <span class="context-item-meta">${topic.mention_count}x this week</span>
-                        </div>`;
-                    });
-                }
-
-                if (onYourMind.action_prompt) {
-                    html += `<div class="action-prompt">
-                        <div class="action-prompt-text">${escapeHtml(onYourMind.action_prompt)}</div>
-                        <button class="action-btn" onclick="sendPrompt('${escapeHtml(onYourMind.action_prompt).replace(/'/g, "\\'")}')">Let's talk</button>
-                    </div>`;
-                }
-
-                html += '</div></div>';
-            }
-
-            // NOTICED section
-            const relationshipNeglect = noticed.relationship_neglect || [];
-            const energyPatterns = noticed.energy_patterns || [];
-            const hasNoticed = relationshipNeglect.length > 0 || energyPatterns.length > 0;
-
-            if (hasNoticed) {
-                html += '<div class="context-section">';
-                html += '<div class="section-title">Noticed</div>';
-                html += '<div class="section-content">';
-
-                relationshipNeglect.forEach(item => {
-                    html += `<div class="noticed-item">${escapeHtml(item.observation || `You haven't contacted ${item.name} in ${item.gap_days} days.`)}</div>`;
-                });
-
-                energyPatterns.forEach(item => {
-                    html += `<div class="noticed-item">${escapeHtml(item.observation)}</div>`;
-                });
-
-                html += '</div></div>';
-            }
-
-            contextContent.innerHTML = html;
-        }
-
-        function renderActiveView() {
-            const ctx = contextData;
-            const schedule = ctx.schedule || {};
-            const surfacedCount = ctx.surfaced_count || 0;
-
-            let html = '<div class="active-view-minimal">';
-
-            html += `<div class="active-current">Now: ${schedule.current_activity || 'Deep work'}</div>`;
-
-            if (schedule.next_event) {
-                html += `<div class="active-next">Next: ${escapeHtml(schedule.next_event.title)} <a onclick="openChat()">See context</a></div>`;
-            }
-
-            if (surfacedCount > 0) {
-                html += `<div class="surfaced-notice">
-                    <div class="surfaced-notice-text">${surfacedCount} thing${surfacedCount > 1 ? 's' : ''} surfaced while you worked</div>
-                    <div class="surfaced-actions">
-                        <button class="surfaced-btn" onclick="togglePanel('notifications')">See</button>
-                        <button class="surfaced-btn" onclick="dismissSurfaced()">Later</button>
-                    </div>
-                </div>`;
-            }
-
-            html += '</div>';
-
-            contextContent.innerHTML = html;
-        }
-
-        function renderEveningView() {
-            const ctx = contextData;
-            const tc = ctx.time_context;
-            const daySummary = ctx.day_summary || {};
-            const openThreads = ctx.open_threads || [];
-            const tomorrow = ctx.tomorrow || {};
-
-            let html = `<h1 class="greeting">Winding down</h1>`;
-
-            // TODAY summary
-            html += '<div class="context-section">';
-            html += '<div class="section-title">Today</div>';
-            html += '<div class="section-content">';
-
-            const completed = daySummary.completed_tasks || [];
-            if (completed.length > 0) {
-                completed.forEach(task => {
-                    html += `<div class="summary-item">
-                        <span class="summary-check">✓</span>
-                        <span>${escapeHtml(task.description)}</span>
-                    </div>`;
-                });
-            }
-
-            if (daySummary.logged_entries > 0) {
-                html += `<div class="summary-item">
-                    <span class="summary-check">✓</span>
-                    <span>${daySummary.logged_entries} log entries today</span>
-                </div>`;
-            }
-
-            if (completed.length === 0 && !daySummary.logged_entries) {
-                html += '<div class="context-empty">No activity recorded today.</div>';
-            }
-
-            html += '</div></div>';
-
-            // OPEN THREADS
-            if (openThreads.length > 0) {
-                html += '<div class="context-section">';
-                html += '<div class="section-title">Open Threads</div>';
-                html += '<div class="section-content">';
-
-                openThreads.slice(0, 5).forEach(thread => {
-                    const urgencyClass = thread.urgency.replace(' ', '-');
-                    html += `<div class="thread-item">
-                        <span class="thread-urgency ${urgencyClass}">${thread.urgency}</span>
-                        <span>${escapeHtml(thread.description)}</span>
-                    </div>`;
-                });
-
-                html += '</div></div>';
-            }
-
-            // TOMORROW
-            if (tomorrow.task_count > 0 || tomorrow.suggestion) {
-                html += '<div class="context-section">';
-                html += '<div class="section-title">Tomorrow</div>';
-                html += '<div class="tomorrow-preview">';
-
-                if (tomorrow.task_count > 0) {
-                    html += `<div class="tomorrow-summary">${tomorrow.task_count} task${tomorrow.task_count > 1 ? 's' : ''} scheduled`;
-                    if (tomorrow.high_priority_count > 0) {
-                        html += ` (${tomorrow.high_priority_count} high priority)`;
-                    }
-                    html += '</div>';
-                }
-
-                if (tomorrow.suggestion) {
-                    html += `<div class="tomorrow-suggestion">${escapeHtml(tomorrow.suggestion)}</div>`;
-                }
-
-                html += '</div></div>';
-            }
-
-            contextContent.innerHTML = html;
-        }
-
-        function renderWeeklyView() {
-            // For now, render similar to morning view
-            renderMorningView();
+        function renderQuote(data) {
+            contextContent.innerHTML = `
+                <div class="quote-container">
+                    <div class="quote-text">"${escapeHtml(data.quote)}"</div>
+                    <div class="quote-author">— ${escapeHtml(data.author)}</div>
+                </div>
+            `;
         }
 
         // ============== Inline Chat ==============
@@ -1465,21 +1512,40 @@
 
         // ============== Tasks ==============
 
+        let completedTasksData = [];
+
         async function loadTasksData() {
             try {
-                const [tasksRes, projectsRes] = await Promise.all([
+                const [tasksRes, projectsRes, completedRes] = await Promise.all([
                     fetch('/api/tasks'),
-                    fetch('/api/projects')
+                    fetch('/api/projects'),
+                    fetch('/api/tasks/completed?days=30&limit=20')
                 ]);
 
                 const tasksJson = await tasksRes.json();
                 const projectsJson = await projectsRes.json();
+                const completedJson = await completedRes.json();
 
                 tasksData = tasksJson.tasks || [];
                 projectsData = projectsJson.projects || [];
+                completedTasksData = completedJson.tasks || [];
+
+                // Load notes counts for each active project
+                const activeProjects = projectsData.filter(p => p.status === 'active');
+                const notesPromises = activeProjects.map(async (p) => {
+                    try {
+                        const res = await fetch(`/api/projects/${p.id}/notes`);
+                        const data = await res.json();
+                        projectNotesData[p.id] = { count: data.count || 0 };
+                    } catch (e) {
+                        projectNotesData[p.id] = { count: 0 };
+                    }
+                });
+                await Promise.all(notesPromises);
 
                 renderTodayTasks();
                 renderProjects();
+                renderCompletedTasks();
                 updateTasksBadge();
             } catch (error) {
                 console.error('Failed to load tasks data:', error);
@@ -1491,15 +1557,15 @@
             const countEl = document.getElementById('today-count');
 
             const today = new Date().toISOString().split('T')[0];
+            // Only show pending/in_progress tasks in Today section
             const todayTasks = tasksData.filter(t => {
                 const dueDate = t.scheduling?.due_date;
                 const isToday = dueDate === today || !dueDate;
                 const isPending = t.status === 'pending' || t.status === 'in_progress';
-                return isToday && (isPending || t.status === 'completed');
+                return isToday && isPending;
             }).slice(0, 10);
 
-            const pendingCount = todayTasks.filter(t => t.status !== 'completed').length;
-            countEl.textContent = pendingCount;
+            countEl.textContent = todayTasks.length;
 
             if (todayTasks.length === 0) {
                 container.innerHTML = '<div class="task-empty">No tasks for today</div>';
@@ -1507,11 +1573,13 @@
             }
 
             container.innerHTML = todayTasks.map(task => `
-                <div class="task-item ${task.status === 'completed' ? 'completed' : ''}" data-task-id="${task.id}">
+                <div class="task-item" data-task-id="${task.id}">
                     <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
-                    <div class="task-info" onclick="discussTask('${escapeHtml(task.description)}')">
-                        <div class="task-description">${escapeHtml(task.description)}</div>
+                    <div class="task-info">
+                        <span class="task-project-badge" title="${escapeHtml(task.project_title || 'General')}">${escapeHtml(task.project_title || 'General')}</span>
+                        <div class="task-description" onclick="showTaskFullContent('${escapeHtml(task.description).replace(/'/g, "\\'")}', '${escapeHtml(task.project_title || 'General').replace(/'/g, "\\'")}')" title="Click to view full text">${escapeHtml(task.description)}</div>
                     </div>
+                    <button class="task-delete" onclick="deleteTask(event, '${task.id}')" title="Delete">×</button>
                 </div>
             `).join('');
         }
@@ -1530,23 +1598,37 @@
 
             container.innerHTML = activeProjects.map(project => {
                 const projectTasks = tasksData.filter(t => t.project_id === project.id && t.status !== 'completed');
+                const noteCount = projectNotesData[project.id]?.count || 0;
+                const isGeneral = project.id === 'project-general';
                 return `
                     <div class="project-item" data-project-id="${project.id}">
-                        <div class="project-header" onclick="toggleProject('${project.id}')">
-                            <span class="project-toggle">▶</span>
-                            <span class="project-name">${escapeHtml(project.title)}</span>
-                            <span class="project-badge">${projectTasks.length}</span>
+                        <div class="project-header">
+                            <span class="project-toggle" onclick="toggleProject('${project.id}')">▶</span>
+                            <span class="project-name" onclick="showFullContent('Project', '${escapeHtml(project.title).replace(/'/g, "\\'")}')" title="Click to view full text">${escapeHtml(project.title)}</span>
+                            <span class="project-badge" onclick="toggleProject('${project.id}')">${projectTasks.length}</span>
                         </div>
                         <div class="project-tasks">
                             ${projectTasks.length === 0
                                 ? '<div class="task-empty">No pending tasks</div>'
                                 : projectTasks.map(task => `
-                                    <div class="task-item ${task.status === 'completed' ? 'completed' : ''}" data-task-id="${task.id}">
+                                    <div class="task-item" data-task-id="${task.id}">
                                         <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
-                                        <div class="task-description" onclick="discussTask('${escapeHtml(task.description)}')">${escapeHtml(task.description)}</div>
+                                        <div class="task-description" onclick="showTaskFullContent('${escapeHtml(task.description).replace(/'/g, "\\'")}', '${escapeHtml(project.title).replace(/'/g, "\\'")}')" title="Click to view full text">${escapeHtml(task.description)}</div>
+                                        <button class="task-archive" onclick="archiveTask(event, '${task.id}')" title="Archive">📦</button>
+                                        <button class="task-delete" onclick="deleteTask(event, '${task.id}')" title="Delete">×</button>
                                     </div>
                                 `).join('')
                             }
+                            <div class="project-notes-toggle" onclick="toggleProjectNotes('${project.id}')" title="Click to view notes">
+                                <span class="project-notes-icon">📝</span>
+                                <span>${noteCount} note${noteCount !== 1 ? 's' : ''}</span>
+                            </div>
+                            ${!isGeneral ? `
+                            <div class="project-actions">
+                                <button class="project-action-btn" onclick="completeProject('${project.id}')">Complete</button>
+                                <button class="project-action-btn archive" onclick="archiveProject('${project.id}')">Archive</button>
+                            </div>
+                            ` : ''}
                         </div>
                     </div>
                 `;
@@ -1558,50 +1640,206 @@
             if (el) el.classList.toggle('expanded');
         }
 
+        async function toggleProjectNotes(projectId) {
+            // Find the project name
+            const project = projectsData.find(p => p.id === projectId);
+            const projectName = project ? project.title : 'Project';
+
+            try {
+                const response = await fetch(`/api/projects/${projectId}/notes`);
+                const data = await response.json();
+
+                // Show notes in chat area
+                showProjectNotes(projectName, data.notes);
+
+                // Update cached count
+                projectNotesData[projectId] = { count: data.count };
+            } catch (error) {
+                console.error('Failed to load notes:', error);
+                showProjectNotes(projectName, null);
+            }
+        }
+
+        async function archiveTask(event, taskId) {
+            event.stopPropagation();
+
+            const reason = prompt('Reason for archiving (optional):');
+            if (reason === null) return; // Cancelled
+
+            try {
+                const response = await fetch(`/api/tasks/${taskId}/archive`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason, outcome: 'abandoned' })
+                });
+
+                if (response.ok) {
+                    await loadTasksData();
+                }
+            } catch (error) {
+                console.error('Failed to archive task:', error);
+            }
+        }
+
+        async function archiveProject(projectId) {
+            const reason = prompt('Reason for archiving (optional):');
+            if (reason === null) return; // Cancelled
+
+            const outcome = confirm('Was this project completed?') ? 'completed' : 'abandoned';
+
+            try {
+                const response = await fetch(`/api/projects/${projectId}/archive`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason, outcome })
+                });
+
+                if (response.ok) {
+                    await loadTasksData();
+                }
+            } catch (error) {
+                console.error('Failed to archive project:', error);
+            }
+        }
+
+        async function completeProject(projectId) {
+            try {
+                const response = await fetch(`/api/projects/${projectId}/complete`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    await loadTasksData();
+                }
+            } catch (error) {
+                console.error('Failed to complete project:', error);
+            }
+        }
+
         async function toggleTask(event, taskId) {
             event.stopPropagation();
-            const task = tasksData.find(t => t.id === taskId);
+            const task = tasksData.find(t => t.id === taskId) || completedTasksData.find(t => t.id === taskId);
             if (!task) return;
 
             const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-            task.status = newStatus;
-            renderTodayTasks();
-            renderProjects();
-
-            const action = newStatus === 'completed' ? 'completed' : 'reopened';
-            inlineChat.style.display = 'block';
-            addInlineMessage(`Mark task "${task.description}" as ${action}`, 'you');
-            setContextWaiting(true);
 
             try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
+                const response = await fetch(`/api/tasks/${taskId}/status`, {
+                    method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: `Mark the task "${task.description}" as ${action}`,
-                        session_id: sessionId
-                    })
+                    body: JSON.stringify({ status: newStatus })
                 });
 
-                const data = await response.json();
-                sessionId = data.session_id;
-                localStorage.setItem('sessionId', sessionId);
-                removeInlineThinking();
-                addInlineMessage(data.response, 'friend');
-                loadTasksData();
+                if (response.ok) {
+                    // Reload data to reflect changes
+                    await loadTasksData();
+                }
             } catch (error) {
-                removeInlineThinking();
-                addInlineMessage('Had trouble updating that task.', 'friend');
+                console.error('Failed to update task status:', error);
+            }
+        }
+
+        async function deleteTask(event, taskId) {
+            event.stopPropagation();
+            if (!confirm('Delete this task?')) return;
+
+            try {
+                const response = await fetch(`/api/tasks/${taskId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    await loadTasksData();
+                }
+            } catch (error) {
+                console.error('Failed to delete task:', error);
+            }
+        }
+
+        function renderCompletedTasks() {
+            const container = document.getElementById('completed-tasks');
+            const countEl = document.getElementById('completed-count');
+
+            countEl.textContent = completedTasksData.length;
+
+            if (completedTasksData.length === 0) {
+                container.innerHTML = '<div class="task-empty">No completed tasks</div>';
+                return;
             }
 
-            setContextWaiting(false);
-            contextInput.focus();
+            container.innerHTML = completedTasksData.slice(0, 10).map(task => `
+                <div class="task-item completed" data-task-id="${task.id}">
+                    <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
+                    <div class="task-info">
+                        <span class="task-project-badge" title="${escapeHtml(task.project_title || 'General')}">${escapeHtml(task.project_title || 'General')}</span>
+                        <div class="task-description" onclick="showTaskFullContent('${escapeHtml(task.description).replace(/'/g, "\\'")}', '${escapeHtml(task.project_title || 'General').replace(/'/g, "\\'")}')" title="Click to view full text">${escapeHtml(task.description)}</div>
+                    </div>
+                    <button class="task-delete" onclick="deleteTask(event, '${task.id}')" title="Delete">×</button>
+                </div>
+            `).join('');
         }
 
         function discussTask(description) {
             contextInput.value = `Tell me about the task: ${description}`;
             inlineChat.style.display = 'block';
             sendContextMessage();
+        }
+
+        function showFullContent(title, content, type = 'task') {
+            // Show full content in chat area as a system message (not logged to lifelog)
+            inlineChat.style.display = 'block';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message message-system';
+            messageDiv.innerHTML = `
+                <div class="message-system-header">
+                    <span class="message-system-title">${escapeHtml(title)}</span>
+                    <button class="message-system-close" onclick="this.closest('.message-system').remove()">×</button>
+                </div>
+                <div class="message-system-body">${type === 'notes' ? marked.parse(content) : escapeHtml(content)}</div>
+            `;
+
+            inlineMessages.appendChild(messageDiv);
+            inlineChat.scrollTop = inlineChat.scrollHeight;
+        }
+
+        function showTaskFullContent(description, projectName) {
+            // Show task with project name in chat area
+            inlineChat.style.display = 'block';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message message-system';
+            messageDiv.innerHTML = `
+                <div class="message-system-header">
+                    <span class="message-system-title">Task</span>
+                    <button class="message-system-close" onclick="this.closest('.message-system').remove()">×</button>
+                </div>
+                <div class="message-system-body">
+                    <p><strong>Project:</strong> ${escapeHtml(projectName)}</p>
+                    <p><strong>Task:</strong> ${escapeHtml(description)}</p>
+                </div>
+            `;
+
+            inlineMessages.appendChild(messageDiv);
+            inlineChat.scrollTop = inlineChat.scrollHeight;
+        }
+
+        function showProjectNotes(projectName, notes) {
+            // Show project notes in chat area as a system message
+            inlineChat.style.display = 'block';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message message-system';
+            messageDiv.innerHTML = `
+                <div class="message-system-header">
+                    <span class="message-system-title">${escapeHtml(projectName)} - Notes</span>
+                    <button class="message-system-close" onclick="this.closest('.message-system').remove()">×</button>
+                </div>
+                <div class="message-system-body">${notes ? marked.parse(notes) : '<em>No notes yet</em>'}</div>
+            `;
+
+            inlineMessages.appendChild(messageDiv);
+            inlineChat.scrollTop = inlineChat.scrollHeight;
         }
 
         function quickAddTask() {
@@ -1721,12 +1959,6 @@
             const count = notificationsData.length;
             badge.textContent = count;
             badge.style.display = count > 0 ? 'inline' : 'none';
-        }
-
-        function dismissSurfaced() {
-            // For now, just hide - could mark as "later" in backend
-            contextData.surfaced_count = 0;
-            renderContext();
         }
 
         // ============== File Upload ==============
@@ -1865,10 +2097,15 @@
                 const data = JSON.parse(e.data);
                 notificationsData = data.notifications || [];
                 tasksData = data.tasks || [];
+                projectsData = data.projects || [];
                 updateTasksBadge();
                 updateNotificationsBadge();
                 if (activePanel === 'notifications') renderNotifications();
-                else if (activePanel === 'tasks') renderTodayTasks();
+                else if (activePanel === 'tasks') {
+                    renderTodayTasks();
+                    renderProjects();
+                    renderCompletedTasks();
+                }
                 reconnectAttempts = 0;
             });
 
@@ -1891,7 +2128,20 @@
             eventSource.addEventListener('tasks_update', (e) => {
                 const data = JSON.parse(e.data);
                 tasksData = data.tasks || [];
-                if (activePanel === 'tasks') renderTodayTasks();
+                if (activePanel === 'tasks') {
+                    renderTodayTasks();
+                    renderProjects();
+                    renderCompletedTasks();
+                }
+                updateTasksBadge();
+            });
+
+            eventSource.addEventListener('projects_update', (e) => {
+                const data = JSON.parse(e.data);
+                projectsData = data.projects || [];
+                if (activePanel === 'tasks') {
+                    renderProjects();
+                }
             });
 
             eventSource.addEventListener('ping', () => {});

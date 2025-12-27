@@ -397,10 +397,20 @@ async def watch_tasks():
                 last_mtime = current_mtime
                 # Broadcast task update
                 tasks = get_tasks_for_panel()
-                await sse_manager.broadcast({
-                    "event": "tasks_update",
-                    "data": {"tasks": tasks}
-                })
+                await sse_manager.broadcast("tasks_update", {"tasks": tasks})
+
+
+async def watch_projects():
+    """Watch projects directory and broadcast changes via SSE."""
+    projects_dir = BASE_DIR / "data" / "worker" / "state" / "projects"
+
+    if not projects_dir.exists():
+        projects_dir.mkdir(parents=True, exist_ok=True)
+
+    async for changes in awatch(projects_dir):
+        # Broadcast projects update on any change
+        projects = get_projects_data(status="active")
+        await sse_manager.broadcast("projects_update", {"projects": projects})
 
 
 # ============== Lifespan Management ==============
@@ -412,6 +422,7 @@ async def lifespan(app: FastAPI):
     watcher_task = asyncio.create_task(watch_notifications())
     ingestion_watcher_task = asyncio.create_task(watch_ingestion_queue())
     tasks_watcher_task = asyncio.create_task(watch_tasks())
+    projects_watcher_task = asyncio.create_task(watch_projects())
     cleanup_task = asyncio.create_task(cleanup_stale_notifications())
 
     yield
@@ -420,6 +431,7 @@ async def lifespan(app: FastAPI):
     watcher_task.cancel()
     ingestion_watcher_task.cancel()
     tasks_watcher_task.cancel()
+    projects_watcher_task.cancel()
     cleanup_task.cancel()
 
 
@@ -778,6 +790,15 @@ async def get_weekly_context():
     return get_context_for_view("weekly")
 
 
+# ============== Daily Quote ==============
+
+@app.get("/api/daily-quote")
+async def get_daily_quote_endpoint():
+    """Get the daily reflection quote."""
+    from src.tools.attention.daily_quote import get_daily_quote
+    return get_daily_quote()
+
+
 # ============== Summaries ==============
 
 @app.get("/api/summaries")
@@ -994,9 +1015,11 @@ async def sse_endpoint():
             # Send initial state
             notifications = get_enriched_notifications()
             tasks = get_tasks_for_panel()
+            projects = get_projects_data(status="active")
             init_data = {
                 "notifications": notifications,
                 "tasks": tasks,
+                "projects": projects,
                 "timestamp": datetime.now().isoformat()
             }
             yield {
@@ -1027,7 +1050,8 @@ async def sse_endpoint():
 
 from ..tools.worker.project import (
     create_project, get_projects, get_projects_data, get_project, update_project,
-    add_milestone, archive_project, get_projects_with_deadlines
+    add_milestone, archive_project, delete_project, get_projects_with_deadlines,
+    get_project_notes, get_project_notes_count, prepend_project_note
 )
 
 
@@ -1052,6 +1076,17 @@ class ProjectUpdateRequest(BaseModel):
 class MilestoneRequest(BaseModel):
     title: str
     target_date: Optional[str] = None
+
+
+class ProjectArchiveRequest(BaseModel):
+    reason: str = ""
+    outcome: str = "completed"  # completed, abandoned, paused, superseded
+
+
+class ProjectNoteRequest(BaseModel):
+    title: str
+    content: str
+    note_type: str = "note"  # note, research, update, decision
 
 
 @app.get("/api/projects")
@@ -1112,9 +1147,46 @@ async def add_project_milestone(project_id: str, request: MilestoneRequest):
 
 
 @app.post("/api/projects/{project_id}/archive")
-async def archive_project_endpoint(project_id: str):
-    """Archive a project."""
-    result = archive_project(project_id)
+async def archive_project_endpoint(project_id: str, request: ProjectArchiveRequest = None):
+    """Archive a project with behavioral context."""
+    if request:
+        result = archive_project(project_id, reason=request.reason, outcome=request.outcome)
+    else:
+        result = archive_project(project_id)
+    return {"status": "success", "message": result}
+
+
+@app.get("/api/projects/{project_id}/notes")
+async def get_project_notes_endpoint(project_id: str):
+    """Get project notes."""
+    notes = get_project_notes(project_id)
+    count = get_project_notes_count(project_id)
+    return {"project_id": project_id, "notes": notes, "count": count}
+
+
+@app.post("/api/projects/{project_id}/notes")
+async def add_project_note_endpoint(project_id: str, request: ProjectNoteRequest):
+    """Add a note to a project."""
+    result = prepend_project_note(
+        project_id=project_id,
+        title=request.title,
+        content=request.content,
+        note_type=request.note_type
+    )
+    return {"status": "success", "message": result}
+
+
+@app.post("/api/projects/{project_id}/complete")
+async def complete_project_endpoint(project_id: str):
+    """Mark a project as completed."""
+    result = update_project(project_id, status="completed")
+    return {"status": "success", "message": result}
+
+
+@app.delete("/api/projects/{project_id}")
+async def delete_project_endpoint(project_id: str, delete_tasks: bool = True):
+    """Delete a project and optionally its associated tasks."""
+    result = delete_project(project_id, delete_tasks=delete_tasks)
     return {"status": "success", "message": result}
 
 
@@ -1122,8 +1194,8 @@ async def archive_project_endpoint(project_id: str):
 
 from ..tools.worker.task import (
     create_task, create_learning_task, get_tasks, get_tasks_data, get_task,
-    get_daily_view, add_quick_task, update_task_status,
-    get_recent_results, get_result
+    get_daily_view, add_quick_task, update_task_status, delete_task,
+    get_recent_results, get_result, get_completed_tasks_data, archive_task
 )
 
 
@@ -1144,6 +1216,15 @@ class LearningTaskRequest(BaseModel):
 
 class QuickTaskRequest(BaseModel):
     description: str
+
+
+class TaskStatusRequest(BaseModel):
+    status: str
+
+
+class TaskArchiveRequest(BaseModel):
+    reason: str = ""
+    outcome: str = "abandoned"  # completed, abandoned, deferred, superseded
 
 
 @app.get("/api/tasks")
@@ -1168,6 +1249,13 @@ async def get_todays_tasks(date: Optional[str] = None):
     """Get daily task view."""
     content = get_daily_view(date)
     return {"content": content}
+
+
+@app.get("/api/tasks/completed")
+async def get_completed_tasks(days: int = 30, limit: int = 50):
+    """Get recently completed tasks."""
+    tasks = get_completed_tasks_data(days=days, limit=limit)
+    return {"tasks": tasks}
 
 
 @app.get("/api/tasks/{task_id}")
@@ -1212,9 +1300,26 @@ async def add_new_quick_task(request: QuickTaskRequest):
 
 
 @app.put("/api/tasks/{task_id}/status")
-async def update_task_status_endpoint(task_id: str, status: str):
+async def update_task_status_endpoint(task_id: str, request: TaskStatusRequest):
     """Update task status."""
-    result = update_task_status(task_id, status)
+    result = update_task_status(task_id, request.status)
+    return {"status": "success", "message": result}
+
+
+@app.delete("/api/tasks/{task_id}")
+async def delete_task_endpoint(task_id: str):
+    """Delete a task."""
+    result = delete_task(task_id)
+    return {"status": "success", "message": result}
+
+
+@app.post("/api/tasks/{task_id}/archive")
+async def archive_task_endpoint(task_id: str, request: TaskArchiveRequest = None):
+    """Archive a task with behavioral context."""
+    if request:
+        result = archive_task(task_id, reason=request.reason, outcome=request.outcome)
+    else:
+        result = archive_task(task_id)
     return {"status": "success", "message": result}
 
 

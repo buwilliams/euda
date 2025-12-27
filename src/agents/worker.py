@@ -25,13 +25,15 @@ from ..tools.worker.task import (
     update_task_status,
     store_result
 )
+from ..tools.worker.project import append_research_result
 from ..tools.shared.notifications import queue_notification
 from ..tools.shared.profile_signals import PROFILE_SIGNAL_TOOLS, PROFILE_SIGNAL_HANDLERS
+from ..tools.world.fetch import fetch_url, FETCH_TOOLS, FETCH_HANDLERS
 
 
-# Combined tools and handlers with profile signals
-ALL_WORKER_TOOLS = EXTENDED_WORKER_TOOLS + PROFILE_SIGNAL_TOOLS
-ALL_WORKER_HANDLERS = {**WORKER_HANDLERS, **PROFILE_SIGNAL_HANDLERS}
+# Combined tools and handlers with profile signals and fetch capability
+ALL_WORKER_TOOLS = EXTENDED_WORKER_TOOLS + PROFILE_SIGNAL_TOOLS + FETCH_TOOLS
+ALL_WORKER_HANDLERS = {**WORKER_HANDLERS, **PROFILE_SIGNAL_HANDLERS, **FETCH_HANDLERS}
 
 
 def create_worker_agent():
@@ -132,18 +134,21 @@ class AutonomousWorkerAgent(AutonomousAgent):
     - Are there pending tasks in the queue?
     - Are there approved actions ready for execution?
     - Are there projects with upcoming deadlines?
+    - Are there research tasks to execute autonomously?
 
     Work:
     - Process pending tasks based on delegation strategy
     - Execute approved actions
     - Prepare learning materials
-    - Store results
+    - Execute research tasks autonomously
+    - Store results and append to project notes
     - Update task statuses
 
     Signals:
     - task_completed: After completing a task
     - action_pending: When an action needs user approval
     - materials_ready: When learning materials are prepared
+    - research_completed: When research task finished
     """
 
     def __init__(self):
@@ -156,11 +161,136 @@ class AutonomousWorkerAgent(AutonomousAgent):
             signals_on_complete=["task_completed"]
         )
 
+    def _get_research_tasks(self) -> list:
+        """Get research tasks that can be executed autonomously."""
+        pending_tasks = get_pending_tasks_for_worker()
+        return [
+            t for t in pending_tasks
+            if t.get("type") == "research"
+            and t.get("delegation", {}).get("strategy") == "agent_autonomous"
+        ]
+
+    def _execute_research_task(self, task: dict) -> str:
+        """
+        Execute a research task autonomously.
+
+        1. Execute research using agent with fetch_url tool
+        2. Store result
+        3. Auto-append to project notes
+        4. Send notification
+        5. Mark task completed
+
+        Returns:
+            Result summary
+        """
+        task_id = task["id"]
+        description = task["description"]
+        project_id = task.get("project_id")
+
+        self.logger.info(f"Executing research task: {description[:50]}...")
+
+        # Mark as in progress
+        update_task_status(task_id, "in_progress")
+
+        try:
+            # Use agent to research the topic
+            prompt = f"""Research the following task and provide a comprehensive summary:
+
+Task: {description}
+
+Instructions:
+1. Use the fetch_url tool to gather relevant information from the web
+2. Synthesize the findings into a clear, actionable summary
+3. Include key details, options, and recommendations
+4. List your sources
+
+Provide your response in this format:
+SUMMARY: (2-3 sentence overview)
+KEY FINDINGS:
+- (bullet points)
+DETAILS:
+(expanded information)
+SOURCES:
+- (URLs used)
+"""
+            # Process with agent
+            response = self.agent.process(prompt, ALL_WORKER_HANDLERS)
+
+            # Parse response into structured format
+            summary = ""
+            details = response
+            sources = []
+
+            # Try to extract summary
+            if "SUMMARY:" in response:
+                parts = response.split("SUMMARY:", 1)
+                if len(parts) > 1:
+                    summary_part = parts[1].split("\n")[0].strip()
+                    summary = summary_part if summary_part else description
+
+            if not summary:
+                summary = description
+
+            # Try to extract sources
+            if "SOURCES:" in response:
+                sources_part = response.split("SOURCES:", 1)[1]
+                for line in sources_part.split("\n"):
+                    line = line.strip()
+                    if line.startswith("-") or line.startswith("http"):
+                        url = line.lstrip("- ").strip()
+                        if url:
+                            sources.append(url)
+
+            # Store result
+            store_result(
+                task_id=task_id,
+                summary=summary,
+                content={"research": details, "sources": sources},
+                recommendations=None
+            )
+
+            # Append to project notes if project exists
+            if project_id:
+                append_research_result(
+                    project_id=project_id,
+                    task_description=description,
+                    summary=summary,
+                    details=details,
+                    sources=sources
+                )
+
+            # Mark completed
+            update_task_status(task_id, "completed")
+
+            # Notify user
+            queue_notification(
+                agent_name="worker",
+                title=f"Research complete: {description[:40]}...",
+                message=f"I've finished researching and saved the results to your project notes. {summary[:100]}",
+                notification_type="info",
+                action_prompt=f"Show me the research results for {description[:30]}",
+                priority="normal"
+            )
+
+            self.logger.info(f"Research task completed: {task_id}")
+            return f"Research completed: {summary[:100]}"
+
+        except Exception as e:
+            self.logger.error(f"Research task failed: {e}")
+            update_task_status(task_id, "pending")  # Reset to pending for retry
+            return f"Research failed: {e}"
+
     def check_work_needed(self) -> bool:
         """Check if there are tasks or approved actions to process."""
         # Check for explicit signal
         if self.check_signal("new_task"):
             self.logger.info("Received new_task signal")
+            return True
+
+        # Check for research tasks (high priority - execute immediately)
+        research_tasks = self._get_research_tasks()
+        if research_tasks:
+            self.logger.debug(f"Found {len(research_tasks)} research tasks to execute")
             return True
 
         # Check for pending tasks that the worker can process
@@ -181,10 +311,21 @@ class AutonomousWorkerAgent(AutonomousAgent):
         """Process tasks based on delegation and execute approved actions."""
         results = []
         tasks_processed = 0
+        research_completed = 0
         actions_executed = 0
 
-        # Process pending tasks with delegation logic
-        pending_tasks = get_pending_tasks_for_worker()
+        # Execute research tasks first (autonomous)
+        research_tasks = self._get_research_tasks()
+        for task in research_tasks[:3]:  # Limit to 3 research tasks per cycle
+            result = self._execute_research_task(task)
+            results.append(result)
+            research_completed += 1
+
+        # Process other pending tasks with delegation logic
+        pending_tasks = [
+            t for t in get_pending_tasks_for_worker()
+            if t.get("type") != "research" or t.get("delegation", {}).get("strategy") != "agent_autonomous"
+        ]
         if pending_tasks:
             tasks_processed = len(pending_tasks)
             self.logger.info(f"Processing {tasks_processed} pending tasks...")
@@ -203,12 +344,13 @@ class AutonomousWorkerAgent(AutonomousAgent):
         state = self.load_state()
         state["last_work_time"] = datetime.now().isoformat()
         state["work_count"] = state.get("work_count", 0) + 1
+        state["research_completed"] = state.get("research_completed", 0) + research_completed
         self.save_state(state)
 
         # Clear context to avoid memory buildup
         self.agent.clear_context()
 
-        # Notify user about completed work
+        # Notify user about completed work (only for non-research, as research has its own notification)
         if tasks_processed > 0 or actions_executed > 0:
             queue_notification(
                 agent_name="worker",

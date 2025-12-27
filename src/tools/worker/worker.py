@@ -28,7 +28,8 @@ from .task import (
     get_pending_tasks_for_worker,
     process_rollover,
     determine_delegation,
-    TASK_TOOLS, TASK_HANDLERS
+    TASK_TOOLS, TASK_HANDLERS,
+    AUTONOMOUS_TASK_TOOLS, AUTONOMOUS_TASK_HANDLERS
 )
 from .project import (
     create_project,
@@ -630,8 +631,8 @@ WORKER_HANDLERS = {
     "mark_action_executed": mark_action_executed,
     "get_action_history": get_action_history,
     "get_integration_status": get_integration_status,
-    # New task system
-    **TASK_HANDLERS,
+    # New task system (using autonomous handlers to exclude dangerous bulk delete)
+    **AUTONOMOUS_TASK_HANDLERS,
     # Project system
     **PROJECT_HANDLERS,
     # Results
@@ -640,7 +641,8 @@ WORKER_HANDLERS = {
 }
 
 # Extended tools including project and new task system
-EXTENDED_WORKER_TOOLS = WORKER_TOOLS + TASK_TOOLS + PROJECT_TOOLS + [
+# Uses AUTONOMOUS_TASK_TOOLS to exclude dangerous bulk-delete operations
+EXTENDED_WORKER_TOOLS = WORKER_TOOLS + AUTONOMOUS_TASK_TOOLS + PROJECT_TOOLS + [
     {
         "name": "store_result",
         "description": "Store the result of completed work for a task. Use after autonomous execution or preparing materials.",
