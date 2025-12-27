@@ -15,8 +15,9 @@ from pathlib import Path
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-PROFILE_DIR = DATA_DIR / "profile"
-CONTRACT_DIR = SHARED_DIR / "profile"
+SYNTHESIS_DIR = DATA_DIR / "synthesis"
+PROFILE_DIR = SYNTHESIS_DIR / "profile"  # User profile data lives under synthesis
+CONTRACT_DIR = SHARED_DIR / "profile"    # System config (contract, policy)
 
 
 def cmd_validate(args: list[str]) -> int:

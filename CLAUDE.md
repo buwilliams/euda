@@ -57,14 +57,15 @@ euno/
 │   └── web/
 │       └── app.py          # FastAPI server
 └── data/                   # Agent-oriented data
-    ├── shared/             # Cross-agent (log, signals, identity, notifications)
-    ├── ingestion/          # inbox/, queue/, digests/
-    ├── synthesis/          # epistemic/, values/, behaviors/, context/, derived/
-    ├── world/              # opportunities/
-    ├── attention/          # energy + surfacing queue
-    ├── interaction/        # conversations/
-    ├── worker/             # tasks/, projects/, actions/
-    └── evolution/          # capabilities, evolution logs
+    ├── shared/             # Cross-agent (log, signals, identity, notifications, config)
+    ├── ingestion/          # inbox/, digests/, state/, prompts/
+    ├── summary/            # state/, prompts/
+    ├── synthesis/          # epistemic/, values/, behaviors/, context/, profile/, prompts/
+    ├── world/              # opportunities/, prompts/
+    ├── attention/          # queue/, prompts/
+    ├── interaction/        # conversations/, cards/
+    ├── worker/             # tasks/, projects/, actions/, prompts/
+    └── evolution/          # output/, prompts/
 ```
 
 See `docs/architecture.md` for full directory structure details.

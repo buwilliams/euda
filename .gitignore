@@ -16,8 +16,6 @@ data/ingestion/inbox/**/*
 # And keep profile contract/policy (system config, not user data)
 !data/shared/profile/profile.contract.md
 !data/shared/profile/redaction.policy.md
-# And keep share prefs template (not user data)
-!data/profile/share.prefs.template.md
 # And keep prompts (code/configuration, not user data)
 !data/*/prompts/*.md
 

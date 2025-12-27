@@ -310,7 +310,7 @@ euno/
 │       └── app.py              # FastAPI server
 │
 └── data/                       # Agent-oriented data
-    ├── shared/                 # Cross-agent resources
+    ├── shared/                 # Cross-agent resources (system config)
     │   ├── lifelog/            # Life log (written by ingestion, read by many)
     │   │   └── [yyyy]/
     │   │       ├── [yyyy-mm-dd].md
@@ -319,59 +319,72 @@ euno/
     │   ├── identity/           # Agent identity files
     │   │   ├── _core.identity.md
     │   │   └── [agent].identity.md
-    │   ├── profile/            # Profile contract and policy
+    │   ├── profile/            # Profile contract and policy (system config)
     │   │   ├── profile.contract.md
     │   │   └── redaction.policy.md
+    │   ├── config/             # Shared configuration
     │   ├── evolution/          # Identity evolution proposals
     │   └── notifications/      # User notifications
     │
-    ├── profile/                # User profile data (governance-controlled)
-    │   ├── profile.current.md  # Current private profile (Synthesis writes)
-    │   ├── profile.YYYY.md     # Annual private snapshots
-    │   ├── profile.public.current.md  # Current public profile
-    │   ├── profile.public.YYYY.md     # Annual public snapshots
-    │   └── share.prefs.current.md     # User sharing preferences
-    │
     ├── ingestion/              # Ingestion Agent data
-    │   ├── state/              # state.json
+    │   ├── state/              # state.json, queue.json, budget.json
     │   ├── config/             # config.json, processed_hashes.json
+    │   ├── prompts/            # process_file.md
     │   ├── inbox/              # pending/, processing/, processed/, failed/, deferred/
-    │   ├── queue/              # queue.json
-    │   └── digests/            # {hash}.json files
+    │   ├── digests/            # {hash}.json files (LLM-generated summaries)
+    │   └── logs/               # Ingestion activity logs
+    │
+    ├── summary/                # Summary Agent data
+    │   ├── state/              # state.json
+    │   ├── prompts/            # summarize_year.md
+    │   └── logs/               # Summary activity logs
     │
     ├── synthesis/              # Synthesis Agent data (epistemic at foundation)
     │   ├── state/              # state.json
+    │   ├── prompts/            # temporal.md
+    │   ├── profile/            # User profile data (governance-controlled)
+    │   │   ├── profile.current.md       # Current private profile (Synthesis writes)
+    │   │   ├── profile.YYYY.md          # Annual private snapshots
+    │   │   ├── profile.public.current.md  # Current public profile
+    │   │   ├── profile.public.YYYY.md   # Annual public snapshots
+    │   │   └── share.prefs.current.md   # User sharing preferences
     │   ├── epistemic/          # Foundational: axioms.md, mental_models.md, tools.md
     │   ├── values/             # Derived: current.values.md, phase.values.md, lifetime.values.md
     │   ├── behaviors/          # Reveals: patterns.md
     │   ├── context/            # Supporting: biographical.md, relationships.md, influences.md
     │   ├── temporal/           # Evolution: {year}.profile.md, evolution.md, influences_timeline.md
     │   ├── derived/            # current_profile.md (synthesized from temporal)
-    │   └── prompts/            # derive.md, temporal.md
+    │   └── logs/               # Synthesis activity logs
     │
     ├── world/                  # World Agent data
     │   ├── state/              # state.json
-    │   └── opportunities/      # opportunities.json
+    │   ├── prompts/            # discovery_sweep.md
+    │   ├── opportunities/      # opportunities.json
+    │   └── logs/               # World activity logs
     │
     ├── attention/              # Attention Agent data
     │   ├── state/              # state.json, surfaced.json (tracks asked questions)
-    │   ├── config/             # config.json
-    │   ├── prompts/            # proactive.md
-    │   └── queue/              # surfacing_queue.json, energy logs
+    │   ├── prompts/            # morning.md, evening.md, proactive.md
+    │   ├── queue/              # surfacing_queue.json, energy logs
+    │   └── logs/               # Attention activity logs
     │
     ├── interaction/            # Interaction Agent data
     │   ├── state/              # state.json
-    │   └── conversations/      # session files
+    │   ├── conversations/      # session files
+    │   ├── cards/              # received cards
+    │   └── logs/               # Interaction activity logs
     │
     ├── worker/                 # Worker Agent data
     │   ├── state/              # state.json
+    │   ├── prompts/            # process_tasks.md, execute_actions.md
     │   ├── tasks/              # queue.json, daily/, results/
     │   ├── projects/           # {id}.json files
-    │   └── actions/            # pending/, completed/
+    │   ├── actions/            # pending/, completed/
+    │   └── logs/               # Worker activity logs
     │
     └── evolution/              # Evolution Agent data
         ├── state/              # state.json
-        ├── prompts/            # assess_health.md
+        ├── prompts/            # assess_health.md, analyze_system.md, check_evolution.md
         ├── output/             # capabilities.md
         └── logs/               # Evolution activity logs
 ```
@@ -386,8 +399,8 @@ Profiles are authoritative artifacts representing user identity. To prevent corr
 
 | Type | Location | Authority | Purpose |
 |------|----------|-----------|---------|
-| Private | `data/profile/profile.current.md` | Synthesis Agent | Internal identity model |
-| Public | `data/profile/profile.public.current.md` | Public Profile Generator | Safe external sharing |
+| Private | `data/synthesis/profile/profile.current.md` | Synthesis Agent | Internal identity model |
+| Public | `data/synthesis/profile/profile.public.current.md` | Public Profile Generator | Safe external sharing |
 
 ### Write Authority
 
