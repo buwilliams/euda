@@ -752,6 +752,33 @@
             padding: 0.5rem 0;
         }
 
+        /* History panel */
+        .history-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .history-item:hover { background: #f5f5f5; margin: 0 -1rem; padding-left: 1rem; padding-right: 1rem; }
+        .history-item:last-child { border-bottom: none; }
+        .history-date {
+            font-size: 0.75rem;
+            color: #999;
+            margin-bottom: 0.25rem;
+        }
+        .history-preview {
+            font-size: 0.9rem;
+            color: #333;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .history-empty {
+            color: #999;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
         .task-project-badge {
             font-size: 0.7rem;
             color: #666;
@@ -1240,6 +1267,10 @@
                             <span>Focus</span>
                             <span class="toggle-badge" id="tasks-badge" style="display: none;">0</span>
                         </button>
+                        <button class="menu-btn" id="history-toggle" onclick="togglePanel('history')" title="History">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 16 14" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                            <span>History</span>
+                        </button>
                     </div>
                     <div class="input-container">
                         <textarea id="context-input" placeholder="Talk to me..." rows="1"></textarea>
@@ -1288,6 +1319,18 @@
             </div>
         </aside>
 
+        <!-- History Panel -->
+        <aside class="panel" id="history-panel">
+            <div class="panel-header">
+                <div class="panel-title">History</div>
+            </div>
+            <div class="panel-content">
+                <div id="history-list">
+                    <div class="history-empty">Loading...</div>
+                </div>
+            </div>
+        </aside>
+
         <!-- Upload Progress -->
         <div class="upload-progress" id="upload-progress">
             <div class="upload-progress-header">
@@ -1312,6 +1355,7 @@
         let tasksData = [];
         let projectsData = [];
         let projectNotesData = {};
+        let historyData = [];
         let chatOpen = false;
         let uploadXhr = null;
 
@@ -1408,6 +1452,15 @@
 
                 removeInlineThinking();
                 addInlineMessage(data.response, 'friend');
+
+                // If the agent cleared the conversation, clear the UI after showing the response
+                if (data.clear_chat) {
+                    setTimeout(() => {
+                        inlineMessages.innerHTML = '';
+                        inlineChat.style.display = 'none';
+                        loadDailyQuote();
+                    }, 1500);  // Brief delay so user sees the confirmation
+                }
             } catch (error) {
                 console.error('Chat error:', error);
                 removeInlineThinking();
@@ -1483,7 +1536,7 @@
             // No-op now
         }
 
-        function resetUI() {
+        async function resetUI() {
             // Clear all messages
             inlineMessages.innerHTML = '';
             // Hide chat area
@@ -1494,6 +1547,18 @@
             }
             // Reload the quote
             loadDailyQuote();
+
+            // Create a new session (old session preserved in history)
+            try {
+                const response = await fetch('/api/sessions/new', { method: 'POST' });
+                if (response.ok) {
+                    const data = await response.json();
+                    sessionId = data.session_id;
+                    localStorage.setItem('sessionId', sessionId);
+                }
+            } catch (error) {
+                console.error('Failed to create new session:', error);
+            }
         }
 
         // ============== Utility Functions ==============
@@ -1529,6 +1594,7 @@
                 localStorage.setItem('activePanel', panelName);
 
                 if (panelName === 'tasks') loadTasksData();
+                if (panelName === 'history') loadHistoryData();
             }
         }
 
@@ -1858,6 +1924,62 @@
                     <button class="task-delete" onclick="deleteTask(event, '${task.id}')" title="Delete">×</button>
                 </div>
             `).join('');
+        }
+
+        // ============== History ==============
+
+        async function loadHistoryData() {
+            try {
+                const response = await fetch('/api/conversations/recent/structured?count=20');
+                const data = await response.json();
+                historyData = data.conversations || [];
+                renderHistory();
+            } catch (error) {
+                console.error('Failed to load history:', error);
+                document.getElementById('history-list').innerHTML =
+                    '<div class="history-empty">Failed to load history</div>';
+            }
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-list');
+            if (!historyData || historyData.length === 0) {
+                container.innerHTML = '<div class="history-empty">No conversations yet</div>';
+                return;
+            }
+            container.innerHTML = historyData.map(item => `
+                <div class="history-item" onclick="forkConversation('${item.session_id}')">
+                    <div class="history-date">${item.date} ${item.time}</div>
+                    <div class="history-preview">${escapeHtml(item.preview || 'No preview')}</div>
+                </div>
+            `).join('');
+        }
+
+        async function forkConversation(oldSessionId) {
+            try {
+                const response = await fetch('/api/conversations/fork', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: oldSessionId })
+                });
+                if (!response.ok) throw new Error('Failed to fork');
+                const data = await response.json();
+
+                sessionId = data.new_session_id;
+                localStorage.setItem('sessionId', sessionId);
+
+                inlineChat.style.display = 'block';
+                inlineMessages.innerHTML = '';
+                for (const msg of data.messages) {
+                    addInlineMessage(msg.content, msg.role === 'user' ? 'you' : 'friend');
+                }
+
+                togglePanel('history');
+                contextInput.focus();
+            } catch (error) {
+                console.error('Failed to fork conversation:', error);
+                alert('Failed to load conversation');
+            }
         }
 
         function discussTask(description) {

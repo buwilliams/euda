@@ -190,6 +190,10 @@ class EnergyRequest(BaseModel):
     notes: Optional[str] = ""
 
 
+class ForkRequest(BaseModel):
+    session_id: str
+
+
 # ============== Session Helpers ==============
 
 def get_or_create_session(session_id: Optional[str] = None) -> tuple[str, object]:
@@ -615,6 +619,26 @@ async def delete_session(session_id: str):
     raise HTTPException(status_code=404, detail="Session not found")
 
 
+@app.post("/api/sessions/new")
+async def create_new_session():
+    """
+    Create a new session, returning the new session ID.
+
+    Used by the UI Clear button to start a fresh conversation
+    while preserving the old session in history.
+    """
+    new_session_id = str(uuid.uuid4())
+    agent = create_agent(persona_name="interaction", tools=INTERACTION_TOOLS)
+
+    sessions[new_session_id] = {
+        "agent": agent,
+        "created": datetime.now(),
+        "last_used": datetime.now()
+    }
+
+    return {"session_id": new_session_id}
+
+
 # ============== Conversation History ==============
 
 @app.get("/api/conversations/recent")
@@ -637,6 +661,89 @@ async def get_history(session_id: str = None, date: str = None):
 
     data = get_conversation_data(session_id=session_id, date=date)
     return data
+
+
+@app.get("/api/conversations/recent/structured")
+async def get_recent_convos_structured(count: int = 20):
+    """Get recent conversations as structured JSON for the History panel."""
+    from ..tools.interaction.conversation_history import _get_session_file, _get_daily_file, _ensure_dirs
+    from datetime import timedelta
+
+    _ensure_dirs()
+    all_sessions = []
+    today = datetime.now()
+
+    # Collect session IDs from recent daily index files
+    for i in range(30):
+        date = (today - timedelta(days=i)).strftime("%Y-%m-%d")
+        daily_file = _get_daily_file(date)
+        if daily_file.exists():
+            with open(daily_file, 'r') as f:
+                daily_data = json.load(f)
+            all_sessions.extend(daily_data.get("sessions", []))
+        if len(all_sessions) >= count * 2:
+            break
+
+    # Deduplicate and load session data
+    seen = set()
+    sessions_with_data = []
+    for session_id in all_sessions:
+        if session_id in seen:
+            continue
+        seen.add(session_id)
+        session_file = _get_session_file(session_id)
+        if session_file.exists():
+            with open(session_file, 'r') as f:
+                data = json.load(f)
+            first_msg = data.get("messages", [{}])[0] if data.get("messages") else {}
+            sessions_with_data.append({
+                "session_id": session_id,
+                "date": data.get("updated", data.get("created", ""))[:10],
+                "time": data.get("updated", data.get("created", ""))[11:16],
+                "message_count": len(data.get("messages", [])),
+                "preview": first_msg.get("user", "")[:100]
+            })
+
+    # Sort by date+time descending (most recent first)
+    sessions_with_data.sort(key=lambda x: x.get("date", "") + x.get("time", ""), reverse=True)
+    return {"conversations": sessions_with_data[:count]}
+
+
+@app.post("/api/conversations/fork")
+async def fork_conversation(request: ForkRequest):
+    """
+    Fork an existing conversation into a new session.
+
+    Creates a new session with a new ID, pre-populated with messages
+    from the original conversation. The original is not modified.
+    """
+    from ..tools.interaction.conversation_history import load_conversation_into_context
+
+    messages = load_conversation_into_context(session_id=request.session_id)
+    if not messages:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # Create new session with fresh agent
+    new_session_id = str(uuid.uuid4())
+    agent = create_agent(persona_name="interaction", tools=INTERACTION_TOOLS)
+
+    # Pre-populate agent context with old messages
+    context = agent.get_context()
+    for msg in messages:
+        context.append({"role": msg["role"], "content": msg["content"]})
+
+    sessions[new_session_id] = {
+        "agent": agent,
+        "created": datetime.now(),
+        "last_used": datetime.now(),
+        "forked_from": request.session_id
+    }
+
+    return {
+        "new_session_id": new_session_id,
+        "forked_from": request.session_id,
+        "messages": messages
+    }
 
 
 # ============== Server-Sent Events ==============

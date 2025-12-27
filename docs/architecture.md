@@ -859,8 +859,13 @@ Notifications are enriched by the web layer with additional UI fields:
 ## API Reference
 
 ```
-POST /api/chat              # Send message, get response
-POST /api/upload            # Upload file to inbox
+POST /api/chat                          # Send message, get response
+POST /api/upload                        # Upload file to inbox
+
+GET  /api/conversations/recent          # Recent conversations (text preview)
+GET  /api/conversations/recent/structured  # Recent conversations (structured JSON for UI)
+GET  /api/conversations/history         # Load specific conversation by session_id or date
+POST /api/conversations/fork            # Fork conversation into new session
 
 GET  /api/logs/{year}/{date}
 GET  /api/logs/search?q=
@@ -890,6 +895,10 @@ DELETE /api/projects/{id}
 GET  /api/notifications
 POST /api/notifications/{id}/seen
 POST /api/notifications/{id}/dismiss
+
+GET  /api/sessions                      # List active sessions
+POST /api/sessions/new                  # Create new session (for UI clear)
+DELETE /api/sessions/{id}               # Delete a session
 
 GET  /api/events            # SSE stream for real-time updates
 
@@ -985,7 +994,8 @@ The `/api/context` endpoint auto-detects the appropriate view:
 
 **Side Panels:**
 - Notifications panel (bell icon) — agent activity, proactive surfaces
-- Tasks panel (list icon) — today's tasks, projects
+- Focus panel (list icon) — today's tasks, projects
+- History panel (clock icon) — recent conversations, click to continue
 - Slide in from right, updates via SSE
 - Quick-add task input
 
