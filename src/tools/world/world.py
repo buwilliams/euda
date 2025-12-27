@@ -194,23 +194,20 @@ def get_discovery_context() -> str:
     Get context for opportunity discovery.
 
     Returns:
-        Current values and constraints for discovery
+        Current profile and constraints for discovery
     """
-    from ..values.values import get_current_values, get_phase_values
+    from ..synthesis.profile import get_synthesis_summary
 
-    current = get_current_values()
-    phase = get_phase_values()
+    summary = get_synthesis_summary()
 
     output = """## Discovery Context
 
-### Current Values
+### Identity Profile
 """
-    output += current if not current.startswith("No current") else "Not yet defined.\n"
-
-    output += "\n### Life Phase Values\n"
-    output += phase if not phase.startswith("No phase") else "Not yet defined.\n"
+    output += summary if not summary.startswith("No identity") else "Not yet defined.\n"
 
     output += """
+
 ### Discovery Guidelines
 
 **90% Aligned**: Opportunities that clearly match stated values

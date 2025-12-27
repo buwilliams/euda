@@ -302,42 +302,35 @@ def update_received_card_status(from_agent: str, new_status: str) -> str:
 
 def generate_cards_from_values() -> str:
     """
-    Generate card drafts from current values.
+    Generate card drafts from profile.
 
     Returns:
         Status message with guidance
     """
-    from ..values.values import get_current_values, get_phase_values, get_lifetime_values
+    from ..synthesis.profile import get_profile
 
-    current = get_current_values()
-    phase = get_phase_values()
-    lifetime = get_lifetime_values()
+    profile = get_profile()
 
     output = """## Card Generation Context
 
-Use the values below to generate both internal and public cards.
+Use the profile below to generate both internal and public cards.
 
-### Current Values
+### Identity Profile
 """
-    output += current if not current.startswith("No current") else "Not defined yet.\n"
-
-    output += "\n### Phase Values\n"
-    output += phase if not phase.startswith("No phase") else "Not defined yet.\n"
-
-    output += "\n### Lifetime Values\n"
-    output += lifetime if not lifetime.startswith("No lifetime") else "Not defined yet.\n"
+    output += profile[:3000] if not profile.startswith("No identity") else "Not defined yet.\n"
 
     output += """
+
 ### Instructions
 
 **For Internal Card** (write_internal_card):
-- Include all values in full detail
+- Include key identity constraints and behavioral patterns
 - Be comprehensive about priorities and interests
 - Include preferences and boundaries
 - This is for agent use, not sharing
 
 **For Public Card** (write_public_card):
-- Summarize values concisely
+- Summarize identity concisely
 - Focus on what enables connection
 - Be clear about what you're open to
 - Respect privacy - only share what's comfortable

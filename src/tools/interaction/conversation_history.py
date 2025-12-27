@@ -661,25 +661,17 @@ def suggest_activities(context: str = "") -> str:
     Returns:
         Personalized activity suggestions
     """
-    from ..values.values import get_current_values, get_phase_values, get_lifetime_values
+    from ..synthesis.profile import get_profile
     from ..world.world import get_opportunities
     from ..shared.log import get_recent_entries
 
     # Gather context
     sections = []
 
-    # Values
-    current_values = get_current_values()
-    if not current_values.startswith("No current"):
-        sections.append(("Current Values", current_values))
-
-    phase_values = get_phase_values()
-    if not phase_values.startswith("No phase"):
-        sections.append(("Phase Values", phase_values))
-
-    lifetime_values = get_lifetime_values()
-    if not lifetime_values.startswith("No lifetime"):
-        sections.append(("Lifetime Values", lifetime_values))
+    # Profile (identity, values, behavioral patterns)
+    profile = get_profile()
+    if not profile.startswith("No identity"):
+        sections.append(("Identity Profile", profile[:2000]))
 
     # Opportunities
     opportunities = get_opportunities(include_surfaced=False)
@@ -736,16 +728,16 @@ def get_personalized_context() -> str:
     Returns:
         Combined context from values, recent activity, and patterns
     """
-    from ..values.values import get_all_values
+    from ..synthesis.profile import get_profile
     from ..shared.log import get_recent_entries
 
     lines = ["## User Context"]
 
-    # Values
-    values = get_all_values()
-    if not values.startswith("No values"):
-        lines.append("\n### Values")
-        lines.append(values[:1500])
+    # Profile
+    profile = get_profile()
+    if not profile.startswith("No identity"):
+        lines.append("\n### Identity Profile")
+        lines.append(profile[:1500])
 
     # Recent activity
     recent = get_recent_entries(days=3)
