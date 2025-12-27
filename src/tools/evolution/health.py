@@ -15,7 +15,7 @@ from typing import Optional
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-SIGNALS_DIR = SHARED_DIR / "signals"
+SIGNALS_DIR = SHARED_DIR / "state" / "signals"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
 
 # Ensure directories exist
@@ -38,7 +38,7 @@ def assess_data_completeness() -> dict:
     }
 
     # Check biographical context
-    bio_file = SYNTHESIS_DIR / "context" / "biographical.md"
+    bio_file = SYNTHESIS_DIR / "state" / "context" / "biographical.md"
     if bio_file.exists():
         content = bio_file.read_text().strip()
         # Check if it has actual content beyond template
@@ -50,7 +50,7 @@ def assess_data_completeness() -> dict:
         results["biographical"]["missing"] = ["name", "location", "birth_date", "background"]
 
     # Check relationships
-    rel_file = SYNTHESIS_DIR / "context" / "relationships.md"
+    rel_file = SYNTHESIS_DIR / "state" / "context" / "relationships.md"
     if rel_file.exists():
         content = rel_file.read_text().strip()
         if len(content) > 100:
@@ -61,7 +61,7 @@ def assess_data_completeness() -> dict:
         results["relationships"]["missing"] = ["family", "close_friends", "community"]
 
     # Check values
-    values_dir = SYNTHESIS_DIR / "values"
+    values_dir = SYNTHESIS_DIR / "state" / "values"
     if values_dir.exists():
         current = (values_dir / "current.values.md").exists()
         lifetime = (values_dir / "lifetime.values.md").exists()
@@ -76,7 +76,7 @@ def assess_data_completeness() -> dict:
         results["values"]["missing"] = ["current_values", "lifetime_values"]
 
     # Check epistemic
-    epistemic_dir = SYNTHESIS_DIR / "epistemic"
+    epistemic_dir = SYNTHESIS_DIR / "state" / "epistemic"
     if epistemic_dir.exists():
         axioms = (epistemic_dir / "axioms.md").exists()
         if axioms:
@@ -87,7 +87,7 @@ def assess_data_completeness() -> dict:
         results["epistemic"]["missing"] = ["axioms", "mental_models"]
 
     # Check behaviors
-    behaviors_dir = SYNTHESIS_DIR / "behaviors"
+    behaviors_dir = SYNTHESIS_DIR / "state" / "behaviors"
     if behaviors_dir.exists():
         patterns = (behaviors_dir / "patterns.md").exists()
         if patterns:
@@ -133,7 +133,7 @@ def assess_configuration() -> dict:
         results["attention_preferences"]["missing"] = ["morning_time", "evening_time", "quiet_hours"]
 
     # Check if location is known (from biographical or elsewhere)
-    bio_file = SYNTHESIS_DIR / "context" / "biographical.md"
+    bio_file = SYNTHESIS_DIR / "state" / "context" / "biographical.md"
     if bio_file.exists():
         content = bio_file.read_text()
         if "location" in content.lower() or "city" in content.lower():
@@ -184,7 +184,7 @@ def assess_agent_activity() -> dict:
                 pass
 
     # Special check for ingestion - check queue
-    pending_dir = DATA_DIR / "ingestion" / "inbox" / "pending"
+    pending_dir = DATA_DIR / "ingestion" / "state" / "inbox" / "pending"
     if pending_dir.exists():
         pending_count = len([f for f in pending_dir.iterdir() if f.is_file() and not f.name.startswith('.')])
         results["ingestion"]["pending_files"] = pending_count
@@ -210,19 +210,19 @@ def get_progress_metrics() -> dict:
     }
 
     # Count processed files
-    processed_dir = DATA_DIR / "ingestion" / "inbox" / "processed"
+    processed_dir = DATA_DIR / "ingestion" / "state" / "inbox" / "processed"
     if processed_dir.exists():
         metrics["files_processed"] = len([f for f in processed_dir.iterdir() if f.is_file() and not f.name.startswith('.')])
 
     # Count log entries (rough estimate from lifelog)
-    lifelog_dir = SHARED_DIR / "lifelog"
+    lifelog_dir = SHARED_DIR / "state" / "lifelog"
     if lifelog_dir.exists():
         for year_dir in lifelog_dir.iterdir():
             if year_dir.is_dir():
                 metrics["log_entries"] += len(list(year_dir.glob("*.md")))
 
     # Count values
-    values_dir = SYNTHESIS_DIR / "values"
+    values_dir = SYNTHESIS_DIR / "state" / "values"
     if values_dir.exists():
         for values_file in values_dir.glob("*.values.md"):
             content = values_file.read_text()
@@ -230,13 +230,13 @@ def get_progress_metrics() -> dict:
             metrics["values_derived"] += content.count("\n- ")
 
     # Count patterns
-    patterns_file = SYNTHESIS_DIR / "behaviors" / "patterns.md"
+    patterns_file = SYNTHESIS_DIR / "state" / "behaviors" / "patterns.md"
     if patterns_file.exists():
         content = patterns_file.read_text()
         metrics["patterns_identified"] = content.count("## ") - 1  # Subtract header
 
     # Count opportunities
-    opps_file = DATA_DIR / "world" / "opportunities" / "opportunities.json"
+    opps_file = DATA_DIR / "world" / "state" / "opportunities" / "opportunities.json"
     if opps_file.exists():
         try:
             opps = json.loads(opps_file.read_text())

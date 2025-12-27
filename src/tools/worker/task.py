@@ -14,7 +14,7 @@ from typing import Optional
 # Base paths - Tasks are owned by Worker agent
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 WORKER_DIR = DATA_DIR / "worker"
-TASKS_DIR = WORKER_DIR / "tasks"
+TASKS_DIR = WORKER_DIR / "state" / "tasks"
 QUEUE_FILE = TASKS_DIR / "queue.json"
 DAILY_DIR = TASKS_DIR / "daily"
 RESULTS_DIR = TASKS_DIR / "results"

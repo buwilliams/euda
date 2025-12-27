@@ -11,7 +11,7 @@ from pathlib import Path
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
-BEHAVIORS_DIR = SYNTHESIS_DIR / "behaviors"
+BEHAVIORS_DIR = SYNTHESIS_DIR / "state" / "behaviors"
 
 # Ensure directory exists
 BEHAVIORS_DIR.mkdir(parents=True, exist_ok=True)

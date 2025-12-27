@@ -44,9 +44,9 @@ from .project import (
 # Data paths - Worker agent directory
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 WORKER_DIR = DATA_DIR / "worker"
-TASKS_FILE = WORKER_DIR / "tasks" / "queue.json"
-PENDING_FILE = WORKER_DIR / "actions" / "pending.json"
-COMPLETED_FILE = WORKER_DIR / "actions" / "completed.json"
+TASKS_FILE = WORKER_DIR / "state" / "tasks" / "queue.json"
+PENDING_FILE = WORKER_DIR / "state" / "actions" / "pending.json"
+COMPLETED_FILE = WORKER_DIR / "state" / "actions" / "completed.json"
 CONFIG_FILE = WORKER_DIR / "config" / "integrations.json"
 
 

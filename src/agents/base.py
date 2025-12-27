@@ -36,7 +36,7 @@ load_dotenv(ENV_FILE, override=True)
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-IDENTITY_DIR = SHARED_DIR / "identity"
+IDENTITY_DIR = SHARED_DIR / "state" / "identity"
 
 
 def load_file(path: Path) -> str:
@@ -266,7 +266,7 @@ def create_agent(
 # ============== Autonomous Agent Base ==============
 
 # Signals directory (shared across agents)
-SIGNALS_DIR = SHARED_DIR / "signals"
+SIGNALS_DIR = SHARED_DIR / "state" / "signals"
 SIGNALS_DIR.mkdir(parents=True, exist_ok=True)
 
 

@@ -15,9 +15,9 @@ from pathlib import Path
 # Base paths - Synthesis agent uses shared log and synthesis data
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-LOG_DIR = SHARED_DIR / "lifelog"
+LOG_DIR = SHARED_DIR / "state" / "lifelog"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
-VALUES_DIR = SYNTHESIS_DIR / "values"
+VALUES_DIR = SYNTHESIS_DIR / "state" / "values"
 
 # Ensure values directory exists
 VALUES_DIR.mkdir(parents=True, exist_ok=True)

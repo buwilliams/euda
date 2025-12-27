@@ -21,7 +21,7 @@ from typing import Optional
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SRC_DIR = Path(__file__).parent.parent.parent
 SHARED_DIR = DATA_DIR / "shared"
-IDENTITY_DIR = SHARED_DIR / "identity"
+IDENTITY_DIR = SHARED_DIR / "state" / "identity"
 AGENTS_DIR = SRC_DIR / "agents"
 TOOLS_DIR = SRC_DIR / "tools"
 EVOLUTION_DIR = DATA_DIR / "evolution" / "output"
@@ -325,10 +325,10 @@ def get_system_overview() -> str:
 - **Tools Modules**: {tools_count} available
 
 ## Key Directories
-- `data/shared/identity/` - Agent personas and beliefs
+- `data/shared/state/identity/` - Agent personas and beliefs
 - `src/agents/` - Agent implementations
 - `src/tools/` - Tool definitions and handlers
-- `data/shared/lifelog/` - Life log entries
+- `data/shared/state/lifelog/` - Life log entries
 - `data/worker/` - Project and task management
 - `data/synthesis/` - User identity (values, epistemic, behaviors, context)
 

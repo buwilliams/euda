@@ -13,7 +13,7 @@ from typing import Optional
 # Base paths - Notifications are shared
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-NOTIFICATIONS_DIR = SHARED_DIR / "notifications"
+NOTIFICATIONS_DIR = SHARED_DIR / "state" / "notifications"
 NOTIFICATIONS_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -141,7 +141,7 @@ def check_for_pending_approvals() -> list:
     evolutions = get_pending_evolutions()
     if "No pending" not in evolutions:
         # Parse the pending evolutions and create notifications
-        EVOLUTION_DIR = SHARED_DIR / "evolution"
+        EVOLUTION_DIR = SHARED_DIR / "state" / "evolution"
         for f in EVOLUTION_DIR.glob("*.json"):
             with open(f, 'r') as file:
                 proposal = json.load(file)

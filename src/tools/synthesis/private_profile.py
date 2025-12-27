@@ -18,7 +18,7 @@ from typing import Optional
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
-PROFILE_DIR = SYNTHESIS_DIR / "profile"  # User profile data lives under synthesis
+PROFILE_DIR = SYNTHESIS_DIR / "state" / "profile"  # User profile data lives under synthesis
 
 # Ensure directory exists
 PROFILE_DIR.mkdir(parents=True, exist_ok=True)

@@ -13,7 +13,7 @@ import re
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
-CONTEXT_DIR = SYNTHESIS_DIR / "context"
+CONTEXT_DIR = SYNTHESIS_DIR / "state" / "context"
 
 # Ensure directory exists
 CONTEXT_DIR.mkdir(parents=True, exist_ok=True)

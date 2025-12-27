@@ -11,9 +11,9 @@ import json
 # Base paths - Attention agent uses shared signals and its own queue
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-SIGNALS_DIR = SHARED_DIR / "signals"
+SIGNALS_DIR = SHARED_DIR / "state" / "signals"
 ATTENTION_DIR = DATA_DIR / "attention"
-QUEUES_DIR = ATTENTION_DIR / "queue"
+QUEUES_DIR = ATTENTION_DIR / "state" / "queue"
 
 # Ensure directories exist
 SIGNALS_DIR.mkdir(parents=True, exist_ok=True)

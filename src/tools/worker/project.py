@@ -13,8 +13,8 @@ from typing import Optional
 # Base paths - Projects are owned by Worker agent
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 WORKER_DIR = DATA_DIR / "worker"
-PROJECTS_DIR = WORKER_DIR / "projects"
-ARCHIVE_DIR = WORKER_DIR / "archive"
+PROJECTS_DIR = WORKER_DIR / "state" / "projects"
+ARCHIVE_DIR = WORKER_DIR / "state" / "archive"
 
 # Ensure directories exist
 PROJECTS_DIR.mkdir(parents=True, exist_ok=True)

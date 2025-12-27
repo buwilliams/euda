@@ -23,7 +23,7 @@ INGESTION_DIR = DATA_DIR / "ingestion"
 QUEUE_FILE = INGESTION_DIR / "state" / "queue.json"  # Queue state lives in state/
 
 # Inbox directories are under ingestion
-INBOX_DIR = INGESTION_DIR / "inbox"
+INBOX_DIR = INGESTION_DIR / "state" / "inbox"
 PENDING_DIR = INBOX_DIR / "pending"
 PROCESSING_DIR = INBOX_DIR / "processing"
 DEFERRED_DIR = INBOX_DIR / "deferred"

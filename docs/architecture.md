@@ -310,83 +310,98 @@ euno/
 │       └── app.py              # FastAPI server
 │
 └── data/                       # Agent-oriented data
-    ├── shared/                 # Cross-agent resources (system config)
-    │   ├── lifelog/            # Life log (written by ingestion, read by many)
-    │   │   └── [yyyy]/
-    │   │       ├── [yyyy-mm-dd].md
-    │   │       └── _manifest.md
-    │   ├── signals/            # Inter-agent triggers
-    │   ├── identity/           # Agent identity files
-    │   │   ├── _core.identity.md
-    │   │   └── [agent].identity.md
-    │   ├── profile/            # Profile contract and policy (system config)
-    │   │   ├── profile.contract.md
-    │   │   └── redaction.policy.md
-    │   ├── config/             # Shared configuration
-    │   ├── evolution/          # Identity evolution proposals
-    │   └── notifications/      # User notifications
     │
-    ├── ingestion/              # Ingestion Agent data
-    │   ├── state/              # state.json, queue.json, budget.json
+    │   # Standard agent pattern: config/, logs/, prompts/, state/
+    │   # - config/  : Agent configuration files
+    │   # - logs/    : Agent activity logs (stdout)
+    │   # - prompts/ : Prompt templates used by Python
+    │   # - state/   : All data the agent reads or writes
+    │
+    ├── shared/                 # Cross-agent resources
+    │   ├── config/             # System-wide configuration
+    │   ├── logs/               # System-wide logs
+    │   └── state/              # System-wide state
+    │       ├── identity/       # Agent identity files
+    │       │   ├── _core.identity.md
+    │       │   └── [agent].identity.md
+    │       ├── profile/        # Profile contract and policy
+    │       │   ├── profile.contract.md
+    │       │   └── redaction.policy.md
+    │       ├── lifelog/        # Life log entries
+    │       │   └── [yyyy]/
+    │       │       └── [yyyy-mm-dd].md
+    │       ├── signals/        # Inter-agent triggers
+    │       ├── notifications/  # User notifications
+    │       └── evolution/      # Identity evolution proposals
+    │
+    ├── ingestion/              # Ingestion Agent (The Archivist)
     │   ├── config/             # config.json, processed_hashes.json
+    │   ├── logs/
     │   ├── prompts/            # process_file.md
-    │   ├── inbox/              # pending/, processing/, processed/, failed/, deferred/
-    │   ├── digests/            # {hash}.json files (LLM-generated summaries)
-    │   └── logs/               # Ingestion activity logs
+    │   └── state/
+    │       ├── inbox/          # pending/, processing/, processed/, failed/, deferred/
+    │       ├── digests/        # {hash}.json files (LLM summaries)
+    │       ├── state.json
+    │       ├── queue.json
+    │       └── budget.json
     │
-    ├── summary/                # Summary Agent data
-    │   ├── state/              # state.json
+    ├── summary/                # Summary Agent (The Historian)
+    │   ├── config/
+    │   ├── logs/
     │   ├── prompts/            # summarize_year.md
-    │   └── logs/               # Summary activity logs
+    │   └── state/
     │
-    ├── synthesis/              # Synthesis Agent data (epistemic at foundation)
-    │   ├── state/              # state.json
+    ├── synthesis/              # Synthesis Agent (The Keeper)
+    │   ├── config/
+    │   ├── logs/
     │   ├── prompts/            # temporal.md
-    │   ├── profile/            # User profile data (governance-controlled)
-    │   │   ├── profile.current.md       # Current private profile (Synthesis writes)
-    │   │   ├── profile.YYYY.md          # Annual private snapshots
-    │   │   ├── profile.public.current.md  # Current public profile
-    │   │   ├── profile.public.YYYY.md   # Annual public snapshots
-    │   │   └── share.prefs.current.md   # User sharing preferences
-    │   ├── epistemic/          # Foundational: axioms.md, mental_models.md, tools.md
-    │   ├── values/             # Derived: current.values.md, phase.values.md, lifetime.values.md
-    │   ├── behaviors/          # Reveals: patterns.md
-    │   ├── context/            # Supporting: biographical.md, relationships.md, influences.md
-    │   ├── temporal/           # Evolution: {year}.profile.md, evolution.md, influences_timeline.md
-    │   ├── derived/            # current_profile.md (synthesized from temporal)
-    │   └── logs/               # Synthesis activity logs
+    │   └── state/
+    │       ├── profile/        # User profiles (governance-controlled)
+    │       ├── values/         # current.values.md, phase.values.md, lifetime.values.md
+    │       ├── behaviors/      # patterns.md
+    │       ├── epistemic/      # axioms.md, mental_models.md, tools.md
+    │       ├── context/        # biographical.md, relationships.md, influences.md
+    │       ├── temporal/       # {year}.profile.md
+    │       └── derived/        # current_profile.md
     │
-    ├── world/                  # World Agent data
-    │   ├── state/              # state.json
+    ├── world/                  # World Agent (The Scout)
+    │   ├── config/
+    │   ├── logs/
     │   ├── prompts/            # discovery_sweep.md
-    │   ├── opportunities/      # opportunities.json
-    │   └── logs/               # World activity logs
+    │   └── state/
+    │       └── opportunities/  # opportunities.json
     │
-    ├── attention/              # Attention Agent data
-    │   ├── state/              # state.json, surfaced.json (tracks asked questions)
+    ├── attention/              # Attention Agent (The Curator)
+    │   ├── config/
+    │   ├── logs/
     │   ├── prompts/            # morning.md, evening.md, proactive.md
-    │   ├── queue/              # surfacing_queue.json, energy logs
-    │   └── logs/               # Attention activity logs
+    │   └── state/
+    │       └── queue/          # surfacing_queue.json, energy logs
     │
-    ├── interaction/            # Interaction Agent data
-    │   ├── state/              # state.json
-    │   ├── conversations/      # session files
-    │   ├── cards/              # received cards
-    │   └── logs/               # Interaction activity logs
+    ├── interaction/            # Interaction Agent (The Caring Friend)
+    │   ├── config/
+    │   ├── logs/
+    │   ├── prompts/
+    │   └── state/
+    │       ├── conversations/  # session files
+    │       └── cards/          # received cards
     │
-    ├── worker/                 # Worker Agent data
-    │   ├── state/              # state.json
+    ├── worker/                 # Worker Agent (The Executor)
+    │   ├── config/
+    │   ├── logs/
     │   ├── prompts/            # process_tasks.md, execute_actions.md
-    │   ├── tasks/              # queue.json, daily/, results/
-    │   ├── projects/           # {id}.json files
-    │   ├── actions/            # pending/, completed/
-    │   └── logs/               # Worker activity logs
+    │   └── state/
+    │       ├── tasks/          # queue.json, daily/, results/
+    │       ├── projects/       # {id}.json files
+    │       ├── actions/        # pending/, completed/
+    │       └── archive/
     │
-    └── evolution/              # Evolution Agent data
-        ├── state/              # state.json
+    └── evolution/              # Evolution Agent (The Evolver)
+        ├── config/
+        ├── logs/
         ├── prompts/            # assess_health.md, analyze_system.md, check_evolution.md
-        ├── output/             # capabilities.md
-        └── logs/               # Evolution activity logs
+        └── state/
+            └── output/         # capabilities.md
 ```
 
 ---
@@ -399,8 +414,8 @@ Profiles are authoritative artifacts representing user identity. To prevent corr
 
 | Type | Location | Authority | Purpose |
 |------|----------|-----------|---------|
-| Private | `data/synthesis/profile/profile.current.md` | Synthesis Agent | Internal identity model |
-| Public | `data/synthesis/profile/profile.public.current.md` | Public Profile Generator | Safe external sharing |
+| Private | `data/synthesis/state/profile/profile.current.md` | Synthesis Agent | Internal identity model |
+| Public | `data/synthesis/state/profile/profile.public.current.md` | Public Profile Generator | Safe external sharing |
 
 ### Write Authority
 

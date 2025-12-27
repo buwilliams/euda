@@ -14,8 +14,8 @@ from typing import Optional
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-LOG_DIR = SHARED_DIR / "lifelog"
-SIGNALS_DIR = SHARED_DIR / "signals"
+LOG_DIR = SHARED_DIR / "state" / "lifelog"
+SIGNALS_DIR = SHARED_DIR / "state" / "signals"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
 WORKER_DIR = DATA_DIR / "worker"
 ATTENTION_DIR = DATA_DIR / "attention"
@@ -184,7 +184,7 @@ def compute_noticed_patterns() -> dict:
     }
 
     # Check for relationship neglect
-    relationships_file = SYNTHESIS_DIR / "context" / "relationships.md"
+    relationships_file = SYNTHESIS_DIR / "state" / "context" / "relationships.md"
     if relationships_file.exists():
         with open(relationships_file, 'r') as f:
             content = f.read()
@@ -470,7 +470,7 @@ def get_context_for_view(view_mode: str = None) -> dict:
             "current_activity": "Deep work"  # Default
         }
         # Count unsurfaced items
-        queue_file = ATTENTION_DIR / "queue" / "surfacing.json"
+        queue_file = ATTENTION_DIR / "state" / "queue" / "surfacing.json"
         surfaced_count = 0
         if queue_file.exists():
             with open(queue_file, 'r') as f:

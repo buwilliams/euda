@@ -23,7 +23,7 @@ from pathlib import Path
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
-EPISTEMIC_DIR = SYNTHESIS_DIR / "epistemic"
+EPISTEMIC_DIR = SYNTHESIS_DIR / "state" / "epistemic"
 
 # Ensure directory exists
 EPISTEMIC_DIR.mkdir(parents=True, exist_ok=True)

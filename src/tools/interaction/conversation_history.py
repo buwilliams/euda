@@ -14,7 +14,7 @@ import re
 
 # Base paths - Conversations are owned by Interaction agent
 BASE_DIR = Path(__file__).parent.parent.parent
-CONVERSATIONS_DIR = BASE_DIR / "data" / "interaction" / "conversations"
+CONVERSATIONS_DIR = BASE_DIR / "data" / "interaction" / "state" / "conversations"
 
 
 def _ensure_dirs():

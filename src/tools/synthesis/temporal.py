@@ -21,7 +21,7 @@ import json
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
-TEMPORAL_DIR = SYNTHESIS_DIR / "temporal"
+TEMPORAL_DIR = SYNTHESIS_DIR / "state" / "temporal"
 LOG_DIR = DATA_DIR / "shared" / "lifelog"
 
 # Ensure directory exists
@@ -316,7 +316,7 @@ Generated: {datetime.now().isoformat()}
 """
 
     # Save the current profile
-    current_file = SYNTHESIS_DIR / "derived" / "current_profile.md"
+    current_file = SYNTHESIS_DIR / "state" / "derived" / "current_profile.md"
     current_file.parent.mkdir(parents=True, exist_ok=True)
     with open(current_file, 'w') as f:
         f.write(result)

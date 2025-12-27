@@ -9,7 +9,7 @@ from pathlib import Path
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-LOG_DIR = SHARED_DIR / "lifelog"
+LOG_DIR = SHARED_DIR / "state" / "lifelog"
 
 
 def ensure_year_dir(year: int) -> Path:

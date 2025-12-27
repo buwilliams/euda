@@ -55,60 +55,56 @@ TEST_CORE_FILES = [
 
 # Directories to PRESERVE (not cleared) - only system config, not user data
 PRESERVE_DIRS = [
-    "shared/identity",           # Agent identity files
-    "shared/profile",            # Profile contract and policy
+    # Shared system config
+    "shared/state/identity",     # Agent identity files
+    "shared/state/profile",      # Profile contract and policy
     "shared/config",             # LLM config
-    "ingestion/prompts",         # Ingestion prompts
-    "synthesis/prompts",         # Synthesis prompts
-    "attention/prompts",         # Attention prompts
-    "worker/prompts",            # Worker prompts
-    "evolution/prompts",         # Evolution prompts
+    # Agent prompts (all agents)
+    "ingestion/prompts",
+    "summary/prompts",
+    "synthesis/prompts",
+    "world/prompts",
+    "attention/prompts",
+    "interaction/prompts",
+    "worker/prompts",
+    "evolution/prompts",
 ]
 
 # Directories to CLEAR (remove contents but keep .gitkeep)
+# Standard pattern: each agent has config/, logs/, prompts/, state/
+# We clear state/ and logs/, preserve config/ and prompts/
 CLEAR_DIRS = [
-    # Shared agent data
-    "shared/lifelog",            # Generated log entries
-    "shared/signals",            # Inter-agent signals
-    "shared/notifications",      # User notifications
-    "shared/evolution",          # Identity evolution proposals
-    # Ingestion data (ALL of it - test data comes from test_core/)
-    "ingestion/state",           # Ingestion state (includes queue.json)
-    "ingestion/config",          # Processed hashes, etc.
-    "ingestion/digests",         # File digests
-    "ingestion/logs",            # Ingestion logs
-    "ingestion/inbox/processed", # Processed source files (backed up elsewhere)
-    "ingestion/inbox/pending",   # Files awaiting processing
-    "ingestion/inbox/failed",    # Failed files
-    "ingestion/inbox/deferred",  # Deferred files
-    # Synthesis data
-    "synthesis/state",           # Synthesis state
-    "synthesis/epistemic",       # Generated epistemic data
-    "synthesis/values",          # Generated values
-    "synthesis/behaviors",       # Generated behaviors
-    "synthesis/context",         # Generated context
-    "synthesis/temporal",        # Temporal profiles
-    "synthesis/derived",         # Derived profiles
-    # World data
-    "world/state",               # World state
-    "world/opportunities",       # Discovered opportunities
-    # Attention data
-    "attention/state",           # Attention state
-    "attention/queue",           # Surfacing queue
-    # Interaction data
-    "interaction/state",         # Interaction state
-    "interaction/conversations", # Conversation history
-    # Worker data
-    "worker/state",              # Worker state
-    "worker/tasks",              # Task queue and results
-    "worker/projects",           # Projects
-    "worker/actions",            # Pending/completed actions
-    # Evolution data
-    "evolution/state",           # Evolution state
-    "evolution/output",          # Evolution output
-    "evolution/logs",            # Evolution logs
-    # User profile data (preferences, not system contract)
-    "synthesis/profile",         # User profiles and sharing preferences
+    # Shared state (lifelog, signals, notifications, evolution proposals)
+    "shared/state/lifelog",
+    "shared/state/signals",
+    "shared/state/notifications",
+    "shared/state/evolution",
+    "shared/logs",
+    # Ingestion (state includes inbox, digests, queue.json)
+    "ingestion/state",
+    "ingestion/config",              # Processed hashes, etc.
+    "ingestion/logs",
+    # Summary
+    "summary/state",
+    "summary/logs",
+    # Synthesis (state includes values, behaviors, epistemic, context, profile, temporal, derived)
+    "synthesis/state",
+    "synthesis/logs",
+    # World (state includes opportunities)
+    "world/state",
+    "world/logs",
+    # Attention (state includes queue)
+    "attention/state",
+    "attention/logs",
+    # Interaction (state includes conversations, cards)
+    "interaction/state",
+    "interaction/logs",
+    # Worker (state includes tasks, projects, actions, archive)
+    "worker/state",
+    "worker/logs",
+    # Evolution (state includes output)
+    "evolution/state",
+    "evolution/logs",
 ]
 
 
@@ -159,7 +155,7 @@ def copy_test_core_to_pending(dry_run: bool = False) -> int:
 
     Returns count of files copied.
     """
-    pending_dir = DATA_DIR / "ingestion" / "inbox" / "pending"
+    pending_dir = DATA_DIR / "ingestion" / "state" / "inbox" / "pending"
 
     if not TEST_CORE_DIR.exists():
         print(f"  Error: Test core directory not found: {TEST_CORE_DIR}")

@@ -24,8 +24,8 @@ from .validate import validate_profile, ValidationResult
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
-PROFILE_DIR = SYNTHESIS_DIR / "profile"  # User profile data lives under synthesis
-CONTRACT_DIR = SHARED_DIR / "profile"    # System config (contract, policy)
+PROFILE_DIR = SYNTHESIS_DIR / "state" / "profile"  # User profile data lives under synthesis
+CONTRACT_DIR = SHARED_DIR / "state" / "profile"    # System config (contract, policy)
 
 
 @dataclass

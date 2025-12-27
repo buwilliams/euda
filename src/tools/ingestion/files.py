@@ -13,7 +13,7 @@ from pathlib import Path
 # Base paths - Ingestion agent owns inbox
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 INGESTION_DIR = DATA_DIR / "ingestion"
-INBOX_DIR = INGESTION_DIR / "inbox"
+INBOX_DIR = INGESTION_DIR / "state" / "inbox"
 PENDING_DIR = INBOX_DIR / "pending"
 PROCESSED_DIR = INBOX_DIR / "processed"
 FAILED_DIR = INBOX_DIR / "failed"

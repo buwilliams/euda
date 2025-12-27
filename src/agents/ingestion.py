@@ -47,7 +47,7 @@ ALL_HANDLERS = {
 # Inbox paths - now under ingestion agent directory
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 INGESTION_DIR = DATA_DIR / "ingestion"
-INBOX_DIR = INGESTION_DIR / "inbox"
+INBOX_DIR = INGESTION_DIR / "state" / "inbox"
 PENDING_DIR = INBOX_DIR / "pending"
 PROCESSING_DIR = INBOX_DIR / "processing"
 

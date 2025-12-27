@@ -14,8 +14,8 @@ from pathlib import Path
 # Base paths - Identity is shared, evolution is part of identity
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-IDENTITY_DIR = SHARED_DIR / "identity"
-EVOLUTION_DIR = SHARED_DIR / "evolution"
+IDENTITY_DIR = SHARED_DIR / "state" / "identity"
+EVOLUTION_DIR = SHARED_DIR / "state" / "evolution"
 EVOLUTION_DIR.mkdir(parents=True, exist_ok=True)
 
 

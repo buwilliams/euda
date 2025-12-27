@@ -23,7 +23,7 @@ from .context import get_biographical, get_relationships, get_influences
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
-DERIVED_DIR = SYNTHESIS_DIR / "derived"
+DERIVED_DIR = SYNTHESIS_DIR / "state" / "derived"
 
 # Ensure directory exists
 DERIVED_DIR.mkdir(parents=True, exist_ok=True)

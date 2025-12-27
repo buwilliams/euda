@@ -14,7 +14,7 @@ import json
 # Base paths - Cards are owned by Interaction agent
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 INTERACTION_DIR = DATA_DIR / "interaction"
-CARDS_DIR = INTERACTION_DIR / "cards"
+CARDS_DIR = INTERACTION_DIR / "state" / "cards"
 RECEIVED_DIR = CARDS_DIR / "received"
 
 # Ensure directories exist
