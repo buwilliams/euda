@@ -527,6 +527,50 @@ def get_conversation_data(session_id: str = None, date: str = None) -> dict:
     }
 
 
+def delete_conversation(session_id: str) -> str:
+    """
+    Permanently delete a conversation session.
+
+    Args:
+        session_id: The session to delete
+
+    Returns:
+        Confirmation or error message
+    """
+    _ensure_dirs()
+
+    session_file = _get_session_file(session_id)
+
+    if not session_file.exists():
+        return f"No conversation found with session ID: {session_id}"
+
+    # Delete the session file
+    session_file.unlink()
+
+    # Remove from all daily index files
+    daily_dir = CONVERSATIONS_DIR / "daily"
+    if not daily_dir.exists():
+        return f"Conversation {session_id[:8]}... deleted permanently."
+    for daily_file in daily_dir.glob("*.json"):
+        try:
+            with open(daily_file, 'r') as f:
+                daily_data = json.load(f)
+
+            if session_id in daily_data.get("sessions", []):
+                daily_data["sessions"].remove(session_id)
+
+                # Save updated index (or delete if empty)
+                if daily_data["sessions"]:
+                    with open(daily_file, 'w') as f:
+                        json.dump(daily_data, f, indent=2)
+                else:
+                    daily_file.unlink()
+        except (json.JSONDecodeError, IOError):
+            continue
+
+    return f"Conversation {session_id[:8]}... deleted permanently."
+
+
 # Tool definitions for the LLM
 CONVERSATION_HISTORY_TOOLS = [
     {

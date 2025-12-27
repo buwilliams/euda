@@ -2,14 +2,15 @@
 
 from .conversation import (
     CONVERSATION_TOOLS, CONVERSATION_HANDLERS,
-    clear_conversation, reset_clear_flag, was_clear_requested
+    clear_conversation, reset_clear_flag, was_clear_requested,
+    delete_current_conversation, reset_delete_flag, was_delete_requested
 )
 from .conversation_history import (
     CONVERSATION_HISTORY_TOOLS, CONVERSATION_HISTORY_HANDLERS,
     save_message, get_conversation, get_conversations_for_date,
     search_conversations, get_conversation_themes, get_recent_conversations,
     load_conversation_into_context, get_conversation_data,
-    suggest_activities, get_personalized_context
+    suggest_activities, get_personalized_context, delete_conversation
 )
 from .cards import (
     CARDS_TOOLS, CARDS_HANDLERS,
@@ -21,12 +22,13 @@ __all__ = [
     # Conversation tools
     'CONVERSATION_TOOLS', 'CONVERSATION_HANDLERS',
     'clear_conversation', 'reset_clear_flag', 'was_clear_requested',
+    'delete_current_conversation', 'reset_delete_flag', 'was_delete_requested',
     # Conversation history tools
     'CONVERSATION_HISTORY_TOOLS', 'CONVERSATION_HISTORY_HANDLERS',
     'save_message', 'get_conversation', 'get_conversations_for_date',
     'search_conversations', 'get_conversation_themes', 'get_recent_conversations',
     'load_conversation_into_context', 'get_conversation_data',
-    'suggest_activities', 'get_personalized_context',
+    'suggest_activities', 'get_personalized_context', 'delete_conversation',
     # Card tools
     'CARDS_TOOLS', 'CARDS_HANDLERS',
     'get_internal_card', 'get_public_card', 'write_public_card',

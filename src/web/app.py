@@ -26,7 +26,7 @@ from watchfiles import awatch, Change
 from ..agents.base import create_agent
 from ..agents.interaction import INTERACTION_TOOLS, INTERACTION_HANDLERS
 from ..tools.shared.log import read_log_entry, search_log, get_recent_entries, write_log_entry
-from ..tools.interaction.conversation_history import save_message, get_conversation_data, get_recent_conversations
+from ..tools.interaction.conversation_history import save_message, get_conversation_data, get_recent_conversations, delete_conversation
 from ..tools.synthesis import get_profile, get_synthesis_summary
 from ..tools.interaction.cards import (
     get_internal_card, get_public_card, write_public_card,
@@ -245,19 +245,30 @@ async def app_page():
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """Chat with the Interaction Agent."""
-    from ..tools.interaction.conversation import reset_clear_flag, was_clear_requested
+    from ..tools.interaction.conversation import (
+        reset_clear_flag, was_clear_requested,
+        reset_delete_flag, was_delete_requested
+    )
 
     session_id, agent = get_or_create_session(request.session_id)
 
     try:
-        # Reset the clear flag before processing
+        # Reset flags before processing
         reset_clear_flag()
+        reset_delete_flag()
 
         sessions[session_id]["last_used"] = datetime.now()
         response = agent.process(request.message, INTERACTION_HANDLERS)
 
         # Check if clear_conversation tool was called during processing
         clear_chat = was_clear_requested()
+        delete_chat = was_delete_requested()
+
+        # Handle delete request (also clears chat)
+        if delete_chat:
+            # Delete the conversation history permanently
+            delete_conversation(session_id)
+            clear_chat = True  # Also clear the session
 
         if clear_chat:
             # Clear the agent's context
@@ -271,7 +282,7 @@ async def chat(request: ChatRequest):
             }
             session_id = new_session_id
 
-        # Auto-log the conversation (skip if clearing)
+        # Auto-log the conversation (skip if clearing/deleting)
         if not clear_chat:
             write_log_entry(
                 content=f"**Me:** {request.message}\n\n**Friend:** {response}",
@@ -744,6 +755,19 @@ async def fork_conversation(request: ForkRequest):
         "forked_from": request.session_id,
         "messages": messages
     }
+
+
+@app.delete("/api/conversations/{session_id}")
+async def delete_conversation_endpoint(session_id: str):
+    """
+    Permanently delete a conversation from history.
+
+    This removes the session file and cleans up daily indices.
+    """
+    result = delete_conversation(session_id)
+    if "No conversation found" in result:
+        raise HTTPException(status_code=404, detail=result)
+    return {"status": "success", "message": result}
 
 
 # ============== Server-Sent Events ==============

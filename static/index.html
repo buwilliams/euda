@@ -586,6 +586,7 @@
             min-width: 0.9rem;
             text-align: center;
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            z-index: 1;
         }
 
         /* ============== Side Panels ============== */
@@ -777,6 +778,34 @@
             color: #999;
             font-style: italic;
             font-size: 0.9rem;
+        }
+
+        .history-item {
+            position: relative;
+        }
+
+        .history-delete {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.25rem 0.5rem;
+            transition: opacity 0.15s, color 0.15s;
+        }
+
+        .history-item:hover .history-delete {
+            opacity: 1;
+            right: 1rem; /* Compensate for hover padding-right */
+        }
+
+        .history-delete:hover {
+            color: #e74c3c;
         }
 
         .task-project-badge {
@@ -1350,6 +1379,7 @@
 
         // State
         let sessionId = localStorage.getItem('sessionId') || null;
+        let viewingHistorySessionId = null;  // Track which history conversation is being viewed
         let isWaiting = false;
         let activePanel = null;  // Always start collapsed
         let tasksData = [];
@@ -1951,6 +1981,7 @@
                 <div class="history-item" onclick="forkConversation('${item.session_id}')">
                     <div class="history-date">${item.date} ${item.time}</div>
                     <div class="history-preview">${escapeHtml(item.preview || 'No preview')}</div>
+                    <button class="history-delete" onclick="deleteConversation('${item.session_id}', event)" title="Delete conversation">&times;</button>
                 </div>
             `).join('');
         }
@@ -1967,6 +1998,7 @@
 
                 sessionId = data.new_session_id;
                 localStorage.setItem('sessionId', sessionId);
+                viewingHistorySessionId = oldSessionId;  // Track which history item we're viewing
 
                 inlineChat.style.display = 'block';
                 inlineMessages.innerHTML = '';
@@ -1979,6 +2011,31 @@
             } catch (error) {
                 console.error('Failed to fork conversation:', error);
                 alert('Failed to load conversation');
+            }
+        }
+
+        async function deleteConversation(targetSessionId, event) {
+            event.stopPropagation(); // Prevent triggering forkConversation
+            if (!confirm('Delete this conversation permanently?')) return;
+
+            try {
+                const response = await fetch(`/api/conversations/${targetSessionId}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error('Failed to delete');
+
+                // If we deleted the conversation we're currently viewing, clear the chat
+                if (targetSessionId === viewingHistorySessionId) {
+                    inlineMessages.innerHTML = '';
+                    inlineChat.style.display = 'none';
+                    viewingHistorySessionId = null;
+                }
+
+                // Refresh history list
+                await loadHistoryData();
+            } catch (error) {
+                console.error('Failed to delete conversation:', error);
+                alert('Failed to delete conversation');
             }
         }
 
