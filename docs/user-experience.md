@@ -4,6 +4,10 @@
 
 ## Core Philosophy
 
+Most tools wait for you to ask. Euno already knows.
+
+It knows because it understands who you are—your values, your failure modes, your patterns, what you'd rather suffer than violate. Not facts about you. *You.*
+
 Euno is **ambient and anticipatory**. It surfaces what matters without being asked. Chat is available for depth, but it's not the primary mode.
 
 The interface answers: **"What do I need to know right now?"** before you ask anything.
@@ -246,13 +250,22 @@ Chat isn't for commands. It's for:
 - Processing and reflecting
 - Making decisions with support
 - Going deep on something surfaced
+- Tapping expertise on any topic that matters to you
 
-### 6. Respectful of Attention
+A caring collaborator who knows you and can go deep when you need it.
 
+### 6. Guards Your Attention
+
+Engagement algorithms are designed to hijack your attention. Euno stands between you and that.
+
+- Read your feeds so you don't have to scroll them
+- Surface what actually matters, shield you from the rest
 - Don't show everything you know
 - Don't interrupt unless it matters
 - Batch and summarize
 - Protect focus as a feature
+
+Less screen time, less brain-rot, without losing touch.
 
 ## The Feeling
 

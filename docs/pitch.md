@@ -6,6 +6,22 @@
 
 ---
 
+## In One Minute
+
+> Today's AI can remember facts about you—your dog's name, your meeting preferences. But it doesn't actually know you. It can't anticipate what you need because it hasn't studied your life deeply enough to understand who you are.
+>
+> Euno is different. It's a personal intelligence that ingests your writing, photos, messages, and behaviors to build a real model of your identity—your values, your patterns, your failure modes. Not who you say you are. Who you actually are.
+>
+> And it doesn't wait for you to ask. It works proactively—highlighting what matters, noticing what you're avoiding, and actually doing tasks for you. Research, scheduling, ordering, follow-ups. Real work, off your plate, before you think to ask.
+>
+> It also curates. Engagement algorithms are designed to hijack your attention. Euno stands between you and that—reading your feeds, extracting what's important, shielding you from the rest. Less screen time, less brain-rot, without losing touch.
+>
+> The goal isn't productivity. It's flourishing. A caring collaborator that knows you deeply, can go deep on any topic, and gets better at anticipating you over years, not just sessions.
+>
+> That's Euno.
+
+---
+
 ## The Gap
 
 Today's AI remembers facts about you. Euno understands who you are.
@@ -126,18 +142,3 @@ From *Eudaimonia*—ancient Greek for "human flourishing." A deep sense of fulfi
 - [Architecture](architecture.md) — Technical implementation details
 - [User Experience](user-experience.md) — UI/UX philosophy
 
----
-
-## Elevator Pitch (1 minute)
-
-> Today's AI can remember facts about you—your dog's name, your meeting preferences. But it doesn't actually know you. It can't anticipate what you need because it hasn't studied your life deeply enough to understand who you are.
->
-> Euno is different. It's a personal intelligence that ingests your writing, photos, messages, and behaviors to build a real model of your identity—your values, your patterns, your failure modes. Not who you say you are. Who you actually are.
->
-> And it doesn't wait for you to ask. It works proactively—highlighting what matters, noticing what you're avoiding, and actually doing tasks for you. Research, scheduling, ordering, follow-ups. Real work, off your plate, before you think to ask.
->
-> It also curates. Engagement algorithms are designed to hijack your attention. Euno stands between you and that—reading your feeds, extracting what's important, shielding you from the rest. Less screen time, less brain-rot, without losing touch.
->
-> The goal isn't productivity. It's flourishing. A caring collaborator that knows you deeply, can go deep on any topic, and gets better at anticipating you over years, not just sessions.
->
-> That's Euno.
