@@ -25,7 +25,7 @@ MAX_SENTENCES_SUMMARY = 7
 # Entry types that preserve human expression (no length limit)
 VERBATIM_TYPES = {
     'journal', 'reflection', 'thought', 'musing', 'note',
-    'message', 'conversation', 'email', 'text', 'letter',
+    'message', 'conversation', 'chat', 'email', 'text', 'letter',
     'quote', 'idea', 'blog', 'writing'
 }
 
