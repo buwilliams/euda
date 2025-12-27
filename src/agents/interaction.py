@@ -18,11 +18,14 @@ This agent can:
 - Load and search previous conversation history
 - Analyze conversation themes over time
 - Suggest activities based on understanding of user (values, discoveries, patterns)
+- Emit profile observations for Synthesis Agent to integrate (behavioral patterns,
+  identity constraints, failure modes, value expressions, change signals)
 """
 
 from .base import create_agent
 from ..tools.shared.log import LOG_TOOLS, LOG_HANDLERS
 from ..tools.shared.guidance import GUIDANCE_TOOLS, GUIDANCE_HANDLERS, get_interaction_hints
+from ..tools.shared.profile_signals import PROFILE_SIGNAL_TOOLS, PROFILE_SIGNAL_HANDLERS
 from ..tools.world.fetch import FETCH_TOOLS, FETCH_HANDLERS
 from ..tools.synthesis import (
     get_current_values, get_phase_values, get_lifetime_values, get_all_values,
@@ -211,7 +214,8 @@ INTERACTION_TOOLS = (
     AGENT_LOG_TOOLS +
     CONVERSATION_TOOLS +
     CONVERSATION_HISTORY_TOOLS +
-    GUIDANCE_TOOLS
+    GUIDANCE_TOOLS +
+    PROFILE_SIGNAL_TOOLS  # For emitting profile observations to Synthesis
 )
 
 # Handlers for tool execution
@@ -224,6 +228,7 @@ INTERACTION_HANDLERS = {
     **CONVERSATION_HANDLERS,
     **CONVERSATION_HISTORY_HANDLERS,
     **GUIDANCE_HANDLERS,
+    **PROFILE_SIGNAL_HANDLERS,  # For emitting profile observations
     # Identity tools - values at core
     "get_current_values": get_current_values,
     "get_phase_values": get_phase_values,
