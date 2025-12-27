@@ -168,7 +168,37 @@ data/attention/state/patterns.cache.json          # Attention Agent: cached patt
 
 ### Proactive Behavior
 
-The system proactively surfaces questions and guidance to help users configure and understand Euno:
+The system proactively surfaces questions, opportunities, and insights to help users without waiting for requests:
+
+**World Agent Opportunity Discovery:**
+- Discovers opportunities based on user's synthesis profile
+- Creates tasks for aligned opportunities (90% of discoveries)
+- Expansive opportunities (10% surprise) stored for Attention to surface
+- Each opportunity includes alignment type, category, and expiration info
+
+**Attention Agent Proactive Surfacing:**
+
+*Gap Surfacing:*
+- Reads gaps signal from Evolution, picks highest priority unsurfaced gap
+- Surfaces as friendly notification ("Hey, I realized I don't know your name yet!")
+- Tracks what's been asked in `surfaced.json` with cooldowns
+- Respects cooldown periods (1 week for biographical, 1 day for energy)
+
+*Opportunity Mining:*
+- Surfaces expiring opportunities (within 7 days) with deadline reminders
+- Surfaces expansive opportunities (max 2/week) to introduce novelty safely
+- Tracks expansive surfacing to avoid overwhelm
+
+*Profile Mining (LLM-based):*
+- **Failure Mode Detection** — Compares recent lifelog against profile's failure modes section; surfaces interventions when patterns detected
+- **Stalled Project Detection** — Flags projects with no activity in 14+ days; creates nudge tasks
+- **Semantic Pattern Analysis** — Detects emotional patterns, recurring frustrations, implicit needs, value-behavior gaps
+- All LLM-based checks run at most once per day with cooldowns
+
+*Actionable Pattern Creation:*
+- Detects recurring intents from lifelog (mentioned 3+ times in 14 days)
+- Proactively creates projects/tasks from detected patterns
+- Throttled: 24hr cooldown between creations, max 3/week
 
 **Evolution Agent Health Assessment:**
 - Runs every 6 hours (or on first startup)
@@ -177,12 +207,6 @@ The system proactively surfaces questions and guidance to help users configure a
 - Identifies gaps with priorities (high/medium/low)
 - Writes `proactive_gaps.json` for Attention to surface
 - Writes `agent_guidance.json` to steer other agents
-
-**Attention Agent Gap Surfacing:**
-- Reads gaps signal, picks highest priority unsurfaced gap
-- Surfaces as friendly notification ("Hey, I realized I don't know your name yet!")
-- Tracks what's been asked in `surfaced.json` with cooldowns
-- Respects cooldown periods (1 week for biographical, 1 day for energy)
 
 **Agent Steering:**
 - Evolution writes guidance signals for specific agents
@@ -501,12 +525,20 @@ See `docs/governance.md` for complete governance specification.
 | Summary | 5min | `logs_updated` | `summaries_updated` | `_summary.hash` per year |
 | Synthesis | 10min | `summaries_updated` | `synthesis_updated` | `processed_summaries.hash` |
 | World | 1hr | `synthesis_updated`, 24hr timer | `opportunities_updated` | `processed_profile.hash` |
-| Attention | 5min | time windows, `proactive_gaps` | `attention_delivered` | `patterns.cache.json` |
+| Attention | 5min | time windows, `proactive_gaps`, opportunities, lifelog | `attention_delivered` | `patterns.cache.json`, `surfaced.json` |
 | Interaction | on-demand | user messages | — | — |
 | Worker | 30s | pending tasks, research tasks | `task_completed` | Task evaluation tracking |
 | Evolution | 30min | `synthesis_updated`, 6hr timer | `proactive_gaps`, `agent_guidance` | `processed_synthesis.hash` |
 
 **Hash verification prevents redundant work:** Agents verify that input data actually changed since their last run before processing, even when a signal is received. This prevents cascading unnecessary API calls when signals fire but underlying data is unchanged.
+
+**World Agent proactive outputs:** Creates tasks directly for aligned opportunities via `create_euno_task()`, surfacing discoveries without waiting for user to ask.
+
+**Attention Agent proactive checks:** Beyond time windows and gaps, the Attention Agent mines:
+- World opportunities (expiring deadlines, expansive novelty)
+- Synthesis profile (failure mode triggers)
+- Worker projects (stalled projects)
+- Lifelog content (semantic patterns via LLM analysis)
 
 ### Large-Scale Ingestion Strategy
 
