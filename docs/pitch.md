@@ -6,6 +6,8 @@
 
 **A personal intelligence that learns to anticipate you.**
 
+*Built for its creator first—refined through lived experience, not hypothetical users.*
+
 ---
 
 ## The Gap
@@ -22,46 +24,44 @@ And it doesn't wait for you to ask. Euno works proactively: surfacing what matte
 
 ## The Vision
 
-Imagine a lifelong friend with:
-- **Perfect memory** — Remembers every conversation, every commitment, every pattern
-- **Infinite patience** — Never frustrated, never distracted, always available
-- **Your values** — Understands what matters to you and acts accordingly
-- **No agenda** — Works for your flourishing, not engagement metrics
+Imagine a lifelong friend with perfect memory and infinite patience. Someone who remembers every conversation, every commitment, every pattern. Who understands what matters to you and acts accordingly. Who has no agenda except your flourishing.
 
-This friend doesn't wait for you to ask. It anticipates what you need. It notices what you're avoiding. It surfaces what matters before you forget.
+That's the relationship Euno is building toward.
 
-It's not an assistant you command. It's a caring collaborator who knows you.
+It's not an assistant you command. It's a caring collaborator who knows you—one that gets better at anticipating you over years, not just sessions.
+
+---
+
+## Why Now
+
+Three capabilities make this possible today:
+
+1. **Deep context** — Models can now hold and reason over vast amounts of personal data
+2. **Tool use** — AI can take real actions: search, fetch, schedule, order, communicate
+3. **Continuous operation** — Agents can run persistently, working in the background while you live your life
+
+The building blocks exist. What's missing is software that puts them together in service of a single person's flourishing—not engagement metrics, not ad revenue, not aggregate user behavior.
 
 ---
 
 ## What It Does Today
 
-Euno is a working system with eight specialized agents:
+Euno is a working system with specialized agents that handle different aspects of your life:
 
-| Agent | What It Does |
-|-------|--------------|
-| **The Archivist** | Ingests your life data—photos, documents, exports—and preserves it with high fidelity |
-| **The Historian** | Compresses your history without losing what matters; maintains your searchable life log |
-| **The Keeper** | Builds a predictive model of who you are—values, patterns, failure modes, rhythms |
-| **The Scout** | Explores the world for opportunities that fit you; filters out noise |
-| **The Curator** | Decides what deserves your attention right now based on your energy and capacity |
-| **The Caring Friend** | Talks with you like someone who actually knows you |
-| **The Executor** | Handles tasks autonomously; asks before acting on anything important |
-| **The Evolver** | Continuously refines the system to serve you better |
-
-**Current capabilities:**
-- Ingest and understand documents, photos, messages, and exports
-- Maintain a unified, searchable life log
-- Learn your values from patterns (not just what you say)
-- Surface what matters at the right moment
-- Execute tasks with appropriate autonomy
-- Have conversations that remember context across time
+- **Ingestion** — Reads your life data (photos, documents, exports) and preserves it with high fidelity
+- **Memory** — Maintains a unified, searchable life log across everything you've shared
+- **Identity modeling** — Builds a predictive model of who you are: values, patterns, failure modes, rhythms
+- **World scanning** — Explores opportunities that fit you; filters out noise
+- **Attention management** — Decides what deserves your attention based on your energy and capacity
+- **Conversation** — Talks with you like someone who actually knows you
+- **Task execution** — Handles work autonomously; asks before acting on anything important
+- **Self-improvement** — Continuously refines itself to serve you better
 
 ---
 
-## What It Could Do
+## Where It's Heading
 
-As Euno learns more about you, the possibilities expand:
+As Euno learns more about you, the capabilities deepen:
 
 ### For Parents
 - Understand your child's current season of life and surface age-appropriate guidance
@@ -126,7 +126,3 @@ Euno [U-no], from *Eudaimonia*—ancient Greek for "human flourishing." A deep s
 - [Vision](vision.md) — The full philosophy and long-term direction
 - [Architecture](architecture.md) — Technical implementation details
 - [User Experience](user-experience.md) — UI/UX philosophy
-
----
-
-*Euno is built for its creator first—refined through lived experience, not hypothetical users. Features get prioritized by real need, rough edges smoothed by real annoyance.*
