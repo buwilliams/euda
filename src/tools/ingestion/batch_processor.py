@@ -151,7 +151,12 @@ For EACH file, determine:
    - "message" / "conversation" / "email" for communications
    - "summary" for compressed data
 
-3. **Timestamp:** Use temporal hint if available, otherwise extract from content or leave null
+3. **Timestamp (CRITICAL for historical content):**
+   - If temporal hint has HIGH confidence → use it
+   - If content contains dates (e.g., "January 15, 2016", "2016-01-15") → extract and use that date
+   - If temporal hint has LOW confidence (file_mtime) but content is clearly from another time → use the content's actual date
+   - **The timestamp must be when the content was WRITTEN, not when it was uploaded**
+   - Historical content from 2016 MUST have a 2016 timestamp
 
 Return ONLY valid JSON in this exact format (no other text):
 {{
@@ -159,11 +164,11 @@ Return ONLY valid JSON in this exact format (no other text):
     {{
       "file_name": "example.txt",
       "content": "The log entry content...",
-      "timestamp": "2024-12-24T10:00:00",
+      "timestamp": "2016-01-15T10:00:00",
       "source": "text_file",
       "entry_type": "journal",
       "temporal_confidence": "high",
-      "temporal_source": "filename"
+      "temporal_source": "content"
     }}
   ]
 }}
@@ -172,9 +177,10 @@ IMPORTANT:
 - Include one entry per file, in the same order as the files below
 - For verbatim content, preserve the exact words
 - For data, summarize in 2-5 sentences
-- timestamp can be null if unknown
-- temporal_confidence: "high", "medium", or "low"
-- temporal_source: how you determined the timestamp (e.g., "filename", "content", "metadata", "inferred")
+- **timestamp is REQUIRED for historical content** - extract dates from content if needed
+- timestamp can only be null if absolutely no date can be determined
+- temporal_confidence: "high" (from content/filename), "medium" (inferred), "low" (uncertain)
+- temporal_source: how you determined the timestamp (e.g., "filename", "content", "metadata", "temporal_hint")
 
 FILES TO PROCESS:
 {''.join(files_content)}"""

@@ -92,7 +92,45 @@ class TextHandler(FileHandler):
 
     def get_temporal_hints(self, file_path: str, metadata: dict) -> dict:
         """Extract temporal hints from text file."""
-        # Use file modification time as fallback
+        import re
+
+        filename = Path(file_path).stem
+
+        # Priority 1: Check filename for date patterns
+        # Patterns like: 2016-01-15, 2016_01_15, 20160115, journal_2016-01-15
+        date_patterns = [
+            # ISO-like: 2016-01-15 or 2016_01_15
+            (r'(\d{4})[-_](\d{2})[-_](\d{2})', '%Y-%m-%d'),
+            # Compact: 20160115
+            (r'(\d{4})(\d{2})(\d{2})', '%Y%m%d'),
+            # US format: 01-15-2016
+            (r'(\d{2})[-_](\d{2})[-_](\d{4})', '%m-%d-%Y'),
+        ]
+
+        for pattern, date_fmt in date_patterns:
+            match = re.search(pattern, filename)
+            if match:
+                try:
+                    groups = match.groups()
+                    if date_fmt == '%Y-%m-%d':
+                        date_str = f"{groups[0]}-{groups[1]}-{groups[2]}"
+                    elif date_fmt == '%Y%m%d':
+                        date_str = f"{groups[0]}{groups[1]}{groups[2]}"
+                    elif date_fmt == '%m-%d-%Y':
+                        date_str = f"{groups[0]}-{groups[1]}-{groups[2]}"
+
+                    dt = datetime.strptime(date_str, date_fmt)
+                    # Sanity check: year should be reasonable (1970-2100)
+                    if 1970 <= dt.year <= 2100:
+                        return {
+                            "timestamp": dt.isoformat(),
+                            "confidence": "high",
+                            "source": "filename"
+                        }
+                except ValueError:
+                    continue
+
+        # Priority 2: File modification time (low confidence - could be copy date)
         modified = metadata.get("modified_time")
         if modified:
             return {
@@ -100,4 +138,5 @@ class TextHandler(FileHandler):
                 "confidence": "low",
                 "source": "file_mtime"
             }
+
         return super().get_temporal_hints(file_path, metadata)
