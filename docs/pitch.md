@@ -12,17 +12,17 @@ Today's AI remembers facts about you. Euno understands who you are.
 
 The difference matters. Memory features can recall that you have a dog named Max or prefer morning meetings. But they don't study your life deeply enough to build a coherent model of your identity—your values, your failure modes, your behavioral patterns, what you'd rather suffer than violate.
 
-Euno does that work. It ingests your writing, photos, messages, and behaviors. It looks for patterns across years of your life. It builds a predictive model of who you actually are—not who you say you are.
+**Euno does that work.** It ingests your writing, photos, messages, and behaviors. It looks for patterns across years of your life. It builds a predictive model of who you actually are—not who you say you are.
 
-And it doesn't wait for you to ask. Euno works proactively: surfacing what matters, noticing what you're avoiding, and actually doing tasks for you—research, scheduling, ordering, follow-ups—taking real work off your plate before you think to ask.
+**And it doesn't wait for you to ask.** Euno works proactively: surfacing what matters, noticing what you're avoiding, and actually doing tasks for you—research, scheduling, ordering, follow-ups—taking real work off your plate before you think to ask.
 
-And it curates. Engagement algorithms are designed to hijack your attention—infinite feeds engineered for clicks, not your wellbeing. Euno stands between you and that. It reads your feeds so you don't have to. It elevates what actually matters and shields you from the rest. Less screen time, less brain-rot, without missing what's important.
+**And it curates.** Engagement algorithms are designed to hijack your attention—infinite feeds engineered for clicks, not your wellbeing. Euno stands between you and that. It reads your feeds so you don't have to. It elevates what actually matters and shields you from the rest. Less screen time, less brain-rot, without missing what's important.
 
 ---
 
 ## The Vision
 
-Imagine a lifelong friend with perfect memory and infinite patience. Someone who remembers every conversation, every commitment, every pattern. Who understands what matters to you and acts accordingly. Who has no agenda except your flourishing.
+Imagine a lifelong friend with perfect memory, infinite patience, and the ability to go deep on any topic that matters to you. Someone who remembers every conversation, every commitment, every pattern. Who understands what matters to you and acts accordingly. Who has no agenda except your flourishing.
 
 That's the relationship Euno is building toward.
 
@@ -51,7 +51,7 @@ Euno is a working system with specialized agents that handle different aspects o
 - **The Keeper** — Builds a predictive model of who you are: values, patterns, failure modes, rhythms
 - **The Scout** — Explores opportunities that fit you; screens out the rest
 - **The Curator** — Guards your attention; reads feeds, delivers what counts
-- **The Caring Friend** — Talks with you like someone who actually knows you
+- **The Caring Friend** — Talks with you like someone who actually knows you; goes deep when you need it
 - **The Executor** — Handles work autonomously; asks before acting on anything important
 - **The Evolver** — Continuously refines the system to serve you better
 
@@ -62,7 +62,7 @@ Euno is a working system with specialized agents that handle different aspects o
 As Euno learns more about you, the capabilities deepen:
 
 ### For Parents
-- Understand your child's current season of life and surface age-appropriate guidance
+- Understand your child's current season of life and offer age-appropriate guidance
 - Remember what worked (and didn't) with older children
 - Coordinate logistics between family members who also use Euno
 
@@ -94,7 +94,7 @@ As Euno learns more about you, the capabilities deepen:
 - If others use Euno, exchange "public profiles" to find genuine connection points
 
 ### For Personal Growth
-- Surface opportunities that stretch you just enough (90% safe, 10% surprising)
+- Find opportunities that stretch you just enough (90% safe, 10% surprising)
 - Notice recurring interests you haven't acted on
 - Track what you're actually learning versus what you planned to learn
 
@@ -138,6 +138,6 @@ From *Eudaimonia*—ancient Greek for "human flourishing." A deep sense of fulfi
 >
 > It also curates. Engagement algorithms are designed to hijack your attention. Euno stands between you and that—reading your feeds, extracting what's important, shielding you from the rest. Less screen time, less brain-rot, without losing touch.
 >
-> The goal isn't productivity. It's flourishing. A caring collaborator that knows you deeply and gets better at anticipating you over years, not just sessions.
+> The goal isn't productivity. It's flourishing. A caring collaborator that knows you deeply, can go deep on any topic, and gets better at anticipating you over years, not just sessions.
 >
 > That's Euno.
