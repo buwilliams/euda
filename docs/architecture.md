@@ -259,7 +259,7 @@ euno/
 │   │   ├── base.py             # Agent factory, AutonomousAgent base
 │   │   ├── ingestion.py        # The Archivist
 │   │   ├── summary.py          # The Historian
-│   │   ├── synthesis.py        # The Keeper (epistemic axioms at foundation)
+│   │   ├── synthesis.py        # The Keeper (predictive identity model)
 │   │   ├── world.py            # The Scout
 │   │   ├── attention.py        # The Curator
 │   │   ├── interaction.py      # The Caring Friend
@@ -281,13 +281,10 @@ euno/
 │   │   │   ├── scorer.py
 │   │   │   ├── token_budget.py
 │   │   │   └── handlers/       # File type handlers
-│   │   ├── synthesis/          # Synthesis tools (epistemic at foundation)
-│   │   │   ├── epistemic.py    # Foundational: axioms, mental models, tools
-│   │   │   ├── values.py       # Derived: current, phase, lifetime values
-│   │   │   ├── behaviors.py    # Reveals: behavioral patterns
-│   │   │   ├── context.py      # Supporting: biographical, relationships, influences
-│   │   │   ├── temporal.py     # Evolution: year profiles, influence timeline
-│   │   │   ├── profile.py      # Consolidated profile
+│   │   ├── synthesis/          # Synthesis tools (predictive identity model)
+│   │   │   ├── temporal.py     # Yearly profiles, evolution, influence timeline
+│   │   │   ├── private_profile.py  # Contract-compliant behavioral profile
+│   │   │   ├── profile.py      # Profile access utilities
 │   │   │   └── summary.py      # Summary tools
 │   │   ├── world/              # World tools
 │   │   │   ├── world.py
@@ -354,9 +351,9 @@ euno/
     ├── synthesis/              # Synthesis Agent (The Keeper)
     │   ├── config/
     │   ├── logs/
-    │   ├── prompts/            # temporal.md
+    │   ├── prompts/            # temporal.md, extract_behavioral.md
     │   └── state/
-    │       └── profile/        # profile.current.md, profile.YYYY.md, evolution.md, influences_timeline.md
+    │       └── profile/        # profile.YYYY.md, profile.current.md, evolution.md, influences_timeline.md
     │
     ├── world/                  # World Agent (The Scout)
     │   ├── config/
@@ -453,7 +450,7 @@ See `docs/governance.md` for complete governance specification.
 |-------|---------------|----------|-------------|-----------|
 | Ingestion | 30s | `inbox_changed`, pending files | `logs_updated` | read_file, write_log, mark_processed |
 | Summary | 5min | `logs_updated` | `summaries_updated` | read_log, write_summary |
-| Synthesis | 10min | `summaries_updated` | `synthesis_updated` | read_summaries, write_epistemic, write_values |
+| Synthesis | 10min | `summaries_updated` | `synthesis_updated` | read_summaries, write_profile, extract_behavioral |
 | World | 1hr | `synthesis_updated`, 24hr timer | `opportunities_updated` | search_*, write_opportunity, get_guidance |
 | Attention | 5min | time windows, `proactive_gaps` | `attention_delivered` | read_*, queue_notification, surface_gaps |
 | Interaction | on-demand | user messages | — | read_*, write_log, update_biographical, get_guidance |
