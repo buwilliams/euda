@@ -16,6 +16,8 @@ Euno does that work. It ingests your writing, photos, messages, and behaviors. I
 
 And it doesn't wait for you to ask. Euno works proactively: surfacing what matters, noticing what you're avoiding, and actually doing tasks for you—research, scheduling, ordering, follow-ups—taking real work off your plate before you think to ask.
 
+And it curates. Engagement algorithms are designed to hijack your attention—infinite feeds engineered for clicks, not your wellbeing. Euno stands between you and that. It reads your feeds so you don't have to. It elevates what actually matters and shields you from the rest. Less screen time, less brain-rot, without missing what's important.
+
 ---
 
 ## The Vision
@@ -47,8 +49,8 @@ Euno is a working system with specialized agents that handle different aspects o
 - **The Archivist** — Reads your life data (photos, documents, exports) and preserves it with high fidelity
 - **The Historian** — Maintains a unified, searchable life log across everything you've shared
 - **The Keeper** — Builds a predictive model of who you are: values, patterns, failure modes, rhythms
-- **The Scout** — Explores opportunities that fit you; filters out noise
-- **The Curator** — Decides what deserves your attention based on your energy and capacity
+- **The Scout** — Explores opportunities that fit you; screens out the rest
+- **The Curator** — Guards your attention; reads feeds, delivers what counts
 - **The Caring Friend** — Talks with you like someone who actually knows you
 - **The Executor** — Handles work autonomously; asks before acting on anything important
 - **The Evolver** — Continuously refines the system to serve you better
@@ -68,6 +70,13 @@ As Euno learns more about you, the capabilities deepen:
 - Detect early patterns of burnout or depression before you recognize them
 - Gently guide you toward activities that historically restore your energy
 - Track what actually makes you feel better versus what you think does
+
+### For Your Attention
+- Read your social feeds so you don't have to scroll them
+- Surface genuinely important updates from people who matter
+- Post on your behalf when you want to share without getting sucked in
+- Shield you from algorithmic manipulation designed to maximize engagement
+- Reclaim hours lost to doom-scrolling without disconnecting entirely
 
 ### For Daily Life
 - Order medication for your dog before you remember to
@@ -125,7 +134,9 @@ From *Eudaimonia*—ancient Greek for "human flourishing." A deep sense of fulfi
 >
 > Euno is different. It's a personal intelligence that ingests your writing, photos, messages, and behaviors to build a real model of your identity—your values, your patterns, your failure modes. Not who you say you are. Who you actually are.
 >
-> And it doesn't wait for you to ask. It works proactively—surfacing what matters, noticing what you're avoiding, and actually doing tasks for you. Research, scheduling, ordering, follow-ups. Real work, off your plate, before you think to ask.
+> And it doesn't wait for you to ask. It works proactively—highlighting what matters, noticing what you're avoiding, and actually doing tasks for you. Research, scheduling, ordering, follow-ups. Real work, off your plate, before you think to ask.
+>
+> It also curates. Engagement algorithms are designed to hijack your attention. Euno stands between you and that—reading your feeds, extracting what's important, shielding you from the rest. Less screen time, less brain-rot, without losing touch.
 >
 > The goal isn't productivity. It's flourishing. A caring collaborator that knows you deeply and gets better at anticipating you over years, not just sessions.
 >
