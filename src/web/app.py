@@ -45,8 +45,8 @@ from ..tools.synthesis.summary import list_years, get_summary
 # Base paths
 BASE_DIR = Path(__file__).parent.parent.parent
 STATIC_DIR = BASE_DIR / "static"
-INBOX_PENDING_DIR = BASE_DIR / "data" / "ingestion" / "inbox" / "pending"
-NOTIFICATIONS_DIR = BASE_DIR / "data" / "shared" / "notifications"
+INBOX_PENDING_DIR = BASE_DIR / "data" / "ingestion" / "state" / "inbox" / "pending"
+NOTIFICATIONS_DIR = BASE_DIR / "data" / "shared" / "state" / "notifications"
 
 
 # ============== SSE Event Manager ==============
@@ -169,7 +169,7 @@ def get_enriched_notifications() -> list:
             pass
 
     # Add synthetic ingestion notification showing queue status
-    inbox_dir = BASE_DIR / "data" / "ingestion" / "inbox"
+    inbox_dir = BASE_DIR / "data" / "ingestion" / "state" / "inbox"
     if inbox_dir.exists():
         # Count files in each status directory (exclude hidden files and .reason.txt metadata)
         def count_files(path):
@@ -281,7 +281,7 @@ async def watch_notifications():
 
 async def watch_ingestion_queue():
     """Watch ingestion inbox directories and broadcast synthetic notification updates."""
-    inbox_dir = BASE_DIR / "data" / "ingestion" / "inbox"
+    inbox_dir = BASE_DIR / "data" / "ingestion" / "state" / "inbox"
     if not inbox_dir.exists():
         return
 
@@ -385,7 +385,7 @@ async def cleanup_stale_notifications():
 
 async def watch_tasks():
     """Watch tasks queue and broadcast changes via SSE."""
-    tasks_dir = BASE_DIR / "data" / "worker" / "tasks"
+    tasks_dir = BASE_DIR / "data" / "worker" / "state" / "tasks"
     queue_file = tasks_dir / "queue.json"
 
     if not tasks_dir.exists():
@@ -910,7 +910,7 @@ async def get_agent_status():
 
         # Special handling for ingestion - show queue info
         if agent_name == "ingestion":
-            pending_dir = BASE_DIR / "data" / "ingestion" / "inbox" / "pending"
+            pending_dir = BASE_DIR / "data" / "ingestion" / "state" / "inbox" / "pending"
             if pending_dir.exists():
                 pending_count = len([f for f in pending_dir.iterdir() if f.is_file() and not f.name.startswith('.')])
                 agent_data["pending_files"] = pending_count

@@ -10,7 +10,7 @@ from pathlib import Path
 import json
 
 # Base paths - World agent directory
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 WORLD_DIR = DATA_DIR / "world"
 OPPORTUNITIES_DIR = WORLD_DIR / "state" / "opportunities"
 

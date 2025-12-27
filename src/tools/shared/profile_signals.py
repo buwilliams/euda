@@ -20,7 +20,7 @@ import uuid
 
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
-SIGNALS_DIR = DATA_DIR / "shared" / "signals"
+SIGNALS_DIR = DATA_DIR / "shared" / "state" / "signals"
 OBSERVATIONS_FILE = SIGNALS_DIR / "profile_observations.json"
 
 # Ensure directory exists

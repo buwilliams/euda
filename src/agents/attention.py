@@ -23,7 +23,7 @@ from ..tools.shared.profile_signals import PROFILE_SIGNAL_TOOLS, PROFILE_SIGNAL_
 
 # Paths for proactive attention
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
-SIGNALS_DIR = DATA_DIR / "shared" / "signals"
+SIGNALS_DIR = DATA_DIR / "shared" / "state" / "signals"
 ATTENTION_STATE_DIR = DATA_DIR / "attention" / "state"
 ATTENTION_STATE_DIR.mkdir(parents=True, exist_ok=True)
 

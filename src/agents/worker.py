@@ -14,7 +14,6 @@ Can emit profile observations for Synthesis Agent to integrate (behavioral
 patterns around task completion, work preferences, constraint violations).
 """
 
-from pathlib import Path
 from datetime import datetime
 from .base import create_agent, AutonomousAgent, load_prompt
 from ..tools.worker.worker import (
@@ -29,11 +28,6 @@ from ..tools.worker.task import (
 from ..tools.shared.notifications import queue_notification
 from ..tools.shared.profile_signals import PROFILE_SIGNAL_TOOLS, PROFILE_SIGNAL_HANDLERS
 
-
-# Data paths
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
-WORKER_DIR = DATA_DIR / "worker"
-TASKS_DIR = DATA_DIR / "tasks"
 
 # Combined tools and handlers with profile signals
 ALL_WORKER_TOOLS = EXTENDED_WORKER_TOOLS + PROFILE_SIGNAL_TOOLS

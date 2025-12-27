@@ -875,10 +875,6 @@ def run_evolve():
         get_pending_evolutions, review_evolution,
         approve_evolution, reject_evolution
     )
-    from pathlib import Path
-
-    EVOLUTION_DIR = Path(__file__).parent / "data" / "agents" / "evolution"
-
     print("=" * 60)
     print("Euno - Identity Evolution Review")
     print("=" * 60)

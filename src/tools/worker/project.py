@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional
 
 # Base paths - Projects are owned by Worker agent
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 WORKER_DIR = DATA_DIR / "worker"
 PROJECTS_DIR = WORKER_DIR / "state" / "projects"
 ARCHIVE_DIR = WORKER_DIR / "state" / "archive"

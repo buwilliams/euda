@@ -24,7 +24,7 @@ SHARED_DIR = DATA_DIR / "shared"
 IDENTITY_DIR = SHARED_DIR / "state" / "identity"
 AGENTS_DIR = SRC_DIR / "agents"
 TOOLS_DIR = SRC_DIR / "tools"
-EVOLUTION_DIR = DATA_DIR / "evolution" / "output"
+EVOLUTION_DIR = DATA_DIR / "evolution" / "state" / "output"
 
 # Ensure output directory exists
 EVOLUTION_DIR.mkdir(parents=True, exist_ok=True)

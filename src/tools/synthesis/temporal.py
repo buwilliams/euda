@@ -22,7 +22,7 @@ import json
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SYNTHESIS_DIR = DATA_DIR / "synthesis"
 TEMPORAL_DIR = SYNTHESIS_DIR / "state" / "temporal"
-LOG_DIR = DATA_DIR / "shared" / "lifelog"
+LOG_DIR = DATA_DIR / "shared" / "state" / "lifelog"
 
 # Ensure directory exists
 TEMPORAL_DIR.mkdir(parents=True, exist_ok=True)

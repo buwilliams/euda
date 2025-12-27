@@ -11,7 +11,7 @@ from typing import Optional
 
 
 # Path to guidance signal
-SIGNALS_DIR = Path(__file__).parent.parent.parent.parent / "data" / "shared" / "signals"
+SIGNALS_DIR = Path(__file__).parent.parent.parent.parent / "data" / "shared" / "state" / "signals"
 
 
 def get_guidance(agent_name: Optional[str] = None) -> dict:

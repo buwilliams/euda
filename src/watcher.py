@@ -1,7 +1,7 @@
 """
 File watcher for the inbox directory.
 
-Monitors data/inbox/pending for new files and triggers the Ingestion Agent.
+Monitors data/ingestion/state/inbox/pending for new files and triggers the Ingestion Agent.
 """
 
 import time

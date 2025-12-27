@@ -9,7 +9,7 @@ from pathlib import Path
 import json
 
 # Base paths - Attention agent uses shared signals and its own queue
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
 SIGNALS_DIR = SHARED_DIR / "state" / "signals"
 ATTENTION_DIR = DATA_DIR / "attention"

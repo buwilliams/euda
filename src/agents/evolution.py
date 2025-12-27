@@ -298,7 +298,7 @@ class AutonomousEvolutionAgent(AutonomousAgent):
     def _notify_high_priority_gaps(self):
         """Send notification for the highest priority gap found."""
         import json
-        gaps_file = Path(__file__).parent.parent.parent / "data" / "shared" / "signals" / "proactive_gaps.json"
+        gaps_file = Path(__file__).parent.parent.parent / "data" / "shared" / "state" / "signals" / "proactive_gaps.json"
 
         if not gaps_file.exists():
             return

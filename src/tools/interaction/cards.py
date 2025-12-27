@@ -12,7 +12,7 @@ from pathlib import Path
 import json
 
 # Base paths - Cards are owned by Interaction agent
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 INTERACTION_DIR = DATA_DIR / "interaction"
 CARDS_DIR = INTERACTION_DIR / "state" / "cards"
 RECEIVED_DIR = CARDS_DIR / "received"
