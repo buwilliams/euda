@@ -10,11 +10,13 @@
 
 ## The Gap
 
-Today's AI is powerful but generic. It doesn't know you. Every conversation starts from zero. It can't anticipate what you need because it has no memory of who you are.
+Today's AI remembers facts about you. Euno understands who you are.
 
-Euno is different. It learns from your life—your writing, photos, messages, calendar, behaviors—and builds a model of who you actually are. Not who you say you are. Who you are.
+The difference matters. Memory features can recall that you have a dog named Max or prefer morning meetings. But they don't study your life deeply enough to build a coherent model of your identity—your values, your failure modes, your behavioral patterns, what you'd rather suffer than violate.
 
-Over time, it becomes something unprecedented: a second mind that knows you deeply and works for you continuously.
+Euno does that work. It ingests your writing, photos, messages, and behaviors. It looks for patterns across years of your life. It builds a predictive model of who you actually are—not who you say you are.
+
+And it doesn't wait for you to ask. Euno works proactively: surfacing what matters, noticing what you're avoiding, and actually doing tasks for you—research, scheduling, ordering, follow-ups—taking real work off your plate before you think to ask.
 
 ---
 
