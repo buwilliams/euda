@@ -565,6 +565,47 @@ Pause and notify (rate limit hit)
 - `user_only` — Cannot execute, surface to user
 - `prepare_materials` — For learning tasks, curate but don't do
 
+### Task-Based Approval Workflow
+
+Actions requiring approval are surfaced as tasks in the "From Euno" project. Users approve or reject using familiar task interactions:
+
+```
+Action created (requires_approval=true)
+    ↓
+Approval task created in "From Euno" project
+    ↓
+User sees task with rich markdown description
+    ↓
+┌─────────────────────────────────────────┐
+│ Complete task (checkbox) → APPROVE      │
+│ Delete task              → REJECT       │
+└─────────────────────────────────────────┘
+    ↓
+Action status updated, Worker executes if approved
+```
+
+**Approval task structure:**
+```json
+{
+  "id": "task-xxx",
+  "description": "## Approval Needed: Calendar Create\n\n**Summary here**\n\nDetails...",
+  "type": "approval",
+  "project_id": "project-euno",
+  "action_id": "action-xxx",
+  "delegation": {
+    "strategy": "user_approval",
+    "requires_approval": true
+  }
+}
+```
+
+**Key functions:**
+- `create_approval_task()` — Creates rich markdown task linked to action
+- `update_task_status()` — When completing, calls `approve_action()` if `action_id` present
+- `delete_task()` — When deleting, calls `reject_action()` if `action_id` present
+
+This eliminates the need for a separate approval UI—users manage approvals through the same task interface they already use.
+
 ---
 
 ## Data Schemas
@@ -644,6 +685,7 @@ Manual user note here...
   "description": "Find conversation groups",
   "type": "research",
   "project_id": "project-xxx",
+  "action_id": null,
   "delegation": {
     "strategy": "agent_autonomous",
     "requires_approval": false
@@ -658,6 +700,9 @@ Manual user note here...
   }
 }
 ```
+
+**Fields:**
+- `action_id` — Links to a pending action (for approval tasks). When present, completing the task approves the action; deleting rejects it.
 
 **Archived tasks** include behavioral metadata:
 
@@ -803,7 +848,7 @@ The `/api/events` endpoint provides Server-Sent Events for real-time updates:
 | `init` | `{notifications, tasks, projects, timestamp}` | Initial state on connection |
 | `notification_update` | notification object | New or updated notification |
 | `notification_removed` | `{id}` | Notification dismissed/deleted |
-| `tasks_update` | `{tasks}` | Task queue changed |
+| `tasks_update` | `{tasks}` | Task queue changed (includes all statuses) |
 | `projects_update` | `{projects}` | Projects changed |
 | `ping` | empty | Keepalive (every 30s) |
 
@@ -812,6 +857,8 @@ The server watches:
 - `data/ingestion/state/inbox/` for queue status changes (synthetic notifications)
 - `data/worker/state/tasks/` for task queue changes
 - `data/worker/state/projects/` for project changes
+
+**Note:** The `tasks_update` event sends all tasks (pending and completed) so the frontend can properly split and display them. The frontend filters into separate lists for display.
 
 ---
 
