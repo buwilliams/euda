@@ -8,6 +8,237 @@ Entry point for running agents and services.
 import sys
 
 
+# Subcommand help texts
+SUBCOMMAND_HELP = {
+    "start": """
+Usage: python main.py start
+
+Start the Agent Manager which runs all autonomous agents and the web server.
+
+This is the recommended way to run Euno. It starts:
+  - Web server at http://localhost:8000
+  - File watchers for inbox and lifelog
+  - 7 autonomous agents (ingestion, summary, synthesis, world, attention, worker, evolution)
+
+Press Ctrl+C to stop.
+""",
+    "ingest": """
+Usage: python main.py ingest [path] [options]
+
+Batch process files from the inbox or an external directory.
+
+Arguments:
+  path                    Optional directory to ingest (default: inbox)
+
+Options:
+  -r, --recursive         Include subdirectories
+  -t, --type TYPE         Filter by content type (text, images, video, audio)
+                          Can be comma-separated: --type text,images
+  --batch-size N          Files per batch (default: 5)
+  -h, --help              Show this help message
+
+Examples:
+  python main.py ingest                       # Process inbox
+  python main.py ingest ~/Documents           # Process directory
+  python main.py ingest ~/Documents -r        # Include subdirectories
+  python main.py ingest --type text           # Only text files
+  python main.py ingest ~/Photos --type images -r
+  python main.py ingest --batch-size 10       # Larger batches
+""",
+    "chat": """
+Usage: python main.py chat
+
+Start an interactive chat with The Caring Friend (Interaction Agent).
+
+This is the default command when no arguments are provided.
+The agent supports thinking through problems without threatening identity coherence.
+
+Type 'quit' or 'exit' to end the conversation.
+""",
+    "ingestion": """
+Usage: python main.py ingestion
+
+Start an interactive chat with The Archivist (Ingestion Agent).
+
+For manual ingestion conversations. For batch processing, use 'ingest' instead.
+
+Type 'quit' or 'exit' to end the conversation.
+""",
+    "summary": """
+Usage: python main.py summary
+
+Start an interactive chat with The Historian (Summary Agent).
+
+For discussing summaries and historical patterns.
+
+Type 'quit' or 'exit' to end the conversation.
+""",
+    "summarize": """
+Usage: python main.py summarize
+
+Generate summaries for all years that need updates.
+
+Checks each year's logs against existing summaries and regenerates
+any that are outdated or missing.
+""",
+    "synthesis": """
+Usage: python main.py synthesis
+
+Start an interactive chat with The Keeper (Synthesis Agent).
+
+For discussing identity model, epistemic style, values, and behaviors.
+
+Type 'quit' or 'exit' to end the conversation.
+""",
+    "derive": """
+Usage: python main.py derive
+
+Derive synthesis model (epistemic, values, behaviors) from summaries.
+
+Uses existing yearly summaries to construct or update the user's
+identity model through temporal derivation.
+""",
+    "attention": """
+Usage: python main.py attention
+
+Start an interactive chat with The Curator (Attention Agent).
+
+For discussing attention allocation and energy management.
+
+Type 'quit' or 'exit' to end the conversation.
+""",
+    "morning": """
+Usage: python main.py morning
+
+Generate morning attention briefing.
+
+Produces a curated set of items for the day based on:
+  - Current energy state
+  - Scheduled commitments
+  - Surfaced opportunities
+  - Identity-aligned priorities
+""",
+    "evening": """
+Usage: python main.py evening
+
+Generate evening reflection.
+
+Reviews the day and prepares for rest:
+  - What was accomplished
+  - What needs attention tomorrow
+  - Energy restoration suggestions
+""",
+    "world": """
+Usage: python main.py world
+
+Start an interactive chat with The Scout (World Agent).
+
+For discussing opportunities and external discoveries.
+
+Type 'quit' or 'exit' to end the conversation.
+""",
+    "discover": """
+Usage: python main.py discover
+
+Run a discovery sweep for opportunities.
+
+Searches configured sources for opportunities that align with
+the user's identity and current context.
+""",
+    "worker": """
+Usage: python main.py worker
+
+Start an interactive chat with The Executor (Worker Agent).
+
+For discussing tasks, projects, and actions.
+
+Type 'quit' or 'exit' to end the conversation.
+""",
+    "tasks": """
+Usage: python main.py tasks
+
+Process the task queue once.
+
+Executes pending approved tasks and checks for new work.
+""",
+    "approvals": """
+Usage: python main.py approvals
+
+Show actions waiting for approval.
+
+Lists tasks that require user confirmation before execution.
+""",
+    "evolution": """
+Usage: python main.py evolution
+
+Start an interactive chat with The Evolver (Evolution Agent).
+
+For discussing system improvements and identity evolution.
+
+Type 'quit' or 'exit' to end the conversation.
+""",
+    "introspect": """
+Usage: python main.py introspect
+
+Run a full system analysis.
+
+The Evolution Agent analyzes system capabilities, identifies
+potential improvements, and may generate evolution proposals.
+""",
+    "evolve": """
+Usage: python main.py evolve
+
+Review pending identity evolution proposals.
+
+Interactive interface to review, approve, or reject proposals
+from the Evolution Agent.
+
+Commands in review mode:
+  review <filename>   View full proposal details
+  approve <filename>  Approve and apply the evolution
+  reject <filename>   Reject the proposal
+  quit                Exit
+""",
+    "watch": """
+Usage: python main.py watch
+
+Watch inbox for new files and process them automatically.
+
+Runs continuously, processing files as they appear.
+Press Ctrl+C to stop.
+""",
+    "process": """
+Usage: python main.py process
+
+Process pending files once and exit.
+
+Unlike 'watch', this processes the current queue and exits.
+""",
+    "serve": """
+Usage: python main.py serve
+
+Start the web API server (standalone).
+
+Starts the FastAPI server at http://localhost:8000 with background agents.
+API documentation available at http://localhost:8000/docs
+
+For full agent management, use 'start' instead.
+""",
+}
+
+
+def show_subcommand_help(command: str) -> bool:
+    """Show help for a subcommand if --help/-h is in args. Returns True if help was shown."""
+    args = sys.argv[2:]  # Skip script name and command
+    if "-h" in args or "--help" in args:
+        if command in SUBCOMMAND_HELP:
+            print(SUBCOMMAND_HELP[command].strip())
+        else:
+            print(f"No detailed help available for '{command}'")
+        return True
+    return False
+
+
 def main():
     """Main entry point."""
     if len(sys.argv) > 1:
@@ -93,25 +324,20 @@ def main():
         print("Use 'python main.py help' for more info.")
         sys.exit(1)
 
+    # Check for subcommand help (for commands that don't handle it themselves)
+    # This catches lambda commands like chat, ingestion, summary, etc.
+    if show_subcommand_help(command):
+        return
+
     commands[command]()
 
 
 def run_ingest():
-    """Batch process files with progress display.
+    """Batch process files with progress display."""
+    # Check for help flag first
+    if show_subcommand_help("ingest"):
+        return
 
-    Usage:
-        python main.py ingest                    # Process inbox
-        python main.py ingest /path/to/dir       # Process external directory
-        python main.py ingest /path/to/dir --recursive  # Include subdirectories
-        python main.py ingest /path/to/dir --type text  # Filter by content type
-        python main.py ingest /path/to/dir --type text,images  # Multiple types
-        python main.py ingest /path/to/dir -r --type text  # Combined options
-        python main.py ingest --batch-size 10   # Custom batch size (default: 5)
-
-    Content types: text, images, video, audio
-
-    Uses batch processing to handle multiple files per API call, reducing latency.
-    """
     import json
     import hashlib
     import time
@@ -642,6 +868,9 @@ def run_ingest():
 
 def run_server():
     """Run the FastAPI web server with background agents."""
+    if show_subcommand_help("serve"):
+        return
+
     import asyncio
     import uvicorn
     import threading
@@ -698,12 +927,18 @@ def run_server():
 
 def run_summarize():
     """Generate summaries for all years needing updates."""
+    if show_subcommand_help("summarize"):
+        return
+
     from src.agents.summary import check_and_summarize_all
     check_and_summarize_all()
 
 
 def run_derive_synthesis():
     """Derive synthesis model (epistemic, values, behaviors) from summaries."""
+    if show_subcommand_help("derive"):
+        return
+
     from src.agents.synthesis import derive_synthesis
     print("=" * 60)
     print("Euno - Deriving Synthesis Model")
@@ -722,6 +957,9 @@ run_derive_identity = run_derive_synthesis
 
 def run_morning():
     """Generate morning attention."""
+    if show_subcommand_help("morning"):
+        return
+
     from src.agents.attention import morning_attention
     print("=" * 60)
     print("Euno - Morning Attention")
@@ -733,6 +971,9 @@ def run_morning():
 
 def run_evening():
     """Generate evening reflection."""
+    if show_subcommand_help("evening"):
+        return
+
     from src.agents.attention import evening_attention
     print("=" * 60)
     print("Euno - Evening Reflection")
@@ -744,6 +985,9 @@ def run_evening():
 
 def run_discover():
     """Run a discovery sweep for opportunities."""
+    if show_subcommand_help("discover"):
+        return
+
     from src.agents.world import run_discovery_sweep
     print("=" * 60)
     print("Euno - Discovery Sweep")
@@ -755,6 +999,9 @@ def run_discover():
 
 def run_tasks():
     """Process the task queue once."""
+    if show_subcommand_help("tasks"):
+        return
+
     from src.agents.worker import process_task_queue
     print("=" * 60)
     print("Euno - Task Queue Processing")
@@ -766,6 +1013,9 @@ def run_tasks():
 
 def run_approvals():
     """Show actions waiting for approval."""
+    if show_subcommand_help("approvals"):
+        return
+
     from src.agents.worker import check_pending_approvals
     print("=" * 60)
     print("Euno - Pending Approvals")
@@ -777,6 +1027,9 @@ def run_approvals():
 
 def run_introspect():
     """Run a full system analysis."""
+    if show_subcommand_help("introspect"):
+        return
+
     from src.agents.evolution import run_analysis
     print("=" * 60)
     print("Euno - System Analysis")
@@ -790,6 +1043,9 @@ def run_introspect():
 
 def run_evolve():
     """Interactive review of identity evolution proposals."""
+    if show_subcommand_help("evolve"):
+        return
+
     from src.tools.shared.identity import (
         get_pending_evolutions, review_evolution,
         approve_evolution, reject_evolution
