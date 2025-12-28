@@ -2,7 +2,7 @@
 
 import json
 import hashlib
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import anthropic
@@ -16,48 +16,70 @@ def get_user_context() -> str:
     """Get relevant user context for quote generation."""
     context_parts = []
 
-    # Read values
-    values_file = PROFILE_DIR / "values.md"
-    if values_file.exists():
-        content = values_file.read_text()
+    # Read current profile (contains identity constraints, values, behavioral attractors)
+    profile_file = PROFILE_DIR / "profile.current.md"
+    if profile_file.exists():
+        content = profile_file.read_text()
         if content.strip():
-            context_parts.append(f"User values:\n{content[:1000]}")
+            # Extract key sections (first ~3000 chars covers the important parts)
+            context_parts.append(f"User profile:\n{content[:3000]}")
 
-    # Read identity constraints
-    constraints_file = PROFILE_DIR / "identity_constraints.md"
-    if constraints_file.exists():
-        content = constraints_file.read_text()
+    # Read influences timeline (thinkers, books, ideas they resonate with)
+    influences_file = PROFILE_DIR / "influences_timeline.md"
+    if influences_file.exists():
+        content = influences_file.read_text()
         if content.strip():
-            context_parts.append(f"Identity constraints:\n{content[:500]}")
-
-    # Read behavioral attractors
-    attractors_file = PROFILE_DIR / "behavioral_attractors.md"
-    if attractors_file.exists():
-        content = attractors_file.read_text()
-        if content.strip():
-            context_parts.append(f"Behavioral patterns:\n{content[:500]}")
+            # Include influences to help select relevant authors
+            context_parts.append(f"Intellectual influences and interests:\n{content[:2000]}")
 
     return "\n\n".join(context_parts) if context_parts else ""
 
 
-def generate_quote(user_context: str) -> dict:
+def get_recent_quotes(days: int = 7) -> list:
+    """Get quotes from the last N days to avoid repetition."""
+    recent = []
+    today = date.today()
+    for i in range(1, days + 1):
+        past_date = today - timedelta(days=i)
+        quote_file = QUOTES_DIR / f"{past_date.isoformat()}.json"
+        if quote_file.exists():
+            try:
+                data = json.loads(quote_file.read_text())
+                recent.append(f"- \"{data.get('quote', '')}\" — {data.get('author', '')}")
+            except:
+                pass
+    return recent
+
+
+def generate_quote(user_context: str, avoid_quotes: list = None) -> dict:
     """Generate a quote using Claude that matches the user's profile."""
     client = anthropic.Anthropic()
 
-    system_prompt = """You are a curator of wisdom. Your task is to provide a single compelling quote that will resonate with the user based on their profile.
+    avoid_section = ""
+    if avoid_quotes:
+        avoid_section = f"""
+
+IMPORTANT: Do NOT use any of these quotes that were shown recently:
+{chr(10).join(avoid_quotes)}
+
+Choose a completely different quote from a different author if possible."""
+
+    system_prompt = f"""You are a curator of wisdom. Your task is to provide a single compelling quote that will deeply resonate with the user based on their profile and intellectual influences.
 
 The quote should:
-- Be from a real person (philosopher, writer, scientist, leader, artist, etc.)
+- STRONGLY PREFER quotes from thinkers, authors, and figures the user admires or whose ideas they engage with (check their influences)
+- Great sources include: philosophers they follow (e.g., Popper, rationalist thinkers), scientists, technologists, writers on topics they care about
+- Connect to the user's values, current struggles, or intellectual interests
 - Be thought-provoking and worthy of reflection
-- Connect to the user's values, struggles, or aspirations
 - Be concise (1-3 sentences max)
+- Be a real, verifiable quote (not invented){avoid_section}
 
 Respond with JSON only:
-{
+{{
     "quote": "The actual quote text",
     "author": "Author Name",
     "context": "One brief sentence on why this quote was chosen for this user"
-}"""
+}}"""
 
     user_prompt = f"""Based on this user's profile, select a meaningful quote for their day:
 
@@ -97,7 +119,8 @@ def get_daily_quote() -> dict:
     # Generate new quote
     try:
         user_context = get_user_context()
-        quote_data = generate_quote(user_context)
+        recent_quotes = get_recent_quotes(days=365)
+        quote_data = generate_quote(user_context, avoid_quotes=recent_quotes)
         quote_data["date"] = today
         quote_data["generated"] = True
 

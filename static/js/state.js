@@ -23,4 +23,3 @@ let archivingTaskId = null;
 
 // Elements
 const appContainer = document.getElementById('app-container');
-const contextContent = document.getElementById('context-content');

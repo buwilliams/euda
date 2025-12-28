@@ -3,12 +3,16 @@
 // ============== Daily Quote ==============
 
 async function loadDailyQuote() {
-    // Show loading state
-    contextContent.innerHTML = `
-        <div class="quote-container">
-            <div class="quote-loading">Loading today's reflection...</div>
-        </div>
-    `;
+    // Remove any existing quote first
+    const existingQuote = document.getElementById('daily-quote');
+    if (existingQuote) existingQuote.remove();
+
+    // Show loading state in messages area
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'daily-quote';
+    loadingDiv.className = 'quote-container';
+    loadingDiv.innerHTML = `<div class="quote-loading">Loading today's reflection...</div>`;
+    inlineMessages.insertBefore(loadingDiv, inlineMessages.firstChild);
 
     try {
         const response = await fetch('/api/daily-quote', {
@@ -35,12 +39,13 @@ async function loadDailyQuote() {
 }
 
 function renderQuote(data) {
-    contextContent.innerHTML = `
-        <div class="quote-container">
+    const quoteDiv = document.getElementById('daily-quote');
+    if (quoteDiv) {
+        quoteDiv.innerHTML = `
             <div class="quote-text">"${escapeHtml(data.quote)}"</div>
             <div class="quote-author">— ${escapeHtml(data.author)}</div>
-        </div>
-    `;
+        `;
+    }
 }
 
 // ============== Inline Chat ==============
