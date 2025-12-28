@@ -24,7 +24,7 @@ From *Eudaimonia*—ancient Greek for "human flourishing." A deep sense of fulfi
 >
 > **It travels.** Not trapped in one app or device. Euno moves with you—from your phone to your desk to a wearable to whatever comes next. One intelligence that knows you, present wherever you are.
 >
-> The goal isn't productivity. It's flourishing. Imagine a lifelong friend with perfect memory, infinite patience, and the ability to go deep on any topic. Someone who remembers every conversation, every commitment, every pattern. Who has no agenda except your flourishing—and gets better at anticipating you over years, not just sessions.
+> The goal isn't productivity. It's flourishing. Imagine waking up rested, your life organized, your concerns addressed. Free to explore what matters—a novel you're writing, a skill you're building, a relationship you're deepening. That's the space Euno creates.
 >
 > That's Euno.
 
