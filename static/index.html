@@ -945,6 +945,63 @@
             gap: 0.5rem;
         }
 
+        /* ============== About Tab ============== */
+        .about-content {
+            padding: 1rem;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .about-content h1 {
+            font-size: 1.5rem;
+            margin: 0 0 1rem 0;
+            color: #222;
+        }
+
+        .about-content h2 {
+            font-size: 1.25rem;
+            margin: 1.5rem 0 0.75rem 0;
+            color: #333;
+        }
+
+        .about-content h3 {
+            font-size: 1.1rem;
+            margin: 1.25rem 0 0.5rem 0;
+            color: #444;
+        }
+
+        .about-content p {
+            margin: 0.5rem 0;
+        }
+
+        .about-content ul, .about-content ol {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .about-content li {
+            margin: 0.25rem 0;
+        }
+
+        .about-content strong {
+            color: #222;
+        }
+
+        .about-content blockquote {
+            margin: 1rem 0;
+            padding: 0.5rem 1rem;
+            border-left: 3px solid #ddd;
+            background: #f9f9f9;
+            color: #555;
+        }
+
+        .about-content code {
+            background: #f5f5f5;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
         /* ============== Cards (Minimal & Full) ============== */
         .card {
             border: 1px solid #eee;
@@ -1847,6 +1904,13 @@
                             <div class="focus-empty">Loading...</div>
                         </div>
                     </div>
+
+                    <!-- About Tab -->
+                    <div class="tab-pane" id="tab-about">
+                        <div class="about-content" id="about-content">
+                            <div class="focus-empty">Loading...</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Tab Menu (below content) -->
@@ -1863,6 +1927,10 @@
                     <button class="tab-btn" data-tab="history" onclick="switchTab('history')">
                         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 16 14" fill="none" stroke="currentColor" stroke-width="2"/></svg>
                         <span>History</span>
+                    </button>
+                    <button class="tab-btn" data-tab="about" onclick="switchTab('about')">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><line x1="12" y1="16" x2="12" y2="12" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="8" r="1" fill="currentColor"/></svg>
+                        <span>About</span>
                     </button>
                     <div class="tab-spacer"></div>
                     <button class="tab-action-btn" id="upload-btn" onclick="triggerUpload()" title="Upload file">
@@ -1964,6 +2032,7 @@
             // Load data for tab
             if (tabName === 'focus') loadTasksData();
             if (tabName === 'history') loadHistoryData();
+            if (tabName === 'about') loadAboutData();
         }
 
         // ============== Daily Quote ==============
@@ -2972,6 +3041,33 @@
             if (event) event.stopPropagation();
             if (!confirm('Delete this conversation permanently?')) return;
             await deleteConversationById(targetSessionId);
+        }
+
+        // ============== About ==============
+
+        let aboutContent = null;
+
+        async function loadAboutData() {
+            try {
+                const response = await fetch('/api/about');
+                const data = await response.json();
+                aboutContent = data.content || '';
+                renderAbout();
+            } catch (error) {
+                console.error('Failed to load about:', error);
+                document.getElementById('about-content').innerHTML =
+                    '<div class="focus-empty">Failed to load about content</div>';
+            }
+        }
+
+        function renderAbout() {
+            const container = document.getElementById('about-content');
+            if (!aboutContent) {
+                container.innerHTML = '<div class="focus-empty">No content available</div>';
+                return;
+            }
+            // Use marked to convert markdown to HTML
+            container.innerHTML = marked.parse(aboutContent);
         }
 
         function discussTask(description) {

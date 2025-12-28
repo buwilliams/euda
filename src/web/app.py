@@ -1229,6 +1229,20 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============== About ==============
+
+@app.get("/api/about")
+async def get_about():
+    """Get about page content from docs/pitch.md."""
+    pitch_file = BASE_DIR / "docs" / "pitch.md"
+
+    if not pitch_file.exists():
+        return {"content": "# About\n\nContent not available."}
+
+    content = pitch_file.read_text()
+    return {"content": content}
+
+
 # ============== Health ==============
 
 @app.get("/api/health")
