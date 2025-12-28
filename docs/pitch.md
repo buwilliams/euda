@@ -8,7 +8,7 @@
 
 *Pronounced "you-know." Built for its creator first—refined through lived experience, not hypothetical users.*
 
-From *Eudaimonia*—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities.
+From *Eudaimonia* (you-dye-MOH-nee-ah)—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities.
 
 ---
 
