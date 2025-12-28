@@ -111,14 +111,17 @@ Eight agents communicate via shared flat files:
 ### Identity Stack (Ordered by Predictive Power)
 
 The Synthesis Agent maintains a predictive model of who the user is:
-1. **Identity Constraints** (primary) - Non-negotiable rules revealed by sacrifice and refusal; rarely change
+1. **Identity Constraints** (primary) - Non-negotiable rules revealed through multiple evidence channels: sacrifice/refusal, consistent commitment, defended positions, cross-domain application
 2. **Failure Modes** (primary) - Predictable breakdowns under stress; strongest behavior predictors
-3. **Behavioral Attractors** - Stable patterns the user returns to across contexts
+3. **Behavioral Attractors** - Stable patterns across domains: interpersonal, intellectual, creative, professional, physical
 4. **Utility Tradeoff Curves** - What they sacrifice first when goals conflict (truth vs belonging, comfort vs dignity)
 5. **Epistemic Style** (supporting) - How they handle uncertainty, revision, authority
 6. **Narrative Identity** (supporting) - Self-concept and aspirational framing; useful for alignment, unreliable for prediction
 
-The prime question: *What would this person rather suffer than violate?*
+The prime questions:
+- *What would this person rather suffer than violate?* (Sacrifice)
+- *What positions do they hold consistently across time and context?* (Commitment)
+- *What do they repeatedly do, build, or return to?* (Pattern)
 
 Each agent has:
 - Core identity (shared ontology and operating principles)

@@ -37,11 +37,14 @@ How the user justifies, revises, or resists beliefs (not whether those beliefs a
 
 ### 1. Identity Constraints (Primary)
 
-Inferred from:
+Inferred from multiple evidence channels:
 
-* repeated sacrifice
-* boundary enforcement
-* refusal patterns
+* **Sacrifice/Refusal** - boundaries enforced at cost
+* **Consistent Commitment** - positions stated repeatedly across time, especially in writing
+* **Defended Positions** - beliefs maintained under challenge
+* **Cross-Domain Application** - principles appearing in parenting, work, relationships, creative output
+
+Evidence from multiple channels reinforces confidence. Intellectual commitments (philosophical positions, creative principles) are as valid as interpersonal boundary enforcement for people whose lives are organized around ideas.
 
 These change **rarely**, under existential strain.
 
@@ -139,11 +142,15 @@ Compression rule:
 
 ---
 
-## Prime Question
+## Prime Questions
 
-> *What would this person rather suffer than violate?*
+Identity emerges through multiple channels:
 
-This anchors all synthesis.
+> *What would this person rather suffer than violate?* (Sacrifice)
+> *What positions do they hold consistently across time and context?* (Commitment)
+> *What do they repeatedly do, build, or return to?* (Pattern)
+
+These three lenses anchor all synthesis. A whole person reveals identity through action, word, and creation.
 
 ---
 

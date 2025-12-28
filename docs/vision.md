@@ -62,9 +62,9 @@ Content shows what you say. Behavior shows what you do.
 
 Over time, a rich model emerges:
 
-- **Your identity constraints** - What you'd rather suffer than violate; the non-negotiables revealed by sacrifice and refusal
+- **Your identity constraints** - What you'd rather suffer than violate; revealed through sacrifice, consistent commitment, defended positions, and cross-domain patterns
 - **Your failure modes** - How you break down under stress; predictable patterns that derail you
-- **Your values** - Not just what you claim, but what your behavior reveals
+- **Your values** - Not just what you claim, but what your behavior and consistent positions reveal
 - **Your rhythms** - Daily, weekly, seasonal patterns of energy and attention
 - **Your relationships** - Who matters, how you connect, what you give and receive
 - **Your goals** - The explicit ones and the ones you haven't articulated
