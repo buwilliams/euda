@@ -59,16 +59,11 @@ Euno is a working system with specialized agents that handle different aspects o
 
 ## Where It's Heading
 
-Euno is in early development. Here's where we're taking it:
+Euno is in early development. Here's where we're taking it.
 
-- Detect early signs of burnout before you recognize them
-- Shield you from algorithmic manipulation designed to hijack your attention
-- Connect ideas across years of your thinking
-- Prepare you for conversations with context you've forgotten
-- Learn your rhythms—when you're sharp, when you're depleted
-- Handle routine logistics before you think to
-- Notice when you're neglecting relationships you value
-- Remember what matters to each person—their concerns, their milestones
+Imagine Euno noticing you're heading toward burnout before you do—the late nights, the skipped workouts, the shorter replies. It gently surfaces what's happening and reminds you what actually restores your energy. It shields you from the infinite scroll designed to hijack your attention, reading your feeds so you don't have to.
+
+It remembers that your mom's surgery is next week and drafts a check-in message. It connects an idea you had three years ago to something you're thinking about now. It notices you haven't talked to your best friend in months—not to guilt you, but because you asked it to help you show up for people who matter.
 
 Emotional, intellectual, physical, relational—Euno supports every dimension of your wellbeing.
 
