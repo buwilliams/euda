@@ -2126,7 +2126,12 @@
             }
 
             // Load data for tab
-            if (tabName === 'focus') loadTasksData();
+            if (tabName === 'focus') {
+                // Reset focus view to menu when clicking tab
+                focusView = 'menu';
+                focusViewHistory = [];
+                loadTasksData();
+            }
             if (tabName === 'history') loadHistoryData();
             if (tabName === 'about') loadAboutData();
         }
