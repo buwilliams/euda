@@ -22,7 +22,7 @@ From *Eudaimonia*—ancient Greek for "human flourishing." A deep sense of fulfi
 >
 > **It curates.** Engagement algorithms are designed to hijack your attention. Euno stands between you and that—reading your feeds, extracting what's important, shielding you from the rest. Less screen time, less brain-rot, without losing touch.
 >
-> **It follows.** Not trapped in one app or device. Euno moves with you—from your phone to your desk to a wearable to whatever comes next. One intelligence that knows you, present wherever you are.
+> **It travels.** Not trapped in one app or device. Euno moves with you—from your phone to your desk to a wearable to whatever comes next. One intelligence that knows you, present wherever you are.
 >
 > The goal isn't productivity. It's flourishing. Imagine a lifelong friend with perfect memory, infinite patience, and the ability to go deep on any topic. Someone who remembers every conversation, every commitment, every pattern. Who has no agenda except your flourishing—and gets better at anticipating you over years, not just sessions.
 >
@@ -114,7 +114,7 @@ As Euno learns more about you, the capabilities deepen:
 
 ---
 
-## It Follows You
+## A Traveling Intelligence
 
 What you're seeing here is one expression—a web app with chat and tasks. But Euno isn't the interface. Euno is the intelligence behind it.
 
@@ -128,4 +128,4 @@ That intelligence can live anywhere:
 
 The form factor changes. Euno doesn't. The same model of who you are, the same memory of your life, the same caring collaborator—present in whatever environment you're in.
 
-A business meeting. A video game. A walk in the park. A difficult conversation. Euno follows you through life, not just through apps.
+A business meeting. A video game. A walk in the park. A difficult conversation. Euno travels with you through life, not just through apps.
