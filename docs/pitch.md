@@ -24,33 +24,9 @@ From *Eudaimonia*—ancient Greek for "human flourishing." A deep sense of fulfi
 >
 > **It follows.** Not trapped in one app or device. Euno moves with you—from your phone to your desk to a wearable to whatever comes next. One intelligence that knows you, present wherever you are.
 >
-> The goal isn't productivity. It's flourishing. A caring collaborator that knows you deeply and gets better at anticipating you over years, not just sessions.
+> The goal isn't productivity. It's flourishing. Imagine a lifelong friend with perfect memory, infinite patience, and the ability to go deep on any topic. Someone who remembers every conversation, every commitment, every pattern. Who has no agenda except your flourishing—and gets better at anticipating you over years, not just sessions.
 >
 > That's Euno.
-
----
-
-## The Gap
-
-Today's AI remembers facts about you. Euno understands who you are.
-
-The difference matters. Memory features can recall that you have a dog named Max or prefer morning meetings. But they don't study your life deeply enough to build a coherent model of your identity—your values, your failure modes, your behavioral patterns, what you'd rather suffer than violate.
-
-**Euno does that work.** It ingests your writing, photos, messages, and behaviors. It looks for patterns across years of your life. It builds a predictive model of who you actually are—not who you say you are.
-
-**And it doesn't wait for you to ask.** Euno works proactively: surfacing what matters, noticing what you're avoiding, and actually doing tasks for you—research, scheduling, ordering, follow-ups—taking real work off your plate before you think to ask.
-
-**And it curates.** Engagement algorithms are designed to hijack your attention—infinite feeds engineered for clicks, not your wellbeing. Euno stands between you and that. It reads your feeds so you don't have to. It elevates what actually matters and shields you from the rest. Less screen time, less brain-rot, without missing what's important.
-
----
-
-## The Vision
-
-Imagine a lifelong friend with perfect memory, infinite patience, and the ability to go deep on any topic that matters to you. Someone who remembers every conversation, every commitment, every pattern. Who understands what matters to you and acts accordingly. Who has no agenda except your flourishing.
-
-That's the relationship Euno is building toward.
-
-It's not an assistant you command. It's a caring collaborator who knows you—one that gets better at anticipating you over years, not just sessions.
 
 ---
 
