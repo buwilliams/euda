@@ -76,7 +76,7 @@ function renderHistoryDetailView(sessionId) {
         </div>
         <div class="focus-view-content">
             <div class="history-detail">
-                <div class="history-detail-preview">${escapeHtml(item.preview || 'No preview')}</div>
+                <div class="history-detail-preview">${marked.parse(item.preview || 'No preview')}</div>
                 <div class="history-detail-meta">${item.message_count || '?'} messages</div>
             </div>
             <div class="task-detail-actions">

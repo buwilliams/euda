@@ -923,13 +923,28 @@ async def get_recent_convos_structured(count: int = 20):
         if session_file.exists():
             with open(session_file, 'r') as f:
                 data = json.load(f)
-            first_msg = data.get("messages", [{}])[0] if data.get("messages") else {}
+            messages = data.get("messages", [])
+            # Build preview from multiple messages until we have enough content
+            preview_parts = []
+            preview_len = 0
+            for msg in messages:
+                if preview_len >= 300:
+                    break
+                user_text = msg.get("user", "").strip()
+                if user_text:
+                    preview_parts.append(f"You: {user_text}")
+                    preview_len += len(user_text)
+                assistant_text = msg.get("assistant", "").strip()
+                if assistant_text and preview_len < 300:
+                    preview_parts.append(f"Euno: {assistant_text}")
+                    preview_len += len(assistant_text)
+            preview = "\n".join(preview_parts)[:500] if preview_parts else "No preview"
             sessions_with_data.append({
                 "session_id": session_id,
                 "date": data.get("updated", data.get("created", ""))[:10],
                 "time": data.get("updated", data.get("created", ""))[11:16],
-                "message_count": len(data.get("messages", [])),
-                "preview": first_msg.get("user", "")[:100]
+                "message_count": len(messages),
+                "preview": preview
             })
 
     # Sort by date+time descending (most recent first)

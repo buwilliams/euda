@@ -432,37 +432,6 @@
             border-top: none;
         }
 
-        .clear-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 44px;
-            height: 44px;
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            cursor: pointer;
-            color: #666;
-            transition: all 0.15s;
-            flex-shrink: 0;
-            box-sizing: border-box;
-        }
-
-        .clear-btn:hover {
-            background: #eee;
-            color: #333;
-        }
-
-        .clear-btn svg {
-            width: 16px;
-            height: 16px;
-            stroke: currentColor;
-            fill: none;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
         .input-bar textarea {
             flex: 1;
             padding: 0.6rem 0.75rem;
@@ -820,6 +789,7 @@
         .focus-view-content {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
         }
 
         /* Task Detail View */
@@ -1084,6 +1054,8 @@
             line-height: 1.5;
             margin-bottom: 1rem;
             white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         .history-detail-meta {
