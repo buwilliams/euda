@@ -259,7 +259,8 @@ async def login(request: LoginRequest):
         value=token,
         httponly=True,
         max_age=30 * 24 * 60 * 60,  # 30 days
-        samesite="lax"
+        samesite="lax",
+        path="/"  # Ensure cookie is sent for all paths
     )
     return response
 

@@ -2,15 +2,21 @@
 
 // ============== Tasks ==============
 
-let completedTasksData = [];
-
 async function loadTasksData() {
     try {
+        const fetchOpts = { credentials: 'same-origin' };
         const [tasksRes, projectsRes, completedRes] = await Promise.all([
-            fetch('/api/tasks'),
-            fetch('/api/projects'),
-            fetch('/api/tasks/completed?days=30&limit=20')
+            fetch('/api/tasks', fetchOpts),
+            fetch('/api/projects', fetchOpts),
+            fetch('/api/tasks/completed?days=30&limit=20', fetchOpts)
         ]);
+
+        // Check for auth errors - if any request returns 401, redirect to login
+        if (tasksRes.status === 401 || projectsRes.status === 401 || completedRes.status === 401) {
+            console.error('Focus tab: Authentication required');
+            window.location.reload();
+            return;
+        }
 
         const tasksJson = await tasksRes.json();
         const projectsJson = await projectsRes.json();
@@ -26,7 +32,7 @@ async function loadTasksData() {
         const activeProjects = projectsData.filter(p => p.status === 'active');
         const notesPromises = activeProjects.map(async (p) => {
             try {
-                const res = await fetch(`/api/projects/${p.id}/notes/list`);
+                const res = await fetch(`/api/projects/${p.id}/notes/list`, fetchOpts);
                 const data = await res.json();
                 projectNotesData[p.id] = {
                     count: data.count || 0,

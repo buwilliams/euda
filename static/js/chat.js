@@ -11,9 +11,19 @@ async function loadDailyQuote() {
     `;
 
     try {
-        const response = await fetch('/api/daily-quote');
+        const response = await fetch('/api/daily-quote', {
+            credentials: 'same-origin'
+        });
+        if (!response.ok) {
+            console.error('Daily quote API error:', response.status, response.statusText);
+            throw new Error(`HTTP ${response.status}`);
+        }
         const data = await response.json();
-        renderQuote(data);
+        if (data.quote) {
+            renderQuote(data);
+        } else {
+            throw new Error('No quote in response');
+        }
     } catch (error) {
         console.error('Failed to load daily quote:', error);
         // Fallback
