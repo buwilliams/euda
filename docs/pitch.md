@@ -124,7 +124,7 @@ That intelligence can live anywhere:
 - **On your wrist** — A screenless wearable you talk to, adding conversations to your life log
 - **In your ears** — An ambient presence during your day
 - **In virtual worlds** — A floating companion in VR/AR, a second mind on your journey
-- **In your home** — A physical presence that helps where you live
+- **In your home** — A robotic companion that helps where you live
 
 The form factor changes. Euno doesn't. The same model of who you are, the same memory of your life, the same caring collaborator—present in whatever environment you're in.
 
