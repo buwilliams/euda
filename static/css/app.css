@@ -2107,6 +2107,10 @@
                 border: none;
                 border-radius: 0;
             }
+            .tab-menu {
+                padding-left: env(safe-area-inset-left, 0px);
+                padding-right: env(safe-area-inset-right, 0px);
+            }
             .tab-btn {
                 padding: 0.7rem 0.5rem;
                 min-height: 44px; /* Minimum touch target size */
@@ -2134,6 +2138,9 @@
             }
             .input-bar {
                 padding: 0.5rem 0.75rem;
+                padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+                padding-left: calc(0.75rem + env(safe-area-inset-left, 0px));
+                padding-right: calc(0.75rem + env(safe-area-inset-right, 0px));
                 border-top: 1px solid #e0e0e0;
                 background: #f8f8f8;
             }
