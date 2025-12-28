@@ -683,8 +683,6 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            position: relative;
-            overflow: hidden;
         }
 
         .focus-empty {
@@ -759,7 +757,7 @@
             align-items: center;
             padding: 0.75rem 0.5rem;
             border-bottom: 1px solid #eee;
-            background: #fafafa;
+            background: #f8f8f8;
             margin: -1rem -1rem 0.75rem -1rem;
             cursor: pointer;
         }
@@ -2136,9 +2134,19 @@
             }
             .tab-pane {
                 padding: 0.75rem;
+                padding-left: calc(0.75rem + env(safe-area-inset-left, 0px));
+                padding-right: calc(0.75rem + env(safe-area-inset-right, 0px));
             }
             #tab-chat {
                 padding: 0.75rem 0;
+            }
+            .focus-view-header {
+                margin: -0.75rem;
+                margin-bottom: 0.75rem;
+                margin-left: calc(-0.75rem - env(safe-area-inset-left, 0px));
+                margin-right: calc(-0.75rem - env(safe-area-inset-right, 0px));
+                padding-left: calc(0.5rem + env(safe-area-inset-left, 0px));
+                padding-right: calc(0.5rem + env(safe-area-inset-right, 0px));
             }
             .inline-message {
                 margin-left: 0.75rem;
