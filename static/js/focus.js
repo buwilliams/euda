@@ -633,7 +633,21 @@ function collapseProjectCard(projectId) {
 
 // ============== When Picker ==============
 
+let whenPickerState = {
+    type: null,
+    id: null,
+    viewDate: new Date(),
+    selectedDate: null
+};
+
 function openWhenPicker(type, id) {
+    whenPickerState = {
+        type,
+        id,
+        viewDate: new Date(),
+        selectedDate: null
+    };
+
     const picker = document.createElement('div');
     picker.className = 'when-picker';
     picker.id = 'when-picker';
@@ -645,13 +659,11 @@ function openWhenPicker(type, id) {
                 <span class="when-option-icon">☀️</span>
                 <span class="when-option-label">Today</span>
             </div>
-            <div class="when-option" onclick="showDatePicker('${type}', '${id}')">
+            <div class="when-option" onclick="toggleInlineCalendar()">
                 <span class="when-option-icon">📅</span>
                 <span class="when-option-label">Pick a date...</span>
             </div>
-            <div id="date-picker-row" style="display: none; padding: 0.5rem 0.75rem;">
-                <input type="date" class="when-date-input" id="when-date-input" onchange="setWhenDate('${type}', '${id}')">
-            </div>
+            <div id="inline-calendar-container"></div>
             <div class="when-option" onclick="setWhen('${type}', '${id}', 'someday')">
                 <span class="when-option-icon">💭</span>
                 <span class="when-option-label">Someday</span>
@@ -672,20 +684,136 @@ function closeWhenPicker() {
     }
 }
 
-function showDatePicker(type, id) {
-    const row = document.getElementById('date-picker-row');
-    const input = document.getElementById('when-date-input');
-    if (row && input) {
-        row.style.display = 'block';
-        input.focus();
+function toggleInlineCalendar() {
+    const container = document.getElementById('inline-calendar-container');
+    if (container.innerHTML) {
+        container.innerHTML = '';
+    } else {
+        renderInlineCalendar();
     }
 }
 
-function setWhenDate(type, id) {
-    const input = document.getElementById('when-date-input');
-    if (input && input.value) {
-        setWhen(type, id, 'date', input.value);
+function renderInlineCalendar() {
+    const container = document.getElementById('inline-calendar-container');
+    const { viewDate } = whenPickerState;
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+    const dayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+    // Get first day of month and total days
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Build calendar grid
+    let daysHtml = '';
+
+    // Empty cells for days before first of month
+    for (let i = 0; i < firstDay; i++) {
+        daysHtml += '<div class="calendar-day empty"></div>';
     }
+
+    // Days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const dateStr = formatDateISO(date);
+        const isToday = date.getTime() === today.getTime();
+        const isPast = date < today;
+        const classes = ['calendar-day'];
+        if (isToday) classes.push('today');
+        if (isPast) classes.push('past');
+
+        daysHtml += `<div class="${classes.join(' ')}" onclick="selectCalendarDate('${dateStr}')">${day}</div>`;
+    }
+
+    container.innerHTML = `
+        <div class="inline-calendar">
+            <div class="calendar-nav">
+                <button class="calendar-nav-btn" onclick="changeCalendarMonth(-1)">‹</button>
+                <div class="calendar-nav-title">
+                    <span class="calendar-month" onclick="showMonthPicker()">${monthNames[month]}</span>
+                    <span class="calendar-year" onclick="showYearPicker()">${year}</span>
+                </div>
+                <button class="calendar-nav-btn" onclick="changeCalendarMonth(1)">›</button>
+            </div>
+            <div id="calendar-picker-overlay"></div>
+            <div class="calendar-weekdays">
+                ${dayNames.map(d => `<div class="calendar-weekday">${d}</div>`).join('')}
+            </div>
+            <div class="calendar-days">
+                ${daysHtml}
+            </div>
+        </div>
+    `;
+}
+
+function formatDateISO(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function changeCalendarMonth(delta) {
+    whenPickerState.viewDate.setMonth(whenPickerState.viewDate.getMonth() + delta);
+    renderInlineCalendar();
+}
+
+function showMonthPicker() {
+    const overlay = document.getElementById('calendar-picker-overlay');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentMonth = whenPickerState.viewDate.getMonth();
+
+    overlay.innerHTML = `
+        <div class="calendar-picker-grid months">
+            ${monthNames.map((m, i) => `
+                <div class="calendar-picker-item ${i === currentMonth ? 'selected' : ''}"
+                     onclick="selectMonth(${i})">${m}</div>
+            `).join('')}
+        </div>
+    `;
+    overlay.style.display = 'block';
+}
+
+function selectMonth(month) {
+    whenPickerState.viewDate.setMonth(month);
+    document.getElementById('calendar-picker-overlay').style.display = 'none';
+    renderInlineCalendar();
+}
+
+function showYearPicker() {
+    const overlay = document.getElementById('calendar-picker-overlay');
+    const currentYear = whenPickerState.viewDate.getFullYear();
+    const startYear = currentYear - 5;
+    const years = [];
+    for (let y = startYear; y <= startYear + 11; y++) {
+        years.push(y);
+    }
+
+    overlay.innerHTML = `
+        <div class="calendar-picker-grid years">
+            ${years.map(y => `
+                <div class="calendar-picker-item ${y === currentYear ? 'selected' : ''}"
+                     onclick="selectYear(${y})">${y}</div>
+            `).join('')}
+        </div>
+    `;
+    overlay.style.display = 'block';
+}
+
+function selectYear(year) {
+    whenPickerState.viewDate.setFullYear(year);
+    document.getElementById('calendar-picker-overlay').style.display = 'none';
+    renderInlineCalendar();
+}
+
+function selectCalendarDate(dateStr) {
+    setWhen(whenPickerState.type, whenPickerState.id, 'date', dateStr);
 }
 
 async function setWhen(type, id, whenType, date = null) {
