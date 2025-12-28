@@ -34,26 +34,14 @@
             width: 100%;
             max-width: 640px;
             padding: 1.5rem;
-            transition: max-width 0.3s ease;
         }
 
-        .app-container.panel-open .app {
-            max-width: 480px;
-        }
-
-        /* ============== Context View (Primary) ============== */
-        .context-view {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
+        /* ============== Context/Quote Content ============== */
         .context-content {
             flex: 0 0 auto;
             overflow-y: auto;
             padding: 0.5rem 0;
-            max-height: 50vh;
+            max-height: 40vh;
         }
 
         .context-content:empty {
@@ -452,50 +440,36 @@
 
         /* ============== Chat Input (Bottom Bar) ============== */
         .input-bar {
-            margin-top: auto;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-        }
-
-        .input-menu {
             display: flex;
-            background: #f8f8f8;
-            border-bottom: 1px solid #ddd;
-            border-radius: 6px 6px 0 0;
+            align-items: flex-end;
+            gap: 0.5rem;
+            padding: 0.75rem 0;
+            border-top: none;
         }
 
-        .menu-btn {
+        .clear-btn {
             display: flex;
             align-items: center;
-            gap: 0.3rem;
-            padding: 0.4rem 0.6rem;
-            background: transparent;
-            border: none;
-            border-right: 1px solid #e0e0e0;
-            font-size: 0.8rem;
-            color: #666;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
             cursor: pointer;
+            color: #666;
             transition: all 0.15s;
-            position: relative;
+            flex-shrink: 0;
         }
 
-        .menu-btn:last-child {
-            border-right: none;
-        }
-
-        .menu-btn:hover {
+        .clear-btn:hover {
             background: #eee;
             color: #333;
         }
 
-        .menu-btn.active {
-            background: #e8e8e8;
-            color: #333;
-        }
-
-        .menu-btn svg {
-            width: 14px;
-            height: 14px;
+        .clear-btn svg {
+            width: 16px;
+            height: 16px;
             stroke: currentColor;
             fill: none;
             stroke-width: 2;
@@ -503,128 +477,183 @@
             stroke-linejoin: round;
         }
 
-        .menu-btn svg rect {
-            fill: none;
-        }
-
-        .input-container {
-            display: flex;
-            align-items: flex-end;
-        }
-
-        .input-container input,
-        .input-container textarea {
+        .input-bar textarea {
             flex: 1;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 0 0 0 6px;
+            padding: 0.6rem 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
             font-family: inherit;
             font-size: 1rem;
             resize: none;
-            min-height: 48px;
+            min-height: 40px;
             max-height: 200px;
             line-height: 1.4;
             overflow-y: auto;
         }
 
-        .input-container input:focus,
-        .input-container textarea:focus {
+        .input-bar textarea:focus {
             outline: none;
+            border-color: #999;
         }
 
-        .input-container input:disabled,
-        .input-container textarea:disabled {
+        .input-bar textarea:disabled {
             background: #fafafa;
             color: #999;
         }
 
-        #send-btn {
-            padding: 0.875rem 1.5rem;
-            border: none;
-            background: #000;
-            color: #fff;
-            font-family: inherit;
-            font-size: 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.2s;
-            height: 48px;
-            margin-right: 0.25rem;
-        }
-
-        #send-btn:hover:not(:disabled) { background: #333; }
-        #send-btn:disabled { background: #ccc; cursor: not-allowed; }
-
         #context-send-btn {
-            padding: 0.75rem 1.25rem;
+            padding: 0.6rem 1.25rem;
+            height: 40px;
             border: none;
-            border-left: 1px solid #ddd;
-            border-radius: 0 0 6px 0;
+            border-radius: 6px;
             background: #000;
             color: #fff;
             font-family: inherit;
             font-size: 1rem;
-            line-height: 1.4;
             cursor: pointer;
             transition: background 0.2s;
-            align-self: stretch;
+            flex-shrink: 0;
         }
 
         #context-send-btn:hover:not(:disabled) { background: #333; }
         #context-send-btn:disabled { background: #ccc; cursor: not-allowed; }
 
-        /* Menu button badge */
-        .toggle-badge {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            background: #ef4444;
-            color: #fff;
-            font-size: 0.6rem;
-            padding: 0.1rem 0.3rem;
-            border-radius: 8px;
-            min-width: 0.9rem;
-            text-align: center;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            z-index: 1;
-        }
-
-        /* ============== Side Panels ============== */
-        .panel {
-            width: 280px;
-            height: 100vh;
-            background: #fafafa;
-            border-left: 1px solid #eee;
-            display: none;
+        /* ============== Tabs Container ============== */
+        .tabs-container {
+            flex: 1;
+            display: flex;
             flex-direction: column;
             overflow: hidden;
+            min-height: 0;
         }
 
-        .panel.active { display: flex; }
-
-        .panel-header {
-            padding: 1.5rem 1rem 1rem;
-            border-bottom: 1px solid #eee;
+        .tab-content {
+            flex: 1;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
             background: #fff;
         }
 
-        .panel-title {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #999;
-            margin-bottom: 0.25rem;
-        }
-
-        .panel-content {
-            flex: 1;
+        .tab-pane {
+            display: none;
+            height: 100%;
             overflow-y: auto;
             padding: 1rem;
         }
 
-        .panel-section { margin-bottom: 1.5rem; }
+        .tab-pane.active {
+            display: block;
+        }
 
-        .panel-section-header {
+        /* Tab Menu */
+        .tab-menu {
+            display: flex;
+            align-items: stretch;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.6rem 1rem;
+            background: #f0f0f0;
+            border: none;
+            border-right: 1px solid #ddd;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            color: #666;
+            transition: all 0.15s;
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            background: #e8e8e8;
+            color: #333;
+        }
+
+        .tab-btn.active {
+            background: #fff;
+            color: #333;
+            margin-top: -1px;
+            padding-top: calc(0.6rem + 1px);
+            border-top: 1px solid #fff;
+        }
+
+        .tab-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .tab-btn svg rect {
+            fill: none;
+        }
+
+        .tab-badge {
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.65rem;
+            padding: 0.1rem 0.35rem;
+            border-radius: 8px;
+            min-width: 1rem;
+            text-align: center;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .tab-spacer {
+            flex: 1;
+        }
+
+        .tab-action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 0.8rem;
+            background: transparent;
+            border: none;
+            border-left: 1px solid #ddd;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.15s;
+        }
+
+        .tab-action-btn:hover {
+            background: #e8e8e8;
+            color: #333;
+        }
+
+        .tab-action-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* ============== Focus Tab Sections ============== */
+        .focus-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .focus-section {
+            margin-bottom: 0;
+        }
+
+        .focus-section-header {
             display: flex;
             align-items: center;
             margin-bottom: 0.75rem;
@@ -632,7 +661,7 @@
             user-select: none;
         }
 
-        .panel-section-header:hover { opacity: 0.8; }
+        .focus-section-header:hover { opacity: 0.8; }
 
         .section-toggle {
             font-size: 0.7rem;
@@ -641,11 +670,11 @@
             transition: transform 0.2s;
         }
 
-        .panel-section.collapsed .section-toggle {
+        .focus-section.collapsed .section-toggle {
             transform: rotate(-90deg);
         }
 
-        .panel-section-title {
+        .focus-section-title {
             font-size: 0.8rem;
             font-weight: 600;
             color: #333;
@@ -654,7 +683,7 @@
             flex: 1;
         }
 
-        .panel-section-count {
+        .focus-section-count {
             font-size: 0.75rem;
             color: #999;
             background: #eee;
@@ -662,12 +691,295 @@
             border-radius: 10px;
         }
 
-        .panel-section-content {
+        .focus-section-content {
             transition: max-height 0.2s ease-out, opacity 0.2s ease-out;
         }
 
-        .panel-section.collapsed .panel-section-content {
+        .focus-section.collapsed .focus-section-content {
             display: none;
+        }
+
+        .focus-empty {
+            color: #999;
+            font-style: italic;
+            font-size: 0.9rem;
+            padding: 0.5rem 0;
+        }
+
+        /* ============== Chat Tab ============== */
+        .chat-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-content .context-content {
+            flex: 0 0 auto;
+        }
+
+        .chat-content .inline-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        /* ============== History Tab ============== */
+        .history-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        /* ============== Cards (Minimal & Full) ============== */
+        .card {
+            border: 1px solid #eee;
+            border-radius: 6px;
+            background: #fff;
+            transition: all 0.2s;
+        }
+
+        /* Minimal Card */
+        .card-minimal {
+            padding: 0.6rem 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-minimal:hover {
+            background: #f9f9f9;
+            border-color: #ddd;
+        }
+
+        .card-title {
+            flex: 1;
+            font-size: 0.9rem;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        .card-badge {
+            font-size: 0.75rem;
+            color: #666;
+            background: #f0f0f0;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+
+        .card-date {
+            font-size: 0.75rem;
+            color: #999;
+            flex-shrink: 0;
+        }
+
+        .card-preview {
+            flex: 1;
+            font-size: 0.85rem;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        /* Full Card (Expanded) */
+        .card-full {
+            padding: 0;
+        }
+
+        .card-header {
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            background: #fafafa;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .card-header .card-title {
+            white-space: normal;
+            overflow: visible;
+            flex: 1;
+        }
+
+        .card-collapse {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #999;
+            cursor: pointer;
+            padding: 0 0.25rem;
+            line-height: 1;
+            flex-shrink: 0;
+            margin-left: 0.5rem;
+        }
+
+        .card-collapse:hover {
+            color: #333;
+        }
+
+        .card-body {
+            padding: 0.75rem;
+        }
+
+        .card-meta {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-description {
+            font-size: 0.9rem;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .card-description p { margin: 0.5rem 0; }
+        .card-description p:first-child { margin-top: 0; }
+        .card-description p:last-child { margin-bottom: 0; }
+
+        .card-actions {
+            padding: 0.5rem 0.75rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 0.5rem;
+            background: #fafafa;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .card-action {
+            padding: 0.35rem 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8rem;
+            color: #666;
+            transition: all 0.15s;
+        }
+
+        .card-action:hover {
+            border-color: #999;
+            color: #333;
+        }
+
+        .card-action.primary {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+
+        .card-action.primary:hover {
+            background: #333;
+        }
+
+        .card-action.danger:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        /* ============== Project Group ============== */
+        .project-group {
+            margin-bottom: 1rem;
+        }
+
+        .project-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .project-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #666;
+            padding-bottom: 0.35rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .project-group .card {
+            margin-bottom: 0.35rem;
+        }
+
+        .project-group .card:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ============== Nested Task Cards in Project ============== */
+        .card-tasks {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            margin-top: 0.5rem;
+        }
+
+        .card-tasks .card {
+            margin-bottom: 0;
+        }
+
+        /* ============== Note Cards ============== */
+        .card-notes {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px dashed #eee;
+        }
+
+        .card-notes-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Add Task Input in Project Card */
+        .card-add-task {
+            display: flex;
+            gap: 0.25rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px dashed #eee;
+        }
+
+        .card-add-input {
+            flex: 1;
+            padding: 0.35rem 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.8rem;
+        }
+
+        .card-add-input:focus {
+            outline: none;
+            border-color: #999;
+        }
+
+        .card-add-btn {
+            padding: 0.35rem 0.6rem;
+            border: none;
+            background: #000;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .card-add-btn:hover {
+            background: #333;
         }
 
         /* Task items */
@@ -1208,17 +1520,15 @@
         .app.drag-over { background: #f5f5f5; outline: 2px dashed #999; outline-offset: -10px; }
 
         /* Responsive */
-        @media (max-width: 800px) {
-            .app-container.panel-open .app { display: none; }
-            .panel { width: 100%; max-width: 100%; }
-        }
-
-        @media (max-width: 480px) {
-            .menu-btn span:not(.toggle-badge) {
+        @media (max-width: 600px) {
+            .tab-btn span {
                 display: none;
             }
-            .menu-btn {
-                padding: 0.5rem;
+            .tab-btn {
+                padding: 0.6rem 0.75rem;
+            }
+            .app {
+                padding: 1rem;
             }
         }
 
@@ -1262,103 +1572,102 @@
 <body>
     <div class="app-container" id="app-container">
         <div class="app">
-            <!-- Context View (Primary) -->
-            <section class="context-view" id="context-view">
-                <div class="context-content" id="context-content">
-                    <div class="loading-spinner">Loading...</div>
+            <!-- Tabs Container -->
+            <div class="tabs-container">
+                <div class="tab-content">
+                    <!-- Chat Tab -->
+                    <div class="tab-pane active" id="tab-chat">
+                        <div class="chat-content">
+                            <div class="context-content" id="context-content">
+                                <div class="loading-spinner">Loading...</div>
+                            </div>
+                            <div class="inline-chat-messages" id="inline-messages"></div>
+                        </div>
+                    </div>
+
+                    <!-- Focus Tab -->
+                    <div class="tab-pane" id="tab-focus">
+                        <div class="focus-content">
+                            <div class="focus-section" id="section-today">
+                                <div class="focus-section-header" onclick="toggleSection('today')">
+                                    <span class="section-toggle">▼</span>
+                                    <span class="focus-section-title">Today</span>
+                                    <span class="focus-section-count" id="today-count">0</span>
+                                </div>
+                                <div class="focus-section-content" id="today-tasks">
+                                    <div class="focus-empty">No tasks for today</div>
+                                </div>
+                            </div>
+                            <div class="focus-section" id="section-projects">
+                                <div class="focus-section-header" onclick="toggleSection('projects')">
+                                    <span class="section-toggle">▼</span>
+                                    <span class="focus-section-title">Projects</span>
+                                    <span class="focus-section-count" id="projects-count">0</span>
+                                </div>
+                                <div class="focus-section-content" id="projects-list">
+                                    <div class="focus-empty">No active projects</div>
+                                </div>
+                            </div>
+                            <div class="focus-section collapsed" id="section-completed">
+                                <div class="focus-section-header" onclick="toggleSection('completed')">
+                                    <span class="section-toggle">▼</span>
+                                    <span class="focus-section-title">Completed</span>
+                                    <span class="focus-section-count" id="completed-count">0</span>
+                                </div>
+                                <div class="focus-section-content" id="completed-tasks">
+                                    <div class="focus-empty">No completed tasks</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- History Tab -->
+                    <div class="tab-pane" id="tab-history">
+                        <div class="history-content" id="history-list">
+                            <div class="focus-empty">Loading...</div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Inline conversation area -->
-                <div class="inline-chat" id="inline-chat" style="display: none;">
-                    <div class="inline-chat-messages" id="inline-messages"></div>
+                <!-- Tab Menu (below content) -->
+                <div class="tab-menu">
+                    <button class="tab-btn active" data-tab="chat" onclick="switchTab('chat')">
+                        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <span>Chat</span>
+                    </button>
+                    <button class="tab-btn" data-tab="focus" onclick="switchTab('focus')">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="4" height="4" rx="1"/><line x1="10" y1="7" x2="21" y2="7"/><rect x="3" y="15" width="4" height="4" rx="1"/><line x1="10" y1="17" x2="21" y2="17"/></svg>
+                        <span>Focus</span>
+                        <span class="tab-badge" id="tasks-badge" style="display: none;">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="history" onclick="switchTab('history')">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 16 14" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                        <span>History</span>
+                    </button>
+                    <div class="tab-spacer"></div>
+                    <button class="tab-action-btn" id="upload-btn" onclick="triggerUpload()" title="Upload file">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </button>
+                    <input type="file" id="file-input" style="display:none" onchange="handleFileSelect(event)" multiple>
                 </div>
+            </div>
 
-                <div class="input-bar">
-                    <div class="input-menu">
-                        <button class="menu-btn" onclick="resetUI()" title="Clear chat">
-                            <svg viewBox="0 0 24 24">
-                                <line x1="18" y1="6" x2="6" y2="18"/>
-                                <line x1="6" y1="6" x2="18" y2="18"/>
-                            </svg>
-                            <span>Clear</span>
-                        </button>
-                        <button class="menu-btn" id="upload-btn" onclick="triggerUpload()" title="Upload file">
-                            <svg viewBox="0 0 24 24">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="17 8 12 3 7 8"/>
-                                <line x1="12" y1="3" x2="12" y2="15"/>
-                            </svg>
-                            <span>Upload</span>
-                        </button>
-                        <input type="file" id="file-input" style="display:none" onchange="handleFileSelect(event)" multiple>
-                        <button class="menu-btn" id="tasks-toggle" onclick="togglePanel('tasks')" title="Focus">
-                            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="4" height="4" rx="1"/><line x1="10" y1="7" x2="21" y2="7"/><rect x="3" y="15" width="4" height="4" rx="1"/><line x1="10" y1="17" x2="21" y2="17"/></svg>
-                            <span>Focus</span>
-                            <span class="toggle-badge" id="tasks-badge" style="display: none;">0</span>
-                        </button>
-                        <button class="menu-btn" id="history-toggle" onclick="togglePanel('history')" title="History">
-                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 16 14" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-                            <span>History</span>
-                        </button>
-                    </div>
-                    <div class="input-container">
-                        <textarea id="context-input" placeholder="Talk to me..." rows="1"></textarea>
-                        <button id="context-send-btn" onclick="sendContextMessage()">Send</button>
-                    </div>
-                </div>
-            </section>
+            <!-- Input Bar (always visible) -->
+            <div class="input-bar">
+                <button class="clear-btn" onclick="resetUI()" title="Clear chat">
+                    <svg viewBox="0 0 24 24">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+                <textarea id="context-input" placeholder="Talk to me..." rows="1"></textarea>
+                <button id="context-send-btn" onclick="sendContextMessage()">Send</button>
+            </div>
         </div>
-
-        <!-- Focus Panel -->
-        <aside class="panel" id="tasks-panel">
-            <div class="panel-header">
-                <div class="panel-title">Focus</div>
-            </div>
-            <div class="panel-content">
-                <div class="panel-section" id="section-today">
-                    <div class="panel-section-header" onclick="toggleSection('today')">
-                        <span class="section-toggle">▼</span>
-                        <span class="panel-section-title">Today</span>
-                        <span class="panel-section-count" id="today-count">0</span>
-                    </div>
-                    <div class="panel-section-content" id="today-tasks">
-                        <div class="task-empty">No tasks for today</div>
-                    </div>
-                </div>
-                <div class="panel-section" id="section-projects">
-                    <div class="panel-section-header" onclick="toggleSection('projects')">
-                        <span class="section-toggle">▼</span>
-                        <span class="panel-section-title">Projects</span>
-                        <span class="panel-section-count" id="projects-count">0</span>
-                    </div>
-                    <div class="panel-section-content" id="projects-list">
-                        <div class="project-empty">No active projects</div>
-                    </div>
-                </div>
-                <div class="panel-section collapsed" id="section-completed">
-                    <div class="panel-section-header" onclick="toggleSection('completed')">
-                        <span class="section-toggle">▼</span>
-                        <span class="panel-section-title">Completed</span>
-                        <span class="panel-section-count" id="completed-count">0</span>
-                    </div>
-                    <div class="panel-section-content" id="completed-tasks">
-                        <div class="task-empty">No completed tasks</div>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- History Panel -->
-        <aside class="panel" id="history-panel">
-            <div class="panel-header">
-                <div class="panel-title">History</div>
-            </div>
-            <div class="panel-content">
-                <div id="history-list">
-                    <div class="history-empty">Loading...</div>
-                </div>
-            </div>
-        </aside>
 
         <!-- Upload Progress -->
         <div class="upload-progress" id="upload-progress">
@@ -1381,12 +1690,12 @@
         let sessionId = localStorage.getItem('sessionId') || null;
         let viewingHistorySessionId = null;  // Track which history conversation is being viewed
         let isWaiting = false;
-        let activePanel = null;  // Always start collapsed
+        let activeTab = localStorage.getItem('activeTab') || 'chat';
+        let expandedCards = new Set();  // Track which cards are expanded
         let tasksData = [];
         let projectsData = [];
         let projectNotesData = {};
         let historyData = [];
-        let chatOpen = false;
         let uploadXhr = null;
 
         // Elements
@@ -1398,6 +1707,9 @@
             // Restore section collapse states
             restoreSectionStates();
 
+            // Restore active tab
+            switchTab(activeTab, false);
+
             // Load daily quote
             loadDailyQuote();
 
@@ -1406,6 +1718,29 @@
 
             // Load tasks data for badge
             loadTasksData();
+        }
+
+        // ============== Tab Functions ==============
+
+        function switchTab(tabName, saveState = true) {
+            // Hide all panes and deactivate all buttons
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+            // Show selected pane and activate button
+            const pane = document.getElementById(`tab-${tabName}`);
+            const btn = document.querySelector(`[data-tab="${tabName}"]`);
+            if (pane) pane.classList.add('active');
+            if (btn) btn.classList.add('active');
+
+            activeTab = tabName;
+            if (saveState) {
+                localStorage.setItem('activeTab', tabName);
+            }
+
+            // Load data for tab
+            if (tabName === 'focus') loadTasksData();
+            if (tabName === 'history') loadHistoryData();
         }
 
         // ============== Daily Quote ==============
@@ -1445,15 +1780,16 @@
 
         const contextInput = document.getElementById('context-input');
         const contextSendBtn = document.getElementById('context-send-btn');
-        const inlineChat = document.getElementById('inline-chat');
         const inlineMessages = document.getElementById('inline-messages');
 
         async function sendContextMessage() {
             const message = contextInput.value.trim();
             if (!message || isWaiting) return;
 
-            // Show inline chat area
-            inlineChat.style.display = 'block';
+            // Switch to chat tab if not already there
+            if (activeTab !== 'chat') {
+                switchTab('chat');
+            }
 
             // Add user message
             addInlineMessage(message, 'you');
@@ -1487,7 +1823,6 @@
                 if (data.clear_chat) {
                     setTimeout(() => {
                         inlineMessages.innerHTML = '';
-                        inlineChat.style.display = 'none';
                         loadDailyQuote();
                     }, 1500);  // Brief delay so user sees the confirmation
                 }
@@ -1507,7 +1842,9 @@
             const html = role === 'friend' ? marked.parse(content) : escapeHtml(content);
             div.innerHTML = `<div class="message-content">${html}</div>`;
             inlineMessages.appendChild(div);
-            inlineChat.scrollTop = inlineChat.scrollHeight;
+            // Scroll to bottom of chat tab
+            const chatPane = document.getElementById('tab-chat');
+            if (chatPane) chatPane.scrollTop = chatPane.scrollHeight;
         }
 
         function addInlineThinking() {
@@ -1516,7 +1853,8 @@
             div.id = 'inline-thinking';
             div.innerHTML = `<div class="message-content" style="color: #999; font-style: italic;">Thinking<span class="thinking-dots"><span></span><span></span><span></span></span></div>`;
             inlineMessages.appendChild(div);
-            inlineChat.scrollTop = inlineChat.scrollHeight;
+            const chatPane = document.getElementById('tab-chat');
+            if (chatPane) chatPane.scrollTop = chatPane.scrollHeight;
         }
 
         function removeInlineThinking() {
@@ -1569,14 +1907,12 @@
         async function resetUI() {
             // Clear all messages
             inlineMessages.innerHTML = '';
-            // Hide chat area
-            inlineChat.style.display = 'none';
-            // Close panel if open
-            if (activePanel) {
-                togglePanel(activePanel);
-            }
+            // Switch to chat tab
+            switchTab('chat');
             // Reload the quote
             loadDailyQuote();
+            // Clear expanded cards state
+            expandedCards.clear();
 
             // Create a new session (old session preserved in history)
             try {
@@ -1599,34 +1935,7 @@
             return div.innerHTML;
         }
 
-        // ============== Panel Functions ==============
-
-        function togglePanel(panelName) {
-            const panel = document.getElementById(`${panelName}-panel`);
-            const toggle = document.getElementById(`${panelName}-toggle`);
-
-            if (activePanel === panelName) {
-                panel.classList.remove('active');
-                toggle.classList.remove('active');
-                appContainer.classList.remove('panel-open');
-                activePanel = null;
-                localStorage.removeItem('activePanel');
-            } else {
-                if (activePanel) {
-                    document.getElementById(`${activePanel}-panel`).classList.remove('active');
-                    document.getElementById(`${activePanel}-toggle`).classList.remove('active');
-                }
-
-                panel.classList.add('active');
-                toggle.classList.add('active');
-                appContainer.classList.add('panel-open');
-                activePanel = panelName;
-                localStorage.setItem('activePanel', panelName);
-
-                if (panelName === 'tasks') loadTasksData();
-                if (panelName === 'history') loadHistoryData();
-            }
-        }
+        // ============== Section Toggle ==============
 
         function toggleSection(sectionName) {
             const section = document.getElementById(`section-${sectionName}`);
@@ -1708,33 +2017,95 @@
                 return isToday && isPending;
             });
 
-            // Separate From Euno tasks and show them first
-            const eunoTasks = todayTasks.filter(t => t.project_id === 'project-euno');
-            const otherTasks = todayTasks.filter(t => t.project_id !== 'project-euno');
-            const sortedTasks = [...eunoTasks, ...otherTasks].slice(0, 15);
+            countEl.textContent = todayTasks.length;
 
-            countEl.textContent = sortedTasks.length;
-
-            if (sortedTasks.length === 0) {
-                container.innerHTML = '<div class="task-empty">No tasks for today</div>';
+            if (todayTasks.length === 0) {
+                container.innerHTML = '<div class="focus-empty">No tasks for today</div>';
                 return;
             }
 
-            container.innerHTML = sortedTasks.map(task => {
-                const isEuno = task.project_id === 'project-euno';
-                const badgeClass = isEuno ? 'task-project-badge euno-badge' : 'task-project-badge';
-                const badgeText = isEuno ? 'Euno' : (task.project_title || 'General');
+            // Group tasks by project
+            const tasksByProject = {};
+            todayTasks.forEach(task => {
+                const projectName = task.project_title || 'General';
+                if (!tasksByProject[projectName]) {
+                    tasksByProject[projectName] = [];
+                }
+                tasksByProject[projectName].push(task);
+            });
+
+            // Sort projects: Euno first, then General, then alphabetically
+            const sortedProjects = Object.keys(tasksByProject).sort((a, b) => {
+                if (a === 'From Euno') return -1;
+                if (b === 'From Euno') return 1;
+                if (a === 'General') return 1;
+                if (b === 'General') return -1;
+                return a.localeCompare(b);
+            });
+
+            container.innerHTML = sortedProjects.map(projectName => {
+                const tasks = tasksByProject[projectName];
                 return `
-                <div class="task-item" data-task-id="${task.id}">
-                    <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
-                    <div class="task-info">
-                        <span class="${badgeClass}" title="${escapeHtml(task.project_title || 'General')}">${escapeHtml(badgeText)}</span>
-                        <div class="task-description" onclick="showTaskById('${task.id}')" title="Click to view full text">${escapeHtml(task.description)}</div>
+                    <div class="project-group">
+                        <div class="project-label">${escapeHtml(projectName)}</div>
+                        ${tasks.map(task => renderTaskCard(task)).join('')}
                     </div>
-                    <button class="task-snooze" onclick="snoozeTask(event, '${task.id}')" title="Snooze until tomorrow">💤</button>
-                    <button class="task-delete" onclick="deleteTask(event, '${task.id}')" title="Delete">×</button>
+                `;
+            }).join('');
+        }
+
+        function renderTaskCard(task) {
+            const isExpanded = expandedCards.has(`task-${task.id}`);
+
+            if (isExpanded) {
+                return renderFullTaskCard(task);
+            } else {
+                return renderMinimalTaskCard(task);
+            }
+        }
+
+        function renderMinimalTaskCard(task) {
+            return `
+                <div class="card card-minimal" data-task-id="${task.id}" onclick="expandTaskCard('${task.id}')">
+                    <span class="card-title">${escapeHtml(task.description)}</span>
                 </div>
-            `}).join('');
+            `;
+        }
+
+        function renderFullTaskCard(task) {
+            const projectName = task.project_title || 'General';
+            const dueDate = task.scheduling?.due_date || 'No due date';
+            return `
+                <div class="card card-full" data-task-id="${task.id}">
+                    <div class="card-header">
+                        <span class="card-title">${escapeHtml(task.description)}</span>
+                        <button class="card-collapse" onclick="event.stopPropagation(); collapseTaskCard('${task.id}')">−</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-meta">Project: ${escapeHtml(projectName)} • Due: ${escapeHtml(dueDate)}</div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="card-action" onclick="toggleTask(event, '${task.id}')">Complete</button>
+                        <button class="card-action" onclick="snoozeTask(event, '${task.id}')">Snooze</button>
+                        <button class="card-action" onclick="archiveTask(event, '${task.id}')">Archive</button>
+                        <button class="card-action danger" onclick="deleteTask(event, '${task.id}')">Delete</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function expandTaskCard(taskId) {
+            expandedCards.add(`task-${taskId}`);
+            renderTodayTasks();
+            renderProjects();
+            renderCompletedTasks();
+        }
+
+        function collapseTaskCard(taskId) {
+            expandedCards.delete(`task-${taskId}`);
+            renderTodayTasks();
+            renderProjects();
+            renderCompletedTasks();
         }
 
         function renderProjects() {
@@ -1745,57 +2116,97 @@
             countEl.textContent = activeProjects.length;
 
             if (activeProjects.length === 0) {
-                container.innerHTML = '<div class="project-empty">No active projects</div>';
+                container.innerHTML = '<div class="focus-empty">No active projects</div>';
                 return;
             }
 
-            container.innerHTML = activeProjects.map(project => {
-                const projectTasks = tasksData.filter(t => t.project_id === project.id && t.status !== 'completed');
-                const noteCount = projectNotesData[project.id]?.count || 0;
-                const isGeneral = project.id === 'project-general';
-                return `
-                    <div class="project-item" data-project-id="${project.id}">
-                        <div class="project-header">
-                            <span class="project-toggle" onclick="toggleProject('${project.id}')">▶</span>
-                            <span class="project-name" onclick="showFullContent('Project', '${escapeHtml(project.title).replace(/'/g, "\\'")}')" title="Click to view full text">${escapeHtml(project.title)}</span>
-                            <span class="project-badge" onclick="toggleProject('${project.id}')">${projectTasks.length}</span>
-                        </div>
-                        <div class="project-tasks">
-                            ${projectTasks.length === 0
-                                ? '<div class="task-empty">No pending tasks</div>'
-                                : projectTasks.map(task => `
-                                    <div class="task-item" data-task-id="${task.id}">
-                                        <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
-                                        <div class="task-description" onclick="showTaskById('${task.id}')" title="Click to view full text">${escapeHtml(task.description)}</div>
-                                        <button class="task-snooze" onclick="snoozeTask(event, '${task.id}')" title="Snooze until tomorrow">💤</button>
-                                        <button class="task-archive" onclick="archiveTask(event, '${task.id}')" title="Archive">📦</button>
-                                        <button class="task-delete" onclick="deleteTask(event, '${task.id}')" title="Delete">×</button>
-                                    </div>
-                                `).join('')
-                            }
-                            <div class="project-add-task">
-                                <input type="text" class="project-add-input" id="add-task-${project.id}" placeholder="Add task..." onkeypress="if(event.key==='Enter')addTaskToProject('${project.id}', this)">
-                                <button class="project-add-btn" onclick="addTaskToProject('${project.id}', document.getElementById('add-task-${project.id}'))">+</button>
-                            </div>
-                            <div class="project-notes-toggle" onclick="toggleProjectNotes('${project.id}')" title="Click to view notes">
-                                <span class="project-notes-icon">📝</span>
-                                <span>${noteCount} note${noteCount !== 1 ? 's' : ''}</span>
-                            </div>
-                            ${!isGeneral ? `
-                            <div class="project-actions">
-                                <button class="project-action-btn" onclick="completeProject('${project.id}')">Complete</button>
-                                <button class="project-action-btn archive" onclick="archiveProject('${project.id}')">Archive</button>
-                            </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            container.innerHTML = activeProjects.map(project => renderProjectCard(project)).join('');
         }
 
-        function toggleProject(projectId) {
-            const el = document.querySelector(`[data-project-id="${projectId}"]`);
-            if (el) el.classList.toggle('expanded');
+        function renderProjectCard(project) {
+            const isExpanded = expandedCards.has(`project-${project.id}`);
+
+            if (isExpanded) {
+                return renderFullProjectCard(project);
+            } else {
+                return renderMinimalProjectCard(project);
+            }
+        }
+
+        function renderMinimalProjectCard(project) {
+            const projectTasks = tasksData.filter(t => t.project_id === project.id && t.status !== 'completed');
+            return `
+                <div class="card card-minimal" data-project-id="${project.id}" onclick="expandProjectCard('${project.id}')">
+                    <span class="card-title">${escapeHtml(project.title)}</span>
+                    <span class="card-badge">${projectTasks.length} task${projectTasks.length !== 1 ? 's' : ''}</span>
+                </div>
+            `;
+        }
+
+        function renderFullProjectCard(project) {
+            const projectTasks = tasksData.filter(t => t.project_id === project.id && t.status !== 'completed');
+            const noteCount = projectNotesData[project.id]?.count || 0;
+            const isGeneral = project.id === 'project-general';
+
+            return `
+                <div class="card card-full" data-project-id="${project.id}">
+                    <div class="card-header">
+                        <span class="card-title">${escapeHtml(project.title)}</span>
+                        <button class="card-collapse" onclick="event.stopPropagation(); collapseProjectCard('${project.id}')">−</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-meta">${projectTasks.length} pending task${projectTasks.length !== 1 ? 's' : ''} • ${noteCount} note${noteCount !== 1 ? 's' : ''}</div>
+                        <div class="card-tasks">
+                            ${projectTasks.length === 0
+                                ? '<div class="focus-empty">No pending tasks</div>'
+                                : projectTasks.map(task => renderTaskCard(task)).join('')
+                            }
+                        </div>
+                        <div class="card-add-task">
+                            <input type="text" class="card-add-input" id="add-task-${project.id}" placeholder="Add task..." onkeypress="if(event.key==='Enter')addTaskToProject('${project.id}', this)">
+                            <button class="card-add-btn" onclick="addTaskToProject('${project.id}', document.getElementById('add-task-${project.id}'))">+</button>
+                        </div>
+                        ${noteCount > 0 ? `
+                        <div class="card-notes">
+                            <div class="card-notes-header">Notes</div>
+                            <button class="card-action" onclick="toggleProjectNotes('${project.id}')">View ${noteCount} note${noteCount !== 1 ? 's' : ''}</button>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ${!isGeneral ? `
+                    <div class="card-actions">
+                        <button class="card-action" onclick="archiveProject('${project.id}')">Archive</button>
+                        <button class="card-action danger" onclick="deleteProject('${project.id}')">Delete</button>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function expandProjectCard(projectId) {
+            expandedCards.add(`project-${projectId}`);
+            renderProjects();
+        }
+
+        function collapseProjectCard(projectId) {
+            expandedCards.delete(`project-${projectId}`);
+            renderProjects();
+        }
+
+        async function deleteProject(projectId) {
+            if (!confirm('Delete this project and all its tasks?')) return;
+
+            try {
+                const response = await fetch(`/api/projects/${projectId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    await loadTasksData();
+                }
+            } catch (error) {
+                console.error('Failed to delete project:', error);
+            }
         }
 
         async function toggleProjectNotes(projectId) {
@@ -1940,20 +2351,54 @@
             countEl.textContent = completedTasksData.length;
 
             if (completedTasksData.length === 0) {
-                container.innerHTML = '<div class="task-empty">No completed tasks</div>';
+                container.innerHTML = '<div class="focus-empty">No completed tasks</div>';
                 return;
             }
 
-            container.innerHTML = completedTasksData.slice(0, 10).map(task => `
-                <div class="task-item completed" data-task-id="${task.id}">
-                    <div class="task-checkbox" onclick="toggleTask(event, '${task.id}')"></div>
-                    <div class="task-info">
-                        <span class="task-project-badge" title="${escapeHtml(task.project_title || 'General')}">${escapeHtml(task.project_title || 'General')}</span>
-                        <div class="task-description" onclick="showTaskById('${task.id}')" title="Click to view full text">${escapeHtml(task.description)}</div>
-                    </div>
-                    <button class="task-delete" onclick="deleteTask(event, '${task.id}')" title="Delete">×</button>
+            // Group by project
+            const tasksByProject = {};
+            completedTasksData.slice(0, 15).forEach(task => {
+                const projectName = task.project_title || 'General';
+                if (!tasksByProject[projectName]) {
+                    tasksByProject[projectName] = [];
+                }
+                tasksByProject[projectName].push(task);
+            });
+
+            container.innerHTML = Object.entries(tasksByProject).map(([projectName, tasks]) => `
+                <div class="project-group">
+                    <div class="project-label">${escapeHtml(projectName)}</div>
+                    ${tasks.map(task => renderCompletedTaskCard(task)).join('')}
                 </div>
             `).join('');
+        }
+
+        function renderCompletedTaskCard(task) {
+            const isExpanded = expandedCards.has(`completed-${task.id}`);
+
+            if (isExpanded) {
+                return `
+                    <div class="card card-full" data-task-id="${task.id}" style="opacity: 0.7;">
+                        <div class="card-header">
+                            <span class="card-title" style="text-decoration: line-through;">${escapeHtml(task.description)}</span>
+                            <button class="card-collapse" onclick="event.stopPropagation(); expandedCards.delete('completed-${task.id}'); renderCompletedTasks();">−</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-meta">Completed ${task.completed_at ? new Date(task.completed_at).toLocaleDateString() : 'recently'}</div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action" onclick="toggleTask(event, '${task.id}')">Restore</button>
+                            <button class="card-action danger" onclick="deleteTask(event, '${task.id}')">Delete</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="card card-minimal" data-task-id="${task.id}" onclick="expandedCards.add('completed-${task.id}'); renderCompletedTasks();" style="opacity: 0.7;">
+                        <span class="card-title" style="text-decoration: line-through; color: #888;">${escapeHtml(task.description)}</span>
+                    </div>
+                `;
+            }
         }
 
         // ============== History ==============
@@ -1974,19 +2419,44 @@
         function renderHistory() {
             const container = document.getElementById('history-list');
             if (!historyData || historyData.length === 0) {
-                container.innerHTML = '<div class="history-empty">No conversations yet</div>';
+                container.innerHTML = '<div class="focus-empty">No conversations yet</div>';
                 return;
             }
-            container.innerHTML = historyData.map(item => `
-                <div class="history-item" onclick="forkConversation('${item.session_id}')">
-                    <div class="history-date">${item.date} ${item.time}</div>
-                    <div class="history-preview">${escapeHtml(item.preview || 'No preview')}</div>
-                    <button class="history-delete" onclick="deleteConversation('${item.session_id}', event)" title="Delete conversation">&times;</button>
-                </div>
-            `).join('');
+            container.innerHTML = historyData.map(item => renderHistoryCard(item)).join('');
         }
 
-        async function forkConversation(oldSessionId) {
+        function renderHistoryCard(item) {
+            const isExpanded = expandedCards.has(`history-${item.session_id}`);
+
+            if (isExpanded) {
+                return `
+                    <div class="card card-full" data-session-id="${item.session_id}">
+                        <div class="card-header">
+                            <span class="card-date">${item.date} at ${item.time}</span>
+                            <button class="card-collapse" onclick="event.stopPropagation(); expandedCards.delete('history-${item.session_id}'); renderHistory();">−</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-preview" style="white-space: normal;">${escapeHtml(item.preview || 'No preview')}</div>
+                            <div class="card-meta">${item.message_count || '?'} messages</div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action primary" onclick="loadConversation('${item.session_id}')">Load</button>
+                            <button class="card-action" onclick="archiveConversation('${item.session_id}')">Archive</button>
+                            <button class="card-action danger" onclick="deleteConversation('${item.session_id}', event)">Delete</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="card card-minimal" data-session-id="${item.session_id}" onclick="expandedCards.add('history-${item.session_id}'); renderHistory();">
+                        <span class="card-date">${item.date} ${item.time}</span>
+                        <span class="card-preview">${escapeHtml(item.preview || 'No preview')}</span>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadConversation(oldSessionId) {
             try {
                 const response = await fetch('/api/conversations/fork', {
                     method: 'POST',
@@ -1998,26 +2468,34 @@
 
                 sessionId = data.new_session_id;
                 localStorage.setItem('sessionId', sessionId);
-                viewingHistorySessionId = oldSessionId;  // Track which history item we're viewing
+                viewingHistorySessionId = oldSessionId;
 
-                inlineChat.style.display = 'block';
                 inlineMessages.innerHTML = '';
                 for (const msg of data.messages) {
                     addInlineMessage(msg.content, msg.role === 'user' ? 'you' : 'friend');
                 }
 
-                togglePanel('history');
+                // Switch to chat tab
+                switchTab('chat');
                 contextInput.focus();
             } catch (error) {
-                console.error('Failed to fork conversation:', error);
+                console.error('Failed to load conversation:', error);
                 alert('Failed to load conversation');
             }
         }
 
-        async function deleteConversation(targetSessionId, event) {
-            event.stopPropagation(); // Prevent triggering forkConversation
-            if (!confirm('Delete this conversation permanently?')) return;
+        // Legacy alias for forkConversation
+        async function forkConversation(oldSessionId) {
+            return loadConversation(oldSessionId);
+        }
 
+        async function archiveConversation(targetSessionId) {
+            // For now, archive just deletes - could be enhanced to move to archive
+            if (!confirm('Archive this conversation? (This will remove it from history)')) return;
+            await deleteConversationById(targetSessionId);
+        }
+
+        async function deleteConversationById(targetSessionId) {
             try {
                 const response = await fetch(`/api/conversations/${targetSessionId}`, {
                     method: 'DELETE'
@@ -2027,7 +2505,6 @@
                 // If we deleted the conversation we're currently viewing, clear the chat
                 if (targetSessionId === viewingHistorySessionId) {
                     inlineMessages.innerHTML = '';
-                    inlineChat.style.display = 'none';
                     viewingHistorySessionId = null;
                 }
 
@@ -2039,15 +2516,21 @@
             }
         }
 
+        async function deleteConversation(targetSessionId, event) {
+            if (event) event.stopPropagation();
+            if (!confirm('Delete this conversation permanently?')) return;
+            await deleteConversationById(targetSessionId);
+        }
+
         function discussTask(description) {
             contextInput.value = `Tell me about the task: ${description}`;
-            inlineChat.style.display = 'block';
+            switchTab('chat');
             sendContextMessage();
         }
 
         function showFullContent(title, content, type = 'task') {
             // Show full content in chat area as a system message (not logged to lifelog)
-            inlineChat.style.display = 'block';
+            switchTab('chat');
 
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message message-system';
@@ -2060,7 +2543,12 @@
             `;
 
             inlineMessages.appendChild(messageDiv);
-            inlineChat.scrollTop = inlineChat.scrollHeight;
+            scrollChatToBottom();
+        }
+
+        function scrollChatToBottom() {
+            const chatPane = document.getElementById('tab-chat');
+            if (chatPane) chatPane.scrollTop = chatPane.scrollHeight;
         }
 
         function showTaskById(taskId) {
@@ -2072,7 +2560,7 @@
 
         function showTaskFullContent(description, projectName) {
             // Show task with project name in chat area, rendering markdown
-            inlineChat.style.display = 'block';
+            switchTab('chat');
 
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message message-system';
@@ -2085,12 +2573,12 @@
             `;
 
             inlineMessages.appendChild(messageDiv);
-            inlineChat.scrollTop = inlineChat.scrollHeight;
+            scrollChatToBottom();
         }
 
         function showProjectNotesList(projectId, projectName, notes) {
             // Show project notes as a list of note cards
-            inlineChat.style.display = 'block';
+            switchTab('chat');
 
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message message-system';
@@ -2128,7 +2616,7 @@
             `;
 
             inlineMessages.appendChild(messageDiv);
-            inlineChat.scrollTop = inlineChat.scrollHeight;
+            scrollChatToBottom();
         }
 
         async function viewNoteDetail(projectId, filename) {
@@ -2139,7 +2627,7 @@
                 const note = data.notes.find(n => n.filename === filename);
 
                 if (note) {
-                    inlineChat.style.display = 'block';
+                    switchTab('chat');
                     const messageDiv = document.createElement('div');
                     messageDiv.className = 'message message-system';
                     messageDiv.innerHTML = `
@@ -2150,7 +2638,7 @@
                         <div class="message-system-body">${marked.parse(note.content || '*No content*')}</div>
                     `;
                     inlineMessages.appendChild(messageDiv);
-                    inlineChat.scrollTop = inlineChat.scrollHeight;
+                    scrollChatToBottom();
                 }
             } catch (error) {
                 console.error('Failed to load note detail:', error);
@@ -2305,7 +2793,7 @@
                         fillEl.style.width = '100%';
                         percentEl.textContent = '100%';
 
-                        inlineChat.style.display = 'block';
+                        switchTab('chat');
                         addInlineMessage(`Uploaded: ${file.name}`, 'you');
                         addInlineMessage(response.message || `File "${response.filename}" uploaded.`, 'friend');
                     } catch (e) {
@@ -2313,7 +2801,7 @@
                     }
                 } else {
                     statusEl.textContent = 'Upload failed';
-                    inlineChat.style.display = 'block';
+                    switchTab('chat');
                     addInlineMessage(`Upload failed: ${file.name}`, 'you');
                     addInlineMessage('Sorry, the upload failed. Please try again.', 'friend');
                 }
@@ -2331,7 +2819,7 @@
 
             uploadXhr.onerror = function() {
                 statusEl.textContent = 'Network error';
-                inlineChat.style.display = 'block';
+                switchTab('chat');
                 addInlineMessage(`Upload failed: ${file.name}`, 'friend');
                 uploadXhr = null;
 
@@ -2368,7 +2856,7 @@
                     .slice(0, 20);
                 projectsData = data.projects || [];
                 updateTasksBadge();
-                if (activePanel === 'tasks') {
+                if (activeTab === 'focus') {
                     renderTodayTasks();
                     renderProjects();
                     renderCompletedTasks();
@@ -2384,7 +2872,7 @@
                 completedTasksData = allTasks.filter(t => t.status === 'completed')
                     .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
                     .slice(0, 20);
-                if (activePanel === 'tasks') {
+                if (activeTab === 'focus') {
                     renderTodayTasks();
                     renderProjects();
                     renderCompletedTasks();
@@ -2395,7 +2883,7 @@
             eventSource.addEventListener('projects_update', (e) => {
                 const data = JSON.parse(e.data);
                 projectsData = data.projects || [];
-                if (activePanel === 'tasks') {
+                if (activeTab === 'focus') {
                     renderProjects();
                 }
             });
