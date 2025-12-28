@@ -1353,6 +1353,13 @@
             color: #000;
         }
 
+        .card-due-date {
+            font-size: 0.75rem;
+            color: #999;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+
         .card-badge {
             font-size: 0.85rem;
             color: #888;

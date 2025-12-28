@@ -81,6 +81,49 @@ function getTaskCategory(task) {
     return 'anytime';
 }
 
+function formatFriendlyDueDate(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+
+    if (date.getTime() === today.getTime()) {
+        return 'Today';
+    } else if (date.getTime() === tomorrow.getTime()) {
+        return 'Tomorrow';
+    } else if (date < nextWeek) {
+        return date.toLocaleDateString('en-US', { weekday: 'short' });
+    } else {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+}
+
+function formatFriendlyPastDate(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    date.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const lastWeek = new Date(today);
+    lastWeek.setDate(lastWeek.getDate() - 7);
+
+    if (date.getTime() === today.getTime()) {
+        return 'Today';
+    } else if (date.getTime() === yesterday.getTime()) {
+        return 'Yesterday';
+    } else if (date > lastWeek) {
+        return date.toLocaleDateString('en-US', { weekday: 'short' });
+    } else {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+}
+
 function getFocusCounts() {
     const today = new Date().toISOString().split('T')[0];
     const counts = { today: 0, upcoming: 0, anytime: 0, someday: 0, logbook: 0, projects: 0 };
@@ -315,9 +358,12 @@ function isEunoTask(task) {
 function renderMinimalTaskCard(task) {
     const eunoIcon = isEunoTask(task) ? '<span class="card-euno-icon">✨</span>' : '';
     const displayName = task.name || task.description || 'Untitled';
+    const dueDate = task.scheduling?.due_date;
+    const dueDateLabel = dueDate ? `<span class="card-due-date">${formatFriendlyDueDate(dueDate)}</span>` : '';
     return `
         <div class="card card-minimal" data-task-id="${task.id}" onclick="navigateFocus('task-${task.id}')">
             ${eunoIcon}<span class="card-title">${escapeHtml(displayName)}</span>
+            ${dueDateLabel}
             <span class="card-arrow">›</span>
         </div>
     `;
@@ -543,10 +589,11 @@ function renderFullProjectCard(project) {
 }
 
 function renderNoteCard(projectId, projectTitle, note) {
+    const friendlyDate = note.date ? formatFriendlyPastDate(note.date) : '';
     return `
         <div class="card card-minimal" data-note-filename="${note.filename}" onclick="navigateFocus('note-${projectId}:${note.filename}')">
             <span class="card-title">${escapeHtml(note.title)}</span>
-            <span class="card-preview">${escapeHtml(note.date)}</span>
+            <span class="card-due-date">${escapeHtml(friendlyDate)}</span>
             <span class="card-arrow">›</span>
         </div>
     `;
@@ -885,6 +932,10 @@ async function confirmArchiveTask(taskId) {
         if (response.ok) {
             archivingTaskId = null;
             await loadTasksData();
+            // Navigate back if viewing this task's detail
+            if (focusView === `task-${taskId}`) {
+                navigateFocusBack();
+            }
         }
     } catch (error) {
         console.error('Failed to archive task:', error);
@@ -906,6 +957,10 @@ async function archiveProject(projectId) {
 
         if (response.ok) {
             await loadTasksData();
+            // Navigate back if viewing this project's detail
+            if (focusView === projectId) {
+                navigateFocusBack();
+            }
         }
     } catch (error) {
         console.error('Failed to archive project:', error);
@@ -920,6 +975,10 @@ async function completeProject(projectId) {
 
         if (response.ok) {
             await loadTasksData();
+            // Navigate back if viewing this project's detail
+            if (focusView === projectId) {
+                navigateFocusBack();
+            }
         }
     } catch (error) {
         console.error('Failed to complete project:', error);
@@ -943,6 +1002,10 @@ async function toggleTask(event, taskId) {
         if (response.ok) {
             // Reload data to reflect changes
             await loadTasksData();
+            // Navigate back if viewing this task's detail
+            if (focusView === `task-${taskId}` || focusView === `completed-${taskId}`) {
+                navigateFocusBack();
+            }
         }
     } catch (error) {
         console.error('Failed to update task status:', error);
@@ -953,6 +1016,9 @@ async function deleteTask(event, taskId) {
     event.stopPropagation();
     if (!confirm('Delete this task?')) return;
 
+    // Check if viewing this task before deletion
+    const wasViewingTask = focusView === `task-${taskId}` || focusView === `completed-${taskId}`;
+
     try {
         const response = await fetch(`/api/tasks/${taskId}`, {
             method: 'DELETE'
@@ -960,6 +1026,10 @@ async function deleteTask(event, taskId) {
 
         if (response.ok) {
             await loadTasksData();
+            // Navigate back if was viewing this task's detail
+            if (wasViewingTask) {
+                navigateFocusBack();
+            }
         }
     } catch (error) {
         console.error('Failed to delete task:', error);
@@ -989,9 +1059,11 @@ function renderCompletedTaskCard(task) {
             </div>
         `;
     } else {
+        const completedDateLabel = task.completed_at ? `<span class="card-due-date">${formatFriendlyPastDate(task.completed_at)}</span>` : '';
         return `
             <div class="card card-minimal" data-task-id="${task.id}" style="opacity: 0.7;" onclick="navigateFocus('completed-${task.id}')">
                 <span class="card-title" style="text-decoration: line-through; color: #888;">${escapeHtml(displayName)}</span>
+                ${completedDateLabel}
                 <span class="card-arrow">›</span>
             </div>
         `;
