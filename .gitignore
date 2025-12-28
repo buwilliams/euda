@@ -21,6 +21,8 @@ data/ingestion/state/inbox/**/*
 !data/shared/state/profile/redaction.policy.md
 # And keep prompts (code/configuration, not user data)
 !data/*/prompts/*.md
+# And keep templates (reusable input templates, not user data)
+!data/*/templates/*.md
 
 # Python
 __pycache__/
