@@ -1,6 +1,6 @@
 # Euno
 
-**A personal intelligence that learns to anticipate you.**
+**A personal intelligence that anticipates you.**
 
 ---
 
