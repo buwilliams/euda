@@ -15,8 +15,9 @@ from contextlib import asynccontextmanager
 
 import re
 import aiofiles
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
@@ -36,6 +37,11 @@ from ..tools.world.world import get_opportunities
 from ..tools.attention.attention import get_queue, get_recent_energy, record_energy
 from ..tools.attention.context import get_context_for_view, get_view_mode
 from ..tools.synthesis.summary import list_years, get_summary
+from .auth import (
+    is_password_set, authenticate, validate_session,
+    invalidate_session, cleanup_expired_sessions,
+    verify_password, set_password, _load_auth_data
+)
 
 
 # Base paths
@@ -148,6 +154,216 @@ app.add_middleware(
 # Mount static files if directory exists
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+# ============== Authentication ==============
+
+# Paths that don't require authentication
+PUBLIC_PATHS = {
+    "/",
+    "/app",
+    "/api/auth/login",
+    "/api/auth/check",
+    "/api/health",
+    "/docs",
+    "/openapi.json",
+    "/redoc",
+}
+
+
+def get_session_token(request: Request) -> Optional[str]:
+    """Extract session token from cookie or Authorization header."""
+    # Check cookie first
+    token = request.cookies.get("euno_session")
+    if token:
+        return token
+
+    # Check Authorization header
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        return auth_header[7:]
+
+    return None
+
+
+async def require_auth(request: Request):
+    """Dependency that requires valid authentication."""
+    # Skip auth for public paths
+    if request.url.path in PUBLIC_PATHS:
+        return
+
+    # Skip auth for static files
+    if request.url.path.startswith("/static"):
+        return
+
+    # If no password is set, allow access (first-time setup)
+    if not is_password_set():
+        return
+
+    token = get_session_token(request)
+    if not token or not validate_session(token):
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    """Check authentication for protected routes."""
+    # Skip auth for public paths
+    if request.url.path in PUBLIC_PATHS:
+        return await call_next(request)
+
+    # Skip auth for static files
+    if request.url.path.startswith("/static"):
+        return await call_next(request)
+
+    # If no password is set, allow access
+    if not is_password_set():
+        return await call_next(request)
+
+    token = get_session_token(request)
+    if not token or not validate_session(token):
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Authentication required"}
+        )
+
+    return await call_next(request)
+
+
+class LoginRequest(BaseModel):
+    password: str
+
+
+class LoginResponse(BaseModel):
+    success: bool
+    message: str
+
+
+@app.post("/api/auth/login", response_model=LoginResponse)
+async def login(request: LoginRequest):
+    """Authenticate with password and get session token."""
+    if not is_password_set():
+        raise HTTPException(status_code=400, detail="No password configured. Use CLI to set password.")
+
+    token = authenticate(request.password)
+    if not token:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    response = JSONResponse(content={"success": True, "message": "Login successful"})
+    response.set_cookie(
+        key="euno_session",
+        value=token,
+        httponly=True,
+        max_age=30 * 24 * 60 * 60,  # 30 days
+        samesite="lax"
+    )
+    return response
+
+
+@app.post("/api/auth/logout")
+async def logout(request: Request):
+    """Invalidate session and clear cookie."""
+    token = get_session_token(request)
+    if token:
+        invalidate_session(token)
+
+    response = JSONResponse(content={"success": True, "message": "Logged out"})
+    response.delete_cookie("euno_session")
+    return response
+
+
+@app.get("/api/auth/check")
+async def check_auth(request: Request):
+    """Check if current session is authenticated."""
+    # If no password is set, report as authenticated (open access)
+    if not is_password_set():
+        return {"authenticated": True, "password_required": False}
+
+    token = get_session_token(request)
+    if token and validate_session(token):
+        return {"authenticated": True, "password_required": True}
+
+    return {"authenticated": False, "password_required": True}
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@app.post("/api/auth/change-password")
+async def change_password(request: ChangePasswordRequest):
+    """Change password (requires current password)."""
+    if not is_password_set():
+        raise HTTPException(status_code=400, detail="No password configured")
+
+    # Verify current password
+    auth_data = _load_auth_data()
+    stored_hash = auth_data.get("password_hash", "")
+    if not verify_password(request.current_password, stored_hash):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+
+    # Validate new password
+    if len(request.new_password) < 4:
+        raise HTTPException(status_code=400, detail="New password must be at least 4 characters")
+
+    # Set new password
+    result = set_password(request.new_password)
+    return {"success": True, "message": result}
+
+
+# ============== Settings ==============
+
+@app.get("/api/settings")
+async def get_settings():
+    """Get application settings."""
+    from ..providers import load_config, CONFIG_FILE
+
+    llm_config = load_config()
+
+    return {
+        "llm": llm_config,
+        "config_path": str(CONFIG_FILE)
+    }
+
+
+class LLMSettingsRequest(BaseModel):
+    default_provider: str
+    providers: Optional[dict] = None
+
+
+@app.put("/api/settings/llm")
+async def update_llm_settings(request: LLMSettingsRequest):
+    """Update LLM settings."""
+    from ..providers import load_config, reload_config, CONFIG_FILE
+
+    # Load current config
+    config = load_config()
+
+    # Update default provider
+    if request.default_provider not in config.get("providers", {}):
+        raise HTTPException(status_code=400, detail=f"Unknown provider: {request.default_provider}")
+
+    config["default_provider"] = request.default_provider
+
+    # Update provider settings if provided
+    if request.providers:
+        for provider_name, provider_settings in request.providers.items():
+            if provider_name in config["providers"]:
+                config["providers"][provider_name].update(provider_settings)
+
+    # Save config
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump(config, f, indent=2)
+
+    # Reload config to clear cache
+    reload_config()
+
+    return {"success": True, "message": "LLM settings updated"}
 
 
 # Session storage (in-memory for now)

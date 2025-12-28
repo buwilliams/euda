@@ -1,0 +1,125 @@
+#!/bin/bash
+#
+# setup-server.sh - Initial setup of a fresh Linux server for Euno
+#
+# Usage: ./setup-server.sh user@server-ip
+#
+# This script:
+# 1. Installs Python 3, pip, and dependencies
+# 2. Creates the euno directory structure
+# 3. Sets up a systemd service
+# 4. Configures firewall (optional)
+#
+
+set -e
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 user@server-ip"
+    echo "Example: $0 root@192.168.1.100"
+    exit 1
+fi
+
+SERVER="$1"
+REMOTE_DIR="/opt/euno"
+
+echo "==================================="
+echo "Euno Server Setup"
+echo "==================================="
+echo "Server: $SERVER"
+echo "Remote directory: $REMOTE_DIR"
+echo ""
+
+# Check SSH connectivity
+echo "[1/5] Testing SSH connection..."
+ssh -o ConnectTimeout=10 "$SERVER" "echo 'SSH connection successful'" || {
+    echo "Error: Cannot connect to $SERVER"
+    exit 1
+}
+
+# Install dependencies
+echo "[2/5] Installing system dependencies..."
+ssh "$SERVER" bash << 'REMOTE_SCRIPT'
+set -e
+
+# Detect package manager
+if command -v apt-get &> /dev/null; then
+    export DEBIAN_FRONTEND=noninteractive
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq python3 python3-pip python3-venv git
+elif command -v dnf &> /dev/null; then
+    sudo dnf install -y python3 python3-pip git
+elif command -v yum &> /dev/null; then
+    sudo yum install -y python3 python3-pip git
+elif command -v pacman &> /dev/null; then
+    sudo pacman -Sy --noconfirm python python-pip git
+else
+    echo "Error: Could not detect package manager"
+    exit 1
+fi
+
+echo "Python version: $(python3 --version)"
+REMOTE_SCRIPT
+
+# Create directory structure
+echo "[3/5] Creating directory structure..."
+ssh "$SERVER" bash << REMOTE_SCRIPT
+set -e
+sudo mkdir -p $REMOTE_DIR
+sudo chown \$USER:\$USER $REMOTE_DIR
+mkdir -p $REMOTE_DIR/data
+REMOTE_SCRIPT
+
+# Create systemd service
+echo "[4/5] Setting up systemd service..."
+ssh "$SERVER" bash << REMOTE_SCRIPT
+set -e
+
+# Create virtual environment if it doesn't exist
+if [ ! -d "$REMOTE_DIR/venv" ]; then
+    python3 -m venv $REMOTE_DIR/venv
+fi
+
+# Create systemd service file
+sudo tee /etc/systemd/system/euno.service > /dev/null << 'EOF'
+[Unit]
+Description=Euno Personal Intelligence
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=$REMOTE_DIR
+Environment=PATH=$REMOTE_DIR/venv/bin:/usr/bin:/bin
+ExecStart=$REMOTE_DIR/venv/bin/python main.py serve
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable euno
+REMOTE_SCRIPT
+
+# Configure firewall (if ufw is available)
+echo "[5/5] Configuring firewall..."
+ssh "$SERVER" bash << 'REMOTE_SCRIPT'
+if command -v ufw &> /dev/null; then
+    sudo ufw allow 8000/tcp 2>/dev/null || true
+    echo "Firewall: Port 8000 opened"
+else
+    echo "Firewall: ufw not found, skipping"
+fi
+REMOTE_SCRIPT
+
+echo ""
+echo "==================================="
+echo "Server setup complete!"
+echo "==================================="
+echo ""
+echo "Next steps:"
+echo "  1. Run ./deploy.sh $SERVER to deploy the application"
+echo "  2. SSH in and run: cd $REMOTE_DIR && python main.py set-password"
+echo "  3. Access at http://<server-ip>:8000"
+echo ""

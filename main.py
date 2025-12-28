@@ -199,6 +199,14 @@ Commands in review mode:
   reject <filename>   Reject the proposal
   quit                Exit
 """,
+    "set-password": """
+Usage: python main.py set-password
+
+Set or change the password for web UI authentication.
+
+The password is stored as a secure hash in data/shared/state/auth/.
+After setting, all existing sessions are invalidated.
+""",
     "watch": """
 Usage: python main.py watch
 
@@ -273,6 +281,7 @@ def main():
         # Backwards compatibility
         "introspection": lambda: __import__('src.agents.evolution', fromlist=['run_interactive']).run_interactive(),
         "evolve": run_evolve,
+        "set-password": run_set_password,
         "watch": lambda: __import__('src.watcher', fromlist=['watch_inbox']).watch_inbox(),
         "process": lambda: __import__('src.watcher', fromlist=['process_pending']).process_pending(),
         "serve": run_server,
@@ -303,6 +312,7 @@ def main():
         print("  evolution  Interactive chat with The Evolver")
         print("  introspect Run a full system analysis")
         print("  evolve     Review pending identity evolution proposals")
+        print("  set-password  Set password for web UI authentication")
         print("  watch      Watch inbox for new files to process")
         print("  process    Process pending files once and exit")
         print("  serve      Start the web API server (standalone)")
@@ -1103,6 +1113,43 @@ def run_evolve():
             break
         except Exception as e:
             print(f"Error: {e}")
+
+
+def run_set_password():
+    """Set or change the password for web UI authentication."""
+    if show_subcommand_help("set-password"):
+        return
+
+    import getpass
+    from src.web.auth import set_password, is_password_set
+
+    print("=" * 60)
+    print("Euno - Set Password")
+    print("=" * 60)
+    print()
+
+    if is_password_set():
+        print("A password is already set. This will replace it.")
+        print("All existing sessions will be invalidated.")
+        print()
+
+    try:
+        password = getpass.getpass("Enter new password: ")
+        if not password:
+            print("Cancelled.")
+            return
+
+        confirm = getpass.getpass("Confirm password: ")
+        if password != confirm:
+            print("Error: Passwords do not match.")
+            return
+
+        result = set_password(password)
+        print()
+        print(result)
+
+    except KeyboardInterrupt:
+        print("\nCancelled.")
 
 
 if __name__ == "__main__":
