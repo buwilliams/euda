@@ -43,6 +43,7 @@ def create_euno_task(
 
     # Create the task in the Notifications project
     result = create_task(
+        name=title,
         description=description,
         task_type=task_type,
         project_id=NOTIFICATIONS_PROJECT_ID,
@@ -97,6 +98,7 @@ def create_approval_task(
 
     # Create the task linked to the action
     result = create_task_with_action(
+        name=summary,
         description=description,
         action_id=action_id,
         task_type="approval",
