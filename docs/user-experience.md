@@ -41,7 +41,7 @@ The interface adapts to the rhythm of your day.
 │  Energy has been low since Tuesday.     │
 │                                         │
 ├─────────────────────────────────────────┤
-│  [Talk to me...]                        │
+│  [What's on your mind?]                 │
 └─────────────────────────────────────────┘
 ```
 

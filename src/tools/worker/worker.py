@@ -228,7 +228,7 @@ def create_pending_action(
     """
     Create a pending action for user approval.
 
-    When requires_approval=True, also creates an approval task in "From Euno"
+    When requires_approval=True, also creates an approval task in "Notifications"
     project. User can approve by completing the task, or reject by deleting it.
 
     Args:
@@ -270,7 +270,7 @@ def create_pending_action(
     if task_id and requires_approval:
         new_update_task_status(task_id, "awaiting_approval")
 
-    # If approval is required, create an approval task in From Euno project
+    # If approval is required, create an approval task in Notifications project
     # User can approve by completing the task, or reject by deleting it
     if requires_approval:
         from ..shared.notifications import create_approval_task
@@ -289,7 +289,7 @@ def create_pending_action(
             priority="normal"
         )
 
-    status_msg = "awaiting approval (check From Euno)" if requires_approval else "auto-approved"
+    status_msg = "awaiting approval (check Notifications)" if requires_approval else "auto-approved"
     return f"Action created: {action_id}\nType: {action_type}\nSummary: {summary}\nStatus: {status_msg}"
 
 

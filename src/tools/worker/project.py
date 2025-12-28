@@ -29,11 +29,8 @@ GENERAL_PROJECT_ID = "project-general"
 NOTIFICATIONS_PROJECT_ID = "project-notifications"
 RECOMMENDATIONS_PROJECT_ID = "project-recommendations"
 
-# Legacy - kept for backwards compatibility during migration
-EUNO_PROJECT_ID = "project-euno"
-
 # All system project IDs (for filtering)
-SYSTEM_PROJECT_IDS = {GENERAL_PROJECT_ID, NOTIFICATIONS_PROJECT_ID, RECOMMENDATIONS_PROJECT_ID, EUNO_PROJECT_ID}
+SYSTEM_PROJECT_IDS = {GENERAL_PROJECT_ID, NOTIFICATIONS_PROJECT_ID, RECOMMENDATIONS_PROJECT_ID}
 
 
 def _generate_id() -> str:
@@ -125,14 +122,6 @@ def ensure_general_project() -> str:
 
     _update_index(project)
     return GENERAL_PROJECT_ID
-
-
-def ensure_euno_project() -> str:
-    """
-    DEPRECATED: Use ensure_notifications_project() or ensure_recommendations_project() instead.
-    Kept for backwards compatibility during migration.
-    """
-    return ensure_notifications_project()
 
 
 def ensure_notifications_project() -> str:
@@ -702,9 +691,6 @@ def get_projects_data(
             return (2, 0, "")
         if pid == RECOMMENDATIONS_PROJECT_ID:
             return (2, 1, "")
-        # Legacy Euno project - treat as system
-        if pid == EUNO_PROJECT_ID:
-            return (2, 2, "")
         # User projects sorted by priority then deadline
         priority_order = {"high": 0, "normal": 1, "low": 2}
         return (1, priority_order.get(p.get("priority", "normal"), 1), p.get("deadline") or "9999-12-31")

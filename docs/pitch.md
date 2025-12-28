@@ -2,7 +2,13 @@
 
 **A personal intelligence that learns to anticipate you.**
 
+---
+
+## The Name
+
 *Pronounced "you-know." Built for its creator first—refined through lived experience, not hypothetical users.*
+
+From *Eudaimonia*—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities.
 
 ---
 
@@ -130,15 +136,13 @@ As Euno learns more about you, the capabilities deepen:
 
 ---
 
-## The Name
+## Form Factors
 
-From *Eudaimonia*—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities.
+I'm presenting just one expression of what Euno is. Properly executed, Euno is:
 
----
+- Web/Mobile Application: What you are seeing now. A chat application with projects/tasks.
+- Wearable Device: with no screen that you talk to. It would record your conversations and add them to the life log.
+- Virtual/Augmented Reality Entity: with a VR headset, Euno could be a floating entity that you talk with as a second mind to help you on your journey.
+- Physical Robot: that you talk to and helps you around the house
 
-## Learn More
-
-- [Vision](vision.md) — The full philosophy and long-term direction
-- [Architecture](architecture.md) — Technical implementation details
-- [User Experience](user-experience.md) — UI/UX philosophy
-
+In the limit, it should be a hybrid, following you through all the various form factors.

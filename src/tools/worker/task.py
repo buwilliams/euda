@@ -262,7 +262,7 @@ def create_task_with_action(
         description: Full description (supports markdown)
         action_id: The action ID this task controls
         task_type: Type of task (usually "approval")
-        project_id: Project to add to (usually project-euno)
+        project_id: Project to add to (usually project-notifications)
         priority: high, normal, or low
         source_agent: Which agent created this
         source_context: Why it was created
@@ -865,7 +865,7 @@ def delete_tasks_by_project(project_id: str) -> str:
     Delete all tasks in a specific project.
 
     Args:
-        project_id: The project ID (e.g., 'project-euno' for From Euno tasks)
+        project_id: The project ID (e.g., 'project-notifications' for system notifications)
 
     Returns:
         Success message with count of deleted tasks
@@ -1843,13 +1843,13 @@ TASK_TOOLS = [
     },
     {
         "name": "delete_tasks_by_project",
-        "description": "Delete all tasks in a specific project. Use 'project-euno' to delete all 'From Euno' system tasks, or other project IDs for user projects.",
+        "description": "Delete all tasks in a specific project. Use 'project-notifications' to delete all system notification tasks, or other project IDs for user projects.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "project_id": {
                     "type": "string",
-                    "description": "The project ID (e.g., 'project-euno' for From Euno tasks, 'project-general' for General tasks)"
+                    "description": "The project ID (e.g., 'project-notifications' for system notifications, 'project-general' for General tasks)"
                 }
             },
             "required": ["project_id"]

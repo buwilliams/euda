@@ -721,10 +721,12 @@ temporal_source: explicit
 {
   "id": "project-xxx",
   "title": "Learn Spanish",
+  "description": "Achieve conversational fluency in Spanish through immersion and practice",
   "type": "learning",
   "status": "active",
   "priority": "high",
   "deadline": "2025-06-01",
+  "someday": false,
   "milestones": [],
   "values_alignment": ["growth"],
   "meta": {
@@ -733,6 +735,25 @@ temporal_source: explicit
   }
 }
 ```
+
+**Fields:**
+- `title` — Short project name for display
+- `description` — Full project details, goals, and context
+- `someday` — When true with no deadline, project is deferred; same logic as tasks
+
+**System Projects:**
+
+Three special projects are automatically created and managed by Euno:
+
+| Project ID | Title | Purpose |
+|------------|-------|---------|
+| `project-general` | General | Default project for tasks without a specific project |
+| `project-notifications` | Notifications | System notifications and approval requests from Euno |
+| `project-recommendations` | Curator | Curated suggestions based on user behaviors and interests |
+
+System project tasks are hidden from timeline views (Today, Upcoming, etc.) unless the user explicitly sets a "When" value. This prevents Euno's notifications from cluttering the user's task list while still making them accessible in the Projects view.
+
+**Project ordering in UI:** General → User projects → System projects (Notifications, Curator)
 
 **Archived projects** include behavioral metadata:
 
@@ -779,7 +800,8 @@ Found 3 language schools within 30 minutes...
 ```json
 {
   "id": "task-xxx",
-  "description": "Find conversation groups",
+  "name": "Find conversation groups",
+  "description": "Research local Spanish conversation groups and meetups in the area",
   "type": "research",
   "project_id": "project-xxx",
   "action_id": null,
@@ -789,6 +811,7 @@ Found 3 language schools within 30 minutes...
   },
   "scheduling": {
     "due_date": "2025-12-22",
+    "someday": false,
     "energy_level": "medium"
   },
   "rollover": {
@@ -799,7 +822,17 @@ Found 3 language schools within 30 minutes...
 ```
 
 **Fields:**
+- `name` — Short task name (1-7 words) for display in lists
+- `description` — Full task details, context, and requirements
 - `action_id` — Links to a pending action (for approval tasks). When present, completing the task approves the action; deleting rejects it.
+- `scheduling.someday` — When true, task appears in "Someday" category; when false with no due_date, appears in "Anytime"
+
+**Task categorization:**
+- `due_date === today` → Today
+- `due_date > today` → Upcoming
+- `due_date === null && someday === true` → Someday
+- `due_date === null && someday !== true` → Anytime
+- `status === "completed"` → Logbook
 
 **Archived tasks** include behavioral metadata:
 
@@ -902,6 +935,7 @@ Notifications are enriched by the web layer with additional UI fields:
 ```
 POST /api/chat                          # Send message, get response
 POST /api/upload                        # Upload file to inbox
+GET  /api/about                         # Get about page content (docs/pitch.md)
 
 GET  /api/conversations/recent          # Recent conversations (text preview)
 GET  /api/conversations/recent/structured  # Recent conversations (structured JSON for UI)
@@ -920,6 +954,7 @@ GET  /api/tasks/today
 GET  /api/tasks/completed
 POST /api/tasks
 PUT  /api/tasks/{id}/status
+PUT  /api/tasks/{id}/when              # Set task scheduling (today/date/someday/clear)
 POST /api/tasks/{id}/archive
 DELETE /api/tasks/{id}
 
@@ -973,10 +1008,11 @@ The server watches:
 ## User Interface
 
 *See [user-experience.md](user-experience.md) for detailed UI/UX philosophy.*
+*See [user-interface.md](user-interface.md) for current implementation details.*
 
-### Current Design (Context-First)
+### Current Design (Tab-Based)
 
-The UI is context-first: it surfaces what matters before you ask. Chat is available for depth, but the primary value is delivered through time-aware contextual views.
+The UI uses a tab-based layout with four main views: Chat, Focus, About, and History. The primary interaction surface is the Focus tab, which uses Things-like slide navigation for task management.
 
 **Principles:**
 
@@ -986,67 +1022,76 @@ The UI is context-first: it surfaces what matters before you ask. Chat is availa
 - **Progressive disclosure** — Glance (2s) → Scan (10s) → Engage (unlimited)
 - **Conversation is depth** — Chat for thinking through, not for commands
 
-### Time-Aware Views
-
-The `/api/context` endpoint auto-detects the appropriate view:
-
-| Time | View | Purpose |
-|------|------|---------|
-| 7-10am | Morning | Full briefing: schedule, tasks, "on your mind", noticed patterns |
-| 10am-6pm | Active | Minimal, focus-protecting: current/next activity, surfaced count |
-| 6-10pm | Evening | Reflection: day summary, open threads, tomorrow preview |
-| Sunday | Weekly | Patterns, time analysis, relationships, next week |
-
-### Layout (Morning View)
+### Layout
 
 ```
 ┌─────────────────────────────────────┐
-│  Good morning                       │
-│                                     │
-│  TODAY                              │
-│  • Deep work window until 11am      │
-│  • 11:30 Call with Sarah            │
-│                                     │
-│  ON YOUR MIND                       │
-│  You've mentioned X three times...  │
-│  [Let's talk]                       │
-│                                     │
-│  NOTICED                            │
-│  Energy has been low since Tuesday  │
+│  Daily Quote                        │
 │                                     │
 ├─────────────────────────────────────┤
-│  [Talk to me...]        [📎] [🔔] [✓]│
+│  Tab Content                        │
+│  (Chat / Focus / About / History)   │
+│                                     │
+│                                     │
+├─────────────────────────────────────┤
+│  [Chat] [Focus 3] [About] [History] │
+├─────────────────────────────────────┤
+│  [What's on your mind?    ] [➤] [×] │
 └─────────────────────────────────────┘
 ```
 
-### Components
+### Focus Tab (Things-like Navigation)
 
-**Context View (Primary):**
-- Time-aware content sections
-- "On Your Mind" — recurring topics from recent logs
-- "Noticed" — patterns, relationship neglect, energy observations
-- Action prompts to engage deeper
+The Focus tab uses slide navigation instead of expand/collapse sections:
 
-**Chat Overlay:**
-- Opens when clicking input or action buttons
-- Full conversation capability
-- "← Back to overview" returns to context view
-- Preserves all existing chat functionality
+**Main Menu:**
+```
+┌─────────────────────────────────────┐
+│  ☀️  Today                      3 → │
+│  📅  Upcoming                   5 → │
+│  ⏳  Anytime                   12 → │
+│  💭  Someday                    8 → │
+│  📖  Logbook                   24 → │
+├─────────────────────────────────────┤
+│  📁  General                    2 → │
+│  📁  Project Name               4 → │
+│  ✨  Notifications              3 → │
+│      from Euno                      │
+│  ✨  Curator                    1 → │
+│      from Euno                      │
+└─────────────────────────────────────┘
+```
 
-**Side Panels:**
-- Notifications panel (bell icon) — agent activity, proactive surfaces
-- Focus panel (list icon) — today's tasks, projects
-- History panel (clock icon) — recent conversations, click to continue
-- Slide in from right, updates via SSE
-- Quick-add task input
+**Timeline View (after selecting category):**
+```
+┌─────────────────────────────────────┐
+│ ← Today                             │
+├─────────────────────────────────────┤
+│ Project Alpha                       │
+│ ────────────────────────            │
+│ [task card]                         │
+│ [task card]                         │
+│                                     │
+│ General                             │
+│ ────────────────────────            │
+│ [task card]                         │
+└─────────────────────────────────────┘
+```
+
+**When Picker:**
+Tasks and projects can be scheduled using the "When" picker:
+- Today — Set due date to today
+- Pick a date — Calendar date picker
+- Someday — Mark as someday (no specific date)
+- Clear — Remove scheduling
 
 ### Visual Style
 
-- Typography-first: black text on white
+- Typography-first: black text on off-white (#f8f8f8)
+- White (#fff) for inputs, cards, and chat bubbles (contrast against background)
 - Generous whitespace
 - Minimal UI chrome
-- Context sections with subtle hierarchy
-- Chat as overlay, not primary surface
+- Tab-based navigation with icon buttons
 
 ---
 

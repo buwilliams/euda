@@ -1,8 +1,8 @@
 """
-Agent-to-user communication via the "From Euno" project.
+Agent-to-user communication via the Notifications project.
 
 Agents use create_euno_task() to send notifications to users.
-These appear as tasks in the Focus panel under the "From Euno" project.
+These appear as tasks in the Focus panel under the "Notifications" project.
 
 For approval workflows, use create_approval_task() which links to an action.
 When the user completes the task, the action is approved and executed.
@@ -18,7 +18,7 @@ def create_euno_task(
     priority: str = "normal"
 ) -> str:
     """
-    Create a task in the "From Euno" project for agent-to-user communication.
+    Create a task in the Notifications project for agent-to-user communication.
 
     Args:
         agent_name: Which agent is creating this (e.g., "attention", "worker")
@@ -30,22 +30,22 @@ def create_euno_task(
     Returns:
         Confirmation message with task ID
     """
-    from ...tools.worker.project import EUNO_PROJECT_ID, ensure_euno_project
+    from ...tools.worker.project import NOTIFICATIONS_PROJECT_ID, ensure_notifications_project
     from ...tools.worker.task import create_task
 
-    # Ensure the From Euno project exists
-    ensure_euno_project()
+    # Ensure the Notifications project exists
+    ensure_notifications_project()
 
     # Combine title and message for description
     description = title
     if message:
         description = f"{title}\n\n{message}"
 
-    # Create the task in the From Euno project
+    # Create the task in the Notifications project
     result = create_task(
         description=description,
         task_type=task_type,
-        project_id=EUNO_PROJECT_ID,
+        project_id=NOTIFICATIONS_PROJECT_ID,
         priority=priority,
         source_agent=agent_name,
         source_context="Agent notification"
@@ -79,11 +79,11 @@ def create_approval_task(
     Returns:
         Confirmation message with task ID
     """
-    from ...tools.worker.project import EUNO_PROJECT_ID, ensure_euno_project
+    from ...tools.worker.project import NOTIFICATIONS_PROJECT_ID, ensure_notifications_project
     from ...tools.worker.task import create_task_with_action
 
-    # Ensure the From Euno project exists
-    ensure_euno_project()
+    # Ensure the Notifications project exists
+    ensure_notifications_project()
 
     # Format description with approval instructions
     description = f"""## Approval Needed: {action_type.replace('_', ' ').title()}
@@ -100,7 +100,7 @@ def create_approval_task(
         description=description,
         action_id=action_id,
         task_type="approval",
-        project_id=EUNO_PROJECT_ID,
+        project_id=NOTIFICATIONS_PROJECT_ID,
         priority=priority,
         source_agent=agent_name,
         source_context=f"Approval for {action_type}"
