@@ -3350,16 +3350,11 @@
 
         function updateTasksBadge() {
             const badge = document.getElementById('tasks-badge');
-            const today = new Date().toISOString().split('T')[0];
-            // Count only tasks with due_date = today (not tasks without dates)
-            const count = tasksData.filter(t => {
-                const dueDate = t.scheduling?.due_date;
-                const isToday = dueDate === today;
-                const isPending = t.status === 'pending' || t.status === 'in_progress';
-                // Exclude system project tasks (notifications, recommendations)
-                const isSystemProject = t.project_id === 'project-notifications' || t.project_id === 'project-recommendations';
-                return isToday && isPending && !isSystemProject;
-            }).length;
+            // Use same logic as getFocusCounts for Today
+            const count = tasksData
+                .filter(shouldShowInTimeline)
+                .filter(t => getTaskCategory(t) === 'today')
+                .length;
             badge.textContent = count;
             badge.style.display = count > 0 ? 'inline' : 'none';
         }
