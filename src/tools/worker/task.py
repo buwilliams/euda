@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
-from .project import EUNO_PROJECT_ID
+from .project import NOTIFICATIONS_PROJECT_ID, RECOMMENDATIONS_PROJECT_ID, SYSTEM_PROJECT_IDS
 
 # Base paths - Tasks are owned by Worker agent
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
@@ -173,10 +173,10 @@ def create_task(
         Success message with task ID
     """
     # Ensure task has a project - use General if not specified
-    from .project import GENERAL_PROJECT_ID, EUNO_PROJECT_ID, ensure_general_project
+    from .project import GENERAL_PROJECT_ID, ensure_general_project
 
-    # Prevent user tasks from being added to the Euno project (reserved for agents)
-    if project_id == EUNO_PROJECT_ID and source_agent == "user":
+    # Prevent user tasks from being added to system projects (reserved for agents)
+    if project_id in SYSTEM_PROJECT_IDS and source_agent == "user":
         ensure_general_project()
         project_id = GENERAL_PROJECT_ID
 
@@ -184,9 +184,8 @@ def create_task(
         ensure_general_project()
         project_id = GENERAL_PROJECT_ID
 
-    # Tasks from Euno (in the From Euno project) automatically go to Today
-    if project_id == EUNO_PROJECT_ID and due_date is None:
-        due_date = datetime.now().strftime("%Y-%m-%d")
+    # System project tasks do NOT auto-set due_date - they stay hidden from timeline
+    # until user explicitly adds a When value
 
     task_id = _generate_task_id()
     now = datetime.now().isoformat()
@@ -271,11 +270,11 @@ def create_task_with_action(
     Returns:
         Success message with task ID
     """
-    from .project import EUNO_PROJECT_ID, ensure_euno_project
+    from .project import ensure_notifications_project
 
     if not project_id:
-        ensure_euno_project()
-        project_id = EUNO_PROJECT_ID
+        ensure_notifications_project()
+        project_id = NOTIFICATIONS_PROJECT_ID
 
     task_id = _generate_task_id()
     now = datetime.now().isoformat()
@@ -1541,8 +1540,8 @@ def get_pending_tasks_for_worker() -> list:
         if task["status"] != "pending":
             continue
 
-        # Skip Euno project tasks (these are agent notifications, not work items)
-        if task.get("project_id") == EUNO_PROJECT_ID:
+        # Skip system project tasks (notifications/recommendations, not work items)
+        if task.get("project_id") in SYSTEM_PROJECT_IDS:
             continue
 
         delegation = task.get("delegation", {})
@@ -1626,7 +1625,7 @@ def mark_task_evaluated(task_id: str) -> str:
 TASK_TOOLS = [
     {
         "name": "create_task",
-        "description": "Create a new task for the user. Use this when the user wants to add something to their task list. Tasks go to the user's projects (General project if not specified). Note: The 'From Euno' project (project-euno) is reserved for system/agent messages - never create user tasks there.",
+        "description": "Create a new task for the user. Use this when the user wants to add something to their task list. Tasks go to the user's projects (General project if not specified). Note: System projects (project-notifications, project-recommendations) are reserved for system messages - never create user tasks there.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -1645,7 +1644,7 @@ TASK_TOOLS = [
                 },
                 "project_id": {
                     "type": "string",
-                    "description": "User's project to associate with. Do NOT use 'project-euno' - that's reserved for system messages."
+                    "description": "User's project to associate with. Do NOT use system projects (project-notifications, project-recommendations)."
                 },
                 "priority": {
                     "type": "string",

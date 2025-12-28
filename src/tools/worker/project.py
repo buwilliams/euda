@@ -25,8 +25,15 @@ NOTES_DIR.mkdir(parents=True, exist_ok=True)
 # The General project for miscellaneous tasks
 GENERAL_PROJECT_ID = "project-general"
 
-# The From Euno project for agent-generated notifications/tasks
+# System projects for Euno-generated content
+NOTIFICATIONS_PROJECT_ID = "project-notifications"
+RECOMMENDATIONS_PROJECT_ID = "project-recommendations"
+
+# Legacy - kept for backwards compatibility during migration
 EUNO_PROJECT_ID = "project-euno"
+
+# All system project IDs (for filtering)
+SYSTEM_PROJECT_IDS = {GENERAL_PROJECT_ID, NOTIFICATIONS_PROJECT_ID, RECOMMENDATIONS_PROJECT_ID, EUNO_PROJECT_ID}
 
 
 def _generate_id() -> str:
@@ -122,34 +129,42 @@ def ensure_general_project() -> str:
 
 def ensure_euno_project() -> str:
     """
-    Ensure the From Euno project exists for agent-generated tasks.
+    DEPRECATED: Use ensure_notifications_project() or ensure_recommendations_project() instead.
+    Kept for backwards compatibility during migration.
+    """
+    return ensure_notifications_project()
+
+
+def ensure_notifications_project() -> str:
+    """
+    Ensure the Notifications project exists for system notifications.
 
     Returns:
-        The From Euno project ID
+        The Notifications project ID
     """
-    project_file = PROJECTS_DIR / f"{EUNO_PROJECT_ID}.json"
+    project_file = PROJECTS_DIR / f"{NOTIFICATIONS_PROJECT_ID}.json"
 
     if project_file.exists():
-        return EUNO_PROJECT_ID
+        return NOTIFICATIONS_PROJECT_ID
 
-    # Create the From Euno project
     now = datetime.now().isoformat()
     project = {
-        "id": EUNO_PROJECT_ID,
+        "id": NOTIFICATIONS_PROJECT_ID,
         "created": now,
         "updated": now,
-        "title": "From Euno",
-        "description": "Tasks and notifications from Euno agents",
+        "title": "Notifications",
+        "description": "System notifications and alerts from Euno",
         "type": "system",
         "status": "active",
         "priority": "normal",
         "source": {
             "agent": "system",
-            "context": "System project for agent-generated items"
+            "context": "System project for notifications"
         },
         "milestones": [],
         "values_alignment": [],
         "deadline": None,
+        "someday": False,
         "review_frequency": "daily",
         "last_reviewed": None,
         "archived": False,
@@ -165,7 +180,60 @@ def ensure_euno_project() -> str:
         json.dump(project, f, indent=2)
 
     _update_index(project)
-    return EUNO_PROJECT_ID
+    return NOTIFICATIONS_PROJECT_ID
+
+
+def ensure_recommendations_project() -> str:
+    """
+    Ensure the Recommendations project exists for system recommendations.
+
+    Returns:
+        The Recommendations project ID
+    """
+    project_file = PROJECTS_DIR / f"{RECOMMENDATIONS_PROJECT_ID}.json"
+
+    if project_file.exists():
+        return RECOMMENDATIONS_PROJECT_ID
+
+    now = datetime.now().isoformat()
+    project = {
+        "id": RECOMMENDATIONS_PROJECT_ID,
+        "created": now,
+        "updated": now,
+        "title": "Curator",
+        "description": "Curated suggestions from Euno based on your behaviors and interests",
+        "type": "system",
+        "status": "active",
+        "priority": "normal",
+        "source": {
+            "agent": "system",
+            "context": "System project for recommendations"
+        },
+        "milestones": [],
+        "values_alignment": [],
+        "deadline": None,
+        "someday": False,
+        "review_frequency": "weekly",
+        "last_reviewed": None,
+        "archived": False,
+        "meta": {
+            "total_tasks_created": 0,
+            "tasks_completed": 0,
+            "estimated_hours": 0,
+            "logged_hours": 0
+        }
+    }
+
+    with open(project_file, 'w') as f:
+        json.dump(project, f, indent=2)
+
+    _update_index(project)
+    return RECOMMENDATIONS_PROJECT_ID
+
+
+def is_system_project(project_id: str) -> bool:
+    """Check if a project is a system project."""
+    return project_id in SYSTEM_PROJECT_IDS
 
 
 def get_project_title(project_id: str) -> str:
@@ -623,12 +691,25 @@ def get_projects_data(
                     p["someday"] = full.get("someday", False)
                 result.append(p)
 
-    # Sort by priority then deadline
-    priority_order = {"high": 0, "normal": 1, "low": 2}
-    result.sort(key=lambda p: (
-        priority_order.get(p.get("priority", "normal"), 1),
-        p.get("deadline") or "9999-12-31"
-    ))
+    # Sort projects: General first, user projects middle (by priority/deadline), system projects last
+    def project_sort_key(p):
+        pid = p.get("id", "")
+        # General always first
+        if pid == GENERAL_PROJECT_ID:
+            return (0, 0, "")
+        # Notifications and Recommendations last
+        if pid == NOTIFICATIONS_PROJECT_ID:
+            return (2, 0, "")
+        if pid == RECOMMENDATIONS_PROJECT_ID:
+            return (2, 1, "")
+        # Legacy Euno project - treat as system
+        if pid == EUNO_PROJECT_ID:
+            return (2, 2, "")
+        # User projects sorted by priority then deadline
+        priority_order = {"high": 0, "normal": 1, "low": 2}
+        return (1, priority_order.get(p.get("priority", "normal"), 1), p.get("deadline") or "9999-12-31")
+
+    result.sort(key=project_sort_key)
 
     return result
 

@@ -699,6 +699,13 @@
             color: #333;
         }
 
+        .focus-menu-subtitle {
+            font-size: 0.75rem;
+            color: #999;
+            margin-left: 0.5rem;
+            font-style: italic;
+        }
+
         .focus-menu-count {
             color: #888;
             font-size: 0.85rem;
@@ -2271,6 +2278,22 @@
 
         // ============== Focus Tab - Things-like Navigation ==============
 
+        // System project IDs that should be filtered from timeline views
+        const SYSTEM_PROJECT_IDS = ['project-notifications', 'project-recommendations', 'project-euno'];
+
+        function isSystemProjectTask(task) {
+            return SYSTEM_PROJECT_IDS.includes(task.project_id);
+        }
+
+        function shouldShowInTimeline(task) {
+            // Non-system project tasks always show in timeline
+            if (!isSystemProjectTask(task)) return true;
+            // System project tasks only show if user explicitly set a When value
+            const dueDate = task.scheduling?.due_date;
+            const someday = task.scheduling?.someday;
+            return dueDate || someday;
+        }
+
         function getTaskCategory(task) {
             const today = new Date().toISOString().split('T')[0];
             const dueDate = task.scheduling?.due_date;
@@ -2287,13 +2310,14 @@
             const today = new Date().toISOString().split('T')[0];
             const counts = { today: 0, upcoming: 0, anytime: 0, someday: 0, logbook: 0, projects: 0 };
 
-            tasksData.forEach(task => {
+            // Only count tasks that should show in timeline
+            tasksData.filter(shouldShowInTimeline).forEach(task => {
                 const category = getTaskCategory(task);
                 if (category === 'logbook') return; // Don't count in logbook badge
                 counts[category]++;
             });
 
-            counts.logbook = completedTasksData.length;
+            counts.logbook = completedTasksData.filter(shouldShowInTimeline).length;
             counts.projects = projectsData.filter(p => p.status === 'active').length;
 
             return counts;
@@ -2363,20 +2387,25 @@
                         <span class="focus-menu-count">${counts.logbook}</span>
                         <span class="focus-menu-arrow">›</span>
                     </div>
-                    ${activeProjects.map(project => `
+                    ${activeProjects.map(project => {
+                        const isSystemProject = project.id === 'project-notifications' || project.id === 'project-recommendations';
+                        const icon = isSystemProject ? '✨' : '📁';
+                        const subtitle = isSystemProject ? '<span class="focus-menu-subtitle">from Euno</span>' : '';
+                        return `
                         <div class="focus-menu-item" onclick="navigateFocus('${project.id}')">
-                            <span class="focus-menu-icon">📁</span>
-                            <span class="focus-menu-label">${escapeHtml(project.title)}</span>
+                            <span class="focus-menu-icon">${icon}</span>
+                            <span class="focus-menu-label">${escapeHtml(project.title)}${subtitle}</span>
                             <span class="focus-menu-count">${projectTaskCounts[project.id] || 0}</span>
                             <span class="focus-menu-arrow">›</span>
                         </div>
-                    `).join('')}
+                    `}).join('')}
                 </div>
             `;
         }
 
         function renderTimelineView(category, title) {
-            const tasks = tasksData.filter(t => getTaskCategory(t) === category);
+            // Filter to tasks in this category AND should show in timeline
+            const tasks = tasksData.filter(t => shouldShowInTimeline(t) && getTaskCategory(t) === category);
             return `
                 <div class="focus-view-header">
                     <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
@@ -2392,7 +2421,8 @@
         }
 
         function renderLogbookView() {
-            const tasks = completedTasksData.slice(0, 20);
+            // Filter completed tasks - only show non-system tasks or system tasks with When value
+            const tasks = completedTasksData.filter(shouldShowInTimeline).slice(0, 20);
             return `
                 <div class="focus-view-header">
                     <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
@@ -2515,7 +2545,8 @@
         }
 
         function isEunoTask(task) {
-            return task.project_id === 'project-euno';
+            // Show icon for all system project tasks (notifications, recommendations, legacy euno)
+            return SYSTEM_PROJECT_IDS.includes(task.project_id);
         }
 
         function renderMinimalTaskCard(task) {
@@ -3253,12 +3284,14 @@
         function updateTasksBadge() {
             const badge = document.getElementById('tasks-badge');
             const today = new Date().toISOString().split('T')[0];
-            // Count pending/in_progress tasks for today badge
+            // Count only tasks with due_date = today (not tasks without dates)
             const count = tasksData.filter(t => {
                 const dueDate = t.scheduling?.due_date;
-                const isToday = dueDate === today || !dueDate;
+                const isToday = dueDate === today;
                 const isPending = t.status === 'pending' || t.status === 'in_progress';
-                return isToday && isPending;
+                // Exclude system project tasks (notifications, recommendations)
+                const isSystemProject = t.project_id === 'project-notifications' || t.project_id === 'project-recommendations';
+                return isToday && isPending && !isSystemProject;
             }).length;
             badge.textContent = count;
             badge.style.display = count > 0 ? 'inline' : 'none';
