@@ -2074,7 +2074,6 @@
         // Focus tab navigation state
         let focusView = 'menu';  // 'menu' | 'today' | 'upcoming' | 'anytime' | 'someday' | 'logbook' | 'projects' | 'project-{id}'
         let focusViewHistory = [];  // For back navigation
-        let expandedProjectGroups = new Set();  // Track which project groups are expanded (collapsed by default)
         let archivingTaskId = null;  // Track which task is showing archive input
 
         // Elements
@@ -2495,7 +2494,7 @@
                 <div class="focus-view-content">
                     ${tasks.length === 0
                         ? '<div class="focus-empty">No tasks</div>'
-                        : renderTasksGroupedByProject(tasks)
+                        : renderTasksSortedByProject(tasks)
                     }
                 </div>
             `;
@@ -2512,7 +2511,7 @@
                 <div class="focus-view-content">
                     ${tasks.length === 0
                         ? '<div class="focus-empty">No completed tasks</div>'
-                        : renderTasksGroupedByProject(tasks, true)
+                        : renderTasksSortedByProject(tasks, true)
                     }
                 </div>
             `;
@@ -2557,50 +2556,20 @@
             `;
         }
 
-        function renderTasksGroupedByProject(tasks, isCompleted = false) {
-            const tasksByProject = {};
-            tasks.forEach(task => {
-                const projectName = task.project_title || 'General';
-                if (!tasksByProject[projectName]) {
-                    tasksByProject[projectName] = [];
-                }
-                tasksByProject[projectName].push(task);
+        function renderTasksSortedByProject(tasks, isCompleted = false) {
+            // Sort tasks by project name
+            const sortedTasks = [...tasks].sort((a, b) => {
+                const projA = a.project_title || 'General';
+                const projB = b.project_title || 'General';
+                // General goes last
+                if (projA === 'General' && projB !== 'General') return 1;
+                if (projB === 'General' && projA !== 'General') return -1;
+                return projA.localeCompare(projB);
             });
 
-            const sortedProjects = Object.keys(tasksByProject).sort((a, b) => {
-                if (a === 'Notifications') return -1;
-                if (b === 'Notifications') return 1;
-                if (a === 'General') return 1;
-                if (b === 'General') return -1;
-                return a.localeCompare(b);
-            });
-
-            return sortedProjects.map(projectName => {
-                const projectTasks = tasksByProject[projectName];
-                const groupKey = `${focusView}-${projectName}`;
-                const isExpanded = expandedProjectGroups.has(groupKey);
-                return `
-                    <div class="project-group${isExpanded ? '' : ' collapsed'}" data-group-key="${escapeHtml(groupKey)}">
-                        <div class="project-label" onclick="toggleProjectGroup('${escapeHtml(groupKey)}')">
-                            <span class="project-label-toggle">▼</span>
-                            <span class="project-label-name">${escapeHtml(projectName)}</span>
-                            <span class="project-label-count">${projectTasks.length}</span>
-                        </div>
-                        <div class="project-group-tasks">
-                            ${projectTasks.map(task => isCompleted ? renderCompletedTaskCard(task) : renderTaskCard(task)).join('')}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function toggleProjectGroup(groupKey) {
-            if (expandedProjectGroups.has(groupKey)) {
-                expandedProjectGroups.delete(groupKey);
-            } else {
-                expandedProjectGroups.add(groupKey);
-            }
-            renderFocusTab();
+            return sortedTasks.map(task =>
+                isCompleted ? renderCompletedTaskCard(task) : renderTaskCard(task)
+            ).join('');
         }
 
         function navigateFocus(view) {

@@ -145,4 +145,4 @@ I'm presenting just one expression of what Euno is. Properly executed, Euno is:
 - Virtual/Augmented Reality Entity: with a VR headset, Euno could be a floating entity that you talk with as a second mind to help you on your journey.
 - Physical Robot: that you talk to and helps you around the house
 
-In the limit, it should be a hybrid, following you through all the various form factors.
+In the limit, it should be a hybrid, following you through all the various form factors. Euno is the personal intelligence that follows you through life in all your environments whether it's inside a video game or in a business meeting.
