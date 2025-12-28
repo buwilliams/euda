@@ -59,44 +59,47 @@ Euno is a working system with specialized agents that handle different aspects o
 
 ## Where It's Heading
 
-As Euno learns more about you, the capabilities deepen:
+As Euno learns more about you, it supports every dimension of your wellbeing:
 
-### For Parents
-- Understand your child's current season of life and offer age-appropriate guidance
-- Remember what worked (and didn't) with older children
-- Coordinate logistics between family members who also use Euno
+### Emotional
 
-### For Your Wellbeing
-- Detect early patterns of burnout or depression before you recognize them
-- Gently guide you toward activities that historically restore your energy
-- Track what actually makes you feel better versus what you think does
+Your inner life matters. Euno learns your patterns—what drains you, what restores you, what you're avoiding.
 
-### For Your Attention
-- Read your social feeds so you don't have to scroll them
-- Surface genuinely important updates from people who matter
-- Post on your behalf when you want to share without getting sucked in
-- Shield you from algorithmic manipulation designed to maximize engagement
+- Detect early signs of burnout or depression before you recognize them
+- Track what actually improves your mood versus what you think does
+- Shield you from algorithmic manipulation designed to hijack your attention
 - Reclaim hours lost to doom-scrolling without disconnecting entirely
+- Gently surface what you're avoiding when you're ready to face it
 
-### For Daily Life
-- Order medication for your dog before you remember to
-- Prepare you for tomorrow's conversation with context you've forgotten
-- Handle routine logistics so your attention stays on what matters
+### Intellectual
 
-### For Your Finances
-- Learn your actual spending patterns (not your aspirational budget)
-- Notice when spending doesn't align with stated priorities
-- Manage recurring tasks like bill reviews and subscription audits
+Growth requires the right challenges at the right time. Euno finds the edge where learning happens.
 
-### For Your Relationships
-- Notice when you're neglecting relationships that matter to you
-- Detect complicated dynamics and help you navigate them
-- If others use Euno, exchange "public profiles" to find genuine connection points
-
-### For Personal Growth
-- Find opportunities that stretch you just enough (90% safe, 10% surprising)
 - Notice recurring interests you haven't acted on
-- Track what you're actually learning versus what you planned to learn
+- Track what you're actually learning versus what you planned to
+- Prepare you for conversations with context you've forgotten
+- Find opportunities that stretch you—90% familiar, 10% surprising
+- Connect ideas across years of your thinking
+
+### Physical
+
+Your body keeps the score. Euno notices what your habits reveal about your energy and health.
+
+- Learn your actual rhythms—when you're sharp, when you're depleted
+- Notice when sleep, movement, or nutrition patterns shift
+- Handle routine logistics—refills, appointments, reminders—before you think to
+- Track what restores your energy versus what you assume does
+- Spot the early signs when something's off
+
+### Relational
+
+Relationships sustain us. Euno helps you show up for the people who matter.
+
+- Notice when you're neglecting relationships you value
+- Remember what matters to each person—their concerns, their milestones
+- For parents: understand your child's current season and what worked before
+- Detect complicated dynamics and help you navigate them
+- If others use Euno, exchange profiles to find genuine connection points
 
 ---
 
