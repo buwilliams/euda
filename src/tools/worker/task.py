@@ -142,6 +142,7 @@ def create_task(
     project_id: Optional[str] = None,
     priority: str = "normal",
     due_date: Optional[str] = None,
+    someday: bool = False,
     time_estimate_minutes: Optional[int] = None,
     energy_level: str = "medium",
     best_window: str = "any",
@@ -158,6 +159,7 @@ def create_task(
         project_id: Project to associate with (defaults to General project)
         priority: high, normal, or low
         due_date: When it should be done (ISO format)
+        someday: Mark as "someday" task (no specific date, but not anytime)
         time_estimate_minutes: Estimated time to complete
         energy_level: Required energy - low, medium, high
         best_window: Best time - morning, afternoon, evening, any
@@ -180,6 +182,10 @@ def create_task(
         ensure_general_project()
         project_id = GENERAL_PROJECT_ID
 
+    # Tasks from Euno (in the From Euno project) automatically go to Today
+    if project_id == EUNO_PROJECT_ID and due_date is None:
+        due_date = datetime.now().strftime("%Y-%m-%d")
+
     task_id = _generate_task_id()
     now = datetime.now().isoformat()
 
@@ -201,6 +207,7 @@ def create_task(
         "delegation": delegation,
         "scheduling": {
             "due_date": due_date,
+            "someday": someday,
             "scheduled_for": None,
             "time_estimate_minutes": time_estimate_minutes,
             "energy_level": energy_level,
@@ -469,8 +476,7 @@ def get_tasks_data(
     due_date: Optional[str] = None,
     priority: Optional[str] = None,
     limit: int = 50,
-    include_project_title: bool = True,
-    exclude_snoozed: bool = False
+    include_project_title: bool = True
 ) -> list:
     """
     Get tasks as raw data for API consumption.
@@ -482,7 +488,6 @@ def get_tasks_data(
         priority: Filter by priority
         limit: Maximum tasks to return
         include_project_title: Add project_title field to each task
-        exclude_snoozed: Exclude tasks snoozed until a future date
 
     Returns:
         List of task dictionaries
@@ -499,11 +504,6 @@ def get_tasks_data(
         tasks = [t for t in tasks if t.get("scheduling", {}).get("due_date") == due_date]
     if priority:
         tasks = [t for t in tasks if t["priority"] == priority]
-
-    # Exclude snoozed tasks (snoozed_until is in the future)
-    if exclude_snoozed:
-        today = datetime.now().strftime("%Y-%m-%d")
-        tasks = [t for t in tasks if not t.get("scheduling", {}).get("snoozed_until") or t.get("scheduling", {}).get("snoozed_until") <= today]
 
     # Sort by priority then due date
     priority_order = {"high": 0, "normal": 1, "low": 2}
@@ -955,62 +955,6 @@ def get_archived_tasks_data(days: int = 90, limit: int = 100) -> list:
     return tasks[:limit]
 
 
-def snooze_task(task_id: str, until_date: Optional[str] = None) -> str:
-    """
-    Snooze a task until a specific date (default: tomorrow).
-
-    Snoozed tasks won't appear in the Today view until the snooze date.
-
-    Args:
-        task_id: The task ID to snooze
-        until_date: Date to snooze until (ISO format YYYY-MM-DD, default: tomorrow)
-
-    Returns:
-        Success message or error
-    """
-    if not until_date:
-        until_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-
-    queue = _load_queue()
-
-    for task in queue["tasks"]:
-        if task["id"] == task_id:
-            if task["status"] not in ["pending", "in_progress"]:
-                return f"Cannot snooze task with status '{task['status']}'"
-
-            # Set snoozed_until in scheduling
-            if "scheduling" not in task:
-                task["scheduling"] = {}
-            task["scheduling"]["snoozed_until"] = until_date
-
-            _save_queue(queue)
-            return f"Task snoozed until {until_date}"
-
-    return f"Task not found: {task_id}"
-
-
-def unsnooze_task(task_id: str) -> str:
-    """
-    Remove snooze from a task, making it visible again.
-
-    Args:
-        task_id: The task ID to unsnooze
-
-    Returns:
-        Success message or error
-    """
-    queue = _load_queue()
-
-    for task in queue["tasks"]:
-        if task["id"] == task_id:
-            if "scheduling" in task:
-                task["scheduling"]["snoozed_until"] = None
-            _save_queue(queue)
-            return "Task unsnooze - now visible"
-
-    return f"Task not found: {task_id}"
-
-
 def update_task(
     task_id: str,
     description: Optional[str] = None,
@@ -1067,6 +1011,57 @@ def update_task(
                 return f"Updated task: {', '.join(updated)}"
 
             return "No changes made"
+
+    return f"Task not found: {task_id}"
+
+
+def update_task_when(
+    task_id: str,
+    when_type: str,
+    date: Optional[str] = None
+) -> str:
+    """
+    Update task's "when" scheduling (due_date and someday flag).
+
+    Args:
+        task_id: The task ID to update
+        when_type: One of "today", "date", "someday", "anytime", "clear"
+        date: ISO format date (required when when_type is "date")
+
+    Returns:
+        Success message
+    """
+    queue = _load_queue()
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    for task in queue["tasks"]:
+        if task["id"] == task_id:
+            if "scheduling" not in task:
+                task["scheduling"] = {}
+
+            if when_type == "today":
+                task["scheduling"]["due_date"] = today
+                task["scheduling"]["someday"] = False
+            elif when_type == "date":
+                if not date:
+                    return "Date required for 'date' when_type"
+                task["scheduling"]["due_date"] = date
+                task["scheduling"]["someday"] = False
+            elif when_type == "someday":
+                task["scheduling"]["due_date"] = None
+                task["scheduling"]["someday"] = True
+            elif when_type == "anytime":
+                task["scheduling"]["due_date"] = None
+                task["scheduling"]["someday"] = False
+            elif when_type == "clear":
+                task["scheduling"]["due_date"] = None
+                task["scheduling"]["someday"] = False
+            else:
+                return f"Invalid when_type: {when_type}"
+
+            task["modified_at"] = datetime.now().isoformat()
+            _save_queue(queue)
+            return f"Updated task when to: {when_type}" + (f" ({date})" if date else "")
 
     return f"Task not found: {task_id}"
 

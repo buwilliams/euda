@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Euno, Personal Intelligence.</title>
     <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         * {
@@ -14,8 +17,8 @@
         }
 
         body {
-            font-family: Georgia, 'Times New Roman', serif;
-            background: #fff;
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #2d2d2d;
             color: #000;
             min-height: 100vh;
         }
@@ -25,15 +28,19 @@
             display: flex;
             height: 100vh;
             justify-content: center;
+            padding: 1rem;
         }
 
         .app {
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: 100%;
             width: 100%;
             max-width: 640px;
             padding: 1.5rem;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
         }
 
         /* ============== Context/Quote Content ============== */
@@ -65,7 +72,7 @@
             letter-spacing: 0.1em;
             color: #888;
             margin-bottom: 0.75rem;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Roboto', sans-serif;
         }
 
         .section-content {
@@ -263,7 +270,7 @@
             border-radius: 3px;
             margin-right: 0.75rem;
             flex-shrink: 0;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Roboto', sans-serif;
         }
 
         .thread-urgency.can-wait {
@@ -530,7 +537,7 @@
         .tab-content {
             flex: 1;
             overflow: hidden;
-            border: 1px solid #ddd;
+            border: 1px solid #e8e8e8;
             border-bottom: none;
             border-radius: 8px 8px 0 0;
             background: #fff;
@@ -551,9 +558,8 @@
         .tab-menu {
             display: flex;
             align-items: stretch;
-            background: #f0f0f0;
-            border: 1px solid #ddd;
-            border-top: none;
+            background: #f5f5f5;
+            border-top: 1px solid #e0e0e0;
         }
 
         .tab-btn {
@@ -607,7 +613,7 @@
             border-radius: 8px;
             min-width: 1rem;
             text-align: center;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Roboto', sans-serif;
         }
 
         .tab-spacer {
@@ -642,61 +648,13 @@
             stroke-linejoin: round;
         }
 
-        /* ============== Focus Tab Sections ============== */
+        /* ============== Focus Tab - Things-like Navigation ============== */
         .focus-content {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .focus-section {
-            margin-bottom: 0;
-        }
-
-        .focus-section-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 0.75rem;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .focus-section-header:hover { opacity: 0.8; }
-
-        .section-toggle {
-            font-size: 0.7rem;
-            color: #999;
-            margin-right: 0.5rem;
-            transition: transform 0.2s;
-        }
-
-        .focus-section.collapsed .section-toggle {
-            transform: rotate(-90deg);
-        }
-
-        .focus-section-title {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #333;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            flex: 1;
-        }
-
-        .focus-section-count {
-            font-size: 0.75rem;
-            color: #999;
-            background: #eee;
-            padding: 0.1rem 0.4rem;
-            border-radius: 10px;
-        }
-
-        .focus-section-content {
-            transition: max-height 0.2s ease-out, opacity 0.2s ease-out;
-        }
-
-        .focus-section.collapsed .focus-section-content {
-            display: none;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
         }
 
         .focus-empty {
@@ -704,6 +662,261 @@
             font-style: italic;
             font-size: 0.9rem;
             padding: 0.5rem 0;
+        }
+
+        /* Focus Menu */
+        .focus-menu {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .focus-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .focus-menu-item:hover {
+            background: #f9f9f9;
+        }
+
+        .focus-menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .focus-menu-icon {
+            width: 28px;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .focus-menu-label {
+            flex: 1;
+            font-size: 0.95rem;
+            color: #333;
+        }
+
+        .focus-menu-count {
+            color: #888;
+            font-size: 0.85rem;
+            margin-right: 0.5rem;
+        }
+
+        .focus-menu-arrow {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        .focus-menu-divider {
+            height: 1px;
+            background: #ddd;
+            margin: 0.5rem 0;
+        }
+
+        /* Focus View Header */
+        .focus-view-header {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+            background: #fafafa;
+            margin: -1rem -1rem 0.75rem -1rem;
+        }
+
+        .focus-back-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            margin-right: 0.25rem;
+            color: #666;
+        }
+
+        .focus-back-btn:hover {
+            color: #333;
+        }
+
+        .focus-view-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #333;
+        }
+
+        /* Focus View Content */
+        .focus-view-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* When Picker */
+        .when-picker {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .when-picker-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .when-picker-content {
+            position: relative;
+            background: #fff;
+            border-radius: 12px 12px 0 0;
+            padding: 1rem;
+            width: 100%;
+            max-width: 640px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .when-picker-header {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .when-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .when-option:hover {
+            background: #f5f5f5;
+        }
+
+        .when-option-icon {
+            font-size: 1.1rem;
+            width: 28px;
+            text-align: center;
+        }
+
+        .when-option-label {
+            font-size: 0.95rem;
+            color: #333;
+        }
+
+        /* Date Picker in When Picker */
+        .when-date-input {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+        }
+
+        .when-date-input:focus {
+            outline: none;
+            border-color: #999;
+        }
+
+        /* Card When Button */
+        .card-when {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            background: #f5f5f5;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+            transition: all 0.15s;
+        }
+
+        .card-when:hover {
+            background: #eee;
+            border-color: #ddd;
+        }
+
+        .card-when-icon {
+            font-size: 0.9rem;
+        }
+
+        .card-when-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        /* Euno task icon */
+        .card-euno-icon {
+            font-size: 0.85rem;
+            margin-right: 0.35rem;
+            flex-shrink: 0;
+        }
+
+        /* Inline archive input */
+        .card-archive-form {
+            display: flex;
+            gap: 0.35rem;
+            padding: 0.5rem 0.75rem;
+            border-top: 1px solid #eee;
+            background: #f9f9f9;
+        }
+
+        .card-archive-input {
+            flex: 1;
+            padding: 0.35rem 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.8rem;
+        }
+
+        .card-archive-input:focus {
+            outline: none;
+            border-color: #999;
+        }
+
+        .card-archive-btn {
+            padding: 0.35rem 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .card-archive-btn:hover {
+            border-color: #999;
+            color: #333;
+        }
+
+        .card-archive-btn.confirm {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+
+        .card-archive-btn.confirm:hover {
+            background: #333;
         }
 
         /* ============== Chat Tab ============== */
@@ -897,12 +1110,49 @@
         }
 
         .project-label {
+            display: flex;
+            align-items: center;
             font-size: 0.8rem;
             font-weight: 600;
             color: #666;
             padding-bottom: 0.35rem;
             margin-bottom: 0.5rem;
             border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .project-label:hover {
+            color: #333;
+        }
+
+        .project-label-toggle {
+            font-size: 0.65rem;
+            margin-right: 0.4rem;
+            transition: transform 0.2s;
+            color: #999;
+        }
+
+        .project-group.collapsed .project-label-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .project-label-name {
+            flex: 1;
+        }
+
+        .project-label-count {
+            font-weight: 400;
+            color: #999;
+            font-size: 0.75rem;
+        }
+
+        .project-group-tasks {
+            transition: max-height 0.2s ease-out, opacity 0.15s ease-out;
+        }
+
+        .project-group.collapsed .project-group-tasks {
+            display: none;
         }
 
         .project-group .card {
@@ -1401,8 +1651,8 @@
 
         .project-add-btn:hover { background: #333; }
 
-        /* Task Snooze & Archive */
-        .task-snooze, .task-archive {
+        /* Task Archive */
+        .task-archive {
             opacity: 0;
             background: none;
             border: none;
@@ -1413,9 +1663,7 @@
             transition: opacity 0.15s, color 0.15s;
         }
 
-        .task-item:hover .task-snooze,
         .task-item:hover .task-archive { opacity: 1; }
-        .task-snooze:hover { color: #6366f1; }
         .task-archive:hover { color: #f59e0b; }
 
         /* Euno task styling */
@@ -1587,37 +1835,8 @@
 
                     <!-- Focus Tab -->
                     <div class="tab-pane" id="tab-focus">
-                        <div class="focus-content">
-                            <div class="focus-section" id="section-today">
-                                <div class="focus-section-header" onclick="toggleSection('today')">
-                                    <span class="section-toggle">▼</span>
-                                    <span class="focus-section-title">Today</span>
-                                    <span class="focus-section-count" id="today-count">0</span>
-                                </div>
-                                <div class="focus-section-content" id="today-tasks">
-                                    <div class="focus-empty">No tasks for today</div>
-                                </div>
-                            </div>
-                            <div class="focus-section" id="section-projects">
-                                <div class="focus-section-header" onclick="toggleSection('projects')">
-                                    <span class="section-toggle">▼</span>
-                                    <span class="focus-section-title">Projects</span>
-                                    <span class="focus-section-count" id="projects-count">0</span>
-                                </div>
-                                <div class="focus-section-content" id="projects-list">
-                                    <div class="focus-empty">No active projects</div>
-                                </div>
-                            </div>
-                            <div class="focus-section collapsed" id="section-completed">
-                                <div class="focus-section-header" onclick="toggleSection('completed')">
-                                    <span class="section-toggle">▼</span>
-                                    <span class="focus-section-title">Completed</span>
-                                    <span class="focus-section-count" id="completed-count">0</span>
-                                </div>
-                                <div class="focus-section-content" id="completed-tasks">
-                                    <div class="focus-empty">No completed tasks</div>
-                                </div>
-                            </div>
+                        <div class="focus-content" id="focus-content">
+                            <!-- Content dynamically rendered by renderFocusTab() -->
                         </div>
                     </div>
 
@@ -1698,15 +1917,18 @@
         let historyData = [];
         let uploadXhr = null;
 
+        // Focus tab navigation state
+        let focusView = 'menu';  // 'menu' | 'today' | 'upcoming' | 'anytime' | 'someday' | 'logbook' | 'projects' | 'project-{id}'
+        let focusViewHistory = [];  // For back navigation
+        let expandedProjectGroups = new Set();  // Track which project groups are expanded (collapsed by default)
+        let archivingTaskId = null;  // Track which task is showing archive input
+
         // Elements
         const appContainer = document.getElementById('app-container');
         const contextContent = document.getElementById('context-content');
 
         // Initialize
         async function init() {
-            // Restore section collapse states
-            restoreSectionStates();
-
             // Restore active tab
             switchTab(activeTab, false);
 
@@ -1935,33 +2157,6 @@
             return div.innerHTML;
         }
 
-        // ============== Section Toggle ==============
-
-        function toggleSection(sectionName) {
-            const section = document.getElementById(`section-${sectionName}`);
-            if (section) {
-                section.classList.toggle('collapsed');
-                // Save state to localStorage
-                const collapsed = JSON.parse(localStorage.getItem('collapsedSections') || '{}');
-                collapsed[sectionName] = section.classList.contains('collapsed');
-                localStorage.setItem('collapsedSections', JSON.stringify(collapsed));
-            }
-        }
-
-        function restoreSectionStates() {
-            const collapsed = JSON.parse(localStorage.getItem('collapsedSections') || '{}');
-            for (const [sectionName, isCollapsed] of Object.entries(collapsed)) {
-                const section = document.getElementById(`section-${sectionName}`);
-                if (section) {
-                    if (isCollapsed) {
-                        section.classList.add('collapsed');
-                    } else {
-                        section.classList.remove('collapsed');
-                    }
-                }
-            }
-        }
-
         // ============== Tasks ==============
 
         let completedTasksData = [];
@@ -1995,38 +2190,193 @@
                 });
                 await Promise.all(notesPromises);
 
-                renderTodayTasks();
-                renderProjects();
-                renderCompletedTasks();
+                renderFocusTab();
                 updateTasksBadge();
             } catch (error) {
                 console.error('Failed to load tasks data:', error);
             }
         }
 
-        function renderTodayTasks() {
-            const container = document.getElementById('today-tasks');
-            const countEl = document.getElementById('today-count');
+        // ============== Focus Tab - Things-like Navigation ==============
 
+        function getTaskCategory(task) {
             const today = new Date().toISOString().split('T')[0];
-            // Only show pending/in_progress tasks in Today section
-            const todayTasks = tasksData.filter(t => {
-                const dueDate = t.scheduling?.due_date;
-                const isToday = dueDate === today || !dueDate;
-                const isPending = t.status === 'pending' || t.status === 'in_progress';
-                return isToday && isPending;
+            const dueDate = task.scheduling?.due_date;
+            const someday = task.scheduling?.someday;
+
+            if (task.status === 'completed') return 'logbook';
+            if (dueDate === today) return 'today';
+            if (dueDate && dueDate > today) return 'upcoming';
+            if (!dueDate && someday) return 'someday';
+            return 'anytime';
+        }
+
+        function getFocusCounts() {
+            const today = new Date().toISOString().split('T')[0];
+            const counts = { today: 0, upcoming: 0, anytime: 0, someday: 0, logbook: 0, projects: 0 };
+
+            tasksData.forEach(task => {
+                const category = getTaskCategory(task);
+                if (category === 'logbook') return; // Don't count in logbook badge
+                counts[category]++;
             });
 
-            countEl.textContent = todayTasks.length;
+            counts.logbook = completedTasksData.length;
+            counts.projects = projectsData.filter(p => p.status === 'active').length;
 
-            if (todayTasks.length === 0) {
-                container.innerHTML = '<div class="focus-empty">No tasks for today</div>';
-                return;
+            return counts;
+        }
+
+        function renderFocusTab() {
+            const container = document.getElementById('focus-content');
+            if (!container) return;
+
+            if (focusView === 'menu') {
+                container.innerHTML = renderFocusMenu();
+            } else if (focusView === 'today') {
+                container.innerHTML = renderTimelineView('today', 'Today');
+            } else if (focusView === 'upcoming') {
+                container.innerHTML = renderTimelineView('upcoming', 'Upcoming');
+            } else if (focusView === 'anytime') {
+                container.innerHTML = renderTimelineView('anytime', 'Anytime');
+            } else if (focusView === 'someday') {
+                container.innerHTML = renderTimelineView('someday', 'Someday');
+            } else if (focusView === 'logbook') {
+                container.innerHTML = renderLogbookView();
+            } else if (focusView.startsWith('project-')) {
+                const projectId = focusView;
+                container.innerHTML = renderSingleProjectView(projectId);
+            }
+        }
+
+        function renderFocusMenu() {
+            const counts = getFocusCounts();
+            const activeProjects = projectsData.filter(p => p.status === 'active');
+
+            // Get task counts per project
+            const projectTaskCounts = {};
+            activeProjects.forEach(p => {
+                projectTaskCounts[p.id] = tasksData.filter(t => t.project_id === p.id && t.status !== 'completed').length;
+            });
+
+            return `
+                <div class="focus-menu">
+                    <div class="focus-menu-item" onclick="navigateFocus('today')">
+                        <span class="focus-menu-icon">☀️</span>
+                        <span class="focus-menu-label">Today</span>
+                        <span class="focus-menu-count">${counts.today}</span>
+                        <span class="focus-menu-arrow">›</span>
+                    </div>
+                    <div class="focus-menu-item" onclick="navigateFocus('upcoming')">
+                        <span class="focus-menu-icon">📅</span>
+                        <span class="focus-menu-label">Upcoming</span>
+                        <span class="focus-menu-count">${counts.upcoming}</span>
+                        <span class="focus-menu-arrow">›</span>
+                    </div>
+                    <div class="focus-menu-item" onclick="navigateFocus('anytime')">
+                        <span class="focus-menu-icon">⏳</span>
+                        <span class="focus-menu-label">Anytime</span>
+                        <span class="focus-menu-count">${counts.anytime}</span>
+                        <span class="focus-menu-arrow">›</span>
+                    </div>
+                    <div class="focus-menu-item" onclick="navigateFocus('someday')">
+                        <span class="focus-menu-icon">💭</span>
+                        <span class="focus-menu-label">Someday</span>
+                        <span class="focus-menu-count">${counts.someday}</span>
+                        <span class="focus-menu-arrow">›</span>
+                    </div>
+                    <div class="focus-menu-item" onclick="navigateFocus('logbook')">
+                        <span class="focus-menu-icon">📖</span>
+                        <span class="focus-menu-label">Logbook</span>
+                        <span class="focus-menu-count">${counts.logbook}</span>
+                        <span class="focus-menu-arrow">›</span>
+                    </div>
+                    ${activeProjects.map(project => `
+                        <div class="focus-menu-item" onclick="navigateFocus('${project.id}')">
+                            <span class="focus-menu-icon">📁</span>
+                            <span class="focus-menu-label">${escapeHtml(project.title)}</span>
+                            <span class="focus-menu-count">${projectTaskCounts[project.id] || 0}</span>
+                            <span class="focus-menu-arrow">›</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderTimelineView(category, title) {
+            const tasks = tasksData.filter(t => getTaskCategory(t) === category);
+            return `
+                <div class="focus-view-header">
+                    <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
+                    <span class="focus-view-title">${title}</span>
+                </div>
+                <div class="focus-view-content">
+                    ${tasks.length === 0
+                        ? '<div class="focus-empty">No tasks</div>'
+                        : renderTasksGroupedByProject(tasks)
+                    }
+                </div>
+            `;
+        }
+
+        function renderLogbookView() {
+            const tasks = completedTasksData.slice(0, 20);
+            return `
+                <div class="focus-view-header">
+                    <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
+                    <span class="focus-view-title">Logbook</span>
+                </div>
+                <div class="focus-view-content">
+                    ${tasks.length === 0
+                        ? '<div class="focus-empty">No completed tasks</div>'
+                        : renderTasksGroupedByProject(tasks, true)
+                    }
+                </div>
+            `;
+        }
+
+
+        function renderSingleProjectView(projectId) {
+            const project = projectsData.find(p => p.id === projectId);
+            if (!project) {
+                return `
+                    <div class="focus-view-header">
+                        <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
+                        <span class="focus-view-title">Project not found</span>
+                    </div>
+                `;
             }
 
-            // Group tasks by project
+            const projectTasks = tasksData.filter(t => t.project_id === projectId && t.status !== 'completed');
+            const noteCount = projectNotesData[projectId]?.count || 0;
+
+            return `
+                <div class="focus-view-header">
+                    <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
+                    <span class="focus-view-title">${escapeHtml(project.title)}</span>
+                </div>
+                <div class="focus-view-content">
+                    <div class="card-meta" style="margin-bottom: 0.75rem;">${projectTasks.length} pending task${projectTasks.length !== 1 ? 's' : ''} • ${noteCount} note${noteCount !== 1 ? 's' : ''}</div>
+                    ${projectTasks.length === 0
+                        ? '<div class="focus-empty">No pending tasks</div>'
+                        : projectTasks.map(task => renderTaskCard(task)).join('')
+                    }
+                    <div class="card-add-task" style="margin-top: 0.75rem;">
+                        <input type="text" class="card-add-input" id="add-task-${project.id}" placeholder="Add task..." onkeypress="if(event.key==='Enter')addTaskToProject('${project.id}', this)">
+                        <button class="card-add-btn" onclick="addTaskToProject('${project.id}', document.getElementById('add-task-${project.id}'))">+</button>
+                    </div>
+                    ${noteCount > 0 ? `
+                    <div style="margin-top: 0.75rem;">
+                        <button class="card-action" onclick="toggleProjectNotes('${project.id}')">View ${noteCount} note${noteCount !== 1 ? 's' : ''}</button>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderTasksGroupedByProject(tasks, isCompleted = false) {
             const tasksByProject = {};
-            todayTasks.forEach(task => {
+            tasks.forEach(task => {
                 const projectName = task.project_title || 'General';
                 if (!tasksByProject[projectName]) {
                     tasksByProject[projectName] = [];
@@ -2034,7 +2384,6 @@
                 tasksByProject[projectName].push(task);
             });
 
-            // Sort projects: Euno first, then General, then alphabetically
             const sortedProjects = Object.keys(tasksByProject).sort((a, b) => {
                 if (a === 'From Euno') return -1;
                 if (b === 'From Euno') return 1;
@@ -2043,94 +2392,129 @@
                 return a.localeCompare(b);
             });
 
-            container.innerHTML = sortedProjects.map(projectName => {
-                const tasks = tasksByProject[projectName];
+            return sortedProjects.map(projectName => {
+                const projectTasks = tasksByProject[projectName];
+                const groupKey = `${focusView}-${projectName}`;
+                const isExpanded = expandedProjectGroups.has(groupKey);
                 return `
-                    <div class="project-group">
-                        <div class="project-label">${escapeHtml(projectName)}</div>
-                        ${tasks.map(task => renderTaskCard(task)).join('')}
+                    <div class="project-group${isExpanded ? '' : ' collapsed'}" data-group-key="${escapeHtml(groupKey)}">
+                        <div class="project-label" onclick="toggleProjectGroup('${escapeHtml(groupKey)}')">
+                            <span class="project-label-toggle">▼</span>
+                            <span class="project-label-name">${escapeHtml(projectName)}</span>
+                            <span class="project-label-count">${projectTasks.length}</span>
+                        </div>
+                        <div class="project-group-tasks">
+                            ${projectTasks.map(task => isCompleted ? renderCompletedTaskCard(task) : renderTaskCard(task)).join('')}
+                        </div>
                     </div>
                 `;
             }).join('');
         }
 
+        function toggleProjectGroup(groupKey) {
+            if (expandedProjectGroups.has(groupKey)) {
+                expandedProjectGroups.delete(groupKey);
+            } else {
+                expandedProjectGroups.add(groupKey);
+            }
+            renderFocusTab();
+        }
+
+        function navigateFocus(view) {
+            focusViewHistory.push(focusView);
+            focusView = view;
+            renderFocusTab();
+        }
+
+        function navigateFocusBack() {
+            if (focusViewHistory.length > 0) {
+                focusView = focusViewHistory.pop();
+            } else {
+                focusView = 'menu';
+            }
+            renderFocusTab();
+        }
+
+        // ============== Task Cards ==============
+
         function renderTaskCard(task) {
             const isExpanded = expandedCards.has(`task-${task.id}`);
+            return isExpanded ? renderFullTaskCard(task) : renderMinimalTaskCard(task);
+        }
 
-            if (isExpanded) {
-                return renderFullTaskCard(task);
-            } else {
-                return renderMinimalTaskCard(task);
-            }
+        function isEunoTask(task) {
+            return task.project_id === 'project-euno';
         }
 
         function renderMinimalTaskCard(task) {
+            const eunoIcon = isEunoTask(task) ? '<span class="card-euno-icon">✨</span>' : '';
             return `
                 <div class="card card-minimal" data-task-id="${task.id}" onclick="expandTaskCard('${task.id}')">
-                    <span class="card-title">${escapeHtml(task.description)}</span>
+                    ${eunoIcon}<span class="card-title">${escapeHtml(task.description)}</span>
                 </div>
             `;
         }
 
         function renderFullTaskCard(task) {
             const projectName = task.project_title || 'General';
-            const dueDate = task.scheduling?.due_date || 'No due date';
+            const whenLabel = getWhenLabel(task);
+            const eunoIcon = isEunoTask(task) ? '<span class="card-euno-icon">✨</span>' : '';
+            const isArchiving = archivingTaskId === task.id;
+
             return `
                 <div class="card card-full" data-task-id="${task.id}">
                     <div class="card-header">
-                        <span class="card-title">${escapeHtml(task.description)}</span>
+                        ${eunoIcon}<span class="card-title">${escapeHtml(task.description)}</span>
                         <button class="card-collapse" onclick="event.stopPropagation(); collapseTaskCard('${task.id}')">−</button>
                     </div>
                     <div class="card-body">
-                        <div class="card-meta">Project: ${escapeHtml(projectName)} • Due: ${escapeHtml(dueDate)}</div>
+                        <div class="card-when" onclick="event.stopPropagation(); openWhenPicker('task', '${task.id}')">
+                            <span class="card-when-icon">📅</span>
+                            <span class="card-when-label">${escapeHtml(whenLabel)}</span>
+                        </div>
+                        <div class="card-meta">Project: ${escapeHtml(projectName)}</div>
                     </div>
                     <div class="card-actions">
                         <button class="card-action" onclick="toggleTask(event, '${task.id}')">Complete</button>
-                        <button class="card-action" onclick="snoozeTask(event, '${task.id}')">Snooze</button>
-                        <button class="card-action" onclick="archiveTask(event, '${task.id}')">Archive</button>
+                        <button class="card-action" onclick="showArchiveInput(event, '${task.id}')">${isArchiving ? 'Cancel' : 'Archive'}</button>
                         <button class="card-action danger" onclick="deleteTask(event, '${task.id}')">Delete</button>
                     </div>
+                    ${isArchiving ? `
+                    <div class="card-archive-form">
+                        <input type="text" class="card-archive-input" id="archive-reason-${task.id}" placeholder="Reason (optional)..." onkeypress="if(event.key==='Enter')confirmArchiveTask('${task.id}')">
+                        <button class="card-archive-btn confirm" onclick="confirmArchiveTask('${task.id}')">Archive</button>
+                    </div>
+                    ` : ''}
                 </div>
             `;
         }
 
+        function getWhenLabel(task) {
+            const today = new Date().toISOString().split('T')[0];
+            const dueDate = task.scheduling?.due_date;
+            const someday = task.scheduling?.someday;
+
+            if (dueDate === today) return 'Today';
+            if (dueDate) return dueDate;
+            if (someday) return 'Someday';
+            return 'Anytime';
+        }
+
         function expandTaskCard(taskId) {
             expandedCards.add(`task-${taskId}`);
-            renderTodayTasks();
-            renderProjects();
-            renderCompletedTasks();
+            renderFocusTab();
         }
 
         function collapseTaskCard(taskId) {
             expandedCards.delete(`task-${taskId}`);
-            renderTodayTasks();
-            renderProjects();
-            renderCompletedTasks();
+            renderFocusTab();
         }
 
-        function renderProjects() {
-            const container = document.getElementById('projects-list');
-            const countEl = document.getElementById('projects-count');
-
-            const activeProjects = projectsData.filter(p => p.status === 'active');
-            countEl.textContent = activeProjects.length;
-
-            if (activeProjects.length === 0) {
-                container.innerHTML = '<div class="focus-empty">No active projects</div>';
-                return;
-            }
-
-            container.innerHTML = activeProjects.map(project => renderProjectCard(project)).join('');
-        }
+        // ============== Project Cards ==============
 
         function renderProjectCard(project) {
             const isExpanded = expandedCards.has(`project-${project.id}`);
-
-            if (isExpanded) {
-                return renderFullProjectCard(project);
-            } else {
-                return renderMinimalProjectCard(project);
-            }
+            return isExpanded ? renderFullProjectCard(project) : renderMinimalProjectCard(project);
         }
 
         function renderMinimalProjectCard(project) {
@@ -2147,6 +2531,7 @@
             const projectTasks = tasksData.filter(t => t.project_id === project.id && t.status !== 'completed');
             const noteCount = projectNotesData[project.id]?.count || 0;
             const isGeneral = project.id === 'project-general';
+            const whenLabel = getProjectWhenLabel(project);
 
             return `
                 <div class="card card-full" data-project-id="${project.id}">
@@ -2155,21 +2540,18 @@
                         <button class="card-collapse" onclick="event.stopPropagation(); collapseProjectCard('${project.id}')">−</button>
                     </div>
                     <div class="card-body">
+                        ${!isGeneral ? `
+                        <div class="card-when" onclick="event.stopPropagation(); openWhenPicker('project', '${project.id}')">
+                            <span class="card-when-icon">📅</span>
+                            <span class="card-when-label">${escapeHtml(whenLabel)}</span>
+                        </div>
+                        ` : ''}
                         <div class="card-meta">${projectTasks.length} pending task${projectTasks.length !== 1 ? 's' : ''} • ${noteCount} note${noteCount !== 1 ? 's' : ''}</div>
-                        <div class="card-tasks">
-                            ${projectTasks.length === 0
-                                ? '<div class="focus-empty">No pending tasks</div>'
-                                : projectTasks.map(task => renderTaskCard(task)).join('')
-                            }
-                        </div>
-                        <div class="card-add-task">
-                            <input type="text" class="card-add-input" id="add-task-${project.id}" placeholder="Add task..." onkeypress="if(event.key==='Enter')addTaskToProject('${project.id}', this)">
-                            <button class="card-add-btn" onclick="addTaskToProject('${project.id}', document.getElementById('add-task-${project.id}'))">+</button>
-                        </div>
+                        <button class="card-action" style="margin-top: 0.5rem;" onclick="event.stopPropagation(); navigateFocus('${project.id}')">View tasks →</button>
                         ${noteCount > 0 ? `
                         <div class="card-notes">
                             <div class="card-notes-header">Notes</div>
-                            <button class="card-action" onclick="toggleProjectNotes('${project.id}')">View ${noteCount} note${noteCount !== 1 ? 's' : ''}</button>
+                            <button class="card-action" onclick="event.stopPropagation(); toggleProjectNotes('${project.id}')">View ${noteCount} note${noteCount !== 1 ? 's' : ''}</button>
                         </div>
                         ` : ''}
                     </div>
@@ -2183,14 +2565,105 @@
             `;
         }
 
+        function getProjectWhenLabel(project) {
+            const today = new Date().toISOString().split('T')[0];
+            const deadline = project.deadline;
+            const someday = project.someday;
+
+            if (deadline === today) return 'Today';
+            if (deadline) return deadline;
+            if (someday) return 'Someday';
+            return 'Anytime';
+        }
+
         function expandProjectCard(projectId) {
             expandedCards.add(`project-${projectId}`);
-            renderProjects();
+            renderFocusTab();
         }
 
         function collapseProjectCard(projectId) {
             expandedCards.delete(`project-${projectId}`);
-            renderProjects();
+            renderFocusTab();
+        }
+
+        // ============== When Picker ==============
+
+        function openWhenPicker(type, id) {
+            const picker = document.createElement('div');
+            picker.className = 'when-picker';
+            picker.id = 'when-picker';
+            picker.innerHTML = `
+                <div class="when-picker-backdrop" onclick="closeWhenPicker()"></div>
+                <div class="when-picker-content">
+                    <div class="when-picker-header">When?</div>
+                    <div class="when-option" onclick="setWhen('${type}', '${id}', 'today')">
+                        <span class="when-option-icon">☀️</span>
+                        <span class="when-option-label">Today</span>
+                    </div>
+                    <div class="when-option" onclick="showDatePicker('${type}', '${id}')">
+                        <span class="when-option-icon">📅</span>
+                        <span class="when-option-label">Pick a date...</span>
+                    </div>
+                    <div id="date-picker-row" style="display: none; padding: 0.5rem 0.75rem;">
+                        <input type="date" class="when-date-input" id="when-date-input" onchange="setWhenDate('${type}', '${id}')">
+                    </div>
+                    <div class="when-option" onclick="setWhen('${type}', '${id}', 'someday')">
+                        <span class="when-option-icon">💭</span>
+                        <span class="when-option-label">Someday</span>
+                    </div>
+                    <div class="when-option" onclick="setWhen('${type}', '${id}', 'clear')">
+                        <span class="when-option-icon">✕</span>
+                        <span class="when-option-label">Clear (Anytime)</span>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(picker);
+        }
+
+        function closeWhenPicker() {
+            const picker = document.getElementById('when-picker');
+            if (picker) {
+                picker.remove();
+            }
+        }
+
+        function showDatePicker(type, id) {
+            const row = document.getElementById('date-picker-row');
+            const input = document.getElementById('when-date-input');
+            if (row && input) {
+                row.style.display = 'block';
+                input.focus();
+            }
+        }
+
+        function setWhenDate(type, id) {
+            const input = document.getElementById('when-date-input');
+            if (input && input.value) {
+                setWhen(type, id, 'date', input.value);
+            }
+        }
+
+        async function setWhen(type, id, whenType, date = null) {
+            const endpoint = type === 'task'
+                ? `/api/tasks/${id}/when`
+                : `/api/projects/${id}/when`;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ when_type: whenType, date })
+                });
+
+                if (response.ok) {
+                    closeWhenPicker();
+                    await loadTasksData();
+                } else {
+                    console.error('Failed to update when:', await response.text());
+                }
+            } catch (error) {
+                console.error('Failed to update when:', error);
+            }
         }
 
         async function deleteProject(projectId) {
@@ -2230,29 +2703,25 @@
             }
         }
 
-        async function snoozeTask(event, taskId) {
+        function showArchiveInput(event, taskId) {
             event.stopPropagation();
-
-            try {
-                const response = await fetch(`/api/tasks/${taskId}/snooze`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})  // Default: snooze until tomorrow
-                });
-
-                if (response.ok) {
-                    await loadTasksData();
-                }
-            } catch (error) {
-                console.error('Failed to snooze task:', error);
+            // Toggle archive mode - if already archiving this task, cancel
+            if (archivingTaskId === taskId) {
+                archivingTaskId = null;
+            } else {
+                archivingTaskId = taskId;
             }
+            renderFocusTab();
+            // Focus the input after render
+            setTimeout(() => {
+                const input = document.getElementById(`archive-reason-${taskId}`);
+                if (input) input.focus();
+            }, 50);
         }
 
-        async function archiveTask(event, taskId) {
-            event.stopPropagation();
-
-            const reason = prompt('Reason for archiving (optional):');
-            if (reason === null) return; // Cancelled
+        async function confirmArchiveTask(taskId) {
+            const input = document.getElementById(`archive-reason-${taskId}`);
+            const reason = input ? input.value : '';
 
             try {
                 const response = await fetch(`/api/tasks/${taskId}/archive`, {
@@ -2262,6 +2731,7 @@
                 });
 
                 if (response.ok) {
+                    archivingTaskId = null;
                     await loadTasksData();
                 }
             } catch (error) {
@@ -2344,35 +2814,6 @@
             }
         }
 
-        function renderCompletedTasks() {
-            const container = document.getElementById('completed-tasks');
-            const countEl = document.getElementById('completed-count');
-
-            countEl.textContent = completedTasksData.length;
-
-            if (completedTasksData.length === 0) {
-                container.innerHTML = '<div class="focus-empty">No completed tasks</div>';
-                return;
-            }
-
-            // Group by project
-            const tasksByProject = {};
-            completedTasksData.slice(0, 15).forEach(task => {
-                const projectName = task.project_title || 'General';
-                if (!tasksByProject[projectName]) {
-                    tasksByProject[projectName] = [];
-                }
-                tasksByProject[projectName].push(task);
-            });
-
-            container.innerHTML = Object.entries(tasksByProject).map(([projectName, tasks]) => `
-                <div class="project-group">
-                    <div class="project-label">${escapeHtml(projectName)}</div>
-                    ${tasks.map(task => renderCompletedTaskCard(task)).join('')}
-                </div>
-            `).join('');
-        }
-
         function renderCompletedTaskCard(task) {
             const isExpanded = expandedCards.has(`completed-${task.id}`);
 
@@ -2381,7 +2822,7 @@
                     <div class="card card-full" data-task-id="${task.id}" style="opacity: 0.7;">
                         <div class="card-header">
                             <span class="card-title" style="text-decoration: line-through;">${escapeHtml(task.description)}</span>
-                            <button class="card-collapse" onclick="event.stopPropagation(); expandedCards.delete('completed-${task.id}'); renderCompletedTasks();">−</button>
+                            <button class="card-collapse" onclick="event.stopPropagation(); expandedCards.delete('completed-${task.id}'); renderFocusTab();">−</button>
                         </div>
                         <div class="card-body">
                             <div class="card-meta">Completed ${task.completed_at ? new Date(task.completed_at).toLocaleDateString() : 'recently'}</div>
@@ -2394,7 +2835,7 @@
                 `;
             } else {
                 return `
-                    <div class="card card-minimal" data-task-id="${task.id}" onclick="expandedCards.add('completed-${task.id}'); renderCompletedTasks();" style="opacity: 0.7;">
+                    <div class="card card-minimal" data-task-id="${task.id}" onclick="expandedCards.add('completed-${task.id}'); renderFocusTab();" style="opacity: 0.7;">
                         <span class="card-title" style="text-decoration: line-through; color: #888;">${escapeHtml(task.description)}</span>
                     </div>
                 `;
@@ -2703,7 +3144,7 @@
         function updateTasksBadge() {
             const badge = document.getElementById('tasks-badge');
             const today = new Date().toISOString().split('T')[0];
-            // Match the same logic as renderTodayTasks - pending OR in_progress
+            // Count pending/in_progress tasks for today badge
             const count = tasksData.filter(t => {
                 const dueDate = t.scheduling?.due_date;
                 const isToday = dueDate === today || !dueDate;
@@ -2857,9 +3298,7 @@
                 projectsData = data.projects || [];
                 updateTasksBadge();
                 if (activeTab === 'focus') {
-                    renderTodayTasks();
-                    renderProjects();
-                    renderCompletedTasks();
+                    renderFocusTab();
                 }
                 reconnectAttempts = 0;
             });
@@ -2873,9 +3312,7 @@
                     .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
                     .slice(0, 20);
                 if (activeTab === 'focus') {
-                    renderTodayTasks();
-                    renderProjects();
-                    renderCompletedTasks();
+                    renderFocusTab();
                 }
                 updateTasksBadge();
             });
@@ -2884,7 +3321,7 @@
                 const data = JSON.parse(e.data);
                 projectsData = data.projects || [];
                 if (activeTab === 'focus') {
-                    renderProjects();
+                    renderFocusTab();
                 }
             });
 

@@ -440,6 +440,7 @@ def create_project(
     project_type: str = "goal",
     priority: str = "normal",
     deadline: Optional[str] = None,
+    someday: bool = False,
     review_frequency: str = "weekly",
     values_alignment: Optional[list] = None,
     source_agent: str = "user",
@@ -454,6 +455,7 @@ def create_project(
         project_type: Type of project - learning, habit, goal, maintenance
         priority: high, normal, or low
         deadline: Optional ISO date string for completion target
+        someday: Mark as "someday" project (no specific deadline)
         review_frequency: How often to review - daily, weekly, monthly
         values_alignment: List of values this project aligns with
         source_agent: Which agent created this (user, interaction, world, etc.)
@@ -481,6 +483,7 @@ def create_project(
         "milestones": [],
         "values_alignment": values_alignment or [],
         "deadline": deadline,
+        "someday": someday,
         "review_frequency": review_frequency,
         "last_reviewed": None,
         "archived": False,
@@ -720,6 +723,64 @@ def update_project(
     _update_index(project)
 
     return f"Updated project '{project['title']}'"
+
+
+def update_project_when(
+    project_id: str,
+    when_type: str,
+    date: Optional[str] = None
+) -> str:
+    """
+    Update project's "when" scheduling (deadline and someday flag).
+
+    Args:
+        project_id: The project ID to update
+        when_type: One of "today", "date", "someday", "anytime", "clear"
+        date: ISO format date (required when when_type is "date")
+
+    Returns:
+        Success message
+    """
+    project_file = PROJECTS_DIR / f"{project_id}.json"
+
+    if not project_file.exists():
+        return f"Project not found: {project_id}"
+
+    with open(project_file, 'r') as f:
+        project = json.load(f)
+
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    if when_type == "today":
+        project["deadline"] = today
+        project["someday"] = False
+    elif when_type == "date":
+        if not date:
+            return "Date required for 'date' when_type"
+        project["deadline"] = date
+        project["someday"] = False
+    elif when_type == "someday":
+        project["deadline"] = None
+        project["someday"] = True
+    elif when_type == "anytime":
+        project["deadline"] = None
+        project["someday"] = False
+    elif when_type == "clear":
+        project["deadline"] = None
+        project["someday"] = False
+    else:
+        return f"Invalid when_type: {when_type}"
+
+    project["updated"] = datetime.now().isoformat()
+
+    # Save
+    with open(project_file, 'w') as f:
+        json.dump(project, f, indent=2)
+
+    # Update index
+    _update_index(project)
+
+    return f"Updated project when to: {when_type}" + (f" ({date})" if date else "")
 
 
 def add_milestone(

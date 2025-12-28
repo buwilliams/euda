@@ -990,8 +990,10 @@ async def delete_project_endpoint(project_id: str, delete_tasks: bool = True):
 from ..tools.worker.task import (
     create_task, create_learning_task, get_tasks, get_tasks_data, get_task,
     get_daily_view, add_quick_task, update_task_status, delete_task,
-    get_recent_results, get_result, get_completed_tasks_data, archive_task
+    get_recent_results, get_result, get_completed_tasks_data, archive_task,
+    update_task_when
 )
+from ..tools.worker.project import update_project_when
 
 
 class TaskRequest(BaseModel):
@@ -1027,16 +1029,14 @@ async def list_tasks(
     status: Optional[str] = None,
     project_id: Optional[str] = None,
     priority: Optional[str] = None,
-    limit: int = 50,
-    exclude_snoozed: bool = True
+    limit: int = 50
 ):
     """Get tasks with optional filters."""
     tasks = get_tasks_data(
         status=status,
         project_id=project_id,
         priority=priority,
-        limit=limit,
-        exclude_snoozed=exclude_snoozed
+        limit=limit
     )
     return {"tasks": tasks}
 
@@ -1120,16 +1120,44 @@ async def archive_task_endpoint(task_id: str, request: TaskArchiveRequest = None
     return {"status": "success", "message": result}
 
 
-class TaskSnoozeRequest(BaseModel):
-    until_date: Optional[str] = None  # ISO format YYYY-MM-DD, default: tomorrow
+class WhenRequest(BaseModel):
+    when_type: str  # "today", "date", "someday", "anytime", "clear"
+    date: Optional[str] = None  # For "date" type, ISO format YYYY-MM-DD
 
 
-@app.post("/api/tasks/{task_id}/snooze")
-async def snooze_task_endpoint(task_id: str, request: TaskSnoozeRequest = None):
-    """Snooze a task until a specific date (default: tomorrow)."""
-    from ..tools.worker.task import snooze_task
-    until_date = request.until_date if request else None
-    result = snooze_task(task_id, until_date)
+@app.put("/api/tasks/{task_id}/when")
+async def update_task_when_endpoint(task_id: str, request: WhenRequest):
+    """
+    Update task's "when" scheduling (Things-like).
+
+    when_type options:
+    - "today": Set due_date to today
+    - "date": Set due_date to provided date
+    - "someday": Clear due_date, set someday=true
+    - "anytime": Clear due_date, set someday=false
+    - "clear": Clear due_date, set someday=false (same as anytime)
+    """
+    result = update_task_when(task_id, request.when_type, request.date)
+    if "not found" in result.lower():
+        raise HTTPException(status_code=404, detail=result)
+    return {"status": "success", "message": result}
+
+
+@app.put("/api/projects/{project_id}/when")
+async def update_project_when_endpoint(project_id: str, request: WhenRequest):
+    """
+    Update project's "when" scheduling (Things-like).
+
+    when_type options:
+    - "today": Set deadline to today
+    - "date": Set deadline to provided date
+    - "someday": Clear deadline, set someday=true
+    - "anytime": Clear deadline, set someday=false
+    - "clear": Clear deadline, set someday=false (same as anytime)
+    """
+    result = update_project_when(project_id, request.when_type, request.date)
+    if "not found" in result.lower():
+        raise HTTPException(status_code=404, detail=result)
     return {"status": "success", "message": result}
 
 
