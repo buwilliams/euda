@@ -2,7 +2,7 @@
 
 *Current UI implementation and component reference*
 
-This document describes the actual UI as implemented. For the vision and philosophy behind the design, see [user-experience.md](user-experience.md).
+Euno's interface is designed to surface what matters before you ask, guard your attention, and feel like a caring friend who knows you. This document describes the current implementation. For the vision and philosophy behind the design, see [user-experience.md](user-experience.md).
 
 ---
 
@@ -189,6 +189,15 @@ Past conversation browser.
 - Pre-populates agent context with old messages
 - Loads messages into chat UI
 - Original conversation preserved unchanged
+
+### Feeds Panel (Future)
+
+Curated social feed access—read what matters without doom-scrolling.
+
+- Surfaces important updates from people who matter
+- Shields from engagement algorithms designed to hijack attention
+- Option to post on your behalf without opening the feed
+- Goal: less screen time, less brain-rot, without losing touch
 
 ---
 
