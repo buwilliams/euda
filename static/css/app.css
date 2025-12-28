@@ -436,8 +436,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             background: #f5f5f5;
             border: 1px solid #ddd;
             border-radius: 6px;
@@ -465,15 +465,15 @@
 
         .input-bar textarea {
             flex: 1;
-            padding: 0.5rem 0.75rem;
+            padding: 0.6rem 0.75rem;
             border: 1px solid #ddd;
             border-radius: 6px;
             font-family: inherit;
             font-size: 1rem;
             resize: none;
-            min-height: 40px;
+            min-height: 44px;
             max-height: 200px;
-            line-height: 1.4;
+            line-height: 1.5;
             overflow-y: auto;
             box-sizing: border-box;
             background: #fff;
@@ -493,8 +493,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             border: none;
             border-radius: 6px;
             background: #333;
@@ -1988,10 +1988,15 @@
                 height: 100dvh; /* Dynamic viewport height - accounts for browser chrome */
             }
             .app {
-                padding: 0.75rem;
+                padding: 0;
                 border-radius: 0;
                 box-shadow: none;
                 max-width: 100%;
+                background: #f8f8f8;
+            }
+            .tab-content {
+                border: none;
+                border-radius: 0;
             }
             .tab-btn {
                 padding: 0.7rem 0.5rem;
@@ -2002,8 +2007,8 @@
                 margin-bottom: 1rem;
             }
             .quote-container {
-                padding: 1rem 0.5rem;
-                margin-bottom: 0.5rem;
+                padding: 1rem;
+                margin: 0 0.75rem 0.5rem 0.75rem;
             }
             .quote-text {
                 font-size: 0.95rem;
@@ -2011,8 +2016,17 @@
             .tab-pane {
                 padding: 0.75rem;
             }
+            #tab-chat {
+                padding: 0.75rem 0;
+            }
+            .inline-message {
+                margin-left: 0.75rem;
+                margin-right: 0.75rem;
+            }
             .input-bar {
-                padding: 0.5rem 0;
+                padding: 0.5rem 0.75rem;
+                border-top: 1px solid #e0e0e0;
+                background: #f8f8f8;
             }
         }
 
