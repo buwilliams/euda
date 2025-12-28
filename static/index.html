@@ -1144,6 +1144,18 @@
             margin-bottom: 0.5rem;
         }
 
+        .card-project-link {
+            color: #555;
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+        }
+
+        .card-project-link:hover {
+            color: #333;
+            text-decoration-style: solid;
+        }
+
         .card-description {
             font-size: 0.9rem;
             color: #555;
@@ -2531,6 +2543,7 @@
 
             const projectTasks = tasksData.filter(t => t.project_id === projectId && t.status !== 'completed');
             const noteCount = projectNotesData[projectId]?.count || 0;
+            const notes = projectNotesData[projectId]?.notes || [];
 
             return `
                 <div class="focus-view-header">
@@ -2538,7 +2551,8 @@
                     <span class="focus-view-title">${escapeHtml(project.title)}</span>
                 </div>
                 <div class="focus-view-content">
-                    <div class="card-meta" style="margin-bottom: 0.75rem;">${projectTasks.length} pending task${projectTasks.length !== 1 ? 's' : ''} • ${noteCount} note${noteCount !== 1 ? 's' : ''}</div>
+                    ${project.description ? `<div class="card-description" style="margin-bottom: 0.75rem;">${escapeHtml(project.description)}</div>` : ''}
+                    <div class="card-meta" style="margin-bottom: 0.75rem;">${projectTasks.length} pending task${projectTasks.length !== 1 ? 's' : ''}</div>
                     ${projectTasks.length === 0
                         ? '<div class="focus-empty">No pending tasks</div>'
                         : projectTasks.map(task => renderTaskCard(task)).join('')
@@ -2548,8 +2562,11 @@
                         <button class="card-add-btn" onclick="addTaskToProject('${project.id}', document.getElementById('add-task-${project.id}'))">+</button>
                     </div>
                     ${noteCount > 0 ? `
-                    <div style="margin-top: 0.75rem;">
-                        <button class="card-action" onclick="toggleProjectNotes('${project.id}')">View ${noteCount} note${noteCount !== 1 ? 's' : ''}</button>
+                    <div class="notes-section">
+                        <div class="notes-section-header">Notes (${noteCount})</div>
+                        <div class="notes-list-body">
+                            ${notes.map(note => renderNoteCard(projectId, project.title, note)).join('')}
+                        </div>
                     </div>
                     ` : ''}
                 </div>
@@ -2611,6 +2628,7 @@
 
         function renderFullTaskCard(task) {
             const projectName = task.project_title || 'General';
+            const projectId = task.project_id || 'project-general';
             const whenLabel = getWhenLabel(task);
             const eunoIcon = isEunoTask(task) ? '<span class="card-euno-icon">✨</span>' : '';
             const isArchiving = archivingTaskId === task.id;
@@ -2625,7 +2643,7 @@
                     </div>
                     <div class="card-body">
                         ${hasDescription ? `<div class="card-description">${escapeHtml(task.description)}</div>` : ''}
-                        <div class="card-meta">Project: ${escapeHtml(projectName)}</div>
+                        <div class="card-meta">Project: <span class="card-project-link" onclick="event.stopPropagation(); navigateFocus('${projectId}')">${escapeHtml(projectName)}</span></div>
                     </div>
                     <div class="card-actions">
                         <button class="card-action" onclick="event.stopPropagation(); openWhenPicker('task', '${task.id}')">📅 ${escapeHtml(whenLabel)}</button>
@@ -2903,27 +2921,6 @@
                 }
             } catch (error) {
                 console.error('Failed to delete project:', error);
-            }
-        }
-
-        async function toggleProjectNotes(projectId) {
-            // Find the project name
-            const project = projectsData.find(p => p.id === projectId);
-            const projectName = project ? project.title : 'Project';
-
-            try {
-                // Use the new structured notes list endpoint
-                const response = await fetch(`/api/projects/${projectId}/notes/list`);
-                const data = await response.json();
-
-                // Show notes as list in chat area
-                showProjectNotesList(projectId, projectName, data.notes);
-
-                // Update cached count
-                projectNotesData[projectId] = { count: data.count };
-            } catch (error) {
-                console.error('Failed to load notes:', error);
-                showProjectNotesList(projectId, projectName, []);
             }
         }
 
@@ -3291,75 +3288,6 @@
 
             inlineMessages.appendChild(messageDiv);
             scrollChatToBottom();
-        }
-
-        function showProjectNotesList(projectId, projectName, notes) {
-            // Show project notes as a list of note cards
-            switchTab('chat');
-
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message message-system';
-            messageDiv.id = `notes-list-${projectId}`;
-
-            let notesHtml;
-            if (!notes || notes.length === 0) {
-                notesHtml = '<em>No notes yet</em>';
-            } else {
-                notesHtml = notes.map(note => `
-                    <div class="note-card" data-note-filename="${note.filename}">
-                        <div class="note-card-header">
-                            <span class="note-card-date">${escapeHtml(note.date)}</span>
-                            <span class="note-card-type">${escapeHtml(note.type)}</span>
-                        </div>
-                        <div class="note-card-title">${escapeHtml(note.title)}</div>
-                        <div class="note-card-preview">${escapeHtml(note.preview)}</div>
-                        <div class="note-card-actions">
-                            <button class="note-action-btn" onclick="viewNoteDetail('${projectId}', '${note.filename}')">View</button>
-                            <button class="note-action-btn" onclick="bringNoteToChat('${escapeHtml(projectName).replace(/'/g, "\\'")}', '${escapeHtml(note.title).replace(/'/g, "\\'")}', '${escapeHtml(note.preview).replace(/'/g, "\\'")}')">Chat</button>
-                            <button class="note-action-btn delete" onclick="deleteProjectNote('${projectId}', '${note.filename}')">Delete</button>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            messageDiv.innerHTML = `
-                <div class="message-system-header">
-                    <span class="message-system-title">${escapeHtml(projectName)} - Notes (${notes.length})</span>
-                    <button class="message-system-close" onclick="this.closest('.message-system').remove()">×</button>
-                </div>
-                <div class="message-system-body notes-list-body">
-                    ${notesHtml}
-                </div>
-            `;
-
-            inlineMessages.appendChild(messageDiv);
-            scrollChatToBottom();
-        }
-
-        async function viewNoteDetail(projectId, filename) {
-            // Fetch note details and show full content
-            try {
-                const response = await fetch(`/api/projects/${projectId}/notes/list`);
-                const data = await response.json();
-                const note = data.notes.find(n => n.filename === filename);
-
-                if (note) {
-                    switchTab('chat');
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = 'message message-system';
-                    messageDiv.innerHTML = `
-                        <div class="message-system-header">
-                            <span class="message-system-title">${escapeHtml(note.date)} - ${escapeHtml(note.title)}</span>
-                            <button class="message-system-close" onclick="this.closest('.message-system').remove()">×</button>
-                        </div>
-                        <div class="message-system-body">${marked.parse(note.content || '*No content*')}</div>
-                    `;
-                    inlineMessages.appendChild(messageDiv);
-                    scrollChatToBottom();
-                }
-            } catch (error) {
-                console.error('Failed to load note detail:', error);
-            }
         }
 
         function bringNoteToChat(projectName, noteTitle, notePreview) {
