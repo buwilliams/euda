@@ -1,27 +1,39 @@
 #!/bin/bash
 #
-# deploy.sh - Deploy Euno to a remote server
+# deploy-euno.sh - Deploy Euno to a remote server
 #
-# Usage: ./deploy.sh user@server-ip
+# Usage: ./deploy-euno.sh [user@server-ip]
 #
 # This script:
 # 1. Syncs the current directory to the server (excluding data/)
-# 2. Installs Python dependencies
-# 3. Restarts the service
+# 2. Copies .env file
+# 3. Installs Python dependencies
+# 4. Restarts the service
+#
+# If no server is specified, uses EUNO_SERVER from .env
 #
 
 set -e
 
-if [ -z "$1" ]; then
-    echo "Usage: $0 user@server-ip"
-    echo "Example: $0 root@192.168.1.100"
-    exit 1
-fi
-
-SERVER="$1"
-REMOTE_DIR="/opt/euno"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+REMOTE_DIR="/opt/euno"
+
+# Load .env if it exists
+if [ -f "$PROJECT_DIR/.env" ]; then
+    export $(grep -v '^#' "$PROJECT_DIR/.env" | grep -v '^$' | xargs)
+fi
+
+# Use argument or fall back to EUNO_SERVER from .env
+SERVER="${1:-$EUNO_SERVER}"
+
+if [ -z "$SERVER" ]; then
+    echo "Usage: $0 [user@server-ip]"
+    echo "Example: $0 root@192.168.1.100"
+    echo ""
+    echo "Or set EUNO_SERVER in .env to use without arguments"
+    exit 1
+fi
 
 echo "==================================="
 echo "Euno Deployment"
@@ -31,8 +43,15 @@ echo "Local: $PROJECT_DIR"
 echo "Remote: $REMOTE_DIR"
 echo ""
 
+# Check .env file exists
+if [ ! -f "$PROJECT_DIR/.env" ]; then
+    echo "Error: .env file not found in $PROJECT_DIR"
+    echo "Copy .env.example to .env and add your API keys"
+    exit 1
+fi
+
 # Check SSH connectivity
-echo "[1/4] Testing SSH connection..."
+echo "[1/5] Testing SSH connection..."
 ssh -o ConnectTimeout=10 "$SERVER" "echo 'Connected'" || {
     echo "Error: Cannot connect to $SERVER"
     echo "Run ./setup-server.sh first if this is a new server"
@@ -40,7 +59,7 @@ ssh -o ConnectTimeout=10 "$SERVER" "echo 'Connected'" || {
 }
 
 # Sync files (exclude data, venv, __pycache__, .git)
-echo "[2/4] Syncing files..."
+echo "[2/5] Syncing files..."
 rsync -avz --delete \
     --exclude 'data/' \
     --exclude 'venv/' \
@@ -53,8 +72,12 @@ rsync -avz --delete \
     --exclude '.DS_Store' \
     "$PROJECT_DIR/" "$SERVER:$REMOTE_DIR/"
 
+# Copy .env file
+echo "[3/5] Copying .env file..."
+scp "$PROJECT_DIR/.env" "$SERVER:$REMOTE_DIR/.env"
+
 # Install dependencies
-echo "[3/4] Installing dependencies..."
+echo "[4/5] Installing dependencies..."
 ssh "$SERVER" bash << REMOTE_SCRIPT
 set -e
 cd $REMOTE_DIR
@@ -67,7 +90,7 @@ pip install -q -r requirements.txt
 REMOTE_SCRIPT
 
 # Restart service
-echo "[4/4] Restarting service..."
+echo "[5/5] Restarting service..."
 ssh "$SERVER" "sudo systemctl restart euno"
 
 # Check status

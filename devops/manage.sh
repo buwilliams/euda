@@ -2,13 +2,27 @@
 #
 # manage.sh - Manage Euno service on remote server
 #
-# Usage: ./manage.sh user@server-ip [start|stop|restart|status|logs]
+# Usage: ./manage.sh [start|stop|restart|status|logs] [user@server-ip]
+#
+# If no server is specified, uses EUNO_SERVER from .env
 #
 
 set -e
 
-if [ -z "$1" ] || [ -z "$2" ]; then
-    echo "Usage: $0 user@server-ip [start|stop|restart|status|logs]"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# Load .env if it exists
+if [ -f "$PROJECT_DIR/.env" ]; then
+    export $(grep -v '^#' "$PROJECT_DIR/.env" | grep -v '^$' | xargs)
+fi
+
+# Use second argument or fall back to EUNO_SERVER from .env
+ACTION="$1"
+SERVER="${2:-$EUNO_SERVER}"
+
+if [ -z "$ACTION" ] || [ -z "$SERVER" ]; then
+    echo "Usage: $0 [start|stop|restart|status|logs] [user@server-ip]"
     echo ""
     echo "Commands:"
     echo "  start    - Start the Euno service"
@@ -16,11 +30,10 @@ if [ -z "$1" ] || [ -z "$2" ]; then
     echo "  restart  - Restart the Euno service"
     echo "  status   - Show service status"
     echo "  logs     - Follow service logs (Ctrl+C to exit)"
+    echo ""
+    echo "Server can be omitted if EUNO_SERVER is set in .env"
     exit 1
 fi
-
-SERVER="$1"
-ACTION="$2"
 
 case "$ACTION" in
     start)

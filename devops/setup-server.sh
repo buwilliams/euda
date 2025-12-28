@@ -2,7 +2,7 @@
 #
 # setup-server.sh - Initial setup of a fresh Linux server for Euno
 #
-# Usage: ./setup-server.sh user@server-ip
+# Usage: ./setup-server.sh [user@server-ip]
 #
 # This script:
 # 1. Installs Python 3, pip, and dependencies
@@ -10,17 +10,30 @@
 # 3. Sets up a systemd service
 # 4. Configures firewall (optional)
 #
+# If no server is specified, uses EUNO_SERVER from .env
+#
 
 set -e
 
-if [ -z "$1" ]; then
-    echo "Usage: $0 user@server-ip"
-    echo "Example: $0 root@192.168.1.100"
-    exit 1
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+REMOTE_DIR="/opt/euno"
+
+# Load .env if it exists
+if [ -f "$PROJECT_DIR/.env" ]; then
+    export $(grep -v '^#' "$PROJECT_DIR/.env" | grep -v '^$' | xargs)
 fi
 
-SERVER="$1"
-REMOTE_DIR="/opt/euno"
+# Use argument or fall back to EUNO_SERVER from .env
+SERVER="${1:-$EUNO_SERVER}"
+
+if [ -z "$SERVER" ]; then
+    echo "Usage: $0 [user@server-ip]"
+    echo "Example: $0 root@192.168.1.100"
+    echo ""
+    echo "Or set EUNO_SERVER in .env to use without arguments"
+    exit 1
+fi
 
 echo "==================================="
 echo "Euno Server Setup"
@@ -167,7 +180,7 @@ echo "Server setup complete!"
 echo "==================================="
 echo ""
 echo "Next steps:"
-echo "  1. Run ./deploy.sh $SERVER to deploy the application"
+echo "  1. Run ./deploy-euno.sh $SERVER to deploy the application"
 echo "  2. SSH in and run: cd $REMOTE_DIR && python main.py set-password"
 echo "  3. Access at http://<server-ip>"
 echo ""

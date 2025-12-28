@@ -1,25 +1,36 @@
 #!/bin/bash
 #
-# sync.sh - Sync data to a remote server
+# sync-data.sh - Sync data to a remote server
 #
-# Usage: ./sync.sh user@server-ip
+# Usage: ./sync-data.sh [user@server-ip]
 #
 # This script syncs the local data/ directory to the remote server.
 # Use with caution - this overwrites remote data.
 #
+# If no server is specified, uses EUNO_SERVER from .env
+#
 
 set -e
 
-if [ -z "$1" ]; then
-    echo "Usage: $0 user@server-ip"
-    echo "Example: $0 root@192.168.1.100"
-    exit 1
-fi
-
-SERVER="$1"
-REMOTE_DIR="/opt/euno"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+REMOTE_DIR="/opt/euno"
+
+# Load .env if it exists
+if [ -f "$PROJECT_DIR/.env" ]; then
+    export $(grep -v '^#' "$PROJECT_DIR/.env" | grep -v '^$' | xargs)
+fi
+
+# Use argument or fall back to EUNO_SERVER from .env
+SERVER="${1:-$EUNO_SERVER}"
+
+if [ -z "$SERVER" ]; then
+    echo "Usage: $0 [user@server-ip]"
+    echo "Example: $0 root@192.168.1.100"
+    echo ""
+    echo "Or set EUNO_SERVER in .env to use without arguments"
+    exit 1
+fi
 
 echo "==================================="
 echo "Euno Data Sync"
