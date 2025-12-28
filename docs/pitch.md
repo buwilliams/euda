@@ -61,11 +61,15 @@ Euno is a working system with specialized agents that handle different aspects o
 
 Euno is in early development. Here's where we're taking it.
 
-Euno notices you're heading toward burnout before you do—the late nights, the skipped workouts, the shorter replies. It gently surfaces what's happening and reminds you what actually restores your energy. It shields you from the infinite scroll designed to hijack your attention, reading your feeds so you don't have to.
+For the ambitious, Euno clears the path. It handles the logistics—refills, appointments, follow-ups—so your attention stays on the work that matters. It prepares you for tomorrow's meeting with context you've forgotten. It tracks your commitments so nothing slips.
 
-It remembers that your mom's surgery is next week and drafts a check-in message. It connects an idea you had three years ago to something you're thinking about now. It notices you haven't talked to your best friend in months—not to guilt you, but because you asked it to help you show up for people who matter.
+For the overwhelmed, Euno creates space. It notices you're heading toward burnout before you do—the late nights, the skipped workouts, the shorter replies. It shields you from the infinite scroll designed to hijack your attention. It reminds you what actually restores your energy.
 
-Emotional, intellectual, physical, relational—Euno supports every dimension of your wellbeing.
+For the curious, Euno connects the dots. It links an idea you had three years ago to something you're exploring now. It surfaces patterns in your thinking you couldn't see. It finds opportunities that stretch you just enough.
+
+For the connected, Euno helps you show up. It remembers your mom's surgery is next week and drafts a check-in. It notices you haven't called your best friend in months. It holds what matters about each person so you can be present when you're with them.
+
+Different lives, different needs—Euno adapts to serve yours.
 
 ---
 
