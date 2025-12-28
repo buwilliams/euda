@@ -1,5 +1,35 @@
 // Euno - History Tab
 
+// ============== Date Formatting ==============
+
+function formatHistoryDate(dateStr) {
+    const date = new Date(dateStr + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.getTime() === today.getTime()) {
+        return 'Today';
+    } else if (date.getTime() === yesterday.getTime()) {
+        return 'Yesterday';
+    } else if (date > new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)) {
+        // Within last week - show day name
+        return date.toLocaleDateString('en-US', { weekday: 'short' });
+    } else {
+        // Older - show "Dec 25" format
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+}
+
+function formatHistoryTime(timeStr) {
+    // timeStr is "HH:MM" format
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const period = hours >= 12 ? 'p' : 'a';
+    const hour12 = hours % 12 || 12;
+    return `${hour12}:${String(minutes).padStart(2, '0')}${period}`;
+}
+
 // ============== History Navigation ==============
 
 function navigateHistory(view) {
@@ -48,9 +78,11 @@ function renderHistory() {
 }
 
 function renderHistoryCard(item) {
+    const friendlyDate = formatHistoryDate(item.date);
+    const friendlyTime = formatHistoryTime(item.time);
     return `
         <div class="card card-minimal" data-session-id="${item.session_id}" onclick="navigateHistory('conversation-${item.session_id}')">
-            <span class="card-title">${item.date} ${item.time}</span>
+            <span class="card-title">${friendlyDate} ${friendlyTime}</span>
             <span class="card-preview">${escapeHtml(item.preview || 'No preview')}</span>
             <span class="card-arrow">›</span>
         </div>

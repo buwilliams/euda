@@ -187,13 +187,19 @@ function renderFocusMenu() {
     `;
 }
 
+function getTimelineIcon(category) {
+    const icons = { today: '☀️', upcoming: '📅', anytime: '⏳', someday: '💭' };
+    return icons[category] || '';
+}
+
 function renderTimelineView(category, title) {
     // Filter to tasks in this category AND should show in timeline
     const tasks = tasksData.filter(t => shouldShowInTimeline(t) && getTaskCategory(t) === category);
+    const icon = getTimelineIcon(category);
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">←</span>
-            <span class="focus-view-title">${title}</span>
+            <span class="focus-view-title">${icon} ${title}</span>
         </div>
         <div class="focus-view-content">
             ${tasks.length === 0
@@ -210,7 +216,7 @@ function renderLogbookView() {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">←</span>
-            <span class="focus-view-title">Logbook</span>
+            <span class="focus-view-title">📖 Logbook</span>
         </div>
         <div class="focus-view-content">
             ${tasks.length === 0
@@ -236,26 +242,24 @@ function renderSingleProjectView(projectId) {
     const projectTasks = tasksData.filter(t => t.project_id === projectId && t.status !== 'completed');
     const noteCount = projectNotesData[projectId]?.count || 0;
     const notes = projectNotesData[projectId]?.notes || [];
+    const isSystemProject = projectId === 'project-notifications' || projectId === 'project-recommendations';
+    const projectIcon = isSystemProject ? '✨' : '📁';
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">←</span>
-            <span class="focus-view-title">${escapeHtml(project.title)}</span>
+            <span class="focus-view-title">${projectIcon} ${escapeHtml(project.title)}</span>
         </div>
         <div class="focus-view-content">
-            ${project.description ? `<div class="card-description" style="margin-bottom: 0.75rem;">${escapeHtml(project.description)}</div>` : ''}
-            <div class="card-meta" style="margin-bottom: 0.75rem;">${projectTasks.length} pending task${projectTasks.length !== 1 ? 's' : ''}</div>
+            ${project.description ? `<div class="card-description" style="margin-bottom: 0.75rem;">${marked.parse(project.description)}</div>` : ''}
+            <div class="section-header">TASKS (${projectTasks.length})</div>
             ${projectTasks.length === 0
                 ? '<div class="focus-empty">No pending tasks</div>'
                 : projectTasks.map(task => renderTaskCard(task)).join('')
             }
-            <div class="card-add-task" style="margin-top: 0.75rem;">
-                <input type="text" class="card-add-input" id="add-task-${project.id}" placeholder="Add task..." onkeypress="if(event.key==='Enter')addTaskToProject('${project.id}', this)">
-                <button class="card-add-btn" onclick="addTaskToProject('${project.id}', document.getElementById('add-task-${project.id}'))">+</button>
-            </div>
             ${noteCount > 0 ? `
             <div class="notes-section">
-                <div class="notes-section-header">Notes (${noteCount})</div>
+                <div class="section-header">NOTES (${noteCount})</div>
                 <div class="notes-list-body">
                     ${notes.map(note => renderNoteCard(projectId, project.title, note)).join('')}
                 </div>
@@ -392,7 +396,7 @@ function renderTaskDetailView(taskId) {
         </div>
         <div class="focus-view-content">
             <div class="task-detail">
-                ${hasDescription ? `<div class="task-detail-description">${escapeHtml(task.description)}</div>` : ''}
+                ${hasDescription ? `<div class="task-detail-description">${marked.parse(task.description)}</div>` : ''}
                 <div class="task-detail-meta">
                     <span class="task-detail-label">Project:</span>
                     <span class="task-detail-value card-project-link" onclick="navigateFocus('${projectId}')">${escapeHtml(projectName)}</span>
@@ -441,7 +445,7 @@ function renderCompletedTaskDetailView(taskId) {
         </div>
         <div class="focus-view-content">
             <div class="task-detail">
-                ${hasDescription ? `<div class="task-detail-description">${escapeHtml(task.description)}</div>` : ''}
+                ${hasDescription ? `<div class="task-detail-description">${marked.parse(task.description)}</div>` : ''}
                 <div class="task-detail-meta">
                     <span class="task-detail-label">Completed:</span>
                     <span class="task-detail-value">${escapeHtml(completedDate)}</span>
@@ -521,7 +525,7 @@ function renderFullProjectCard(project) {
                 <button class="card-action" style="margin-top: 0.5rem;" onclick="event.stopPropagation(); navigateFocus('${project.id}')">View tasks →</button>
                 ${noteCount > 0 ? `
                 <div class="notes-section">
-                    <div class="notes-section-header">Notes (${noteCount})</div>
+                    <div class="section-header">NOTES (${noteCount})</div>
                     <div class="notes-list-body">
                         ${notes.map(note => renderNoteCard(project.id, project.title, note)).join('')}
                     </div>
