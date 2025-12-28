@@ -59,47 +59,18 @@ Euno is a working system with specialized agents that handle different aspects o
 
 ## Where It's Heading
 
-Euno is in early development. Here's where we're taking it—supporting every dimension of your wellbeing:
+Euno is in early development. Here's where we're taking it:
 
-### Emotional
-
-Your inner life matters. Euno learns your patterns—what drains you, what restores you, what you're avoiding.
-
-- Detect early signs of burnout or depression before you recognize them
-- Track what actually improves your mood versus what you think does
+- Detect early signs of burnout before you recognize them
 - Shield you from algorithmic manipulation designed to hijack your attention
-- Reclaim hours lost to doom-scrolling without disconnecting entirely
-- Gently surface what you're avoiding when you're ready to face it
-
-### Intellectual
-
-Growth requires the right challenges at the right time. Euno finds the edge where learning happens.
-
-- Notice recurring interests you haven't acted on
-- Track what you're actually learning versus what you planned to
-- Prepare you for conversations with context you've forgotten
-- Find opportunities that stretch you—90% familiar, 10% surprising
 - Connect ideas across years of your thinking
-
-### Physical
-
-Your body keeps the score. Euno notices what your habits reveal about your energy and health.
-
-- Learn your actual rhythms—when you're sharp, when you're depleted
-- Notice when sleep, movement, or nutrition patterns shift
-- Handle routine logistics—refills, appointments, reminders—before you think to
-- Track what restores your energy versus what you assume does
-- Spot the early signs when something's off
-
-### Relational
-
-Relationships sustain us. Euno helps you show up for the people who matter.
-
+- Prepare you for conversations with context you've forgotten
+- Learn your rhythms—when you're sharp, when you're depleted
+- Handle routine logistics before you think to
 - Notice when you're neglecting relationships you value
 - Remember what matters to each person—their concerns, their milestones
-- For parents: understand your child's current season and what worked before
-- Detect complicated dynamics and help you navigate them
-- If others use Euno, exchange profiles to find genuine connection points
+
+Emotional, intellectual, physical, relational—Euno supports every dimension of your wellbeing.
 
 ---
 
