@@ -38,7 +38,7 @@
             width: 100%;
             max-width: 640px;
             padding: 1.5rem;
-            background: #fff;
+            background: #f8f8f8;
             border-radius: 12px;
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
         }
@@ -226,7 +226,8 @@
 
         .inline-message-you {
             align-self: flex-end;
-            background: #f5f5f5;
+            background: #fff;
+            border: 1px solid #e0e0e0;
             border-radius: 12px;
             padding: 0.5rem 0.75rem;
             font-size: 0.95rem;
@@ -467,6 +468,7 @@
             color: #666;
             transition: all 0.15s;
             flex-shrink: 0;
+            box-sizing: border-box;
         }
 
         .clear-btn:hover {
@@ -486,7 +488,7 @@
 
         .input-bar textarea {
             flex: 1;
-            padding: 0.6rem 0.75rem;
+            padding: 0.5rem 0.75rem;
             border: 1px solid #ddd;
             border-radius: 6px;
             font-family: inherit;
@@ -496,6 +498,8 @@
             max-height: 200px;
             line-height: 1.4;
             overflow-y: auto;
+            box-sizing: border-box;
+            background: #fff;
         }
 
         .input-bar textarea:focus {
@@ -509,21 +513,41 @@
         }
 
         #context-send-btn {
-            padding: 0.6rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
             height: 40px;
             border: none;
             border-radius: 6px;
-            background: #000;
+            background: #333;
             color: #fff;
-            font-family: inherit;
-            font-size: 1rem;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.15s;
             flex-shrink: 0;
+            box-sizing: border-box;
         }
 
-        #context-send-btn:hover:not(:disabled) { background: #333; }
-        #context-send-btn:disabled { background: #ccc; cursor: not-allowed; }
+        #context-send-btn:hover:not(:disabled) {
+            background: #444;
+            color: #fff;
+        }
+
+        #context-send-btn:disabled {
+            background: #ccc;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        #context-send-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
 
         /* ============== Tabs Container ============== */
         .tabs-container {
@@ -540,7 +564,7 @@
             border: 1px solid #e8e8e8;
             border-bottom: none;
             border-radius: 8px 8px 0 0;
-            background: #fff;
+            background: #f8f8f8;
         }
 
         .tab-pane {
@@ -559,7 +583,7 @@
             display: flex;
             align-items: stretch;
             background: #f5f5f5;
-            border-top: 1px solid #e0e0e0;
+            border: 1px solid #e0e0e0;
         }
 
         .tab-btn {
@@ -584,11 +608,11 @@
         }
 
         .tab-btn.active {
-            background: #fff;
+            background: #f8f8f8;
             color: #333;
             margin-top: -1px;
             padding-top: calc(0.6rem + 1px);
-            border-top: 1px solid #fff;
+            border-top: 1px solid #f8f8f8;
         }
 
         .tab-btn svg {
@@ -1953,14 +1977,16 @@
 
             <!-- Input Bar (always visible) -->
             <div class="input-bar">
+                <textarea id="context-input" placeholder="What's on your mind?" rows="1"></textarea>
+                <button id="context-send-btn" onclick="sendContextMessage()" title="Send">
+                    <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                </button>
                 <button class="clear-btn" onclick="resetUI()" title="Clear chat">
                     <svg viewBox="0 0 24 24">
                         <line x1="18" y1="6" x2="6" y2="18"/>
                         <line x1="6" y1="6" x2="18" y2="18"/>
                     </svg>
                 </button>
-                <textarea id="context-input" placeholder="Talk to me..." rows="1"></textarea>
-                <button id="context-send-btn" onclick="sendContextMessage()">Send</button>
             </div>
         </div>
 
