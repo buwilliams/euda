@@ -102,12 +102,60 @@ sudo systemctl daemon-reload
 sudo systemctl enable euno
 REMOTE_SCRIPT
 
+# Install and configure nginx
+echo "[5/6] Setting up nginx reverse proxy..."
+ssh "$SERVER" bash << 'REMOTE_SCRIPT'
+set -e
+
+# Install nginx
+if command -v apt-get &> /dev/null; then
+    sudo apt-get install -y -qq nginx
+elif command -v dnf &> /dev/null; then
+    sudo dnf install -y nginx
+elif command -v yum &> /dev/null; then
+    sudo yum install -y nginx
+elif command -v pacman &> /dev/null; then
+    sudo pacman -Sy --noconfirm nginx
+fi
+
+# Create nginx config for Euno
+sudo tee /etc/nginx/sites-available/euno > /dev/null << 'EOF'
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400;
+    }
+}
+EOF
+
+# Enable the site
+sudo ln -sf /etc/nginx/sites-available/euno /etc/nginx/sites-enabled/euno
+sudo rm -f /etc/nginx/sites-enabled/default
+
+# Test and reload nginx
+sudo nginx -t
+sudo systemctl enable nginx
+sudo systemctl reload nginx
+echo "nginx configured to proxy port 80 -> 8000"
+REMOTE_SCRIPT
+
 # Configure firewall (if ufw is available)
-echo "[5/5] Configuring firewall..."
+echo "[6/6] Configuring firewall..."
 ssh "$SERVER" bash << 'REMOTE_SCRIPT'
 if command -v ufw &> /dev/null; then
-    sudo ufw allow 8000/tcp 2>/dev/null || true
-    echo "Firewall: Port 8000 opened"
+    sudo ufw allow 80/tcp 2>/dev/null || true
+    sudo ufw allow 443/tcp 2>/dev/null || true
+    echo "Firewall: Ports 80 and 443 opened"
 else
     echo "Firewall: ufw not found, skipping"
 fi
@@ -121,5 +169,5 @@ echo ""
 echo "Next steps:"
 echo "  1. Run ./deploy.sh $SERVER to deploy the application"
 echo "  2. SSH in and run: cd $REMOTE_DIR && python main.py set-password"
-echo "  3. Access at http://<server-ip>:8000"
+echo "  3. Access at http://<server-ip>"
 echo ""
