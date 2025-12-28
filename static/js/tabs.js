@@ -73,7 +73,12 @@ function switchTab(tabName, saveState = true) {
         focusViewHistory = [];
         loadTasksData();
     }
-    if (tabName === 'history') loadHistoryData();
+    if (tabName === 'history') {
+        // Reset history view to list when clicking tab
+        historyView = 'list';
+        historyViewHistory = [];
+        loadHistoryData();
+    }
     if (tabName === 'about') loadAboutData();
     if (tabName === 'settings') loadSettingsData();
 }

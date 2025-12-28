@@ -1,5 +1,22 @@
 // Euno - History Tab
 
+// ============== History Navigation ==============
+
+function navigateHistory(view) {
+    historyViewHistory.push(historyView);
+    historyView = view;
+    renderHistory();
+}
+
+function navigateHistoryBack() {
+    if (historyViewHistory.length > 0) {
+        historyView = historyViewHistory.pop();
+    } else {
+        historyView = 'list';
+    }
+    renderHistory();
+}
+
 // ============== History ==============
 
 async function loadHistoryData() {
@@ -17,52 +34,63 @@ async function loadHistoryData() {
 
 function renderHistory() {
     const container = document.getElementById('history-list');
-    if (!historyData || historyData.length === 0) {
-        container.innerHTML = '<div class="focus-empty">No conversations yet</div>';
-        return;
+
+    if (historyView === 'list') {
+        if (!historyData || historyData.length === 0) {
+            container.innerHTML = '<div class="focus-empty">No conversations yet</div>';
+            return;
+        }
+        container.innerHTML = historyData.map(item => renderHistoryCard(item)).join('');
+    } else if (historyView.startsWith('conversation-')) {
+        const sessionId = historyView.substring(13);
+        container.innerHTML = renderHistoryDetailView(sessionId);
     }
-    container.innerHTML = historyData.map(item => renderHistoryCard(item)).join('');
 }
 
 function renderHistoryCard(item) {
-    const isExpanded = expandedCards.has(`history-${item.session_id}`);
+    return `
+        <div class="card card-minimal" data-session-id="${item.session_id}" onclick="navigateHistory('conversation-${item.session_id}')">
+            <span class="card-title">${item.date} ${item.time}</span>
+            <span class="card-preview">${escapeHtml(item.preview || 'No preview')}</span>
+            <span class="card-arrow">›</span>
+        </div>
+    `;
+}
 
-    if (isExpanded) {
+function renderHistoryDetailView(sessionId) {
+    const item = historyData.find(h => h.session_id === sessionId);
+    if (!item) {
         return `
-            <div class="card card-full" data-session-id="${item.session_id}">
-                <div class="card-header">
-                    <span class="card-title" onclick="toggleHistoryCard('${item.session_id}')">${item.date} at ${item.time}</span>
-                    <button class="card-collapse" onclick="event.stopPropagation(); toggleHistoryCard('${item.session_id}')">−</button>
-                </div>
-                <div class="card-body">
-                    <div class="card-preview" style="white-space: normal;">${escapeHtml(item.preview || 'No preview')}</div>
-                    <div class="card-meta">${item.message_count || '?'} messages</div>
-                </div>
-                <div class="card-actions">
-                    <button class="card-action primary" onclick="loadConversation('${item.session_id}')">Load</button>
-                    <button class="card-action" onclick="archiveConversation('${item.session_id}')">Archive</button>
-                    <button class="card-action danger" onclick="deleteConversation('${item.session_id}', event)">Delete</button>
-                </div>
+            <div class="focus-view-header" onclick="navigateHistoryBack()">
+                <span class="focus-back-btn">←</span>
+                <span class="focus-view-title">Conversation Not Found</span>
             </div>
-        `;
-    } else {
-        return `
-            <div class="card card-minimal" data-session-id="${item.session_id}">
-                <span class="card-title" onclick="toggleHistoryCard('${item.session_id}')">${item.date} ${item.time}</span>
-                <span class="card-preview">${escapeHtml(item.preview || 'No preview')}</span>
-            </div>
+            <div class="focus-empty">This conversation no longer exists.</div>
         `;
     }
+
+    return `
+        <div class="focus-view-header" onclick="navigateHistoryBack()">
+            <span class="focus-back-btn">←</span>
+            <span class="focus-view-title">${item.date} at ${item.time}</span>
+        </div>
+        <div class="focus-view-content">
+            <div class="history-detail">
+                <div class="history-detail-preview">${escapeHtml(item.preview || 'No preview')}</div>
+                <div class="history-detail-meta">${item.message_count || '?'} messages</div>
+            </div>
+            <div class="task-detail-actions">
+                <button class="task-detail-action" onclick="loadConversation('${item.session_id}')">💬 Continue Conversation</button>
+                <button class="task-detail-action" onclick="archiveConversation('${item.session_id}')">📦 Archive</button>
+                <button class="task-detail-action danger" onclick="deleteConversation('${item.session_id}', event)">🗑 Delete</button>
+            </div>
+        </div>
+    `;
 }
 
 function toggleHistoryCard(sessionId) {
-    const key = `history-${sessionId}`;
-    if (expandedCards.has(key)) {
-        expandedCards.delete(key);
-    } else {
-        expandedCards.add(key);
-    }
-    renderHistory();
+    // Legacy function - now just navigates
+    navigateHistory('conversation-' + sessionId);
 }
 
 async function loadConversation(oldSessionId) {

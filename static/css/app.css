@@ -788,17 +788,19 @@
         .focus-view-header {
             display: flex;
             align-items: center;
-            padding: 0.5rem;
+            padding: 0.75rem 0.5rem;
             border-bottom: 1px solid #eee;
             background: #fafafa;
             margin: -1rem -1rem 0.75rem -1rem;
+            cursor: pointer;
+        }
+
+        .focus-view-header:hover {
+            background: #f0f0f0;
         }
 
         .focus-back-btn {
-            background: none;
-            border: none;
             font-size: 1.2rem;
-            cursor: pointer;
             padding: 0.25rem 0.5rem;
             margin-right: 0.25rem;
             color: #666;
@@ -818,6 +820,68 @@
         .focus-view-content {
             flex: 1;
             overflow-y: auto;
+        }
+
+        /* Task Detail View */
+        .task-detail {
+            padding: 1rem 0.5rem;
+        }
+
+        .task-detail-description {
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            white-space: pre-wrap;
+        }
+
+        .task-detail-meta {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .task-detail-label {
+            color: #888;
+        }
+
+        .task-detail-value {
+            color: #333;
+        }
+
+        .task-detail-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0.5rem;
+        }
+
+        .task-detail-action {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: #333;
+            transition: all 0.15s;
+        }
+
+        .task-detail-action:hover {
+            background: #eee;
+        }
+
+        .task-detail-action.danger {
+            color: #c00;
+        }
+
+        .task-detail-action.danger:hover {
+            background: #fee;
         }
 
         /* When Picker */
@@ -933,9 +997,10 @@
 
         /* Euno task icon */
         .card-euno-icon {
-            font-size: 0.85rem;
-            margin-right: 0.35rem;
+            width: 24px;
+            font-size: 1rem;
             flex-shrink: 0;
+            text-align: center;
         }
 
         /* Inline archive input */
@@ -1006,7 +1071,53 @@
         .history-content {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            height: 100%;
+        }
+
+        .history-detail {
+            padding: 1rem 0.5rem;
+        }
+
+        .history-detail-preview {
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            white-space: pre-wrap;
+        }
+
+        .history-detail-meta {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        /* Note Detail View */
+        .note-detail {
+            padding: 1rem 0.5rem;
+        }
+
+        .note-detail-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .note-detail-body {
+            font-size: 0.95rem;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .note-detail-body p {
+            margin-bottom: 0.75rem;
+        }
+
+        .note-detail-body h1,
+        .note-detail-body h2,
+        .note-detail-body h3 {
+            margin: 1rem 0 0.5rem 0;
         }
 
         /* ============== About Tab ============== */
@@ -1074,27 +1185,45 @@
             transition: all 0.2s;
         }
 
-        /* Minimal Card */
+        /* Minimal Card - row style like focus menu */
         .card-minimal {
-            padding: 0.6rem 0.75rem;
+            padding: 0.75rem 0.5rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+            border-bottom: 1px solid #eee;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .card-minimal:hover {
+            background: #f9f9f9;
+        }
+
+        .card-minimal:last-child {
+            border-bottom: none;
         }
 
         .card-title {
             flex: 1;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: #333;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             min-width: 0;
-            cursor: pointer;
         }
 
-        .card-title:hover {
-            color: #000;
+        .card-minimal .card-preview {
+            color: #888;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 50%;
         }
 
         .card-header .card-title {
@@ -1106,11 +1235,14 @@
         }
 
         .card-badge {
-            font-size: 0.75rem;
-            color: #666;
-            background: #f0f0f0;
-            padding: 0.15rem 0.5rem;
-            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #888;
+            flex-shrink: 0;
+        }
+
+        .card-arrow {
+            color: #ccc;
+            font-size: 1rem;
             flex-shrink: 0;
         }
 
@@ -1692,6 +1824,11 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .note-card-minimal:hover {
+            background: #fafafa;
         }
 
         .note-card-full {

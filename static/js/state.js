@@ -21,5 +21,9 @@ let focusView = 'menu';
 let focusViewHistory = [];
 let archivingTaskId = null;
 
+// History tab navigation state
+let historyView = 'list';
+let historyViewHistory = [];
+
 // Elements
 const appContainer = document.getElementById('app-container');

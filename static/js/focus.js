@@ -114,6 +114,15 @@ function renderFocusTab() {
         container.innerHTML = renderTimelineView('someday', 'Someday');
     } else if (focusView === 'logbook') {
         container.innerHTML = renderLogbookView();
+    } else if (focusView.startsWith('task-')) {
+        const taskId = focusView.substring(5);
+        container.innerHTML = renderTaskDetailView(taskId);
+    } else if (focusView.startsWith('completed-')) {
+        const taskId = focusView.substring(10);
+        container.innerHTML = renderCompletedTaskDetailView(taskId);
+    } else if (focusView.startsWith('note-')) {
+        const noteKey = focusView.substring(5); // format: projectId:filename
+        container.innerHTML = renderNoteDetailView(noteKey);
     } else if (focusView.startsWith('project-')) {
         const projectId = focusView;
         container.innerHTML = renderSingleProjectView(projectId);
@@ -182,8 +191,8 @@ function renderTimelineView(category, title) {
     // Filter to tasks in this category AND should show in timeline
     const tasks = tasksData.filter(t => shouldShowInTimeline(t) && getTaskCategory(t) === category);
     return `
-        <div class="focus-view-header">
-            <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">←</span>
             <span class="focus-view-title">${title}</span>
         </div>
         <div class="focus-view-content">
@@ -199,8 +208,8 @@ function renderLogbookView() {
     // Filter completed tasks - only show non-system tasks or system tasks with When value
     const tasks = completedTasksData.filter(shouldShowInTimeline).slice(0, 20);
     return `
-        <div class="focus-view-header">
-            <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">←</span>
             <span class="focus-view-title">Logbook</span>
         </div>
         <div class="focus-view-content">
@@ -229,8 +238,8 @@ function renderSingleProjectView(projectId) {
     const notes = projectNotesData[projectId]?.notes || [];
 
     return `
-        <div class="focus-view-header">
-            <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">←</span>
             <span class="focus-view-title">${escapeHtml(project.title)}</span>
         </div>
         <div class="focus-view-content">
@@ -303,8 +312,9 @@ function renderMinimalTaskCard(task) {
     const eunoIcon = isEunoTask(task) ? '<span class="card-euno-icon">✨</span>' : '';
     const displayName = task.name || task.description || 'Untitled';
     return `
-        <div class="card card-minimal" data-task-id="${task.id}">
-            ${eunoIcon}<span class="card-title" onclick="toggleTaskCard('${task.id}')">${escapeHtml(displayName)}</span>
+        <div class="card card-minimal" data-task-id="${task.id}" onclick="navigateFocus('task-${task.id}')">
+            ${eunoIcon}<span class="card-title">${escapeHtml(displayName)}</span>
+            <span class="card-arrow">›</span>
         </div>
     `;
 }
@@ -355,6 +365,96 @@ function getWhenLabel(task) {
     return 'Anytime';
 }
 
+function renderTaskDetailView(taskId) {
+    const task = tasksData.find(t => t.id === taskId);
+    if (!task) {
+        return `
+            <div class="focus-view-header">
+                <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
+                <span class="focus-view-title">Task Not Found</span>
+            </div>
+            <div class="focus-empty">This task no longer exists.</div>
+        `;
+    }
+
+    const projectName = task.project_title || 'General';
+    const projectId = task.project_id || 'project-general';
+    const whenLabel = getWhenLabel(task);
+    const eunoIcon = isEunoTask(task) ? '<span class="card-euno-icon">✨</span>' : '';
+    const isArchiving = archivingTaskId === task.id;
+    const displayName = task.name || task.description || 'Untitled';
+    const hasDescription = task.description && task.description !== task.name;
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">←</span>
+            <span class="focus-view-title">${eunoIcon}${escapeHtml(displayName)}</span>
+        </div>
+        <div class="focus-view-content">
+            <div class="task-detail">
+                ${hasDescription ? `<div class="task-detail-description">${escapeHtml(task.description)}</div>` : ''}
+                <div class="task-detail-meta">
+                    <span class="task-detail-label">Project:</span>
+                    <span class="task-detail-value card-project-link" onclick="navigateFocus('${projectId}')">${escapeHtml(projectName)}</span>
+                </div>
+                <div class="task-detail-meta">
+                    <span class="task-detail-label">When:</span>
+                    <span class="task-detail-value">${escapeHtml(whenLabel)}</span>
+                </div>
+            </div>
+            <div class="task-detail-actions">
+                <button class="task-detail-action" onclick="openWhenPicker('task', '${task.id}')">📅 Change When</button>
+                <button class="task-detail-action" onclick="toggleTask(event, '${task.id}')">✓ Complete</button>
+                <button class="task-detail-action" onclick="showArchiveInput(event, '${task.id}')">${isArchiving ? 'Cancel' : '📦 Archive'}</button>
+                <button class="task-detail-action danger" onclick="deleteTask(event, '${task.id}')">🗑 Delete</button>
+            </div>
+            ${isArchiving ? `
+            <div class="card-archive-form">
+                <input type="text" class="card-archive-input" id="archive-reason-${task.id}" placeholder="Reason (optional)..." onkeypress="if(event.key==='Enter')confirmArchiveTask('${task.id}')">
+                <button class="card-archive-btn confirm" onclick="confirmArchiveTask('${task.id}')">Archive</button>
+            </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function renderCompletedTaskDetailView(taskId) {
+    const task = completedTasksData.find(t => t.id === taskId);
+    if (!task) {
+        return `
+            <div class="focus-view-header">
+                <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
+                <span class="focus-view-title">Task Not Found</span>
+            </div>
+            <div class="focus-empty">This task no longer exists.</div>
+        `;
+    }
+
+    const displayName = task.name || task.description || 'Untitled';
+    const hasDescription = task.description && task.description !== task.name;
+    const completedDate = task.completed_at ? new Date(task.completed_at).toLocaleDateString() : 'Unknown';
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">←</span>
+            <span class="focus-view-title">${escapeHtml(displayName)}</span>
+        </div>
+        <div class="focus-view-content">
+            <div class="task-detail">
+                ${hasDescription ? `<div class="task-detail-description">${escapeHtml(task.description)}</div>` : ''}
+                <div class="task-detail-meta">
+                    <span class="task-detail-label">Completed:</span>
+                    <span class="task-detail-value">${escapeHtml(completedDate)}</span>
+                </div>
+            </div>
+            <div class="task-detail-actions">
+                <button class="task-detail-action" onclick="toggleTask(event, '${task.id}')">↩ Restore</button>
+                <button class="task-detail-action danger" onclick="deleteTask(event, '${task.id}')">🗑 Delete</button>
+            </div>
+        </div>
+    `;
+}
+
 function toggleTaskCard(taskId) {
     const key = `task-${taskId}`;
     if (expandedCards.has(key)) {
@@ -385,8 +485,8 @@ function renderProjectCard(project) {
 function renderMinimalProjectCard(project) {
     const projectTasks = tasksData.filter(t => t.project_id === project.id && t.status !== 'completed');
     return `
-        <div class="card card-minimal" data-project-id="${project.id}">
-            <span class="card-title" onclick="toggleProjectCard('${project.id}')">${escapeHtml(project.title)}</span>
+        <div class="card card-minimal" data-project-id="${project.id}" onclick="toggleProjectCard('${project.id}')">
+            <span class="card-title">${escapeHtml(project.title)}</span>
             <span class="card-badge">${projectTasks.length} task${projectTasks.length !== 1 ? 's' : ''}</span>
         </div>
     `;
@@ -439,35 +539,51 @@ function renderFullProjectCard(project) {
 }
 
 function renderNoteCard(projectId, projectTitle, note) {
-    const isExpanded = expandedCards.has(`note-${note.filename}`);
-    if (isExpanded) {
+    return `
+        <div class="card card-minimal" data-note-filename="${note.filename}" onclick="navigateFocus('note-${projectId}:${note.filename}')">
+            <span class="card-title">${escapeHtml(note.title)}</span>
+            <span class="card-preview">${escapeHtml(note.date)}</span>
+            <span class="card-arrow">›</span>
+        </div>
+    `;
+}
+
+function renderNoteDetailView(noteKey) {
+    const [projectId, filename] = noteKey.split(':');
+    const projectNotes = projectNotesData[projectId]?.notes || [];
+    const note = projectNotes.find(n => n.filename === filename);
+    const project = projectsData.find(p => p.id === projectId);
+    const projectTitle = project?.title || 'Unknown Project';
+
+    if (!note) {
         return `
-            <div class="note-card" data-note-filename="${note.filename}">
-                <div class="note-card-full">
-                    <div class="note-card-header">
-                        <span class="note-card-title" onclick="toggleNoteCard('${note.filename}')">${escapeHtml(note.title)}</span>
-                        <button class="card-collapse" onclick="event.stopPropagation(); toggleNoteCard('${note.filename}')">−</button>
-                    </div>
-                    <div class="note-card-body">${marked.parse(note.content || '*No content*')}</div>
-                    <div class="note-card-actions">
-                        <span class="note-card-date">${escapeHtml(note.date)}</span>
-                        <span class="note-card-type">${escapeHtml(note.type)}</span>
-                        <button class="note-action-btn" onclick="event.stopPropagation(); bringNoteToChat('${escapeHtml(projectTitle).replace(/'/g, "\\'")}', '${escapeHtml(note.title).replace(/'/g, "\\'")}', '${escapeHtml(note.preview).replace(/'/g, "\\'")}')">Chat</button>
-                        <button class="note-action-btn delete" onclick="event.stopPropagation(); deleteProjectNote('${projectId}', '${note.filename}')">Delete</button>
-                    </div>
-                </div>
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">←</span>
+                <span class="focus-view-title">Note Not Found</span>
             </div>
-        `;
-    } else {
-        return `
-            <div class="note-card" data-note-filename="${note.filename}">
-                <div class="note-card-minimal">
-                    <span class="note-card-title" onclick="toggleNoteCard('${note.filename}')">${escapeHtml(note.title)}</span>
-                    <span class="note-card-date">${escapeHtml(note.date)}</span>
-                </div>
-            </div>
+            <div class="focus-empty">This note no longer exists.</div>
         `;
     }
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">←</span>
+            <span class="focus-view-title">${escapeHtml(note.title)}</span>
+        </div>
+        <div class="focus-view-content">
+            <div class="note-detail">
+                <div class="note-detail-meta">
+                    <span class="note-detail-date">${escapeHtml(note.date)}</span>
+                    <span class="note-detail-type">${escapeHtml(note.type)}</span>
+                </div>
+                <div class="note-detail-body">${marked.parse(note.content || '*No content*')}</div>
+            </div>
+            <div class="task-detail-actions">
+                <button class="task-detail-action" onclick="bringNoteToChat('${escapeHtml(projectTitle).replace(/'/g, "\\'")}', '${escapeHtml(note.title).replace(/'/g, "\\'")}', '${escapeHtml(note.preview).replace(/'/g, "\\'")}')">💬 Discuss in Chat</button>
+                <button class="task-detail-action danger" onclick="deleteProjectNote('${projectId}', '${note.filename}')">🗑 Delete</button>
+            </div>
+        </div>
+    `;
 }
 
 function toggleNoteCard(filename) {
@@ -742,8 +858,9 @@ function renderCompletedTaskCard(task) {
         `;
     } else {
         return `
-            <div class="card card-minimal" data-task-id="${task.id}" style="opacity: 0.7;">
-                <span class="card-title" style="text-decoration: line-through; color: #888;" onclick="toggleCompletedTaskCard('${task.id}')">${escapeHtml(displayName)}</span>
+            <div class="card card-minimal" data-task-id="${task.id}" style="opacity: 0.7;" onclick="navigateFocus('completed-${task.id}')">
+                <span class="card-title" style="text-decoration: line-through; color: #888;">${escapeHtml(displayName)}</span>
+                <span class="card-arrow">›</span>
             </div>
         `;
     }
