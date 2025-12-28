@@ -2,6 +2,8 @@
 
 Technical architecture and implementation spec for Euno.
 
+Euno is a personal intelligence that understands who you are—not just facts about you. It builds a predictive model of your identity (values, failure modes, patterns), acts proactively before you ask, and guards your attention from engagement algorithms designed to hijack it. This document describes how.
+
 ## Philosophy
 
 ### Information Flow
@@ -199,6 +201,13 @@ The system proactively surfaces questions, opportunities, and insights to help u
 - Detects recurring intents from lifelog (mentioned 3+ times in 14 days)
 - Proactively creates projects/tasks from detected patterns
 - Throttled: 24hr cooldown between creations, max 3/week
+
+*Feed Curation (Future):*
+- Reads social feeds so user doesn't have to scroll them
+- Surfaces genuinely important updates from people who matter
+- Shields from engagement algorithms designed to maximize clicks, not wellbeing
+- Can post on user's behalf when they want to share without getting sucked in
+- Goal: less screen time, less brain-rot, without losing touch
 
 **Evolution Agent Health Assessment:**
 - Runs every 6 hours (or on first startup)
@@ -525,7 +534,7 @@ See `docs/governance.md` for complete governance specification.
 | Summary | 5min | `logs_updated` | `summaries_updated` | `_summary.hash` per year |
 | Synthesis | 10min | `summaries_updated` | `synthesis_updated` | `processed_summaries.hash` |
 | World | 1hr | `synthesis_updated`, 24hr timer | `opportunities_updated` | `processed_profile.hash` |
-| Attention | 5min | time windows, `proactive_gaps`, opportunities, lifelog | `attention_delivered` | `patterns.cache.json`, `surfaced.json` |
+| Attention (Curator) | 5min | time windows, `proactive_gaps`, opportunities, lifelog, feeds | `attention_delivered` | `patterns.cache.json`, `surfaced.json` |
 | Interaction | on-demand | user messages | — | — |
 | Worker | 30s | pending tasks, research tasks | `task_completed` | Task evaluation tracking |
 | Evolution | 30min | `synthesis_updated`, 6hr timer | `proactive_gaps`, `agent_guidance` | `processed_synthesis.hash` |
