@@ -59,7 +59,7 @@ Euno is a working system with specialized agents that handle different aspects o
 
 ## Where It's Heading
 
-As Euno learns more about you, it supports every dimension of your wellbeing:
+Euno is in early development. Here's where we're taking it—supporting every dimension of your wellbeing:
 
 ### Emotional
 
