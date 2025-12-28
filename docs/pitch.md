@@ -100,20 +100,6 @@ As Euno learns more about you, the capabilities deepen:
 
 ---
 
-## Core Principles
-
-**Your data stays yours.** Processing uses AI APIs, but your information lives locally. No company optimizes against your attention.
-
-**Anticipate, don't control.** Euno surfaces options and context. You make the decisions. Your autonomy is sacred.
-
-**90/10 balance.** ~90% grounded in your values and comfort zone. ~10% novelty that challenges and expands you. Too much surprise creates anxiety. Too little creates stagnation.
-
-**Stated vs. revealed.** What you say matters versus what your behavior shows. The gap isn't hypocrisy—it's tension to understand.
-
-**Promote life, not productivity.** The goal isn't to make you more efficient. It's to help you live well—which sometimes means doing less.
-
----
-
 ## A Traveling Intelligence
 
 What you're seeing here is one expression—a web app with chat and tasks. But Euno isn't the interface. Euno is the intelligence behind it.
