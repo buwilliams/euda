@@ -2174,7 +2174,9 @@
                 const projectsJson = await projectsRes.json();
                 const completedJson = await completedRes.json();
 
-                tasksData = tasksJson.tasks || [];
+                // Filter out archived and completed tasks from main list
+                const allTasks = tasksJson.tasks || [];
+                tasksData = allTasks.filter(t => t.status !== 'completed' && t.status !== 'archived');
                 projectsData = projectsJson.projects || [];
                 completedTasksData = completedJson.tasks || [];
 
@@ -2473,13 +2475,10 @@
                     </div>
                     <div class="card-body">
                         ${hasDescription ? `<div class="card-description">${escapeHtml(task.description)}</div>` : ''}
-                        <div class="card-when" onclick="event.stopPropagation(); openWhenPicker('task', '${task.id}')">
-                            <span class="card-when-icon">📅</span>
-                            <span class="card-when-label">${escapeHtml(whenLabel)}</span>
-                        </div>
                         <div class="card-meta">Project: ${escapeHtml(projectName)}</div>
                     </div>
                     <div class="card-actions">
+                        <button class="card-action" onclick="event.stopPropagation(); openWhenPicker('task', '${task.id}')">📅 ${escapeHtml(whenLabel)}</button>
                         <button class="card-action" onclick="toggleTask(event, '${task.id}')">Complete</button>
                         <button class="card-action" onclick="showArchiveInput(event, '${task.id}')">${isArchiving ? 'Cancel' : 'Archive'}</button>
                         <button class="card-action danger" onclick="deleteTask(event, '${task.id}')">Delete</button>
@@ -3304,8 +3303,8 @@
             eventSource.addEventListener('init', (e) => {
                 const data = JSON.parse(e.data);
                 const allTasks = data.tasks || [];
-                // Split tasks into pending and completed
-                tasksData = allTasks.filter(t => t.status !== 'completed');
+                // Split tasks into active and completed (filter out archived)
+                tasksData = allTasks.filter(t => t.status !== 'completed' && t.status !== 'archived');
                 completedTasksData = allTasks.filter(t => t.status === 'completed')
                     .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
                     .slice(0, 20);
@@ -3320,8 +3319,8 @@
             eventSource.addEventListener('tasks_update', (e) => {
                 const data = JSON.parse(e.data);
                 const allTasks = data.tasks || [];
-                // Split tasks into pending and completed
-                tasksData = allTasks.filter(t => t.status !== 'completed');
+                // Split tasks into active and completed (filter out archived)
+                tasksData = allTasks.filter(t => t.status !== 'completed' && t.status !== 'archived');
                 completedTasksData = allTasks.filter(t => t.status === 'completed')
                     .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
                     .slice(0, 20);
