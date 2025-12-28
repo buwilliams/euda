@@ -16,13 +16,15 @@ From *Eudaimonia*—ancient Greek for "human flourishing." A deep sense of fulfi
 
 > Today's AI can remember facts about you—your dog's name, your meeting preferences. But it doesn't actually know you. It can't anticipate what you need because it hasn't studied your life deeply enough to understand who you are.
 >
-> Euno is different. It's a personal intelligence that ingests your writing, photos, messages, and behaviors to build a real model of your identity—your values, your patterns, your failure modes. Not who you say you are. Who you actually are.
+> Euno is different. **It's personal.** It ingests your writing, photos, messages, and behaviors to build a real model of your identity—your values, your patterns, your failure modes. Not who you say you are. Who you actually are.
 >
-> And it doesn't wait for you to ask. It works proactively—highlighting what matters, noticing what you're avoiding, and actually doing tasks for you. Research, scheduling, ordering, follow-ups. Real work, off your plate, before you think to ask.
+> **It's proactive.** It doesn't wait for you to ask. It highlights what matters, notices what you're avoiding, and actually does tasks for you—research, scheduling, ordering, follow-ups. Real work, off your plate, before you think to ask.
 >
-> It also curates. Engagement algorithms are designed to hijack your attention. Euno stands between you and that—reading your feeds, extracting what's important, shielding you from the rest. Less screen time, less brain-rot, without losing touch.
+> **It curates.** Engagement algorithms are designed to hijack your attention. Euno stands between you and that—reading your feeds, extracting what's important, shielding you from the rest. Less screen time, less brain-rot, without losing touch.
 >
-> The goal isn't productivity. It's flourishing. A caring collaborator that knows you deeply, can go deep on any topic, and gets better at anticipating you over years, not just sessions.
+> **It follows.** Not trapped in one app or device. Euno moves with you—from your phone to your desk to a wearable to whatever comes next. One intelligence that knows you, present wherever you are.
+>
+> The goal isn't productivity. It's flourishing. A caring collaborator that knows you deeply and gets better at anticipating you over years, not just sessions.
 >
 > That's Euno.
 
@@ -136,13 +138,18 @@ As Euno learns more about you, the capabilities deepen:
 
 ---
 
-## Form Factors
+## It Follows You
 
-I'm presenting just one expression of what Euno is. Properly executed, Euno is:
+What you're seeing here is one expression—a web app with chat and tasks. But Euno isn't the interface. Euno is the intelligence behind it.
 
-- Web/Mobile Application: What you are seeing now. A chat application with projects/tasks.
-- Wearable Device: with no screen that you talk to. It would record your conversations and add them to the life log.
-- Virtual/Augmented Reality Entity: with a VR headset, Euno could be a floating entity that you talk with as a second mind to help you on your journey.
-- Physical Robot: that you talk to and helps you around the house
+That intelligence can live anywhere:
 
-In the limit, it should be a hybrid, following you through all the various form factors. Euno is the personal intelligence that follows you through life in all your environments whether it's inside a video game or in a business meeting.
+- **In your pocket** — A mobile app that's always with you
+- **On your wrist** — A screenless wearable you talk to, adding conversations to your life log
+- **In your ears** — An ambient presence during your day
+- **In virtual worlds** — A floating companion in VR/AR, a second mind on your journey
+- **In your home** — A physical presence that helps where you live
+
+The form factor changes. Euno doesn't. The same model of who you are, the same memory of your life, the same caring collaborator—present in whatever environment you're in.
+
+A business meeting. A video game. A walk in the park. A difficult conversation. Euno follows you through life, not just through apps.
