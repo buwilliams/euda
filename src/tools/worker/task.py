@@ -137,7 +137,8 @@ def determine_delegation(task_type: str, is_learning: bool = False) -> dict:
 
 
 def create_task(
-    description: str,
+    name: str,
+    description: str = "",
     task_type: str = "general",
     project_id: Optional[str] = None,
     priority: str = "normal",
@@ -154,7 +155,8 @@ def create_task(
     Create a new task.
 
     Args:
-        description: What needs to be done
+        name: Short task name (displayed in lists)
+        description: Detailed description of what needs to be done
         task_type: Type of task (research, email_send, reminder, etc.)
         project_id: Project to associate with (defaults to General project)
         priority: high, normal, or low
@@ -195,6 +197,7 @@ def create_task(
     task = {
         "id": task_id,
         "created": now,
+        "name": name,
         "description": description,
         "type": task_type,
         "status": "pending",
@@ -240,6 +243,7 @@ def create_task(
 
 
 def create_task_with_action(
+    name: str,
     description: str,
     action_id: str,
     task_type: str = "approval",
@@ -255,6 +259,7 @@ def create_task_with_action(
     When the task is deleted, the linked action is rejected.
 
     Args:
+        name: Short task name
         description: Full description (supports markdown)
         action_id: The action ID this task controls
         task_type: Type of task (usually "approval")
@@ -278,6 +283,7 @@ def create_task_with_action(
     task = {
         "id": task_id,
         "created": now,
+        "name": name,
         "description": description,
         "type": task_type,
         "status": "pending",
@@ -327,7 +333,8 @@ def create_task_with_action(
 
 
 def create_learning_task(
-    description: str,
+    name: str,
+    description: str = "",
     project_id: Optional[str] = None,
     learning_objectives: Optional[list] = None,
     preferred_format: str = "mixed",
@@ -338,7 +345,8 @@ def create_learning_task(
     Create a learning-focused task where the agent prepares materials.
 
     Args:
-        description: What the user wants to learn
+        name: Short task name (what to learn)
+        description: Detailed description of learning goals
         project_id: Learning project (defaults to General project)
         learning_objectives: Specific goals for this learning session
         preferred_format: video, reading, interactive, mixed
@@ -360,6 +368,7 @@ def create_learning_task(
     task = {
         "id": task_id,
         "created": now,
+        "name": name,
         "description": description,
         "type": "learning",
         "status": "pending",
@@ -957,6 +966,7 @@ def get_archived_tasks_data(days: int = 90, limit: int = 100) -> list:
 
 def update_task(
     task_id: str,
+    name: Optional[str] = None,
     description: Optional[str] = None,
     priority: Optional[str] = None,
     due_date: Optional[str] = None,
@@ -967,6 +977,7 @@ def update_task(
 
     Args:
         task_id: The task ID to update
+        name: New short task name (optional)
         description: New description (optional)
         priority: New priority (optional)
         due_date: New due date (optional)
@@ -980,6 +991,10 @@ def update_task(
     for task in queue["tasks"]:
         if task["id"] == task_id:
             updated = []
+
+            if name is not None:
+                task["name"] = name
+                updated.append("name")
 
             if description is not None:
                 task["description"] = description
@@ -1095,6 +1110,111 @@ def cleanup_old_completed_tasks(retention_days: int = 30) -> str:
         _save_queue(queue)
 
     return f"Removed {removed_count} completed task(s) older than {retention_days} days"
+
+
+def _extract_task_name(description: str) -> str:
+    """
+    Extract a clean, short task name from a description.
+
+    Handles markdown formatting, headers, and extracts meaningful content.
+    """
+    import re
+
+    if not description:
+        return "Untitled task"
+
+    text = description
+
+    # Strip markdown headers (## Header)
+    text = re.sub(r'^#+\s*', '', text, flags=re.MULTILINE)
+
+    # Strip bold/italic markers
+    text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)  # **bold**
+    text = re.sub(r'\*([^*]+)\*', r'\1', text)      # *italic*
+    text = re.sub(r'__([^_]+)__', r'\1', text)      # __bold__
+    text = re.sub(r'_([^_]+)_', r'\1', text)        # _italic_
+
+    # Strip bullet points
+    text = re.sub(r'^\s*[-*+]\s+', '', text, flags=re.MULTILINE)
+
+    # Strip code blocks and inline code
+    text = re.sub(r'```[^`]*```', '', text, flags=re.DOTALL)
+    text = re.sub(r'`[^`]+`', '', text)
+
+    # Strip links [text](url) -> text
+    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
+
+    # Remove common prefixes like "Approval Needed:"
+    text = re.sub(r'^(Approval Needed|Action Required|TODO|Task):\s*', '', text, flags=re.IGNORECASE)
+
+    # Clean up whitespace
+    text = ' '.join(text.split())
+
+    if not text:
+        return "Untitled task"
+
+    # Try to get first sentence (ending with . ! or ?)
+    sentence_match = re.match(r'^([^.!?\n]+[.!?]?)', text)
+    if sentence_match:
+        first_part = sentence_match.group(1).strip()
+        # If short enough, use it
+        if len(first_part) <= 50:
+            return first_part.rstrip('.!?')
+
+    # Otherwise take first ~5 words, max 40 chars
+    words = text.split()[:5]
+    name = ' '.join(words)
+    if len(name) > 40:
+        name = name[:37] + "..."
+    elif len(words) == 5 and len(text.split()) > 5:
+        name += "..."
+
+    return name
+
+
+def migrate_tasks_add_name_field(force: bool = False) -> str:
+    """
+    Migrate existing tasks to use the new name/description schema.
+
+    For tasks that only have 'description' and no 'name', or have
+    poorly formatted names (with markdown), extract a clean name.
+
+    Args:
+        force: If True, regenerate names even for tasks that have one
+
+    Returns:
+        Summary of migrated tasks
+    """
+    import re
+
+    queue = _load_queue()
+    migrated = 0
+
+    for task in queue["tasks"]:
+        current_name = task.get("name", "")
+        description = task.get("description", "")
+
+        # Check if migration needed
+        needs_migration = False
+        if not current_name:
+            needs_migration = True
+        elif force:
+            needs_migration = True
+        # Check for markdown artifacts in name
+        elif re.search(r'^#+\s|^\*\*|\*\*$|^[-*+]\s', current_name):
+            needs_migration = True
+
+        if not needs_migration:
+            continue
+
+        # Extract clean name from description
+        task["name"] = _extract_task_name(description)
+        migrated += 1
+
+    if migrated > 0:
+        _save_queue(queue)
+
+    return f"Migrated {migrated} task(s) to name/description schema"
 
 
 def get_completed_tasks_data(days: int = 30, limit: int = 50) -> list:
@@ -1510,9 +1630,13 @@ TASK_TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Short task name (2-5 words). Examples: 'Review PR feedback', 'Call dentist', 'Buy groceries'"
+                },
                 "description": {
                     "type": "string",
-                    "description": "What needs to be done"
+                    "description": "Detailed description with full context, steps, or notes. Can be multiple sentences. Leave empty if name is self-explanatory."
                 },
                 "task_type": {
                     "type": "string",
@@ -1531,9 +1655,13 @@ TASK_TOOLS = [
                 "due_date": {
                     "type": "string",
                     "description": "When it should be done (YYYY-MM-DD)"
+                },
+                "someday": {
+                    "type": "boolean",
+                    "description": "Mark as 'someday' task (no specific date, but not anytime). Default: false"
                 }
             },
-            "required": ["description"]
+            "required": ["name"]
         }
     },
     {
@@ -1542,9 +1670,13 @@ TASK_TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Short task name (2-5 words, e.g., 'Learn Python basics')"
+                },
                 "description": {
                     "type": "string",
-                    "description": "What the user wants to learn"
+                    "description": "Detailed description of learning goals (optional)"
                 },
                 "project_id": {
                     "type": "string",
@@ -1561,7 +1693,7 @@ TASK_TOOLS = [
                     "description": "Preferred learning format"
                 }
             },
-            "required": ["description"]
+            "required": ["name"]
         }
     },
     {
@@ -1648,13 +1780,17 @@ TASK_TOOLS = [
     },
     {
         "name": "update_task",
-        "description": "Update task properties like description, priority, due date, or type. This triggers re-evaluation by the Worker Agent.",
+        "description": "Update task properties like name, description, priority, due date, or type. This triggers re-evaluation by the Worker Agent.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "task_id": {
                     "type": "string",
                     "description": "The task ID to update"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "New short task name (2-5 words)"
                 },
                 "description": {
                     "type": "string",

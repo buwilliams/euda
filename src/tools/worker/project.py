@@ -569,10 +569,17 @@ def get_projects(
 def get_projects_data(
     status: str = "active",
     project_type: Optional[str] = None,
-    include_archived: bool = False
+    include_archived: bool = False,
+    include_description: bool = True
 ) -> list:
     """
     Get projects as raw data for API consumption.
+
+    Args:
+        status: Filter by status - active, paused, completed, or all
+        project_type: Filter by type
+        include_archived: Include archived projects
+        include_description: Include full description field (loads from file)
 
     Returns:
         List of project dictionaries
@@ -588,26 +595,42 @@ def get_projects_data(
     if project_type:
         projects = [p for p in projects if p.get("type") == project_type]
 
-    # Exclude archived unless requested
-    if not include_archived:
-        filtered = []
-        for p in projects:
-            project_file = PROJECTS_DIR / f"{p['id']}.json"
-            if project_file.exists():
-                with open(project_file, 'r') as f:
+    # Load full project data if needed (for descriptions and archive check)
+    result = []
+    for p in projects:
+        project_file = PROJECTS_DIR / f"{p['id']}.json"
+        if project_file.exists():
+            with open(project_file, 'r') as f:
+                full = json.load(f)
+            # Skip archived unless requested
+            if not include_archived and full.get("archived", False):
+                continue
+            # Add description if requested
+            if include_description:
+                p = p.copy()
+                p["description"] = full.get("description", "")
+                p["someday"] = full.get("someday", False)
+            result.append(p)
+        elif include_archived:
+            # Try archive directory
+            archive_file = ARCHIVE_DIR / f"{p['id']}.json"
+            if archive_file.exists():
+                with open(archive_file, 'r') as f:
                     full = json.load(f)
-                if not full.get("archived", False):
-                    filtered.append(p)
-        projects = filtered
+                if include_description:
+                    p = p.copy()
+                    p["description"] = full.get("description", "")
+                    p["someday"] = full.get("someday", False)
+                result.append(p)
 
     # Sort by priority then deadline
     priority_order = {"high": 0, "normal": 1, "low": 2}
-    projects.sort(key=lambda p: (
+    result.sort(key=lambda p: (
         priority_order.get(p.get("priority", "normal"), 1),
         p.get("deadline") or "9999-12-31"
     ))
 
-    return projects
+    return result
 
 
 def get_project(project_id: str) -> str:
@@ -1058,11 +1081,11 @@ PROJECT_TOOLS = [
             "properties": {
                 "title": {
                     "type": "string",
-                    "description": "Short, clear project title"
+                    "description": "Short project title (2-5 words, e.g., 'Learn Spanish', 'Morning Routine')"
                 },
                 "description": {
                     "type": "string",
-                    "description": "What this project is about and why it matters"
+                    "description": "Detailed description of the project goals, scope, and why it matters. Can be multiple sentences."
                 },
                 "project_type": {
                     "type": "string",
@@ -1077,6 +1100,10 @@ PROJECT_TOOLS = [
                 "deadline": {
                     "type": "string",
                     "description": "Target completion date (ISO format: YYYY-MM-DD)"
+                },
+                "someday": {
+                    "type": "boolean",
+                    "description": "Mark as 'someday' project (no specific deadline). Default: false"
                 },
                 "review_frequency": {
                     "type": "string",
@@ -1131,7 +1158,7 @@ PROJECT_TOOLS = [
     },
     {
         "name": "update_project",
-        "description": "Update project details like status, priority, or deadline.",
+        "description": "Update project details like title, description, status, priority, or deadline.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -1139,8 +1166,14 @@ PROJECT_TOOLS = [
                     "type": "string",
                     "description": "The project ID"
                 },
-                "title": {"type": "string"},
-                "description": {"type": "string"},
+                "title": {
+                    "type": "string",
+                    "description": "Short project title (2-5 words)"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Detailed project description"
+                },
                 "status": {
                     "type": "string",
                     "enum": ["active", "paused", "completed"]

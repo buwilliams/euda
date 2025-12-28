@@ -1051,8 +1051,9 @@
 
         .card-description {
             font-size: 0.9rem;
-            color: #333;
+            color: #555;
             line-height: 1.5;
+            margin-bottom: 0.75rem;
         }
 
         .card-description p { margin: 0.5rem 0; }
@@ -2448,9 +2449,10 @@
 
         function renderMinimalTaskCard(task) {
             const eunoIcon = isEunoTask(task) ? '<span class="card-euno-icon">✨</span>' : '';
+            const displayName = task.name || task.description || 'Untitled';
             return `
                 <div class="card card-minimal" data-task-id="${task.id}" onclick="expandTaskCard('${task.id}')">
-                    ${eunoIcon}<span class="card-title">${escapeHtml(task.description)}</span>
+                    ${eunoIcon}<span class="card-title">${escapeHtml(displayName)}</span>
                 </div>
             `;
         }
@@ -2460,14 +2462,17 @@
             const whenLabel = getWhenLabel(task);
             const eunoIcon = isEunoTask(task) ? '<span class="card-euno-icon">✨</span>' : '';
             const isArchiving = archivingTaskId === task.id;
+            const displayName = task.name || task.description || 'Untitled';
+            const hasDescription = task.description && task.description !== task.name;
 
             return `
                 <div class="card card-full" data-task-id="${task.id}">
                     <div class="card-header">
-                        ${eunoIcon}<span class="card-title">${escapeHtml(task.description)}</span>
+                        ${eunoIcon}<span class="card-title">${escapeHtml(displayName)}</span>
                         <button class="card-collapse" onclick="event.stopPropagation(); collapseTaskCard('${task.id}')">−</button>
                     </div>
                     <div class="card-body">
+                        ${hasDescription ? `<div class="card-description">${escapeHtml(task.description)}</div>` : ''}
                         <div class="card-when" onclick="event.stopPropagation(); openWhenPicker('task', '${task.id}')">
                             <span class="card-when-icon">📅</span>
                             <span class="card-when-label">${escapeHtml(whenLabel)}</span>
@@ -2531,7 +2536,10 @@
             const projectTasks = tasksData.filter(t => t.project_id === project.id && t.status !== 'completed');
             const noteCount = projectNotesData[project.id]?.count || 0;
             const isGeneral = project.id === 'project-general';
+            const isEuno = project.id === 'project-euno';
+            const isSystemProject = isGeneral || isEuno;
             const whenLabel = getProjectWhenLabel(project);
+            const hasDescription = project.description && project.description.length > 0;
 
             return `
                 <div class="card card-full" data-project-id="${project.id}">
@@ -2540,7 +2548,8 @@
                         <button class="card-collapse" onclick="event.stopPropagation(); collapseProjectCard('${project.id}')">−</button>
                     </div>
                     <div class="card-body">
-                        ${!isGeneral ? `
+                        ${hasDescription ? `<div class="card-description">${escapeHtml(project.description)}</div>` : ''}
+                        ${!isSystemProject ? `
                         <div class="card-when" onclick="event.stopPropagation(); openWhenPicker('project', '${project.id}')">
                             <span class="card-when-icon">📅</span>
                             <span class="card-when-label">${escapeHtml(whenLabel)}</span>
@@ -2555,7 +2564,7 @@
                         </div>
                         ` : ''}
                     </div>
-                    ${!isGeneral ? `
+                    ${!isSystemProject ? `
                     <div class="card-actions">
                         <button class="card-action" onclick="archiveProject('${project.id}')">Archive</button>
                         <button class="card-action danger" onclick="deleteProject('${project.id}')">Delete</button>
@@ -2816,15 +2825,18 @@
 
         function renderCompletedTaskCard(task) {
             const isExpanded = expandedCards.has(`completed-${task.id}`);
+            const displayName = task.name || task.description || 'Untitled';
+            const hasDescription = task.description && task.description !== task.name;
 
             if (isExpanded) {
                 return `
                     <div class="card card-full" data-task-id="${task.id}" style="opacity: 0.7;">
                         <div class="card-header">
-                            <span class="card-title" style="text-decoration: line-through;">${escapeHtml(task.description)}</span>
+                            <span class="card-title" style="text-decoration: line-through;">${escapeHtml(displayName)}</span>
                             <button class="card-collapse" onclick="event.stopPropagation(); expandedCards.delete('completed-${task.id}'); renderFocusTab();">−</button>
                         </div>
                         <div class="card-body">
+                            ${hasDescription ? `<div class="card-description" style="text-decoration: line-through;">${escapeHtml(task.description)}</div>` : ''}
                             <div class="card-meta">Completed ${task.completed_at ? new Date(task.completed_at).toLocaleDateString() : 'recently'}</div>
                         </div>
                         <div class="card-actions">
@@ -2836,7 +2848,7 @@
             } else {
                 return `
                     <div class="card card-minimal" data-task-id="${task.id}" onclick="expandedCards.add('completed-${task.id}'); renderFocusTab();" style="opacity: 0.7;">
-                        <span class="card-title" style="text-decoration: line-through; color: #888;">${escapeHtml(task.description)}</span>
+                        <span class="card-title" style="text-decoration: line-through; color: #888;">${escapeHtml(displayName)}</span>
                     </div>
                 `;
             }
@@ -2996,10 +3008,12 @@
             // Look up task in tasksData or completedTasksData and show in chat
             const task = tasksData.find(t => t.id === taskId) || completedTasksData.find(t => t.id === taskId);
             if (!task) return;
-            showTaskFullContent(task.description, task.project_title || 'General');
+            const displayName = task.name || task.description || 'Untitled';
+            const description = task.description || '';
+            showTaskFullContent(displayName, description, task.project_title || 'General');
         }
 
-        function showTaskFullContent(description, projectName) {
+        function showTaskFullContent(taskName, description, projectName) {
             // Show task with project name in chat area, rendering markdown
             switchTab('chat');
 
@@ -3007,10 +3021,10 @@
             messageDiv.className = 'message message-system';
             messageDiv.innerHTML = `
                 <div class="message-system-header">
-                    <span class="message-system-title">${escapeHtml(projectName)}</span>
+                    <span class="message-system-title">${escapeHtml(projectName)}: ${escapeHtml(taskName)}</span>
                     <button class="message-system-close" onclick="this.closest('.message-system').remove()">×</button>
                 </div>
-                <div class="message-system-body">${marked.parse(description)}</div>
+                ${description ? `<div class="message-system-body">${marked.parse(description)}</div>` : ''}
             `;
 
             inlineMessages.appendChild(messageDiv);
