@@ -21,6 +21,10 @@ let focusView = 'menu';
 let focusViewHistory = [];
 let archivingTaskId = null;
 
+// Tab order for slide animations (left to right)
+const TAB_ORDER = ['chat', 'focus', 'history', 'about', 'settings'];
+let previousTab = activeTab;
+
 // History tab navigation state
 let historyView = 'list';
 let historyViewHistory = [];

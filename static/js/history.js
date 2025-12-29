@@ -32,9 +32,13 @@ function formatHistoryTime(timeStr) {
 
 // ============== History Navigation ==============
 
+// Track navigation direction for animations
+let historySlideDirection = null; // 'forward' or 'back'
+
 function navigateHistory(view) {
     historyViewHistory.push(historyView);
     historyView = view;
+    historySlideDirection = 'forward';
     renderHistory();
 }
 
@@ -44,6 +48,7 @@ function navigateHistoryBack() {
     } else {
         historyView = 'list';
     }
+    historySlideDirection = 'back';
     renderHistory();
 }
 
@@ -65,16 +70,70 @@ async function loadHistoryData() {
 function renderHistory() {
     const container = document.getElementById('history-list');
 
+    let content;
     if (historyView === 'list') {
         if (!historyData || historyData.length === 0) {
-            container.innerHTML = '<div class="focus-empty">No conversations yet</div>';
-            return;
+            content = '<div class="focus-empty">No conversations yet</div>';
+        } else {
+            content = historyData.map(item => renderHistoryCard(item)).join('');
         }
-        container.innerHTML = historyData.map(item => renderHistoryCard(item)).join('');
     } else if (historyView.startsWith('conversation-')) {
         const sessionId = historyView.substring(13);
-        container.innerHTML = renderHistoryDetailView(sessionId);
+        content = renderHistoryDetailView(sessionId);
     }
+
+    // Apply slide animation if direction is set
+    if (historySlideDirection && container.querySelector('.view-slide-container')) {
+        animateHistoryTransition(container, content, historySlideDirection);
+        historySlideDirection = null;
+    } else {
+        // Initial render or no animation needed
+        container.innerHTML = `<div class="view-slide-container current">${content}</div>`;
+    }
+}
+
+function animateHistoryTransition(container, newContent, direction) {
+    const oldView = container.querySelector('.view-slide-container');
+    if (!oldView) {
+        container.innerHTML = `<div class="view-slide-container current">${newContent}</div>`;
+        return;
+    }
+
+    // Create new view
+    const newView = document.createElement('div');
+    newView.className = 'view-slide-container';
+    newView.innerHTML = newContent;
+
+    // Position new view off-screen
+    if (direction === 'forward') {
+        newView.classList.add('slide-in-right');
+    } else {
+        newView.classList.add('slide-in-left');
+    }
+
+    container.appendChild(newView);
+
+    // Trigger reflow
+    newView.offsetHeight;
+
+    // Animate old view out and new view in
+    if (direction === 'forward') {
+        oldView.classList.remove('current');
+        oldView.classList.add('slide-out-left');
+    } else {
+        oldView.classList.remove('current');
+        oldView.classList.add('slide-out-right');
+    }
+
+    newView.classList.remove('slide-in-left', 'slide-in-right');
+    newView.classList.add('current');
+
+    // Clean up old view after animation
+    setTimeout(() => {
+        if (oldView.parentNode) {
+            oldView.remove();
+        }
+    }, 300);
 }
 
 function renderHistoryCard(item) {

@@ -44,14 +44,32 @@ document.addEventListener('click', (e) => {
 // ============== Tab Functions ==============
 
 function switchTab(tabName, saveState = true) {
-    // Hide all panes and deactivate all buttons
-    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    // Determine slide direction based on tab order
+    const prevIndex = TAB_ORDER.indexOf(previousTab);
+    const newIndex = TAB_ORDER.indexOf(tabName);
+    const slideRight = newIndex > prevIndex; // New tab is to the right, slide left to reveal
+
+    // Deactivate all buttons
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 
-    // Show selected pane and activate button
-    const pane = document.getElementById(`tab-${tabName}`);
+    // Update pane positions for slide animation
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        const paneTab = pane.id.replace('tab-', '');
+        const paneIndex = TAB_ORDER.indexOf(paneTab);
+
+        pane.classList.remove('active', 'slide-left', 'slide-right');
+
+        if (paneTab === tabName) {
+            pane.classList.add('active');
+        } else if (paneIndex < newIndex) {
+            pane.classList.add('slide-left');
+        } else {
+            pane.classList.add('slide-right');
+        }
+    });
+
+    // Activate button
     const btn = document.querySelector(`.tab-menu > [data-tab="${tabName}"]`);
-    if (pane) pane.classList.add('active');
     if (btn) btn.classList.add('active');
 
     // If tab is in overflow menu, highlight the "More" button
@@ -61,6 +79,7 @@ function switchTab(tabName, saveState = true) {
         overflowBtn.classList.add('active');
     }
 
+    previousTab = tabName;
     activeTab = tabName;
     if (saveState) {
         localStorage.setItem('activeTab', tabName);

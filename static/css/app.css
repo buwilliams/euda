@@ -517,17 +517,36 @@
             border-bottom: none;
             border-radius: 8px 8px 0 0;
             background: #f8f8f8;
+            position: relative;
         }
 
         .tab-pane {
-            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             height: 100%;
             overflow-y: auto;
             padding: 1rem;
+            transform: translateX(100%);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
         }
 
         .tab-pane.active {
-            display: block;
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .tab-pane.slide-left {
+            transform: translateX(-100%);
+        }
+
+        .tab-pane.slide-right {
+            transform: translateX(100%);
         }
 
         /* Tab Menu */
@@ -685,10 +704,49 @@
         }
 
         /* ============== Focus Tab - Things-like Navigation ============== */
-        .focus-content {
+        .focus-content,
+        .history-content {
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .view-slide-container {
             display: flex;
             flex-direction: column;
             height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+
+        .view-slide-container.current {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .view-slide-container.slide-out-left {
+            transform: translateX(-30%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .view-slide-container.slide-out-right {
+            transform: translateX(30%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .view-slide-container.slide-in-left {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+
+        .view-slide-container.slide-in-right {
+            transform: translateX(100%);
+            opacity: 0;
         }
 
         .focus-empty {
@@ -1191,12 +1249,6 @@
         }
 
         /* ============== History Tab ============== */
-        .history-content {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
         .history-detail {
             padding: 1rem 0.5rem;
         }

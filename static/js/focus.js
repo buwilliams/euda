@@ -141,35 +141,92 @@ function getFocusCounts() {
     return counts;
 }
 
+// Track navigation direction for animations
+let focusSlideDirection = null; // 'forward' or 'back'
+
 function renderFocusTab() {
     const container = document.getElementById('focus-content');
     if (!container) return;
 
+    let content;
     if (focusView === 'menu') {
-        container.innerHTML = renderFocusMenu();
+        content = renderFocusMenu();
     } else if (focusView === 'today') {
-        container.innerHTML = renderTimelineView('today', 'Today');
+        content = renderTimelineView('today', 'Today');
     } else if (focusView === 'upcoming') {
-        container.innerHTML = renderTimelineView('upcoming', 'Upcoming');
+        content = renderTimelineView('upcoming', 'Upcoming');
     } else if (focusView === 'anytime') {
-        container.innerHTML = renderTimelineView('anytime', 'Anytime');
+        content = renderTimelineView('anytime', 'Anytime');
     } else if (focusView === 'someday') {
-        container.innerHTML = renderTimelineView('someday', 'Someday');
+        content = renderTimelineView('someday', 'Someday');
     } else if (focusView === 'logbook') {
-        container.innerHTML = renderLogbookView();
+        content = renderLogbookView();
     } else if (focusView.startsWith('task-')) {
         const taskId = focusView.substring(5);
-        container.innerHTML = renderTaskDetailView(taskId);
+        content = renderTaskDetailView(taskId);
     } else if (focusView.startsWith('completed-')) {
         const taskId = focusView.substring(10);
-        container.innerHTML = renderCompletedTaskDetailView(taskId);
+        content = renderCompletedTaskDetailView(taskId);
     } else if (focusView.startsWith('note-')) {
         const noteKey = focusView.substring(5); // format: projectId:filename
-        container.innerHTML = renderNoteDetailView(noteKey);
+        content = renderNoteDetailView(noteKey);
     } else if (focusView.startsWith('project-')) {
         const projectId = focusView;
-        container.innerHTML = renderSingleProjectView(projectId);
+        content = renderSingleProjectView(projectId);
     }
+
+    // Apply slide animation if direction is set
+    if (focusSlideDirection && container.querySelector('.view-slide-container')) {
+        animateViewTransition(container, content, focusSlideDirection);
+        focusSlideDirection = null;
+    } else {
+        // Initial render or no animation needed
+        container.innerHTML = `<div class="view-slide-container current">${content}</div>`;
+    }
+}
+
+function animateViewTransition(container, newContent, direction) {
+    const oldView = container.querySelector('.view-slide-container');
+    if (!oldView) {
+        container.innerHTML = `<div class="view-slide-container current">${newContent}</div>`;
+        return;
+    }
+
+    // Create new view
+    const newView = document.createElement('div');
+    newView.className = 'view-slide-container';
+    newView.innerHTML = newContent;
+
+    // Position new view off-screen
+    if (direction === 'forward') {
+        newView.classList.add('slide-in-right');
+    } else {
+        newView.classList.add('slide-in-left');
+    }
+
+    container.appendChild(newView);
+
+    // Trigger reflow
+    newView.offsetHeight;
+
+    // Animate old view out and new view in
+    if (direction === 'forward') {
+        oldView.classList.remove('current');
+        oldView.classList.add('slide-out-left');
+    } else {
+        oldView.classList.remove('current');
+        oldView.classList.add('slide-out-right');
+    }
+
+    newView.classList.remove('slide-in-left', 'slide-in-right');
+    newView.classList.add('current');
+
+    // Clean up old view after animation
+    setTimeout(() => {
+        if (oldView.parentNode) {
+            oldView.remove();
+        }
+    }, 300);
 }
 
 function renderFocusMenu() {
@@ -331,6 +388,7 @@ function renderTasksSortedByProject(tasks, isCompleted = false) {
 function navigateFocus(view) {
     focusViewHistory.push(focusView);
     focusView = view;
+    focusSlideDirection = 'forward';
     renderFocusTab();
 }
 
@@ -340,6 +398,7 @@ function navigateFocusBack() {
     } else {
         focusView = 'menu';
     }
+    focusSlideDirection = 'back';
     renderFocusTab();
 }
 
