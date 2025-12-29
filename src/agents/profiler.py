@@ -191,7 +191,7 @@ class AutonomousProfilerAgent(AutonomousAgent):
             tools=ALL_PROFILER_TOOLS,
             tool_handlers=ALL_PROFILER_HANDLERS,
             check_interval=600,  # Check every 10 minutes
-            signals_on_complete=["profile_updated"]
+            signals_on_complete=["profile_updated", "curator_profile_ready"]
         )
 
     def _get_log_files(self) -> list[Path]:

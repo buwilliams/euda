@@ -667,6 +667,106 @@ If no concerning patterns are detected, respond with {{"detected": false}}"""
         self.logger.info(f"Surfaced intervention for failure mode: {failure_mode}")
         return f"Intervention surfaced: {failure_mode}"
 
+    def _analyze_new_profile(self) -> str:
+        """
+        Analyze a newly created profile and generate initial opportunities.
+
+        This runs when a profile is first created to bootstrap curation
+        based on the user's interests, goals, and wants.
+        """
+        try:
+            from ..tools.profiler.private_profile import get_profile_section
+            from ..tools.curator.attention import add_to_queue
+
+            # Read key profile sections
+            interests = get_profile_section("Interests")
+            wants_and_fears = get_profile_section("Wants and Fears")
+            influences = get_profile_section("Influences")
+
+            # Build profile context
+            profile_context = ""
+            if interests and not interests.startswith("Section"):
+                profile_context += f"## Interests\n{interests}\n\n"
+            if wants_and_fears and not wants_and_fears.startswith("Section"):
+                profile_context += f"## Wants and Fears\n{wants_and_fears}\n\n"
+            if influences and not influences.startswith("Section"):
+                profile_context += f"## Influences\n{influences}\n\n"
+
+            if not profile_context:
+                return "Profile sections not available yet"
+
+            prompt = f"""Based on this user's profile, identify 2-3 specific opportunities that could help them thrive.
+
+{profile_context}
+
+## Task
+Generate opportunities that:
+1. Align with their stated wants and interests
+2. Are specific and actionable (not vague aspirations)
+3. Could realistically be explored in the near future
+4. Respect their values and constraints
+
+For each opportunity, consider:
+- What specific action could they take?
+- Why would this matter to them based on their profile?
+- What's a small first step?
+
+Respond in JSON format:
+{{
+    "opportunities": [
+        {{
+            "title": "short title",
+            "description": "why this matters to them",
+            "first_step": "concrete small action",
+            "profile_alignment": "which want/interest this serves"
+        }}
+    ]
+}}"""
+
+            response = self.agent.process(prompt, {})
+
+            # Parse response and add opportunities to queue
+            try:
+                import re
+                json_match = re.search(r'\{[\s\S]*\}', response)
+                if json_match:
+                    result = json.loads(json_match.group())
+                    opportunities = result.get("opportunities", [])
+
+                    for opp in opportunities[:3]:  # Limit to 3
+                        content = f"**{opp.get('title', 'Opportunity')}**\n\n"
+                        content += f"{opp.get('description', '')}\n\n"
+                        content += f"**First step:** {opp.get('first_step', '')}\n\n"
+                        content += f"_Aligns with: {opp.get('profile_alignment', '')}_"
+
+                        add_to_queue(
+                            content=content,
+                            source="profile_analysis",
+                            priority="normal",
+                            tags="initial_opportunity"
+                        )
+
+                    # Send welcome notification
+                    create_euno_task(
+                        agent_name="curator",
+                        title="Welcome - I've learned about you",
+                        message=f"I've read through your profile and identified {len(opportunities)} opportunities that align with your interests. Check your queue when you're ready.",
+                        task_type="notification",
+                        priority="normal"
+                    )
+
+                    return f"Created {len(opportunities)} initial opportunities from profile"
+
+            except json.JSONDecodeError as e:
+                self.logger.error(f"Error parsing profile analysis: {e}")
+                return "Could not parse profile analysis"
+
+        except Exception as e:
+            self.logger.error(f"Error analyzing new profile: {e}")
+            return f"Error: {e}"
+
+        return "Profile analysis complete"
+
     def _check_stalled_projects(self) -> dict | None:
         """
         Check for projects that have stalled (no activity in STALLED_PROJECT_DAYS).
@@ -919,10 +1019,16 @@ Only respond if you find something genuinely useful. If nothing significant, res
         today = now.date().isoformat()
         state = self.load_state()
 
-        # Check for profile signal - profile has been updated
-        if self.check_signal("profile_updated"):
-            self.logger.info("Received profile_updated signal")
+        # Check for profile signal - profile has been updated (dedicated signal for Curator)
+        if self.check_signal("curator_profile_ready"):
+            self.logger.info("Received curator_profile_ready signal")
             state["profile_refreshed"] = True
+            # If we haven't done initial profile analysis, do it now
+            if not state.get("initial_profile_analyzed"):
+                self.logger.info("New profile detected - running initial curation")
+                state["pending_type"] = "new_profile"
+                self.save_state(state)
+                return True
             self.save_state(state)
 
         # Check morning window (7-9am)
@@ -1109,6 +1215,16 @@ Only respond if you find something genuinely useful. If nothing significant, res
             state["pending_type"] = None
             self.save_state(state)
             self.logger.info(f"Task cleanup completed: {result}")
+            return result
+
+        elif pending_type == "new_profile":
+            # Analyze new profile and create initial opportunities
+            result = self._analyze_new_profile()
+            state["initial_profile_analyzed"] = True
+            state["initial_profile_date"] = today
+            state["pending_type"] = None
+            self.save_state(state)
+            self.logger.info(f"New profile analysis completed")
             return result
 
         elif pending_type == "morning":
