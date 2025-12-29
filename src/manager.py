@@ -109,7 +109,11 @@ class InboxHandler(FileSystemEventHandler):
     def on_created(self, event):
         if event.is_directory:
             return
-        logger.info(f"New file in inbox: {Path(event.src_path).name}")
+        filename = Path(event.src_path).name
+        # Skip .gitkeep files (used for git directory tracking)
+        if filename == '.gitkeep':
+            return
+        logger.info(f"New file in inbox: {filename}")
         # Create signal file for archivist agent to pick up
         signal_file = SIGNALS_DIR / "inbox_changed.signal"
         signal_file.write_text(datetime.now().isoformat())

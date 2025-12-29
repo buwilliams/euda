@@ -74,7 +74,7 @@ class IngestionQueue:
         existing_paths = {item["path"] for item in self.queue.get("items", [])}
 
         for file_path in PENDING_DIR.iterdir():
-            if file_path.is_file() and not file_path.name.startswith('.'):
+            if file_path.is_file() and file_path.name != '.gitkeep':
                 path_str = str(file_path.absolute())
                 if path_str not in existing_paths:
                     self.add(path_str)
