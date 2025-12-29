@@ -11,11 +11,11 @@ import sys
 # Subcommand help texts
 SUBCOMMAND_HELP = {
     "start": """
-Usage: python main.py start
+Usage: python main.py [start]
 
 Start the Agent Manager which runs all autonomous agents and the web server.
 
-This is the recommended way to run Euno. It starts:
+This is the default command when no arguments are provided. It starts:
   - Web server at http://localhost:8000
   - File watchers for inbox and lifelog
   - 6 autonomous agents (archivist, profiler, curator, friend, worker, adaptor)
@@ -50,7 +50,6 @@ Usage: python main.py chat
 
 Start an interactive chat with The Friend.
 
-This is the default command when no arguments are provided.
 The agent supports thinking through problems without threatening identity coherence.
 
 Type 'quit' or 'exit' to end the conversation.
@@ -218,7 +217,7 @@ def main():
     if len(sys.argv) > 1:
         command = sys.argv[1]
     else:
-        command = "chat"
+        command = "start"
 
     # Lazy imports to avoid loading everything upfront
     commands = {
@@ -249,9 +248,9 @@ def main():
         print("Usage: python main.py [command]")
         print()
         print("Commands:")
-        print("  start      Start the Agent Manager (runs all agents)")
+        print("  start      Start the Agent Manager (runs all agents) (default)")
         print("  ingest     Batch process files with progress (inbox or external dir)")
-        print("  chat       Interactive chat with The Friend (default)")
+        print("  chat       Interactive chat with The Friend")
         print("  archivist  Interactive chat with The Archivist")
         print("  profiler   Interactive chat with The Profiler")
         print("  derive     Derive profile model from lifelogs")
@@ -270,8 +269,9 @@ def main():
         print("  serve      Start the web API server (standalone)")
         print()
         print("Examples:")
-        print("  python main.py start        # Run Agent Manager (recommended)")
-        print("  python main.py              # Start chatting")
+        print("  python main.py              # Run Agent Manager (default)")
+        print("  python main.py start        # Same as above")
+        print("  python main.py chat         # Start chatting with The Friend")
         print("  python main.py ingest       # Process inbox files")
         print("  python main.py ingest ~/Documents -r  # Ingest directory recursively")
         print("  python main.py ingest --batch-size 10  # Custom batch size (default: 5)")
