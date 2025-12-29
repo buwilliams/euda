@@ -36,8 +36,8 @@ Every agent follows this pattern:
 ```python
 def create_agent(persona_name, tools=[]):
     # Load core identity + persona-specific identity
-    core = load_file("data/shared/state/identity/_core.identity.md")
-    persona = load_file(f"data/shared/state/identity/{persona_name}.identity.md")
+    core = load_file("data/shared/state/agents/0_core.agent.md")
+    persona = load_file(f"data/shared/state/agents/{persona_name}.agent.md")
 
     context = []
     system_prompt = f"{core}\n\n{persona}"
@@ -487,7 +487,7 @@ Agents contribute to profile updates by emitting observations to `profile_observ
   "observation": "User declined social event citing need for rest",
   "confidence": "medium",
   "suggested_update": {
-    "section": "Failure Modes",
+    "section": "Stable Attractors",
     "action": "strengthen"
   }
 }
@@ -495,14 +495,19 @@ Agents contribute to profile updates by emitting observations to `profile_observ
 
 Profiler reads and integrates these signals. Signals are suggestions, not commands.
 
-### Profile Contract
+### Profile Schema
 
-All profiles must comply with `data/shared/state/profile/profile.contract.md`:
-- JSON frontmatter
-- Canonical section order (Identity Constraints → Failure Modes → Behavioral Attractors → Utility Tradeoffs → Epistemic Style → Narrative Identity)
-- Profile item microformat with evidence pointers
+Profiles follow the schema defined in `docs/2_profile.md`:
 
-See `docs/governance.md` for complete governance specification.
+1. **Biographical Information** — Name, addresses, phone numbers, etc.
+2. **Wants and Fears** — Patterns of behavior that uncover desires and fears
+3. **Stable Attractors** — Patterns the person returns to
+4. **Notable Events and Actions** — Consistent or surprising behaviors
+5. **Influences** — People, places, books, activities, experiences
+6. **Interests** — Goals, projects, work, hobbies
+7. **Summary of changes** — From previous years
+
+Historical profiles (`_profile.YYYY.md`) use the same schema, enabling tracking of how a person changes over time.
 
 ---
 
@@ -913,7 +918,7 @@ Notifications are enriched by the web layer with additional UI fields:
 ```
 POST /api/chat                          # Send message, get response
 POST /api/upload                        # Upload file to inbox
-GET  /api/about                         # Get about page content (docs/pitch.md)
+GET  /api/about                         # Get about page content (docs/1_pitch.md)
 
 GET  /api/conversations/recent          # Recent conversations (text preview)
 GET  /api/conversations/recent/structured  # Recent conversations (structured JSON for UI)
@@ -985,8 +990,8 @@ The server watches:
 
 ## User Interface
 
-*See [user-experience.md](user-experience.md) for detailed UI/UX philosophy.*
-*See [user-interface.md](user-interface.md) for current implementation details.*
+*See [4_user-experience.md](4_user-experience.md) for detailed UI/UX philosophy.*
+*See [5_user-interface.md](5_user-interface.md) for current implementation details.*
 
 ### Current Design (Tab-Based)
 

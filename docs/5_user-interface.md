@@ -2,7 +2,35 @@
 
 *Current UI implementation and component reference*
 
-Euno's interface is designed to surface what matters before you ask, guard your attention, and feel like a caring friend who knows you. This document describes the current implementation. For the vision and philosophy behind the design, see [user-experience.md](user-experience.md).
+Euno's interface is designed to surface what matters before you ask, guard your attention, and feel like a caring friend who knows you. This document describes the current implementation. For the vision and philosophy behind the design, see [4_user-experience.md](4_user-experience.md).
+
+---
+
+## Splash Screen
+
+On app load, an animated splash screen displays before the main UI:
+
+```
+┌─────────────────────────────────────────┐
+│                                         │
+│                                         │
+│              E u n o                    │
+│           (letters fade in)             │
+│                                         │
+│            "you-know"                   │
+│   A personal intelligence that          │
+│   learns to anticipate you              │
+│                                         │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+**Animation sequence:**
+1. Letters "E", "u", "n", "o" fade in one at a time (150ms each)
+2. Pause (500ms)
+3. Pronunciation and tagline fade in (400ms)
+4. Hold (800ms)
+5. Crossfade to login modal or main app
 
 ---
 
@@ -68,7 +96,7 @@ Four tabs provide the main navigation:
 |-----|------|---------|
 | Chat | 💬 | Conversation with Euno |
 | Focus | ☐ | Task and project management (Things-like) |
-| About | ℹ | About page (docs/pitch.md content) |
+| About | ℹ | About page (docs/1_pitch.md content) |
 | History | ◷ | Past conversation browser |
 
 **Focus badge:** Shows count of tasks due today
@@ -201,7 +229,7 @@ Accessible from expanded task card, allows scheduling:
 
 ### About Tab
 
-Displays the product pitch from `docs/pitch.md`.
+Displays the product pitch from `docs/1_pitch.md`.
 
 - Content loaded from `/api/about` endpoint
 - Rendered as markdown
@@ -295,9 +323,24 @@ Bottom sheet for scheduling tasks/projects.
 - Max content width: 640px
 
 **Transitions:**
-- Tab switches: instant
-- Hover states: 0.15s
-- Focus view navigation: 0.3s slide
+- Hover states: 0.15s ease
+
+**Animations:**
+
+All navigation uses slide animations for spatial continuity:
+
+| Navigation | Direction | Duration |
+|------------|-----------|----------|
+| Tab switch (forward) | Slide left | 0.3s |
+| Tab switch (backward) | Slide right | 0.3s |
+| Focus view deeper | Slide left | 0.3s |
+| Focus view back | Slide right | 0.3s |
+| History view deeper | Slide left | 0.3s |
+| History view back | Slide right | 0.3s |
+
+Tab order for direction: Chat (0) → Focus (1) → About (2) → History (3)
+
+Switching from Chat to Focus slides left; Focus to Chat slides right.
 
 ---
 
@@ -307,8 +350,10 @@ Bottom sheet for scheduling tasks/projects.
 ```javascript
 sessionId          // Current chat session UUID (localStorage)
 activeTab          // 'chat' | 'focus' | 'about' | 'history'
+previousTab        // Previous tab for animation direction
 focusView          // 'menu' | 'today' | 'upcoming' | 'anytime' | 'someday' | 'logbook' | 'project-{id}'
 focusViewHistory   // Stack for back navigation
+historyView        // 'list' | 'detail'
 tasksData          // Cached task list
 projectsData       // Cached project list
 historyData        // Cached conversation list
@@ -335,9 +380,23 @@ historyData        // Cached conversation list
 
 ```
 static/
-├── index.html          # Single-page app (HTML + CSS + JS)
+├── index.html          # Main HTML shell
+├── css/
+│   └── app.css         # All styles
+├── js/
+│   ├── init.js         # App initialization and routing
+│   ├── state.js        # Global state management
+│   ├── splash.js       # Splash screen animation
+│   ├── auth.js         # Authentication and login modal
+│   ├── tabs.js         # Tab navigation with animations
+│   ├── chat.js         # Chat tab functionality
+│   ├── focus.js        # Focus tab (tasks/projects)
+│   ├── history.js      # History tab
+│   ├── about.js        # About tab
+│   ├── upload.js       # File upload handling
+│   └── utils.js        # Shared utilities
 └── images/
     └── euno-logo-*.png # Logo variants
 ```
 
-The UI is a single HTML file with embedded CSS and JavaScript. No build step required.
+Modular JavaScript with no build step required.

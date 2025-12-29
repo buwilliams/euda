@@ -1462,8 +1462,8 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.get("/api/about")
 async def get_about():
-    """Get about page content from docs/pitch.md."""
-    pitch_file = BASE_DIR / "docs" / "pitch.md"
+    """Get about page content from docs/1_pitch.md."""
+    pitch_file = BASE_DIR / "docs" / "1_pitch.md"
 
     if not pitch_file.exists():
         return {"content": "# About\n\nContent not available."}

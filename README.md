@@ -49,12 +49,12 @@ Six specialized agents work together, all inheriting from a shared Core identity
 
 ## Documentation
 
-- **[Pitch](docs/pitch.md)** — Introduction and vision overview
-- **[Profile](docs/profile.md)** — Profile system and agent personas
-- **[Architecture](docs/architecture.md)** — Technical design and implementation
-- **[User Experience](docs/user-experience.md)** — UI/UX philosophy and vision
-- **[User Interface](docs/user-interface.md)** — Current UI components and layout
-- **[Todo](docs/todo.md)** — Implementation roadmap
+- **[Pitch](docs/1_pitch.md)** — Introduction and vision overview
+- **[Profile](docs/2_profile.md)** — Profile system and agent personas
+- **[Architecture](docs/3_architecture.md)** — Technical design and implementation
+- **[User Experience](docs/4_user-experience.md)** — UI/UX philosophy and vision
+- **[User Interface](docs/5_user-interface.md)** — Current UI components and layout
+- **[DevOps](docs/6_devops.md)** — Deployment and operations
 
 ## Development
 
