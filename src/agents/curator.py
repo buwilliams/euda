@@ -944,15 +944,13 @@ Only respond if you find something genuinely useful. If nothing significant, res
         suggestion = analysis.get("suggestion", "")
         confidence = analysis.get("confidence", "medium")
 
-        type_labels = {
-            "emotional": "💭 Noticed",
-            "frustration": "🔄 Recurring",
-            "implicit_need": "💡 Might want",
-            "value_gap": "⚖️ Consider"
+        type_titles = {
+            "emotional": "Something I noticed",
+            "frustration": "A recurring pattern",
+            "implicit_need": "Something you might want",
+            "value_gap": "Something to consider"
         }
-        label = type_labels.get(pattern_type, "💭 Noticed")
-
-        title = f"{label}: {observation[:50]}..."
+        title = type_titles.get(pattern_type, "An observation")
         message = f"**Observation**: {observation}\n\n"
         if insight:
             message += f"**Why it matters**: {insight}\n\n"
