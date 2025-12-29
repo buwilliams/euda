@@ -199,6 +199,20 @@ API documentation available at http://localhost:8000/docs
 
 For full agent management, use 'start' instead.
 """,
+    "fresh-start": """
+Usage: python main.py fresh-start [--dry-run]
+
+Reset Euno to a clean state.
+
+Moves the current data/ directory to data_backup-[num]/ and creates
+a fresh data/ directory with minimal structure. Essential config files
+(agent personas, profile contracts) are restored from the backup.
+
+Options:
+  --dry-run    Show what would be done without making changes
+
+The backup directories (data_backup-1/, etc.) are gitignored.
+""",
 }
 
 
@@ -242,6 +256,7 @@ def main():
         "watch": lambda: __import__('src.watcher', fromlist=['watch_inbox']).watch_inbox(),
         "process": lambda: __import__('src.watcher', fromlist=['process_pending']).process_pending(),
         "serve": run_server,
+        "fresh-start": run_fresh_start,
     }
 
     if command in ("help", "-h", "--help"):
@@ -269,6 +284,7 @@ def main():
         print("  watch      Watch inbox for new files to process")
         print("  process    Process pending files once and exit")
         print("  serve      Start the web API server (standalone)")
+        print("  fresh-start  Reset data/ to clean state (with backup)")
         print()
         print("Examples:")
         print("  python main.py              # Run Agent Manager (default)")
@@ -1078,6 +1094,19 @@ def run_set_password():
 
     except KeyboardInterrupt:
         print("\nCancelled.")
+
+
+def run_fresh_start():
+    """Reset Euno to a clean state with backup."""
+    if show_subcommand_help("fresh-start"):
+        return
+
+    from src.tools.admin.fresh_start import fresh_start
+
+    # Check for --dry-run flag
+    dry_run = "--dry-run" in sys.argv
+
+    fresh_start(dry_run=dry_run)
 
 
 if __name__ == "__main__":

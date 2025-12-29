@@ -1,20 +1,15 @@
 """
 Fresh Start utility for Euno.
 
-Destructively clears the data directory and recreates minimal structure.
-Preserves only:
-- Agent personas (data/shared/state/agents/*.agent.md)
-- Profile contracts (data/shared/state/profile/*.md)
-- LLM config (data/shared/config/)
+Moves the current data/ directory to data_backup-[num]/ and creates a
+completely fresh data/ directory with minimal structure.
 
-Everything else is wiped clean, including:
-- Inbox (processed, pending, failed, deferred)
-- Lifelogs, signals, notifications
-- All profile data
-- All agent state and conversation history
-- Tasks, projects, opportunities
+The new data/ directory contains:
+- Directory structure with .gitkeep files for git tracking
+- NO user data (lifelog, conversations, tasks, etc.)
+- NO configuration (agent personas are in git-tracked locations)
 
-Note: Prompts are now stored in src/agents/prompts/ (part of codebase, not data).
+Backups are stored as data_backup-1/, data_backup-2/, etc. and are gitignored.
 
 Usage:
     python -m src.tools.admin.fresh_start --help
@@ -31,89 +26,102 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 
-# Directories to PRESERVE (not cleared) - only system config, not user data
-# Note: Prompts are now in src/agents/prompts/ (part of codebase)
-PRESERVE_DIRS = [
-    "shared/state/agents",       # Agent persona files
-    "shared/state/profile",      # Profile contract and policy
-    "shared/config",             # LLM config
-]
-
-# Directories to CLEAR (remove contents but keep .gitkeep)
-# Standard pattern: each agent has config/, logs/, state/
-# Prompts have moved to src/agents/prompts/
-CLEAR_DIRS = [
-    # Shared state (lifelog, signals, notifications, evolution proposals)
+# Complete directory structure for fresh data/
+# Each path gets created with a .gitkeep file
+DIRECTORY_STRUCTURE = [
+    # Shared
+    "shared/state/agents",
     "shared/state/lifelog",
     "shared/state/signals",
     "shared/state/notifications",
+    "shared/state/profile",
+    "shared/state/auth",
     "shared/state/evolution",
+    "shared/config",
     "shared/logs",
-    # Archivist (state includes inbox, digests, queue.json)
-    "archivist/state",
+
+    # Archivist
+    "archivist/state/inbox/pending",
+    "archivist/state/inbox/processing",
+    "archivist/state/inbox/processed",
+    "archivist/state/inbox/failed",
+    "archivist/state/inbox/deferred",
+    "archivist/state/digests",
     "archivist/config",
     "archivist/logs",
-    # Profiler (state includes profile/)
+
+    # Profiler
     "profiler/state",
+    "profiler/config",
     "profiler/logs",
-    # Curator (state includes queue)
-    "curator/state",
+
+    # Curator
+    "curator/state/queue",
+    "curator/config",
     "curator/logs",
-    # Friend (state includes conversations, cards)
-    "friend/state",
+
+    # Friend
+    "friend/state/conversations/sessions",
+    "friend/state/conversations/daily",
+    "friend/state/cards/received",
+    "friend/config",
     "friend/logs",
-    # Worker (state includes tasks, projects, actions, archive)
-    "worker/state",
+
+    # Worker
+    "worker/state/tasks",
+    "worker/state/projects",
+    "worker/state/actions",
+    "worker/state/archive",
+    "worker/config",
     "worker/logs",
-    # Adaptor (state includes output)
-    "adaptor/state",
+
+    # Adaptor
+    "adaptor/state/output",
+    "adaptor/config",
     "adaptor/logs",
 ]
 
-
-def clear_directory(dir_path: Path, dry_run: bool = False) -> int:
-    """
-    Clear contents of a directory, preserving .gitkeep files and directory structure.
-
-    Returns count of items removed.
-    """
-    if not dir_path.exists():
-        return 0
-
-    count = 0
-    for item in dir_path.iterdir():
-        if item.name == ".gitkeep":
-            continue
-
-        if item.is_dir():
-            # Recursively clear subdirectory, preserving structure
-            count += clear_directory(item, dry_run)
-        else:
-            if dry_run:
-                print(f"  [DRY-RUN] Would remove: {item}")
-            else:
-                item.unlink()
-            count += 1
-
-    return count
+# Files to copy from backup to new data/ (essential config that lives in data/)
+# These are git-tracked files that should be restored
+FILES_TO_RESTORE = [
+    "shared/state/agents/0_core.agent.md",
+    "shared/state/agents/1_archivist.agent.md",
+    "shared/state/agents/2_profiler.agent.md",
+    "shared/state/agents/3_curator.agent.md",
+    "shared/state/agents/4_friend.agent.md",
+    "shared/state/agents/5_worker.agent.md",
+    "shared/state/agents/6_adaptor.agent.md",
+    "shared/state/profile/profile.contract.md",
+    "shared/state/profile/redaction.policy.md",
+]
 
 
-def ensure_gitkeep(dir_path: Path, dry_run: bool = False):
-    """Ensure directory exists and has a .gitkeep file."""
+def get_next_backup_number() -> int:
+    """Find the next available backup number."""
+    n = 1
+    while (PROJECT_ROOT / f"data_backup-{n}").exists():
+        n += 1
+    return n
+
+
+def create_directory_with_gitkeep(dir_path: Path, dry_run: bool = False):
+    """Create directory and add .gitkeep file."""
     if dry_run:
-        if not dir_path.exists():
-            print(f"  [DRY-RUN] Would create: {dir_path}")
+        print(f"  [DRY-RUN] Would create: {dir_path}")
         return
 
     dir_path.mkdir(parents=True, exist_ok=True)
     gitkeep = dir_path / ".gitkeep"
-    if not gitkeep.exists():
-        gitkeep.touch()
+    gitkeep.touch()
 
 
 def fresh_start(dry_run: bool = False):
     """
     Perform a fresh start of Euno.
+
+    1. Move data/ to data_backup-[num]/
+    2. Create fresh data/ directory structure
+    3. Restore essential git-tracked files from backup
 
     Args:
         dry_run: If True, only show what would be done
@@ -125,60 +133,68 @@ def fresh_start(dry_run: bool = False):
     print(f"Time: {timestamp}")
     print("=" * 60)
 
-    # Step 1: Clear generated data
-    print("\n1. Clearing generated data...")
-    total_cleared = 0
+    # Step 1: Move current data/ to backup
+    backup_num = get_next_backup_number()
+    backup_dir = PROJECT_ROOT / f"data_backup-{backup_num}"
 
-    for rel_path in CLEAR_DIRS:
-        dir_path = DATA_DIR / rel_path
-        count = clear_directory(dir_path, dry_run)
-        if count > 0:
-            print(f"   {rel_path}: {count} items")
-            total_cleared += count
+    print(f"\n1. Backing up data/ to data_backup-{backup_num}/...")
 
-        # Ensure directory and .gitkeep exist
-        ensure_gitkeep(dir_path, dry_run)
-
-    print(f"\n   Total cleared: {total_cleared} items")
-
-    # Step 2: Ensure preserved directories exist
-    print("\n2. Preserving system directories...")
-    for rel_path in PRESERVE_DIRS:
-        dir_path = DATA_DIR / rel_path
-        ensure_gitkeep(dir_path, dry_run)
-        if not dry_run:
-            print(f"   ✓ {rel_path}")
-
-    # Step 3: Clear archivist processed hashes (so files can be reprocessed)
-    print("\n3. Resetting archivist tracking...")
-    config_dir = DATA_DIR / "archivist" / "config"
-    hashes_file = config_dir / "processed_hashes.json"
-    if hashes_file.exists():
+    if DATA_DIR.exists():
         if dry_run:
-            print(f"   [DRY-RUN] Would remove: processed_hashes.json")
+            print(f"   [DRY-RUN] Would move: data/ -> data_backup-{backup_num}/")
         else:
-            hashes_file.unlink()
-            print("   ✓ Cleared processed_hashes.json")
+            shutil.move(str(DATA_DIR), str(backup_dir))
+            print(f"   ✓ Moved to data_backup-{backup_num}/")
+    else:
+        print("   (no existing data/ directory)")
+        backup_dir = None
 
-    state_file = DATA_DIR / "archivist" / "state" / "state.json"
-    if state_file.exists():
-        if dry_run:
-            print(f"   [DRY-RUN] Would remove: state.json")
-        else:
-            state_file.unlink()
-            print("   ✓ Cleared archivist state")
+    # Step 2: Create fresh directory structure
+    print("\n2. Creating fresh data/ directory structure...")
 
+    for rel_path in DIRECTORY_STRUCTURE:
+        dir_path = DATA_DIR / rel_path
+        create_directory_with_gitkeep(dir_path, dry_run)
+
+    if not dry_run:
+        # Also add .gitkeep to root directories
+        (DATA_DIR / ".gitkeep").touch()
+        print(f"   ✓ Created {len(DIRECTORY_STRUCTURE)} directories with .gitkeep files")
+
+    # Step 3: Restore essential git-tracked files from backup
+    print("\n3. Restoring essential config files...")
+
+    restored_count = 0
+    for rel_path in FILES_TO_RESTORE:
+        if backup_dir:
+            src = backup_dir / rel_path
+            dst = DATA_DIR / rel_path
+
+            if src.exists():
+                if dry_run:
+                    print(f"   [DRY-RUN] Would restore: {rel_path}")
+                else:
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(str(src), str(dst))
+                    restored_count += 1
+
+    if not dry_run:
+        print(f"   ✓ Restored {restored_count} files")
+
+    # Summary
     print("\n" + "=" * 60)
     if dry_run:
         print("DRY RUN complete. No changes were made.")
     else:
         print("Fresh start complete!")
+        print(f"\nBackup location: data_backup-{backup_num}/")
+        print("New data/ directory is clean and ready.")
     print("=" * 60)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Fresh start Euno - clear generated data while preserving system config"
+        description="Fresh start Euno - backup data/ and create clean directory"
     )
     parser.add_argument(
         "--dry-run",

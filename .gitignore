@@ -19,8 +19,9 @@ data/archivist/state/inbox/**/*
 # And keep profile contract/policy (system config, not user data)
 !data/shared/state/profile/profile.contract.md
 !data/shared/state/profile/redaction.policy.md
-# And keep prompts (code/configuration, not user data)
-!data/*/prompts/*.md
+
+# Fresh start backups (personal data)
+data_backup-*/
 
 # Python
 __pycache__/
