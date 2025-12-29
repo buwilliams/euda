@@ -86,13 +86,21 @@ def load_prompt(agent_name: str, prompt_name: str, **kwargs) -> str:
 
 
 def load_identity(persona_name: str) -> str:
-    """Load core agent file + agent-specific persona."""
+    """Load core agent file + agent-specific persona + user profile (if exists)."""
     core = load_file(PERSONAS_DIR / "0_core.agent.md")
 
     # Map code name to file name
     file_prefix = AGENT_FILE_MAP.get(persona_name, persona_name)
     persona = load_file(PERSONAS_DIR / f"{file_prefix}.agent.md")
-    return f"{core}\n\n---\n\n{persona}"
+
+    # Load user profile if it exists
+    profile_path = SHARED_DIR / "state" / "lifelog" / "_profile.current.md"
+    profile_section = ""
+    if profile_path.exists():
+        profile_content = load_file(profile_path)
+        profile_section = f"\n\n---\n\n# User Profile\n\nThis is who you are serving. Use this to personalize all interactions.\n\n{profile_content}"
+
+    return f"{core}\n\n---\n\n{persona}{profile_section}"
 
 
 def create_agent(
