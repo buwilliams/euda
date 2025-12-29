@@ -45,7 +45,9 @@ euno/
 ├── main.py                 # Entry point
 ├── src/
 │   ├── agents/             # 6 agent modules
-│   │   └── base.py         # Core agent pattern
+│   │   ├── base.py         # Core agent pattern
+│   │   ├── personas/       # Agent identity files (*.agent.md)
+│   │   └── prompts/        # Prompt templates by agent
 │   ├── tools/              # Organized by agent concern
 │   │   ├── shared/         # Cross-agent (log, agent identity, signals)
 │   │   ├── archivist/      # File processing, queue, budget, iPhone backup tools
@@ -56,12 +58,11 @@ euno/
 │   │   └── adaptor/        # System analysis and identity evolution
 │   └── web/
 │       └── app.py          # FastAPI server
-└── data/                   # Agent-oriented data
-    │                       # Standard pattern: config/, logs/, prompts/, state/
+└── data/                   # Agent-oriented data (user data, not code)
     ├── shared/             # Cross-agent resources
-    │   └── state/          # agents/, profile/, lifelog/, signals/
+    │   └── state/          # profile/, lifelog/, signals/
     ├── archivist/          # state/inbox/, state/digests/
-    ├── profiler/           # state/values/, state/behaviors/, state/profile/, etc.
+    ├── profiler/           # state/
     ├── curator/            # state/queue/
     ├── friend/             # state/conversations/, state/cards/
     ├── worker/             # state/tasks/, state/projects/, state/actions/
@@ -153,8 +154,9 @@ Key details:
 
 ## Adding New Agents
 
-1. Create agent file: `data/shared/state/agents/[number]_[name].agent.md`
+1. Create persona file: `src/agents/personas/[number]_[name].agent.md`
 2. Create agent module: `src/agents/[name].py`
 3. Add tools if needed: `src/tools/[agent]/[tool].py`
-4. Create data directory: `data/[name]/` with `state/` subdirectory
-5. Register in `main.py`
+4. Add prompts if needed: `src/agents/prompts/[name]/[prompt].md`
+5. Create data directory: `data/[name]/` with `state/` subdirectory
+6. Register in `main.py`

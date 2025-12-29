@@ -29,8 +29,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 # Complete directory structure for fresh data/
 # Each path gets created with a .gitkeep file
 DIRECTORY_STRUCTURE = [
-    # Shared
-    "shared/state/agents",
+    # Shared (agent personas moved to src/agents/personas)
     "shared/state/lifelog",
     "shared/state/signals",
     "shared/state/notifications",
@@ -82,15 +81,8 @@ DIRECTORY_STRUCTURE = [
 ]
 
 # Files to copy from backup to new data/ (essential config that lives in data/)
-# These are git-tracked files that should be restored
+# Note: Agent personas moved to src/agents/personas/ (part of codebase)
 FILES_TO_RESTORE = [
-    "shared/state/agents/0_core.agent.md",
-    "shared/state/agents/1_archivist.agent.md",
-    "shared/state/agents/2_profiler.agent.md",
-    "shared/state/agents/3_curator.agent.md",
-    "shared/state/agents/4_friend.agent.md",
-    "shared/state/agents/5_worker.agent.md",
-    "shared/state/agents/6_adaptor.agent.md",
     "shared/state/profile/profile.contract.md",
     "shared/state/profile/redaction.policy.md",
 ]

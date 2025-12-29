@@ -36,7 +36,7 @@ load_dotenv(ENV_FILE, override=True)
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-AGENTS_DIR = SHARED_DIR / "state" / "agents"
+PERSONAS_DIR = Path(__file__).parent / "personas"  # src/agents/personas
 PROMPTS_DIR = Path(__file__).parent / "prompts"  # src/agents/prompts
 
 # Agent name to file number mapping
@@ -87,11 +87,11 @@ def load_prompt(agent_name: str, prompt_name: str, **kwargs) -> str:
 
 def load_identity(persona_name: str) -> str:
     """Load core agent file + agent-specific persona."""
-    core = load_file(AGENTS_DIR / "0_core.agent.md")
+    core = load_file(PERSONAS_DIR / "0_core.agent.md")
 
     # Map code name to file name
     file_prefix = AGENT_FILE_MAP.get(persona_name, persona_name)
-    persona = load_file(AGENTS_DIR / f"{file_prefix}.agent.md")
+    persona = load_file(PERSONAS_DIR / f"{file_prefix}.agent.md")
     return f"{core}\n\n---\n\n{persona}"
 
 

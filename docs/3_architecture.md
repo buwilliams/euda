@@ -36,8 +36,8 @@ Every agent follows this pattern:
 ```python
 def create_agent(persona_name, tools=[]):
     # Load core identity + persona-specific identity
-    core = load_file("data/shared/state/agents/0_core.agent.md")
-    persona = load_file(f"data/shared/state/agents/{persona_name}.agent.md")
+    core = load_file("src/agents/personas/0_core.agent.md")
+    persona = load_file(f"src/agents/personas/{persona_name}.agent.md")
 
     context = []
     system_prompt = f"{core}\n\n{persona}"
@@ -240,7 +240,7 @@ The system proactively surfaces questions, opportunities, and insights to help u
 Agents derive behavior from identity files loaded at startup:
 
 ```
-data/shared/state/agents/
+src/agents/personas/
 ├── 0_core.agent.md          # Shared ontology for all agents
 ├── 1_archivist.agent.md     # The Archivist
 ├── 2_profiler.agent.md      # The Profiler
@@ -328,6 +328,8 @@ euno/
 ├── src/
 │   ├── agents/
 │   │   ├── base.py             # Agent factory, AutonomousAgent base
+│   │   ├── personas/           # Agent identity files (*.agent.md)
+│   │   ├── prompts/            # Prompt templates by agent
 │   │   ├── archivist.py        # The Archivist
 │   │   ├── profiler.py         # The Profiler (predictive identity model)
 │   │   ├── curator.py          # The Curator
@@ -375,21 +377,18 @@ euno/
 │   └── web/
 │       └── app.py              # FastAPI server
 │
-└── data/                       # Agent-oriented data
+└── data/                       # Agent-oriented data (user data, not code)
     │
-    │   # Standard agent pattern: config/, logs/, prompts/, state/
+    │   # Standard agent pattern: config/, logs/, state/
     │   # - config/  : Agent configuration files
     │   # - logs/    : Agent activity logs (stdout)
-    │   # - prompts/ : Prompt templates used by Python
     │   # - state/   : All data the agent reads or writes
+    │   # Note: Personas and prompts are in src/agents/ (code, not data)
     │
     ├── shared/                 # Cross-agent resources
     │   ├── config/             # System-wide configuration
     │   ├── logs/               # System-wide logs
     │   └── state/              # System-wide state
-    │       ├── agents/         # Agent identity files
-    │       │   ├── 0_core.agent.md
-    │       │   └── [N]_[agent].agent.md
     │       ├── profile/        # Profile contract and policy
     │       │   ├── profile.contract.md
     │       │   └── redaction.policy.md
@@ -406,7 +405,6 @@ euno/
     ├── archivist/              # Archivist Agent (The Archivist)
     │   ├── config/             # config.json, processed_hashes.json
     │   ├── logs/
-    │   ├── prompts/            # process_file.md
     │   └── state/
     │       ├── inbox/          # pending/, processing/, processed/, failed/, deferred/
     │       ├── digests/        # {hash}.json files (LLM summaries)
@@ -417,14 +415,12 @@ euno/
     ├── profiler/               # Profiler Agent (The Profiler)
     │   ├── config/
     │   ├── logs/
-    │   ├── prompts/            # temporal.md, extract_behavioral.md
     │   └── state/
     │       └── processed_summaries.hash  # Hash of summaries last processed
     │
     ├── curator/                # Curator Agent (The Curator)
     │   ├── config/
     │   ├── logs/
-    │   ├── prompts/            # morning.md, evening.md, proactive.md
     │   └── state/
     │       ├── queue/          # surfacing_queue.json, energy logs
     │       ├── opportunities/  # opportunities.json
@@ -433,7 +429,6 @@ euno/
     ├── friend/                 # Friend Agent (The Caring Friend)
     │   ├── config/
     │   ├── logs/
-    │   ├── prompts/
     │   └── state/
     │       ├── conversations/  # session files
     │       └── cards/          # received cards
@@ -441,7 +436,6 @@ euno/
     ├── worker/                 # Worker Agent (The Executor)
     │   ├── config/
     │   ├── logs/
-    │   ├── prompts/            # process_tasks.md, execute_actions.md, execute_research.md
     │   └── state/
     │       ├── tasks/          # queue.json, daily/, results/
     │       ├── projects/       # {id}.json files
@@ -452,7 +446,6 @@ euno/
     └── adaptor/                # Adaptor Agent (The Adaptor)
         ├── config/
         ├── logs/
-        ├── prompts/            # assess_health.md, analyze_system.md, check_evolution.md
         └── state/
             ├── output/         # capabilities.md
             └── processed_profile.hash    # Hash of profile last processed

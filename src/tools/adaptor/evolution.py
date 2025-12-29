@@ -17,11 +17,11 @@ from pathlib import Path
 from typing import Optional
 
 
-# Base paths - Adaptor uses shared agents and its own output
+# Base paths - Personas are in src/agents/personas
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SRC_DIR = Path(__file__).parent.parent.parent
 SHARED_DIR = DATA_DIR / "shared"
-AGENTS_DATA_DIR = SHARED_DIR / "state" / "agents"  # Agent persona files
+PERSONAS_DIR = SRC_DIR / "agents" / "personas"  # Agent persona files (src/agents/personas)
 AGENTS_CODE_DIR = SRC_DIR / "agents"  # Agent Python code
 TOOLS_DIR = SRC_DIR / "tools"
 ADAPTOR_OUTPUT_DIR = DATA_DIR / "adaptor" / "state" / "output"
@@ -54,7 +54,7 @@ def list_agents() -> str:
     agents = []
 
     # Find all agent files (excluding 0_core)
-    agent_files = list(AGENTS_DATA_DIR.glob("*.agent.md"))
+    agent_files = list(PERSONAS_DIR.glob("*.agent.md"))
 
     for agent_file in sorted(agent_files):
         name = agent_file.stem.replace(".agent", "")
@@ -90,7 +90,7 @@ def get_agent_identity(agent_name: str) -> str:
         The full agent file content or error message.
     """
     file_prefix = AGENT_FILE_MAP.get(agent_name, agent_name)
-    agent_file = AGENTS_DATA_DIR / f"{file_prefix}.agent.md"
+    agent_file = PERSONAS_DIR / f"{file_prefix}.agent.md"
 
     if not agent_file.exists():
         return f"Error: No agent file found for agent '{agent_name}'"
@@ -105,7 +105,7 @@ def get_core_identity() -> str:
     Returns:
         The core agent file content.
     """
-    core_file = AGENTS_DATA_DIR / "0_core.agent.md"
+    core_file = PERSONAS_DIR / "0_core.agent.md"
 
     if not core_file.exists():
         return "Error: Core agent file not found"
@@ -318,7 +318,7 @@ def get_system_overview() -> str:
         Overview including agent count, tool modules, and key directories.
     """
     # Count agents
-    agent_files_list = list(AGENTS_DATA_DIR.glob("*.agent.md"))
+    agent_files_list = list(PERSONAS_DIR.glob("*.agent.md"))
     agent_count = len([f for f in agent_files_list if not f.name.startswith("0_")])
 
     # Count tools modules
