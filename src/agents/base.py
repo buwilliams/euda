@@ -417,7 +417,7 @@ class AutonomousAgent(ABC):
             return False
 
     async def run(self):
-        """Run the agent continuously."""
+        """Run the agent continuously (Agent Manager mode)."""
         self.running = True
         self.logger.info(f"Starting autonomous agent: {self.name}")
 
@@ -426,6 +426,28 @@ class AutonomousAgent(ABC):
             await asyncio.sleep(self.check_interval)
 
         self.logger.info(f"Agent stopped: {self.name}")
+
+    async def run_until_done(self):
+        """
+        Run the agent until no more work is needed (CLI mode).
+
+        Unlike run(), this exits when work is complete rather than sleeping.
+        Keeps running as long as run_once() returns True (work was done).
+        """
+        self.running = True
+        self.logger.info(f"Starting agent (run until done): {self.name}")
+
+        work_done_total = 0
+        while self.running:
+            work_done = await self.run_once()
+            if work_done:
+                work_done_total += 1
+            else:
+                # No more work needed, exit
+                break
+
+        self.logger.info(f"Agent finished: {self.name} (completed {work_done_total} work cycles)")
+        return work_done_total
 
     def stop(self):
         """Stop the agent."""

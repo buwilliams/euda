@@ -59,20 +59,17 @@ Type 'quit' or 'exit' to end the conversation.
     "archivist": """
 Usage: python main.py archivist
 
-Start an interactive chat with The Archivist.
+Run The Archivist agent until all work is complete.
 
-For manual ingestion conversations. For batch processing, use 'ingest' instead.
-
-Type 'quit' or 'exit' to end the conversation.
+Processes inbox files and updates the lifelog. Exits when no more work is needed.
+For batch processing with progress display, use 'ingest' instead.
 """,
     "profiler": """
 Usage: python main.py profiler
 
-Start an interactive chat with The Profiler.
+Run The Profiler agent until all work is complete.
 
-For discussing profile model, patterns, and behaviors.
-
-Type 'quit' or 'exit' to end the conversation.
+Processes lifelogs to update the user profile. Exits when no more work is needed.
 """,
     "derive": """
 Usage: python main.py derive
@@ -85,11 +82,10 @@ identity model through temporal derivation.
     "curator": """
 Usage: python main.py curator
 
-Start an interactive chat with The Curator.
+Run The Curator agent until all work is complete.
 
-For discussing attention allocation, opportunities, and energy management.
-
-Type 'quit' or 'exit' to end the conversation.
+Surfaces opportunities, manages attention queue, and creates notifications.
+Exits when no more work is needed.
 """,
     "morning": """
 Usage: python main.py morning
@@ -115,11 +111,10 @@ Reviews the day and prepares for rest:
     "worker": """
 Usage: python main.py worker
 
-Start an interactive chat with The Worker.
+Run The Worker agent until all work is complete.
 
-For discussing tasks, projects, and actions.
-
-Type 'quit' or 'exit' to end the conversation.
+Processes task queue, executes approved actions, and handles research tasks.
+Exits when no more work is needed.
 """,
     "tasks": """
 Usage: python main.py tasks
@@ -138,11 +133,10 @@ Lists tasks that require user confirmation before execution.
     "adaptor": """
 Usage: python main.py adaptor
 
-Start an interactive chat with The Adaptor.
+Run The Adaptor agent until all work is complete.
 
-For discussing system improvements and agent evolution.
-
-Type 'quit' or 'exit' to end the conversation.
+Analyzes system health, identifies gaps, and proposes agent evolution.
+Exits when no more work is needed.
 """,
     "introspect": """
 Usage: python main.py introspect
@@ -239,17 +233,17 @@ def main():
     commands = {
         "start": lambda: __import__('src.manager', fromlist=['start']).start(),
         "ingest": run_ingest,
-        "archivist": lambda: __import__('src.agents.archivist', fromlist=['run_interactive']).run_interactive(),
+        "archivist": lambda: run_agent_cli("archivist"),
         "chat": lambda: __import__('src.agents.friend', fromlist=['run_interactive']).run_interactive(),
-        "profiler": lambda: __import__('src.agents.profiler', fromlist=['run_interactive']).run_interactive(),
+        "profiler": lambda: run_agent_cli("profiler"),
         "derive": run_derive_synthesis,
-        "curator": lambda: __import__('src.agents.curator', fromlist=['run_interactive']).run_interactive(),
+        "curator": lambda: run_agent_cli("curator"),
         "morning": run_morning,
         "evening": run_evening,
-        "worker": lambda: __import__('src.agents.worker', fromlist=['run_interactive']).run_interactive(),
+        "worker": lambda: run_agent_cli("worker"),
         "tasks": run_tasks,
         "approvals": run_approvals,
-        "adaptor": lambda: __import__('src.agents.adaptor', fromlist=['run_interactive']).run_interactive(),
+        "adaptor": lambda: run_agent_cli("adaptor"),
         "introspect": run_introspect,
         "evolve": run_evolve,
         "set-password": run_set_password,
@@ -266,25 +260,31 @@ def main():
         print()
         print("Commands:")
         print("  start      Start the Agent Manager (runs all agents) (default)")
-        print("  ingest     Batch process files with progress (inbox or external dir)")
         print("  chat       Interactive chat with The Friend")
-        print("  archivist  Interactive chat with The Archivist")
-        print("  profiler   Interactive chat with The Profiler")
+        print()
+        print("Agent commands (run until done, then exit):")
+        print("  archivist  Process inbox files to lifelog")
+        print("  profiler   Update user profile from lifelogs")
+        print("  curator    Surface opportunities and manage attention")
+        print("  worker     Process tasks and execute actions")
+        print("  adaptor    Analyze system health and propose evolution")
+        print()
+        print("One-shot commands:")
+        print("  ingest     Batch process files with progress display")
         print("  derive     Derive profile model from lifelogs")
-        print("  curator    Interactive chat with The Curator")
-        print("  morning    Generate morning attention")
+        print("  morning    Generate morning attention briefing")
         print("  evening    Generate evening reflection")
-        print("  worker     Interactive chat with The Worker")
         print("  tasks      Process the task queue once")
         print("  approvals  Show actions waiting for approval")
-        print("  adaptor    Interactive chat with The Adaptor")
         print("  introspect Run a full system analysis")
         print("  evolve     Review pending agent evolution proposals")
-        print("  set-password  Set password for web UI authentication")
-        print("  watch      Watch inbox for new files to process")
-        print("  process    Process pending files once and exit")
-        print("  serve      Start the web API server (standalone)")
-        print("  fresh-start  Reset data/ to clean state (with backup)")
+        print()
+        print("System commands:")
+        print("  serve      Start the web API server")
+        print("  watch      Watch inbox for new files")
+        print("  process    Process pending files once")
+        print("  set-password  Set web UI password")
+        print("  fresh-start   Reset data/ to clean state")
         print()
         print("Examples:")
         print("  python main.py              # Run Agent Manager (default)")
@@ -309,6 +309,67 @@ def main():
         return
 
     commands[command]()
+
+
+def run_agent_cli(agent_name: str):
+    """
+    Run an autonomous agent from CLI until all work is complete.
+
+    This is the CLI mode - agent runs until done, then exits.
+    Different from Agent Manager mode where agents sleep and wake periodically.
+    """
+    import asyncio
+
+    # Map agent names to their autonomous agent classes
+    agent_classes = {
+        "archivist": ("src.agents.archivist", "AutonomousArchivistAgent"),
+        "profiler": ("src.agents.profiler", "AutonomousProfilerAgent"),
+        "curator": ("src.agents.curator", "AutonomousCuratorAgent"),
+        "worker": ("src.agents.worker", "AutonomousWorkerAgent"),
+        "adaptor": ("src.agents.adaptor", "AutonomousAdaptorAgent"),
+    }
+
+    if agent_name not in agent_classes:
+        print(f"Unknown agent: {agent_name}")
+        return
+
+    module_path, class_name = agent_classes[agent_name]
+
+    print("=" * 60)
+    print(f"Euno - Running {agent_name.title()} Agent")
+    print("=" * 60)
+    print()
+    print("Running until all work is complete...")
+    print()
+
+    try:
+        # Dynamically import the agent class
+        module = __import__(module_path, fromlist=[class_name])
+        AgentClass = getattr(module, class_name)
+
+        # Create agent instance
+        agent = AgentClass()
+
+        # Run until done
+        async def run():
+            return await agent.run_until_done()
+
+        work_cycles = asyncio.run(run())
+
+        print()
+        print("=" * 60)
+        if work_cycles > 0:
+            print(f"Completed {work_cycles} work cycle(s)")
+        else:
+            print("No work needed")
+        print("=" * 60)
+
+    except KeyboardInterrupt:
+        print("\n\nStopped by user.")
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 def run_ingest():
