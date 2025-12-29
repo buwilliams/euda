@@ -47,7 +47,8 @@ euno/
 │   ├── agents/             # 6 agent modules
 │   │   ├── base.py         # Core agent pattern
 │   │   ├── personas/       # Agent identity files (*.agent.md)
-│   │   └── prompts/        # Prompt templates by agent
+│   │   ├── prompts/        # Prompt templates by agent
+│   │   └── contracts/      # Profile contract and redaction policy
 │   ├── tools/              # Organized by agent concern
 │   │   ├── shared/         # Cross-agent (log, agent identity, signals)
 │   │   ├── archivist/      # File processing, queue, budget, iPhone backup tools

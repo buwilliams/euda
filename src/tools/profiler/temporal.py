@@ -21,12 +21,12 @@ import re
 
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
+SRC_DIR = Path(__file__).parent.parent.parent
 LIFELOG_DIR = DATA_DIR / "shared" / "state" / "lifelog"
-CONTRACT_DIR = DATA_DIR / "shared" / "state" / "profile"  # Profile contract and policy
+CONTRACTS_DIR = SRC_DIR / "agents" / "contracts"  # Profile contract and policy (in codebase)
 
 # Ensure directories exist
 LIFELOG_DIR.mkdir(parents=True, exist_ok=True)
-CONTRACT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # =============================================================================

@@ -82,9 +82,9 @@ DIRECTORY_STRUCTURE = [
 
 # Files to copy from backup to new data/ (essential config that lives in data/)
 # Note: Agent personas moved to src/agents/personas/ (part of codebase)
+# Note: Profile contracts moved to src/agents/contracts/ (part of codebase)
 FILES_TO_RESTORE = [
-    "shared/state/profile/profile.contract.md",
-    "shared/state/profile/redaction.policy.md",
+    # Currently empty - all config files are now in src/
 ]
 
 

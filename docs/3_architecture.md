@@ -330,6 +330,7 @@ euno/
 │   │   ├── base.py             # Agent factory, AutonomousAgent base
 │   │   ├── personas/           # Agent identity files (*.agent.md)
 │   │   ├── prompts/            # Prompt templates by agent
+│   │   ├── contracts/          # Profile contract and redaction policy
 │   │   ├── archivist.py        # The Archivist
 │   │   ├── profiler.py         # The Profiler (predictive identity model)
 │   │   ├── curator.py          # The Curator
@@ -389,9 +390,6 @@ euno/
     │   ├── config/             # System-wide configuration
     │   ├── logs/               # System-wide logs
     │   └── state/              # System-wide state
-    │       ├── profile/        # Profile contract and policy
-    │       │   ├── profile.contract.md
-    │       │   └── redaction.policy.md
     │       ├── lifelog/        # Life log entries and profiles
     │       │   ├── _profile.current.md
     │       │   ├── _profile.public.md
