@@ -1,4 +1,10 @@
 // Euno - Global State
+
+// Disable browser's automatic scroll restoration (causes issues on mobile)
+if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+}
+
 // Configure marked
 marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
 

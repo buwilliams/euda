@@ -45,6 +45,9 @@ function renderQuote(data) {
             <div class="quote-text">"${escapeHtml(data.quote)}"</div>
             <div class="quote-author">— ${escapeHtml(data.author)}</div>
         `;
+        // Ensure chat stays scrolled to top after quote renders
+        const chatPane = document.getElementById('tab-chat');
+        if (chatPane) chatPane.scrollTop = 0;
     }
 }
 

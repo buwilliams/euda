@@ -69,6 +69,9 @@ async function logout() {
 }
 
 function initApp() {
+    // Reset scroll positions to top (mobile browsers try to restore previous scroll)
+    resetScrollPositions();
+
     // Initialize with default tab (chat)
     switchTab(activeTab);
 
@@ -80,6 +83,20 @@ function initApp() {
 
     // Load tasks data for badge
     loadTasksData();
+}
+
+function resetScrollPositions() {
+    // Scroll window to top
+    window.scrollTo(0, 0);
+
+    // Scroll all tab panes to top
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.scrollTop = 0;
+    });
+
+    // Scroll chat messages to top
+    const chatMessages = document.getElementById('inline-messages');
+    if (chatMessages) chatMessages.scrollTop = 0;
 }
 
 // ============== Settings ==============
