@@ -83,15 +83,40 @@ appEl.addEventListener('drop', (e) => {
 // ============== Initialize ==============
 
 async function init() {
-    const auth = await checkAuth();
+    // Run splash animation and auth check in parallel
+    const [_, auth] = await Promise.all([
+        runSplashAnimation(),
+        checkAuth()
+    ]);
+
+    const splashScreen = document.getElementById('splash-screen');
+    const loginOverlay = document.getElementById('login-overlay');
+    const appContainer = document.getElementById('app-container');
 
     if (auth.password_required && !auth.authenticated) {
-        // Show login overlay
-        document.getElementById('login-overlay').classList.remove('hidden');
-        document.getElementById('login-password').focus();
+        // Crossfade: splash out, login in
+        loginOverlay.classList.remove('hidden');
+        // Trigger reflow to ensure transition works
+        loginOverlay.offsetHeight;
+
+        splashScreen.classList.add('fade-out');
+        loginOverlay.classList.add('visible');
+
+        // Clean up splash after fade
+        setTimeout(() => {
+            splashScreen.classList.add('hidden');
+            document.getElementById('login-password').focus();
+        }, 400);
     } else {
-        // Hide login overlay and start app
-        document.getElementById('login-overlay').classList.add('hidden');
+        // Crossfade: splash out, app in
+        splashScreen.classList.add('fade-out');
+        appContainer.classList.add('visible');
+
+        // Clean up splash after fade and init app
+        setTimeout(() => {
+            splashScreen.classList.add('hidden');
+        }, 400);
+
         initApp();
     }
 }

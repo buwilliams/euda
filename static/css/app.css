@@ -17,6 +17,12 @@
             height: 100vh;
             justify-content: center;
             padding: 1rem;
+            opacity: 0;
+            transition: opacity 0.4s ease-out;
+        }
+
+        .app-container.visible {
+            opacity: 1;
         }
 
         .app {
@@ -2347,6 +2353,12 @@
             align-items: center;
             justify-content: center;
             z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.4s ease-out;
+        }
+
+        .login-overlay.visible {
+            opacity: 1;
         }
 
         .login-overlay.hidden {
@@ -2436,6 +2448,85 @@
 
         .logout-btn:hover {
             color: #000;
+        }
+
+        /* ============== Splash Screen ============== */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #2d2d2d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            transition: opacity 0.4s ease-out;
+        }
+
+        .splash-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .splash-screen.hidden {
+            display: none;
+        }
+
+        .splash-content {
+            text-align: center;
+        }
+
+        .splash-title {
+            font-size: 4rem;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+            letter-spacing: 0.05em;
+        }
+
+        .splash-letter {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        }
+
+        .splash-letter.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .splash-pronunciation {
+            font-size: 1.1rem;
+            color: #888;
+            margin: 0.5rem 0 0 0;
+            font-weight: 300;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+        }
+
+        .splash-pronunciation.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .splash-tagline {
+            font-size: 0.85rem;
+            color: #fff;
+            margin: 1.5rem 0 0 0;
+            font-weight: 400;
+            letter-spacing: 0.25em;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+
+        .splash-tagline.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         /* ============== Settings Tab ============== */

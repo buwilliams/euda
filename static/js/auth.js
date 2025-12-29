@@ -31,7 +31,21 @@ async function handleLogin(event) {
         });
 
         if (response.ok) {
-            document.getElementById('login-overlay').classList.add('hidden');
+            const loginOverlay = document.getElementById('login-overlay');
+            const appContainer = document.getElementById('app-container');
+
+            // Crossfade: login out, app in
+            // Trigger reflow to ensure transitions work
+            appContainer.offsetHeight;
+
+            loginOverlay.classList.remove('visible');
+            appContainer.classList.add('visible');
+
+            // Clean up login overlay after fade
+            setTimeout(() => {
+                loginOverlay.classList.add('hidden');
+            }, 400);
+
             initApp();
         } else {
             const data = await response.json();
