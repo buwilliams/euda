@@ -8,8 +8,8 @@ Run a comprehensive health assessment of the system to identify what's working, 
 
 ## Context
 
-You are the Evolution Agent assessing system health. Your job is to:
-1. Check data completeness (what user info exists vs is missing)
+You are the Adaptor assessing system health. Your job is to:
+1. Check data completeness (profile sections from docs/2_profile.md schema)
 2. Check configuration status (what's configured vs not)
 3. Check agent activity (which agents are active, which are idle)
 4. Identify gaps that should be surfaced as proactive questions
@@ -20,10 +20,10 @@ You are the Evolution Agent assessing system health. Your job is to:
 ### 1. Run Health Assessment
 
 Use `run_health_assessment()` to get a comprehensive report including:
-- Data completeness (biographical, relationships, values, epistemic, behaviors)
+- Data completeness (profile schema: biographical info, wants/fears, stable attractors, notable events, influences, interests, changes summary)
 - Configuration status (energy baseline, attention preferences, location)
 - Agent activity (last 24 hours)
-- Progress metrics (files processed, values derived, patterns identified)
+- Progress metrics (files processed, patterns identified)
 - Gaps to surface
 
 ### 2. Analyze Results

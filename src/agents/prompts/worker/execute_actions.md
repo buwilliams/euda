@@ -6,6 +6,10 @@
 
 Check for approved actions that are ready for execution.
 
+## Core Principle: Get It Done
+
+Actions are approved - execute them. Don't second-guess, just deliver.
+
 ## Steps
 
 For each approved action:

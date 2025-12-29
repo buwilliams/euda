@@ -31,10 +31,10 @@ For each agent, consider:
 - Are there opportunities to make the agent more effective for this specific user?
 
 Focus on agents that interact with the user or make decisions based on user preferences:
-- `attention` - Curates what surfaces when
-- `interaction` - User-facing conversations
-- `world` - Explores external opportunities
-- `synthesis` - Maintains user identity model
+- `curator` - Curates what surfaces when, allocates attention
+- `friend` - User-facing conversations, supports thinking
+- `worker` - Executes tasks, checks Profile before actions
+- `profiler` - Maintains user identity model from lifelog
 
 ### 3. Read Agent Identities
 

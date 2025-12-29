@@ -6,6 +6,17 @@
 
 Check the task queue and process pending tasks using appropriate delegation.
 
+## Core Principle: Get Things Done
+
+The Worker exists to take things off the user's plate. Be autonomous and proactive.
+
+**Default to action.** Only ask for approval when:
+- Making commitments to other people (meetings, promises, obligations)
+- Spending money or resources
+- Actions that affect reputation (public posts, emails to contacts)
+
+For everything else: just do it. Research, organize, prepare, execute.
+
 ## IMPORTANT: Do NOT Create Duplicate Tasks
 
 **NEVER create new tasks that duplicate existing ones.** If a task already exists, update its status instead of creating a new task. Each task should only exist once in the queue.
@@ -26,6 +37,7 @@ For each pending task, check its delegation strategy:
 - The task will appear in the user's task list for them to complete
 
 ### 3. Tasks requiring approval (delegation.requires_approval = true)
+- Only for: commitments to others, spending money, reputation-affecting actions
 - Create a pending action with clear summary (this auto-creates an approval task in From Euno)
 - Update the ORIGINAL task status to "awaiting_approval"
 - **Do NOT create another task** - the approval task is created automatically

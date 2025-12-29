@@ -28,13 +28,15 @@ Read the year's summary with `get_summary(year)`.
 
 Extract and write a temporal profile with `write_temporal_profile(year, content)`.
 
-The temporal profile should capture:
+The temporal profile should capture (aligned with profile schema from docs/2_profile.md):
 
 ```markdown
-## Values in {year}
+## Wants and Fears in {year}
 
-What mattered to them this year? What were they prioritizing?
-- List specific values with evidence from the summary
+What were they pursuing this year? What were they avoiding?
+- **Wants**: What they moved toward, prioritized, sought
+- **Fears**: What they avoided, refused, protected against
+- List with evidence from the summary
 
 ## Influences Active/Discovered
 
@@ -90,11 +92,12 @@ Use `write_evolution(content)` with:
 
 High-level narrative of how they evolved.
 
-## Values Over Time
+## Wants and Fears Over Time
 
-- Values that emerged (when, why)
-- Values that faded (when, why)
-- Values that stayed constant (the core)
+- Wants that emerged (when, why)
+- Wants that faded (when, why)
+- Fears that appeared or resolved
+- Core patterns that stayed constant
 
 ## Influence Patterns
 
