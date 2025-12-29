@@ -826,10 +826,6 @@
             cursor: pointer;
         }
 
-        .focus-view-header:hover {
-            background: #f0f0f0;
-        }
-
         .focus-back-btn {
             font-size: 1.2rem;
             padding: 0.25rem 0.5rem;
