@@ -6,7 +6,7 @@ marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
 let sessionId = localStorage.getItem('sessionId') || null;
 let viewingHistorySessionId = null;
 let isWaiting = false;
-let activeTab = localStorage.getItem('activeTab') || 'chat';
+let activeTab = 'chat';  // Always start fresh on page load
 let expandedCards = new Set();
 let tasksData = [];
 let completedTasksData = [];

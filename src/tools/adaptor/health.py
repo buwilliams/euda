@@ -380,22 +380,18 @@ def identify_gaps() -> list:
     data = assess_data_completeness()
     config = assess_configuration()
 
-    # High priority: Name (most personal) - but check lifelog first
-    if "name" in data["biographical"].get("missing", []):
-        if mined["name"]:
-            # Found name in lifelog - don't ask, but could store it
-            pass
-        else:
-            gaps.append({
-                "id": "biographical.name",
-                "type": "missing_data",
-                "category": "biographical",
-                "field": "name",
-                "priority": "high",
-                "question": "Hey, I realized I don't know your name yet!",
-                "context": "I'd love to address you personally instead of generically.",
-                "action_prompt": "I'd like to get to know you better. What should I call you?"
-            })
+    # High priority: Name (most personal) - check mined data
+    if not mined["name"]:
+        gaps.append({
+            "id": "biographical.name",
+            "type": "missing_data",
+            "category": "biographical",
+            "field": "name",
+            "priority": "high",
+            "question": "Hey, I realized I don't know your name yet!",
+            "context": "I'd love to address you personally instead of generically.",
+            "action_prompt": "I'd like to get to know you better. What should I call you?"
+        })
 
     # Medium priority: Location - but check lifelog first
     if not config["location"]["configured"]:
@@ -427,22 +423,18 @@ def identify_gaps() -> list:
             "action_prompt": "I'd like to understand your energy patterns better. How are you feeling today - physically, mentally, emotionally?"
         })
 
-    # Check if relationships empty - but check lifelog first
-    if data["relationships"].get("missing"):
-        if mined["relationships"]:
-            # Found relationships in lifelog - don't ask
-            pass
-        else:
-            gaps.append({
-                "id": "biographical.relationships",
-                "type": "missing_data",
-                "category": "relationships",
-                "field": "relationships",
-                "priority": "low",
-                "question": "I've been learning about you, but I don't know much about the people in your life yet.",
-                "context": "Understanding your relationships helps me be more helpful.",
-                "action_prompt": "Tell me about the important people in your life - family, close friends, community."
-            })
+    # Check if relationships empty - check mined data
+    if not mined["relationships"]:
+        gaps.append({
+            "id": "biographical.relationships",
+            "type": "missing_data",
+            "category": "relationships",
+            "field": "relationships",
+            "priority": "low",
+            "question": "I've been learning about you, but I don't know much about the people in your life yet.",
+            "context": "Understanding your relationships helps me be more helpful.",
+            "action_prompt": "Tell me about the important people in your life - family, close friends, community."
+        })
 
     return gaps
 

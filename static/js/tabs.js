@@ -43,7 +43,7 @@ document.addEventListener('click', (e) => {
 
 // ============== Tab Functions ==============
 
-function switchTab(tabName, saveState = true) {
+function switchTab(tabName) {
     // Determine slide direction based on tab order
     const prevIndex = TAB_ORDER.indexOf(previousTab);
     const newIndex = TAB_ORDER.indexOf(tabName);
@@ -81,9 +81,6 @@ function switchTab(tabName, saveState = true) {
 
     previousTab = tabName;
     activeTab = tabName;
-    if (saveState) {
-        localStorage.setItem('activeTab', tabName);
-    }
 
     // Load data for tab
     if (tabName === 'focus') {

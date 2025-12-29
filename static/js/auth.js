@@ -69,8 +69,8 @@ async function logout() {
 }
 
 function initApp() {
-    // Restore active tab
-    switchTab(activeTab, false);
+    // Initialize with default tab (chat)
+    switchTab(activeTab);
 
     // Load daily quote
     loadDailyQuote();

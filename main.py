@@ -18,7 +18,9 @@ Start the Agent Manager which runs all autonomous agents and the web server.
 This is the default command when no arguments are provided. It starts:
   - Web server at http://localhost:8000
   - File watchers for inbox and lifelog
-  - 6 autonomous agents (archivist, profiler, curator, friend, worker, adaptor)
+  - 5 autonomous agents (archivist, profiler, curator, worker, adaptor)
+
+The Friend agent is prompt-based and responds via web UI or CLI chat.
 
 Press Ctrl+C to stop.
 """,
