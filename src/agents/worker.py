@@ -28,12 +28,11 @@ from ..tools.worker.task import (
 from ..tools.worker.project import append_research_result
 from ..tools.shared.notifications import create_euno_task
 from ..tools.shared.profile_signals import PROFILE_SIGNAL_TOOLS, PROFILE_SIGNAL_HANDLERS
-from ..tools.world.fetch import fetch_url, FETCH_TOOLS, FETCH_HANDLERS
 
 
-# Combined tools and handlers with profile signals and fetch capability
-ALL_WORKER_TOOLS = EXTENDED_WORKER_TOOLS + PROFILE_SIGNAL_TOOLS + FETCH_TOOLS
-ALL_WORKER_HANDLERS = {**WORKER_HANDLERS, **PROFILE_SIGNAL_HANDLERS, **FETCH_HANDLERS}
+# Combined tools and handlers with profile signals
+ALL_WORKER_TOOLS = EXTENDED_WORKER_TOOLS + PROFILE_SIGNAL_TOOLS
+ALL_WORKER_HANDLERS = {**WORKER_HANDLERS, **PROFILE_SIGNAL_HANDLERS}
 
 
 def create_worker_agent():
@@ -199,10 +198,9 @@ class AutonomousWorkerAgent(AutonomousAgent):
 Task: {description}
 
 Instructions:
-1. Use the fetch_url tool to gather relevant information from the web
-2. Synthesize the findings into a clear, actionable summary
-3. Include key details, options, and recommendations
-4. List your sources
+1. Synthesize available information into a clear, actionable summary
+2. Include key details, options, and recommendations
+3. Note any areas where additional research may be needed
 
 Provide your response in this format:
 SUMMARY: (2-3 sentence overview)
@@ -210,8 +208,6 @@ KEY FINDINGS:
 - (bullet points)
 DETAILS:
 (expanded information)
-SOURCES:
-- (URLs used)
 """
             # Process with agent
             response = self.agent.process(prompt, ALL_WORKER_HANDLERS)
@@ -219,7 +215,6 @@ SOURCES:
             # Parse response into structured format
             summary = ""
             details = response
-            sources = []
 
             # Try to extract summary
             if "SUMMARY:" in response:
@@ -231,21 +226,11 @@ SOURCES:
             if not summary:
                 summary = description
 
-            # Try to extract sources
-            if "SOURCES:" in response:
-                sources_part = response.split("SOURCES:", 1)[1]
-                for line in sources_part.split("\n"):
-                    line = line.strip()
-                    if line.startswith("-") or line.startswith("http"):
-                        url = line.lstrip("- ").strip()
-                        if url:
-                            sources.append(url)
-
             # Store result
             store_result(
                 task_id=task_id,
                 summary=summary,
-                content={"research": details, "sources": sources},
+                content={"research": details},
                 recommendations=None
             )
 
@@ -256,7 +241,7 @@ SOURCES:
                     task_description=description,
                     summary=summary,
                     details=details,
-                    sources=sources
+                    sources=[]
                 )
 
             # Mark completed

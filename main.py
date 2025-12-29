@@ -18,7 +18,7 @@ Start the Agent Manager which runs all autonomous agents and the web server.
 This is the recommended way to run Euno. It starts:
   - Web server at http://localhost:8000
   - File watchers for inbox and lifelog
-  - 7 autonomous agents (ingestion, summary, synthesis, world, attention, worker, evolution)
+  - 6 autonomous agents (archivist, profiler, curator, friend, worker, adaptor)
 
 Press Ctrl+C to stop.
 """,
@@ -48,45 +48,28 @@ Examples:
     "chat": """
 Usage: python main.py chat
 
-Start an interactive chat with The Caring Friend (Interaction Agent).
+Start an interactive chat with The Friend.
 
 This is the default command when no arguments are provided.
 The agent supports thinking through problems without threatening identity coherence.
 
 Type 'quit' or 'exit' to end the conversation.
 """,
-    "ingestion": """
-Usage: python main.py ingestion
+    "archivist": """
+Usage: python main.py archivist
 
-Start an interactive chat with The Archivist (Ingestion Agent).
+Start an interactive chat with The Archivist.
 
 For manual ingestion conversations. For batch processing, use 'ingest' instead.
 
 Type 'quit' or 'exit' to end the conversation.
 """,
-    "summary": """
-Usage: python main.py summary
+    "profiler": """
+Usage: python main.py profiler
 
-Start an interactive chat with The Historian (Summary Agent).
+Start an interactive chat with The Profiler.
 
-For discussing summaries and historical patterns.
-
-Type 'quit' or 'exit' to end the conversation.
-""",
-    "summarize": """
-Usage: python main.py summarize
-
-Generate summaries for all years that need updates.
-
-Checks each year's logs against existing summaries and regenerates
-any that are outdated or missing.
-""",
-    "synthesis": """
-Usage: python main.py synthesis
-
-Start an interactive chat with The Keeper (Synthesis Agent).
-
-For discussing identity model, epistemic style, values, and behaviors.
+For discussing profile model, patterns, and behaviors.
 
 Type 'quit' or 'exit' to end the conversation.
 """,
@@ -98,12 +81,12 @@ Derive synthesis model (epistemic, values, behaviors) from summaries.
 Uses existing yearly summaries to construct or update the user's
 identity model through temporal derivation.
 """,
-    "attention": """
-Usage: python main.py attention
+    "curator": """
+Usage: python main.py curator
 
-Start an interactive chat with The Curator (Attention Agent).
+Start an interactive chat with The Curator.
 
-For discussing attention allocation and energy management.
+For discussing attention allocation, opportunities, and energy management.
 
 Type 'quit' or 'exit' to end the conversation.
 """,
@@ -128,27 +111,10 @@ Reviews the day and prepares for rest:
   - What needs attention tomorrow
   - Energy restoration suggestions
 """,
-    "world": """
-Usage: python main.py world
-
-Start an interactive chat with The Scout (World Agent).
-
-For discussing opportunities and external discoveries.
-
-Type 'quit' or 'exit' to end the conversation.
-""",
-    "discover": """
-Usage: python main.py discover
-
-Run a discovery sweep for opportunities.
-
-Searches configured sources for opportunities that align with
-the user's identity and current context.
-""",
     "worker": """
 Usage: python main.py worker
 
-Start an interactive chat with The Executor (Worker Agent).
+Start an interactive chat with The Worker.
 
 For discussing tasks, projects, and actions.
 
@@ -168,12 +134,12 @@ Show actions waiting for approval.
 
 Lists tasks that require user confirmation before execution.
 """,
-    "evolution": """
-Usage: python main.py evolution
+    "adaptor": """
+Usage: python main.py adaptor
 
-Start an interactive chat with The Evolver (Evolution Agent).
+Start an interactive chat with The Adaptor.
 
-For discussing system improvements and identity evolution.
+For discussing system improvements and agent evolution.
 
 Type 'quit' or 'exit' to end the conversation.
 """,
@@ -188,10 +154,10 @@ potential improvements, and may generate evolution proposals.
     "evolve": """
 Usage: python main.py evolve
 
-Review pending identity evolution proposals.
+Review pending agent evolution proposals.
 
 Interactive interface to review, approve, or reject proposals
-from the Evolution Agent.
+from the Adaptor.
 
 Commands in review mode:
   review <filename>   View full proposal details
@@ -258,28 +224,18 @@ def main():
     commands = {
         "start": lambda: __import__('src.manager', fromlist=['start']).start(),
         "ingest": run_ingest,
-        "ingestion": lambda: __import__('src.agents.ingestion', fromlist=['run_interactive']).run_interactive(),
-        "chat": lambda: __import__('src.agents.interaction', fromlist=['run_interactive']).run_interactive(),
-        "summary": lambda: __import__('src.agents.summary', fromlist=['run_interactive']).run_interactive(),
-        "summarize": run_summarize,
-        "synthesis": lambda: __import__('src.agents.synthesis', fromlist=['run_interactive']).run_interactive(),
+        "archivist": lambda: __import__('src.agents.archivist', fromlist=['run_interactive']).run_interactive(),
+        "chat": lambda: __import__('src.agents.friend', fromlist=['run_interactive']).run_interactive(),
+        "profiler": lambda: __import__('src.agents.profiler', fromlist=['run_interactive']).run_interactive(),
         "derive": run_derive_synthesis,
-        # Backwards compatibility aliases
-        "self": lambda: __import__('src.agents.synthesis', fromlist=['run_interactive']).run_interactive(),
-        "identity": lambda: __import__('src.agents.synthesis', fromlist=['run_interactive']).run_interactive(),
-        "values": lambda: __import__('src.agents.synthesis', fromlist=['run_interactive']).run_interactive(),
-        "attention": lambda: __import__('src.agents.attention', fromlist=['run_interactive']).run_interactive(),
+        "curator": lambda: __import__('src.agents.curator', fromlist=['run_interactive']).run_interactive(),
         "morning": run_morning,
         "evening": run_evening,
-        "world": lambda: __import__('src.agents.world', fromlist=['run_interactive']).run_interactive(),
-        "discover": run_discover,
         "worker": lambda: __import__('src.agents.worker', fromlist=['run_interactive']).run_interactive(),
         "tasks": run_tasks,
         "approvals": run_approvals,
-        "evolution": lambda: __import__('src.agents.evolution', fromlist=['run_interactive']).run_interactive(),
+        "adaptor": lambda: __import__('src.agents.adaptor', fromlist=['run_interactive']).run_interactive(),
         "introspect": run_introspect,
-        # Backwards compatibility
-        "introspection": lambda: __import__('src.agents.evolution', fromlist=['run_interactive']).run_interactive(),
         "evolve": run_evolve,
         "set-password": run_set_password,
         "watch": lambda: __import__('src.watcher', fromlist=['watch_inbox']).watch_inbox(),
@@ -295,23 +251,19 @@ def main():
         print("Commands:")
         print("  start      Start the Agent Manager (runs all agents)")
         print("  ingest     Batch process files with progress (inbox or external dir)")
-        print("  chat       Interactive chat with The Caring Friend (default)")
-        print("  ingestion  Interactive chat with The Archivist")
-        print("  summary    Interactive chat with The Historian")
-        print("  summarize  Generate summaries for all years needing updates")
-        print("  synthesis  Interactive chat with The Keeper (epistemic, values, behaviors)")
-        print("  derive     Derive synthesis model from summaries")
-        print("  attention  Interactive chat with The Curator")
+        print("  chat       Interactive chat with The Friend (default)")
+        print("  archivist  Interactive chat with The Archivist")
+        print("  profiler   Interactive chat with The Profiler")
+        print("  derive     Derive profile model from lifelogs")
+        print("  curator    Interactive chat with The Curator")
         print("  morning    Generate morning attention")
         print("  evening    Generate evening reflection")
-        print("  world      Interactive chat with The Scout")
-        print("  discover   Run a discovery sweep for opportunities")
-        print("  worker     Interactive chat with The Executor")
+        print("  worker     Interactive chat with The Worker")
         print("  tasks      Process the task queue once")
         print("  approvals  Show actions waiting for approval")
-        print("  evolution  Interactive chat with The Evolver")
+        print("  adaptor    Interactive chat with The Adaptor")
         print("  introspect Run a full system analysis")
-        print("  evolve     Review pending identity evolution proposals")
+        print("  evolve     Review pending agent evolution proposals")
         print("  set-password  Set password for web UI authentication")
         print("  watch      Watch inbox for new files to process")
         print("  process    Process pending files once and exit")
@@ -323,7 +275,6 @@ def main():
         print("  python main.py ingest       # Process inbox files")
         print("  python main.py ingest ~/Documents -r  # Ingest directory recursively")
         print("  python main.py ingest --batch-size 10  # Custom batch size (default: 5)")
-        print("  python main.py summarize    # Generate yearly summaries")
         print("  python main.py serve        # Start API at http://localhost:8000")
         print()
         return
@@ -354,19 +305,19 @@ def run_ingest():
     import tempfile
     from datetime import datetime
     from pathlib import Path
-    from src.tools.ingestion.queue import get_queue
-    from src.tools.ingestion.token_budget import get_budget
-    from src.tools.ingestion.digest import generate_digest, get_content_for_ai
-    from src.tools.ingestion.classifier import mark_as_processed, should_ignore, compute_file_hash
-    from src.tools.ingestion.content_types import (
+    from src.tools.archivist.queue import get_queue
+    from src.tools.archivist.token_budget import get_budget
+    from src.tools.archivist.digest import generate_digest, get_content_for_ai
+    from src.tools.archivist.classifier import mark_as_processed, should_ignore, compute_file_hash
+    from src.tools.archivist.content_types import (
         parse_content_types, matches_content_types, is_archive,
         VALID_CONTENT_TYPES
     )
-    from src.tools.ingestion.archive_extractor import (
+    from src.tools.archivist.archive_extractor import (
         scan_archive_contents, extract_matching_files,
         get_archive_manifest_key, is_archive_supported, get_unsupported_reason
     )
-    from src.agents.ingestion import create_ingestion_agent, ALL_HANDLERS
+    from src.agents.archivist import create_archivist_agent, ALL_HANDLERS
 
     # Parse arguments
     source_dir = None
@@ -415,7 +366,7 @@ def run_ingest():
 
     # Always use batch processing
     print(f"Batch size: {batch_size}")
-    from src.tools.ingestion.batch_processor import (
+    from src.tools.archivist.batch_processor import (
         chunk_files, build_batch_prompt,
         parse_batch_response, write_batch_entries,
         load_batch_system_prompt
@@ -720,8 +671,8 @@ def run_ingest():
     queue = get_queue()
 
     # Recover any stuck files first
-    from src.agents.ingestion import AutonomousIngestionAgent
-    agent_instance = AutonomousIngestionAgent()
+    from src.agents.archivist import AutonomousArchivistAgent
+    agent_instance = AutonomousArchivistAgent()
     agent_instance._recover_stuck_files()
 
     # Restore deferred files if new day
@@ -885,9 +836,8 @@ def run_server():
     import uvicorn
     import threading
     from src.agents.worker import AutonomousWorkerAgent
-    from src.agents.attention import AutonomousAttentionAgent
-    from src.agents.world import AutonomousWorldAgent
-    from src.agents.ingestion import AutonomousIngestionAgent
+    from src.agents.curator import AutonomousCuratorAgent
+    from src.agents.archivist import AutonomousArchivistAgent
 
     print("=" * 60)
     print("Euno - Web API Server")
@@ -902,9 +852,8 @@ def run_server():
         async def agent_loop():
             agents = [
                 AutonomousWorkerAgent(),
-                AutonomousAttentionAgent(morning_hour=7, evening_hour=21),
-                AutonomousWorldAgent(sweep_interval_hours=24),
-                AutonomousIngestionAgent(),
+                AutonomousCuratorAgent(morning_hour=7, evening_hour=21),
+                AutonomousArchivistAgent(),
             ]
 
             # Start all agent loops
@@ -923,7 +872,7 @@ def run_server():
     # Start agents in background thread
     agent_thread = threading.Thread(target=run_agents, daemon=True)
     agent_thread.start()
-    print("Background agents running (Worker, Attention, World, Ingestion)")
+    print("Background agents running (Worker, Curator, Archivist)")
     print("Press Ctrl+C to stop.")
     print()
 
@@ -935,21 +884,12 @@ def run_server():
     )
 
 
-def run_summarize():
-    """Generate summaries for all years needing updates."""
-    if show_subcommand_help("summarize"):
-        return
-
-    from src.agents.summary import check_and_summarize_all
-    check_and_summarize_all()
-
-
 def run_derive_synthesis():
     """Derive synthesis model (epistemic, values, behaviors) from summaries."""
     if show_subcommand_help("derive"):
         return
 
-    from src.agents.synthesis import derive_synthesis
+    from src.agents.profiler import derive_synthesis
     print("=" * 60)
     print("Euno - Deriving Synthesis Model")
     print("=" * 60)
@@ -970,7 +910,7 @@ def run_morning():
     if show_subcommand_help("morning"):
         return
 
-    from src.agents.attention import morning_attention
+    from src.agents.curator import morning_attention
     print("=" * 60)
     print("Euno - Morning Attention")
     print("=" * 60)
@@ -984,26 +924,12 @@ def run_evening():
     if show_subcommand_help("evening"):
         return
 
-    from src.agents.attention import evening_attention
+    from src.agents.curator import evening_attention
     print("=" * 60)
     print("Euno - Evening Reflection")
     print("=" * 60)
     print()
     result = evening_attention()
-    print(f"\n{result}")
-
-
-def run_discover():
-    """Run a discovery sweep for opportunities."""
-    if show_subcommand_help("discover"):
-        return
-
-    from src.agents.world import run_discovery_sweep
-    print("=" * 60)
-    print("Euno - Discovery Sweep")
-    print("=" * 60)
-    print()
-    result = run_discovery_sweep()
     print(f"\n{result}")
 
 
@@ -1040,7 +966,7 @@ def run_introspect():
     if show_subcommand_help("introspect"):
         return
 
-    from src.agents.evolution import run_analysis
+    from src.agents.adaptor import run_analysis
     print("=" * 60)
     print("Euno - System Analysis")
     print("=" * 60)
@@ -1052,7 +978,7 @@ def run_introspect():
 
 
 def run_evolve():
-    """Interactive review of identity evolution proposals."""
+    """Interactive review of agent evolution proposals."""
     if show_subcommand_help("evolve"):
         return
 
@@ -1061,7 +987,7 @@ def run_evolve():
         approve_evolution, reject_evolution
     )
     print("=" * 60)
-    print("Euno - Identity Evolution Review")
+    print("Euno - Agent Evolution Review")
     print("=" * 60)
     print()
 

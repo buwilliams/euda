@@ -23,7 +23,7 @@ from typing import Optional
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 
 # Known agents for scanning logs
-KNOWN_AGENTS = ["ingestion", "summary", "synthesis", "world", "attention", "interaction", "worker", "evolution"]
+KNOWN_AGENTS = ["archivist", "profiler", "curator", "friend", "worker", "adaptor"]
 
 
 def _normalize_agent_name(agent_name: str) -> str:
@@ -468,7 +468,7 @@ AGENT_LOG_TOOLS = [
             "properties": {
                 "agent_name": {
                     "type": "string",
-                    "description": "Name of the agent (e.g., 'worker', 'attention', 'ingestion')"
+                    "description": "Name of the agent (e.g., 'worker', 'curator', 'archivist')"
                 },
                 "date": {
                     "type": "string",

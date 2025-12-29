@@ -44,16 +44,14 @@ The building blocks exist. What's missing is software that puts them together in
 
 ## What It Does Today
 
-Euno is a working system with specialized agents that handle different aspects of your life:
+Euno is a working system with six specialized agents that handle different aspects of your life:
 
 - **The Archivist** — Reads your life data (photos, documents, exports) and preserves it with high fidelity
-- **The Historian** — Maintains a unified, searchable life log across everything you've shared
-- **The Keeper** — Builds a predictive model of who you are: values, patterns, failure modes, rhythms
-- **The Scout** — Explores opportunities that fit you; screens out the rest
-- **The Curator** — Guards your attention; reads feeds, delivers what counts
-- **The Caring Friend** — Talks with you like someone who actually knows you; goes deep when you need it
-- **The Executor** — Handles work autonomously; asks before acting on anything important
-- **The Evolver** — Continuously refines the system to serve you better
+- **The Profiler** — Builds a predictive model of who you are: values, patterns, rhythms
+- **The Curator** — Explores opportunities that fit you; guards your attention; delivers what counts
+- **The Friend** — Talks with you like someone who actually knows you; goes deep when you need it
+- **The Worker** — Handles work autonomously; asks before acting on anything important
+- **The Adaptor** — Continuously refines the system to serve you better
 
 ---
 

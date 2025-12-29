@@ -3,13 +3,12 @@ Tools package for Euno agents.
 
 Tools are organized by agent concern:
 - shared: Cross-agent tools (log, identity, signals)
-- ingestion: File processing and classification
-- synthesis: User identity profile (from temporal profiles)
-- world: Opportunity discovery
-- attention: Surfacing queue and energy tracking
-- interaction: Conversations and cards
+- archivist: File processing and classification
+- profiler: User profile (from temporal profiles)
+- curator: Surfacing queue and energy tracking
+- friend: Conversations and cards
 - worker: Tasks and projects (including From Euno agent communication)
-- evolution: System analysis and identity evolution
+- adaptor: System analysis and identity evolution
 """
 
 # Re-export from submodules for backwards compatibility
@@ -22,7 +21,7 @@ from .shared import (
     create_euno_task,
 )
 
-from .ingestion import (
+from .archivist import (
     FILE_TOOLS, FILE_HANDLERS,
     list_pending_files, read_file_content, mark_file_processed, mark_file_failed,
     extract_temporal_hints, PENDING_DIR,
@@ -31,12 +30,12 @@ from .ingestion import (
     DIGEST_TOOLS, DIGEST_HANDLERS,
     generate_digest, get_content_for_ai,
     QUEUE_TOOLS, QUEUE_HANDLERS,
-    get_queue as get_ingestion_queue, IngestionQueue,
+    get_queue as get_archivist_queue, IngestionQueue,
     TOKEN_BUDGET_TOOLS, TOKEN_BUDGET_HANDLERS,
     get_budget, TokenBudget,
 )
 
-from .synthesis import (
+from .profiler import (
     SUMMARY_TOOLS, SUMMARY_HANDLERS,
     get_year_logs, get_manifest, get_summary, write_summary,
     check_summary_needed, list_years,
@@ -44,23 +43,17 @@ from .synthesis import (
     get_profile, get_synthesis_summary,
     TEMPORAL_TOOLS, TEMPORAL_HANDLERS,
     generate_current_profile,
-    ALL_SYNTHESIS_TOOLS, ALL_SYNTHESIS_HANDLERS,
+    ALL_PROFILER_TOOLS, ALL_PROFILER_HANDLERS,
+    ALL_SYNTHESIS_TOOLS, ALL_SYNTHESIS_HANDLERS,  # backwards compat
 )
 
-from .world import (
-    WORLD_TOOLS, WORLD_HANDLERS,
-    write_opportunity, get_opportunities, mark_opportunity_surfaced,
-    FETCH_TOOLS, FETCH_HANDLERS,
-    fetch_url,
-)
-
-from .attention import (
+from .curator import (
     ATTENTION_TOOLS, ATTENTION_HANDLERS,
     get_queue, add_to_queue, mark_surfaced,
     record_energy, get_recent_energy,
 )
 
-from .interaction import (
+from .friend import (
     CONVERSATION_TOOLS, CONVERSATION_HANDLERS,
     clear_conversation, reset_clear_flag, was_clear_requested,
     CONVERSATION_HISTORY_TOOLS, CONVERSATION_HISTORY_HANDLERS,
@@ -81,10 +74,12 @@ from .worker import (
     WORKER_TOOLS, WORKER_HANDLERS, EXTENDED_WORKER_TOOLS,
 )
 
-from .evolution import (
+from .adaptor import (
     EVOLUTION_TOOLS, EVOLUTION_HANDLERS,
     get_last_introspection, get_system_overview,
 )
-# Backwards compatibility
+
+# Backwards compatibility aliases
 INTROSPECTION_TOOLS = EVOLUTION_TOOLS
 INTROSPECTION_HANDLERS = EVOLUTION_HANDLERS
+get_ingestion_queue = get_archivist_queue

@@ -21,7 +21,7 @@ def create_euno_task(
     Create a task in the Notifications project for agent-to-user communication.
 
     Args:
-        agent_name: Which agent is creating this (e.g., "attention", "worker")
+        agent_name: Which agent is creating this (e.g., "curator", "worker")
         title: Short description of the notification/task
         message: Optional longer context (stored in task description)
         task_type: Type of task - "notification", "approval", "reminder", etc.

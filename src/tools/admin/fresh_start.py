@@ -3,12 +3,12 @@ Fresh Start utility for Euno.
 
 Clears ALL generated data and user content while preserving only:
 - System configuration (agent identities, profile contract, LLM config)
-- Prompts (ingestion, synthesis, attention, worker, evolution)
+- Prompts (archivist, profiler, curator, friend, worker, adaptor)
 
 Everything else is wiped clean, including:
 - Inbox (processed, pending, failed, deferred)
 - Lifelogs, signals, notifications
-- All synthesis data (profile, summaries)
+- All profile data
 - All agent state and conversation history
 - Tasks, projects, opportunities
 
@@ -30,18 +30,16 @@ DATA_DIR = PROJECT_ROOT / "data"
 # Directories to PRESERVE (not cleared) - only system config, not user data
 PRESERVE_DIRS = [
     # Shared system config
-    "shared/state/identity",     # Agent identity files
+    "shared/state/agents",       # Agent persona files
     "shared/state/profile",      # Profile contract and policy
     "shared/config",             # LLM config
-    # Agent prompts (all agents)
-    "ingestion/prompts",
-    "summary/prompts",
-    "synthesis/prompts",
-    "world/prompts",
-    "attention/prompts",
-    "interaction/prompts",
+    # Agent prompts (6 agents: archivist, profiler, curator, friend, worker, adaptor)
+    "archivist/prompts",
+    "profiler/prompts",
+    "curator/prompts",
+    "friend/prompts",
     "worker/prompts",
-    "evolution/prompts",
+    "adaptor/prompts",
 ]
 
 # Directories to CLEAR (remove contents but keep .gitkeep)
@@ -54,31 +52,25 @@ CLEAR_DIRS = [
     "shared/state/notifications",
     "shared/state/evolution",
     "shared/logs",
-    # Ingestion (state includes inbox, digests, queue.json)
-    "ingestion/state",
-    "ingestion/config",              # Processed hashes, etc.
-    "ingestion/logs",
-    # Summary
-    "summary/state",
-    "summary/logs",
-    # Synthesis (state includes profile/)
-    "synthesis/state",
-    "synthesis/logs",
-    # World (state includes opportunities)
-    "world/state",
-    "world/logs",
-    # Attention (state includes queue)
-    "attention/state",
-    "attention/logs",
-    # Interaction (state includes conversations, cards)
-    "interaction/state",
-    "interaction/logs",
+    # Archivist (state includes inbox, digests, queue.json)
+    "archivist/state",
+    "archivist/config",
+    "archivist/logs",
+    # Profiler (state includes profile/)
+    "profiler/state",
+    "profiler/logs",
+    # Curator (state includes queue)
+    "curator/state",
+    "curator/logs",
+    # Friend (state includes conversations, cards)
+    "friend/state",
+    "friend/logs",
     # Worker (state includes tasks, projects, actions, archive)
     "worker/state",
     "worker/logs",
-    # Evolution (state includes output)
-    "evolution/state",
-    "evolution/logs",
+    # Adaptor (state includes output)
+    "adaptor/state",
+    "adaptor/logs",
 ]
 
 
@@ -160,9 +152,9 @@ def fresh_start(dry_run: bool = False):
         if not dry_run:
             print(f"   ✓ {rel_path}")
 
-    # Step 3: Clear ingestion processed hashes (so files can be reprocessed)
-    print("\n3. Resetting ingestion tracking...")
-    config_dir = DATA_DIR / "ingestion" / "config"
+    # Step 3: Clear archivist processed hashes (so files can be reprocessed)
+    print("\n3. Resetting archivist tracking...")
+    config_dir = DATA_DIR / "archivist" / "config"
     hashes_file = config_dir / "processed_hashes.json"
     if hashes_file.exists():
         if dry_run:
@@ -171,13 +163,13 @@ def fresh_start(dry_run: bool = False):
             hashes_file.unlink()
             print("   ✓ Cleared processed_hashes.json")
 
-    state_file = DATA_DIR / "ingestion" / "state" / "state.json"
+    state_file = DATA_DIR / "archivist" / "state" / "state.json"
     if state_file.exists():
         if dry_run:
             print(f"   [DRY-RUN] Would remove: state.json")
         else:
             state_file.unlink()
-            print("   ✓ Cleared ingestion state")
+            print("   ✓ Cleared archivist state")
 
     print("\n" + "=" * 60)
     if dry_run:

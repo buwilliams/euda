@@ -25,18 +25,17 @@ from pydantic import BaseModel
 from watchfiles import awatch, Change
 
 from ..agents.base import create_agent
-from ..agents.interaction import INTERACTION_TOOLS, INTERACTION_HANDLERS
+from ..agents.friend import FRIEND_TOOLS, FRIEND_HANDLERS
 from ..tools.shared.log import read_log_entry, search_log, get_recent_entries, write_log_entry
-from ..tools.interaction.conversation_history import save_message, get_conversation_data, get_recent_conversations, delete_conversation
-from ..tools.synthesis import get_profile, get_synthesis_summary
-from ..tools.interaction.cards import (
+from ..tools.friend.conversation_history import save_message, get_conversation_data, get_recent_conversations, delete_conversation
+from ..tools.profiler import get_profile, get_synthesis_summary
+from ..tools.friend.cards import (
     get_internal_card, get_public_card, write_public_card,
     get_received_cards, update_received_card_status, approve_public_card
 )
-from ..tools.world.world import get_opportunities
-from ..tools.attention.attention import get_queue, get_recent_energy, record_energy
-from ..tools.attention.context import get_context_for_view, get_view_mode
-from ..tools.synthesis.summary import list_years, get_summary
+from ..tools.curator.attention import get_queue, get_recent_energy, record_energy
+from ..tools.curator.context import get_context_for_view, get_view_mode
+from ..tools.profiler.summary import list_years, get_summary
 from .auth import (
     is_password_set, authenticate, validate_session,
     invalidate_session, cleanup_expired_sessions,
@@ -47,7 +46,7 @@ from .auth import (
 # Base paths
 BASE_DIR = Path(__file__).parent.parent.parent
 STATIC_DIR = BASE_DIR / "static"
-INBOX_PENDING_DIR = BASE_DIR / "data" / "ingestion" / "state" / "inbox" / "pending"
+INBOX_PENDING_DIR = BASE_DIR / "data" / "archivist" / "state" / "inbox" / "pending"
 
 
 # ============== SSE Event Manager ==============
@@ -420,8 +419,8 @@ def get_or_create_session(session_id: Optional[str] = None) -> tuple[str, object
 
     new_id = session_id or str(uuid.uuid4())
     agent = create_agent(
-        persona_name="interaction",
-        tools=INTERACTION_TOOLS
+        persona_name="friend",
+        tools=FRIEND_TOOLS
     )
 
     sessions[new_id] = {
@@ -461,8 +460,8 @@ async def app_page():
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
-    """Chat with the Interaction Agent."""
-    from ..tools.interaction.conversation import (
+    """Chat with the Friend Agent."""
+    from ..tools.friend.conversation import (
         reset_clear_flag, was_clear_requested,
         reset_delete_flag, was_delete_requested
     )
@@ -475,7 +474,7 @@ async def chat(request: ChatRequest):
         reset_delete_flag()
 
         sessions[session_id]["last_used"] = datetime.now()
-        response = agent.process(request.message, INTERACTION_HANDLERS)
+        response = agent.process(request.message, FRIEND_HANDLERS)
 
         # Check if clear_conversation tool was called during processing
         clear_chat = was_clear_requested()
@@ -493,7 +492,7 @@ async def chat(request: ChatRequest):
             # Create a fresh session
             new_session_id = str(uuid.uuid4())
             sessions[new_session_id] = {
-                "agent": create_agent("interaction", INTERACTION_TOOLS),
+                "agent": create_agent("friend", FRIEND_TOOLS),
                 "created": datetime.now(),
                 "last_used": datetime.now()
             }
@@ -720,7 +719,7 @@ async def get_weekly_context():
 @app.get("/api/daily-quote")
 async def get_daily_quote_endpoint():
     """Get the daily reflection quote."""
-    from src.tools.attention.daily_quote import get_daily_quote
+    from src.tools.curator.daily_quote import get_daily_quote
     return get_daily_quote()
 
 
@@ -744,14 +743,12 @@ async def get_year_summary(year: int):
 
 # Agent metadata
 AGENT_INFO = {
-    "ingestion": {"display_name": "Ingestion (Archivist)", "description": "Transforms data into log entries"},
-    "interaction": {"display_name": "Interaction (Caring Friend)", "description": "User-facing conversations"},
-    "summary": {"display_name": "Summary (Historian)", "description": "Yearly summaries from logs"},
-    "synthesis": {"display_name": "Synthesis (Keeper)", "description": "Synthesizes user identity from patterns"},
-    "attention": {"display_name": "Attention (Curator)", "description": "Surface the right thing at the right time"},
-    "world": {"display_name": "World (Scout)", "description": "Discover opportunities"},
-    "worker": {"display_name": "Worker (Executor)", "description": "Execute approved tasks"},
-    "evolution": {"display_name": "Evolution (Evolver)", "description": "Evolves agent identities based on synthesis"},
+    "archivist": {"display_name": "Archivist", "description": "Transforms data into log entries"},
+    "profiler": {"display_name": "Profiler", "description": "Synthesizes user profile from patterns"},
+    "curator": {"display_name": "Curator", "description": "Surface the right thing at the right time"},
+    "friend": {"display_name": "Friend", "description": "User-facing conversations"},
+    "worker": {"display_name": "Worker", "description": "Execute approved tasks"},
+    "adaptor": {"display_name": "Adaptor", "description": "Evolves agent identities based on profile"},
 }
 
 def get_agent_state(agent_name: str) -> dict:
@@ -789,13 +786,13 @@ async def get_agent_status():
         if state.get("updated"):
             agent_data["last_active"] = state["updated"]
 
-        # Special handling for interaction agent - show active sessions
-        if agent_name == "interaction":
+        # Special handling for friend agent - show active sessions
+        if agent_name == "friend":
             agent_data["active_sessions"] = len(sessions)
 
-        # Special handling for ingestion - show queue info
-        if agent_name == "ingestion":
-            pending_dir = BASE_DIR / "data" / "ingestion" / "state" / "inbox" / "pending"
+        # Special handling for archivist - show queue info
+        if agent_name == "archivist":
+            pending_dir = BASE_DIR / "data" / "archivist" / "state" / "inbox" / "pending"
             if pending_dir.exists():
                 pending_count = len([f for f in pending_dir.iterdir() if f.is_file() and not f.name.startswith('.')])
                 agent_data["pending_files"] = pending_count
@@ -856,7 +853,7 @@ async def create_new_session():
     while preserving the old session in history.
     """
     new_session_id = str(uuid.uuid4())
-    agent = create_agent(persona_name="interaction", tools=INTERACTION_TOOLS)
+    agent = create_agent(persona_name="friend", tools=FRIEND_TOOLS)
 
     sessions[new_session_id] = {
         "agent": agent,
@@ -894,7 +891,7 @@ async def get_history(session_id: str = None, date: str = None):
 @app.get("/api/conversations/recent/structured")
 async def get_recent_convos_structured(count: int = 20):
     """Get recent conversations as structured JSON for the History panel."""
-    from ..tools.interaction.conversation_history import _get_session_file, _get_daily_file, _ensure_dirs
+    from ..tools.friend.conversation_history import _get_session_file, _get_daily_file, _ensure_dirs
     from datetime import timedelta
 
     _ensure_dirs()
@@ -960,7 +957,7 @@ async def fork_conversation(request: ForkRequest):
     Creates a new session with a new ID, pre-populated with messages
     from the original conversation. The original is not modified.
     """
-    from ..tools.interaction.conversation_history import load_conversation_into_context
+    from ..tools.friend.conversation_history import load_conversation_into_context
 
     messages = load_conversation_into_context(session_id=request.session_id)
     if not messages:
@@ -968,7 +965,7 @@ async def fork_conversation(request: ForkRequest):
 
     # Create new session with fresh agent
     new_session_id = str(uuid.uuid4())
-    agent = create_agent(persona_name="interaction", tools=INTERACTION_TOOLS)
+    agent = create_agent(persona_name="friend", tools=FRIEND_TOOLS)
 
     # Pre-populate agent context with old messages
     context = agent.get_context()

@@ -14,7 +14,7 @@ Usage:
     provider = get_provider("openai")
 
     # Get provider and model for an agent (respects agent_overrides)
-    provider_name, model = get_model_for_agent("ingestion")
+    provider_name, model = get_model_for_agent("archivist")
     provider = get_provider(provider_name)
 """
 
@@ -145,7 +145,7 @@ def get_model_for_agent(agent_name: str) -> tuple[str, str]:
     Checks agent_overrides first, then falls back to defaults.
 
     Args:
-        agent_name: Name of the agent (e.g., "ingestion", "summary")
+        agent_name: Name of the agent (e.g., "archivist", "profiler")
 
     Returns:
         Tuple of (provider_name, model_name)

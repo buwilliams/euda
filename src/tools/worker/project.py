@@ -515,7 +515,7 @@ def create_project(
         someday: Mark as "someday" project (no specific deadline)
         review_frequency: How often to review - daily, weekly, monthly
         values_alignment: List of values this project aligns with
-        source_agent: Which agent created this (user, interaction, world, etc.)
+        source_agent: Which agent created this (user, friend, curator, etc.)
         source_context: Additional context about why it was created
 
     Returns:

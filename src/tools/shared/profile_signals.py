@@ -256,12 +256,16 @@ SYNTHESIS_SIGNAL_HANDLERS = {
     "consume_observations": consume_observations,
 }
 
+# Aliases for new naming convention (Profiler instead of Synthesis)
+PROFILER_SIGNAL_TOOLS = SYNTHESIS_SIGNAL_TOOLS
+PROFILER_SIGNAL_HANDLERS = SYNTHESIS_SIGNAL_HANDLERS
+
 
 if __name__ == "__main__":
     # Test
     print("Emitting test observation...")
     result = emit_profile_observation(
-        agent="interaction",
+        agent="friend",
         signal_type="behavioral_pattern",
         observation="User declined social invitation citing need for rest",
         evidence="lifelog/2025/2025-12-27.md",

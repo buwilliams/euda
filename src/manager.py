@@ -32,19 +32,17 @@ logger = logging.getLogger('manager')
 # Base paths
 DATA_DIR = Path(__file__).parent.parent / "data"
 SIGNALS_DIR = DATA_DIR / "shared" / "state" / "signals"
-INBOX_DIR = DATA_DIR / "ingestion" / "state" / "inbox" / "pending"
+INBOX_DIR = DATA_DIR / "archivist" / "state" / "inbox" / "pending"
 LOG_DIR = DATA_DIR / "shared" / "state" / "lifelog"
 
 # Ensure directories exist
 SIGNALS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Import autonomous agents
-from src.agents.ingestion import AutonomousIngestionAgent
-from src.agents.summary import AutonomousSummaryAgent
-from src.agents.synthesis import AutonomousSynthesisAgent
-from src.agents.world import AutonomousWorldAgent
-from src.agents.attention import AutonomousAttentionAgent
-from src.agents.evolution import AutonomousEvolutionAgent
+from src.agents.archivist import AutonomousArchivistAgent
+from src.agents.profiler import AutonomousProfilerAgent
+from src.agents.curator import AutonomousCuratorAgent
+from src.agents.adaptor import AutonomousAdaptorAgent
 from src.agents.worker import AutonomousWorkerAgent
 
 
@@ -106,13 +104,13 @@ class AutonomousAgentTask:
 
 
 class InboxHandler(FileSystemEventHandler):
-    """Handle new files in the inbox - creates signal for ingestion agent."""
+    """Handle new files in the inbox - creates signal for archivist agent."""
 
     def on_created(self, event):
         if event.is_directory:
             return
         logger.info(f"New file in inbox: {Path(event.src_path).name}")
-        # Create signal file for ingestion agent to pick up
+        # Create signal file for archivist agent to pick up
         signal_file = SIGNALS_DIR / "inbox_changed.signal"
         signal_file.write_text(datetime.now().isoformat())
 
@@ -212,12 +210,10 @@ class AgentManager:
         """Spawn all autonomous agents."""
         # Create agent instances
         agents = [
-            AutonomousIngestionAgent(),
-            AutonomousSummaryAgent(),
-            AutonomousSynthesisAgent(),
-            AutonomousWorldAgent(sweep_interval_hours=24),
-            AutonomousAttentionAgent(morning_hour=7, evening_hour=21),
-            AutonomousEvolutionAgent(check_interval=1800),  # 30 minutes
+            AutonomousArchivistAgent(),
+            AutonomousProfilerAgent(),
+            AutonomousCuratorAgent(morning_hour=7, evening_hour=21),
+            AutonomousAdaptorAgent(check_interval=1800),  # 30 minutes
             AutonomousWorkerAgent(),  # Task executor - checks every 30 seconds
         ]
 

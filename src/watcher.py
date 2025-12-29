@@ -1,7 +1,7 @@
 """
 File watcher for the inbox directory.
 
-Monitors data/ingestion/state/inbox/pending for new files and triggers the Ingestion Agent.
+Monitors data/archivist/state/inbox/pending for new files and triggers the Archivist Agent.
 """
 
 import time
@@ -11,7 +11,7 @@ from watchdog.events import FileSystemEventHandler
 
 from .agents.base import create_agent
 from .tools.shared.log import LOG_TOOLS, LOG_HANDLERS
-from .tools.ingestion.files import FILE_TOOLS, FILE_HANDLERS, PENDING_DIR
+from .tools.archivist.files import FILE_TOOLS, FILE_HANDLERS, PENDING_DIR
 
 
 class InboxHandler(FileSystemEventHandler):
@@ -76,9 +76,9 @@ Be thoughtful about:
 
 
 def create_watcher_agent():
-    """Create an Ingestion Agent with file processing tools."""
+    """Create an Archivist Agent with file processing tools."""
     return create_agent(
-        persona_name="ingestion",
+        persona_name="archivist",
         tools=LOG_TOOLS + FILE_TOOLS
     )
 

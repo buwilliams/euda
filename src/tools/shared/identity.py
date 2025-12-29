@@ -11,44 +11,55 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-# Base paths - Identity is shared, evolution is part of identity
+# Base paths - Agents dir is shared, evolution proposals are separate
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-IDENTITY_DIR = SHARED_DIR / "state" / "identity"
+AGENTS_DIR = SHARED_DIR / "state" / "agents"
 EVOLUTION_DIR = SHARED_DIR / "state" / "evolution"
 EVOLUTION_DIR.mkdir(parents=True, exist_ok=True)
+
+# Agent name to file number mapping
+AGENT_FILE_MAP = {
+    "archivist": "1_archivist",
+    "profiler": "2_profiler",
+    "curator": "3_curator",
+    "friend": "4_friend",
+    "worker": "5_worker",
+    "adaptor": "6_adaptor",
+}
 
 
 def read_own_identity(agent_name: str) -> str:
     """
-    Read the agent's current identity file.
+    Read the agent's current agent file.
 
     Args:
-        agent_name: Name of the agent (e.g., 'interaction', 'ingestion')
+        agent_name: Name of the agent (e.g., 'friend', 'archivist')
 
     Returns:
-        The full content of the identity file
+        The full content of the agent file
     """
-    identity_file = IDENTITY_DIR / f"{agent_name}.identity.md"
+    file_prefix = AGENT_FILE_MAP.get(agent_name, agent_name)
+    agent_file = AGENTS_DIR / f"{file_prefix}.agent.md"
 
-    if not identity_file.exists():
-        return f"Error: No identity file found for agent '{agent_name}'"
+    if not agent_file.exists():
+        return f"Error: No agent file found for agent '{agent_name}'"
 
-    with open(identity_file, 'r') as f:
+    with open(agent_file, 'r') as f:
         return f.read()
 
 
 def read_core_identity() -> str:
     """
-    Read the core identity that all agents inherit.
+    Read the core agent file that all agents inherit.
 
     Returns:
-        The full content of the core identity file
+        The full content of the core agent file
     """
-    core_file = IDENTITY_DIR / "_core.identity.md"
+    core_file = AGENTS_DIR / "0_core.agent.md"
 
     if not core_file.exists():
-        return "Error: Core identity file not found"
+        return "Error: Core agent file not found"
 
     with open(core_file, 'r') as f:
         return f.read()
@@ -190,20 +201,21 @@ def approve_evolution(filename: str) -> str:
         return f"Error: Proposal is not pending (status: {proposal.get('status')})"
 
     agent_name = proposal["agent_name"]
-    identity_file = IDENTITY_DIR / f"{agent_name}.identity.md"
+    file_prefix = AGENT_FILE_MAP.get(agent_name, agent_name)
+    agent_file = AGENTS_DIR / f"{file_prefix}.agent.md"
 
-    # Backup current identity
-    if identity_file.exists():
+    # Backup current agent file
+    if agent_file.exists():
         backup_dir = EVOLUTION_DIR / "backups"
         backup_dir.mkdir(exist_ok=True)
-        backup_file = backup_dir / f"{agent_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
-        with open(identity_file, 'r') as f:
+        backup_file = backup_dir / f"{file_prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+        with open(agent_file, 'r') as f:
             backup_content = f.read()
         with open(backup_file, 'w') as f:
             f.write(backup_content)
 
-    # Apply new identity
-    with open(identity_file, 'w') as f:
+    # Apply new agent content
+    with open(agent_file, 'w') as f:
         f.write(proposal["new_identity"])
 
     # Update proposal status
@@ -254,7 +266,7 @@ IDENTITY_TOOLS = [
             "properties": {
                 "agent_name": {
                     "type": "string",
-                    "description": "Your agent name (e.g., 'interaction', 'ingestion', 'summary')"
+                    "description": "Your agent name (e.g., 'friend', 'archivist', 'profiler')"
                 }
             },
             "required": ["agent_name"]

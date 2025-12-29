@@ -94,7 +94,7 @@ Spawn fresh context for complex tasks:
 
 ```python
 def analyze_photo(photo_path):
-    sub_agent = create_agent("ingestion", tools=[extract_exif, ocr_image])
+    sub_agent = create_agent("archivist", tools=[extract_exif, ocr_image])
     result = sub_agent["process"](f"Analyze: {photo_path}", handlers)
     return result  # Returns to parent, sub-agent context discarded
 ```
@@ -105,11 +105,10 @@ Agents communicate via flat files, not direct calls:
 
 ```
 data/shared/state/signals/
-  logs_updated.signal        # Created by Ingestion, consumed by Summary
-  summaries_updated.signal   # Created by Summary, consumed by Synthesis
-  synthesis_updated.signal   # Created by Synthesis, consumed by World, Evolution
-  proactive_gaps.json        # Created by Evolution, consumed by Attention
-  agent_guidance.json        # Created by Evolution, consumed by all agents
+  logs_updated.signal        # Created by Archivist, consumed by Profiler
+  profile_updated.signal     # Created by Profiler, consumed by Curator, Adaptor
+  proactive_gaps.json        # Created by Adaptor, consumed by Curator
+  agent_guidance.json        # Created by Adaptor, consumed by all agents
 ```
 
 Signal files contain a timestamp. Reading a signal deletes it (one-time trigger).
@@ -154,14 +153,13 @@ def do_work(self):
 **Hash file locations** (each agent tracks its own "last processed" version):
 
 ```
-data/shared/state/lifelog/{year}/_summary.hash    # Summary Agent: logs hash for this year
-data/synthesis/state/processed_summaries.hash     # Synthesis Agent: summaries it last processed
-data/evolution/state/processed_synthesis.hash     # Evolution Agent: synthesis it last processed
-data/world/state/processed_profile.hash           # World Agent: profile it last processed
-data/attention/state/patterns.cache.json          # Attention Agent: cached pattern detection
+data/shared/state/lifelog/{year}/_summary.hash    # Profiler Agent: logs hash for this year
+data/profiler/state/processed_summaries.hash      # Profiler Agent: summaries it last processed
+data/adaptor/state/processed_profile.hash         # Adaptor Agent: profile it last processed
+data/curator/state/patterns.cache.json            # Curator Agent: cached pattern detection
 ```
 
-**Why per-agent tracking?** Each agent independently tracks what *it* has processed. If the Synthesis Agent processes the summaries, the Evolution Agent still needs to know whether *it* has processed the resulting synthesis. Shared hashes wouldn't work—each downstream agent needs its own record.
+**Why per-agent tracking?** Each agent independently tracks what *it* has processed. If the Profiler Agent processes the summaries, the Adaptor Agent still needs to know whether *it* has processed the resulting profile. Shared hashes wouldn't work—each downstream agent needs its own record.
 
 **Utility module:** `src/tools/shared/content_hash.py` provides:
 - `compute_file_hash()`, `compute_directory_hash()`, `compute_files_hash()`
@@ -172,16 +170,16 @@ data/attention/state/patterns.cache.json          # Attention Agent: cached patt
 
 The system proactively surfaces questions, opportunities, and insights to help users without waiting for requests:
 
-**World Agent Opportunity Discovery:**
-- Discovers opportunities based on user's synthesis profile
+**Curator Agent Opportunity Discovery:**
+- Discovers opportunities based on user's profile
 - Creates tasks for aligned opportunities (90% of discoveries)
-- Expansive opportunities (10% surprise) stored for Attention to surface
+- Expansive opportunities (10% surprise) stored for later surfacing
 - Each opportunity includes alignment type, category, and expiration info
 
-**Attention Agent Proactive Surfacing:**
+**Curator Agent Proactive Surfacing:**
 
 *Gap Surfacing:*
-- Reads gaps signal from Evolution, picks highest priority unsurfaced gap
+- Reads gaps signal from Adaptor, picks highest priority unsurfaced gap
 - Surfaces as friendly notification ("Hey, I realized I don't know your name yet!")
 - Tracks what's been asked in `surfaced.json` with cooldowns
 - Respects cooldown periods (1 week for biographical, 1 day for energy)
@@ -209,26 +207,26 @@ The system proactively surfaces questions, opportunities, and insights to help u
 - Can post on user's behalf when they want to share without getting sucked in
 - Goal: less screen time, less brain-rot, without losing touch
 
-**Evolution Agent Health Assessment:**
+**Adaptor Agent Health Assessment:**
 - Runs every 6 hours (or on first startup)
 - Checks data completeness (biographical, relationships, values)
 - Checks configuration (energy baseline, location)
 - Identifies gaps with priorities (high/medium/low)
-- Writes `proactive_gaps.json` for Attention to surface
+- Writes `proactive_gaps.json` for Curator to surface
 - Writes `agent_guidance.json` to steer other agents
 
 **Agent Steering:**
-- Evolution writes guidance signals for specific agents
-- Interaction reads `learn_name_naturally` hint
-- World reads `skip_location_opportunities` hint
+- Adaptor writes guidance signals for specific agents
+- Friend reads `learn_name_naturally` hint
+- Curator reads `skip_location_opportunities` hint
 - Agents adapt behavior without breaking
 
 ```json
 // agent_guidance.json
 {
   "guidance": {
-    "interaction": { "learn_name_naturally": true },
-    "world": { "skip_location_opportunities": true }
+    "friend": { "learn_name_naturally": true },
+    "curator": { "skip_location_opportunities": true }
   }
 }
 ```
@@ -242,16 +240,14 @@ The system proactively surfaces questions, opportunities, and insights to help u
 Agents derive behavior from identity files loaded at startup:
 
 ```
-data/shared/state/identity/
-├── _core.identity.md        # Shared ontology for all agents
-├── ingestion.identity.md    # The Archivist
-├── summary.identity.md      # The Historian
-├── synthesis.identity.md    # The Keeper
-├── world.identity.md        # The Scout
-├── attention.identity.md    # The Curator
-├── interaction.identity.md  # The Caring Friend
-├── worker.identity.md       # The Executor
-└── evolution.identity.md    # The Evolver
+data/shared/state/agents/
+├── 0_core.agent.md          # Shared ontology for all agents
+├── 1_archivist.agent.md     # The Archivist
+├── 2_profiler.agent.md      # The Profiler
+├── 3_curator.agent.md       # The Curator
+├── 4_friend.agent.md        # The Caring Friend
+├── 5_worker.agent.md        # The Executor
+└── 6_adaptor.agent.md       # The Adaptor
 ```
 
 **Hierarchy:**
@@ -305,8 +301,8 @@ Single process that spawns and monitors all agents:
 class AgentManager:
     async def start(self):
         self.agents = {
-            "ingestion": asyncio.create_task(IngestionAgent().run()),
-            "summary": asyncio.create_task(SummaryAgent().run()),
+            "archivist": asyncio.create_task(ArchivistAgent().run()),
+            "profiler": asyncio.create_task(ProfilerAgent().run()),
             # ...
         }
 
@@ -332,14 +328,12 @@ euno/
 ├── src/
 │   ├── agents/
 │   │   ├── base.py             # Agent factory, AutonomousAgent base
-│   │   ├── ingestion.py        # The Archivist
-│   │   ├── summary.py          # The Historian
-│   │   ├── synthesis.py        # The Keeper (predictive identity model)
-│   │   ├── world.py            # The Scout
-│   │   ├── attention.py        # The Curator
-│   │   ├── interaction.py      # The Caring Friend
+│   │   ├── archivist.py        # The Archivist
+│   │   ├── profiler.py         # The Profiler (predictive identity model)
+│   │   ├── curator.py          # The Curator
+│   │   ├── friend.py           # The Caring Friend
 │   │   ├── worker.py           # The Executor
-│   │   └── evolution.py        # The Evolver
+│   │   └── adaptor.py          # The Adaptor
 │   │
 │   ├── tools/                  # Organized by agent concern
 │   │   ├── shared/             # Cross-agent tools
@@ -347,9 +341,9 @@ euno/
 │   │   │   ├── identity.py     # Agent identity evolution
 │   │   │   ├── notifications.py
 │   │   │   ├── agent_log.py    # Agent activity logging
-│   │   │   ├── guidance.py     # Agent steering from Evolution
+│   │   │   ├── guidance.py     # Agent steering from Adaptor
 │   │   │   └── content_hash.py # Hash-based change detection
-│   │   ├── ingestion/          # Ingestion tools
+│   │   ├── archivist/          # Archivist tools
 │   │   │   ├── files.py
 │   │   │   ├── classifier.py
 │   │   │   ├── digest.py
@@ -357,18 +351,16 @@ euno/
 │   │   │   ├── scorer.py
 │   │   │   ├── token_budget.py
 │   │   │   └── handlers/       # File type handlers
-│   │   ├── synthesis/          # Synthesis tools (predictive identity model)
+│   │   ├── profiler/           # Profiler tools (predictive identity model)
 │   │   │   ├── temporal.py     # Yearly profiles, evolution, influence timeline
 │   │   │   ├── private_profile.py  # Contract-compliant behavioral profile
 │   │   │   ├── profile.py      # Profile access utilities
 │   │   │   ├── summary.py      # Summary tools
 │   │   │   └── project_patterns.py  # Behavioral patterns from projects/tasks
-│   │   ├── world/              # World tools
-│   │   │   ├── world.py
-│   │   │   └── fetch.py
-│   │   ├── attention/          # Attention tools
-│   │   │   └── attention.py
-│   │   ├── interaction/        # Interaction tools
+│   │   ├── curator/            # Curator tools
+│   │   │   ├── attention.py    # Attention allocation
+│   │   │   └── world.py        # Opportunity discovery
+│   │   ├── friend/             # Friend tools
 │   │   │   ├── conversation.py
 │   │   │   ├── conversation_history.py
 │   │   │   └── cards.py
@@ -376,8 +368,8 @@ euno/
 │   │   │   ├── task.py
 │   │   │   ├── project.py
 │   │   │   └── worker.py
-│   │   └── evolution/          # Evolution tools
-│   │       ├── evolution.py
+│   │   └── adaptor/            # Adaptor tools
+│   │       ├── evolution.py    # Identity evolution
 │   │       └── health.py       # System health assessment
 │   │
 │   └── web/
@@ -395,20 +387,23 @@ euno/
     │   ├── config/             # System-wide configuration
     │   ├── logs/               # System-wide logs
     │   └── state/              # System-wide state
-    │       ├── identity/       # Agent identity files
-    │       │   ├── _core.identity.md
-    │       │   └── [agent].identity.md
+    │       ├── agents/         # Agent identity files
+    │       │   ├── 0_core.agent.md
+    │       │   └── [N]_[agent].agent.md
     │       ├── profile/        # Profile contract and policy
     │       │   ├── profile.contract.md
     │       │   └── redaction.policy.md
-    │       ├── lifelog/        # Life log entries
+    │       ├── lifelog/        # Life log entries and profiles
+    │       │   ├── _profile.current.md
+    │       │   ├── _profile.public.md
     │       │   └── [yyyy]/
-    │       │       └── [yyyy-mm-dd].md
+    │       │       ├── [yyyy-mm-dd].md
+    │       │       └── _profile.md
     │       ├── signals/        # Inter-agent triggers
     │       ├── notifications/  # User notifications
     │       └── evolution/      # Identity evolution proposals
     │
-    ├── ingestion/              # Ingestion Agent (The Archivist)
+    ├── archivist/              # Archivist Agent (The Archivist)
     │   ├── config/             # config.json, processed_hashes.json
     │   ├── logs/
     │   ├── prompts/            # process_file.md
@@ -419,37 +414,23 @@ euno/
     │       ├── queue.json
     │       └── budget.json
     │
-    ├── summary/                # Summary Agent (The Historian)
-    │   ├── config/
-    │   ├── logs/
-    │   ├── prompts/            # summarize_year.md
-    │   └── state/
-    │
-    ├── synthesis/              # Synthesis Agent (The Keeper)
+    ├── profiler/               # Profiler Agent (The Profiler)
     │   ├── config/
     │   ├── logs/
     │   ├── prompts/            # temporal.md, extract_behavioral.md
     │   └── state/
-    │       ├── profile/        # profile.YYYY.md, profile.current.md, evolution.md, influences_timeline.md
     │       └── processed_summaries.hash  # Hash of summaries last processed
     │
-    ├── world/                  # World Agent (The Scout)
-    │   ├── config/
-    │   ├── logs/
-    │   ├── prompts/            # discovery_sweep.md
-    │   └── state/
-    │       ├── opportunities/  # opportunities.json
-    │       └── processed_profile.hash    # Hash of profile last processed
-    │
-    ├── attention/              # Attention Agent (The Curator)
+    ├── curator/                # Curator Agent (The Curator)
     │   ├── config/
     │   ├── logs/
     │   ├── prompts/            # morning.md, evening.md, proactive.md
     │   └── state/
     │       ├── queue/          # surfacing_queue.json, energy logs
+    │       ├── opportunities/  # opportunities.json
     │       └── patterns.cache.json       # Cached pattern detection results
     │
-    ├── interaction/            # Interaction Agent (The Caring Friend)
+    ├── friend/                 # Friend Agent (The Caring Friend)
     │   ├── config/
     │   ├── logs/
     │   ├── prompts/
@@ -468,13 +449,13 @@ euno/
     │       ├── actions/        # pending/, completed/
     │       └── archive/        # archived projects with behavioral metadata
     │
-    └── evolution/              # Evolution Agent (The Evolver)
+    └── adaptor/                # Adaptor Agent (The Adaptor)
         ├── config/
         ├── logs/
         ├── prompts/            # assess_health.md, analyze_system.md, check_evolution.md
         └── state/
             ├── output/         # capabilities.md
-            └── processed_synthesis.hash  # Hash of synthesis last processed
+            └── processed_profile.hash    # Hash of profile last processed
 ```
 
 ---
@@ -487,13 +468,12 @@ Profiles are authoritative artifacts representing user identity. To prevent corr
 
 | Type | Location | Authority | Purpose |
 |------|----------|-----------|---------|
-| Private | `data/synthesis/state/profile/profile.current.md` | Synthesis Agent | Internal identity model |
-| Public | `data/synthesis/state/profile/profile.public.current.md` | Public Profile Generator | Safe external sharing |
+| Private | `data/shared/state/lifelog/_profile.current.md` | Profiler Agent | Internal identity model |
+| Public | `data/shared/state/lifelog/_profile.public.md` | Profiler Agent | Safe external sharing |
 
 ### Write Authority
 
-- **Synthesis Agent**: Sole authority for private profiles
-- **Public Profile Generator**: Sole authority for public profiles (`python -m src.profile make-public`)
+- **Profiler Agent**: Sole authority for private and public profiles
 - **All other agents**: May read profiles and emit observation signals, but never write
 
 ### Signal-Based Contributions
@@ -502,7 +482,7 @@ Agents contribute to profile updates by emitting observations to `profile_observ
 
 ```json
 {
-  "agent": "interaction",
+  "agent": "friend",
   "type": "behavioral_pattern",
   "observation": "User declined social event citing need for rest",
   "confidence": "medium",
@@ -513,7 +493,7 @@ Agents contribute to profile updates by emitting observations to `profile_observ
 }
 ```
 
-Synthesis reads and integrates these signals. Signals are suggestions, not commands.
+Profiler reads and integrates these signals. Signals are suggestions, not commands.
 
 ### Profile Contract
 
@@ -530,28 +510,26 @@ See `docs/governance.md` for complete governance specification.
 
 | Agent | Check Interval | Triggers | Signals Out | Hash Verification |
 |-------|---------------|----------|-------------|-------------------|
-| Ingestion | 30s | `inbox_changed`, pending files | `logs_updated` | Per-file digests |
-| Summary | 5min | `logs_updated` | `summaries_updated` | `_summary.hash` per year |
-| Synthesis | 10min | `summaries_updated` | `synthesis_updated` | `processed_summaries.hash` |
-| World | 1hr | `synthesis_updated`, 24hr timer | `opportunities_updated` | `processed_profile.hash` |
-| Attention (Curator) | 5min | time windows, `proactive_gaps`, opportunities, lifelog, feeds | `attention_delivered` | `patterns.cache.json`, `surfaced.json` |
-| Interaction | on-demand | user messages | — | — |
+| Archivist | 30s | `inbox_changed`, pending files | `logs_updated` | Per-file digests |
+| Profiler | 10min | `logs_updated` | `profile_updated` | `processed_summaries.hash` |
+| Curator | 5min | time windows, `proactive_gaps`, opportunities, lifelog, feeds | `attention_delivered` | `patterns.cache.json`, `surfaced.json` |
+| Friend | on-demand | user messages | — | — |
 | Worker | 30s | pending tasks, research tasks | `task_completed` | Task evaluation tracking |
-| Evolution | 30min | `synthesis_updated`, 6hr timer | `proactive_gaps`, `agent_guidance` | `processed_synthesis.hash` |
+| Adaptor | 30min | `profile_updated`, 6hr timer | `proactive_gaps`, `agent_guidance` | `processed_profile.hash` |
 
 **Hash verification prevents redundant work:** Agents verify that input data actually changed since their last run before processing, even when a signal is received. This prevents cascading unnecessary API calls when signals fire but underlying data is unchanged.
 
-**World Agent proactive outputs:** Creates tasks directly for aligned opportunities via `create_euno_task()`, surfacing discoveries without waiting for user to ask.
+**Curator Agent proactive outputs:** Creates tasks directly for aligned opportunities via `create_euno_task()`, surfacing discoveries without waiting for user to ask.
 
-**Attention Agent proactive checks:** Beyond time windows and gaps, the Attention Agent mines:
-- World opportunities (expiring deadlines, expansive novelty)
-- Synthesis profile (failure mode triggers)
+**Curator Agent proactive checks:** Beyond time windows and gaps, the Curator Agent mines:
+- Opportunities (expiring deadlines, expansive novelty)
+- User profile (failure mode triggers)
 - Worker projects (stalled projects)
 - Lifelog content (semantic patterns via LLM analysis)
 
 ### Large-Scale Ingestion Strategy
 
-For processing large data volumes (72GB+), the Ingestion Agent uses a pre-processing pipeline:
+For processing large data volumes (72GB+), the Archivist Agent uses a pre-processing pipeline:
 
 ```
 File → Classifier → Extractor → Scorer → Budget Queue → AI Processing → Log
@@ -602,7 +580,7 @@ class TokenBudget:
 
 **Batch Processing:**
 
-Ingestion uses batch processing to minimize API calls:
+Archivist uses batch processing to minimize API calls:
 
 ```bash
 python main.py ingest                      # Default batch size (5 files)
@@ -875,7 +853,7 @@ Found 3 language schools within 30 minutes...
 ```json
 {
   "id": "20251222_093000",
-  "agent_name": "attention",
+  "agent_name": "curator",
   "title": "Good morning",
   "message": "Here's what to focus on...",
   "type": "info",
@@ -892,7 +870,7 @@ Notifications are enriched by the web layer with additional UI fields:
 - `category`: "progress", "discovery", "reminder", "approval", "alert"
 - `actions`: Available UI actions like "expand", "ask", "dismiss"
 
-**Synthetic notifications** (like ingestion queue status) are generated at runtime from system state, not stored as files. They update in real-time as the underlying state changes.
+**Synthetic notifications** (like archivist queue status) are generated at runtime from system state, not stored as files. They update in real-time as the underlying state changes.
 
 ### Digest (Ingestion)
 
@@ -997,7 +975,7 @@ The `/api/events` endpoint provides Server-Sent Events for real-time updates:
 
 The server watches:
 - `data/shared/state/notifications/` for notification file changes
-- `data/ingestion/state/inbox/` for queue status changes (synthetic notifications)
+- `data/archivist/state/inbox/` for queue status changes (synthetic notifications)
 - `data/worker/state/tasks/` for task queue changes
 - `data/worker/state/projects/` for project changes
 

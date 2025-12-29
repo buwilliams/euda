@@ -8,10 +8,10 @@ Euno is a personal intelligence that learns to anticipate you: doing tasks for y
 
 ## Current State
 
-All 8 agents implemented with web UI and API. Key files:
+6 agents implemented with web UI and API. Key files:
 - `README.md` - Product specification
 - `docs/architecture.md` - Technical architecture and implementation spec
-- `docs/vision.md` - Vision for what Euno should become
+- `docs/profile.md` - Profile system and agent personas
 - `docs/user-experience.md` - UI/UX vision and philosophy
 - `docs/user-interface.md` - Current UI components and layout reference
 - `main.py` - Entry point for running agents
@@ -33,7 +33,7 @@ All 8 agents implemented with web UI and API. Key files:
    pip install -r requirements.txt
    ```
 
-4. Run the Ingestion Agent:
+4. Run Euno:
    ```
    python main.py
    ```
@@ -44,31 +44,28 @@ All 8 agents implemented with web UI and API. Key files:
 euno/
 ├── main.py                 # Entry point
 ├── src/
-│   ├── agents/             # 8 agent modules (ingestion, summary, synthesis, etc.)
+│   ├── agents/             # 6 agent modules
 │   │   └── base.py         # Core agent pattern
 │   ├── tools/              # Organized by agent concern
 │   │   ├── shared/         # Cross-agent (log, agent identity, signals)
-│   │   ├── ingestion/      # File processing, queue, budget, iPhone backup tools
-│   │   ├── synthesis/      # User synthesis (epistemic, values, behaviors, context)
-│   │   ├── world/          # Opportunities + fetch
-│   │   ├── attention/      # Energy + surfacing queue
-│   │   ├── interaction/    # Conversations + cards
+│   │   ├── archivist/      # File processing, queue, budget, iPhone backup tools
+│   │   ├── profiler/       # User profile synthesis (epistemic, values, behaviors)
+│   │   ├── curator/        # Energy + attention queue + context
+│   │   ├── friend/         # Conversations + cards
 │   │   ├── worker/         # Tasks + projects
-│   │   └── evolution/      # System analysis and identity evolution
+│   │   └── adaptor/        # System analysis and identity evolution
 │   └── web/
 │       └── app.py          # FastAPI server
 └── data/                   # Agent-oriented data
     │                       # Standard pattern: config/, logs/, prompts/, state/
     ├── shared/             # Cross-agent resources
-    │   └── state/          # identity/, profile/, lifelog/, signals/
-    ├── ingestion/          # state/inbox/, state/digests/
-    ├── summary/            # state/
-    ├── synthesis/          # state/values/, state/behaviors/, state/profile/, etc.
-    ├── world/              # state/opportunities/
-    ├── attention/          # state/queue/
-    ├── interaction/        # state/conversations/, state/cards/
+    │   └── state/          # agents/, profile/, lifelog/, signals/
+    ├── archivist/          # state/inbox/, state/digests/
+    ├── profiler/           # state/values/, state/behaviors/, state/profile/, etc.
+    ├── curator/            # state/queue/
+    ├── friend/             # state/conversations/, state/cards/
     ├── worker/             # state/tasks/, state/projects/, state/actions/
-    └── evolution/          # state/output/
+    └── adaptor/            # state/output/
 ```
 
 See `docs/architecture.md` for full directory structure details.
@@ -98,30 +95,13 @@ The system is grounded in Popperian epistemology: all knowledge is conjecture. V
 
 ## Agent Architecture
 
-Eight agents communicate via shared flat files:
-1. **Ingestion Agent (The Archivist)** - Preserves irreversible human signal with high fidelity; memory, not meaning
-2. **Summary Agent (The Historian)** - Compresses time without collapsing structure; preserves patterns, tensions, change signals
-3. **Synthesis Agent (The Keeper)** - Constructs predictive identity model; anticipates behavior, not aspirations
-4. **World Agent (The Scout)** - Explores integrable external opportunities; filters through identity constraints
-5. **Attention Agent (The Curator)** - Allocates scarce attention; respects capacity, introduces surprise safely
-6. **Interaction Agent (The Caring Friend)** - Supports thinking without threatening identity coherence
-7. **Worker Agent (The Executor)** - Executes tasks without undermining agency; checks constraints before irreversible actions
-8. **Evolution Agent (The Evolver)** - Refines agent identities to serve this specific user; proposes, never forces
-
-### Identity Stack (Ordered by Predictive Power)
-
-The Synthesis Agent maintains a predictive model of who the user is:
-1. **Identity Constraints** (primary) - Non-negotiable rules revealed through multiple evidence channels: sacrifice/refusal, consistent commitment, defended positions, cross-domain application
-2. **Failure Modes** (primary) - Predictable breakdowns under stress; strongest behavior predictors
-3. **Behavioral Attractors** - Stable patterns across domains: interpersonal, intellectual, creative, professional, physical
-4. **Utility Tradeoff Curves** - What they sacrifice first when goals conflict (truth vs belonging, comfort vs dignity)
-5. **Epistemic Style** (supporting) - How they handle uncertainty, revision, authority
-6. **Narrative Identity** (supporting) - Self-concept and aspirational framing; useful for alignment, unreliable for prediction
-
-The prime questions:
-- *What would this person rather suffer than violate?* (Sacrifice)
-- *What positions do they hold consistently across time and context?* (Commitment)
-- *What do they repeatedly do, build, or return to?* (Pattern)
+Six agents communicate via shared flat files, all inheriting from a shared Core identity:
+1. **Archivist** - Preserves irreversible human signal with high fidelity; memory, not meaning
+2. **Profiler** - Constructs the Profile from raw Lifelog data; extracts patterns from behavior
+3. **Curator** - Explores integrable opportunities; allocates scarce attention; respects capacity
+4. **Friend** - Supports thinking without threatening identity coherence
+5. **Worker** - Executes tasks without undermining agency; checks Profile before irreversible actions
+6. **Adaptor** - Refines agent identities to serve this specific user; proposes, never forces
 
 Each agent has:
 - Core identity (shared ontology and operating principles)
@@ -129,9 +109,9 @@ Each agent has:
 - Tools (functions it can call)
 - Context (conversation history)
 
-## Batch Ingestion
+## Batch Archival
 
-Ingestion uses batch processing to minimize API calls:
+The Archivist uses batch processing to minimize API calls:
 
 ```bash
 python main.py ingest                      # Process inbox (default batch size: 5)
@@ -143,26 +123,26 @@ Batch processing groups files together and requests structured JSON output inste
 
 ## iPhone Backup Extraction
 
-Standalone tools for extracting data from iOS device backups, located in `src/tools/ingestion/iphone/`:
+Standalone tools for extracting data from iOS device backups, located in `src/tools/archivist/iphone/`:
 
 ```bash
 # Auto-find backup and export messages + media
-python src/tools/ingestion/iphone/iphone_backup.py
+python src/tools/archivist/iphone/iphone_backup.py
 
 # Export messages only
-python src/tools/ingestion/iphone/iphone_backup.py --messages
+python src/tools/archivist/iphone/iphone_backup.py --messages
 
 # Export media only (photos/videos)
-python src/tools/ingestion/iphone/iphone_backup.py --media
+python src/tools/archivist/iphone/iphone_backup.py --media
 
 # Specify custom paths
-python src/tools/ingestion/iphone/iphone_backup.py --backup /path/to/backup --output ./export
+python src/tools/archivist/iphone/iphone_backup.py --backup /path/to/backup --output ./export
 
 # Find available backups and databases
-python src/tools/ingestion/iphone/find_backup_db.py
+python src/tools/archivist/iphone/find_backup_db.py
 
 # Export directly from sms.db (without contact name lookup)
-python src/tools/ingestion/iphone/iphone_messages_export.py /path/to/sms.db --output ./export
+python src/tools/archivist/iphone/iphone_messages_export.py /path/to/sms.db --output ./export
 ```
 
 Key details:
@@ -173,7 +153,7 @@ Key details:
 
 ## Adding New Agents
 
-1. Create identity file: `data/shared/state/identity/[name].identity.md`
+1. Create agent file: `data/shared/state/agents/[number]_[name].agent.md`
 2. Create agent module: `src/agents/[name].py`
 3. Add tools if needed: `src/tools/[agent]/[tool].py`
 4. Create data directory: `data/[name]/` with `state/` subdirectory

@@ -36,7 +36,17 @@ load_dotenv(ENV_FILE, override=True)
 # Base paths
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
-IDENTITY_DIR = SHARED_DIR / "state" / "identity"
+AGENTS_DIR = SHARED_DIR / "state" / "agents"
+
+# Agent name to file number mapping
+AGENT_FILE_MAP = {
+    "archivist": "1_archivist",
+    "profiler": "2_profiler",
+    "curator": "3_curator",
+    "friend": "4_friend",
+    "worker": "5_worker",
+    "adaptor": "6_adaptor",
+}
 
 
 def load_file(path: Path) -> str:
@@ -53,7 +63,7 @@ def load_prompt(agent_name: str, prompt_name: str, **kwargs) -> str:
     code contains the mechanics.
 
     Args:
-        agent_name: Name of the agent (e.g., "ingestion", "summary")
+        agent_name: Name of the agent (e.g., "archivist", "profiler")
         prompt_name: Name of the prompt file (without .md extension)
         **kwargs: Variables to substitute in the prompt using {var} format
 
@@ -76,9 +86,12 @@ def load_prompt(agent_name: str, prompt_name: str, **kwargs) -> str:
 
 
 def load_identity(persona_name: str) -> str:
-    """Load core identity + agent-specific persona."""
-    core = load_file(IDENTITY_DIR / "_core.identity.md")
-    persona = load_file(IDENTITY_DIR / f"{persona_name}.identity.md")
+    """Load core agent file + agent-specific persona."""
+    core = load_file(AGENTS_DIR / "0_core.agent.md")
+
+    # Map code name to file name
+    file_prefix = AGENT_FILE_MAP.get(persona_name, persona_name)
+    persona = load_file(AGENTS_DIR / f"{file_prefix}.agent.md")
     return f"{core}\n\n---\n\n{persona}"
 
 
@@ -92,7 +105,7 @@ def create_agent(
     Create an agent with identity loaded from file.
 
     Args:
-        persona_name: Name of the persona file (without .identity.md)
+        persona_name: Name of the agent (e.g., "archivist", "profiler")
         tools: List of tool definitions for the agent
         model: Model to use (default: from config)
         provider_name: Provider to use (default: from config)
@@ -119,7 +132,7 @@ def create_agent(
     # Add current date context and agent name
     today = datetime.now().strftime('%Y-%m-%d')
     system_prompt += f"\n\n---\n\nToday's date is {today}. Use this when referencing 'today' or recent dates."
-    system_prompt += f"\n\nYour agent name is '{persona_name}'. Use this when reading or proposing changes to your identity."
+    system_prompt += f"\n\nYour agent name is '{persona_name}'."
 
     # Initialize context (messages only, system is separate)
     context = []
@@ -434,6 +447,6 @@ class AutonomousAgent(ABC):
 if __name__ == "__main__":
     # Test loading identity
     print("Testing identity loading...")
-    identity = load_identity("ingestion")
+    identity = load_identity("archivist")
     print(f"Loaded identity ({len(identity)} chars)")
     print(identity[:500] + "...")

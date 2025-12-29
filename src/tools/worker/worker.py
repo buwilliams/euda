@@ -87,7 +87,7 @@ def create_task(
     Args:
         description: What needs to be done
         task_type: Type of task (email, calendar, research, reminder)
-        source: Who created it (interaction, attention, user)
+        source: Who created it (friend, curator, user)
         priority: Priority level (high, normal, low)
         source_context: Additional context from the source
         deadline: Optional deadline (ISO format)

@@ -2,11 +2,11 @@
   <img src="static/images/euno-logo-with-subtitle.png" alt="Euno" width="50%">
 </p>
 
-_Euno [U-no], from Eudaimonia—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities._
+_Euno [you-know], from Eudaimonia—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities._
 
 **Euno is a personal intelligence that learns to anticipate you.** It understands who you are, proactively does tasks for you, and curates what deserves your attention.
 
-Today's AI remembers facts about you. Euno understands who you are—your values, your failure modes, your patterns, what you'd rather suffer than violate.
+Today's AI remembers facts about you. Euno understands who you are—your values, your patterns, your rhythms.
 
 ## How It Works
 
@@ -18,7 +18,7 @@ Today's AI remembers facts about you. Euno understands who you are—your values
 
 - **Reads your life data** — photos, documents, exports from any platform
 - **Maintains a life log** — one unified record of everything, searchable and private
-- **Learns who you are** — values, failure modes, patterns—discovered from behavior, not just what you say
+- **Learns who you are** — values, patterns, rhythms—discovered from behavior, not just what you say
 - **Surfaces what matters** — the right thing at the right moment, respecting your energy
 - **Guards your attention** — reads your feeds, shields you from engagement algorithms, less screen time without losing touch
 - **Executes tasks** — handles work autonomously, asks before acting on anything important
@@ -36,23 +36,21 @@ Today's AI remembers facts about you. Euno understands who you are—your values
 
 ## Agents
 
-Eight specialized agents work together:
+Six specialized agents work together, all inheriting from a shared Core identity:
 
-| Agent | Persona | Role |
-|-------|---------|------|
-| **Ingestion** | The Archivist | Preserves high-fidelity human data before interpretation |
-| **Summary** | The Historian | Compresses time without collapsing structure |
-| **Synthesis** | The Keeper | Constructs a predictive identity model |
-| **World** | The Scout | Explores integrable external opportunities |
-| **Attention** | The Curator | Guards your attention; reads feeds, delivers what counts |
-| **Interaction** | The Caring Friend | Supports thinking without threatening identity coherence |
-| **Worker** | The Executor | Executes tasks without undermining agency |
-| **Evolution** | The Evolver | Refines agent identities to serve this specific user |
+| Agent | Role |
+|-------|------|
+| **Archivist** | Preserves high-fidelity human data before interpretation |
+| **Profiler** | Constructs the Profile from raw Lifelog data |
+| **Curator** | Explores opportunities; guards attention; delivers what counts |
+| **Friend** | Supports thinking without threatening identity coherence |
+| **Worker** | Executes tasks without undermining agency |
+| **Adaptor** | Refines agent identities to serve this specific user |
 
 ## Documentation
 
 - **[Pitch](docs/pitch.md)** — Introduction and vision overview
-- **[Vision](docs/vision.md)** — What Euno should become
+- **[Profile](docs/profile.md)** — Profile system and agent personas
 - **[Architecture](docs/architecture.md)** — Technical design and implementation
 - **[User Experience](docs/user-experience.md)** — UI/UX philosophy and vision
 - **[User Interface](docs/user-interface.md)** — Current UI components and layout
