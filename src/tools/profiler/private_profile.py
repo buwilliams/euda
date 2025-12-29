@@ -8,10 +8,14 @@ Profiles are stored in the lifelog:
 - lifelog/_profile.current.md - current private profile
 - lifelog/YYYY/_profile.md - yearly profiles
 
-Profile Contract compliance:
-- JSON frontmatter
-- Canonical section order
-- Profile item microformat
+Profile schema (from docs/2_profile.md):
+1. Biographical Information
+2. Wants and Fears
+3. Stable Attractors
+4. Notable Events and Actions
+5. Influences
+6. Interests
+7. Summary of Changes
 """
 
 import json
@@ -26,14 +30,15 @@ LIFELOG_DIR = DATA_DIR / "shared" / "state" / "lifelog"
 # Ensure directory exists
 LIFELOG_DIR.mkdir(parents=True, exist_ok=True)
 
-# Canonical section order from profile.contract.md
+# Canonical section order from docs/2_profile.md
 CANONICAL_SECTIONS = [
-    "Identity Constraints",
-    "Failure Modes",
-    "Behavioral Attractors",
-    "Utility Tradeoff Curves",
-    "Epistemic Style",
-    "Narrative Identity",
+    "Biographical Information",
+    "Wants and Fears",
+    "Stable Attractors",
+    "Notable Events and Actions",
+    "Influences",
+    "Interests",
+    "Summary of Changes",
 ]
 
 
@@ -42,7 +47,7 @@ def _build_frontmatter(scope: str = "private", source_profile: Optional[str] = N
     timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
     fm = {
-        "profile_version": "1.0",
+        "profile_version": "2.0",
         "scope": scope,
         "generated_at": timestamp,
     }
@@ -69,12 +74,13 @@ def get_private_profile() -> str:
 
 
 def write_private_profile(
-    identity_constraints: str = "",
-    failure_modes: str = "",
-    behavioral_attractors: str = "",
-    utility_tradeoffs: str = "",
-    epistemic_style: str = "",
-    narrative_identity: str = "",
+    biographical_info: str = "",
+    wants_and_fears: str = "",
+    stable_attractors: str = "",
+    notable_events: str = "",
+    influences: str = "",
+    interests: str = "",
+    changes_summary: str = "",
     _caller_agent: str = "unknown"
 ) -> str:
     """
@@ -83,12 +89,13 @@ def write_private_profile(
     Per governance.md, only Profiler Agent may call this function.
 
     Args:
-        identity_constraints: Content for Identity Constraints section
-        failure_modes: Content for Failure Modes section
-        behavioral_attractors: Content for Behavioral Attractors section
-        utility_tradeoffs: Content for Utility Tradeoff Curves section
-        epistemic_style: Content for Epistemic Style section
-        narrative_identity: Content for Narrative Identity section
+        biographical_info: Name, location, occupation, family, key dates
+        wants_and_fears: Patterns revealing what person pursues and avoids
+        stable_attractors: Patterns the person returns to across time/context
+        notable_events: Significant events (consistent or surprising)
+        influences: People, ideas, places, activities that shaped them
+        interests: Current goals, projects, work, hobbies
+        changes_summary: How they've evolved from previous years
         _caller_agent: Internal parameter for governance check
 
     Returns:
@@ -105,12 +112,13 @@ def write_private_profile(
 
     # Add sections in canonical order (omit empty ones)
     section_data = [
-        ("Identity Constraints", identity_constraints),
-        ("Failure Modes", failure_modes),
-        ("Behavioral Attractors", behavioral_attractors),
-        ("Utility Tradeoff Curves", utility_tradeoffs),
-        ("Epistemic Style", epistemic_style),
-        ("Narrative Identity", narrative_identity),
+        ("Biographical Information", biographical_info),
+        ("Wants and Fears", wants_and_fears),
+        ("Stable Attractors", stable_attractors),
+        ("Notable Events and Actions", notable_events),
+        ("Influences", influences),
+        ("Interests", interests),
+        ("Summary of Changes", changes_summary),
     ]
 
     for section_name, content in section_data:
@@ -142,7 +150,7 @@ def get_profile_section(section: str) -> str:
     Read a specific section from the current private profile.
 
     Args:
-        section: Section name (e.g., "Identity Constraints")
+        section: Section name (e.g., "Stable Attractors")
 
     Returns:
         Section content or message if not found
@@ -180,7 +188,7 @@ def get_profile_section(section: str) -> str:
     return content if content else f"Section '{section}' is empty."
 
 
-# Tool definitions for Synthesis Agent
+# Tool definitions for Profiler Agent
 PRIVATE_PROFILE_TOOLS = [
     {
         "name": "get_private_profile",
@@ -192,41 +200,44 @@ PRIVATE_PROFILE_TOOLS = [
     },
     {
         "name": "write_private_profile",
-        "description": """Write the private profile with contract-compliant structure.
+        "description": """Write the private profile following the schema from docs/2_profile.md.
 Only Profiler Agent may call this function (governance enforced).
 
 Provide content for each section. Empty sections will be omitted.
-Use the profile item microformat where applicable:
-- **[Label]**: [Description]
+Use evidence citations and confidence levels where applicable:
+- **[Item]**: [Description]
   - Evidence: [pointer to source]
-  - Confidence: [high | medium | low]
-  - Last observed: [YYYY or YYYY-MM]""",
+  - Confidence: [high | medium | low]""",
         "input_schema": {
             "type": "object",
             "properties": {
-                "identity_constraints": {
+                "biographical_info": {
                     "type": "string",
-                    "description": "Non-negotiable rules revealed by sacrifice and refusal"
+                    "description": "Name, location, occupation, family structure, key dates"
                 },
-                "failure_modes": {
+                "wants_and_fears": {
                     "type": "string",
-                    "description": "Predictable breakdowns under stress"
+                    "description": "Patterns of behavior revealing what person pursues (wants) and avoids (fears)"
                 },
-                "behavioral_attractors": {
+                "stable_attractors": {
                     "type": "string",
-                    "description": "Stable patterns across contexts"
+                    "description": "Patterns the person returns to across time and context, especially under stress"
                 },
-                "utility_tradeoffs": {
+                "notable_events": {
                     "type": "string",
-                    "description": "What gets sacrificed first when goals conflict"
+                    "description": "Significant events - either consistent with patterns or surprising departures"
                 },
-                "epistemic_style": {
+                "influences": {
                     "type": "string",
-                    "description": "How uncertainty, revision, and authority are handled"
+                    "description": "People, ideas, books, places, activities, experiences that shaped them"
                 },
-                "narrative_identity": {
+                "interests": {
                     "type": "string",
-                    "description": "Self-concept and aspirational framing"
+                    "description": "Current goals, projects, work, hobbies, entertainment"
+                },
+                "changes_summary": {
+                    "type": "string",
+                    "description": "How they've evolved from previous years - what emerged, faded, stayed constant"
                 }
             }
         }
@@ -281,8 +292,9 @@ if __name__ == "__main__":
 
     # Test write (as profiler)
     result = write_private_profile(
-        identity_constraints="- **Family first**: Will not sacrifice family time for work\n  - Evidence: lifelog/2024/\n  - Confidence: high\n  - Last observed: 2024-12",
-        failure_modes="- **Withdrawal under stress**: Retreats to solitude when overwhelmed\n  - Evidence: lifelog/2024/\n  - Confidence: high\n  - Last observed: 2024-11",
+        biographical_info="- **Name**: Test User\n- **Location**: Atlanta, GA",
+        wants_and_fears="**Wants**\n- **Stability**: Seeks predictable routines\n  - Evidence: lifelog/2024/\n  - Confidence: high",
+        stable_attractors="- **Problem-solving retreat**: Returns to solo analysis when stressed\n  - Domain: intellectual\n  - Evidence: lifelog/2024/\n  - Confidence: high",
         _caller_agent="profiler"
     )
     print(result)
@@ -293,7 +305,7 @@ if __name__ == "__main__":
     # Test governance violation
     print("\nTesting governance violation:")
     result = write_private_profile(
-        identity_constraints="Test",
+        biographical_info="Test",
         _caller_agent="friend"
     )
     print(result)

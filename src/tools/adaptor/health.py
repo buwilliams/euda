@@ -147,44 +147,52 @@ def assess_data_completeness() -> dict:
     """
     Check what user data exists vs what's missing.
 
-    The unified profile system stores all identity data in:
-    - shared/state/lifelog/YYYY/_profile.md (yearly profiles)
+    The profile is stored in:
     - shared/state/lifelog/_profile.current.md (current profile)
+    - shared/state/lifelog/YYYY/_profile.md (yearly profiles)
+
+    Profile schema (from docs/2_profile.md):
+    1. Biographical Information
+    2. Wants and Fears
+    3. Stable Attractors
+    4. Notable Events and Actions
+    5. Influences
+    6. Interests
+    7. Summary of Changes
 
     Returns:
         Dict with completeness status for profile sections.
     """
     results = {
         "profile": {"complete": False, "missing": []},
-        "identity_constraints": {"complete": False, "missing": []},
-        "failure_modes": {"complete": False, "missing": []},
-        "behavioral_attractors": {"complete": False, "missing": []},
-        "narrative_identity": {"complete": False, "missing": []},
+        "biographical_info": {"complete": False, "missing": []},
+        "wants_and_fears": {"complete": False, "missing": []},
+        "stable_attractors": {"complete": False, "missing": []},
+        "notable_events": {"complete": False, "missing": []},
+        "influences": {"complete": False, "missing": []},
+        "interests": {"complete": False, "missing": []},
+        "changes_summary": {"complete": False, "missing": []},
     }
 
-    # Check for current profile
-    profile_dir = PROFILER_DIR / "state" / "profile"
-    current_profile = profile_dir / "profile.current.md"
+    # Check for current profile in lifelog
+    current_profile = LIFELOG_DIR / "_profile.current.md"
 
     if not current_profile.exists():
         # Check for any yearly profiles
-        yearly_profiles = list(profile_dir.glob("profile.*.md"))
-        yearly_profiles = [p for p in yearly_profiles if p.stem != "profile.current" and not p.stem.startswith("profile.public")]
+        yearly_profiles = list(LIFELOG_DIR.glob("*/_profile.md"))
         if not yearly_profiles:
             results["profile"]["missing"] = ["No profile data exists yet"]
             return results
+        # Use most recent yearly profile
+        yearly_profiles.sort(reverse=True)
+        current_profile = yearly_profiles[0]
 
     # Read profile content
-    profile_content = ""
-    if current_profile.exists():
+    try:
         profile_content = current_profile.read_text()
-    else:
-        # Fall back to most recent yearly profile
-        yearly_profiles = sorted(profile_dir.glob("profile.*.md"), reverse=True)
-        for p in yearly_profiles:
-            if p.stem != "profile.current" and not p.stem.startswith("profile.public"):
-                profile_content = p.read_text()
-                break
+    except Exception:
+        results["profile"]["missing"] = ["Could not read profile"]
+        return results
 
     if len(profile_content) < 100:
         results["profile"]["missing"] = ["Profile content is minimal"]
@@ -192,26 +200,41 @@ def assess_data_completeness() -> dict:
 
     results["profile"]["complete"] = True
 
-    # Check for Identity Stack sections
-    if "Identity Constraints" in profile_content or "## Identity Constraints" in profile_content:
-        results["identity_constraints"]["complete"] = True
+    # Check for profile schema sections (from docs/2_profile.md)
+    if "Biographical Information" in profile_content or "## Biographical Information" in profile_content:
+        results["biographical_info"]["complete"] = True
     else:
-        results["identity_constraints"]["missing"] = ["identity_constraints"]
+        results["biographical_info"]["missing"] = ["biographical_info"]
 
-    if "Failure Modes" in profile_content or "## Failure Modes" in profile_content:
-        results["failure_modes"]["complete"] = True
+    if "Wants and Fears" in profile_content or "## Wants and Fears" in profile_content:
+        results["wants_and_fears"]["complete"] = True
     else:
-        results["failure_modes"]["missing"] = ["failure_modes"]
+        results["wants_and_fears"]["missing"] = ["wants_and_fears"]
 
-    if "Behavioral Attractors" in profile_content or "## Behavioral Attractors" in profile_content:
-        results["behavioral_attractors"]["complete"] = True
+    if "Stable Attractors" in profile_content or "## Stable Attractors" in profile_content:
+        results["stable_attractors"]["complete"] = True
     else:
-        results["behavioral_attractors"]["missing"] = ["behavioral_attractors"]
+        results["stable_attractors"]["missing"] = ["stable_attractors"]
 
-    if "Narrative Identity" in profile_content or "## Narrative Identity" in profile_content:
-        results["narrative_identity"]["complete"] = True
+    if "Notable Events" in profile_content or "## Notable Events" in profile_content:
+        results["notable_events"]["complete"] = True
     else:
-        results["narrative_identity"]["missing"] = ["narrative_identity"]
+        results["notable_events"]["missing"] = ["notable_events"]
+
+    if "Influences" in profile_content or "## Influences" in profile_content:
+        results["influences"]["complete"] = True
+    else:
+        results["influences"]["missing"] = ["influences"]
+
+    if "Interests" in profile_content or "## Interests" in profile_content:
+        results["interests"]["complete"] = True
+    else:
+        results["interests"]["missing"] = ["interests"]
+
+    if "Summary of Changes" in profile_content or "## Summary of Changes" in profile_content:
+        results["changes_summary"]["complete"] = True
+    else:
+        results["changes_summary"]["missing"] = ["changes_summary"]
 
     return results
 

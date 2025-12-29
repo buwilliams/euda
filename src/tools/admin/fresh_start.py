@@ -1,9 +1,11 @@
 """
 Fresh Start utility for Euno.
 
-Clears ALL generated data and user content while preserving only:
-- System configuration (agent identities, profile contract, LLM config)
-- Prompts (archivist, profiler, curator, friend, worker, adaptor)
+Destructively clears the data directory and recreates minimal structure.
+Preserves only:
+- Agent personas (data/shared/state/agents/*.agent.md)
+- Profile contracts (data/shared/state/profile/*.md)
+- LLM config (data/shared/config/)
 
 Everything else is wiped clean, including:
 - Inbox (processed, pending, failed, deferred)
@@ -11,6 +13,8 @@ Everything else is wiped clean, including:
 - All profile data
 - All agent state and conversation history
 - Tasks, projects, opportunities
+
+Note: Prompts are now stored in src/agents/prompts/ (part of codebase, not data).
 
 Usage:
     python -m src.tools.admin.fresh_start --help
@@ -28,23 +32,16 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 
 # Directories to PRESERVE (not cleared) - only system config, not user data
+# Note: Prompts are now in src/agents/prompts/ (part of codebase)
 PRESERVE_DIRS = [
-    # Shared system config
     "shared/state/agents",       # Agent persona files
     "shared/state/profile",      # Profile contract and policy
     "shared/config",             # LLM config
-    # Agent prompts (6 agents: archivist, profiler, curator, friend, worker, adaptor)
-    "archivist/prompts",
-    "profiler/prompts",
-    "curator/prompts",
-    "friend/prompts",
-    "worker/prompts",
-    "adaptor/prompts",
 ]
 
 # Directories to CLEAR (remove contents but keep .gitkeep)
-# Standard pattern: each agent has config/, logs/, prompts/, state/
-# We clear state/ and logs/, preserve config/ and prompts/
+# Standard pattern: each agent has config/, logs/, state/
+# Prompts have moved to src/agents/prompts/
 CLEAR_DIRS = [
     # Shared state (lifelog, signals, notifications, evolution proposals)
     "shared/state/lifelog",

@@ -37,6 +37,7 @@ load_dotenv(ENV_FILE, override=True)
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 SHARED_DIR = DATA_DIR / "shared"
 AGENTS_DIR = SHARED_DIR / "state" / "agents"
+PROMPTS_DIR = Path(__file__).parent / "prompts"  # src/agents/prompts
 
 # Agent name to file number mapping
 AGENT_FILE_MAP = {
@@ -59,8 +60,7 @@ def load_prompt(agent_name: str, prompt_name: str, **kwargs) -> str:
     """
     Load a prompt from an agent's prompts directory.
 
-    Engine loads content from data. Prompts contain the understanding,
-    code contains the mechanics.
+    Prompts are stored in src/agents/prompts/{agent_name}/{prompt_name}.md
 
     Args:
         agent_name: Name of the agent (e.g., "archivist", "profiler")
@@ -70,7 +70,7 @@ def load_prompt(agent_name: str, prompt_name: str, **kwargs) -> str:
     Returns:
         The prompt content with any variables substituted
     """
-    prompt_file = DATA_DIR / agent_name / "prompts" / f"{prompt_name}.md"
+    prompt_file = PROMPTS_DIR / agent_name / f"{prompt_name}.md"
 
     if not prompt_file.exists():
         raise FileNotFoundError(f"Prompt not found: {prompt_file}")

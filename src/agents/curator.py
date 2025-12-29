@@ -549,9 +549,11 @@ class AutonomousCuratorAgent(AutonomousAgent):
         try:
             from ..tools.profiler.private_profile import get_profile_section
 
-            # Get failure modes from profile
-            failure_modes = get_profile_section("Failure Modes")
-            if not failure_modes or failure_modes.startswith("Section"):
+            # Get wants/fears and stable attractors from profile
+            wants_and_fears = get_profile_section("Wants and Fears")
+            stable_attractors = get_profile_section("Stable Attractors")
+            if (not wants_and_fears or wants_and_fears.startswith("Section")) and \
+               (not stable_attractors or stable_attractors.startswith("Section")):
                 return None
 
             # Get recent lifelog
@@ -568,29 +570,34 @@ class AutonomousCuratorAgent(AutonomousAgent):
                     return None
 
             # Use the agent's LLM to analyze
-            prompt = f"""Analyze whether recent lifelog entries show signs of the known failure modes.
+            profile_context = ""
+            if wants_and_fears and not wants_and_fears.startswith("Section"):
+                profile_context += f"## Wants and Fears\n{wants_and_fears}\n\n"
+            if stable_attractors and not stable_attractors.startswith("Section"):
+                profile_context += f"## Stable Attractors\n{stable_attractors}\n\n"
 
-## Known Failure Modes (from user profile)
-{failure_modes}
+            prompt = f"""Analyze whether recent lifelog entries show warning signs based on the user's profile.
 
+{profile_context}
 ## Recent Lifelog (last 7 days)
 {recent_logs[:8000]}
 
 ## Task
-1. Identify if any failure mode patterns are currently active or emerging
-2. If a pattern is detected, suggest a specific, reversible intervention
-3. Consider the user's epistemic style: prefer systems/environment design over willpower
+1. Look for patterns where the user is moving toward their fears or away from their wants
+2. Check if they're drifting from their stable attractors (the patterns that keep them grounded)
+3. If a concerning pattern is detected, suggest a specific, reversible intervention
+4. Prefer systems/environment design over willpower-based suggestions
 
 Respond in JSON format:
 {{
     "detected": true/false,
-    "failure_mode": "which failure mode is triggered (if any)",
+    "pattern": "what concerning pattern is visible (if any)",
     "evidence": "specific quotes or patterns from the lifelog",
     "severity": "early_warning" | "active" | "crisis",
-    "intervention": "specific, reversible suggestion aligned with their behavioral attractors"
+    "intervention": "specific, reversible suggestion aligned with their stable attractors"
 }}
 
-If no failure modes are detected, respond with {{"detected": false}}"""
+If no concerning patterns are detected, respond with {{"detected": false}}"""
 
             response = self.agent.process(prompt, {})
 

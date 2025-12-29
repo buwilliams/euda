@@ -54,7 +54,7 @@ def run_interactive():
     print("  - 'temporal' - List temporal profiles (biographical source data)")
     print("  - 'evolution' - Show how you evolved over time")
     print("  - 'derive' - Full pipeline: temporal profiles + behavioral extraction")
-    print("  - 'extract' - Extract behavioral profile from existing temporal data")
+    print("  - 'extract' - Extract profile from existing temporal data")
     print("  - 'profile' - Generate current profile for other agents")
     print("  - Or ask me anything about yourself")
     print("\nType 'quit' to exit.\n")
@@ -90,7 +90,7 @@ def run_interactive():
                 continue
 
             if user_input.lower() == 'derive':
-                print("\nDeriving temporal profiles and extracting behavioral model...")
+                print("\nDeriving temporal profiles and extracting profile...")
                 result = derive_profile()
                 print(f"\n{result}\n")
                 continue
@@ -128,22 +128,26 @@ def derive_profile() -> str:
     temporal_prompt = load_prompt("profiler", "temporal")
     temporal_result = agent.process(temporal_prompt, ALL_PROFILER_HANDLERS)
 
-    # Phase 2: Extract behavioral profile from temporal data
-    extraction_prompt = load_prompt("profiler", "extract_behavioral")
+    # Phase 2: Extract profile from temporal data
+    extraction_prompt = load_prompt("profiler", "extract_profile")
     extraction_result = agent.process(extraction_prompt, ALL_PROFILER_HANDLERS)
 
     return f"Temporal profiles generated. Behavioral profile extracted.\n\n{extraction_result}"
 
 
-def extract_behavioral_profile() -> str:
+def extract_profile() -> str:
     """
-    Extract behavioral profile from existing temporal data.
+    Extract profile from existing temporal data.
 
-    Reads temporal profiles and evolution narrative, then extracts:
-    - Identity constraints (revealed by sacrifice/refusal)
-    - Behavioral attractors (stable patterns)
-    - Epistemic style (uncertainty handling)
-    - Narrative identity (self-concept)
+    Reads temporal profiles and evolution narrative, then extracts
+    the profile following the schema from docs/2_profile.md:
+    - Biographical Information
+    - Wants and Fears
+    - Stable Attractors
+    - Notable Events and Actions
+    - Influences
+    - Interests
+    - Summary of Changes
 
     Writes to profile via write_private_profile().
 
@@ -151,8 +155,12 @@ def extract_behavioral_profile() -> str:
         Result of extraction process
     """
     agent = create_profiler_agent()
-    prompt = load_prompt("profiler", "extract_behavioral")
+    prompt = load_prompt("profiler", "extract_profile")
     return agent.process(prompt, ALL_PROFILER_HANDLERS)
+
+
+# Backwards compatibility alias
+extract_behavioral_profile = extract_profile
 
 
 # Alias for backwards compatibility
