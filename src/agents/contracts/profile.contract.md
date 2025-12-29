@@ -30,10 +30,25 @@ A profile is **not**:
 
 A profile **is**:
 - A synthesis of recurring patterns
-- A record of constraints, tendencies, and tradeoffs
+- A record of what a person wants, fears, and returns to
 - A snapshot of how a person navigates the world at a point in time
 
 Profiles are expected to evolve.
+
+---
+
+## Cognitive Core
+
+The profile captures identity through the lens of the cognitive core:
+
+1. **Humans act to pursue what they desire and avoid what they fear.**
+2. **Early life is dominated by exploration** — trying strategies to learn what works.
+3. **Strategies that reliably work are exploited** — repeated, reinforced, cheaper over time.
+4. **Repeated exploitation forms stable internal attractors** — patterns the person returns to.
+5. **Identity is the pattern of these attractors over time** — not raw desire, values, or stories.
+6. **The self-model is a story layered on top of behavior** — useful but incomplete.
+7. **Lasting change requires new strategies to work under real conditions.**
+8. **Flourishing requires balance** — ~90% exploitation for stability, ~10% bounded exploration.
 
 ---
 
@@ -46,44 +61,18 @@ There are two profile variants:
 - May include sensitive, vulnerable, or identifying information
 - Used internally by Euno agents
 - Stored as:
-  - `profile.current.md`
-  - `profile.YYYY.md`
+  - `_profile.current.md` (in lifelog/)
+  - `_profile.YYYY.md` (yearly snapshots in lifelog/YYYY/)
 
 ### Public Profile
 - Derived artifact
 - Selected and written intentionally for sharing
-- Must follow public-sharing principles
+- Must follow public-sharing principles (see redaction.policy.md)
 - Stored as:
-  - `profile.public.current.md`
-  - `profile.public.YYYY.md`
+  - `_profile.public.md`
 
 Public profiles are **not redacted private profiles**.
 They are **new compositions**, written under explicit principles and user preferences.
-
----
-
-## Profile Frontmatter (Required)
-
-Every profile file MUST begin with JSON frontmatter:
-
-```json
-{
-  "profile_version": "1.0",
-  "scope": "private | public",
-  "generated_at": "YYYY-MM-DDTHH:MM:SSZ",
-  "user_id": "<optional>",
-  "source_profile": "<path>"
-}
-```
-
-The frontmatter block is delimited by triple backticks with `json` language marker at the start of the file.
-
-Fields:
-- `profile_version`: Contract version (currently "1.0")
-- `scope`: Either "private" or "public"
-- `generated_at`: ISO 8601 timestamp of generation
-- `user_id`: Optional identifier for multi-user scenarios
-- `source_profile`: Required for public profiles; path to the private source
 
 ---
 
@@ -91,12 +80,13 @@ Fields:
 
 Profiles MUST follow this section order:
 
-1. **Identity Constraints** — Non-negotiable rules revealed by sacrifice and refusal
-2. **Failure Modes** — Predictable breakdowns under stress
-3. **Behavioral Attractors** — Stable patterns across contexts
-4. **Utility Tradeoff Curves** — What gets sacrificed first when goals conflict
-5. **Epistemic Style** — How uncertainty, revision, and authority are handled
-6. **Narrative Identity** — Self-concept and aspirational framing
+1. **Biographical Information** — Name, addresses, phone numbers, etc.
+2. **Wants and Fears** — Patterns of behavior that uncover desires and fears
+3. **Stable Attractors** — Patterns the person returns to
+4. **Notable Events and Actions** — Either because they are consistent or surprising
+5. **Influences** — People, places, books, activities, entertainment, trips, experiences
+6. **Interests** — Goals, projects, work, hobbies, entertainment
+7. **Summary of Changes** — From previous years (current profile only)
 
 Agents may omit empty sections but may not reorder or rename them.
 
@@ -106,40 +96,53 @@ Agents may omit empty sections but may not reorder or rename them.
 
 These definitions are authoritative across all agents:
 
-### Identity Constraint
-A rule revealed by what the person will suffer rather than violate.
-- Not a preference or value statement
-- Derived from observed sacrifice or refusal
-- Rarely changes; when it does, it signals deep shift
+### Biographical Information
+Factual identifying data about the person.
+- Name, addresses, contact information
+- Key dates (birth, relationships, career milestones)
+- Basic demographics where relevant
 
-### Failure Mode
-A predictable pattern of breakdown under specific conditions.
-- Describes the trigger, the behavior, and the consequence
-- Strongest behavior predictor under stress
-- Phrased descriptively, not judgmentally
+### Wants and Fears
+Patterns of behavior that reveal underlying desires and fears.
+- Not stated preferences — inferred from actions
+- What the person pursues repeatedly
+- What the person avoids or resists
+- Derived from observed behavior, not self-report
 
-### Behavioral Attractor
-A stable pattern the person returns to across contexts.
-- Observable regularity, not aspiration
+### Stable Attractors
+Patterns the person returns to across contexts and time.
+- Observable regularities, not aspirations
+- Behavioral defaults under stress
+- Strategies that have become cheap and familiar
 - May be positive, negative, or neutral
-- Persists over time despite variation
 
-### Utility Tradeoff Curve
-What the person sacrifices first when goals conflict.
-- Reveals operative priorities (truth vs. belonging, comfort vs. dignity)
-- Inferred from actual choices, not stated preferences
+### Notable Events and Actions
+Significant moments that reveal identity.
+- Consistent behaviors that confirm patterns
+- Surprising actions that challenge or update understanding
+- Decisions under pressure that reveal priorities
+- Evidence of change or stability
 
-### Epistemic Style
-How the person handles uncertainty, revision, and authority.
-- Approach to changing beliefs
-- Relationship to expertise and evidence
-- Comfort with ambiguity
+### Influences
+External factors that have shaped the person.
+- People: mentors, family, friends, role models
+- Places: cities, institutions, environments
+- Media: books, films, music, art
+- Experiences: travel, education, challenges, achievements
 
-### Narrative Identity
-The story the person tells about themselves.
-- Self-concept and aspirational framing
-- Useful for alignment, unreliable for prediction
-- May diverge from operative behavior
+### Interests
+Current areas of engagement and aspiration.
+- Goals: what they're working toward
+- Projects: active endeavors
+- Work: professional focus
+- Hobbies and entertainment: how they spend discretionary time
+
+### Summary of Changes
+Evolution from previous years (current profile only).
+- What has shifted since the last profile
+- New patterns that have emerged
+- Old patterns that have faded
+- Significant life transitions
 
 ---
 
@@ -178,7 +181,7 @@ Public profiles MUST NOT contain:
 2. **Direct quotes** — Verbatim speech or writing from private sources
 3. **Transcripts** — Conversation records, message threads, or chat logs
 4. **Excerpts** — Partial reproductions of private documents
-5. **Third-party identifying information** — Names, relationships, or details about others without their consent
+5. **Third-party identifying information** — Names, relationships, or details about others without consent
 6. **Precise location data** — Specific addresses, coordinates, or identifying places
 7. **Financial details** — Exact amounts, account information, or transaction records
 8. **Health specifics** — Diagnoses, medications, or detailed medical information
@@ -190,22 +193,17 @@ They are enforced by artifact-class boundaries in the generation pipeline.
 
 ## Time-Indexed Evolution Rules
 
-### Current Profiles
-- `profile.current.md` — Always the latest private profile
-- `profile.public.current.md` — Always the latest public profile
+### Current Profile
+- `_profile.current.md` — Always the latest private profile
+- `_profile.public.md` — Always the latest public profile
 
 ### Annual Snapshots
-- `profile.YYYY.md` — Private profile as of that year
-- `profile.public.YYYY.md` — Public profile as of that year
+- `_profile.YYYY.md` — Private profile as of that year
 
 ### Writing Rules
 When a new private profile is generated:
-1. Overwrite `profile.current.md`
-2. Overwrite `profile.YYYY.md` (year from `generated_at`)
-
-When a new public profile is generated:
-1. Overwrite `profile.public.current.md`
-2. Overwrite `profile.public.YYYY.md` (year from `generated_at`)
+1. Overwrite `_profile.current.md`
+2. Overwrite `_profile.YYYY.md` (year from generation date)
 
 ### Immutability
 Historical profiles (previous years) are never mutated.
@@ -215,26 +213,26 @@ Only the current year's snapshot may be overwritten.
 
 ## Guiding Principle
 
-**Structure over story, omission over exposure.**
+**Behavior over statements, patterns over incidents.**
 
-When deciding what belongs in a profile:
-- Prefer structural patterns over narrative descriptions
+When constructing a profile:
+- Prefer observed behavior over stated preferences
+- Prefer recurring patterns over single incidents
 - Prefer evidence pointers over excerpts
-- Prefer omission over uncertain exposure
-- Prefer abstraction over specificity for public profiles
+- Prefer omission over uncertain inclusion
 
 A profile that says too little is safer than one that says too much.
-A profile that shows structure is more useful than one that tells stories.
+A profile that shows patterns is more useful than one that tells stories.
 
 ---
 
 ## Validation Requirements
 
 A valid profile:
-1. Has correct YAML frontmatter with required fields
-2. Contains sections in canonical order (may omit empty sections)
-3. Uses the profile item microformat where applicable
-4. Contains no forbidden artifact types (public only)
+1. Contains sections in canonical order (may omit empty sections)
+2. Uses the profile item microformat where applicable
+3. Contains no forbidden artifact types (public only)
+4. Derives claims from observed behavior, not self-report alone
 
 Validation is **structural**, not semantic.
 The validator checks form, not meaning.
@@ -244,7 +242,7 @@ LLMs are responsible for content judgment.
 
 ## References
 
-- `redaction.policy.md` — Plain-language sharing principles
-- `share.prefs.current.md` — User-specific sharing preferences
+- `redaction.policy.md` — Plain-language sharing principles for public profiles
+- `docs/2_profile.md` — Authoritative specification for cognitive core and profile schema
 
 This contract is authoritative. All profile-producing agents must reference it.
