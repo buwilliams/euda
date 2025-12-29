@@ -332,8 +332,8 @@ function renderSingleProjectView(projectId) {
     const project = projectsData.find(p => p.id === projectId);
     if (!project) {
         return `
-            <div class="focus-view-header">
-                <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">←</span>
                 <span class="focus-view-title">Project not found</span>
             </div>
         `;
@@ -478,8 +478,8 @@ function renderTaskDetailView(taskId) {
     const task = tasksData.find(t => t.id === taskId);
     if (!task) {
         return `
-            <div class="focus-view-header">
-                <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">←</span>
                 <span class="focus-view-title">Task Not Found</span>
             </div>
             <div class="focus-empty">This task no longer exists.</div>
@@ -531,8 +531,8 @@ function renderCompletedTaskDetailView(taskId) {
     const task = completedTasksData.find(t => t.id === taskId);
     if (!task) {
         return `
-            <div class="focus-view-header">
-                <button class="focus-back-btn" onclick="navigateFocusBack()">←</button>
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">←</span>
                 <span class="focus-view-title">Task Not Found</span>
             </div>
             <div class="focus-empty">This task no longer exists.</div>
