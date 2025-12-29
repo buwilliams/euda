@@ -695,16 +695,17 @@ If no concerning patterns are detected, respond with {{"detected": false}}"""
             if not profile_context:
                 return "Profile sections not available yet"
 
-            prompt = f"""Based on this user's profile, identify 2-3 specific opportunities that could help them thrive.
+            prompt = f"""Based on this user's profile, provide a brief summary of what you learned and identify 2-3 specific opportunities that could help them thrive.
 
 {profile_context}
 
 ## Task
-Generate opportunities that:
-1. Align with their stated wants and interests
-2. Are specific and actionable (not vague aspirations)
-3. Could realistically be explored in the near future
-4. Respect their values and constraints
+1. Write a brief, warm summary (2-3 sentences) of what stands out about this person
+2. Generate opportunities that:
+   - Align with their stated wants and interests
+   - Are specific and actionable (not vague aspirations)
+   - Could realistically be explored in the near future
+   - Respect their values and constraints
 
 For each opportunity, consider:
 - What specific action could they take?
@@ -713,6 +714,7 @@ For each opportunity, consider:
 
 Respond in JSON format:
 {{
+    "summary": "Brief warm summary of what stands out about this person",
     "opportunities": [
         {{
             "title": "short title",
@@ -746,11 +748,15 @@ Respond in JSON format:
                             tags="initial_opportunity"
                         )
 
-                    # Send welcome notification
+                    # Send welcome notification with summary
+                    summary = result.get("summary", "")
+                    welcome_msg = f"{summary}\n\n" if summary else ""
+                    welcome_msg += f"I've identified {len(opportunities)} opportunities that align with your interests. Check your queue when you're ready."
+
                     create_euno_task(
                         agent_name="curator",
                         title="Welcome - I've learned about you",
-                        message=f"I've read through your profile and identified {len(opportunities)} opportunities that align with your interests. Check your queue when you're ready.",
+                        message=welcome_msg,
                         task_type="notification",
                         priority="normal"
                     )
