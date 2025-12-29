@@ -86,3 +86,22 @@ That intelligence can live anywhere:
 The form factor changes. Euno doesn't. The same model of who you are, the same memory of your life, the same caring collaborator—present in whatever environment you're in.
 
 A business meeting. A video game. A walk in the park. A difficult conversation. Euno travels with you through life, not just through apps.
+
+---
+
+## Demo Cheat Sheet
+
+**Personal:**
+1. Upload files → show data ingestion
+2. "What do you know about me?" → show profile
+3. Have a real conversation → show personalization
+
+**Proactive:**
+1. "Remind me to..." → watch task appear in Focus tab
+2. "I want to learn..." → watch project created
+3. Show Focus tab → walk through timeline views
+
+**Curates:**
+1. "What should I focus on?" → energy-aware suggestions
+2. Show History tab → fork a conversation
+3. Explain 90/10 balance philosophy
