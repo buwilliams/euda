@@ -1,0 +1,17 @@
+{
+  "id": "profiler",
+  "name": "The Profiler",
+  "enabled": true,
+  "tools": [
+    "get_user_profile",
+    "update_user_profile",
+    "read_lifelog",
+    "list_lifelog_dates",
+    "list_jobs",
+    "get_job",
+    "create_job",
+    "add_job_log",
+    "complete_job"
+  ],
+  "sleep_minutes": 30
+}

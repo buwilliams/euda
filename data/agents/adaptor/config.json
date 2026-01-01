@@ -1,0 +1,19 @@
+{
+  "id": "adaptor",
+  "name": "The Adaptor",
+  "enabled": true,
+  "tools": [
+    "list_agents",
+    "get_agent",
+    "get_agent_memory",
+    "update_agent_memory",
+    "get_user_profile",
+    "read_lifelog",
+    "list_jobs",
+    "get_job",
+    "create_job",
+    "add_job_log",
+    "send_notification"
+  ],
+  "sleep_minutes": 60
+}

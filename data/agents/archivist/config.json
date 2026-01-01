@@ -1,0 +1,18 @@
+{
+  "id": "archivist",
+  "name": "The Archivist",
+  "enabled": true,
+  "tools": [
+    "write_lifelog",
+    "read_lifelog",
+    "list_lifelog_dates",
+    "list_jobs",
+    "get_job",
+    "create_job",
+    "add_job_log",
+    "write_asset",
+    "read_asset",
+    "list_assets"
+  ],
+  "sleep_minutes": 5
+}

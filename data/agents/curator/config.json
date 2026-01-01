@@ -1,0 +1,16 @@
+{
+  "id": "curator",
+  "name": "The Curator",
+  "enabled": true,
+  "tools": [
+    "list_jobs",
+    "get_job",
+    "create_job",
+    "update_job",
+    "add_job_log",
+    "get_user_profile",
+    "read_lifelog",
+    "send_notification"
+  ],
+  "sleep_minutes": 15
+}

@@ -1,0 +1,22 @@
+{
+  "id": "worker",
+  "name": "The Worker",
+  "enabled": true,
+  "tools": [
+    "list_jobs",
+    "get_job",
+    "create_job",
+    "update_job",
+    "complete_job",
+    "archive_job",
+    "add_job_log",
+    "get_child_jobs",
+    "list_assets",
+    "read_asset",
+    "write_asset",
+    "delete_asset",
+    "get_user_profile",
+    "send_notification"
+  ],
+  "sleep_minutes": 2
+}

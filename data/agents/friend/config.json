@@ -1,0 +1,22 @@
+{
+  "id": "friend",
+  "name": "The Friend",
+  "enabled": true,
+  "tools": [
+    "list_jobs",
+    "get_job",
+    "create_job",
+    "update_job",
+    "complete_job",
+    "add_job_log",
+    "get_child_jobs",
+    "list_assets",
+    "read_asset",
+    "write_asset",
+    "get_user_profile",
+    "read_lifelog",
+    "write_lifelog",
+    "send_notification"
+  ],
+  "sleep_minutes": 0
+}
