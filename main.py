@@ -16,17 +16,15 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Commands:
-  start       Start the agent manager (runs all enabled agents)
-  serve       Start the web server with agents
+  start       Start the web server with agents (default)
   chat        Interactive chat with an agent
   agents      List all agents
   jobs        List all jobs
 
 Examples:
-  python main.py start          # Run agents in background
-  python main.py serve          # Run web server + agents
-  python main.py chat           # Chat with default agent
-  python main.py chat worker    # Chat with specific agent
+  python main.py start          # Run web server + agents
+  python main.py chat           # Chat with default agent (assistant)
+  python main.py chat friend    # Chat with specific agent
   python main.py agents         # List agents
   python main.py jobs           # List jobs
 """
@@ -40,7 +38,6 @@ Examples:
 
     commands = {
         "start": cmd_start,
-        "serve": cmd_serve,
         "chat": cmd_chat,
         "agents": cmd_agents,
         "jobs": cmd_jobs,
@@ -56,19 +53,6 @@ Examples:
 
 
 def cmd_start(args):
-    """Start the agent manager."""
-    from src.manager import AgentManager
-
-    print("=" * 60)
-    print("Euno - Starting Agent Manager")
-    print("=" * 60)
-    print()
-
-    manager = AgentManager()
-    asyncio.run(manager.run())
-
-
-def cmd_serve(args):
     """Start web server with agents."""
     import threading
     import uvicorn
@@ -76,11 +60,11 @@ def cmd_serve(args):
     from src.web.app import app
 
     print("=" * 60)
-    print("Euno - Web Server")
+    print("Euno - Personal Intelligence System")
     print("=" * 60)
     print()
-    print("API: http://localhost:8000")
-    print("Docs: http://localhost:8000/docs")
+    print("Web UI: http://localhost:8000")
+    print("API:    http://localhost:8000/docs")
     print()
 
     # Start agents in background thread
@@ -90,7 +74,7 @@ def cmd_serve(args):
 
     agent_thread = threading.Thread(target=run_agents, daemon=True)
     agent_thread.start()
-    print("Agent Manager started in background")
+    print("Agents running in background")
     print()
 
     # Run web server
