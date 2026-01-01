@@ -1,1092 +1,457 @@
-# Architecture
+# Euno Architecture v3 - Unified Agent System
 
-Technical architecture and implementation spec for Euno.
+## Overview
 
-Euno is a personal intelligence that understands who you are—not just facts about you. It builds a predictive model of your identity (values, failure modes, patterns), acts proactively before you ask, and guards your attention from engagement algorithms designed to hijack it. This document describes how.
+A radically simplified architecture where everything is either an **Agent** or a **Job**. Agents are configurable entities (human or autonomous) that work on Jobs. Jobs are hierarchical units of work with assets and logs.
 
-## Philosophy
+## Core Principles
 
-### Information Flow
+1. **Agents are generic** - No hardcoded agent types. All agents are config + tools + loop.
+2. **User is an agent** - The human user is just another agent with a different interface (Web UI/CLI vs autonomous loop).
+3. **Jobs replace projects and tasks** - A single hierarchical structure with arbitrary depth.
+4. **Flat files everywhere** - Human-readable, inspectable, version-controllable.
+5. **No permissions, only capabilities** - What an agent can do is controlled by which tools it has access to.
 
-When adding features or content, don't add directly. First examine the system's architecture and capabilities, then design the addition to align with them. If a capability is missing, consider carefully how to organize it alongside existing capabilities.
-
-```
-Architecture → Organization → Capabilities → Features
-```
-
-This hierarchy ensures coherent growth. Features serve capabilities, capabilities fit the organization, organization reflects architecture.
-
-### Simplicity
-
-Keep it simple. An agent is just:
-- A context (list of messages)
-- A loop (process input → call LLM → handle tools → repeat)
-- Tools (JSON schemas describing functions)
-
-As Thomas Ptacek notes: "Your wackiest idea will probably (1) work and (2) take 30 minutes to code."
-
----
-
-## Core Patterns
-
-### Agent Pattern
-
-Every agent follows this pattern:
-
-```python
-def create_agent(persona_name, tools=[]):
-    # Load core identity + persona-specific identity
-    core = load_file("src/agents/personas/0_core.agent.md")
-    persona = load_file(f"src/agents/personas/{persona_name}.agent.md")
-
-    context = []
-    system_prompt = f"{core}\n\n{persona}"
-
-    def process(input_content, handlers):
-        context.append({"role": "user", "content": input_content})
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            system=system_prompt,
-            tools=tools,
-            messages=context
-        )
-
-        # Handle tool calls in a loop
-        while has_tool_calls(response):
-            results = execute_tools(response, handlers)
-            context.append({"role": "assistant", "content": response.content})
-            context.append({"role": "user", "content": results})
-            response = client.messages.create(...)
-
-        context.append({"role": "assistant", "content": response.content})
-        return extract_text(response)
-
-    return {"process": process, "clear_context": lambda: context.clear()}
-```
-
-### Autonomous Agent Pattern
-
-Agents that run continuously:
-
-```python
-class AutonomousAgent:
-    check_interval = 30  # seconds
-
-    async def run(self):
-        while self.running:
-            if await self.check_work_needed():
-                await self.do_work()
-                self.send_signals()
-            await asyncio.sleep(self.check_interval)
-
-    def check_work_needed(self) -> bool:
-        # Check signals, time windows, pending files, etc.
-        pass
-
-    def do_work(self):
-        # Call agent.process() with appropriate prompt
-        pass
-```
-
-### Sub-Agent Pattern
-
-Spawn fresh context for complex tasks:
-
-```python
-def analyze_photo(photo_path):
-    sub_agent = create_agent("archivist", tools=[extract_exif, ocr_image])
-    result = sub_agent["process"](f"Analyze: {photo_path}", handlers)
-    return result  # Returns to parent, sub-agent context discarded
-```
-
-### Signal-Based Communication
-
-Agents communicate via flat files, not direct calls:
+## Data Structure
 
 ```
-data/shared/state/signals/
-  logs_updated.signal        # Created by Archivist, consumed by Profiler
-  profile_updated.signal     # Created by Profiler, consumed by Curator, Adaptor
-  proactive_gaps.json        # Created by Adaptor, consumed by Curator
-  agent_guidance.json        # Created by Adaptor, consumed by all agents
+data/
+├── agents/
+│   └── {agent-id}/
+│       ├── config.json                 # tools, sleep timer, enabled
+│       ├── {agent-id}-persona.md       # identity/system prompt
+│       └── state/
+│           ├── memory.json             # persistent agent memory
+│           └── conversation/
+│               └── {date}.md           # conversation history by date
+├── jobs/
+│   └── {job-id}.json                   # flat structure with parent_id
+├── assets/
+│   └── {job-id}/                       # assets organized by job
+│       └── {filename}
+├── user/
+│   ├── user-profile.md                 # user preferences and patterns
+│   └── lifelog/
+│       └── {date}.md                   # daily journals
+└── system/
+    └── config.json                     # API keys, global settings
 ```
 
-Signal files contain a timestamp. Reading a signal deletes it (one-time trigger).
+## Agents
 
-```python
-def send_signal(name):
-    Path(f"data/shared/state/signals/{name}.signal").write_text(datetime.now().isoformat())
+### Agent Definition
 
-def check_signal(name) -> bool:
-    path = Path(f"data/shared/state/signals/{name}.signal")
-    if path.exists():
-        path.unlink()
-        return True
-    return False
-```
+An agent is defined by three things:
+1. **Config** (`config.json`) - operational parameters
+2. **Persona** (`{agent}-persona.md`) - identity and behavior
+3. **Tools** - list of tool names the agent can use
 
-### Hash-Based Change Detection
-
-Signals alone can cause redundant work—an agent might receive a signal but the underlying data hasn't actually changed since its last run. Agents use content hashes to verify changes before processing:
-
-```python
-# Each agent tracks what version of input data it last processed
-def check_work_needed(self) -> bool:
-    if self.check_signal("summaries_updated"):
-        # Signal received, but verify data actually changed
-        if self._have_summaries_changed():
-            return True
-        self.logger.debug("Signal received but content unchanged - skipping")
-    return False
-
-def _have_summaries_changed(self) -> bool:
-    current_hash = compute_files_hash(summary_files)
-    cached_hash = load_cached_hash(PROCESSED_SUMMARIES_HASH_FILE)
-    return cached_hash is None or current_hash != cached_hash
-
-def do_work(self):
-    # ... do the work ...
-    # Save hash so we know what we processed
-    save_cached_hash(PROCESSED_SUMMARIES_HASH_FILE, current_hash)
-```
-
-**Hash file locations** (each agent tracks its own "last processed" version):
-
-```
-data/shared/state/lifelog/{year}/_summary.hash    # Profiler Agent: logs hash for this year
-data/profiler/state/processed_summaries.hash      # Profiler Agent: summaries it last processed
-data/adaptor/state/processed_profile.hash         # Adaptor Agent: profile it last processed
-data/curator/state/patterns.cache.json            # Curator Agent: cached pattern detection
-```
-
-**Why per-agent tracking?** Each agent independently tracks what *it* has processed. If the Profiler Agent processes the summaries, the Adaptor Agent still needs to know whether *it* has processed the resulting profile. Shared hashes wouldn't work—each downstream agent needs its own record.
-
-**Utility module:** `src/tools/shared/content_hash.py` provides:
-- `compute_file_hash()`, `compute_directory_hash()`, `compute_files_hash()`
-- `load_cached_hash()`, `save_cached_hash()`
-- `has_content_changed()`, `has_files_changed()`
-
-### Proactive Behavior
-
-The system proactively surfaces questions, opportunities, and insights to help users without waiting for requests:
-
-**Curator Agent Opportunity Discovery:**
-- Discovers opportunities based on user's profile
-- Creates tasks for aligned opportunities (90% of discoveries)
-- Expansive opportunities (10% surprise) stored for later surfacing
-- Each opportunity includes alignment type, category, and expiration info
-
-**Curator Agent Proactive Surfacing:**
-
-*Gap Surfacing:*
-- Reads gaps signal from Adaptor, picks highest priority unsurfaced gap
-- Surfaces as friendly notification ("Hey, I realized I don't know your name yet!")
-- Tracks what's been asked in `surfaced.json` with cooldowns
-- Respects cooldown periods (1 week for biographical, 1 day for energy)
-
-*Opportunity Mining:*
-- Surfaces expiring opportunities (within 7 days) with deadline reminders
-- Surfaces expansive opportunities (max 2/week) to introduce novelty safely
-- Tracks expansive surfacing to avoid overwhelm
-
-*Profile Mining (LLM-based):*
-- **Failure Mode Detection** — Compares recent lifelog against profile's failure modes section; surfaces interventions when patterns detected
-- **Stalled Project Detection** — Flags projects with no activity in 14+ days; creates nudge tasks
-- **Semantic Pattern Analysis** — Detects emotional patterns, recurring frustrations, implicit needs, value-behavior gaps
-- All LLM-based checks run at most once per day with cooldowns
-
-*Actionable Pattern Creation:*
-- Detects recurring intents from lifelog (mentioned 3+ times in 14 days)
-- Proactively creates projects/tasks from detected patterns
-- Throttled: 24hr cooldown between creations, max 3/week
-
-*Feed Curation (Future):*
-- Reads social feeds so user doesn't have to scroll them
-- Surfaces genuinely important updates from people who matter
-- Shields from engagement algorithms designed to maximize clicks, not wellbeing
-- Can post on user's behalf when they want to share without getting sucked in
-- Goal: less screen time, less brain-rot, without losing touch
-
-**Adaptor Agent Health Assessment:**
-- Runs every 6 hours (or on first startup)
-- Checks data completeness (biographical, relationships, values)
-- Checks configuration (energy baseline, location)
-- Identifies gaps with priorities (high/medium/low)
-- Writes `proactive_gaps.json` for Curator to surface
-- Writes `agent_guidance.json` to steer other agents
-
-**Agent Steering:**
-- Adaptor writes guidance signals for specific agents
-- Friend reads `learn_name_naturally` hint
-- Curator reads `skip_location_opportunities` hint
-- Agents adapt behavior without breaking
+### Agent Config Schema
 
 ```json
-// agent_guidance.json
 {
-  "guidance": {
-    "friend": { "learn_name_naturally": true },
-    "curator": { "skip_location_opportunities": true }
-  }
+  "id": "archivist",
+  "name": "The Archivist",
+  "enabled": true,
+  "tools": ["read_file", "write_file", "create_job", "complete_job"],
+  "sleep_minutes": 5
 }
 ```
 
-**Tone:** Curious friend—warm and conversational, not corporate:
-- "Hey, I realized I don't know your name yet!"
-- "Quick thought—where are you based?"
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier |
+| `name` | string | Display name |
+| `enabled` | boolean | Whether agent runs |
+| `tools` | string[] | Tools this agent can use |
+| `sleep_minutes` | number | Sleep between work cycles (0 = continuous) |
 
-### Identity System
+### Agent Types
 
-Agents derive behavior from identity files loaded at startup:
+**Autonomous Agents** - Run in a loop managed by Agent Manager:
+- Wake up, check for work, do work, sleep, repeat
+- Decide internally when they're "done" for a cycle
+- Examples: Archivist, Curator, Worker
 
-```
-src/agents/personas/
-├── 0_core.agent.md          # Shared ontology for all agents
-├── 1_archivist.agent.md     # The Archivist
-├── 2_profiler.agent.md      # The Profiler
-├── 3_curator.agent.md       # The Curator
-├── 4_friend.agent.md        # The Caring Friend
-├── 5_worker.agent.md        # The Executor
-└── 6_adaptor.agent.md       # The Adaptor
-```
+**User Agent** - Special case:
+- Interacts via Web UI or CLI
+- Same underlying architecture, different interface
+- Conversation history stored same as other agents
 
-**Hierarchy:**
-1. **Core Identity** — Shared ontology, operating principles, canonical definitions
-2. **Agent Persona** — Role-specific purpose, constraints, and output contracts
-3. **Current Context** — Job to be done, relevant state
-
-**Core identity contains:**
-- Who Am I (caring friend, collaborative second mind, not authority or servant)
-- Purpose (support eudaimonia—a life that holds together over time)
-- Core Beliefs (fallibility, asymmetry of knowledge, human change, non-manipulation)
-- What I Will Do / Will Not Do (behavioral commitments)
-- Canonical Definitions (promotion of life, identity constraint, value, belief, failure mode, resistance)
-- Advocacy Constraint (treat resistance as information, not opposition)
-- Epistemic Foundation (promotion of life as bedrock)
-- Identity Evolution (when and how agents can propose changes)
-
-**Each persona contains:**
-- Who Am I (persona self-concept, e.g., "The Archivist")
-- Purpose (why this agent exists)
-- Canonical/Core Definitions (role-specific terminology)
-- Core Beliefs or Behavioral Rules/Constraints (what guides action)
-- What I Track / Tools (inputs and capabilities)
-- Output Contract (what this agent delivers)
-
-**Identity Evolution:**
-
-Agents can propose changes to their own identity:
-
-```python
-def propose_identity_change(agent_name, new_identity, rationale):
-    proposal = {
-        "agent": agent_name,
-        "proposed": new_identity,
-        "rationale": rationale,
-        "status": "pending"
-    }
-    save_to(f"data/shared/state/evolution/{timestamp}.proposal.json", proposal)
-    send_signal("identity_proposal")
-```
-
-User reviews proposals via `python main.py evolve`. Approved changes update the identity file.
-
----
-
-## Agent Manager
-
-Single process that spawns and monitors all agents:
-
-```python
-class AgentManager:
-    async def start(self):
-        self.agents = {
-            "archivist": asyncio.create_task(ArchivistAgent().run()),
-            "profiler": asyncio.create_task(ProfilerAgent().run()),
-            # ...
-        }
-
-        while True:
-            await self.health_check()
-            await asyncio.sleep(60)
-
-    async def health_check(self):
-        for name, task in self.agents.items():
-            if task.done():
-                self.agents[name] = asyncio.create_task(self.restart(name))
-```
-
----
-
-## Directory Structure
-
-Tools are organized by agent concern, data is organized by agent ownership.
+### Agent Lifecycle
 
 ```
-euno/
-├── main.py                     # Entry point
-├── src/
-│   ├── agents/
-│   │   ├── base.py             # Agent factory, AutonomousAgent base
-│   │   ├── personas/           # Agent identity files (*.agent.md)
-│   │   ├── prompts/            # Prompt templates by agent
-│   │   ├── contracts/          # Profile contract and redaction policy
-│   │   ├── archivist.py        # The Archivist
-│   │   ├── profiler.py         # The Profiler (predictive identity model)
-│   │   ├── curator.py          # The Curator
-│   │   ├── friend.py           # The Caring Friend
-│   │   ├── worker.py           # The Executor
-│   │   └── adaptor.py          # The Adaptor
-│   │
-│   ├── tools/                  # Organized by agent concern
-│   │   ├── shared/             # Cross-agent tools
-│   │   │   ├── log.py          # Life log read/write
-│   │   │   ├── identity.py     # Agent identity evolution
-│   │   │   ├── notifications.py
-│   │   │   ├── agent_log.py    # Agent activity logging
-│   │   │   ├── guidance.py     # Agent steering from Adaptor
-│   │   │   └── content_hash.py # Hash-based change detection
-│   │   ├── archivist/          # Archivist tools
-│   │   │   ├── files.py
-│   │   │   ├── classifier.py
-│   │   │   ├── digest.py
-│   │   │   ├── queue.py
-│   │   │   ├── scorer.py
-│   │   │   ├── token_budget.py
-│   │   │   └── handlers/       # File type handlers
-│   │   ├── profiler/           # Profiler tools (predictive identity model)
-│   │   │   ├── temporal.py     # Yearly profiles, evolution, influence timeline
-│   │   │   ├── private_profile.py  # Contract-compliant behavioral profile
-│   │   │   ├── profile.py      # Profile access utilities
-│   │   │   ├── summary.py      # Summary tools
-│   │   │   └── project_patterns.py  # Behavioral patterns from projects/tasks
-│   │   ├── curator/            # Curator tools
-│   │   │   ├── attention.py    # Attention allocation
-│   │   │   └── world.py        # Opportunity discovery
-│   │   ├── friend/             # Friend tools
-│   │   │   ├── conversation.py
-│   │   │   ├── conversation_history.py
-│   │   │   └── cards.py
-│   │   ├── worker/             # Worker tools
-│   │   │   ├── task.py
-│   │   │   ├── project.py
-│   │   │   └── worker.py
-│   │   └── adaptor/            # Adaptor tools
-│   │       ├── evolution.py    # Identity evolution
-│   │       └── health.py       # System health assessment
-│   │
-│   └── web/
-│       └── app.py              # FastAPI server
-│
-└── data/                       # Agent-oriented data (user data, not code)
-    │
-    │   # Standard agent pattern: config/, logs/, state/
-    │   # - config/  : Agent configuration files
-    │   # - logs/    : Agent activity logs (stdout)
-    │   # - state/   : All data the agent reads or writes
-    │   # Note: Personas and prompts are in src/agents/ (code, not data)
-    │
-    ├── shared/                 # Cross-agent resources
-    │   ├── config/             # System-wide configuration
-    │   ├── logs/               # System-wide logs
-    │   └── state/              # System-wide state
-    │       ├── lifelog/        # Life log entries and profiles
-    │       │   ├── _profile.current.md
-    │       │   ├── _profile.public.md
-    │       │   └── [yyyy]/
-    │       │       ├── [yyyy-mm-dd].md
-    │       │       └── _profile.md
-    │       ├── signals/        # Inter-agent triggers
-    │       ├── notifications/  # User notifications
-    │       └── evolution/      # Identity evolution proposals
-    │
-    ├── archivist/              # Archivist Agent (The Archivist)
-    │   ├── config/             # config.json, processed_hashes.json
-    │   ├── logs/
-    │   └── state/
-    │       ├── inbox/          # pending/, processing/, processed/, failed/, deferred/
-    │       ├── digests/        # {hash}.json files (LLM summaries)
-    │       ├── state.json
-    │       ├── queue.json
-    │       └── budget.json
-    │
-    ├── profiler/               # Profiler Agent (The Profiler)
-    │   ├── config/
-    │   ├── logs/
-    │   └── state/
-    │       └── processed_summaries.hash  # Hash of summaries last processed
-    │
-    ├── curator/                # Curator Agent (The Curator)
-    │   ├── config/
-    │   ├── logs/
-    │   └── state/
-    │       ├── queue/          # surfacing_queue.json, energy logs
-    │       ├── opportunities/  # opportunities.json
-    │       └── patterns.cache.json       # Cached pattern detection results
-    │
-    ├── friend/                 # Friend Agent (The Caring Friend)
-    │   ├── config/
-    │   ├── logs/
-    │   └── state/
-    │       ├── conversations/  # session files
-    │       └── cards/          # received cards
-    │
-    ├── worker/                 # Worker Agent (The Executor)
-    │   ├── config/
-    │   ├── logs/
-    │   └── state/
-    │       ├── tasks/          # queue.json, daily/, results/
-    │       ├── projects/       # {id}.json files
-    │       │   └── notes/      # {project_id}/ directories with individual note files
-    │       ├── actions/        # pending/, completed/
-    │       └── archive/        # archived projects with behavioral metadata
-    │
-    └── adaptor/                # Adaptor Agent (The Adaptor)
-        ├── config/
-        ├── logs/
-        └── state/
-            ├── output/         # capabilities.md
-            └── processed_profile.hash    # Hash of profile last processed
+┌─────────────────────────────────────────────────┐
+│                 Agent Manager                    │
+│  - Starts all enabled agents on app startup     │
+│  - Monitors agent health                        │
+│  - Restarts failed agents                       │
+│  - Handles graceful shutdown                    │
+└─────────────────────────────────────────────────┘
+                      │
+        ┌─────────────┼─────────────┐
+        ▼             ▼             ▼
+   ┌─────────┐   ┌─────────┐   ┌─────────┐
+   │ Agent A │   │ Agent B │   │ Agent C │
+   │  Loop   │   │  Loop   │   │  Loop   │
+   └─────────┘   └─────────┘   └─────────┘
+        │             │             │
+        ▼             ▼             ▼
+   ┌─────────────────────────────────────┐
+   │           Work Cycle                 │
+   │  1. Check for relevant jobs         │
+   │  2. Do work (use tools)             │
+   │  3. Update job state                │
+   │  4. Sleep for configured duration   │
+   │  5. Repeat                          │
+   └─────────────────────────────────────┘
 ```
 
----
+### Agent Memory & Conversation
 
-## Profile Governance
+Each agent maintains its own:
 
-Profiles are authoritative artifacts representing user identity. To prevent corruption and leakage, strict governance applies.
+**Conversation History** (`state/conversation/{date}.md`):
+- Daily markdown files
+- Full context preserved across sessions
+- Used to maintain continuity
 
-### Profile Types
+**Memory** (`state/memory.json`):
+- Persistent facts the agent has learned
+- Survives restarts
+- Agent-specific knowledge
 
-| Type | Location | Authority | Purpose |
-|------|----------|-----------|---------|
-| Private | `data/shared/state/lifelog/_profile.current.md` | Profiler Agent | Internal identity model |
-| Public | `data/shared/state/lifelog/_profile.public.md` | Profiler Agent | Safe external sharing |
+## Jobs
 
-### Write Authority
+### Job Concept
 
-- **Profiler Agent**: Sole authority for private and public profiles
-- **All other agents**: May read profiles and emit observation signals, but never write
+Jobs unify the old "projects" and "tasks" concepts:
+- A Job can contain other Jobs (via `parent_id`)
+- Jobs have assets (files, images, documents)
+- Jobs track state and history
+- All agents can see all jobs (visibility is universal)
 
-### Signal-Based Contributions
-
-Agents contribute to profile updates by emitting observations to `profile_observations.json`:
+### Job Schema
 
 ```json
 {
-  "agent": "friend",
-  "type": "behavioral_pattern",
-  "observation": "User declined social event citing need for rest",
-  "confidence": "medium",
-  "suggested_update": {
-    "section": "Stable Attractors",
-    "action": "strengthen"
-  }
-}
-```
-
-Profiler reads and integrates these signals. Signals are suggestions, not commands.
-
-### Profile Schema
-
-Profiles follow the schema defined in `docs/2_profile.md`:
-
-1. **Biographical Information** — Name, addresses, phone numbers, etc.
-2. **Wants and Fears** — Patterns of behavior that uncover desires and fears
-3. **Stable Attractors** — Patterns the person returns to
-4. **Notable Events and Actions** — Consistent or surprising behaviors
-5. **Influences** — People, places, books, activities, experiences
-6. **Interests** — Goals, projects, work, hobbies
-7. **Summary of changes** — From previous years
-
-Historical profiles (`_profile.YYYY.md`) use the same schema, enabling tracking of how a person changes over time.
-
----
-
-## Agents Reference
-
-| Agent | Check Interval | Triggers | Signals Out | Hash Verification |
-|-------|---------------|----------|-------------|-------------------|
-| Archivist | 30s | `inbox_changed`, pending files | `logs_updated` | Per-file digests |
-| Profiler | 10min | `logs_updated` | `profile_updated` | `processed_summaries.hash` |
-| Curator | 5min | time windows, `proactive_gaps`, opportunities, lifelog, feeds | `attention_delivered` | `patterns.cache.json`, `surfaced.json` |
-| Friend | on-demand | user messages | — | — |
-| Worker | 30s | pending tasks, research tasks | `task_completed` | Task evaluation tracking |
-| Adaptor | 30min | `profile_updated`, 6hr timer | `proactive_gaps`, `agent_guidance` | `processed_profile.hash` |
-
-**Hash verification prevents redundant work:** Agents verify that input data actually changed since their last run before processing, even when a signal is received. This prevents cascading unnecessary API calls when signals fire but underlying data is unchanged.
-
-**Curator Agent proactive outputs:** Creates tasks directly for aligned opportunities via `create_euno_task()`, surfacing discoveries without waiting for user to ask.
-
-**Curator Agent proactive checks:** Beyond time windows and gaps, the Curator Agent mines:
-- Opportunities (expiring deadlines, expansive novelty)
-- User profile (failure mode triggers)
-- Worker projects (stalled projects)
-- Lifelog content (semantic patterns via LLM analysis)
-
-### Large-Scale Ingestion Strategy
-
-For processing large data volumes (72GB+), the Archivist Agent uses a pre-processing pipeline:
-
-```
-File → Classifier → Extractor → Scorer → Budget Queue → AI Processing → Log
-         ↓             ↓           ↓
-      (local)      (local)    (local)
-```
-
-**Phases:**
-1. **Classification** — Detect file type by magic bytes, route to handler
-2. **Extraction** — Pull metadata locally (EXIF, PDF info, mbox headers)
-3. **Scoring** — Relevance heuristics (recency, type, source)
-4. **Budget Queue** — Daily token limit, priority ordering, rollover
-5. **AI Processing** — Tiered models (Haiku → Sonnet → Vision)
-
-**File Type Strategies:**
-
-| Type | Local Extraction | AI Processing | Memory |
-|------|-----------------|---------------|--------|
-| Images | EXIF, dimensions | Vision for selected | Stream only |
-| Videos | ffprobe, keyframes | Whisper for audio | Never load full |
-| Audio | Duration, ID3 | Chunked Whisper | Stream chunks |
-| PDFs | Metadata, TOC | Full <10 pages, summarize large | Page-by-page |
-| mbox | Headers, threads | Summarize threads | Stream messages |
-| Archives | List contents | Process extracted items | Temp extraction |
-
-**Ignore Patterns:**
-- Duplicates (SHA256 hash)
-- System files (.DS_Store, Thumbs.db, caches)
-- Spam/marketing emails
-- Auto-generated content
-
-**Token Budget:**
-
-```python
-class TokenBudget:
-    def __init__(self, daily_limit=1_000_000):
-        self.daily_limit = daily_limit
-        self.used_today = 0
-        self.last_reset = date.today()
-
-    def can_spend(self, tokens: int) -> bool:
-        self._maybe_reset()
-        return self.used_today + tokens <= self.daily_limit
-
-    def spend(self, tokens: int):
-        self.used_today += tokens
-```
-
-**Batch Processing:**
-
-Archivist uses batch processing to minimize API calls:
-
-```bash
-python main.py ingest                      # Default batch size (5 files)
-python main.py ingest --batch-size 10      # Custom batch size
-python main.py ingest ~/Documents -r       # External directory
-```
-
-Batch processing:
-- Groups files by size/count for optimal API efficiency
-- Requests structured JSON output instead of tool calls
-- Large files become single-file batches (still efficient - no tool call overhead)
-
-**Temporal Detection Priority:**
-
-File timestamps are unreliable. Determine actual time in this order:
-
-1. **Content metadata** — EXIF DateTimeOriginal, PDF creation date
-2. **Filename patterns** — `IMG_20240115_093042.jpg`, `Screenshot 2024-01-15`
-3. **Content analysis** — Dates in text, receipt timestamps
-4. **Cross-reference** — Match with existing log entries
-5. **Contextual inference** — Email thread timing, file sequence
-6. **File system timestamp** — Last resort, often wrong
-7. **Ask user** — When confidence is too low
-
-The `temporal_confidence` field in log entries tracks this: `high` (sources 1-2), `medium` (3-5), `low` (6-7).
-
-### Worker Agent Delegation
-
-The Worker Agent decides how to handle each task:
-
-```
-TASK arrives
-    ↓
-Is it a Learning task? ──YES──→ Prepare materials, surface to user
-    ↓ NO
-Is it User-Only? ──YES──→ Surface to user (cannot execute)
-    ↓ NO                   (physical activity, creative work, decisions)
-Is it High-Stakes? ──YES──→ Create pending action, request approval
-    ↓ NO                    (external comms, calendar changes, financial)
-Is it Read-Only/Research? ──YES──→ Execute autonomously, store result
-    ↓ NO
-Within rate limits? ──YES──→ Execute autonomously
-    ↓ NO
-Pause and notify (rate limit hit)
-```
-
-**Delegation strategies:**
-- `agent_autonomous` — Execute without asking
-- `requires_approval` — Create pending action, wait for user
-- `user_only` — Cannot execute, surface to user
-- `prepare_materials` — For learning tasks, curate but don't do
-
-### Task-Based Approval Workflow
-
-Actions requiring approval are surfaced as tasks in the "From Euno" project. Users approve or reject using familiar task interactions:
-
-```
-Action created (requires_approval=true)
-    ↓
-Approval task created in "From Euno" project
-    ↓
-User sees task with rich markdown description
-    ↓
-┌─────────────────────────────────────────┐
-│ Complete task (checkbox) → APPROVE      │
-│ Delete task              → REJECT       │
-└─────────────────────────────────────────┘
-    ↓
-Action status updated, Worker executes if approved
-```
-
-**Approval task structure:**
-```json
-{
-  "id": "task-xxx",
-  "description": "## Approval Needed: Calendar Create\n\n**Summary here**\n\nDetails...",
-  "type": "approval",
-  "project_id": "project-euno",
-  "action_id": "action-xxx",
-  "delegation": {
-    "strategy": "user_approval",
-    "requires_approval": true
-  }
-}
-```
-
-**Key functions:**
-- `create_approval_task()` — Creates rich markdown task linked to action
-- `update_task_status()` — When completing, calls `approve_action()` if `action_id` present
-- `delete_task()` — When deleting, calls `reject_action()` if `action_id` present
-
-This eliminates the need for a separate approval UI—users manage approvals through the same task interface they already use.
-
----
-
-## Data Schemas
-
-### Log Entry
-
-```markdown
----
-2024-12-22T09:30:00
-source: manual
-locality: home
-type: note
-temporal_confidence: high
-temporal_source: explicit
-
-[Content here]
----
-```
-
-### Project
-
-```json
-{
-  "id": "project-xxx",
-  "title": "Learn Spanish",
-  "description": "Achieve conversational fluency in Spanish through immersion and practice",
-  "type": "learning",
-  "status": "active",
-  "priority": "high",
-  "deadline": "2025-06-01",
-  "someday": false,
-  "milestones": [],
-  "values_alignment": ["growth"],
-  "meta": {
-    "total_tasks_created": 5,
-    "tasks_completed": 3
-  }
-}
-```
-
-**Fields:**
-- `title` — Short project name for display
-- `description` — Full project details, goals, and context
-- `someday` — When true with no deadline, project is deferred; same logic as tasks
-
-**System Projects:**
-
-Three special projects are automatically created and managed by Euno:
-
-| Project ID | Title | Purpose |
-|------------|-------|---------|
-| `project-general` | General | Default project for tasks without a specific project |
-| `project-notifications` | Notifications | System notifications and approval requests from Euno |
-| `project-recommendations` | Curator | Curated suggestions based on user behaviors and interests |
-
-System project tasks are hidden from timeline views (Today, Upcoming, etc.) unless the user explicitly sets a "When" value. This prevents Euno's notifications from cluttering the user's task list while still making them accessible in the Projects view.
-
-**Project ordering in UI:** General → User projects → System projects (Notifications, Curator)
-
-**Archived projects** include behavioral metadata:
-
-```json
-{
-  "archived": true,
-  "archived_at": "2025-12-27T10:00:00",
-  "archive_metadata": {
-    "outcome": "completed",
-    "reason": "Reached conversational fluency",
-    "completion_rate": 0.8,
-    "tasks_abandoned": 1,
-    "age_days": 180
-  }
-}
-```
-
-**Project notes** are stored as individual files in `data/worker/state/projects/notes/{project_id}/`:
-
-```
-notes/
-  project-xxx/
-    20241227-103000.md    # Timestamp-based filename
-    20241225-140000.md
-```
-
-Each note file uses YAML frontmatter:
-
-```markdown
----
-date: 2024-12-27 10:30
-type: Research
-title: Language Schools
----
-
-[Auto-generated by Worker Agent]
-
-### Summary
-Found 3 language schools within 30 minutes...
-```
-
-### Task
-
-```json
-{
-  "id": "task-xxx",
-  "name": "Find conversation groups",
-  "description": "Research local Spanish conversation groups and meetups in the area",
-  "type": "research",
-  "project_id": "project-xxx",
-  "action_id": null,
-  "delegation": {
-    "strategy": "agent_autonomous",
-    "requires_approval": false
-  },
-  "scheduling": {
-    "due_date": "2025-12-22",
-    "someday": false,
-    "energy_level": "medium"
-  },
-  "rollover": {
-    "original_date": null,
-    "times_rolled": 0
-  }
-}
-```
-
-**Fields:**
-- `name` — Short task name (1-7 words) for display in lists
-- `description` — Full task details, context, and requirements
-- `action_id` — Links to a pending action (for approval tasks). When present, completing the task approves the action; deleting rejects it.
-- `scheduling.someday` — When true, task appears in "Someday" category; when false with no due_date, appears in "Anytime"
-
-**Task categorization:**
-- `due_date === today` → Today
-- `due_date > today` → Upcoming
-- `due_date === null && someday === true` → Someday
-- `due_date === null && someday !== true` → Anytime
-- `status === "completed"` → Logbook
-
-**Archived tasks** include behavioral metadata:
-
-```json
-{
-  "status": "archived",
-  "archived_at": "2025-12-27T10:00:00",
-  "archive_metadata": {
-    "outcome": "abandoned",
-    "reason": "No longer relevant",
-    "times_rolled": 3,
-    "age_days": 14,
-    "original_priority": "high",
-    "was_scheduled": true
-  }
-}
-```
-
-**Research tasks** with `type: "research"` and `delegation.strategy: "agent_autonomous"` are auto-executed by the Worker Agent, which:
-1. Executes research using web fetch tools
-2. Stores results
-3. Appends findings to project notes
-4. Sends notification to user
-5. Marks task completed
-
-### Result
-
-```json
-{
-  "id": "result-xxx",
-  "task_id": "task-xxx",
-  "summary": "Found 3 groups",
-  "content": { "findings": [...] },
-  "surfaced_to_user": false
-}
-```
-
-### Notification
-
-```json
-{
-  "id": "20251222_093000",
-  "agent_name": "curator",
-  "title": "Good morning",
-  "message": "Here's what to focus on...",
-  "type": "info",
-  "action_prompt": "Tell me more",
-  "priority": "normal",
-  "status": "pending",
-  "seen": false,
-  "created_at": "2025-12-22T09:30:00"
-}
-```
-
-Notifications are enriched by the web layer with additional UI fields:
-- `panel`: "status" or "tasks" (where to display)
-- `category`: "progress", "discovery", "reminder", "approval", "alert"
-- `actions`: Available UI actions like "expand", "ask", "dismiss"
-
-**Synthetic notifications** (like archivist queue status) are generated at runtime from system state, not stored as files. They update in real-time as the underlying state changes.
-
-### Digest (Ingestion)
-
-```json
-{
-  "file_hash": "sha256:abc123",
-  "original_path": "pending/photo.jpg",
-  "file_type": "image/jpeg",
-  "size_bytes": 2456789,
-  "metadata": {
-    "exif": { "date_taken": "2024-06-15T14:30:00" }
-  },
-  "relevance_score": 0.85,
-  "estimated_tokens": 500,
-  "processing_tier": "vision",
-  "status": "queued"
-}
-```
-
-### Conversation Session
-
-```json
-{
-  "session_id": "abc123",
-  "created": "2025-12-22T09:00:00",
-  "messages": [
+  "id": "job-abc123",
+  "name": "Research competitor pricing",
+  "parent_id": null,
+  "status": "todo",
+  "created_at": "2025-01-15T10:30:00Z",
+  "updated_at": "2025-01-15T14:22:00Z",
+  "created_by": "user",
+  "description": "Gather pricing data from top 5 competitors",
+  "due_date": null,
+  "tags": ["research", "pricing"],
+  "log": [
     {
-      "timestamp": "2025-12-22T09:00:00",
-      "user": "What should I focus on?",
-      "assistant": "Based on your values..."
+      "timestamp": "2025-01-15T10:30:00Z",
+      "agent": "user",
+      "action": "created"
+    },
+    {
+      "timestamp": "2025-01-15T14:22:00Z",
+      "agent": "worker",
+      "action": "Started research on competitor A"
     }
   ]
 }
 ```
 
----
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier |
+| `name` | string | Job title |
+| `parent_id` | string? | Parent job ID (null for top-level) |
+| `status` | enum | `todo`, `completed`, `archived` |
+| `created_at` | datetime | Creation timestamp |
+| `updated_at` | datetime | Last modification |
+| `created_by` | string | Agent ID that created it |
+| `description` | string? | Detailed description |
+| `due_date` | datetime? | Optional deadline |
+| `tags` | string[] | Categorization |
+| `log` | array | Activity history |
 
-## API Reference
+### Job States
 
-```
-POST /api/chat                          # Send message, get response
-POST /api/upload                        # Upload file to inbox
-GET  /api/about                         # Get about page content (docs/1_pitch.md)
+| State | Description |
+|-------|-------------|
+| `todo` | Active, needs work |
+| `completed` | Finished successfully |
+| `archived` | No longer relevant, preserved for history |
 
-GET  /api/conversations/recent          # Recent conversations (text preview)
-GET  /api/conversations/recent/structured  # Recent conversations (structured JSON for UI)
-GET  /api/conversations/history         # Load specific conversation by session_id or date
-POST /api/conversations/fork            # Fork conversation into new session
+### Job Hierarchy
 
-GET  /api/logs/{year}/{date}
-GET  /api/logs/search?q=
-GET  /api/logs/recent?days=
-
-GET  /api/values/current
-GET  /api/values/phase
-GET  /api/values/lifetime
-
-GET  /api/tasks/today
-GET  /api/tasks/completed
-POST /api/tasks
-PUT  /api/tasks/{id}/status
-PUT  /api/tasks/{id}/when              # Set task scheduling (today/date/someday/clear)
-POST /api/tasks/{id}/archive
-DELETE /api/tasks/{id}
-
-GET  /api/projects
-POST /api/projects
-GET  /api/projects/{id}/notes
-GET  /api/projects/{id}/notes/list   # Structured list for UI
-POST /api/projects/{id}/notes
-DELETE /api/projects/{id}/notes/{filename}
-POST /api/projects/{id}/archive
-POST /api/projects/{id}/complete
-DELETE /api/projects/{id}
-
-GET  /api/notifications
-POST /api/notifications/{id}/seen
-POST /api/notifications/{id}/dismiss
-
-GET  /api/sessions                      # List active sessions
-POST /api/sessions/new                  # Create new session (for UI clear)
-DELETE /api/sessions/{id}               # Delete a session
-
-GET  /api/events            # SSE stream for real-time updates
-
-GET  /api/agents/status
-GET  /api/health
-```
-
-### Real-Time Updates (SSE)
-
-The `/api/events` endpoint provides Server-Sent Events for real-time updates:
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `init` | `{notifications, tasks, projects, timestamp}` | Initial state on connection |
-| `notification_update` | notification object | New or updated notification |
-| `notification_removed` | `{id}` | Notification dismissed/deleted |
-| `tasks_update` | `{tasks}` | Task queue changed (includes all statuses) |
-| `projects_update` | `{projects}` | Projects changed |
-| `ping` | empty | Keepalive (every 30s) |
-
-The server watches:
-- `data/shared/state/notifications/` for notification file changes
-- `data/archivist/state/inbox/` for queue status changes (synthetic notifications)
-- `data/worker/state/tasks/` for task queue changes
-- `data/worker/state/projects/` for project changes
-
-**Note:** The `tasks_update` event sends all tasks (pending and completed) so the frontend can properly split and display them. The frontend filters into separate lists for display.
-
----
-
-## User Interface
-
-*See [4_user-experience.md](4_user-experience.md) for detailed UI/UX philosophy.*
-*See [5_user-interface.md](5_user-interface.md) for current implementation details.*
-
-### Current Design (Tab-Based)
-
-The UI uses a tab-based layout with four main views: Chat, Focus, About, and History. The primary interaction surface is the Focus tab, which uses Things-like slide navigation for task management.
-
-**Principles:**
-
-- **Ambient over interactive** — Value delivered before you interact
-- **Context-appropriate** — UI morphs based on time of day, energy, what's coming
-- **Anticipatory** — Surfaces what's relevant now, what you might have forgotten
-- **Progressive disclosure** — Glance (2s) → Scan (10s) → Engage (unlimited)
-- **Conversation is depth** — Chat for thinking through, not for commands
-
-### Layout
+Jobs form a tree via `parent_id`:
 
 ```
-┌─────────────────────────────────────┐
-│  Daily Quote                        │
-│                                     │
-├─────────────────────────────────────┤
-│  Tab Content                        │
-│  (Chat / Focus / About / History)   │
-│                                     │
-│                                     │
-├─────────────────────────────────────┤
-│  [Chat] [Focus 3] [About] [History] │
-├─────────────────────────────────────┤
-│  [What's on your mind?    ] [➤] [×] │
-└─────────────────────────────────────┘
+Job: "Q1 Product Launch"
+├── Job: "Marketing Materials"
+│   ├── Job: "Write blog post"
+│   └── Job: "Create social media assets"
+├── Job: "Technical Prep"
+│   ├── Job: "Performance testing"
+│   └── Job: "Security audit"
+└── Job: "Launch Day"
+    └── Job: "Monitor metrics"
 ```
 
-### Focus Tab (Things-like Navigation)
+### Job Assets
 
-The Focus tab uses slide navigation instead of expand/collapse sections:
+Assets are stored in `data/assets/{job-id}/`:
+- Any file type (images, documents, data files)
+- Referenced from job description or log entries
+- Organized by job for easy cleanup
 
-**Main Menu:**
+### Job Handoff
+
+Jobs move between agents implicitly:
+1. Agent A finishes work on a job
+2. Agent A updates job log: "Completed research, ready for review"
+3. Agent B (in its next cycle) sees the job needs attention
+4. Agent B picks it up based on its persona/purpose
+
+No explicit assignment - agents decide based on their identity what jobs they should work on.
+
+## Tools
+
+### Tool Philosophy
+
+- Tools are generic functions available to agents
+- An agent's capabilities are defined by its tool list
+- Tools are the only way agents interact with the system
+
+### Core Tool Categories
+
+**Job Tools:**
+- `list_jobs` - Query jobs (with filters)
+- `get_job` - Get job details
+- `create_job` - Create new job
+- `update_job` - Modify job
+- `complete_job` - Mark job completed
+- `archive_job` - Archive job
+- `add_job_log` - Add log entry
+
+**Asset Tools:**
+- `list_assets` - List assets for a job
+- `read_asset` - Read asset content
+- `write_asset` - Create/update asset
+- `delete_asset` - Remove asset
+
+**User Tools:**
+- `get_user_profile` - Read user profile
+- `update_user_profile` - Modify user profile
+- `read_lifelog` - Access lifelog entries
+- `write_lifelog` - Add lifelog entry
+
+**Agent Tools:**
+- `list_agents` - List all agents
+- `get_agent_memory` - Read agent memory
+- `update_agent_memory` - Store in agent memory
+
+**System Tools:**
+- `get_config` - Read system config
+- `send_notification` - Notify user
+
+### Tool Registration
+
+Tools are Python functions registered with the system:
+
+```python
+@tool(name="create_job", description="Create a new job")
+def create_job(name: str, description: str = None, parent_id: str = None) -> dict:
+    """Create a new job and return its details."""
+    ...
 ```
-┌─────────────────────────────────────┐
-│  ☀️  Today                      3 → │
-│  📅  Upcoming                   5 → │
-│  ⏳  Anytime                   12 → │
-│  💭  Someday                    8 → │
-│  📖  Logbook                   24 → │
-├─────────────────────────────────────┤
-│  📁  General                    2 → │
-│  📁  Project Name               4 → │
-│  ✨  Notifications              3 → │
-│      from Euno                      │
-│  ✨  Curator                    1 → │
-│      from Euno                      │
-└─────────────────────────────────────┘
+
+## Agent Manager
+
+### Responsibilities
+
+1. **Startup** - Load all agent configs, start enabled agents
+2. **Monitoring** - Track agent health, detect failures
+3. **Restart** - Automatically restart crashed agents
+4. **Shutdown** - Gracefully stop all agents on app exit
+5. **Hot Reload** - Detect config changes, restart affected agents
+
+### Implementation
+
+```python
+class AgentManager:
+    def __init__(self):
+        self.agents = {}  # agent_id -> AgentRunner
+
+    async def start_all(self):
+        """Start all enabled agents."""
+        configs = load_all_agent_configs()
+        for config in configs:
+            if config["enabled"]:
+                self.agents[config["id"]] = AgentRunner(config)
+                await self.agents[config["id"]].start()
+
+    async def shutdown(self):
+        """Gracefully stop all agents."""
+        for agent in self.agents.values():
+            await agent.stop()
 ```
 
-**Timeline View (after selecting category):**
+### Agent Runner
+
+Each agent runs in its own async task:
+
+```python
+class AgentRunner:
+    def __init__(self, config):
+        self.config = config
+        self.running = False
+
+    async def start(self):
+        self.running = True
+        while self.running:
+            await self.work_cycle()
+            await asyncio.sleep(self.config["sleep_minutes"] * 60)
+
+    async def work_cycle(self):
+        # 1. Build context (persona + memory + recent conversation)
+        # 2. Check for relevant jobs
+        # 3. Call LLM with tools
+        # 4. Execute tool calls
+        # 5. Update state
+        ...
 ```
-┌─────────────────────────────────────┐
-│ ← Today                             │
-├─────────────────────────────────────┤
-│ Project Alpha                       │
-│ ────────────────────────            │
-│ [task card]                         │
-│ [task card]                         │
-│                                     │
-│ General                             │
-│ ────────────────────────            │
-│ [task card]                         │
-└─────────────────────────────────────┘
+
+## Web Server
+
+### API Endpoints
+
+**Jobs:**
+- `GET /api/jobs` - List jobs (with query params)
+- `GET /api/jobs/{id}` - Get job
+- `POST /api/jobs` - Create job
+- `PATCH /api/jobs/{id}` - Update job
+- `DELETE /api/jobs/{id}` - Archive job
+
+**Agents:**
+- `GET /api/agents` - List agents
+- `GET /api/agents/{id}` - Get agent details
+- `PATCH /api/agents/{id}` - Update agent config
+- `POST /api/agents/{id}/enable` - Enable agent
+- `POST /api/agents/{id}/disable` - Disable agent
+
+**Chat:**
+- `POST /api/chat` - Send message, get response
+- `GET /api/chat/history` - Get conversation history
+
+**User:**
+- `GET /api/user/profile` - Get user profile
+- `PATCH /api/user/profile` - Update profile
+- `GET /api/user/lifelog` - Get lifelog entries
+
+**Assets:**
+- `GET /api/jobs/{id}/assets` - List job assets
+- `GET /api/jobs/{id}/assets/{filename}` - Get asset
+- `POST /api/jobs/{id}/assets` - Upload asset
+- `DELETE /api/jobs/{id}/assets/{filename}` - Delete asset
+
+### Static UI
+
+Static files served from `static/`:
+- Single-page app
+- Communicates via API
+- Real-time updates via SSE or polling
+
+## Source Code Structure
+
+```
+src/
+├── main.py                 # Entry point, CLI
+├── manager.py              # Agent Manager
+├── agent.py                # Generic Agent Runner
+├── tools/
+│   ├── __init__.py         # Tool registry
+│   ├── jobs.py             # Job CRUD tools
+│   ├── assets.py           # Asset management tools
+│   ├── user.py             # User profile/lifelog tools
+│   ├── agents.py           # Agent introspection tools
+│   └── system.py           # System/notification tools
+└── web/
+    ├── app.py              # FastAPI application
+    └── routes/
+        ├── jobs.py
+        ├── agents.py
+        ├── chat.py
+        └── user.py
 ```
 
-**When Picker:**
-Tasks and projects can be scheduled using the "When" picker:
-- Today — Set due date to today
-- Pick a date — Calendar date picker
-- Someday — Mark as someday (no specific date)
-- Clear — Remove scheduling
+## Example: Creating a New Agent
 
-### Visual Style
+1. Create directory: `data/agents/researcher/`
 
-- Typography-first: black text on off-white (#f8f8f8)
-- White (#fff) for inputs, cards, and chat bubbles (contrast against background)
-- Generous whitespace
-- Minimal UI chrome
-- Tab-based navigation with icon buttons
-
----
-
-## Running
-
-```bash
-# Web server with background agents (daily use)
-python main.py serve
-
-# Interactive chat only
-python main.py chat
-
-# Batch ingestion
-python main.py ingest                    # Process inbox
-python main.py ingest ~/Documents -r     # Process directory recursively
-python main.py ingest --batch-size 10    # Custom batch size (default: 5)
-
-# Individual commands
-python main.py morning      # Morning attention
-python main.py evening      # Evening reflection
-python main.py discover     # World discovery sweep
-python main.py introspect   # System analysis
-python main.py evolve       # Review identity proposals
+2. Create config (`config.json`):
+```json
+{
+  "id": "researcher",
+  "name": "The Researcher",
+  "enabled": true,
+  "tools": ["list_jobs", "get_job", "update_job", "add_job_log", "write_asset"],
+  "sleep_minutes": 10
+}
 ```
+
+3. Create persona (`researcher-persona.md`):
+```markdown
+# The Researcher
+
+You are a research specialist. Your purpose is to gather information,
+synthesize findings, and document research results.
+
+## Behavior
+- Look for jobs tagged with "research"
+- Gather information from available sources
+- Document findings as job assets
+- Update job logs with progress
+
+## Constraints
+- Always cite sources
+- Flag uncertainty
+- Don't make things up
+```
+
+4. Restart Agent Manager (or it hot-reloads)
+
+5. Agent starts working on research-tagged jobs
+
+## Migration Path
+
+### From Current Architecture
+
+1. Archive current code to `old-architecture/`
+2. Create new `src/` with minimal implementation
+3. Migrate data:
+   - Existing projects → Jobs
+   - Existing tasks → Child Jobs
+   - Agent personas → `data/agents/{id}/{id}-persona.md`
+   - Conversation history → `data/agents/{id}/state/conversation/`
+   - User profile → `data/user/user-profile.md`
+   - Lifelog → `data/user/lifelog/`
+
+### Preserved Components
+
+- `static/` - Web UI (works with new API)
+- `devops/` - Deployment scripts
+- `.env` - Configuration
+
+## Open Questions
+
+1. **Job Indexing** - With flat files, how do we efficiently query "all jobs where status=todo"? Options:
+   - Scan all files (fine for <1000 jobs)
+   - Maintain an index file (`jobs-index.json`)
+   - SQLite for job metadata only
+
+2. **Conversation Pruning** - Conversation files grow forever. When/how to summarize old context?
+
+3. **Asset Cleanup** - When a job is archived, what happens to its assets?
+
+4. **Agent Creation via Chat** - What's the UX for a user creating a new agent through conversation?

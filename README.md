@@ -36,16 +36,57 @@ Today's AI remembers facts about you. Euno understands who you are—your values
 
 ## Agents
 
-Six specialized agents work together, all inheriting from a shared Core identity:
+Seven agents work together, each defined by config + persona + tools:
 
-| Agent | Role |
-|-------|------|
-| **Archivist** | Preserves high-fidelity human data before interpretation |
-| **Profiler** | Constructs the Profile from raw Lifelog data |
-| **Curator** | Explores opportunities; guards attention; delivers what counts |
-| **Friend** | Supports thinking without threatening identity coherence |
-| **Worker** | Executes tasks without undermining agency |
-| **Adaptor** | Refines agent identities to serve this specific user |
+| Agent | Role | Mode |
+|-------|------|------|
+| **Archivist** | Preserves high-fidelity human data before interpretation | Scheduled (5 min) |
+| **Profiler** | Constructs the Profile from raw Lifelog data | Scheduled (30 min) |
+| **Curator** | Explores opportunities; guards attention; delivers what counts | Scheduled (15 min) |
+| **Friend** | Supports thinking without threatening identity coherence | Interactive |
+| **Worker** | Executes tasks without undermining agency | Scheduled (2 min) |
+| **Adaptor** | Refines agent identities to serve this specific user | Scheduled (60 min) |
+| **Assistant** | General purpose helper for direct requests | Interactive |
+
+Adding a new agent requires only a `config.json` and persona markdown file—no Python code.
+
+## Quick Start
+
+```bash
+# Setup
+cp .env.example .env      # Add your ANTHROPIC_API_KEY
+pip install -r requirements.txt
+
+# Run
+python main.py serve      # Web server + background agents
+python main.py chat       # Interactive chat with assistant
+python main.py chat friend  # Chat with The Friend
+python main.py agents     # List all agents
+python main.py jobs       # List all jobs
+python main.py start      # Run agents only (no web)
+```
+
+## Architecture
+
+Everything is either an **Agent** or a **Job**.
+
+```
+data/
+├── agents/           # Agent configs and personas (code)
+│   └── {agent}/
+│       ├── config.json
+│       └── {agent}-persona.md
+├── jobs/             # Flat job files with parent_id for hierarchy
+├── assets/           # Files attached to jobs
+├── user/             # Profile and lifelog
+└── system/           # Global config
+
+src/
+├── agent.py          # Generic agent: config + persona + tools + loop
+├── manager.py        # Starts/stops all agents
+├── tools/            # All tools with @tool decorator
+└── web/              # FastAPI + routes
+```
 
 ## Documentation
 
@@ -55,19 +96,6 @@ Six specialized agents work together, all inheriting from a shared Core identity
 - **[User Experience](docs/4_user-experience.md)** — UI/UX philosophy and vision
 - **[User Interface](docs/5_user-interface.md)** — Current UI components and layout
 - **[DevOps](docs/6_devops.md)** — Deployment and operations
-
-## Development
-
-Build for yourself first. This is not a solution looking for a problem.
-
-```bash
-# Setup
-cp .env.example .env  # Add your ANTHROPIC_API_KEY
-pip install -r requirements.txt
-
-# Run
-python main.py        # Start the web UI and agents
-```
 
 ## Privacy
 
