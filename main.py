@@ -16,10 +16,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Commands:
-  start       Start the web server with agents (default)
-  chat        Interactive chat with an agent
-  agents      List all agents
-  jobs        List all jobs
+  start         Start the web server with agents
+  chat          Interactive chat with an agent
+  agents        List all agents
+  jobs          List all jobs
+  set-password  Set the access password
 
 Examples:
   python main.py start          # Run web server + agents
@@ -27,6 +28,7 @@ Examples:
   python main.py chat friend    # Chat with specific agent
   python main.py agents         # List agents
   python main.py jobs           # List jobs
+  python main.py set-password   # Set access password
 """
     )
 
@@ -41,6 +43,7 @@ Examples:
         "chat": cmd_chat,
         "agents": cmd_agents,
         "jobs": cmd_jobs,
+        "set-password": cmd_set_password,
         "help": lambda _: parser.print_help(),
     }
 
@@ -152,6 +155,41 @@ def cmd_jobs(args):
 
     for job in jobs:
         print(f"  [{job['status']}] {job['name']} ({job['id']})")
+
+
+def cmd_set_password(args):
+    """Set the access password."""
+    import getpass
+    from src.auth import set_password, is_password_set
+
+    print("=" * 60)
+    print("Euno - Set Password")
+    print("=" * 60)
+    print()
+
+    if is_password_set():
+        print("A password is already set.")
+        confirm = input("Do you want to replace it? (y/N): ").strip().lower()
+        if confirm != 'y':
+            print("Cancelled.")
+            return
+
+    try:
+        password = getpass.getpass("Enter new password: ")
+        confirm = getpass.getpass("Confirm password: ")
+
+        if password != confirm:
+            print("Passwords do not match.")
+            return
+
+        set_password(password)
+        print("\nPassword set successfully.")
+        print("The web UI will now require authentication.")
+
+    except ValueError as e:
+        print(f"Error: {e}")
+    except RuntimeError as e:
+        print(f"Error: {e}")
 
 
 if __name__ == "__main__":
