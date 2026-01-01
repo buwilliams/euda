@@ -79,6 +79,7 @@ def create_job(
     parent_id: str = None,
     tags: list = None,
     due_date: str = None,
+    someday: bool = False,
     created_by: str = "user"
 ) -> dict:
     """Create a new job."""
@@ -94,6 +95,7 @@ def create_job(
         "created_by": created_by,
         "description": description,
         "due_date": due_date,
+        "someday": someday,
         "tags": tags or [],
         "log": [
             {
@@ -115,7 +117,8 @@ def update_job(
     description: str = None,
     status: str = None,
     tags: list = None,
-    due_date: str = None
+    due_date: str = None,
+    someday: bool = None
 ) -> Optional[dict]:
     """Update a job's fields."""
     job = _load_job(job_id)
@@ -133,6 +136,8 @@ def update_job(
         job["tags"] = tags
     if due_date is not None:
         job["due_date"] = due_date
+    if someday is not None:
+        job["someday"] = someday
 
     job["updated_at"] = datetime.utcnow().isoformat() + "Z"
     _save_job(job)
@@ -148,11 +153,33 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
 
     now = datetime.utcnow().isoformat() + "Z"
     job["status"] = "completed"
+    job["completed_at"] = now
     job["updated_at"] = now
     job["log"].append({
         "timestamp": now,
         "agent": agent,
         "action": "completed"
+    })
+
+    _save_job(job)
+    return job
+
+
+@tool("restore_job", "Restore a completed job back to todo")
+def restore_job(job_id: str, agent: str = "user") -> Optional[dict]:
+    """Restore a completed job back to todo status."""
+    job = _load_job(job_id)
+    if not job:
+        return {"error": f"Job not found: {job_id}"}
+
+    now = datetime.utcnow().isoformat() + "Z"
+    job["status"] = "todo"
+    job.pop("completed_at", None)
+    job["updated_at"] = now
+    job["log"].append({
+        "timestamp": now,
+        "agent": agent,
+        "action": "restored"
     })
 
     _save_job(job)
@@ -202,3 +229,24 @@ def add_job_log(job_id: str, action: str, agent: str = "user") -> Optional[dict]
 def get_child_jobs(parent_id: str) -> List[dict]:
     """Get all child jobs of a given parent."""
     return list_jobs(parent_id=parent_id)
+
+
+@tool("delete_job", "Delete a job permanently")
+def delete_job(job_id: str, delete_children: bool = False) -> dict:
+    """Delete a job. Optionally delete child jobs too."""
+    job = _load_job(job_id)
+    if not job:
+        return {"error": f"Job not found: {job_id}"}
+
+    # Delete children if requested
+    if delete_children:
+        children = get_child_jobs(job_id)
+        for child in children:
+            delete_job(child["id"], delete_children=True)
+
+    # Delete the job file
+    path = JOBS_DIR / f"{job_id}.json"
+    if path.exists():
+        path.unlink()
+
+    return {"deleted": job_id, "children_deleted": delete_children}

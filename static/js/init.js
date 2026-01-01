@@ -12,13 +12,12 @@ function connectSSE() {
 
     eventSource.addEventListener('init', (e) => {
         const data = JSON.parse(e.data);
-        const allTasks = data.tasks || [];
-        // Split tasks into active and completed (filter out archived)
-        tasksData = allTasks.filter(t => t.status !== 'completed' && t.status !== 'archived');
-        completedTasksData = allTasks.filter(t => t.status === 'completed')
+        const allJobs = data.jobs || [];
+        // Split jobs into active and completed (filter out archived)
+        jobsData = allJobs.filter(j => j.status !== 'completed' && j.status !== 'archived');
+        completedJobsData = allJobs.filter(j => j.status === 'completed')
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
             .slice(0, 20);
-        projectsData = data.projects || [];
         updateTasksBadge();
         if (activeTab === 'focus') {
             renderFocusTab();
@@ -26,26 +25,18 @@ function connectSSE() {
         reconnectAttempts = 0;
     });
 
-    eventSource.addEventListener('tasks_update', (e) => {
+    eventSource.addEventListener('jobs_update', (e) => {
         const data = JSON.parse(e.data);
-        const allTasks = data.tasks || [];
-        // Split tasks into active and completed (filter out archived)
-        tasksData = allTasks.filter(t => t.status !== 'completed' && t.status !== 'archived');
-        completedTasksData = allTasks.filter(t => t.status === 'completed')
+        const allJobs = data.jobs || [];
+        // Split jobs into active and completed (filter out archived)
+        jobsData = allJobs.filter(j => j.status !== 'completed' && j.status !== 'archived');
+        completedJobsData = allJobs.filter(j => j.status === 'completed')
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
             .slice(0, 20);
         if (activeTab === 'focus') {
             renderFocusTab();
         }
         updateTasksBadge();
-    });
-
-    eventSource.addEventListener('projects_update', (e) => {
-        const data = JSON.parse(e.data);
-        projectsData = data.projects || [];
-        if (activeTab === 'focus') {
-            renderFocusTab();
-        }
     });
 
     eventSource.addEventListener('ping', () => {});

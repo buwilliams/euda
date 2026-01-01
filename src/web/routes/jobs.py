@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from ...tools.jobs import (
     list_jobs, get_job, create_job, update_job,
-    complete_job, archive_job, add_job_log, get_child_jobs
+    complete_job, restore_job, archive_job, add_job_log, get_child_jobs, delete_job
 )
 from ...tools.assets import list_assets, read_asset, write_asset, delete_asset
 
@@ -22,6 +22,7 @@ class CreateJobRequest(BaseModel):
     parent_id: Optional[str] = None
     tags: Optional[List[str]] = None
     due_date: Optional[str] = None
+    someday: bool = False
 
 
 class UpdateJobRequest(BaseModel):
@@ -30,6 +31,7 @@ class UpdateJobRequest(BaseModel):
     status: Optional[str] = None
     tags: Optional[List[str]] = None
     due_date: Optional[str] = None
+    someday: Optional[bool] = None
 
 
 class AddLogRequest(BaseModel):
@@ -64,7 +66,8 @@ def api_create_job(request: CreateJobRequest):
         description=request.description,
         parent_id=request.parent_id,
         tags=request.tags,
-        due_date=request.due_date
+        due_date=request.due_date,
+        someday=request.someday
     )
 
 
@@ -77,7 +80,8 @@ def api_update_job(job_id: str, request: UpdateJobRequest):
         description=request.description,
         status=request.status,
         tags=request.tags,
-        due_date=request.due_date
+        due_date=request.due_date,
+        someday=request.someday
     )
     if isinstance(result, dict) and "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
@@ -97,6 +101,24 @@ def api_complete_job(job_id: str):
 def api_archive_job(job_id: str):
     """Archive a job."""
     result = archive_job(job_id)
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+@router.post("/{job_id}/restore")
+def api_restore_job(job_id: str):
+    """Restore a completed job back to todo."""
+    result = restore_job(job_id)
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+@router.delete("/{job_id}")
+def api_delete_job(job_id: str, delete_children: bool = False):
+    """Delete a job permanently."""
+    result = delete_job(job_id, delete_children=delete_children)
     if isinstance(result, dict) and "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result

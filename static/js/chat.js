@@ -76,7 +76,7 @@ async function sendContextMessage() {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, session_id: sessionId })
+            body: JSON.stringify({ message, agent_id: 'friend' })
         });
 
         const data = await response.json();
@@ -87,9 +87,6 @@ async function sendContextMessage() {
             setContextWaiting(false);
             return;
         }
-
-        sessionId = data.session_id;
-        localStorage.setItem('sessionId', sessionId);
 
         removeInlineThinking();
         addInlineMessage(data.response, 'friend');
@@ -188,17 +185,5 @@ async function resetUI() {
     loadDailyQuote();
     // Clear expanded cards state
     expandedCards.clear();
-
-    // Create a new session (old session preserved in history)
-    try {
-        const response = await fetch('/api/sessions/new', { method: 'POST' });
-        if (response.ok) {
-            const data = await response.json();
-            sessionId = data.session_id;
-            localStorage.setItem('sessionId', sessionId);
-        }
-    } catch (error) {
-        console.error('Failed to create new session:', error);
-    }
 }
 
