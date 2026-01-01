@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# sync-data.sh - Sync data to a remote server
+# push-data-remote.sh - Push local data to remote server
 #
-# Usage: ./sync-data.sh [user@server-ip]
+# Usage: ./push-data-remote.sh [user@server-ip]
 #
-# This script syncs the local data/ directory to the remote server.
-# Use with caution - this overwrites remote data.
+# This script pushes the local data/ directory to the remote server.
+# Remote data is backed up before overwriting.
 #
 # If no server is specified, uses EUNO_SERVER from .env
 #
@@ -33,7 +33,7 @@ if [ -z "$SERVER" ]; then
 fi
 
 echo "==================================="
-echo "Euno Data Sync"
+echo "Euno Data Push"
 echo "==================================="
 echo "Server: $SERVER"
 echo "Local: $PROJECT_DIR/data/"
@@ -41,21 +41,26 @@ echo "Remote: $REMOTE_DIR/data/"
 echo ""
 
 # Check SSH connectivity
-echo "[1/2] Testing SSH connection..."
+echo "[1/3] Testing SSH connection..."
 ssh -o ConnectTimeout=10 "$SERVER" "echo 'Connected'" || {
     echo "Error: Cannot connect to $SERVER"
     exit 1
 }
 
+# Backup remote data first
+BACKUP_NAME="data_backup-$(date +%Y%m%d-%H%M%S)"
+echo "[2/3] Backing up remote data to $BACKUP_NAME..."
+ssh "$SERVER" "cd $REMOTE_DIR && if [ -d data ]; then cp -r data $BACKUP_NAME; fi"
+
 # Sync data directory
-echo "[2/2] Syncing data..."
+echo "[3/3] Pushing data..."
 rsync -avz --delete \
-    --exclude '*.log' \
     --exclude '__pycache__/' \
     --exclude '.DS_Store' \
     "$PROJECT_DIR/data/" "$SERVER:$REMOTE_DIR/data/"
 
 echo ""
 echo "==================================="
-echo "Data sync complete!"
+echo "Data push complete!"
+echo "Remote backup saved to: $REMOTE_DIR/$BACKUP_NAME"
 echo "==================================="
