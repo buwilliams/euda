@@ -1,0 +1,77 @@
+Buddy Williams
+Utility of Truth
+Why Evolution Favors What Works Over What’s True
+Buddy Williams
+Oct 21, 2025
+
+
+
+The following statements all suggest the same idea:
+
+People seek truth only when their current beliefs stop producing utility.
+
+Evolution favors utility over truth; only when utility fails does truth become valuable.
+
+The pursuit of truth begins where the utility of belief ends.
+
+We don’t abandon comforting lies because they are false, but because they stop working.
+
+Persuasion
+Below, I answer a fundamental question: Why is it so hard to change someone’s mind? Has this ever happened to you: You’ve invested a lot of time learning something new about the world, so you excitedly share it with your friends, and are disappointed by their dumbfounded expressions and statements of, “I don’t know about that.” Maybe, like me, you find this a frustrating fact about people. Why is it so hard for people to be open-minded? Isn’t the truth more rewarding? Shouldn’t everyone want better knowledge?
+
+Evolution offers the answer — but not the one we expect. It turns out that people are not willfully obstinate; instead, we all evolved to trust what works rather than what is true. In evolutionary terms, cognition follows a pattern of exploration and exploitation — random search followed by the allocation of resources to what works. Let’s explore these two concepts through the simple example of ants.
+
+Explore and Exploit
+Ants embody exploration & exploitation perfectly. Scout ants wander until one discovers food. I’m willing to bet you’ve seen these solo wandering ants. Once they find a food source, they march back to the colony, leaving a pheromone trail. More ants find this trail and help exploit this new food source. A smaller number of ants will continue searching for new food sources, since it’s unclear when a new one will be needed. As the food source is depleted, the trail weakens. This evolutionary process optimizes for utility, not understanding.
+
+Humans differ only in degree, not in kind. Our mental models — like pheromone trails — strengthen with success and fade with failure. We rarely question our models until they stop working.
+
+As Donald Hoffman argues, evolution optimizes for fitness, not truth. A species that perceives only what’s useful — even if inaccurate — may outcompete one that perceives reality too precisely. Evolution rewards what works locally, not what’s true universally.
+
+Every day, our biases guide us — not despite their inaccuracy, but because they’ve worked.
+
+Utility of Cognition
+Humans, like ants, evolved through the mechanism of fitness; our minds were likewise shaped by utility rather than truth. If beliefs led to survival, they blossomed; otherwise, they died out. This explains why humans are collaborative: we are more likely to survive when we work together. (You might have noticed this is an oversimplification since people don’t work together all that well. Utility, not perfection.)
+
+So, while the processes of ants finding food and human cognition may, on the surface, appear to be analogies, they are actually the same shared mechanisms: exploration and exploitation, also known as utility.
+
+Local Disadvantage of Utility
+A common occurrence in suburbia is unwelcome ants in your manicured lawn. What does a homeowner typically do to remove these pests? Typically, we buy a toxin delivered via a bait-and-carry method. We trick the ants into delivering the toxin to the queen. Goodbye ants.
+
+This is an obvious danger of relying on utility over understanding: the group may not survive. The same is true for beliefs. We all have false beliefs that persist because they are effective until they are no longer effective. It’s at this point that major beliefs may change.
+
+The search for truth can be supported by utility. If, in our lives, we found that searching for truth had the greatest utility, that becomes our worldview; if we found more success in following our social groups, that becomes our worldview. If you are someone who seeks truth, it is probably because your trusted group let you down in a significant way.
+
+Truth is an emergent property of failed utility.
+
+Utility Over Truth
+Evolution only favors those who survive. Likewise, cognition doesn’t care whether a belief is accurate — only whether it coordinates behavior effectively.
+
+As William James put it, truth is “what works.”
+As Karl Popper reframed it, knowledge grows through conjecture and refutation — an evolutionary cycle of error correction.
+And as Andy Clark and Karl Friston have shown, the brain itself is an active inference engine that predicts the world and minimizes error signals.
+
+In this light, truth-seeking isn’t a natural instinct. It’s a late evolutionary luxury — a mutation of the survival algorithm. If evolution tuned us to utility rather than truth, then belief itself must serve prediction rather than reflection. This brings us to the cognitive machinery of belief.
+
+Belief as Prediction
+You cannot decide what is funny, nor can you choose to believe the moon is made of cheese. Belief is the brain’s best prediction given sensory evidence and priors. We inherit our beliefs and update them only when the prediction error exceeds a tolerance threshold.
+
+This means the only persuadable minds are those whose epistemic models have failed to deliver results. Once persuaded, we discover something profound: the more accurate our models are, the more we can leverage control. Predictability becomes power.
+
+Belief is not a choice.
+
+Plant Seeds
+Therefore, pursuing truth is worthwhile — not because it always serves utility, but because it expands the horizon of what utility can reach. How do we expand our horizon? That’s what Cyclic Rationality is all about.
+
+So, the next time you’re in a heated argument, remember, we do not abandon falsehoods because they offend reason. We abandon them because they stop working.
+
+When your beliefs stop working — when the world no longer fits your model — that discomfort is not failure. It may be a signal that truth is near.
+
+Definitions
+Exploration: random search for utility
+
+Exploitation: using what works
+
+Utility: instrumental success (does this belief get results?)
+
+Truth: structural accuracy (does this belief correspond to reality?)

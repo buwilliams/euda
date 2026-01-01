@@ -1,0 +1,91 @@
+{
+  "date": "2025-12-29",
+  "used": 104896,
+  "transactions": [
+    {
+      "time": "2025-12-29T11:55:48.059253",
+      "tokens": 4367,
+      "description": "Processed: Technohumanism.txt"
+    },
+    {
+      "time": "2025-12-29T11:56:03.818436",
+      "tokens": 2268,
+      "description": "Processed: Cyclic Rationality.txt"
+    },
+    {
+      "time": "2025-12-29T11:56:21.106294",
+      "tokens": 2154,
+      "description": "Processed: Why Hypotheticals Matter.txt"
+    },
+    {
+      "time": "2025-12-29T11:56:26.206345",
+      "tokens": 797,
+      "description": "Processed: Biography.txt"
+    },
+    {
+      "time": "2025-12-29T11:57:27.387797",
+      "tokens": 12600,
+      "description": "Processed: Casey Heffernan ______ Lee Heffernan_ Ruth Heffernan _1_.md"
+    },
+    {
+      "time": "2025-12-29T11:57:39.498515",
+      "tokens": 1703,
+      "description": "Processed: Utility of Truth.txt"
+    },
+    {
+      "time": "2025-12-29T11:57:54.902037",
+      "tokens": 984,
+      "description": "Processed: AI Economics - The Time Traveler_s Gift.txt"
+    },
+    {
+      "time": "2025-12-29T11:58:24.740145",
+      "tokens": 4159,
+      "description": "Processed: A Primer on Logic.txt"
+    },
+    {
+      "time": "2025-12-29T11:58:30.829041",
+      "tokens": 554,
+      "description": "Processed: Routine.txt"
+    },
+    {
+      "time": "2025-12-29T11:58:58.741410",
+      "tokens": 4217,
+      "description": "Processed: The Rise of the Outcome Economy.txt"
+    },
+    {
+      "time": "2025-12-29T11:59:24.464489",
+      "tokens": 3452,
+      "description": "Processed: Economics in the Intelligence Age.txt"
+    },
+    {
+      "time": "2025-12-29T11:59:57.291811",
+      "tokens": 4641,
+      "description": "Processed: LinkedIn Profile.txt"
+    },
+    {
+      "time": "2025-12-29T12:00:16.883418",
+      "tokens": 12600,
+      "description": "Processed: Mom.md"
+    },
+    {
+      "time": "2025-12-29T12:01:03.093053",
+      "tokens": 12600,
+      "description": "Processed: Emma Williams ____.md"
+    },
+    {
+      "time": "2025-12-29T12:02:03.072777",
+      "tokens": 12600,
+      "description": "Processed: Courtney Williams.md"
+    },
+    {
+      "time": "2025-12-29T12:03:15.075532",
+      "tokens": 12600,
+      "description": "Processed: Chris Duncan.md"
+    },
+    {
+      "time": "2025-12-29T12:04:22.411518",
+      "tokens": 12600,
+      "description": "Processed: Casey Heffernan _____.md"
+    }
+  ]
+}

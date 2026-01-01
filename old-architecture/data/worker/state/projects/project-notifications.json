@@ -1,0 +1,27 @@
+{
+  "id": "project-notifications",
+  "created": "2025-12-29T12:06:39.903806",
+  "updated": "2026-01-01T12:24:25.936899",
+  "title": "Notifications",
+  "description": "System notifications and alerts from Euno",
+  "type": "system",
+  "status": "active",
+  "priority": "normal",
+  "source": {
+    "agent": "system",
+    "context": "System project for notifications"
+  },
+  "milestones": [],
+  "values_alignment": [],
+  "deadline": null,
+  "someday": false,
+  "review_frequency": "daily",
+  "last_reviewed": null,
+  "archived": false,
+  "meta": {
+    "total_tasks_created": 24,
+    "tasks_completed": 10,
+    "estimated_hours": 0,
+    "logged_hours": 0
+  }
+}

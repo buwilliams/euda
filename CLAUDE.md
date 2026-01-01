@@ -6,15 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Euno is a personal intelligence that learns to anticipate you: doing tasks for you, curating what helps you thrive, and expanding your horizons.
 
-## Current State
+## Current State (v3 Architecture)
 
-6 agents implemented with web UI and API. Key files:
+Unified agent system where everything is either an Agent or a Job. Key files:
 - `README.md` - Product specification
-- `docs/3_architecture.md` - Technical architecture and implementation spec
-- `docs/2_profile.md` - Profile system and agent personas
-- `docs/4_user-experience.md` - UI/UX vision and philosophy
-- `docs/5_user-interface.md` - Current UI components and layout reference
-- `main.py` - Entry point for running agents
+- `docs/architecture-v3.md` - Current architecture documentation
+- `main.py` - Entry point
+
+Old architecture preserved in `old-architecture/` for reference.
 
 ## Setup
 
@@ -35,42 +34,104 @@ Euno is a personal intelligence that learns to anticipate you: doing tasks for y
 
 4. Run Euno:
    ```
-   python main.py
+   python main.py serve    # Web server + agents
+   python main.py chat     # Interactive chat
+   python main.py start    # Agents only (no web)
    ```
 
 ## Project Structure
 
 ```
 euno/
-├── main.py                 # Entry point
+├── main.py                 # Entry point, CLI
 ├── src/
-│   ├── agents/             # 6 agent modules
-│   │   ├── base.py         # Core agent pattern
-│   │   ├── personas/       # Agent identity files (*.agent.md)
-│   │   ├── prompts/        # Prompt templates by agent
-│   │   └── contracts/      # Profile contract and redaction policy
-│   ├── tools/              # Organized by agent concern
-│   │   ├── shared/         # Cross-agent (log, agent identity, signals)
-│   │   ├── archivist/      # File processing, queue, budget, iPhone backup tools
-│   │   ├── profiler/       # User profile synthesis (epistemic, values, behaviors)
-│   │   ├── curator/        # Energy + attention queue + context
-│   │   ├── friend/         # Conversations + cards
-│   │   ├── worker/         # Tasks + projects
-│   │   └── adaptor/        # System analysis and identity evolution
+│   ├── manager.py          # Agent Manager - starts/stops all agents
+│   ├── agent.py            # Generic Agent - config + persona + tools + loop
+│   ├── tools/              # All tools (registered with @tool decorator)
+│   │   ├── jobs.py         # Job CRUD
+│   │   ├── assets.py       # File attachments per job
+│   │   ├── agents.py       # Agent introspection
+│   │   ├── user.py         # Profile and lifelog
+│   │   └── system.py       # Config and notifications
 │   └── web/
-│       └── app.py          # FastAPI server
-└── data/                   # Agent-oriented data (user data, not code)
-    ├── shared/             # Cross-agent resources
-    │   └── state/          # profile/, lifelog/, signals/
-    ├── archivist/          # state/inbox/, state/digests/
-    ├── profiler/           # state/
-    ├── curator/            # state/queue/
-    ├── friend/             # state/conversations/, state/cards/
-    ├── worker/             # state/tasks/, state/projects/, state/actions/
-    └── adaptor/            # state/output/
+│       ├── app.py          # FastAPI application
+│       └── routes/         # API endpoints
+├── data/
+│   ├── agents/             # Agent configs and state
+│   │   └── {agent-id}/
+│   │       ├── config.json
+│   │       ├── {agent}-persona.md
+│   │       └── state/conversation/{date}.md
+│   ├── jobs/               # Flat job files with parent_id
+│   │   └── {job-id}.json
+│   ├── assets/             # Files per job
+│   │   └── {job-id}/
+│   ├── user/
+│   │   ├── user-profile.md
+│   │   └── lifelog/{date}.md
+│   └── system/
+│       └── config.json
+├── static/                 # Web UI
+└── devops/                 # Deployment scripts
 ```
 
-See `docs/3_architecture.md` for full directory structure details.
+## Core Concepts
+
+### Agents
+An agent is: **config + persona + tools + loop**
+
+- Config (`config.json`): id, name, enabled, tools list, sleep_minutes
+- Persona (`{agent}-persona.md`): System prompt defining behavior
+- Tools: Functions the agent can call (controlled by config)
+- Loop: Wake, check for work, do work, sleep, repeat
+
+### Jobs
+Jobs replace projects and tasks. A single hierarchical structure:
+- Flat files with `parent_id` for nesting
+- States: `todo`, `completed`, `archived`
+- Each job can have assets (files) in `data/assets/{job-id}/`
+
+### User as Agent
+The user is conceptually an agent too - just with a different interface (Web UI/CLI vs autonomous loop).
+
+## Adding a New Agent
+
+1. Create directory: `data/agents/{agent-id}/`
+2. Create `config.json`:
+   ```json
+   {
+     "id": "myagent",
+     "name": "My Agent",
+     "enabled": true,
+     "tools": ["list_jobs", "create_job", ...],
+     "sleep_minutes": 5
+   }
+   ```
+3. Create `{agent-id}-persona.md` with the agent's identity
+4. Restart the application
+
+No Python code needed for new agents.
+
+## Adding a New Tool
+
+1. Add function in `src/tools/` with `@tool` decorator:
+   ```python
+   @tool("my_tool", "Description of what it does")
+   def my_tool(param: str) -> dict:
+       return {"result": param}
+   ```
+2. Import in `src/tools/__init__.py`
+3. Add tool name to agent configs that should use it
+
+## API Endpoints
+
+- `GET/POST /api/jobs` - List/create jobs
+- `GET/PATCH /api/jobs/{id}` - Get/update job
+- `POST /api/jobs/{id}/complete` - Complete job
+- `GET/POST /api/chat` - Chat with agent
+- `GET /api/agents` - List agents
+- `GET/PATCH /api/user/profile` - User profile
+- `GET/POST /api/user/lifelog` - Lifelog entries
 
 ## Development Philosophy
 
@@ -79,85 +140,3 @@ Build for yourself first, not "other people." This is not a solution looking for
 - Build the best agent for the creator's own daily use
 - Refine through lived experience, not hypothetical users
 - Features get prioritized by real need, rough edges smoothed by real annoyance
-- The agent is its own first user study
-
-### Information Flow
-
-When adding features or content, don't add directly. First examine the system's architecture and capabilities, then design the addition to align with them. If a capability is missing, consider carefully how to organize it alongside existing capabilities.
-
-```
-Architecture → Organization → Capabilities → Features
-```
-
-This hierarchy ensures coherent growth. Features serve capabilities, capabilities fit the organization, organization reflects architecture.
-
-## Philosophy
-
-The system is grounded in Popperian epistemology: all knowledge is conjecture. Values are not absolute truths but useful generalizations about what promotes life (motion, growth, pleasure, joy, peace, awe). Values are testable and can be refined or discarded.
-
-## Agent Architecture
-
-Six agents communicate via shared flat files, all inheriting from a shared Core identity:
-1. **Archivist** - Preserves irreversible human signal with high fidelity; memory, not meaning
-2. **Profiler** - Constructs the Profile from raw Lifelog data; extracts patterns from behavior
-3. **Curator** - Explores integrable opportunities; allocates scarce attention; respects capacity
-4. **Friend** - Supports thinking without threatening identity coherence
-5. **Worker** - Executes tasks without undermining agency; checks Profile before irreversible actions
-6. **Adaptor** - Refines agent identities to serve this specific user; proposes, never forces
-
-Each agent has:
-- Core identity (shared ontology and operating principles)
-- Persona identity (role-specific purpose, constraints, output contract)
-- Tools (functions it can call)
-- Context (conversation history)
-
-## Batch Archival
-
-The Archivist uses batch processing to minimize API calls:
-
-```bash
-python main.py ingest                      # Process inbox (default batch size: 5)
-python main.py ingest --batch-size 10      # Custom batch size
-python main.py ingest ~/Documents -r       # External directory
-```
-
-Batch processing groups files together and requests structured JSON output instead of tool calls, significantly reducing API round trips.
-
-## iPhone Backup Extraction
-
-Standalone tools for extracting data from iOS device backups, located in `src/tools/archivist/iphone/`:
-
-```bash
-# Auto-find backup and export messages + media
-python src/tools/archivist/iphone/iphone_backup.py
-
-# Export messages only
-python src/tools/archivist/iphone/iphone_backup.py --messages
-
-# Export media only (photos/videos)
-python src/tools/archivist/iphone/iphone_backup.py --media
-
-# Specify custom paths
-python src/tools/archivist/iphone/iphone_backup.py --backup /path/to/backup --output ./export
-
-# Find available backups and databases
-python src/tools/archivist/iphone/find_backup_db.py
-
-# Export directly from sms.db (without contact name lookup)
-python src/tools/archivist/iphone/iphone_messages_export.py /path/to/sms.db --output ./export
-```
-
-Key details:
-- Requires unencrypted iPhone backup (created via iTunes/Finder)
-- Auto-detects backup location on macOS, Windows, and WSL
-- Exports messages as markdown files named by contact
-- Preserves DCIM folder structure for photos/videos
-
-## Adding New Agents
-
-1. Create persona file: `src/agents/personas/[number]_[name].agent.md`
-2. Create agent module: `src/agents/[name].py`
-3. Add tools if needed: `src/tools/[agent]/[tool].py`
-4. Add prompts if needed: `src/agents/prompts/[name]/[prompt].md`
-5. Create data directory: `data/[name]/` with `state/` subdirectory
-6. Register in `main.py`

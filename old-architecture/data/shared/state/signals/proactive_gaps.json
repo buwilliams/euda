@@ -1,0 +1,32 @@
+{
+  "assessed_at": "2025-12-29T12:12:53.736523",
+  "gaps": [
+    {
+      "id": "config.energy_baseline",
+      "type": "missing_config",
+      "category": "energy",
+      "field": "energy_baseline",
+      "priority": "low",
+      "question": "How's your energy today?",
+      "context": "I'm learning your patterns to surface things at the right time.",
+      "action_prompt": "I'd like to understand your energy patterns better. How are you feeling today - physically, mentally, emotionally?"
+    },
+    {
+      "id": "biographical.relationships",
+      "type": "missing_data",
+      "category": "relationships",
+      "field": "relationships",
+      "priority": "low",
+      "question": "I've been learning about you, but I don't know much about the people in your life yet.",
+      "context": "Understanding your relationships helps me be more helpful.",
+      "action_prompt": "Tell me about the important people in your life - family, close friends, community."
+    }
+  ],
+  "progress": {
+    "files_processed": 17,
+    "log_entries": 55,
+    "values_derived": 0,
+    "patterns_identified": 0,
+    "opportunities_found": 0
+  }
+}

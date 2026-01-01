@@ -1,0 +1,38 @@
+{
+  "generated_at": "2025-12-29T11:55:13.502504",
+  "classification": {
+    "path": "/home/buddy/projects/Euno/data/archivist/state/inbox/pending/Casey Heffernan ______ Lee Heffernan_ Ruth Heffernan _1_.md",
+    "name": "Casey Heffernan ______ Lee Heffernan_ Ruth Heffernan _1_.md",
+    "size": 190355,
+    "should_ignore": false,
+    "ignore_reason": "",
+    "mime_type": "text/plain",
+    "detection_method": "magic",
+    "category": "text",
+    "is_duplicate": false,
+    "file_hash": "38da050b014804c861b989caeb5bb0c9afd1a2930a43e2a049edb87289ef20bc"
+  },
+  "metadata": {
+    "type": "text",
+    "size_bytes": 190355,
+    "line_count": 8416,
+    "encoding": "utf-8",
+    "extension": ".md",
+    "preview": [
+      "---",
+      "conversation: \"Casey Heffernan \ud83d\udc81\ud83c\udffb\u200d\u2640\ufe0f, Lee Heffernan, Ruth Heffernan\"",
+      "participants: \"Casey Heffernan \ud83d\udc81\ud83c\udffb\u200d\u2640\ufe0f, Lee Heffernan, Ruth Heffernan\"",
+      "service: iMessage",
+      "message_count: 1917"
+    ],
+    "modified_time": "2025-12-29T11:54:52.269643"
+  },
+  "temporal_hints": {
+    "timestamp": "2025-12-29T11:54:52.269643",
+    "confidence": "low",
+    "source": "file_mtime"
+  },
+  "token_estimate": 12600,
+  "content_preview": "",
+  "status": "ready"
+}

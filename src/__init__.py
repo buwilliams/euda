@@ -1,1 +1,1 @@
-# Euno - AI Personal Assistant
+# Euno - Personal Intelligence System

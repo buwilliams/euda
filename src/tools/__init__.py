@@ -1,85 +1,103 @@
 """
-Tools package for Euno agents.
+Tool Registry - Central registry for all agent tools.
 
-Tools are organized by agent concern:
-- shared: Cross-agent tools (log, identity, signals)
-- archivist: File processing and classification
-- profiler: User profile (from temporal profiles)
-- curator: Surfacing queue and energy tracking
-- friend: Conversations and cards
-- worker: Tasks and projects (including From Euno agent communication)
-- adaptor: System analysis and identity evolution
+Tools are registered with decorators and can be looked up by name.
+Agents are granted access to specific tools via their config.
 """
 
-# Re-export from submodules for backwards compatibility
-from .shared import (
-    LOG_TOOLS, LOG_HANDLERS,
-    write_log_entry, read_log_entry, search_log, get_recent_entries,
-    IDENTITY_TOOLS, IDENTITY_HANDLERS,
-    AGENT_LOG_TOOLS, AGENT_LOG_HANDLERS,
-    log_activity, get_agent_log, get_all_agent_logs,
-    create_euno_task,
-)
+from typing import Callable, Dict, List, Any
 
-from .archivist import (
-    FILE_TOOLS, FILE_HANDLERS,
-    list_pending_files, read_file_content, mark_file_processed, mark_file_failed,
-    extract_temporal_hints, PENDING_DIR,
-    CLASSIFIER_TOOLS, CLASSIFIER_HANDLERS,
-    classify_file, is_duplicate, compute_file_hash,
-    DIGEST_TOOLS, DIGEST_HANDLERS,
-    generate_digest, get_content_for_ai,
-    QUEUE_TOOLS, QUEUE_HANDLERS,
-    get_queue as get_archivist_queue, IngestionQueue,
-    TOKEN_BUDGET_TOOLS, TOKEN_BUDGET_HANDLERS,
-    get_budget, TokenBudget,
-)
 
-from .profiler import (
-    SUMMARY_TOOLS, SUMMARY_HANDLERS,
-    get_year_logs, get_manifest, get_summary, write_summary,
-    check_summary_needed, list_years,
-    PROFILE_TOOLS, PROFILE_HANDLERS,
-    get_profile, get_synthesis_summary,
-    TEMPORAL_TOOLS, TEMPORAL_HANDLERS,
-    generate_current_profile,
-    ALL_PROFILER_TOOLS, ALL_PROFILER_HANDLERS,
-    ALL_SYNTHESIS_TOOLS, ALL_SYNTHESIS_HANDLERS,  # backwards compat
-)
+# Global registry of all tools
+_TOOL_REGISTRY: Dict[str, dict] = {}
 
-from .curator import (
-    ATTENTION_TOOLS, ATTENTION_HANDLERS,
-    get_queue, add_to_queue, mark_surfaced,
-    record_energy, get_recent_energy,
-)
 
-from .friend import (
-    CONVERSATION_TOOLS, CONVERSATION_HANDLERS,
-    clear_conversation, reset_clear_flag, was_clear_requested,
-    CONVERSATION_HISTORY_TOOLS, CONVERSATION_HISTORY_HANDLERS,
-    save_message, get_conversation, get_conversations_for_date,
-    search_conversations, get_conversation_themes, get_recent_conversations,
-    CARDS_TOOLS, CARDS_HANDLERS,
-    get_internal_card, get_public_card, write_public_card,
-    get_received_cards, update_received_card_status, approve_public_card,
-)
+def tool(name: str, description: str):
+    """Decorator to register a tool function."""
+    def decorator(func: Callable) -> Callable:
+        # Extract parameter info from function annotations
+        import inspect
+        sig = inspect.signature(func)
 
-from .worker import (
-    TASK_TOOLS, TASK_HANDLERS,
-    create_task, get_tasks, get_task, update_task_status,
-    get_daily_view, add_quick_task, store_result, get_recent_results,
-    PROJECT_TOOLS, PROJECT_HANDLERS,
-    create_project, get_projects, get_project, update_project,
-    add_milestone, archive_project, get_projects_with_deadlines,
-    WORKER_TOOLS, WORKER_HANDLERS, EXTENDED_WORKER_TOOLS,
-)
+        properties = {}
+        required = []
 
-from .adaptor import (
-    EVOLUTION_TOOLS, EVOLUTION_HANDLERS,
-    get_last_introspection, get_system_overview,
-)
+        for param_name, param in sig.parameters.items():
+            if param_name == "self":
+                continue
 
-# Backwards compatibility aliases
-INTROSPECTION_TOOLS = EVOLUTION_TOOLS
-INTROSPECTION_HANDLERS = EVOLUTION_HANDLERS
-get_ingestion_queue = get_archivist_queue
+            param_type = "string"  # default
+            if param.annotation != inspect.Parameter.empty:
+                if param.annotation == int:
+                    param_type = "integer"
+                elif param.annotation == bool:
+                    param_type = "boolean"
+                elif param.annotation == list:
+                    param_type = "array"
+                elif param.annotation == dict:
+                    param_type = "object"
+
+            properties[param_name] = {"type": param_type}
+
+            # Check if parameter has a default
+            if param.default == inspect.Parameter.empty:
+                required.append(param_name)
+
+        _TOOL_REGISTRY[name] = {
+            "name": name,
+            "description": description,
+            "function": func,
+            "schema": {
+                "type": "object",
+                "properties": properties,
+                "required": required
+            }
+        }
+        return func
+    return decorator
+
+
+def get_all_tools() -> List[dict]:
+    """Get all registered tools as Claude tool definitions."""
+    return [
+        {
+            "name": t["name"],
+            "description": t["description"],
+            "input_schema": t["schema"]
+        }
+        for t in _TOOL_REGISTRY.values()
+    ]
+
+
+def get_tools_for_agent(tool_names: List[str]) -> List[dict]:
+    """Get tool definitions for specific tool names."""
+    tools = []
+    for name in tool_names:
+        if name in _TOOL_REGISTRY:
+            t = _TOOL_REGISTRY[name]
+            tools.append({
+                "name": t["name"],
+                "description": t["description"],
+                "input_schema": t["schema"]
+            })
+    return tools
+
+
+def execute_tool(name: str, inputs: dict) -> Any:
+    """Execute a tool by name with given inputs."""
+    if name not in _TOOL_REGISTRY:
+        return {"error": f"Unknown tool: {name}"}
+
+    try:
+        func = _TOOL_REGISTRY[name]["function"]
+        return func(**inputs)
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# Import all tool modules to register them
+from . import jobs
+from . import agents
+from . import assets
+from . import user
+from . import system

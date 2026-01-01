@@ -1,0 +1,38 @@
+{
+  "generated_at": "2025-12-29T11:55:13.540962",
+  "classification": {
+    "path": "/home/buddy/projects/Euno/data/archivist/state/inbox/pending/Routine.txt",
+    "name": "Routine.txt",
+    "size": 1819,
+    "should_ignore": false,
+    "ignore_reason": "",
+    "mime_type": "text/plain",
+    "detection_method": "magic",
+    "category": "text",
+    "is_duplicate": false,
+    "file_hash": "82fc44e182f73bbea3522f6bcfa865606a9513f16d8caf0f2459edac837f560f"
+  },
+  "metadata": {
+    "type": "text",
+    "size_bytes": 1819,
+    "line_count": 22,
+    "encoding": "utf-8",
+    "extension": ".txt",
+    "preview": [
+      "Recorded: 12/27/2025",
+      "",
+      "My current routine is:",
+      "- wake up early 5am (I have insomnia too so like this morning, I was up at 2am)",
+      "- get ready for bed early around 7-8p (we have a toddler who goes to bed at 7pm)"
+    ],
+    "modified_time": "2025-12-29T11:54:55.978286"
+  },
+  "temporal_hints": {
+    "timestamp": "2025-12-29T11:54:55.978286",
+    "confidence": "low",
+    "source": "file_mtime"
+  },
+  "token_estimate": 554,
+  "content_preview": "",
+  "status": "ready"
+}

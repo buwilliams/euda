@@ -1,0 +1,22 @@
+{
+  "projects": [
+    {
+      "id": "project-notifications",
+      "title": "Notifications",
+      "status": "active",
+      "priority": "normal",
+      "type": "system",
+      "deadline": null,
+      "updated": "2025-12-29T12:06:39.903806"
+    },
+    {
+      "id": "project-20251229-192427-202775",
+      "title": "Alaska Warm Clothes",
+      "status": "active",
+      "priority": "high",
+      "type": "goal",
+      "deadline": "2026-01-10",
+      "updated": "2025-12-29T19:24:27.202824"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "observations": [
+    {
+      "id": "obs_20251230_4aa705",
+      "agent": "curator",
+      "timestamp": "2025-12-30T11:57:52.326888",
+      "type": "failure_mode_trigger",
+      "observation": "Failure mode triggered: Unknown pattern",
+      "confidence": "high",
+      "evidence": [
+        "\u201cMy energy level is really low. I\u2019m exhausted. Probably a 3 out of 10\u201d (2025-12-30T00:17:24)",
+        "\u201cI\u2019m giving a demo.\u201d (2025-12-30T00:22:46) \u2014 obligation persists despite exhaustion",
+        "Multiple entries focus on meta/identity and demo scripting rather than rest/movement/connection actions (2025-12-30 entries).",
+        "The 2025-12-29 reflection draft begins an identity narrative (\u201cBuddy Williams is a technologist, writer, and systems thinker\u2026\u201d) which can be productive, but in context may also function as cognitive load when physical energy is critically low."
+      ],
+      "suggested_update": {
+        "section": "Failure Modes",
+        "action": "strengthen"
+      }
+    },
+    {
+      "id": "obs_20251231_a2942b",
+      "agent": "curator",
+      "timestamp": "2025-12-31T11:58:37.731650",
+      "type": "failure_mode_trigger",
+      "observation": "Failure mode triggered: Unknown pattern",
+      "confidence": "high",
+      "evidence": "\u201cMy energy level is really low. I\u2019m exhausted. Probably a 3 out of 10\u201d (2025-12-30T00:17:24). Shortly after: \u201cI\u2019m giving a demo\u201d (2025-12-30T00:22:46), indicating continued performance demands during a triage-level energy dip. The day also contains repeated meta-identity queries (\u201cWhat do you know about me?\u201d at 00:16 and again at 15:39), consistent with heavy cognitive/reflective mode rather than recovery/connection behaviors.",
+      "suggested_update": {
+        "section": "Failure Modes",
+        "action": "strengthen"
+      }
+    },
+    {
+      "id": "obs_20260101_c076e4",
+      "agent": "curator",
+      "timestamp": "2026-01-01T11:59:18.505636",
+      "type": "failure_mode_trigger",
+      "observation": "Failure mode triggered: Unknown pattern",
+      "confidence": "high",
+      "evidence": "Direct report of severe depletion: \u201cMy energy level is really low. I\u2019m exhausted. Probably a 3 out of 10\u201d.\nImmediate external demand present at the same time: \u201cI\u2019m giving a demo.\u201d\nConversation repeatedly orients toward identity-modeling/description rather than recovery actions (two separate \u2018What do you know about me?\u2019 prompts the same day), suggesting attention may be pulled toward meta/cognitive work while the body is depleted.",
+      "suggested_update": {
+        "section": "Failure Modes",
+        "action": "strengthen"
+      }
+    }
+  ]
+}

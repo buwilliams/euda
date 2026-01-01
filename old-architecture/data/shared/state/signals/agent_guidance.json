@@ -1,0 +1,14 @@
+{
+  "updated_at": "2025-12-29T12:12:53.736510",
+  "guidance": {
+    "curator": {
+      "ask_energy_in_morning": true,
+      "energy_reason": "No energy baseline established yet"
+    },
+    "friend": {},
+    "profiler": {
+      "prioritize_biographical": true,
+      "biographical_reason": "Context files need population"
+    }
+  }
+}

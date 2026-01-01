@@ -1,0 +1,38 @@
+{
+  "generated_at": "2025-12-29T11:55:13.526181",
+  "classification": {
+    "path": "/home/buddy/projects/Euno/data/archivist/state/inbox/pending/Emma Williams ____.md",
+    "name": "Emma Williams ____.md",
+    "size": 325911,
+    "should_ignore": false,
+    "ignore_reason": "",
+    "mime_type": "text/plain",
+    "detection_method": "magic",
+    "category": "text",
+    "is_duplicate": false,
+    "file_hash": "d2dc6d402ba3732d66429e9d6723ceb0cd0629613ee78afea787a610d182fc6f"
+  },
+  "metadata": {
+    "type": "text",
+    "size_bytes": 325911,
+    "line_count": 17132,
+    "encoding": "utf-8",
+    "extension": ".md",
+    "preview": [
+      "---",
+      "conversation: \"Emma Williams \ud83d\udc81\u200d\u2640\ufe0f\"",
+      "participants: \"Emma Williams \ud83d\udc81\u200d\u2640\ufe0f\"",
+      "service: SMS, iMessage",
+      "message_count: 3945"
+    ],
+    "modified_time": "2025-12-29T11:54:56.017215"
+  },
+  "temporal_hints": {
+    "timestamp": "2025-12-29T11:54:56.017215",
+    "confidence": "low",
+    "source": "file_mtime"
+  },
+  "token_estimate": 12600,
+  "content_preview": "",
+  "status": "ready"
+}

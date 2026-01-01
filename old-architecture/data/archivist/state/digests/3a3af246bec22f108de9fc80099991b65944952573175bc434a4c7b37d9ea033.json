@@ -1,0 +1,38 @@
+{
+  "generated_at": "2025-12-29T11:55:13.510717",
+  "classification": {
+    "path": "/home/buddy/projects/Euno/data/archivist/state/inbox/pending/Utility of Truth.txt",
+    "name": "Utility of Truth.txt",
+    "size": 6415,
+    "should_ignore": false,
+    "ignore_reason": "",
+    "mime_type": "text/plain",
+    "detection_method": "magic",
+    "category": "text",
+    "is_duplicate": false,
+    "file_hash": "3a3af246bec22f108de9fc80099991b65944952573175bc434a4c7b37d9ea033"
+  },
+  "metadata": {
+    "type": "text",
+    "size_bytes": 6415,
+    "line_count": 77,
+    "encoding": "utf-8",
+    "extension": ".txt",
+    "preview": [
+      "Buddy Williams",
+      "Utility of Truth",
+      "Why Evolution Favors What Works Over What\u2019s True",
+      "Buddy Williams",
+      "Oct 21, 2025"
+    ],
+    "modified_time": "2025-12-29T11:54:57.748459"
+  },
+  "temporal_hints": {
+    "timestamp": "2025-12-29T11:54:57.748459",
+    "confidence": "low",
+    "source": "file_mtime"
+  },
+  "token_estimate": 1703,
+  "content_preview": "",
+  "status": "ready"
+}

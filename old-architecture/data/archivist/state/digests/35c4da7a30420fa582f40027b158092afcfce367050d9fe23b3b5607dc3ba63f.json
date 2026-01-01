@@ -1,0 +1,38 @@
+{
+  "generated_at": "2025-12-29T11:55:13.535772",
+  "classification": {
+    "path": "/home/buddy/projects/Euno/data/archivist/state/inbox/pending/A Primer on Logic.txt",
+    "name": "A Primer on Logic.txt",
+    "size": 16238,
+    "should_ignore": false,
+    "ignore_reason": "",
+    "mime_type": "text/plain",
+    "detection_method": "magic",
+    "category": "text",
+    "is_duplicate": false,
+    "file_hash": "35c4da7a30420fa582f40027b158092afcfce367050d9fe23b3b5607dc3ba63f"
+  },
+  "metadata": {
+    "type": "text",
+    "size_bytes": 16238,
+    "line_count": 211,
+    "encoding": "utf-8",
+    "extension": ".txt",
+    "preview": [
+      "Buddy Williams",
+      "A Primer on Logic",
+      "Reason and the Pursuit of Truth",
+      "Buddy Williams",
+      "Oct 08, 2025"
+    ],
+    "modified_time": "2025-12-29T11:54:50.480641"
+  },
+  "temporal_hints": {
+    "timestamp": "2025-12-29T11:54:50.480641",
+    "confidence": "low",
+    "source": "file_mtime"
+  },
+  "token_estimate": 4159,
+  "content_preview": "",
+  "status": "ready"
+}

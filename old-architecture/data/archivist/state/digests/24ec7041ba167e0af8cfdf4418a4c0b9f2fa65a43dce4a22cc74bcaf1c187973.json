@@ -1,0 +1,38 @@
+{
+  "generated_at": "2025-12-29T11:55:13.579312",
+  "classification": {
+    "path": "/home/buddy/projects/Euno/data/archivist/state/inbox/pending/LinkedIn Profile.txt",
+    "name": "LinkedIn Profile.txt",
+    "size": 18164,
+    "should_ignore": false,
+    "ignore_reason": "",
+    "mime_type": "text/plain",
+    "detection_method": "magic",
+    "category": "text",
+    "is_duplicate": false,
+    "file_hash": "24ec7041ba167e0af8cfdf4418a4c0b9f2fa65a43dce4a22cc74bcaf1c187973"
+  },
+  "metadata": {
+    "type": "text",
+    "size_bytes": 18164,
+    "line_count": 284,
+    "encoding": "utf-8",
+    "extension": ".txt",
+    "preview": [
+      "Buddy Williams",
+      " CIO",
+      "Chief AI Innovation Officer",
+      "",
+      "Nevo Technologies"
+    ],
+    "modified_time": "2025-12-29T11:54:54.792525"
+  },
+  "temporal_hints": {
+    "timestamp": "2025-12-29T11:54:54.792525",
+    "confidence": "low",
+    "source": "file_mtime"
+  },
+  "token_estimate": 4641,
+  "content_preview": "",
+  "status": "ready"
+}

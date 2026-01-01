@@ -1,0 +1,38 @@
+{
+  "generated_at": "2025-12-29T11:55:13.420567",
+  "classification": {
+    "path": "/home/buddy/projects/Euno/data/archivist/state/inbox/pending/Mom.md",
+    "name": "Mom.md",
+    "size": 409852,
+    "should_ignore": false,
+    "ignore_reason": "",
+    "mime_type": "text/plain",
+    "detection_method": "magic",
+    "category": "text",
+    "is_duplicate": false,
+    "file_hash": "806b55768a553bf2ae2ae1dd8da5066e4f8ac3532cf99f2106cd84f8a4d705c6"
+  },
+  "metadata": {
+    "type": "text",
+    "size_bytes": 409852,
+    "line_count": 22790,
+    "encoding": "utf-8",
+    "extension": ".md",
+    "preview": [
+      "---",
+      "conversation: \"Mom\"",
+      "participants: \"Mom\"",
+      "service: SMS",
+      "message_count: 5151"
+    ],
+    "modified_time": "2025-12-29T11:54:55.385406"
+  },
+  "temporal_hints": {
+    "timestamp": "2025-12-29T11:54:55.385406",
+    "confidence": "low",
+    "source": "file_mtime"
+  },
+  "token_estimate": 12600,
+  "content_preview": "",
+  "status": "ready"
+}

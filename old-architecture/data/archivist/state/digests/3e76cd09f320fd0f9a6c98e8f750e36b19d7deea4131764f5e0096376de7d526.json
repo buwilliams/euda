@@ -1,0 +1,38 @@
+{
+  "generated_at": "2025-12-29T11:55:13.410620",
+  "classification": {
+    "path": "/home/buddy/projects/Euno/data/archivist/state/inbox/pending/Technohumanism.txt",
+    "name": "Technohumanism.txt",
+    "size": 17069,
+    "should_ignore": false,
+    "ignore_reason": "",
+    "mime_type": "text/plain",
+    "detection_method": "magic",
+    "category": "text",
+    "is_duplicate": false,
+    "file_hash": "3e76cd09f320fd0f9a6c98e8f750e36b19d7deea4131764f5e0096376de7d526"
+  },
+  "metadata": {
+    "type": "text",
+    "size_bytes": 17069,
+    "line_count": 125,
+    "encoding": "utf-8",
+    "extension": ".txt",
+    "preview": [
+      "Buddy Williams",
+      "Technohumanism",
+      "Humanity's past, present, and future.",
+      "Buddy Williams",
+      "Oct 23, 2025"
+    ],
+    "modified_time": "2025-12-29T11:54:56.600811"
+  },
+  "temporal_hints": {
+    "timestamp": "2025-12-29T11:54:56.600811",
+    "confidence": "low",
+    "source": "file_mtime"
+  },
+  "token_estimate": 4367,
+  "content_preview": "",
+  "status": "ready"
+}

@@ -1,0 +1,2785 @@
+[
+  {
+    "timestamp": "2025-12-31T00:03:08.608933",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T00:08:08.623945",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T00:13:08.639616",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T00:18:08.651705",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T00:23:08.666316",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T00:28:08.681071",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T00:33:08.690905",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T00:38:08.704722",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T00:43:08.718369",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T00:48:08.728196",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T00:53:08.737753",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T00:58:08.751306",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T01:03:08.763058",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T01:08:08.770479",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T01:13:08.783299",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T01:18:08.795511",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T01:23:08.807438",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T01:28:08.818513",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T01:33:08.831522",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T01:38:08.843901",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T01:43:08.852549",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T01:48:08.861755",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T01:53:08.871885",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T01:58:08.880587",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T02:03:08.889246",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T02:08:08.898584",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T02:13:08.906616",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T02:18:08.915000",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T02:23:08.923948",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T02:28:08.931487",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T02:33:08.939807",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T02:38:08.946758",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T02:43:08.954877",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T02:48:08.962033",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T02:53:08.990399",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T02:58:09.016253",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T03:03:09.023118",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T03:08:09.058452",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T03:13:09.082854",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T03:18:09.116135",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T03:23:09.152075",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T03:28:09.189510",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T03:33:09.209382",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T03:38:09.243738",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T03:43:09.267958",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T03:48:09.292722",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T03:53:09.327030",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T03:58:09.350575",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T04:03:09.383982",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T04:08:09.416026",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T04:13:09.441788",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T04:18:09.474124",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T04:23:09.484381",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T04:28:09.508130",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T04:33:09.535753",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T04:38:09.563725",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T04:43:09.587579",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T04:48:09.612935",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T04:53:09.643146",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T04:58:09.665218",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T05:03:09.695457",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T05:08:09.725336",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T05:13:09.754362",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T05:18:09.782953",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T05:23:09.812580",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T05:28:09.841125",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T05:33:09.870465",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T05:38:09.884896",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T05:43:09.911200",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T05:48:09.943079",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T05:53:09.955087",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T05:58:09.974488",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T06:03:09.990467",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T06:08:10.008414",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T06:13:10.027218",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T06:18:10.052468",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T06:23:10.084530",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T06:28:10.110991",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T06:33:10.127980",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T06:38:10.152636",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T06:43:10.177288",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T06:48:10.203676",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T06:53:10.225475",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T06:58:10.240439",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T07:03:10.254062",
+    "action": "check_work",
+    "details": {
+      "work_needed": true,
+      "reason": ""
+    },
+    "outcome": "work_required"
+  },
+  {
+    "timestamp": "2025-12-31T07:03:10.255738",
+    "action": "work_start",
+    "details": {
+      "task": "curator autonomous work"
+    },
+    "outcome": "started"
+  },
+  {
+    "timestamp": "2025-12-31T07:03:11.628881",
+    "action": "tool_call",
+    "details": {
+      "tool": "generate_morning_attention",
+      "input": {},
+      "success": true
+    },
+    "outcome": "## Morning Attention\n\nGood morning. Here's what deserves your attention today.\n\n## Attention Context\n\n**Time**: 2025-12-31 07:03 (Wednesday)\n**Mode**: Morning attention - focused, action-oriented\n\n###"
+  },
+  {
+    "timestamp": "2025-12-31T07:03:14.052884",
+    "action": "tool_call",
+    "details": {
+      "tool": "infer_energy_state",
+      "input": {},
+      "success": true
+    },
+    "outcome": "## Energy State Inference\n\n**Time context**: Morning - typically rising energy, good for focused work\n\n**Signals**: No recent energy readings. Consider asking user.\n\n*Note: This is inference. When unc"
+  },
+  {
+    "timestamp": "2025-12-31T07:03:14.055235",
+    "action": "tool_call",
+    "details": {
+      "tool": "get_queue",
+      "input": {
+        "include_surfaced": false
+      },
+      "success": true
+    },
+    "outcome": "## Surfacing Queue\n\n\u2713 **[normal]** **Restart a social movement practice with a fixed weekly slot (AcroYoga or climb\n   Tags: initial_opportunity\n\u2713 **[normal]** **Weekly \u201cLogic Night\u201d with kids: a 30-m"
+  },
+  {
+    "timestamp": "2025-12-31T07:03:22.401914",
+    "action": "work_complete",
+    "details": {},
+    "outcome": "Morning attention delivered"
+  },
+  {
+    "timestamp": "2025-12-31T07:03:22.403864",
+    "action": "signal_sent",
+    "details": {
+      "signal": "attention_delivered"
+    },
+    "outcome": "sent"
+  },
+  {
+    "timestamp": "2025-12-31T07:08:22.439312",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T07:13:22.460142",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T07:18:22.492129",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T07:23:22.521763",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T07:28:22.554508",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T07:33:22.581040",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T07:38:22.614090",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T07:43:22.649590",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T07:48:22.666883",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T07:53:22.691353",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T07:58:22.710057",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T08:03:22.741811",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T08:08:22.774630",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T08:13:22.808185",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T08:18:22.835590",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T08:23:22.852354",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T08:28:22.869525",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T08:33:22.898609",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T08:38:22.929036",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T08:43:22.960123",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T08:48:22.972877",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T08:53:23.002011",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T08:58:23.016113",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T09:03:23.044518",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T09:08:23.073203",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T09:13:23.083387",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T09:18:23.107532",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T09:23:23.133667",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T09:28:23.160247",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T09:33:23.181665",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T09:38:23.199952",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T09:43:23.220658",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T09:48:23.246676",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T09:53:23.270360",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T09:58:23.292522",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T10:03:23.317967",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T10:08:23.338701",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T10:13:23.355871",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T10:18:23.378919",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T10:23:23.400430",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T10:28:23.422423",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T10:33:23.445246",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T10:38:23.453335",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T10:43:23.473961",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T10:48:23.493132",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T10:53:23.513635",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T10:58:23.533684",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T11:03:23.554144",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T11:08:23.572852",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T11:13:23.591615",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T11:18:23.614263",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T11:23:23.630456",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T11:28:23.643855",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T11:33:23.663690",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T11:38:23.674613",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T11:43:23.691400",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T11:48:23.708044",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T11:53:23.723351",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T11:58:26.693484",
+    "action": "tool_call",
+    "details": {
+      "tool": "write_log_entry",
+      "input": {
+        "content": "User requested analysis of recent lifelog entries for warning signs vs wants/fears/attractors; lifelog includes 2025-12-30 chat where user reports very low energy (3/10) and is preparing/giving a demo.",
+        "timestamp": "2025-12-31T00:00:00",
+        "source": "conversation",
+        "entry_type": "note",
+        "temporal_confidence": "low",
+        "temporal_source": "inferred"
+      },
+      "success": false
+    },
+    "outcome": "Unknown tool: write_log_entry"
+  },
+  {
+    "timestamp": "2025-12-31T11:58:37.724053",
+    "action": "check_work",
+    "details": {
+      "work_needed": true,
+      "reason": ""
+    },
+    "outcome": "work_required"
+  },
+  {
+    "timestamp": "2025-12-31T11:58:37.726640",
+    "action": "work_start",
+    "details": {
+      "task": "curator autonomous work"
+    },
+    "outcome": "started"
+  },
+  {
+    "timestamp": "2025-12-31T11:58:37.733381",
+    "action": "work_complete",
+    "details": {},
+    "outcome": "Intervention surfaced: Unknown pattern"
+  },
+  {
+    "timestamp": "2025-12-31T11:58:37.735470",
+    "action": "signal_sent",
+    "details": {
+      "signal": "attention_delivered"
+    },
+    "outcome": "sent"
+  },
+  {
+    "timestamp": "2025-12-31T12:03:37.782523",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T12:08:47.990081",
+    "action": "check_work",
+    "details": {
+      "work_needed": true,
+      "reason": ""
+    },
+    "outcome": "work_required"
+  },
+  {
+    "timestamp": "2025-12-31T12:08:47.992190",
+    "action": "work_start",
+    "details": {
+      "task": "curator autonomous work"
+    },
+    "outcome": "started"
+  },
+  {
+    "timestamp": "2025-12-31T12:08:47.997176",
+    "action": "work_complete",
+    "details": {},
+    "outcome": "Insight surfaced: value_gap"
+  },
+  {
+    "timestamp": "2025-12-31T12:08:47.999216",
+    "action": "signal_sent",
+    "details": {
+      "signal": "attention_delivered"
+    },
+    "outcome": "sent"
+  },
+  {
+    "timestamp": "2025-12-31T12:13:48.010303",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T12:18:48.018057",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T12:23:48.022454",
+    "action": "check_work",
+    "details": {
+      "work_needed": true,
+      "reason": ""
+    },
+    "outcome": "work_required"
+  },
+  {
+    "timestamp": "2025-12-31T12:23:48.025443",
+    "action": "work_start",
+    "details": {
+      "task": "curator autonomous work"
+    },
+    "outcome": "started"
+  },
+  {
+    "timestamp": "2025-12-31T12:23:48.031572",
+    "action": "work_complete",
+    "details": {},
+    "outcome": "Proactive question surfaced"
+  },
+  {
+    "timestamp": "2025-12-31T12:23:48.033504",
+    "action": "signal_sent",
+    "details": {
+      "signal": "attention_delivered"
+    },
+    "outcome": "sent"
+  },
+  {
+    "timestamp": "2025-12-31T12:28:48.040475",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T12:33:48.078731",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T12:38:48.101098",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T12:43:48.113778",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T12:48:48.150609",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T12:53:48.187411",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T12:58:48.208446",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T13:03:48.235615",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T13:08:48.267685",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T13:13:48.275685",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T13:18:48.299184",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T13:23:48.323452",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T13:28:48.346191",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T13:33:48.378342",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T13:38:48.409395",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T13:43:48.431379",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T13:48:48.452014",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T13:53:48.466713",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T13:58:48.475802",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T14:03:48.506932",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T14:08:48.537909",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T14:13:48.552375",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T14:18:48.582369",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T14:23:48.605276",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T14:28:48.635975",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T14:33:48.665687",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T14:38:48.694387",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T14:43:48.724795",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T14:48:48.740972",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T14:53:48.769460",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T14:58:48.795313",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T15:03:48.823594",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T15:08:48.850897",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T15:13:48.877389",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T15:18:48.899685",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T15:23:48.925518",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T15:28:48.938809",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T15:33:48.962652",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T15:38:48.976525",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T15:43:49.000868",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T15:48:49.023265",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T15:53:49.036108",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T15:58:49.058607",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T16:03:49.078943",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T16:08:49.090481",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T16:13:49.110474",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T16:18:49.130691",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T16:23:49.149216",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T16:28:49.168426",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T16:33:49.188043",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T16:38:49.206080",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T16:43:49.223526",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T16:48:49.241401",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T16:53:49.257052",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T16:58:49.273426",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T17:03:49.288886",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T17:08:49.305648",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T17:13:49.315417",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T17:18:49.329942",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T17:23:49.346522",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T17:28:49.361651",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T17:33:49.376476",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T17:38:49.388488",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T17:43:49.400740",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T17:48:49.412865",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T17:53:49.425380",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T17:58:49.435042",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T18:03:49.447323",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T18:08:49.459778",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T18:13:49.470084",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T18:18:49.477855",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T18:23:49.521496",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T18:28:49.555051",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T18:33:49.588436",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T18:38:49.597525",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T18:43:49.626768",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T18:48:49.661510",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T18:53:49.697253",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T18:58:49.723749",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T19:03:49.758527",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T19:08:49.792483",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T19:13:49.815884",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T19:18:49.849111",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T19:23:49.882776",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T19:28:49.898649",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T19:33:49.911791",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T19:38:49.924403",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T19:43:49.945018",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T19:48:49.972024",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T19:53:50.002313",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T19:58:50.029613",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T20:03:50.065363",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T20:08:50.096256",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T20:13:50.125362",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T20:18:50.140243",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T20:23:50.161269",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T20:28:50.188026",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T20:33:50.214555",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T20:38:50.226126",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T20:43:50.250475",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T20:48:50.261088",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T20:53:50.284198",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T20:58:50.309694",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T21:03:50.330507",
+    "action": "check_work",
+    "details": {
+      "work_needed": true,
+      "reason": ""
+    },
+    "outcome": "work_required"
+  },
+  {
+    "timestamp": "2025-12-31T21:03:50.335434",
+    "action": "work_start",
+    "details": {
+      "task": "curator autonomous work"
+    },
+    "outcome": "started"
+  },
+  {
+    "timestamp": "2025-12-31T21:03:51.677794",
+    "action": "tool_call",
+    "details": {
+      "tool": "generate_evening_attention",
+      "input": {},
+      "success": true
+    },
+    "outcome": "## Evening Reflection\n\nTime to wind down and reflect.\n\n## Attention Context\n\n**Time**: 2025-12-31 21:03 (Wednesday)\n**Mode**: Evening attention - warm, reflective (user may be tired)\n\n### Energy State"
+  },
+  {
+    "timestamp": "2025-12-31T21:03:57.325181",
+    "action": "work_complete",
+    "details": {},
+    "outcome": "Evening attention delivered"
+  },
+  {
+    "timestamp": "2025-12-31T21:03:57.328700",
+    "action": "signal_sent",
+    "details": {
+      "signal": "attention_delivered"
+    },
+    "outcome": "sent"
+  },
+  {
+    "timestamp": "2025-12-31T21:08:57.358784",
+    "action": "check_work",
+    "details": {
+      "work_needed": true,
+      "reason": ""
+    },
+    "outcome": "work_required"
+  },
+  {
+    "timestamp": "2025-12-31T21:08:57.361904",
+    "action": "work_start",
+    "details": {
+      "task": "curator autonomous work"
+    },
+    "outcome": "started"
+  },
+  {
+    "timestamp": "2025-12-31T21:08:57.365960",
+    "action": "work_complete",
+    "details": {},
+    "outcome": "Removed 0 completed task(s) older than 30 days"
+  },
+  {
+    "timestamp": "2025-12-31T21:08:57.369179",
+    "action": "signal_sent",
+    "details": {
+      "signal": "attention_delivered"
+    },
+    "outcome": "sent"
+  },
+  {
+    "timestamp": "2025-12-31T21:13:57.392408",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T21:18:57.414252",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T21:23:57.438909",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T21:28:57.456991",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T21:33:57.481453",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T21:38:57.509723",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T21:43:57.531755",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T21:48:57.547786",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T21:53:57.575170",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T21:58:57.597450",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T22:03:57.620544",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T22:08:57.643578",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T22:13:57.662402",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T22:18:57.677055",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T22:23:57.701049",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T22:28:57.722356",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T22:33:57.742856",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T22:38:57.756340",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T22:43:57.778558",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T22:48:57.799243",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T22:53:57.818332",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T22:58:57.837635",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T23:03:57.856679",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T23:08:57.873387",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T23:13:57.890644",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T23:18:57.907415",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T23:23:57.925671",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T23:28:57.941557",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T23:33:57.955459",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T23:38:57.969022",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T23:43:57.982765",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T23:48:57.995696",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T23:53:58.008893",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  },
+  {
+    "timestamp": "2025-12-31T23:58:58.022095",
+    "action": "check_work",
+    "details": {
+      "work_needed": false,
+      "reason": ""
+    },
+    "outcome": "idle"
+  }
+]
