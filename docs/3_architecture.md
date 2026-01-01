@@ -39,6 +39,20 @@ data/
 
 ## Agents
 
+### What Is An Agent?
+
+At its core, an agent is simply:
+- **A context** (list of messages)
+- **A loop** (process input → call LLM → handle tools → repeat)
+- **Tools** (functions the agent can call)
+
+That's it. No magic. The LLM receives the conversation context, decides what to do, optionally calls tools, and returns a response. The loop continues until the agent decides it's done.
+
+Autonomous agents add:
+- **check_work_needed()** - decide if there's work to do
+- **do_work()** - perform the work using tools
+- **sleep** - wait before checking again
+
 ### Agent Definition
 
 An agent is defined by three things:
