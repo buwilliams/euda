@@ -1,4 +1,4 @@
-# Euno Architecture v3 - Unified Agent System
+# Euno Architecture - Unified Agent System
 
 ## Overview
 
@@ -6,7 +6,7 @@ A radically simplified architecture where everything is either an **Agent** or a
 
 ## Core Principles
 
-1. **Agents are generic** - No hardcoded agent types. All agents are config + tools + loop.
+1. **Agents are generic** - No hardcoded agent types. All agents are config + persona + tools + loop.
 2. **User is an agent** - The human user is just another agent with a different interface (Web UI/CLI vs autonomous loop).
 3. **Jobs replace projects and tasks** - A single hierarchical structure with arbitrary depth.
 4. **Flat files everywhere** - Human-readable, inspectable, version-controllable.
@@ -20,6 +20,8 @@ data/
 │   └── {agent-id}/
 │       ├── config.json                 # tools, sleep timer, enabled
 │       ├── {agent-id}-persona.md       # identity/system prompt
+│       ├── logs/
+│       │   └── {date}.json             # activity logs by date
 │       └── state/
 │           ├── memory.json             # persistent agent memory
 │           └── conversation/
@@ -34,28 +36,44 @@ data/
 │   └── lifelog/
 │       └── {date}.md                   # daily journals
 └── system/
-    └── config.json                     # API keys, global settings
+    └── config.json                     # system-wide settings
 ```
+
+## System Configuration
+
+System-wide settings are stored in `data/system/config.json`:
+
+```json
+{
+  "version": "3.0.0",
+  "initialized": true,
+  "agents": {
+    "max_work_iterations": 20,
+    "min_sleep_seconds": 60
+  }
+}
+```
+
+| Setting | Description |
+|---------|-------------|
+| `agents.max_work_iterations` | Safety limit for autonomous work loop (prevents runaway agents) |
+| `agents.min_sleep_seconds` | Minimum sleep between work cycles (prevents tight loops) |
 
 ## Agents
 
 ### What Is An Agent?
 
 At its core, an agent is simply:
-- **A context** (list of messages)
-- **A loop** (process input → call LLM → handle tools → repeat)
+- **A persona** (system prompt defining identity)
+- **A context** (conversation history)
 - **Tools** (functions the agent can call)
+- **A loop** (process input → call LLM → handle tools → repeat until done)
 
-That's it. No magic. The LLM receives the conversation context, decides what to do, optionally calls tools, and returns a response. The loop continues until the agent decides it's done.
-
-Autonomous agents add:
-- **check_work_needed()** - decide if there's work to do
-- **do_work()** - perform the work using tools
-- **sleep** - wait before checking again
+That's it. No magic. The LLM receives the conversation context, decides what to do, optionally calls tools, and returns a response. The agent continues working until it decides it's done.
 
 ### Agent Definition
 
-An agent is defined by three things:
+An agent is defined by:
 1. **Config** (`config.json`) - operational parameters
 2. **Persona** (`{agent}-persona.md`) - identity and behavior
 3. **Tools** - list of tool names the agent can use
@@ -67,7 +85,7 @@ An agent is defined by three things:
   "id": "archivist",
   "name": "The Archivist",
   "enabled": true,
-  "tools": ["read_file", "write_file", "create_job", "complete_job"],
+  "tools": ["read_file", "write_file", "create_job", "complete_job", "done_working"],
   "sleep_minutes": 5
 }
 ```
@@ -78,48 +96,88 @@ An agent is defined by three things:
 | `name` | string | Display name |
 | `enabled` | boolean | Whether agent runs |
 | `tools` | string[] | Tools this agent can use |
-| `sleep_minutes` | number | Sleep between work cycles (0 = continuous) |
+| `sleep_minutes` | number | Sleep between work cycles |
 
-### Agent Types
+### Autonomous Work Cycle
 
-**Autonomous Agents** - Run in a loop managed by Agent Manager:
-- Wake up, check for work, do work, sleep, repeat
-- Decide internally when they're "done" for a cycle
-- Examples: Archivist, Curator, Worker
-
-**User Agent** - Special case:
-- Interacts via Web UI or CLI
-- Same underlying architecture, different interface
-- Conversation history stored same as other agents
-
-### Agent Lifecycle
+Each agent runs in its own **thread** (not async task) to prevent blocking:
 
 ```
-┌─────────────────────────────────────────────────┐
-│                 Agent Manager                    │
-│  - Starts all enabled agents on app startup     │
-│  - Monitors agent health                        │
-│  - Restarts failed agents                       │
-│  - Handles graceful shutdown                    │
-└─────────────────────────────────────────────────┘
-                      │
-        ┌─────────────┼─────────────┐
-        ▼             ▼             ▼
-   ┌─────────┐   ┌─────────┐   ┌─────────┐
-   │ Agent A │   │ Agent B │   │ Agent C │
-   │  Loop   │   │  Loop   │   │  Loop   │
-   └─────────┘   └─────────┘   └─────────┘
-        │             │             │
-        ▼             ▼             ▼
-   ┌─────────────────────────────────────┐
-   │           Work Cycle                 │
-   │  1. Check for relevant jobs         │
-   │  2. Do work (use tools)             │
-   │  3. Update job state                │
-   │  4. Sleep for configured duration   │
-   │  5. Repeat                          │
-   └─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                     Agent Work Cycle                         │
+├─────────────────────────────────────────────────────────────┤
+│  1. Wake up                                                  │
+│  2. Check for jobs (list_jobs)                              │
+│  3. If no jobs → log "no_jobs" → sleep                      │
+│  4. If jobs exist:                                          │
+│     ┌──────────────────────────────────────────────────┐    │
+│     │  Autonomous Loop (until done_working called)      │    │
+│     │  ├── Send prompt to LLM                          │    │
+│     │  ├── Execute any tool calls                      │    │
+│     │  ├── Check if agent called done_working          │    │
+│     │  └── If not done, continue with follow-up prompt │    │
+│     └──────────────────────────────────────────────────┘    │
+│  5. Log sleep duration and wake time                        │
+│  6. Sleep for configured duration                           │
+│  7. Log wake event                                          │
+│  8. Repeat from step 2                                      │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+The agent decides when it's done by calling the `done_working` tool. This makes agents truly autonomous—they work until they determine there's nothing left to do.
+
+### The done_working Tool
+
+Every agent should have access to the `done_working` tool:
+
+```python
+done_working(summary: str = "") -> dict
+```
+
+When called:
+- Sets a flag that ends the autonomous loop
+- Logs the completion with optional summary
+- Agent proceeds to sleep phase
+
+Safety limit: If an agent doesn't call `done_working` after `max_work_iterations` (default 20), the loop ends automatically.
+
+### Agent Logging
+
+Each agent maintains activity logs in `logs/{date}.json`:
+
+```json
+[
+  {"timestamp": "2026-01-02T04:30:00", "event": "work_cycle_start"},
+  {"timestamp": "2026-01-02T04:30:01", "event": "work_cycle_jobs_found", "details": {"count": 3}},
+  {"timestamp": "2026-01-02T04:30:01", "event": "work_iteration", "details": {"iteration": 1}},
+  {"timestamp": "2026-01-02T04:30:01", "event": "chat_start", "details": {"message_length": 245}},
+  {"timestamp": "2026-01-02T04:30:03", "event": "llm_response", "details": {"stop_reason": "tool_use", "usage": {"input": 1200, "output": 85}}},
+  {"timestamp": "2026-01-02T04:30:03", "event": "tool_call", "details": {"tool": "list_jobs", "input": {"status": "todo"}}},
+  {"timestamp": "2026-01-02T04:30:03", "event": "tool_result", "details": {"tool": "list_jobs", "success": true}},
+  {"timestamp": "2026-01-02T04:30:05", "event": "llm_response", "details": {"stop_reason": "tool_use", "usage": {"input": 1500, "output": 45}}},
+  {"timestamp": "2026-01-02T04:30:05", "event": "tool_call", "details": {"tool": "done_working", "input": {"summary": "No jobs match my role"}}},
+  {"timestamp": "2026-01-02T04:30:05", "event": "done_working", "details": {"summary": "No jobs match my role"}},
+  {"timestamp": "2026-01-02T04:30:07", "event": "chat_end", "details": {"response_length": 150}},
+  {"timestamp": "2026-01-02T04:30:07", "event": "work_cycle_end", "details": {"reason": "done_working", "iterations": 1}},
+  {"timestamp": "2026-01-02T04:30:07", "event": "sleep", "details": {"duration_seconds": 300, "wake_at": "2026-01-02T04:35:07"}},
+  {"timestamp": "2026-01-02T04:35:07", "event": "wake"}
+]
+```
+
+Log events:
+| Event | Description |
+|-------|-------------|
+| `work_cycle_start` | Agent woke up and started checking for work |
+| `work_cycle_end` | Work cycle finished (reason: `done_working`, `no_jobs`, or `max_iterations`) |
+| `work_iteration` | Started a new iteration of the autonomous loop |
+| `chat_start` / `chat_end` | LLM conversation boundaries |
+| `llm_response` | Response received from LLM (includes token usage) |
+| `tool_call` | Agent called a tool |
+| `tool_result` | Tool execution completed |
+| `done_working` | Agent signaled completion |
+| `sleep` | Agent going to sleep (includes duration and wake time) |
+| `wake` | Agent woke from sleep |
+| `error` | An error occurred |
 
 ### Agent Memory & Conversation
 
@@ -134,6 +192,29 @@ Each agent maintains its own:
 - Persistent facts the agent has learned
 - Survives restarts
 - Agent-specific knowledge
+
+## Agent Manager
+
+The Agent Manager starts each agent in its own thread:
+
+```
+┌─────────────────────────────────────────────────┐
+│                 Agent Manager                    │
+│  - Loads all agent configs on startup           │
+│  - Starts each enabled agent in its own thread  │
+│  - Monitors thread health                       │
+│  - Handles graceful shutdown                    │
+└─────────────────────────────────────────────────┘
+                      │
+        ┌─────────────┼─────────────┐
+        ▼             ▼             ▼
+   ┌─────────┐   ┌─────────┐   ┌─────────┐
+   │ Thread  │   │ Thread  │   │ Thread  │
+   │ Agent A │   │ Agent B │   │ Agent C │
+   └─────────┘   └─────────┘   └─────────┘
+```
+
+Each thread runs independently—one agent's work cannot block another.
 
 ## Jobs
 
@@ -160,33 +241,11 @@ Jobs unify the old "projects" and "tasks" concepts:
   "due_date": null,
   "tags": ["research", "pricing"],
   "log": [
-    {
-      "timestamp": "2025-01-15T10:30:00Z",
-      "agent": "user",
-      "action": "created"
-    },
-    {
-      "timestamp": "2025-01-15T14:22:00Z",
-      "agent": "worker",
-      "action": "Started research on competitor A"
-    }
+    {"timestamp": "2025-01-15T10:30:00Z", "agent": "user", "action": "created"},
+    {"timestamp": "2025-01-15T14:22:00Z", "agent": "worker", "action": "Started research on competitor A"}
   ]
 }
 ```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique identifier |
-| `name` | string | Job title |
-| `parent_id` | string? | Parent job ID (null for top-level) |
-| `status` | enum | `todo`, `completed`, `archived` |
-| `created_at` | datetime | Creation timestamp |
-| `updated_at` | datetime | Last modification |
-| `created_by` | string | Agent ID that created it |
-| `description` | string? | Detailed description |
-| `due_date` | datetime? | Optional deadline |
-| `tags` | string[] | Categorization |
-| `log` | array | Activity history |
 
 ### Job States
 
@@ -196,38 +255,12 @@ Jobs unify the old "projects" and "tasks" concepts:
 | `completed` | Finished successfully |
 | `archived` | No longer relevant, preserved for history |
 
-### Job Hierarchy
-
-Jobs form a tree via `parent_id`:
-
-```
-Job: "Q1 Product Launch"
-├── Job: "Marketing Materials"
-│   ├── Job: "Write blog post"
-│   └── Job: "Create social media assets"
-├── Job: "Technical Prep"
-│   ├── Job: "Performance testing"
-│   └── Job: "Security audit"
-└── Job: "Launch Day"
-    └── Job: "Monitor metrics"
-```
-
 ### Job Assets
 
 Assets are stored in `data/assets/{job-id}/`:
 - Any file type (images, documents, data files)
 - Referenced from job description or log entries
 - Organized by job for easy cleanup
-
-### Job Handoff
-
-Jobs move between agents implicitly:
-1. Agent A finishes work on a job
-2. Agent A updates job log: "Completed research, ready for review"
-3. Agent B (in its next cycle) sees the job needs attention
-4. Agent B picks it up based on its persona/purpose
-
-No explicit assignment - agents decide based on their identity what jobs they should work on.
 
 ## Tools
 
@@ -268,135 +301,91 @@ No explicit assignment - agents decide based on their identity what jobs they sh
 **System Tools:**
 - `get_config` - Read system config
 - `send_notification` - Notify user
+- `done_working` - Signal work completion (for autonomous loop)
 
 ### Tool Registration
 
-Tools are Python functions registered with the system:
+Tools are Python functions registered with the `@tool` decorator:
 
 ```python
-@tool(name="create_job", description="Create a new job")
+@tool("create_job", "Create a new job")
 def create_job(name: str, description: str = None, parent_id: str = None) -> dict:
     """Create a new job and return its details."""
     ...
 ```
 
-## Agent Manager
-
-### Responsibilities
-
-1. **Startup** - Load all agent configs, start enabled agents
-2. **Monitoring** - Track agent health, detect failures
-3. **Restart** - Automatically restart crashed agents
-4. **Shutdown** - Gracefully stop all agents on app exit
-5. **Hot Reload** - Detect config changes, restart affected agents
-
-### Implementation
-
-```python
-class AgentManager:
-    def __init__(self):
-        self.agents = {}  # agent_id -> AgentRunner
-
-    async def start_all(self):
-        """Start all enabled agents."""
-        configs = load_all_agent_configs()
-        for config in configs:
-            if config["enabled"]:
-                self.agents[config["id"]] = AgentRunner(config)
-                await self.agents[config["id"]].start()
-
-    async def shutdown(self):
-        """Gracefully stop all agents."""
-        for agent in self.agents.values():
-            await agent.stop()
-```
-
-### Agent Runner
-
-Each agent runs in its own async task:
-
-```python
-class AgentRunner:
-    def __init__(self, config):
-        self.config = config
-        self.running = False
-
-    async def start(self):
-        self.running = True
-        while self.running:
-            await self.work_cycle()
-            await asyncio.sleep(self.config["sleep_minutes"] * 60)
-
-    async def work_cycle(self):
-        # 1. Build context (persona + memory + recent conversation)
-        # 2. Check for relevant jobs
-        # 3. Call LLM with tools
-        # 4. Execute tool calls
-        # 5. Update state
-        ...
-```
-
 ## Web Server
 
-### API Endpoints
+### API Routes
 
-**Jobs:**
-- `GET /api/jobs` - List jobs (with query params)
-- `GET /api/jobs/{id}` - Get job
-- `POST /api/jobs` - Create job
-- `PATCH /api/jobs/{id}` - Update job
-- `DELETE /api/jobs/{id}` - Archive job
+Routes are organized by domain:
 
-**Agents:**
-- `GET /api/agents` - List agents
-- `GET /api/agents/{id}` - Get agent details
-- `PATCH /api/agents/{id}` - Update agent config
-- `POST /api/agents/{id}/enable` - Enable agent
-- `POST /api/agents/{id}/disable` - Disable agent
+```
+src/web/routes/
+├── auth.py      # /api/auth/* (login, logout, check)
+├── chat.py      # /api/chat/* (messages, history, conversations)
+├── system.py    # /api/* (health, about, settings, events)
+├── jobs.py      # /api/jobs/*
+├── agents.py    # /api/agents/*
+└── user.py      # /api/user/*
+```
 
-**Chat:**
-- `POST /api/chat` - Send message, get response
-- `GET /api/chat/history` - Get conversation history
+### Real-Time Updates (SSE)
 
-**User:**
-- `GET /api/user/profile` - Get user profile
-- `PATCH /api/user/profile` - Update profile
-- `GET /api/user/lifelog` - Get lifelog entries
+The web UI receives real-time updates via Server-Sent Events (SSE):
 
-**Assets:**
-- `GET /api/jobs/{id}/assets` - List job assets
-- `GET /api/jobs/{id}/assets/{filename}` - Get asset
-- `POST /api/jobs/{id}/assets` - Upload asset
-- `DELETE /api/jobs/{id}/assets/{filename}` - Delete asset
+**Endpoint:** `GET /api/events`
+
+```javascript
+const eventSource = new EventSource('/api/events');
+
+eventSource.addEventListener('init', (e) => {
+  const data = JSON.parse(e.data);
+  // Initial state: { jobs: [...] }
+});
+
+eventSource.addEventListener('ping', (e) => {
+  // Keep-alive ping every 30 seconds
+});
+```
+
+SSE is preferred over polling because:
+- Single persistent connection (not repeated requests)
+- Server pushes updates immediately
+- Lower latency, less overhead
+- Automatic reconnection on disconnect
 
 ### Static UI
 
 Static files served from `static/`:
 - Single-page app
 - Communicates via API
-- Real-time updates via SSE or polling
+- Real-time updates via SSE
 
 ## Source Code Structure
 
 ```
 src/
 ├── main.py                 # Entry point, CLI
-├── manager.py              # Agent Manager
-├── agent.py                # Generic Agent Runner
+├── manager.py              # Agent Manager (thread-based)
+├── agent.py                # Generic Agent
+├── auth.py                 # Password/session authentication
 ├── tools/
 │   ├── __init__.py         # Tool registry
 │   ├── jobs.py             # Job CRUD tools
 │   ├── assets.py           # Asset management tools
 │   ├── user.py             # User profile/lifelog tools
 │   ├── agents.py           # Agent introspection tools
-│   └── system.py           # System/notification tools
+│   └── system.py           # System/notification/done_working tools
 └── web/
-    ├── app.py              # FastAPI application
+    ├── app.py              # FastAPI application (router config)
     └── routes/
-        ├── jobs.py
-        ├── agents.py
-        ├── chat.py
-        └── user.py
+        ├── jobs.py         # /api/jobs/*
+        ├── agents.py       # /api/agents/*
+        ├── chat.py         # /api/chat/*
+        ├── user.py         # /api/user/*
+        ├── auth.py         # /api/auth/*
+        └── system.py       # /api/* (health, about, etc.)
 ```
 
 ## Example: Creating a New Agent
@@ -409,7 +398,7 @@ src/
   "id": "researcher",
   "name": "The Researcher",
   "enabled": true,
-  "tools": ["list_jobs", "get_job", "update_job", "add_job_log", "write_asset"],
+  "tools": ["list_jobs", "get_job", "update_job", "add_job_log", "write_asset", "done_working"],
   "sleep_minutes": 10
 }
 ```
@@ -426,6 +415,7 @@ synthesize findings, and document research results.
 - Gather information from available sources
 - Document findings as job assets
 - Update job logs with progress
+- Call done_working when finished or when no research jobs need attention
 
 ## Constraints
 - Always cite sources
@@ -433,29 +423,9 @@ synthesize findings, and document research results.
 - Don't make things up
 ```
 
-4. Restart Agent Manager (or it hot-reloads)
+4. Restart the application
 
 5. Agent starts working on research-tagged jobs
-
-## Migration Path
-
-### From Current Architecture
-
-1. Archive current code to `old-architecture/`
-2. Create new `src/` with minimal implementation
-3. Migrate data:
-   - Existing projects → Jobs
-   - Existing tasks → Child Jobs
-   - Agent personas → `data/agents/{id}/{id}-persona.md`
-   - Conversation history → `data/agents/{id}/state/conversation/`
-   - User profile → `data/user/user-profile.md`
-   - Lifelog → `data/user/lifelog/`
-
-### Preserved Components
-
-- `static/` - Web UI (works with new API)
-- `devops/` - Deployment scripts
-- `.env` - Configuration
 
 ## Open Questions
 
@@ -467,5 +437,3 @@ synthesize findings, and document research results.
 2. **Conversation Pruning** - Conversation files grow forever. When/how to summarize old context?
 
 3. **Asset Cleanup** - When a job is archived, what happens to its assets?
-
-4. **Agent Creation via Chat** - What's the UX for a user creating a new agent through conversation?
