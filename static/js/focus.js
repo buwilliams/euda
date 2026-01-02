@@ -235,16 +235,16 @@ function renderFocusMenu() {
                 <span class="focus-menu-count">${counts.someday}</span>
                 <span class="focus-menu-arrow">›</span>
             </div>
-            <div class="focus-menu-item" onclick="navigateFocus('completed')" style="opacity: 0.7;">
+            <div class="focus-menu-item" onclick="navigateFocus('completed')">
                 <span class="focus-menu-icon">✓</span>
-                <span class="focus-menu-label">Completed Jobs</span>
+                <span class="focus-menu-label">Completed</span>
                 <span class="focus-menu-count">${topLevelCompletedJobs.length}</span>
                 <span class="focus-menu-arrow">›</span>
             </div>
             ${topLevelJobs.map(job => {
                 const childCount = jobsData.filter(j => j.parent_id === job.id).length;
                 return `
-                <div class="focus-menu-item" onclick="navigateFocus('job-${job.id}')" style="margin-top: ${topLevelJobs.indexOf(job) === 0 ? '0.5rem' : '0'};">
+                <div class="focus-menu-item" onclick="navigateFocus('job-${job.id}')">
                     <span class="focus-menu-icon">📁</span>
                     <span class="focus-menu-label">${escapeHtml(job.name)}</span>
                     <span class="focus-menu-count">${childCount}</span>

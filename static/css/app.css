@@ -2961,3 +2961,149 @@
             font-size: 0.85rem;
             padding: 0.5rem;
         }
+
+        /* ============== Rendered Markdown Content (Assets, Descriptions) ============== */
+        .job-description-display h1,
+        .job-description-display h2,
+        .job-description-display h3,
+        .job-description-display h4,
+        .job-description-display h5,
+        .job-description-display h6 {
+            color: #333;
+            line-height: 1.3;
+            margin: 1em 0 0.5em 0;
+        }
+
+        .job-description-display h1:first-child,
+        .job-description-display h2:first-child,
+        .job-description-display h3:first-child,
+        .job-description-display h4:first-child {
+            margin-top: 0;
+        }
+
+        .job-description-display h1 { font-size: 1.4em; font-weight: 600; }
+        .job-description-display h2 { font-size: 1.2em; font-weight: 600; }
+        .job-description-display h3 { font-size: 1.05em; font-weight: 600; }
+        .job-description-display h4 { font-size: 0.95em; font-weight: 600; }
+
+        .job-description-display p {
+            margin: 0.6em 0;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        .job-description-display p:first-child { margin-top: 0; }
+        .job-description-display p:last-child { margin-bottom: 0; }
+
+        .job-description-display ul,
+        .job-description-display ol {
+            margin: 0.6em 0;
+            padding-left: 1.5em;
+            color: #444;
+        }
+
+        .job-description-display li {
+            margin: 0.3em 0;
+            line-height: 1.5;
+        }
+
+        .job-description-display li > ul,
+        .job-description-display li > ol {
+            margin: 0.25em 0;
+        }
+
+        .job-description-display strong {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .job-description-display em {
+            font-style: italic;
+        }
+
+        .job-description-display code {
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 0.85em;
+            background: #f5f5f5;
+            padding: 0.15em 0.4em;
+            border-radius: 3px;
+            color: #c7254e;
+        }
+
+        .job-description-display pre {
+            margin: 0.75em 0;
+            padding: 0.75em 1em;
+            background: #f5f5f5;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        .job-description-display pre code {
+            background: none;
+            padding: 0;
+            color: #333;
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+
+        .job-description-display blockquote {
+            margin: 0.75em 0;
+            padding: 0.5em 1em;
+            border-left: 3px solid #ddd;
+            background: #f9f9f9;
+            color: #666;
+        }
+
+        .job-description-display blockquote p {
+            margin: 0.3em 0;
+        }
+
+        .job-description-display a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        .job-description-display a:hover {
+            text-decoration: underline;
+        }
+
+        .job-description-display hr {
+            margin: 1em 0;
+            border: none;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .job-description-display table {
+            margin: 0.75em 0;
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.9em;
+        }
+
+        .job-description-display th,
+        .job-description-display td {
+            padding: 0.5em 0.75em;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .job-description-display th {
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+
+        .job-description-display img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        /* Task lists (GitHub-style checkboxes) */
+        .job-description-display input[type="checkbox"] {
+            margin-right: 0.5em;
+        }
+
+        .job-description-display li.task-list-item {
+            list-style: none;
+            margin-left: -1.25em;
+        }
