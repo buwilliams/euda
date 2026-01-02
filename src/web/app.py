@@ -46,6 +46,17 @@ def health_check():
     return {"status": "ok", "version": "3.0.0"}
 
 
+@app.get("/api/about")
+def get_about():
+    """Get about/pitch content for the About tab."""
+    docs_dir = Path(__file__).parent.parent.parent / "docs"
+    pitch_file = docs_dir / "1_pitch.md"
+
+    if pitch_file.exists():
+        return {"content": pitch_file.read_text()}
+    return {"content": "# Euno\n\nPersonal Intelligence System"}
+
+
 # ============== Conversations ==============
 
 import re
