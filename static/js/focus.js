@@ -1434,24 +1434,3 @@ function handleNewAssetKeypress(event, jobId) {
     }
 }
 
-// ============== Legacy Aliases ==============
-
-// These maintain backwards compatibility with other parts of the UI
-
-async function toggleTask(event, taskId) {
-    // In the old system this toggled between pending/completed
-    // For jobs, just complete it
-    return completeJob(event, taskId);
-}
-
-async function deleteTask(event, taskId) {
-    return deleteJob(event, taskId);
-}
-
-function renderTaskCard(task) {
-    return renderJobCard(task);
-}
-
-function renderCompletedTaskCard(task) {
-    return renderCompletedJobCard(task);
-}
