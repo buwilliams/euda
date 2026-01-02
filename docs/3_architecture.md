@@ -12,6 +12,40 @@ Euno is built on two core abstractions: **Agents** and **Jobs**. Agents are auto
 4. **Flat files** - All data is human-readable, inspectable, and version-controllable
 5. **Capabilities over permissions** - What an agent can do is defined by which tools it has access to
 
+## Personal Intelligence
+
+To achieve true personal intelligence, every agent must understand the user. Every LLM API call includes the user's profile in the system prompt:
+
+```
+┌─────────────────────────────────┐
+│         System Prompt           │
+├─────────────────────────────────┤
+│  1. Agent Persona               │  ← Who the agent is
+│  2. User Profile                │  ← Who the user is
+│  3. Conversation Context        │  ← Recent history
+└─────────────────────────────────┘
+```
+
+This means every agent—whether it's handling tasks, curating content, or just chatting—knows the user's preferences, patterns, and values. The intelligence is personal because it's grounded in a real model of who the user is.
+
+The **User Profile** (`data/user/user-profile.md`) is built and maintained by the Profiler agent, which examines the Lifelog to identify patterns, preferences, and behaviors over time.
+
+### Default Agents
+
+Euno includes seven default agents:
+
+| Agent | Purpose |
+|-------|---------|
+| **Friend** | Primary conversational interface. Supports thinking and decision-making while respecting identity. |
+| **Assistant** | Task-focused helper for managing jobs, organizing work, and tracking progress. |
+| **Worker** | Autonomous task executor. Handles work while preserving user agency over commitments. |
+| **Profiler** | Constructs the User Profile from Lifelog data. Focuses on observed behavior, not stated preferences. |
+| **Curator** | Manages attention as a scarce resource. Surfaces opportunities at appropriate times. |
+| **Archivist** | Preserves human signal with high fidelity. Writes to the Lifelog without interpretation. |
+| **Adaptor** | Proposes system evolution based on user behavior. Refines agent personas to reduce friction. |
+
+Each agent has a distinct persona defining its behavior, but all share the same architecture and access to the User Profile.
+
 ## Data Structure
 
 ```
