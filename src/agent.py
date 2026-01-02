@@ -147,7 +147,15 @@ class Agent:
 
     def _build_system_prompt(self) -> str:
         """Build the system prompt from persona and context."""
+        from .tools.user import get_user_profile
+
         parts = [self.persona]
+
+        # Add user profile for context about who we're serving
+        profile = get_user_profile()
+        if profile.get("exists") and profile.get("content"):
+            parts.append("\n## User Profile\n")
+            parts.append(profile["content"])
 
         # Add memory context if present
         memory = self._load_memory()
