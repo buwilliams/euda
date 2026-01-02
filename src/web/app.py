@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from .routes import jobs, agents, chat, user, auth, system
+from .routes import jobs, agents, chat, user, auth, system, upload
 
 
 app = FastAPI(
@@ -36,6 +36,7 @@ app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(user.router, prefix="/api/user", tags=["user"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(system.router, prefix="/api", tags=["system"])
+app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
 
 # Serve static files
 static_dir = Path(__file__).parent.parent.parent / "static"

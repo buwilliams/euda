@@ -9,6 +9,7 @@
     "list_jobs",
     "get_job",
     "create_job",
+    "complete_job",
     "add_job_log",
     "write_asset",
     "read_asset",

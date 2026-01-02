@@ -131,9 +131,15 @@ def _load_job(job_id: str) -> Optional[dict]:
     return None
 
 
-@tool("list_jobs", "List all jobs, optionally filtered by status or parent")
-def list_jobs(status: str = None, parent_id: str = None) -> List[dict]:
-    """List jobs with optional filters."""
+@tool("list_jobs", "List all jobs, optionally filtered by status, parent, or tag")
+def list_jobs(status: str = None, parent_id: str = None, tag: str = None) -> List[dict]:
+    """List jobs with optional filters.
+
+    Args:
+        status: Filter by status (todo, completed, archived)
+        parent_id: Filter by parent job ID (empty string for root jobs)
+        tag: Filter to jobs containing this tag
+    """
     conn = _get_connection()
 
     query = "SELECT * FROM jobs WHERE 1=1"
@@ -149,6 +155,11 @@ def list_jobs(status: str = None, parent_id: str = None) -> List[dict]:
         else:
             query += " AND parent_id = ?"
             params.append(parent_id)
+
+    if tag:
+        # Filter jobs that have the specified tag in their tags JSON array
+        query += " AND EXISTS (SELECT 1 FROM json_each(tags) WHERE json_each.value = ?)"
+        params.append(tag)
 
     query += " ORDER BY updated_at DESC"
 
