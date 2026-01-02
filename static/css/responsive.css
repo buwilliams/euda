@@ -1,0 +1,89 @@
+/* ============== Responsive Styles ============== */
+
+/* Mobile phones */
+@media (max-width: 600px) {
+    .app-container {
+        padding: 0;
+        height: 100dvh;
+    }
+
+    .app {
+        padding: 0;
+        border-radius: 0;
+        box-shadow: none;
+        max-width: 100%;
+        background: var(--color-bg-app);
+    }
+
+    .tab-content {
+        border: none;
+        border-radius: 0;
+    }
+
+    .tab-menu {
+        padding-left: env(safe-area-inset-left, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
+    }
+
+    .tab-btn {
+        padding: 0.7rem var(--spacing-md);
+        min-height: var(--input-height);
+    }
+
+    .greeting {
+        font-size: var(--font-size-4xl);
+        margin-bottom: var(--spacing-xl);
+    }
+
+    .quote-container {
+        padding: var(--spacing-xl);
+        margin: 0 var(--spacing-lg) var(--spacing-md) var(--spacing-lg);
+    }
+
+    .quote-text {
+        font-size: var(--font-size-lg);
+    }
+
+    .tab-pane {
+        padding: var(--spacing-lg);
+        padding-left: calc(var(--spacing-lg) + env(safe-area-inset-left, 0px));
+        padding-right: calc(var(--spacing-lg) + env(safe-area-inset-right, 0px));
+    }
+
+    #tab-chat {
+        padding: var(--spacing-lg) 0;
+    }
+
+    .focus-view-header {
+        margin: calc(-1 * var(--spacing-lg));
+        margin-bottom: var(--spacing-lg);
+        margin-left: calc(-1 * var(--spacing-lg) - env(safe-area-inset-left, 0px));
+        margin-right: calc(-1 * var(--spacing-lg) - env(safe-area-inset-right, 0px));
+        padding-left: calc(var(--spacing-md) + env(safe-area-inset-left, 0px));
+        padding-right: calc(var(--spacing-md) + env(safe-area-inset-right, 0px));
+    }
+
+    .inline-message {
+        margin-left: var(--spacing-lg);
+        margin-right: var(--spacing-lg);
+    }
+
+    .input-bar {
+        padding: var(--spacing-md) var(--spacing-lg);
+        padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom, 0px));
+        padding-left: calc(var(--spacing-lg) + env(safe-area-inset-left, 0px));
+        padding-right: calc(var(--spacing-lg) + env(safe-area-inset-right, 0px));
+        border-top: 1px solid var(--color-border);
+        background: var(--color-bg-app);
+    }
+}
+
+/* Fallback for browsers that don't support dvh */
+@supports not (height: 100dvh) {
+    @media (max-width: 600px) {
+        .app-container {
+            height: 100vh;
+            height: -webkit-fill-available;
+        }
+    }
+}

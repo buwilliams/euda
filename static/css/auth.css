@@ -1,0 +1,176 @@
+/* ============== Login Overlay ============== */
+
+.login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-bg-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    transition: var(--transition-opacity);
+}
+
+.login-overlay.visible {
+    opacity: 1;
+}
+
+.login-overlay.hidden {
+    display: none;
+}
+
+.login-box {
+    background: var(--color-bg-app);
+    padding: var(--spacing-3xl);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+}
+
+.login-logo {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto var(--spacing-xl);
+}
+
+.login-title {
+    font-size: 2rem;
+    font-weight: 300;
+    margin-bottom: var(--spacing-xs);
+    color: var(--color-text-primary);
+}
+
+.login-subtitle {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-light);
+    margin-bottom: var(--spacing-2xl);
+    font-weight: 400;
+}
+
+.login-input {
+    width: 100%;
+    padding: var(--spacing-lg);
+    font-size: var(--font-size-xl);
+    border: 1px solid #ddd;
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-xl);
+    font-family: inherit;
+}
+
+.login-input:focus {
+    outline: none;
+    border-color: var(--color-text-muted);
+}
+
+.login-btn {
+    width: 100%;
+    padding: var(--spacing-lg);
+    font-size: var(--font-size-xl);
+    background: #000;
+    color: var(--color-bg-white);
+    border: none;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.login-btn:hover {
+    background: var(--color-accent-dark);
+}
+
+.login-btn:disabled {
+    background: var(--color-text-placeholder);
+    cursor: not-allowed;
+}
+
+.login-error {
+    color: var(--color-danger);
+    font-size: var(--font-size-md);
+    margin-top: var(--spacing-xl);
+}
+
+/* ============== Splash Screen ============== */
+
+.splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-bg-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    transition: var(--transition-opacity);
+}
+
+.splash-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.splash-screen.hidden {
+    display: none;
+}
+
+.splash-content {
+    text-align: center;
+}
+
+.splash-title {
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--color-bg-white);
+    margin: 0;
+    letter-spacing: 0.05em;
+}
+
+.splash-letter {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity var(--transition-slow), transform var(--transition-slow);
+}
+
+.splash-letter.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.splash-pronunciation {
+    font-size: var(--font-size-2xl);
+    color: var(--color-text-light);
+    margin: var(--spacing-md) 0 0 0;
+    font-weight: 300;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.splash-pronunciation.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.splash-tagline {
+    font-size: var(--font-size-base);
+    color: var(--color-bg-white);
+    margin: var(--spacing-2xl) 0 0 0;
+    font-weight: 400;
+    letter-spacing: 0.25em;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.splash-tagline.visible {
+    opacity: 1;
+    transform: translateY(0);
+}

@@ -1,0 +1,269 @@
+/* ============== When Picker ============== */
+
+.when-picker {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.when-picker-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.when-picker-content {
+    position: relative;
+    background: var(--color-bg-white);
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    padding: var(--spacing-xl);
+    width: 100%;
+    max-width: var(--max-width-app);
+    box-shadow: var(--shadow-modal);
+}
+
+.when-picker-header {
+    font-weight: 600;
+    font-size: var(--font-size-md);
+    color: var(--color-text-muted);
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.when-option {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-xl);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.when-option:hover {
+    background: var(--color-bg-muted);
+}
+
+.when-option-icon {
+    font-size: var(--font-size-2xl);
+    width: 28px;
+    text-align: center;
+}
+
+.when-option-label {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-primary);
+}
+
+/* Card When Button */
+.card-when {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: 0.4rem 0.6rem;
+    background: var(--color-bg-muted);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    margin-bottom: var(--spacing-md);
+    transition: all var(--transition-fast);
+}
+
+.card-when:hover {
+    background: var(--color-border-light);
+    border-color: #ddd;
+}
+
+.card-when-icon {
+    font-size: var(--font-size-md);
+}
+
+.card-when-label {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+/* Euno task icon */
+.card-euno-icon {
+    width: 24px;
+    font-size: var(--font-size-xl);
+    flex-shrink: 0;
+    text-align: center;
+}
+
+/* ============== Inline Calendar ============== */
+
+.inline-calendar {
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md) 0;
+    background: var(--color-bg-subtle);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border-light);
+}
+
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-lg);
+}
+
+.calendar-nav-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: var(--color-bg-white);
+    border-radius: var(--radius-full);
+    font-size: 1.25rem;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.calendar-nav-btn:hover {
+    background: var(--color-border-light);
+    color: var(--color-text-primary);
+}
+
+.calendar-nav-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    font-size: var(--font-size-lg);
+    font-weight: 500;
+}
+
+.calendar-month,
+.calendar-year {
+    cursor: pointer;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-md);
+    transition: background var(--transition-fast);
+}
+
+.calendar-month:hover,
+.calendar-year:hover {
+    background: var(--color-border-light);
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: var(--spacing-md);
+}
+
+.calendar-weekday {
+    text-align: center;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-text-light);
+    text-transform: uppercase;
+    padding: var(--spacing-xs) 0;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-md);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    border-radius: var(--radius-full);
+    transition: all var(--transition-fast);
+    min-height: 36px;
+}
+
+.calendar-day:hover:not(.empty) {
+    background: var(--color-border-light);
+}
+
+.calendar-day.empty {
+    cursor: default;
+}
+
+.calendar-day.today {
+    background: #000;
+    color: var(--color-bg-white);
+    font-weight: 600;
+}
+
+.calendar-day.today:hover {
+    background: var(--color-accent-dark);
+}
+
+.calendar-day.past {
+    color: var(--color-text-disabled);
+}
+
+.calendar-day.past:hover {
+    background: var(--color-bg-muted);
+}
+
+/* Calendar Month/Year Picker Overlay */
+#calendar-picker-overlay {
+    display: none;
+    position: relative;
+    margin: var(--spacing-md) 0;
+}
+
+.calendar-picker-grid {
+    display: grid;
+    gap: var(--spacing-md);
+    background: var(--color-bg-white);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-xl);
+    border: 1px solid #ddd;
+}
+
+.calendar-picker-grid.months {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.calendar-picker-grid.years {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.calendar-picker-item {
+    padding: var(--spacing-md);
+    text-align: center;
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.calendar-picker-item:hover {
+    background: var(--color-bg-muted);
+}
+
+.calendar-picker-item.selected {
+    background: #000;
+    color: var(--color-bg-white);
+}
+
+.calendar-picker-item.selected:hover {
+    background: var(--color-accent-dark);
+}
