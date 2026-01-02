@@ -181,15 +181,17 @@ class Agent:
         from .tools import get_tools_for_agent
         return get_tools_for_agent(self.config.get("tools", []))
 
-    def chat(self, message: str, log_to_lifelog: bool = True) -> str:
+    def chat(self, message: str, log_to_lifelog: bool = True, save_to_history: bool = True) -> str:
         """Process a chat message and return response.
 
         Args:
             message: The user message
             log_to_lifelog: Whether to log this conversation to lifelog (default True)
+            save_to_history: Whether to save to conversation history (default True)
         """
         self._log("chat_start", {"message_length": len(message)})
-        self._save_conversation_turn("user", message)
+        if save_to_history:
+            self._save_conversation_turn("user", message)
 
         tools = self._get_tools()
         system_prompt = self._build_system_prompt()
@@ -233,7 +235,8 @@ class Agent:
             if hasattr(block, "text"):
                 text_response += block.text
 
-        self._save_conversation_turn("assistant", text_response)
+        if save_to_history:
+            self._save_conversation_turn("assistant", text_response)
         self._log("chat_end", {"response_length": len(text_response)})
 
         # Log user conversations to lifelog for the friend agent (for Profiler to analyze)
@@ -300,8 +303,8 @@ Work on any jobs that match your role. When you're finished working (or if nothi
             iteration += 1
             self._log("work_iteration", {"iteration": iteration})
 
-            # Don't log autonomous work cycles to lifelog - only user conversations
-            response = self.chat(prompt, log_to_lifelog=False)
+            # Don't log autonomous work cycles to lifelog or history - only user conversations
+            response = self.chat(prompt, log_to_lifelog=False, save_to_history=False)
             print(f"[{self.id}] {response[:100]}...")
 
             if self._work_done:
