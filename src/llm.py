@@ -195,13 +195,15 @@ class UnifiedClient:
             return self._parse_openai_response(response)
         else:
             # Anthropic - use native client
-            response = self.client.messages.create(
-                model=model,
-                max_tokens=max_tokens,
-                system=system,
-                tools=tools if tools else None,
-                messages=messages
-            )
+            kwargs = {
+                "model": model,
+                "max_tokens": max_tokens,
+                "system": system,
+                "messages": messages
+            }
+            if tools:
+                kwargs["tools"] = tools
+            response = self.client.messages.create(**kwargs)
             return response
 
     def create(self, model: str, max_tokens: int, system: str,

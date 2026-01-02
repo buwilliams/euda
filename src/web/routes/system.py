@@ -88,6 +88,7 @@ The quote can be from a famous person, philosopher, writer, or you can compose a
     response = client.messages.create(
         model=get_model(),
         max_tokens=256,
+        system="You are a helpful assistant that provides inspiring quotes.",
         messages=[{"role": "user", "content": prompt}]
     )
 
