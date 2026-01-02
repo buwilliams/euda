@@ -75,34 +75,41 @@ def read_lifelog(date: str = None) -> dict:
 
 
 @tool("write_lifelog", "Add an entry to the lifelog")
-def write_lifelog(content: str, date: str = None) -> dict:
+def write_lifelog(content: str, date: str = None, agent: str = None) -> dict:
     """Add an entry to the lifelog.
 
     Args:
         content: The content to add
         date: Specific date (YYYY-MM-DD) or None for today
+        agent: Who is writing the entry (e.g., "User", "Worker", "Friend")
     """
     _ensure_user_dir()
 
     if date is None:
         date = datetime.now().strftime("%Y-%m-%d")
 
+    if agent is None:
+        agent = "User"
+
     lifelog_dir = USER_DIR / "lifelog"
     lifelog_dir.mkdir(exist_ok=True)
 
     lifelog_path = lifelog_dir / f"{date}.md"
-    timestamp = datetime.now().strftime("%H:%M")
+    timestamp = datetime.now().strftime("%I:%M %p").lstrip("0")  # 2:30 PM format
+
+    # Entry header with time and author
+    entry_header = f"## {timestamp} · {agent}"
 
     # Append to existing or create new
     if lifelog_path.exists():
         existing = lifelog_path.read_text()
-        new_content = f"{existing}\n\n## {timestamp}\n\n{content}"
+        new_content = f"{existing}\n\n{entry_header}\n\n{content}"
     else:
-        new_content = f"# Lifelog - {date}\n\n## {timestamp}\n\n{content}"
+        new_content = f"# Lifelog - {date}\n\n{entry_header}\n\n{content}"
 
     lifelog_path.write_text(new_content)
 
-    return {"date": date, "status": "added"}
+    return {"date": date, "status": "added", "agent": agent}
 
 
 @tool("list_lifelog_dates", "List all dates with lifelog entries")

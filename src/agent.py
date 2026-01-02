@@ -76,12 +76,13 @@ class Agent:
         """Append a conversation exchange to today's lifelog."""
         from .tools.user import write_lifelog
 
-        # Format the conversation for the lifelog
-        content = f"**Conversation with {self.config.get('name', self.id)}**\n\n"
-        content += f"**User:** {user_message}\n\n"
-        content += f"**{self.config.get('name', self.id)}:** {assistant_response}"
+        agent_name = self.config.get('name', self.id)
 
-        write_lifelog(content)
+        # Format the conversation for the lifelog
+        content = f"**User:** {user_message}\n\n"
+        content += f"**{agent_name}:** {assistant_response}"
+
+        write_lifelog(content, agent=agent_name)
 
     def _get_memory_path(self) -> Path:
         """Get path to agent memory file."""

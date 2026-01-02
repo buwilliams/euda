@@ -22,6 +22,7 @@ class UpdateProfileRequest(BaseModel):
 class WriteLifelogRequest(BaseModel):
     content: str
     date: Optional[str] = None
+    agent: Optional[str] = None
 
 
 @router.get("/profile")
@@ -45,7 +46,7 @@ def api_get_lifelog(date: Optional[str] = None):
 @router.post("/lifelog")
 def api_write_lifelog(request: WriteLifelogRequest):
     """Add a lifelog entry."""
-    return write_lifelog(request.content, request.date)
+    return write_lifelog(request.content, request.date, request.agent)
 
 
 @router.get("/lifelog/dates")
