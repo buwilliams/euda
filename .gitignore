@@ -15,8 +15,11 @@ data/agents/*/state/
 # Agent logs are runtime data (ignore)
 data/agents/*/logs/
 
-# Jobs are user data (ignore)
-data/jobs/*.json
+# Jobs database is user data (ignore)
+data/jobs/db.sqlite
+data/jobs/db.sqlite-journal
+data/jobs/db.sqlite-wal
+data/jobs/db.sqlite-shm
 
 # Assets are user data (ignore)
 data/assets/
@@ -35,6 +38,7 @@ data/system/sessions.json
 
 # Backups
 data_backup-*/
+data/jobs_backup_*/
 
 # ===================
 # Old Architecture

@@ -61,7 +61,7 @@ data/
 │           └── conversation/
 │               └── {date}.md           # conversation history by date
 ├── jobs/
-│   └── {job-id}.json                   # flat structure with parent_id
+│   └── db.sqlite                       # SQLite database (jobs + job_logs tables)
 ├── assets/
 │   └── {job-id}/                       # assets organized by job
 │       └── {filename}
@@ -483,11 +483,6 @@ synthesize findings, and document results.
 
 ## Open Questions
 
-1. **Job Indexing** — With flat files, how do we efficiently query jobs? Options:
-   - Scan all files (fine for <1000 jobs)
-   - Maintain an index file
-   - SQLite for metadata only
+1. **Conversation Pruning** — Conversation files grow indefinitely. When/how to summarize old context?
 
-2. **Conversation Pruning** — Conversation files grow indefinitely. When/how to summarize old context?
-
-3. **Asset Cleanup** — When a job is archived, what happens to its assets?
+2. **Asset Cleanup** — When a job is archived, what happens to its assets?

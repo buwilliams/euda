@@ -62,8 +62,8 @@ euno/
 │   │       ├── config.json
 │   │       ├── {agent}-persona.md
 │   │       └── state/conversation/{date}.md
-│   ├── jobs/               # Flat job files with parent_id
-│   │   └── {job-id}.json
+│   ├── jobs/
+│   │   └── db.sqlite       # SQLite database (jobs + job_logs tables)
 │   ├── assets/             # Files per job
 │   │   └── {job-id}/
 │   ├── user/
@@ -87,7 +87,8 @@ An agent is: **config + persona + tools + loop**
 
 ### Jobs
 Jobs replace projects and tasks. A single hierarchical structure:
-- Flat files with `parent_id` for nesting
+- Stored in SQLite database (`data/jobs/db.sqlite`)
+- Hierarchical via `parent_id` field
 - States: `todo`, `completed`, `archived`
 - Each job can have assets (files) in `data/assets/{job-id}/`
 
