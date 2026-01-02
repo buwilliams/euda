@@ -11,7 +11,8 @@
     "get_job",
     "create_job",
     "add_job_log",
-    "complete_job"
+    "complete_job",
+    "done_working"
   ],
   "sleep_minutes": 30
 }

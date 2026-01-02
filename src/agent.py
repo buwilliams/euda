@@ -207,18 +207,25 @@ class Agent:
     def _execute_tools(self, response) -> list:
         """Execute tool calls and return results."""
         from .tools import execute_tool
+        from .tools.system import set_agent_context, clear_agent_context
+
+        # Set agent context so tools can access this agent
+        set_agent_context(self)
 
         results = []
-        for block in response.content:
-            if block.type == "tool_use":
-                self._log("tool_call", {"tool": block.name, "input": block.input})
-                result = execute_tool(block.name, block.input)
-                self._log("tool_result", {"tool": block.name, "success": not isinstance(result, dict) or "error" not in result})
-                results.append({
-                    "type": "tool_result",
-                    "tool_use_id": block.id,
-                    "content": json.dumps(result) if isinstance(result, (dict, list)) else str(result)
-                })
+        try:
+            for block in response.content:
+                if block.type == "tool_use":
+                    self._log("tool_call", {"tool": block.name, "input": block.input})
+                    result = execute_tool(block.name, block.input)
+                    self._log("tool_result", {"tool": block.name, "success": not isinstance(result, dict) or "error" not in result})
+                    results.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": json.dumps(result) if isinstance(result, (dict, list)) else str(result)
+                    })
+        finally:
+            clear_agent_context()
 
         return results
 
@@ -227,6 +234,7 @@ class Agent:
         from .tools.jobs import list_jobs
 
         self._log("work_cycle_start")
+        self._work_done = False
 
         # Get jobs that might need attention
         jobs = list_jobs(status="todo")
@@ -237,18 +245,35 @@ class Agent:
 
         self._log("work_cycle_jobs_found", {"count": len(jobs)})
 
-        # Build a prompt asking the agent to check for work
+        # Initial prompt asking agent to check for work
         prompt = f"""Check if any of these jobs need your attention based on your role:
 
 Jobs:
 {json.dumps(jobs, indent=2)}
 
-If you find work to do, use your tools to complete it. If nothing matches your role, just say so briefly."""
+Work on any jobs that match your role. When you're finished working (or if nothing matches your role), call the done_working tool to signal you're ready to sleep."""
 
-        # Process through chat (which handles tools)
-        response = self.chat(prompt)
-        print(f"[{self.id}] {response[:100]}...")
-        self._log("work_cycle_end", {"response_preview": response[:100]})
+        # Autonomous loop - keep working until agent calls done_working
+        max_iterations = 20  # Safety limit
+        iteration = 0
+
+        while not self._work_done and iteration < max_iterations:
+            iteration += 1
+            self._log("work_iteration", {"iteration": iteration})
+
+            response = self.chat(prompt)
+            print(f"[{self.id}] {response[:100]}...")
+
+            if self._work_done:
+                break
+
+            # Continue prompt for subsequent iterations
+            prompt = "Continue working on your tasks. When finished, call done_working."
+
+        if iteration >= max_iterations:
+            self._log("work_cycle_end", {"reason": "max_iterations", "iterations": iteration})
+        else:
+            self._log("work_cycle_end", {"reason": "done_working", "iterations": iteration})
 
     async def work_cycle(self):
         """Perform one cycle of autonomous work (async wrapper)."""

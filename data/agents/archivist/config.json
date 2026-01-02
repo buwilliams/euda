@@ -12,7 +12,8 @@
     "add_job_log",
     "write_asset",
     "read_asset",
-    "list_assets"
+    "list_assets",
+    "done_working"
   ],
   "sleep_minutes": 5
 }

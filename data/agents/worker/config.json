@@ -16,7 +16,8 @@
     "write_asset",
     "delete_asset",
     "get_user_profile",
-    "send_notification"
+    "send_notification",
+    "done_working"
   ],
   "sleep_minutes": 2
 }
