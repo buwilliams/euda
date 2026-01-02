@@ -2,11 +2,13 @@
 Chat API Routes
 """
 
+import re
+from pathlib import Path
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
 
-from ...agent import Agent
+from ...agent import Agent, AGENTS_DIR
 
 
 router = APIRouter()

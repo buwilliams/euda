@@ -3,14 +3,16 @@ Agent Manager - Manages lifecycle of all agents.
 
 Responsibilities:
 - Load agent configurations
-- Start all enabled agents
+- Start all enabled agents (each in its own thread)
 - Monitor agent health
 - Restart failed agents
 - Handle graceful shutdown
 """
 
-import asyncio
 import json
+import threading
+import time
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List
 
@@ -26,7 +28,7 @@ class AgentManager:
 
     def __init__(self):
         self.agents: Dict[str, Agent] = {}
-        self.tasks: Dict[str, asyncio.Task] = {}
+        self.threads: Dict[str, threading.Thread] = {}
         self.running = False
 
     def load_agent_configs(self) -> List[dict]:
@@ -46,42 +48,54 @@ class AgentManager:
 
         return configs
 
-    async def start_agent(self, config: dict):
-        """Start a single agent."""
+    def start_agent(self, config: dict):
+        """Start a single agent in its own thread."""
         agent_id = config["id"]
         print(f"Starting agent: {agent_id}")
 
         agent = Agent(agent_id, config)
         self.agents[agent_id] = agent
 
-        # Create task for agent loop
-        self.tasks[agent_id] = asyncio.create_task(
-            self._run_agent_loop(agent),
-            name=f"agent-{agent_id}"
+        # Create thread for agent loop
+        thread = threading.Thread(
+            target=self._run_agent_loop,
+            args=(agent,),
+            name=f"agent-{agent_id}",
+            daemon=True
         )
+        self.threads[agent_id] = thread
+        thread.start()
 
-    async def _run_agent_loop(self, agent: Agent):
-        """Run an agent's work loop."""
+    def _run_agent_loop(self, agent: Agent):
+        """Run an agent's work loop in its own thread."""
         sleep_seconds = agent.config.get("sleep_minutes", 5) * 60
+        # Ensure minimum sleep of 60 seconds
+        sleep_seconds = max(sleep_seconds, 60)
 
         while self.running:
             try:
                 # Do work cycle
-                await agent.work_cycle()
+                agent.work_cycle_sync()
+
+                # Calculate wake time
+                wake_time = datetime.now() + timedelta(seconds=sleep_seconds)
+                agent._log("sleep", {
+                    "duration_seconds": sleep_seconds,
+                    "wake_at": wake_time.isoformat()
+                })
 
                 # Sleep between cycles
-                if sleep_seconds > 0:
-                    await asyncio.sleep(sleep_seconds)
+                time.sleep(sleep_seconds)
 
-            except asyncio.CancelledError:
-                print(f"Agent {agent.id} cancelled")
-                break
+                agent._log("wake")
+
             except Exception as e:
+                agent._log("error", {"message": str(e)})
                 print(f"Agent {agent.id} error: {e}")
                 # Brief sleep before retry
-                await asyncio.sleep(5)
+                time.sleep(5)
 
-    async def run(self):
+    def run(self):
         """Run the agent manager."""
         self.running = True
 
@@ -92,7 +106,7 @@ class AgentManager:
         print(f"Found {len(configs)} agents, {len(enabled)} enabled")
 
         for config in enabled:
-            await self.start_agent(config)
+            self.start_agent(config)
 
         if not enabled:
             print("No enabled agents. Waiting...")
@@ -100,24 +114,20 @@ class AgentManager:
         # Wait until shutdown
         try:
             while self.running:
-                await asyncio.sleep(1)
-        except asyncio.CancelledError:
+                time.sleep(1)
+        except KeyboardInterrupt:
             pass
 
-        await self.shutdown()
+        self.shutdown()
 
-    async def shutdown(self):
+    def shutdown(self):
         """Gracefully shut down all agents."""
         print("Shutting down agents...")
         self.running = False
 
-        # Cancel all agent tasks
-        for task in self.tasks.values():
-            task.cancel()
-
-        # Wait for all to complete
-        if self.tasks:
-            await asyncio.gather(*self.tasks.values(), return_exceptions=True)
+        # Wait for threads to finish (they're daemons, so they'll die with main)
+        for agent_id, thread in self.threads.items():
+            thread.join(timeout=2)
 
         print("All agents stopped")
 
@@ -125,4 +135,4 @@ class AgentManager:
 def run_agent_manager():
     """Convenience function to run the agent manager."""
     manager = AgentManager()
-    asyncio.run(manager.run())
+    manager.run()

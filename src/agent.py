@@ -78,6 +78,39 @@ class Agent:
         state_dir.mkdir(parents=True, exist_ok=True)
         return state_dir / "memory.json"
 
+    def _get_log_path(self) -> Path:
+        """Get path to today's log file."""
+        today = datetime.now().strftime("%Y-%m-%d")
+        log_dir = AGENTS_DIR / self.id / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        return log_dir / f"{today}.json"
+
+    def _log(self, event: str, details: Optional[dict] = None):
+        """Append a log entry to today's log file."""
+        path = self._get_log_path()
+
+        # Load existing logs or start fresh
+        logs = []
+        if path.exists():
+            try:
+                with open(path) as f:
+                    logs = json.load(f)
+            except (json.JSONDecodeError, IOError):
+                logs = []
+
+        # Append new entry
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "event": event,
+        }
+        if details:
+            entry["details"] = details
+        logs.append(entry)
+
+        # Save
+        with open(path, "w") as f:
+            json.dump(logs, f, indent=2)
+
     def _load_memory(self) -> dict:
         """Load agent's persistent memory."""
         path = self._get_memory_path()
@@ -122,6 +155,7 @@ class Agent:
 
     def chat(self, message: str) -> str:
         """Process a chat message and return response."""
+        self._log("chat_start", {"message_length": len(message)})
         self._save_conversation_turn("user", message)
 
         tools = self._get_tools()
@@ -137,6 +171,10 @@ class Agent:
             tools=tools if tools else None,
             messages=messages
         )
+        self._log("llm_response", {
+            "stop_reason": response.stop_reason,
+            "usage": {"input": response.usage.input_tokens, "output": response.usage.output_tokens}
+        })
 
         # Handle tool use in a loop
         while response.stop_reason == "tool_use":
@@ -151,6 +189,10 @@ class Agent:
                 tools=tools if tools else None,
                 messages=messages
             )
+            self._log("llm_response", {
+                "stop_reason": response.stop_reason,
+                "usage": {"input": response.usage.input_tokens, "output": response.usage.output_tokens}
+            })
 
         # Extract text response
         text_response = ""
@@ -159,6 +201,7 @@ class Agent:
                 text_response += block.text
 
         self._save_conversation_turn("assistant", text_response)
+        self._log("chat_end", {"response_length": len(text_response)})
         return text_response
 
     def _execute_tools(self, response) -> list:
@@ -168,7 +211,9 @@ class Agent:
         results = []
         for block in response.content:
             if block.type == "tool_use":
+                self._log("tool_call", {"tool": block.name, "input": block.input})
                 result = execute_tool(block.name, block.input)
+                self._log("tool_result", {"tool": block.name, "success": not isinstance(result, dict) or "error" not in result})
                 results.append({
                     "type": "tool_result",
                     "tool_use_id": block.id,
@@ -177,15 +222,20 @@ class Agent:
 
         return results
 
-    async def work_cycle(self):
-        """Perform one cycle of autonomous work."""
+    def work_cycle_sync(self):
+        """Perform one cycle of autonomous work (synchronous version for threads)."""
         from .tools.jobs import list_jobs
+
+        self._log("work_cycle_start")
 
         # Get jobs that might need attention
         jobs = list_jobs(status="todo")
 
         if not jobs:
+            self._log("work_cycle_end", {"reason": "no_jobs"})
             return  # Nothing to do
+
+        self._log("work_cycle_jobs_found", {"count": len(jobs)})
 
         # Build a prompt asking the agent to check for work
         prompt = f"""Check if any of these jobs need your attention based on your role:
@@ -198,3 +248,8 @@ If you find work to do, use your tools to complete it. If nothing matches your r
         # Process through chat (which handles tools)
         response = self.chat(prompt)
         print(f"[{self.id}] {response[:100]}...")
+        self._log("work_cycle_end", {"response_preview": response[:100]})
+
+    async def work_cycle(self):
+        """Perform one cycle of autonomous work (async wrapper)."""
+        return self.work_cycle_sync()

@@ -138,11 +138,8 @@ async function addTaskToProject(projectId, inputEl) {
 
 function updateTasksBadge() {
     const badge = document.getElementById('tasks-badge');
-    // Use same logic as getFocusCounts for Today
-    const count = tasksData
-        .filter(shouldShowInTimeline)
-        .filter(t => getTaskCategory(t) === 'today')
-        .length;
+    // Count jobs due today
+    const count = jobsData.filter(j => getJobCategory(j) === 'today').length;
     badge.textContent = count;
     badge.style.display = count > 0 ? 'inline' : 'none';
 }

@@ -7,11 +7,12 @@ Provides REST API for the Euno system.
 import asyncio
 import json
 import random
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pathlib import Path
+from pydantic import BaseModel
 
 from .routes import jobs, agents, chat, user
 from ..tools.jobs import list_jobs
@@ -45,11 +46,88 @@ def health_check():
     return {"status": "ok", "version": "3.0.0"}
 
 
+# ============== Conversations ==============
+
+import re
+
+@app.get("/api/conversations/recent/structured")
+def get_recent_conversations(count: int = 20):
+    """Get recent conversations for history tab."""
+    conversations = []
+
+    # Look for conversation files in the friend agent's state (used by web UI)
+    conv_dir = Path(__file__).parent.parent.parent / "data" / "agents" / "friend" / "state" / "conversation"
+
+    if conv_dir.exists():
+        # Get all markdown files, sorted by date descending
+        files = sorted(conv_dir.glob("*.md"), reverse=True)[:count]
+
+        for file in files:
+            date_str = file.stem  # e.g., "2024-01-15"
+            content = file.read_text()
+
+            # Extract first timestamp and preview from content
+            time_match = re.search(r'\((\d{2}:\d{2}):\d{2}\)', content)
+            time_str = time_match.group(1) if time_match else "00:00"
+
+            # Get preview from first user message
+            preview = ""
+            user_match = re.search(r'## User \([^)]+\)\n\n(.+?)(?:\n\n##|\Z)', content, re.DOTALL)
+            if user_match:
+                preview = user_match.group(1).strip()[:100]
+
+            # Count messages (## headers)
+            message_count = len(re.findall(r'^## (User|Assistant)', content, re.MULTILINE))
+
+            conversations.append({
+                "session_id": date_str,
+                "date": date_str,
+                "time": time_str,
+                "preview": preview,
+                "message_count": message_count
+            })
+
+    return {"conversations": conversations}
+
+
+class ForkRequest(BaseModel):
+    session_id: str
+
+
+@app.post("/api/conversations/fork")
+def fork_conversation(request: ForkRequest):
+    """Load a past conversation to continue it."""
+    conv_dir = Path(__file__).parent.parent.parent / "data" / "agents" / "friend" / "state" / "conversation"
+    conv_file = conv_dir / f"{request.session_id}.md"
+
+    if not conv_file.exists():
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    content = conv_file.read_text()
+    messages = []
+
+    # Parse markdown format: ## User (HH:MM:SS) or ## Assistant (HH:MM:SS)
+    parts = re.split(r'^## (User|Assistant) \([^)]+\)\n\n', content, flags=re.MULTILINE)
+
+    # parts will be: ['', 'User', 'message1', 'Assistant', 'message2', ...]
+    i = 1
+    while i < len(parts) - 1:
+        role = parts[i].lower()
+        msg_content = parts[i + 1].strip()
+        if msg_content:
+            messages.append({"role": role, "content": msg_content})
+        i += 2
+
+    return {
+        "new_session_id": request.session_id,
+        "messages": messages
+    }
+
+
 # ============== Auth ==============
 
-from fastapi import Request, Response, HTTPException, Depends
+from fastapi import Request, Response, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
 from ..auth import (
     is_password_set, verify_password, create_session,
     verify_session, invalidate_session
@@ -190,7 +268,13 @@ def get_settings():
     }
 
 
-# Serve static files (must be last)
+# Serve static files
 static_dir = Path(__file__).parent.parent.parent / "static"
 if static_dir.exists():
-    app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+    from fastapi.responses import FileResponse
+
+    @app.get("/")
+    def serve_index():
+        return FileResponse(static_dir / "index.html")
