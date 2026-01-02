@@ -6,12 +6,22 @@ Provides REST API for the Euno system.
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from .routes import jobs, agents, chat, user, auth, system, upload
+from .routes.auth import get_session_token
+from ..auth import is_password_set, verify_session
+
+
+# Paths that don't require authentication
+PUBLIC_PATHS = {
+    "/",
+    "/api/auth/check",
+    "/api/auth/login",
+}
 
 
 app = FastAPI(
@@ -28,6 +38,36 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Authentication middleware
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    """Check authentication for protected routes."""
+    path = request.url.path
+
+    # Allow public paths
+    if path in PUBLIC_PATHS:
+        return await call_next(request)
+
+    # Allow static files
+    if path.startswith("/static"):
+        return await call_next(request)
+
+    # If no password set, allow all
+    if not is_password_set():
+        return await call_next(request)
+
+    # Check session
+    token = get_session_token(request)
+    if not token or not verify_session(token):
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Authentication required"}
+        )
+
+    return await call_next(request)
+
 
 # Include routers
 app.include_router(jobs.router, prefix="/api/jobs", tags=["jobs"])
