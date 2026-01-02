@@ -76,8 +76,9 @@ data/
 │   └── {agent}/
 │       ├── config.json
 │       └── {agent}-persona.md
-├── jobs/             # SQLite database for jobs
-├── assets/           # Files attached to jobs
+├── jobs/
+│   ├── db.sqlite     # SQLite database for jobs
+│   └── assets/       # Files attached to jobs (per job-id)
 ├── user/             # Profile and lifelog
 └── system/           # Global config
 

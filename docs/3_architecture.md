@@ -48,7 +48,7 @@ data/user/lifelog/
 
 **Who writes to it:**
 - The **Archivist** agent processes incoming content and writes to the Lifelog
-- The **Friend** agent may log meaningful conversations
+- The **Friend** agent logs meaningful user conversations (not autonomous work cycles)
 - Users can write directly via the web UI or CLI
 
 **Who reads it:**
@@ -88,10 +88,10 @@ data/
 │           └── conversation/
 │               └── {date}.md           # conversation history by date
 ├── jobs/
-│   └── db.sqlite                       # SQLite database (jobs + job_logs tables)
-├── assets/
-│   └── {job-id}/                       # assets organized by job
-│       └── {filename}
+│   ├── db.sqlite                       # SQLite database (jobs + job_logs tables)
+│   └── assets/
+│       └── {job-id}/                   # assets organized by job
+│           └── {filename}
 ├── user/
 │   ├── user-profile.md                 # user preferences and patterns
 │   └── lifelog/
@@ -354,10 +354,11 @@ CREATE INDEX idx_job_logs_job_id ON job_logs(job_id);
 
 ### Job Assets
 
-Assets are stored in `data/assets/{job-id}/`:
+Assets are stored in `data/jobs/assets/{job-id}/`:
 - Any file type (images, documents, data files)
+- Text and markdown files are viewable and editable in the UI
+- Agents should create ONE comprehensive asset per job (not many fragments)
 - Referenced from job description or log entries
-- Organized by job for easy management
 
 ### Job Handoff
 

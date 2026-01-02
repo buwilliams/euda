@@ -22,7 +22,7 @@ data/jobs/db.sqlite-wal
 data/jobs/db.sqlite-shm
 
 # Assets are user data (ignore)
-data/assets/
+data/jobs/assets/
 
 # User data (ignore)
 data/user/
@@ -30,6 +30,7 @@ data/user/
 # System config is tracked (contains settings, not secrets)
 !data/system/config.json
 # But ignore other system files that may contain secrets
+data/system/auth.json
 data/system/notifications.jsonl
 data/system/sessions.json
 

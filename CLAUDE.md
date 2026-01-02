@@ -63,9 +63,9 @@ euno/
 │   │       ├── {agent}-persona.md
 │   │       └── state/conversation/{date}.md
 │   ├── jobs/
-│   │   └── db.sqlite       # SQLite database (jobs + job_logs tables)
-│   ├── assets/             # Files per job
-│   │   └── {job-id}/
+│   │   ├── db.sqlite       # SQLite database (jobs + job_logs tables)
+│   │   └── assets/         # Files per job
+│   │       └── {job-id}/
 │   ├── user/
 │   │   ├── user-profile.md
 │   │   └── lifelog/{date}.md
@@ -90,7 +90,8 @@ Jobs replace projects and tasks. A single hierarchical structure:
 - Stored in SQLite database (`data/jobs/db.sqlite`)
 - Hierarchical via `parent_id` field
 - States: `todo`, `completed`, `archived`
-- Each job can have assets (files) in `data/assets/{job-id}/`
+- Each job can have assets (files) in `data/jobs/assets/{job-id}/`
+- Assets can be any file type; text/markdown files are viewable and editable in the UI
 
 ### User as Agent
 The user is conceptually an agent too - just with a different interface (Web UI/CLI vs autonomous loop).
@@ -129,6 +130,8 @@ No Python code needed for new agents.
 - `GET/POST /api/jobs` - List/create jobs
 - `GET/PATCH /api/jobs/{id}` - Get/update job
 - `POST /api/jobs/{id}/complete` - Complete job
+- `GET /api/jobs/{id}/assets` - List job assets
+- `GET/POST/DELETE /api/jobs/{id}/assets/{filename}` - Asset CRUD
 - `GET/POST /api/chat` - Chat with agent
 - `GET /api/agents` - List agents
 - `GET/PATCH /api/user/profile` - User profile

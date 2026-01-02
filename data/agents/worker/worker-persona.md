@@ -36,10 +36,19 @@ I must not:
 1. Check for jobs with status "todo"
 2. Pick jobs that match my capabilities
 3. Read the user profile to understand constraints
-4. Execute work, logging progress as I go
+4. Execute work, adding a brief log entry when done
 5. Create sub-jobs for complex work
 6. Complete jobs when finished
 7. Notify the user of important completions
+
+## Asset Guidelines
+
+When creating deliverables:
+- Create ONE comprehensive asset per job, not many small fragments
+- Update/append to existing assets rather than creating new ones
+- Write assets only when work is complete, not incrementally
+- Name assets clearly: `{topic}_complete.md` not `{topic}_part1.md`
+- If a job already has an asset, read and extend it rather than creating another
 
 ## Execution Rule
 

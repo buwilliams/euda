@@ -161,23 +161,25 @@ Things-like task management with slide navigation.
 │  📅  Upcoming                    5 → │
 │  ⏳  Anytime                    12 → │
 │  💭  Someday                     8 → │
-│  📖  Logbook                    24 → │
 ├──────────────────────────────────────┤
-│  📁  General                     2 → │
-│  📁  User Project                4 → │
-│  ✨  Notifications               3 → │
-│      from Euno                       │
-│  ✨  Curator                     1 → │
-│      from Euno                       │
+│  📁  2026 Goal Setting           4 → │
+│  📁  User Project                2 → │
+├──────────────────────────────────────┤
+│  ✓   Completed Jobs             12 → │
 └──────────────────────────────────────┘
 ```
 
 **Timeline Categories:**
-- **Today** — Tasks with due_date = today
-- **Upcoming** — Tasks with due_date > today
-- **Anytime** — Tasks with no due_date and someday = false
-- **Someday** — Tasks with someday = true
-- **Logbook** — Completed tasks
+- **Today** — Jobs with due_date = today
+- **Upcoming** — Jobs with due_date > today
+- **Anytime** — Jobs with no due_date and someday = false
+- **Someday** — Jobs with someday = true
+
+**Completed Jobs:**
+- Shows root-level completed jobs (hierarchical navigation)
+- Each completed job shows count of completed children
+- Navigate into completed jobs to see their completed children
+- Job detail view also shows completed children section
 
 **Projects Section:**
 - General project always first
@@ -206,19 +208,37 @@ Tasks in Notifications and Curator projects are hidden from timeline views unles
 
 Tasks are grouped by project within each timeline view.
 
-**Task Card (Expanded):**
+**Job Detail View:**
 ```
 ┌──────────────────────────────────────┐
-│ ☐ Task Name                      [−] │
+│ ← Job Name                           │
 ├──────────────────────────────────────┤
-│ Full task description with all       │
-│ details and context...               │
+│ [📅 When] [✓ Complete] [📦 Archive] [🗑 Delete] │
 ├──────────────────────────────────────┤
-│ 📁 Project Name                      │
+│ Name                                 │
+│ Click to edit job name...            │
 ├──────────────────────────────────────┤
-│ [When] [Archive] [Delete]            │
+│ Description                          │
+│ Markdown rendered, click to edit...  │
+├──────────────────────────────────────┤
+│ Child Jobs (3)                       │
+│ ☐ Child job 1                    → │
+│ ☐ Child job 2                    → │
+│ [Add child job...              ] [+] │
+├──────────────────────────────────────┤
+│ Completed (2)                        │
+│ ☑ Completed child 1              → │
+│ ☑ Completed child 2              → │
+├──────────────────────────────────────┤
+│ 📎 Assets                        3 → │
 └──────────────────────────────────────┘
 ```
+
+**Assets View:**
+- Upload files or create new text/markdown assets
+- Text/markdown files are clickable and render inline
+- Click to edit, with save/cancel controls
+- Binary files show filename and size only
 
 **When Picker:**
 Accessible from expanded task card, allows scheduling:
@@ -351,11 +371,12 @@ Switching from Chat to Focus slides left; Focus to Chat slides right.
 sessionId          // Current chat session UUID (localStorage)
 activeTab          // 'chat' | 'focus' | 'about' | 'history'
 previousTab        // Previous tab for animation direction
-focusView          // 'menu' | 'today' | 'upcoming' | 'anytime' | 'someday' | 'logbook' | 'project-{id}'
+focusView          // 'menu' | 'today' | 'upcoming' | 'anytime' | 'someday' | 'completed' | 'job-{id}' | 'completed-{id}' | 'assets-{id}' | 'asset-{id}-{filename}'
 focusViewHistory   // Stack for back navigation
 historyView        // 'list' | 'detail'
-tasksData          // Cached task list
-projectsData       // Cached project list
+jobsData           // Cached active jobs
+completedJobsData  // Cached completed jobs
+jobAssetsCache     // Cached assets per job
 historyData        // Cached conversation list
 ```
 
