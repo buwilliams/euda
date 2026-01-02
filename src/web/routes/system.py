@@ -4,18 +4,23 @@ System API Routes - Health, about, settings, events
 
 import asyncio
 import json
-import random
+from datetime import datetime
 from pathlib import Path
+
+import anthropic
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
 from ...tools.jobs import list_jobs
+from ...tools.user import get_user_profile
 
 
 router = APIRouter()
 
 DOCS_DIR = Path(__file__).parent.parent.parent.parent / "docs"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
+QUOTES_FILE = DATA_DIR / "system" / "quotes.json"
 
 
 # ============== Health ==============
@@ -40,22 +45,96 @@ def get_about():
 
 # ============== Daily Quote ==============
 
-QUOTES = [
-    {"quote": "The only way to do great work is to love what you do.", "author": "Steve Jobs"},
-    {"quote": "Be yourself; everyone else is already taken.", "author": "Oscar Wilde"},
-    {"quote": "The unexamined life is not worth living.", "author": "Socrates"},
-    {"quote": "In the middle of difficulty lies opportunity.", "author": "Albert Einstein"},
-    {"quote": "What you are is what you have been. What you'll be is what you do now.", "author": "Buddha"},
-    {"quote": "The best time to plant a tree was 20 years ago. The second best time is now.", "author": "Chinese Proverb"},
-    {"quote": "We suffer more often in imagination than in reality.", "author": "Seneca"},
-    {"quote": "The obstacle is the way.", "author": "Marcus Aurelius"},
-]
+def _load_quotes_state() -> dict:
+    """Load quotes state from disk."""
+    if QUOTES_FILE.exists():
+        try:
+            with open(QUOTES_FILE) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            pass
+    return {"current": None, "date": None, "history": []}
+
+
+def _save_quotes_state(state: dict):
+    """Save quotes state to disk."""
+    QUOTES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(QUOTES_FILE, "w") as f:
+        json.dump(state, f, indent=2)
+
+
+def _generate_quote(profile_content: str, history: list) -> dict:
+    """Generate a personalized quote using Claude."""
+    client = anthropic.Anthropic()
+
+    # Build context about recently used quotes to avoid
+    history_context = ""
+    if history:
+        recent = history[-50:]  # Show last 50 to avoid repetition
+        history_context = "\n\nQuotes to AVOID (recently used):\n"
+        for q in recent:
+            history_context += f"- \"{q['quote']}\" — {q['author']}\n"
+
+    prompt = f"""Based on this user's profile, select or compose an inspiring quote that would resonate with them today.
+
+User Profile:
+{profile_content if profile_content else "No profile available - provide a generally inspiring quote."}
+{history_context}
+
+Respond with ONLY a JSON object in this exact format (no markdown, no explanation):
+{{"quote": "The quote text here", "author": "Author Name"}}
+
+The quote can be from a famous person, philosopher, writer, or you can compose an original one attributed to "Unknown" or "Ancient Wisdom". Make it meaningful and relevant to the user's interests, goals, or values."""
+
+    response = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=256,
+        messages=[{"role": "user", "content": prompt}]
+    )
+
+    text = response.content[0].text.strip()
+
+    # Parse JSON response
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # Fallback if parsing fails
+        return {
+            "quote": "The journey of a thousand miles begins with a single step.",
+            "author": "Lao Tzu"
+        }
 
 
 @router.get("/daily-quote")
 def daily_quote():
-    """Get a daily quote."""
-    return random.choice(QUOTES)
+    """Get a personalized daily quote."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    state = _load_quotes_state()
+
+    # Return cached quote if already generated today
+    if state.get("date") == today and state.get("current"):
+        return state["current"]
+
+    # Get user profile for personalization
+    profile = get_user_profile()
+    profile_content = profile.get("content", "") if profile.get("exists") else ""
+
+    # Get history (last 365 quotes)
+    history = state.get("history", [])[-365:]
+
+    # Generate new quote
+    quote = _generate_quote(profile_content, history)
+
+    # Update state
+    history.append(quote)
+    state = {
+        "current": quote,
+        "date": today,
+        "history": history[-365:]  # Keep only last 365
+    }
+    _save_quotes_state(state)
+
+    return quote
 
 
 # ============== Settings ==============
