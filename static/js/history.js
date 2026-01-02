@@ -56,7 +56,7 @@ function navigateHistoryBack() {
 
 async function loadHistoryData() {
     try {
-        const response = await fetch('/api/conversations/recent/structured?count=20');
+        const response = await fetch('/api/chat/conversations/recent?count=20');
         const data = await response.json();
         historyData = data.conversations || [];
         renderHistory();
@@ -186,7 +186,7 @@ function toggleHistoryCard(sessionId) {
 
 async function loadConversation(oldSessionId) {
     try {
-        const response = await fetch('/api/conversations/fork', {
+        const response = await fetch('/api/chat/conversations/fork', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: oldSessionId })
