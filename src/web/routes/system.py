@@ -7,11 +7,10 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-import anthropic
-
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
+from ...llm import get_client, get_model, get_provider, DEFAULT_MODEL
 from ...tools.jobs import list_jobs
 from ...tools.user import get_user_profile
 
@@ -64,8 +63,8 @@ def _save_quotes_state(state: dict):
 
 
 def _generate_quote(profile_content: str, history: list) -> dict:
-    """Generate a personalized quote using Claude."""
-    client = anthropic.Anthropic()
+    """Generate a personalized quote using the configured LLM."""
+    client = get_client()
 
     # Build context about recently used quotes to avoid
     history_context = ""
@@ -87,7 +86,7 @@ Respond with ONLY a JSON object in this exact format (no markdown, no explanatio
 The quote can be from a famous person, philosopher, writer, or you can compose an original one attributed to "Unknown" or "Ancient Wisdom". Make it meaningful and relevant to the user's interests, goals, or values."""
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model=get_model(),
         max_tokens=256,
         messages=[{"role": "user", "content": prompt}]
     )
@@ -141,13 +140,11 @@ def daily_quote():
 
 @router.get("/settings")
 def get_settings():
-    """Get settings - minimal for v3."""
+    """Get current LLM settings."""
     return {
         "llm": {
-            "default_provider": "anthropic",
-            "providers": {
-                "anthropic": {"default_model": "claude-sonnet-4-20250514"}
-            }
+            "provider": get_provider(),
+            "model": get_model()
         }
     }
 

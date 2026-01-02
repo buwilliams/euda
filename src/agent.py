@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-import anthropic
+from .llm import get_client, get_model
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -27,7 +27,7 @@ class Agent:
         self.id = agent_id
         self.config = config or self._load_config()
         self.persona = self._load_persona()
-        self.client = anthropic.Anthropic()
+        self.client = get_client()
 
     def _load_config(self) -> dict:
         """Load agent configuration from disk."""
@@ -198,9 +198,9 @@ class Agent:
 
         messages = [{"role": "user", "content": message}]
 
-        # Call Claude with tools
+        # Call LLM with tools
         response = self.client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=get_model(),
             max_tokens=4096,
             system=system_prompt,
             tools=tools if tools else None,
@@ -218,7 +218,7 @@ class Agent:
             messages.append({"role": "user", "content": tool_results})
 
             response = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=get_model(),
                 max_tokens=4096,
                 system=system_prompt,
                 tools=tools if tools else None,
