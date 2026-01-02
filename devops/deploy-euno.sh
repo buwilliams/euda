@@ -51,15 +51,19 @@ if [ ! -f "$PROJECT_DIR/.env" ]; then
 fi
 
 # Check SSH connectivity
-echo "[1/5] Testing SSH connection..."
+echo "[1/6] Testing SSH connection..."
 ssh -o ConnectTimeout=10 "$SERVER" "echo 'Connected'" || {
     echo "Error: Cannot connect to $SERVER"
     echo "Run ./setup-server.sh first if this is a new server"
     exit 1
 }
 
+# Clean up __pycache__ on remote so rsync --delete can remove old directories
+echo "[2/6] Cleaning remote __pycache__..."
+ssh -T "$SERVER" "find $REMOTE_DIR/src -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true"
+
 # Sync files (exclude data, venv, __pycache__, .git)
-echo "[2/5] Syncing files..."
+echo "[3/6] Syncing files..."
 rsync -avz --delete \
     --exclude 'data/' \
     --exclude 'venv/' \
@@ -73,15 +77,15 @@ rsync -avz --delete \
     "$PROJECT_DIR/" "$SERVER:$REMOTE_DIR/"
 
 # Copy .env file
-echo "[3/5] Copying .env file..."
+echo "[4/6] Copying .env file..."
 scp "$PROJECT_DIR/.env" "$SERVER:$REMOTE_DIR/.env"
 
 # Install dependencies
-echo "[4/5] Installing dependencies..."
+echo "[5/6] Installing dependencies..."
 ssh -T "$SERVER" "cd $REMOTE_DIR && source venv/bin/activate && pip install --no-input --progress-bar off -r requirements.txt"
 
 # Restart service
-echo "[5/5] Restarting service..."
+echo "[6/6] Restarting service..."
 ssh "$SERVER" "sudo systemctl restart euno"
 
 # Check status
