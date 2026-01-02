@@ -2,45 +2,10 @@
 
 // ============== Daily Quote ==============
 
-function getTodayKey() {
-    return new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-}
-
-function getCachedQuote() {
-    const cached = localStorage.getItem('dailyQuote');
-    if (!cached) return null;
-    try {
-        const data = JSON.parse(cached);
-        if (data.date === getTodayKey()) {
-            return data;
-        }
-    } catch (e) {}
-    return null;
-}
-
-function cacheQuote(data) {
-    localStorage.setItem('dailyQuote', JSON.stringify({
-        ...data,
-        date: getTodayKey()
-    }));
-}
-
 async function loadDailyQuote() {
     // Remove any existing quote first
     const existingQuote = document.getElementById('daily-quote');
     if (existingQuote) existingQuote.remove();
-
-    // Check cache first
-    const cached = getCachedQuote();
-    if (cached) {
-        // Show cached quote immediately (no loading state)
-        const quoteDiv = document.createElement('div');
-        quoteDiv.id = 'daily-quote';
-        quoteDiv.className = 'quote-container';
-        inlineMessages.insertBefore(quoteDiv, inlineMessages.firstChild);
-        renderQuote(cached);
-        return;
-    }
 
     // Show loading state in messages area
     const loadingDiv = document.createElement('div');
@@ -59,7 +24,6 @@ async function loadDailyQuote() {
         }
         const data = await response.json();
         if (data.quote) {
-            cacheQuote(data);
             renderQuote(data);
         } else {
             throw new Error('No quote in response');
@@ -67,12 +31,10 @@ async function loadDailyQuote() {
     } catch (error) {
         console.error('Failed to load daily quote:', error);
         // Fallback
-        const fallback = {
+        renderQuote({
             quote: "The only way to do great work is to love what you do.",
             author: "Steve Jobs"
-        };
-        cacheQuote(fallback);
-        renderQuote(fallback);
+        });
     }
 }
 
