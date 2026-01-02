@@ -482,14 +482,6 @@ function renderJobDetailView(jobId) {
                 `}
             </div>
 
-            <!-- Parent Link -->
-            ${parentName ? `
-            <div class="job-section">
-                <div class="job-section-header">Parent</div>
-                <div class="card-project-link" onclick="navigateFocus('job-${job.parent_id}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(parentName)}</div>
-            </div>
-            ` : ''}
-
             <!-- Child Jobs Section -->
             <div class="job-section">
                 <div class="job-section-header">Child Jobs${childJobs.length > 0 ? ` (${childJobs.length})` : ''}</div>
@@ -518,6 +510,14 @@ function renderJobDetailView(jobId) {
                 <span class="focus-menu-count">${assets.length}</span>
                 <span class="focus-menu-arrow">›</span>
             </div>
+
+            <!-- Parent Link -->
+            ${parentName ? `
+            <div class="job-section">
+                <div class="job-section-header">Parent</div>
+                <div class="card-project-link" onclick="navigateFocus('job-${job.parent_id}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(parentName)}</div>
+            </div>
+            ` : ''}
         </div>
     `;
 }
@@ -608,14 +608,6 @@ function renderCompletedJobDetailView(jobId) {
                 `}
             </div>
 
-            <!-- Parent Link -->
-            ${parentName ? `
-            <div class="job-section">
-                <div class="job-section-header">Parent</div>
-                <div class="card-project-link" onclick="navigateFocus('${parentIsCompleted ? 'completed' : 'job'}-${job.parent_id}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(parentName)}</div>
-            </div>
-            ` : ''}
-
             <!-- Active Child Jobs Section (rare but possible) -->
             ${activeChildJobs.length > 0 ? `
             <div class="job-section">
@@ -642,6 +634,14 @@ function renderCompletedJobDetailView(jobId) {
                 <span class="focus-menu-count">${assets.length}</span>
                 <span class="focus-menu-arrow">›</span>
             </div>
+
+            <!-- Parent Link -->
+            ${parentName ? `
+            <div class="job-section">
+                <div class="job-section-header">Parent</div>
+                <div class="card-project-link" onclick="navigateFocus('${parentIsCompleted ? 'completed' : 'job'}-${job.parent_id}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(parentName)}</div>
+            </div>
+            ` : ''}
         </div>
     `;
 }
