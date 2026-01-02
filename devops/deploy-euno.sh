@@ -78,16 +78,7 @@ scp "$PROJECT_DIR/.env" "$SERVER:$REMOTE_DIR/.env"
 
 # Install dependencies
 echo "[4/5] Installing dependencies..."
-ssh "$SERVER" bash << REMOTE_SCRIPT
-set -e
-cd $REMOTE_DIR
-
-# Activate virtual environment
-source venv/bin/activate
-
-# Install/update dependencies
-pip install -q -r requirements.txt
-REMOTE_SCRIPT
+ssh -T "$SERVER" "cd $REMOTE_DIR && source venv/bin/activate && pip install --no-input --progress-bar off -r requirements.txt"
 
 # Restart service
 echo "[5/5] Restarting service..."
