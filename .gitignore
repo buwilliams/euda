@@ -12,6 +12,9 @@
 # Agent state is runtime data (ignore)
 data/agents/*/state/
 
+# Agent logs are runtime data (ignore)
+data/agents/*/logs/
+
 # Jobs are user data (ignore)
 data/jobs/*.json
 
