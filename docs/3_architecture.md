@@ -9,7 +9,7 @@ Euno is built on two core abstractions: **Agents** and **Jobs**. Agents are auto
 1. **Agents are generic** - All agents share the same architecture: config + persona + tools + loop
 2. **User as agent** - The human interacts through Web UI or CLI; agents interact through autonomous loops
 3. **Jobs are hierarchical** - Any job can contain sub-jobs, enabling natural decomposition of work
-4. **Flat files** - All data is human-readable, inspectable, and version-controllable
+4. **Simple storage** - Flat files for agents, user profile, and lifelog; SQLite for jobs (efficient querying)
 5. **Capabilities over permissions** - What an agent can do is defined by which tools it has access to
 
 ## Personal Intelligence
@@ -29,6 +29,33 @@ To achieve true personal intelligence, every agent must understand the user. Eve
 This means every agent—whether it's handling tasks, curating content, or just chatting—knows the user's preferences, patterns, and values. The intelligence is personal because it's grounded in a real model of who the user is.
 
 The **User Profile** (`data/user/user-profile.md`) is built and maintained by the Profiler agent, which examines the Lifelog to identify patterns, preferences, and behaviors over time.
+
+### The Lifelog
+
+The Lifelog is the raw record of the user's life—journals, conversations, reflections, and significant moments. It lives in `data/user/lifelog/` as daily markdown files:
+
+```
+data/user/lifelog/
+├── 2026-01-01.md
+├── 2026-01-02.md
+└── ...
+```
+
+**Purpose:**
+- Capture lived experience before interpretation
+- Preserve human signal (emotions, decisions, struggles) with high fidelity
+- Provide evidence for the Profiler to build the User Profile
+
+**Who writes to it:**
+- The **Archivist** agent processes incoming content and writes to the Lifelog
+- The **Friend** agent may log meaningful conversations
+- Users can write directly via the web UI or CLI
+
+**Who reads it:**
+- The **Profiler** examines the Lifelog to identify patterns and update the User Profile
+- Any agent can read the Lifelog to understand recent context
+
+The Lifelog is intentionally raw and unprocessed. The Archivist's job is to preserve, not interpret. Interpretation happens later when the Profiler extracts patterns into the User Profile.
 
 ### Default Agents
 
@@ -271,25 +298,50 @@ Jobs have:
 
 All agents can see all jobs—visibility is universal.
 
-### Job Schema
+### Job Storage (SQLite)
 
-```json
-{
-  "id": "job-abc123",
-  "name": "Research competitor pricing",
-  "parent_id": null,
-  "status": "todo",
-  "created_at": "2025-01-15T10:30:00Z",
-  "updated_at": "2025-01-15T14:22:00Z",
-  "created_by": "user",
-  "description": "Gather pricing data from top 5 competitors",
-  "due_date": null,
-  "tags": ["research", "pricing"],
-  "log": [
-    {"timestamp": "2025-01-15T10:30:00Z", "agent": "user", "action": "created"},
-    {"timestamp": "2025-01-15T14:22:00Z", "agent": "worker", "action": "Started research"}
-  ]
-}
+Jobs are stored in a SQLite database at `data/jobs/db.sqlite`. SQLite provides efficient querying while remaining a simple, portable single-file database.
+
+**Schema:**
+
+```sql
+CREATE TABLE jobs (
+    id TEXT PRIMARY KEY,              -- e.g., "job-abc123"
+    name TEXT NOT NULL,
+    parent_id TEXT REFERENCES jobs(id) ON DELETE SET NULL,
+    status TEXT NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'completed', 'archived')),
+    created_at TEXT NOT NULL,         -- ISO 8601 timestamp
+    updated_at TEXT NOT NULL,
+    created_by TEXT NOT NULL DEFAULT 'user',
+    description TEXT,
+    due_date TEXT,
+    someday INTEGER NOT NULL DEFAULT 0,  -- boolean flag
+    completed_at TEXT,
+    tags TEXT                         -- JSON array, e.g., '["research", "pricing"]'
+);
+
+CREATE TABLE job_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+    timestamp TEXT NOT NULL,
+    agent TEXT NOT NULL,              -- which agent performed the action
+    action TEXT NOT NULL              -- what happened
+);
+```
+
+**Design decisions:**
+
+- **Logs in separate table** — Logs are append-only and can grow large. A separate table enables efficient inserts without rewriting the job row. Cascade delete ensures cleanup.
+- **Tags as JSON text** — Tags are always read/written with the job. No need for a separate table or complex queries.
+- **ISO 8601 timestamps** — Human-readable, sortable as strings, compatible with SQLite date functions.
+
+**Indexes:**
+
+```sql
+CREATE INDEX idx_jobs_status ON jobs(status);
+CREATE INDEX idx_jobs_parent_id ON jobs(parent_id);
+CREATE INDEX idx_jobs_updated_at ON jobs(updated_at DESC);
+CREATE INDEX idx_job_logs_job_id ON job_logs(job_id);
 ```
 
 ### Job States
