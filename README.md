@@ -76,7 +76,7 @@ data/
 │   └── {agent}/
 │       ├── config.json
 │       └── {agent}-persona.md
-├── jobs/             # Flat job files with parent_id for hierarchy
+├── jobs/             # SQLite database for jobs
 ├── assets/           # Files attached to jobs
 ├── user/             # Profile and lifelog
 └── system/           # Global config
