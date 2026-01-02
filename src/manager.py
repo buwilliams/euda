@@ -66,11 +66,21 @@ class AgentManager:
         self.threads[agent_id] = thread
         thread.start()
 
+    def _get_system_config(self) -> dict:
+        """Load system configuration."""
+        config_path = DATA_DIR / "system" / "config.json"
+        if config_path.exists():
+            with open(config_path) as f:
+                return json.load(f)
+        return {}
+
     def _run_agent_loop(self, agent: Agent):
         """Run an agent's work loop in its own thread."""
+        system_config = self._get_system_config()
+        min_sleep = system_config.get("agents", {}).get("min_sleep_seconds", 60)
+
         sleep_seconds = agent.config.get("sleep_minutes", 5) * 60
-        # Ensure minimum sleep of 60 seconds
-        sleep_seconds = max(sleep_seconds, 60)
+        sleep_seconds = max(sleep_seconds, min_sleep)
 
         while self.running:
             try:

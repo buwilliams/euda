@@ -1,0 +1,8 @@
+{
+  "version": "3.0.0",
+  "initialized": true,
+  "agents": {
+    "max_work_iterations": 20,
+    "min_sleep_seconds": 60
+  }
+}

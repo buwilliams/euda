@@ -125,6 +125,14 @@ class Agent:
         with open(path, "w") as f:
             json.dump(memory, f, indent=2)
 
+    def _get_system_config(self) -> dict:
+        """Load system configuration."""
+        config_path = DATA_DIR / "system" / "config.json"
+        if config_path.exists():
+            with open(config_path) as f:
+                return json.load(f)
+        return {}
+
     def _build_system_prompt(self) -> str:
         """Build the system prompt from persona and context."""
         parts = [self.persona]
@@ -254,7 +262,7 @@ Jobs:
 Work on any jobs that match your role. When you're finished working (or if nothing matches your role), call the done_working tool to signal you're ready to sleep."""
 
         # Autonomous loop - keep working until agent calls done_working
-        max_iterations = 20  # Safety limit
+        max_iterations = self._get_system_config().get("agents", {}).get("max_work_iterations", 20)
         iteration = 0
 
         while not self._work_done and iteration < max_iterations:

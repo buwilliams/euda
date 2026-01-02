@@ -24,8 +24,11 @@ data/assets/
 # User data (ignore)
 data/user/
 
-# System config can be tracked, but may contain secrets
-data/system/*.json
+# System config is tracked (contains settings, not secrets)
+!data/system/config.json
+# But ignore other system files that may contain secrets
+data/system/notifications.jsonl
+data/system/sessions.json
 
 # Keep directory structure
 !data/**/.gitkeep
