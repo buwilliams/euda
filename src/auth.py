@@ -107,3 +107,13 @@ def verify_session(token: str) -> bool:
 def invalidate_session(token: str):
     """Invalidate a session token."""
     _sessions.discard(token)
+
+
+def remove_password():
+    """Remove the password (disables authentication)."""
+    auth = _load_auth()
+    if "password_hash" in auth:
+        del auth["password_hash"]
+        _save_auth(auth)
+    # Clear all sessions
+    _sessions.clear()

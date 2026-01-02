@@ -16,19 +16,21 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Commands:
-  start         Start the web server with agents
-  chat          Interactive chat with an agent
-  agents        List all agents
-  jobs          List all jobs
-  set-password  Set the access password
+  start            Start the web server with agents
+  chat             Interactive chat with an agent
+  agents           List all agents
+  jobs             List all jobs
+  set-password     Set the access password
+  remove-password  Remove the password (disable auth)
 
 Examples:
-  python main.py start          # Run web server + agents
-  python main.py chat           # Chat with default agent (assistant)
-  python main.py chat friend    # Chat with specific agent
-  python main.py agents         # List agents
-  python main.py jobs           # List jobs
-  python main.py set-password   # Set access password
+  python main.py start             # Run web server + agents
+  python main.py chat              # Chat with default agent (assistant)
+  python main.py chat friend       # Chat with specific agent
+  python main.py agents            # List agents
+  python main.py jobs              # List jobs
+  python main.py set-password      # Set access password
+  python main.py remove-password   # Disable authentication
 """
     )
 
@@ -44,6 +46,7 @@ Examples:
         "agents": cmd_agents,
         "jobs": cmd_jobs,
         "set-password": cmd_set_password,
+        "remove-password": cmd_remove_password,
         "help": lambda _: parser.print_help(),
     }
 
@@ -190,6 +193,29 @@ def cmd_set_password(args):
         print(f"Error: {e}")
     except RuntimeError as e:
         print(f"Error: {e}")
+
+
+def cmd_remove_password(args):
+    """Remove the access password (disable authentication)."""
+    from src.auth import remove_password, is_password_set
+
+    print("=" * 60)
+    print("Euno - Remove Password")
+    print("=" * 60)
+    print()
+
+    if not is_password_set():
+        print("No password is currently set.")
+        return
+
+    confirm = input("Are you sure you want to remove the password? (y/N): ").strip().lower()
+    if confirm != 'y':
+        print("Cancelled.")
+        return
+
+    remove_password()
+    print("\nPassword removed.")
+    print("The web UI no longer requires authentication.")
 
 
 if __name__ == "__main__":
