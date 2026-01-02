@@ -22,6 +22,7 @@ Commands:
   jobs             List all jobs
   set-password     Set the access password
   remove-password  Remove the password (disable auth)
+  fresh-start      Reset all user data (lifelog, jobs, logs, password)
 
 Examples:
   python main.py start             # Run web server + agents
@@ -31,6 +32,7 @@ Examples:
   python main.py jobs              # List jobs
   python main.py set-password      # Set access password
   python main.py remove-password   # Disable authentication
+  python main.py fresh-start       # Clean slate (keeps agent configs)
 """
     )
 
@@ -47,6 +49,7 @@ Examples:
         "jobs": cmd_jobs,
         "set-password": cmd_set_password,
         "remove-password": cmd_remove_password,
+        "fresh-start": cmd_fresh_start,
         "help": lambda _: parser.print_help(),
     }
 
@@ -216,6 +219,103 @@ def cmd_remove_password(args):
     remove_password()
     print("\nPassword removed.")
     print("The web UI no longer requires authentication.")
+
+
+def cmd_fresh_start(args):
+    """Reset all user data for a clean slate."""
+    import shutil
+    from pathlib import Path
+
+    print("=" * 60)
+    print("Euno - Fresh Start")
+    print("=" * 60)
+    print()
+    print("This will DELETE:")
+    print("  - All lifelog entries")
+    print("  - User profile")
+    print("  - All jobs and job assets")
+    print("  - All agent logs and conversation history")
+    print("  - Password (if set)")
+    print()
+    print("This will KEEP:")
+    print("  - Agent configurations and personas")
+    print("  - System configuration")
+    print()
+
+    confirm = input("Are you sure? Type 'yes' to confirm: ").strip().lower()
+    if confirm != 'yes':
+        print("Cancelled.")
+        return
+
+    data_dir = Path(__file__).parent / "data"
+    deleted = []
+
+    # 1. Clear user data (lifelog, profile)
+    user_dir = data_dir / "user"
+    if user_dir.exists():
+        # Remove lifelog files
+        lifelog_dir = user_dir / "lifelog"
+        if lifelog_dir.exists():
+            for f in lifelog_dir.glob("*.md"):
+                f.unlink()
+                deleted.append(f"lifelog/{f.name}")
+        # Remove profile
+        profile = user_dir / "user-profile.md"
+        if profile.exists():
+            profile.unlink()
+            deleted.append("user-profile.md")
+
+    # 2. Clear jobs database and assets
+    jobs_dir = data_dir / "jobs"
+    if jobs_dir.exists():
+        # Remove SQLite database
+        db_file = jobs_dir / "db.sqlite"
+        if db_file.exists():
+            db_file.unlink()
+            deleted.append("jobs/db.sqlite")
+        # Remove database journal files
+        for pattern in ["db.sqlite-journal", "db.sqlite-wal", "db.sqlite-shm"]:
+            journal = jobs_dir / pattern
+            if journal.exists():
+                journal.unlink()
+                deleted.append(f"jobs/{pattern}")
+        # Remove assets directory
+        assets_dir = jobs_dir / "assets"
+        if assets_dir.exists():
+            shutil.rmtree(assets_dir)
+            deleted.append("jobs/assets/")
+
+    # 3. Clear agent logs and state (keep config and persona)
+    agents_dir = data_dir / "agents"
+    if agents_dir.exists():
+        for agent_dir in agents_dir.iterdir():
+            if agent_dir.is_dir():
+                # Remove logs
+                logs_dir = agent_dir / "logs"
+                if logs_dir.exists():
+                    shutil.rmtree(logs_dir)
+                    deleted.append(f"agents/{agent_dir.name}/logs/")
+                # Remove state (conversation history, memory)
+                state_dir = agent_dir / "state"
+                if state_dir.exists():
+                    shutil.rmtree(state_dir)
+                    deleted.append(f"agents/{agent_dir.name}/state/")
+
+    # 4. Remove password
+    auth_file = data_dir / "system" / "auth.json"
+    if auth_file.exists():
+        auth_file.unlink()
+        deleted.append("system/auth.json")
+
+    print()
+    print(f"Deleted {len(deleted)} items:")
+    for item in deleted[:10]:
+        print(f"  - {item}")
+    if len(deleted) > 10:
+        print(f"  ... and {len(deleted) - 10} more")
+
+    print()
+    print("Fresh start complete. Ready for new data.")
 
 
 if __name__ == "__main__":
