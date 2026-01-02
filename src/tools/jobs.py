@@ -233,7 +233,7 @@ def update_job(
         params.append(json.dumps(tags))
     if due_date is not None:
         updates.append("due_date = ?")
-        params.append(due_date)
+        params.append(due_date if due_date else None)  # Empty string means clear
     if someday is not None:
         updates.append("someday = ?")
         params.append(int(someday))

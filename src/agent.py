@@ -72,6 +72,17 @@ class Agent:
         with open(path, "a") as f:
             f.write(f"\n## {role.title()} ({timestamp})\n\n{content}\n")
 
+    def _append_to_lifelog(self, user_message: str, assistant_response: str):
+        """Append a conversation exchange to today's lifelog."""
+        from .tools.user import write_lifelog
+
+        # Format the conversation for the lifelog
+        content = f"**Conversation with {self.config.get('name', self.id)}**\n\n"
+        content += f"**User:** {user_message}\n\n"
+        content += f"**{self.config.get('name', self.id)}:** {assistant_response}"
+
+        write_lifelog(content)
+
     def _get_memory_path(self) -> Path:
         """Get path to agent memory file."""
         state_dir = AGENTS_DIR / self.id / "state"
@@ -210,6 +221,11 @@ class Agent:
 
         self._save_conversation_turn("assistant", text_response)
         self._log("chat_end", {"response_length": len(text_response)})
+
+        # Log conversations to lifelog for the friend agent (for Profiler to analyze)
+        if self.id == "friend":
+            self._append_to_lifelog(message, text_response)
+
         return text_response
 
     def _execute_tools(self, response) -> list:
