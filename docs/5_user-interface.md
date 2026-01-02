@@ -177,9 +177,10 @@ Things-like task management with slide navigation.
 
 **Completed Jobs:**
 - Shows root-level completed jobs (hierarchical navigation)
+- Root = no parent OR parent is still active (not in completed list)
 - Each completed job shows count of completed children
 - Navigate into completed jobs to see their completed children
-- Job detail view also shows completed children section
+- Completed job detail view uses same UI as active jobs with "Restore" action
 
 **Projects Section:**
 - General project always first
@@ -234,11 +235,40 @@ Tasks are grouped by project within each timeline view.
 └──────────────────────────────────────┘
 ```
 
+**Completed Job Detail View:**
+```
+┌──────────────────────────────────────┐
+│ ← Job Name                           │
+├──────────────────────────────────────┤
+│ [↩ Restore] [🗑 Delete]              │
+├──────────────────────────────────────┤
+│ ✓ Completed Yesterday                │
+├──────────────────────────────────────┤
+│ Name                                 │
+│ Click to edit job name...            │
+├──────────────────────────────────────┤
+│ Description                          │
+│ Markdown rendered, click to edit...  │
+├──────────────────────────────────────┤
+│ Completed Children (2)               │
+│ ☑ Completed child 1              → │
+│ ☑ Completed child 2              → │
+├──────────────────────────────────────┤
+│ 📎 Assets                        3 → │
+└──────────────────────────────────────┘
+```
+
+Same UI as active jobs but with:
+- "Restore" action instead of "Complete/Archive/When"
+- Completed date badge at top
+- Name and description still editable
+
 **Assets View:**
 - Upload files or create new text/markdown assets
 - Text/markdown files are clickable and render inline
 - Click to edit, with save/cancel controls
 - Binary files show filename and size only
+- Works for both active and completed jobs
 
 **When Picker:**
 Accessible from expanded task card, allows scheduling:
@@ -377,6 +407,9 @@ historyView        // 'list' | 'detail'
 jobsData           // Cached active jobs
 completedJobsData  // Cached completed jobs
 jobAssetsCache     // Cached assets per job
+editingJobField    // {jobId, field} when editing a job field
+currentAssetData   // Currently loaded asset content
+editingAssetFilename // Asset being edited
 historyData        // Cached conversation list
 ```
 

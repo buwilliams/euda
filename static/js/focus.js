@@ -205,7 +205,9 @@ function animateViewTransition(container, newContent, direction) {
 function renderFocusMenu() {
     const counts = getFocusCounts();
     const topLevelJobs = jobsData.filter(j => !j.parent_id);
-    const topLevelCompletedJobs = completedJobsData.filter(j => !j.parent_id);
+    // Root completed jobs: no parent OR parent is not in completed list (parent still active/archived)
+    const completedJobIds = new Set(completedJobsData.map(j => j.id));
+    const topLevelCompletedJobs = completedJobsData.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
 
     return `
         <div class="focus-menu">
@@ -233,10 +235,16 @@ function renderFocusMenu() {
                 <span class="focus-menu-count">${counts.someday}</span>
                 <span class="focus-menu-arrow">›</span>
             </div>
+            <div class="focus-menu-item" onclick="navigateFocus('completed')" style="opacity: 0.7;">
+                <span class="focus-menu-icon">✓</span>
+                <span class="focus-menu-label">Completed Jobs</span>
+                <span class="focus-menu-count">${topLevelCompletedJobs.length}</span>
+                <span class="focus-menu-arrow">›</span>
+            </div>
             ${topLevelJobs.map(job => {
                 const childCount = jobsData.filter(j => j.parent_id === job.id).length;
                 return `
-                <div class="focus-menu-item" onclick="navigateFocus('job-${job.id}')">
+                <div class="focus-menu-item" onclick="navigateFocus('job-${job.id}')" style="margin-top: ${topLevelJobs.indexOf(job) === 0 ? '0.5rem' : '0'};">
                     <span class="focus-menu-icon">📁</span>
                     <span class="focus-menu-label">${escapeHtml(job.name)}</span>
                     <span class="focus-menu-count">${childCount}</span>
@@ -244,12 +252,6 @@ function renderFocusMenu() {
                     <span class="focus-menu-arrow">›</span>
                 </div>
             `}).join('')}
-            <div class="focus-menu-item" onclick="navigateFocus('completed')" style="margin-top: 0.5rem; opacity: 0.7;">
-                <span class="focus-menu-icon">✓</span>
-                <span class="focus-menu-label">Completed Jobs</span>
-                <span class="focus-menu-count">${topLevelCompletedJobs.length}</span>
-                <span class="focus-menu-arrow">›</span>
-            </div>
         </div>
         <div class="quick-add-section">
             <input type="text" id="quick-add-root" class="quick-add-input" placeholder="Add new job..." onkeypress="handleQuickAddKeypress(event, 'quick-add-root')">
@@ -281,8 +283,9 @@ function renderTimelineView(category, title) {
 }
 
 function renderCompletedJobsView() {
-    // Show root completed jobs (no parent)
-    const rootCompletedJobs = completedJobsData.filter(j => !j.parent_id);
+    // Root completed jobs: no parent OR parent is not in completed list
+    const completedJobIds = new Set(completedJobsData.map(j => j.id));
+    const rootCompletedJobs = completedJobsData.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">←</span>
@@ -533,8 +536,14 @@ function renderCompletedJobDetailView(jobId) {
 
     const displayName = job.name || 'Untitled';
     const hasDescription = job.description && job.description.length > 0;
-    const completedDate = job.completed_at ? new Date(job.completed_at).toLocaleDateString() : 'Unknown';
+    const completedDate = job.completed_at ? formatFriendlyPastDate(job.completed_at) : 'Unknown';
     const completedChildJobs = completedJobsData.filter(j => j.parent_id === job.id);
+    const activeChildJobs = jobsData.filter(j => j.parent_id === job.id);
+    const assets = jobAssetsCache[jobId] || [];
+
+    // Check if we're editing this job
+    const isEditingName = editingJobField?.jobId === jobId && editingJobField?.field === 'name';
+    const isEditingDesc = editingJobField?.jobId === jobId && editingJobField?.field === 'description';
 
     // Get parent job name for context (could be active or completed)
     let parentName = null;
@@ -548,27 +557,55 @@ function renderCompletedJobDetailView(jobId) {
         parentName = parent ? parent.name : null;
     }
 
+    // Load assets if not cached
+    if (!jobAssetsCache[jobId]) {
+        loadJobAssets(jobId).then(() => renderFocusTab());
+    }
+
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">←</span>
             <span class="focus-view-title">${escapeHtml(displayName)}</span>
         </div>
         <div class="focus-view-content">
+            <!-- Actions Row -->
             <div class="task-detail-actions">
                 <button class="task-detail-action" onclick="restoreJob(event, '${job.id}')">↩ Restore</button>
                 <button class="task-detail-action danger" onclick="deleteJob(event, '${job.id}')">🗑 Delete</button>
             </div>
 
-            ${hasDescription ? `
-            <div class="job-section">
-                <div class="job-section-header">Description</div>
-                <div class="job-description-display">${marked.parse(job.description)}</div>
+            <!-- Completed Badge -->
+            <div class="job-section" style="background: #f0f8f0; border-radius: 6px; padding: 0.5rem 1rem;">
+                <span style="color: #4a8; font-weight: 500;">✓ Completed ${escapeHtml(completedDate)}</span>
             </div>
-            ` : ''}
 
+            <!-- Name Section -->
             <div class="job-section">
-                <div class="job-section-header">Completed</div>
-                <div style="padding: 0.5rem; color: #888;">${escapeHtml(completedDate)}</div>
+                <div class="job-section-header">Name</div>
+                ${isEditingName ? `
+                    <input type="text" class="job-name-input" id="edit-name-${job.id}" value="${escapeHtml(displayName)}"
+                        onkeydown="handleEditKeypress(event, '${job.id}', 'name')"
+                        onblur="saveCompletedJobField('${job.id}', 'name', this.value)">
+                ` : `
+                    <div class="job-name-display" onclick="startEditingField('${job.id}', 'name')">${escapeHtml(displayName)}</div>
+                `}
+            </div>
+
+            <!-- Description Section -->
+            <div class="job-section">
+                <div class="job-section-header">
+                    Description
+                    ${isEditingDesc ? `<span class="job-section-action" onclick="saveCompletedJobField('${job.id}', 'description', document.getElementById('edit-description-${job.id}').value)">Save</span>` : ''}
+                </div>
+                ${isEditingDesc ? `
+                    <textarea class="job-description-input" id="edit-description-${job.id}"
+                        onkeydown="handleCompletedDescriptionKeypress(event, '${job.id}')"
+                        placeholder="Add a description...">${escapeHtml(job.description || '')}</textarea>
+                ` : `
+                    <div class="job-description-display ${hasDescription ? '' : 'empty'}" onclick="startEditingField('${job.id}', 'description')">
+                        ${hasDescription ? marked.parse(job.description) : 'Click to add description...'}
+                    </div>
+                `}
             </div>
 
             <!-- Parent Link -->
@@ -579,9 +616,17 @@ function renderCompletedJobDetailView(jobId) {
             </div>
             ` : ''}
 
+            <!-- Active Child Jobs Section (rare but possible) -->
+            ${activeChildJobs.length > 0 ? `
+            <div class="job-section">
+                <div class="job-section-header">Active Children (${activeChildJobs.length})</div>
+                ${activeChildJobs.map(child => renderJobCard(child)).join('')}
+            </div>
+            ` : ''}
+
             <!-- Completed Child Jobs Section -->
             ${completedChildJobs.length > 0 ? `
-            <div class="job-section">
+            <div class="job-section" style="opacity: 0.7;">
                 <div class="job-section-header">Completed Children (${completedChildJobs.length})</div>
                 ${completedChildJobs.map(child => {
                     const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
@@ -589,6 +634,14 @@ function renderCompletedJobDetailView(jobId) {
                 }).join('')}
             </div>
             ` : ''}
+
+            <!-- Assets Navigation -->
+            <div class="focus-menu-item" onclick="navigateFocus('assets-${job.id}')" style="margin-top: 0.5rem;">
+                <span class="focus-menu-icon">📎</span>
+                <span class="focus-menu-label">Assets</span>
+                <span class="focus-menu-count">${assets.length}</span>
+                <span class="focus-menu-arrow">›</span>
+            </div>
         </div>
     `;
 }
@@ -651,8 +704,13 @@ function cancelEditingAsset() {
 }
 
 function renderAssetView(jobId, filename) {
-    // Get job name for header
-    const job = jobsData.find(j => j.id === jobId);
+    // Get job name for header (check both active and completed)
+    let job = jobsData.find(j => j.id === jobId);
+    let isCompleted = false;
+    if (!job) {
+        job = completedJobsData.find(j => j.id === jobId);
+        isCompleted = true;
+    }
     const jobName = job ? job.name : 'Job';
 
     // Load asset if not already loaded
@@ -707,14 +765,20 @@ function renderAssetView(jobId, filename) {
             <!-- Back Link -->
             <div class="job-section">
                 <div class="job-section-header">Job</div>
-                <div class="card-project-link" onclick="navigateFocus('job-${jobId}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(jobName)}</div>
+                <div class="card-project-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'job'}-${jobId}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(jobName)}</div>
             </div>
         </div>
     `;
 }
 
 function renderAssetsListView(jobId) {
-    const job = jobsData.find(j => j.id === jobId);
+    // Check both active and completed jobs
+    let job = jobsData.find(j => j.id === jobId);
+    let isCompleted = false;
+    if (!job) {
+        job = completedJobsData.find(j => j.id === jobId);
+        isCompleted = true;
+    }
     const jobName = job ? job.name : 'Job';
     const assets = jobAssetsCache[jobId] || [];
 
@@ -731,7 +795,7 @@ function renderAssetsListView(jobId) {
         <div class="focus-view-content">
             <div class="job-section">
                 <div class="job-section-header">Job</div>
-                <div class="card-project-link" onclick="navigateFocus('job-${jobId}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(jobName)}</div>
+                <div class="card-project-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'job'}-${jobId}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(jobName)}</div>
             </div>
 
             <div class="task-detail-actions">
@@ -1198,6 +1262,37 @@ function handleDescriptionKeypress(event, jobId) {
     // Ctrl+Enter or Cmd+Enter to save
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
         saveJobField(jobId, 'description', event.target.value);
+    }
+}
+
+// Functions for editing completed jobs
+async function saveCompletedJobField(jobId, field, value) {
+    try {
+        const body = {};
+        body[field] = value;
+
+        const response = await fetch(`/api/jobs/${jobId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (response.ok) {
+            editingJobField = null;
+            await loadJobsData();
+        }
+    } catch (error) {
+        console.error('Failed to save completed job field:', error);
+    }
+}
+
+function handleCompletedDescriptionKeypress(event, jobId) {
+    if (event.key === 'Escape') {
+        cancelEditing();
+    }
+    // Ctrl+Enter or Cmd+Enter to save
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        saveCompletedJobField(jobId, 'description', event.target.value);
     }
 }
 
