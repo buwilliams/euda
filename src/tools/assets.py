@@ -11,7 +11,7 @@ from . import tool
 
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
-ASSETS_DIR = DATA_DIR / "assets"
+ASSETS_DIR = DATA_DIR / "jobs" / "assets"
 
 
 def _get_job_assets_dir(job_id: str) -> Path:

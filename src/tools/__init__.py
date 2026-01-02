@@ -99,5 +99,6 @@ def execute_tool(name: str, inputs: dict) -> Any:
 from . import jobs
 from . import agents
 from . import assets
+from . import notes
 from . import user
 from . import system

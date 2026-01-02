@@ -4,6 +4,10 @@
 
 let jobsData = [];           // All active jobs
 let completedJobsData = [];  // Recently completed jobs
+let jobAssetsCache = {};     // Cache of assets per job
+let jobNotesCache = {};      // Cache of notes per job
+let editingJobField = null;  // Which field is being edited: {jobId, field}
+let currentNoteData = null;  // Currently viewed note
 
 // ============== Data Loading ==============
 
@@ -136,6 +140,12 @@ function renderFocusTab() {
         content = renderTimelineView('someday', 'Someday');
     } else if (focusView === 'logbook') {
         content = renderLogbookView();
+    } else if (focusView.startsWith('note-')) {
+        // note-{jobId}-{noteId}
+        const parts = focusView.substring(5).split('-');
+        const jobId = parts[0];
+        const noteId = parts.slice(1).join('-');
+        content = renderNoteView(jobId, noteId);
     } else if (focusView.startsWith('job-')) {
         const jobId = focusView.substring(4);
         content = renderJobDetailView(jobId);
@@ -394,6 +404,12 @@ function renderJobDetailView(jobId) {
     const displayName = job.name || 'Untitled';
     const hasDescription = job.description && job.description.length > 0;
     const childJobs = jobsData.filter(j => j.parent_id === job.id);
+    const assets = jobAssetsCache[jobId] || [];
+    const notes = jobNotesCache[jobId] || [];
+
+    // Check if we're editing this job
+    const isEditingName = editingJobField?.jobId === jobId && editingJobField?.field === 'name';
+    const isEditingDesc = editingJobField?.jobId === jobId && editingJobField?.field === 'description';
 
     // Get parent job name for context
     let parentName = null;
@@ -402,35 +418,29 @@ function renderJobDetailView(jobId) {
         parentName = parent ? parent.name : null;
     }
 
+    // Load assets and notes if not cached
+    if (!jobAssetsCache[jobId]) {
+        loadJobAssets(jobId).then(() => renderFocusTab());
+    }
+    if (!jobNotesCache[jobId]) {
+        loadJobNotes(jobId).then(() => renderFocusTab());
+    }
+
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">←</span>
             <span class="focus-view-title">${escapeHtml(displayName)}</span>
         </div>
         <div class="focus-view-content">
-            <div class="task-detail">
-                ${hasDescription ? `<div class="task-detail-description">${marked.parse(job.description)}</div>` : ''}
-                ${parentName ? `
-                <div class="task-detail-meta">
-                    <span class="task-detail-label">Parent:</span>
-                    <span class="task-detail-value card-project-link" onclick="navigateFocus('job-${job.parent_id}')">${escapeHtml(parentName)}</span>
-                </div>
-                ` : ''}
-                <div class="task-detail-meta">
-                    <span class="task-detail-label">When:</span>
-                    <span class="task-detail-value">${escapeHtml(whenLabel)}</span>
-                </div>
-                ${job.tags && job.tags.length > 0 ? `
-                <div class="task-detail-meta">
-                    <span class="task-detail-label">Tags:</span>
-                    <span class="task-detail-value">${job.tags.map(t => escapeHtml(t)).join(', ')}</span>
-                </div>
-                ` : ''}
-            </div>
+            <!-- Actions Row -->
             <div class="task-detail-actions">
-                <button class="task-detail-action" onclick="openWhenPicker('job', '${job.id}')">📅 Change When</button>
+                <button class="task-detail-action" onclick="openWhenPicker('job', '${job.id}')">📅 ${escapeHtml(whenLabel)}</button>
                 <button class="task-detail-action" onclick="completeJob(event, '${job.id}')">✓ Complete</button>
                 <button class="task-detail-action" onclick="showArchiveInput(event, '${job.id}')">${isArchiving ? 'Cancel' : '📦 Archive'}</button>
+                <label class="task-detail-action" style="cursor: pointer;">
+                    📎 Upload
+                    <input type="file" style="display: none;" onchange="handleAssetUpload(event, '${job.id}')">
+                </label>
                 <button class="task-detail-action danger" onclick="deleteJob(event, '${job.id}')">🗑 Delete</button>
             </div>
             ${isArchiving ? `
@@ -439,11 +449,93 @@ function renderJobDetailView(jobId) {
                 <button class="card-archive-btn confirm" onclick="confirmArchiveJob('${job.id}')">Archive</button>
             </div>
             ` : ''}
-            <div class="section-header">CHILD JOBS${childJobs.length > 0 ? ` (${childJobs.length})` : ''}</div>
-            ${childJobs.map(child => renderJobCard(child)).join('')}
-            <div class="quick-add-section">
-                <input type="text" id="quick-add-${job.id}" class="quick-add-input" placeholder="Add child job..." onkeypress="handleQuickAddKeypress(event, 'quick-add-${job.id}', '${job.id}')">
-                <button class="quick-add-btn" onclick="quickAddJob('quick-add-${job.id}', '${job.id}')">+</button>
+
+            <!-- Name Section -->
+            <div class="job-section">
+                <div class="job-section-header">Name</div>
+                ${isEditingName ? `
+                    <input type="text" class="job-name-input" id="edit-name-${job.id}" value="${escapeHtml(displayName)}"
+                        onkeydown="handleEditKeypress(event, '${job.id}', 'name')"
+                        onblur="saveJobField('${job.id}', 'name', this.value)">
+                ` : `
+                    <div class="job-name-display" onclick="startEditingField('${job.id}', 'name')">${escapeHtml(displayName)}</div>
+                `}
+            </div>
+
+            <!-- Description Section -->
+            <div class="job-section">
+                <div class="job-section-header">
+                    Description
+                    ${isEditingDesc ? `<span class="job-section-action" onclick="saveJobField('${job.id}', 'description', document.getElementById('edit-description-${job.id}').value)">Save</span>` : ''}
+                </div>
+                ${isEditingDesc ? `
+                    <textarea class="job-description-input" id="edit-description-${job.id}"
+                        onkeydown="handleDescriptionKeypress(event, '${job.id}')"
+                        placeholder="Add a description...">${escapeHtml(job.description || '')}</textarea>
+                ` : `
+                    <div class="job-description-display ${hasDescription ? '' : 'empty'}" onclick="startEditingField('${job.id}', 'description')">
+                        ${hasDescription ? marked.parse(job.description) : 'Click to add description...'}
+                    </div>
+                `}
+            </div>
+
+            <!-- Parent Link -->
+            ${parentName ? `
+            <div class="job-section">
+                <div class="job-section-header">Parent</div>
+                <div class="card-project-link" onclick="navigateFocus('job-${job.parent_id}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(parentName)}</div>
+            </div>
+            ` : ''}
+
+            <!-- Assets Section -->
+            <div class="job-section">
+                <div class="job-section-header">Assets${assets.length > 0 ? ` (${assets.length})` : ''}</div>
+                ${assets.length > 0 ? `
+                    <div class="asset-list">
+                        ${assets.map(asset => `
+                            <div class="asset-item">
+                                <span class="asset-item-name">📎 ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-size">${formatFileSize(asset.size)}</span>
+                                <button class="asset-item-delete" onclick="deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">✕</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="empty-section">No assets attached</div>
+                `}
+            </div>
+
+            <!-- Notes Section -->
+            <div class="job-section">
+                <div class="job-section-header">Notes${notes.length > 0 ? ` (${notes.length})` : ''}</div>
+                ${notes.length > 0 ? `
+                    <div class="notes-list">
+                        ${notes.map(note => `
+                            <div class="note-item" onclick="navigateFocus('note-${job.id}-${note.id}')" style="cursor: pointer;">
+                                <div class="note-item-header">
+                                    <span class="note-item-agent">📝 ${escapeHtml(note.title)}</span>
+                                    <span class="note-item-time">${formatNoteTime(note.modified_at)}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="empty-section">No notes yet</div>
+                `}
+                <div class="note-add">
+                    <input type="text" class="note-add-input" id="note-title-${job.id}" placeholder="New note title..." onkeypress="handleNoteCreateKeypress(event, '${job.id}')">
+                    <button class="note-add-btn" onclick="createNote('${job.id}')">+ Note</button>
+                </div>
+            </div>
+
+            <!-- Child Jobs Section -->
+            <div class="job-section">
+                <div class="job-section-header">Child Jobs${childJobs.length > 0 ? ` (${childJobs.length})` : ''}</div>
+                ${childJobs.map(child => renderJobCard(child)).join('')}
+                <div class="quick-add-section" style="border-top: none; margin-top: 0;">
+                    <input type="text" id="quick-add-${job.id}" class="quick-add-input" placeholder="Add child job..." onkeypress="handleQuickAddKeypress(event, 'quick-add-${job.id}', '${job.id}')">
+                    <button class="quick-add-btn" onclick="quickAddJob('quick-add-${job.id}', '${job.id}')">+</button>
+                </div>
             </div>
         </div>
     `;
@@ -505,6 +597,58 @@ function renderCompletedJobCard(job) {
             <span class="card-title" style="text-decoration: line-through; color: #888;">${escapeHtml(displayName)}</span>
             ${completedDateLabel}
             <span class="card-arrow">›</span>
+        </div>
+    `;
+}
+
+function renderNoteView(jobId, noteId) {
+    // Get job name for header
+    const job = jobsData.find(j => j.id === jobId);
+    const jobName = job ? job.name : 'Job';
+
+    // Load note if not already loaded
+    if (!currentNoteData || currentNoteData.id !== noteId) {
+        loadNoteContent(jobId, noteId).then(() => renderFocusTab());
+        return `
+            <div class="focus-view-header" onclick="navigateFocus('job-${jobId}')">
+                <span class="focus-back-btn">←</span>
+                <span class="focus-view-title">Loading...</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="empty-section">Loading note...</div>
+            </div>
+        `;
+    }
+
+    const note = currentNoteData;
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocus('job-${jobId}')">
+            <span class="focus-back-btn">←</span>
+            <span class="focus-view-title">${escapeHtml(note.title)}</span>
+        </div>
+        <div class="focus-view-content">
+            <!-- Actions Row -->
+            <div class="task-detail-actions">
+                <button class="task-detail-action" onclick="saveNoteContent('${jobId}', '${noteId}')">💾 Save</button>
+                <button class="task-detail-action danger" onclick="deleteNote('${jobId}', '${noteId}')">🗑 Delete</button>
+            </div>
+
+            <!-- Note Content -->
+            <div class="job-section">
+                <div class="job-section-header">
+                    Content
+                    <span class="note-item-time">Last modified: ${formatNoteTime(note.modified_at)}</span>
+                </div>
+                <textarea class="job-description-input" id="note-content-${noteId}" style="min-height: 300px;"
+                    placeholder="Write your note here...">${escapeHtml(note.content || '')}</textarea>
+            </div>
+
+            <!-- Back Link -->
+            <div class="job-section">
+                <div class="job-section-header">Job</div>
+                <div class="card-project-link" onclick="navigateFocus('job-${jobId}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(jobName)}</div>
+            </div>
         </div>
     `;
 }
@@ -873,6 +1017,249 @@ async function quickDeleteJob(event, jobId) {
     } catch (error) {
         console.error('Failed to delete job:', error);
     }
+}
+
+// ============== Job Editing ==============
+
+function startEditingField(jobId, field) {
+    editingJobField = { jobId, field };
+    renderFocusTab();
+
+    // Focus the input after render
+    setTimeout(() => {
+        const input = document.getElementById(`edit-${field}-${jobId}`);
+        if (input) {
+            input.focus();
+            if (input.tagName === 'INPUT') {
+                input.select();
+            }
+        }
+    }, 50);
+}
+
+function cancelEditing() {
+    editingJobField = null;
+    renderFocusTab();
+}
+
+async function saveJobField(jobId, field, value) {
+    try {
+        const body = {};
+        body[field] = value;
+
+        const response = await fetch(`/api/jobs/${jobId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (response.ok) {
+            editingJobField = null;
+            await loadJobsData();
+        }
+    } catch (error) {
+        console.error('Failed to save job field:', error);
+    }
+}
+
+function handleEditKeypress(event, jobId, field) {
+    if (event.key === 'Enter' && field === 'name') {
+        saveJobField(jobId, field, event.target.value);
+    } else if (event.key === 'Escape') {
+        cancelEditing();
+    }
+}
+
+function handleDescriptionKeypress(event, jobId) {
+    if (event.key === 'Escape') {
+        cancelEditing();
+    }
+    // Ctrl+Enter or Cmd+Enter to save
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        saveJobField(jobId, 'description', event.target.value);
+    }
+}
+
+// ============== Assets Management ==============
+
+async function loadJobAssets(jobId) {
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/assets`);
+        if (response.ok) {
+            const assets = await response.json();
+            jobAssetsCache[jobId] = assets;
+            return assets;
+        }
+    } catch (error) {
+        console.error('Failed to load assets:', error);
+    }
+    return [];
+}
+
+async function deleteAsset(jobId, filename) {
+    if (!confirm(`Delete asset "${filename}"?`)) return;
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/assets/${encodeURIComponent(filename)}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            await loadJobAssets(jobId);
+            renderFocusTab();
+        }
+    } catch (error) {
+        console.error('Failed to delete asset:', error);
+    }
+}
+
+async function uploadAsset(jobId, file) {
+    try {
+        // Read file as text (for now, only supporting text files)
+        const content = await file.text();
+
+        const response = await fetch(`/api/jobs/${jobId}/assets/${encodeURIComponent(file.name)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content })
+        });
+
+        if (response.ok) {
+            await loadJobAssets(jobId);
+            renderFocusTab();
+        }
+    } catch (error) {
+        console.error('Failed to upload asset:', error);
+    }
+}
+
+function handleAssetUpload(event, jobId) {
+    const file = event.target.files[0];
+    if (file) {
+        uploadAsset(jobId, file);
+        event.target.value = ''; // Reset input
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// ============== Notes Management ==============
+
+async function loadJobNotes(jobId) {
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/notes`);
+        if (response.ok) {
+            const notes = await response.json();
+            jobNotesCache[jobId] = notes;
+            return notes;
+        }
+    } catch (error) {
+        console.error('Failed to load notes:', error);
+    }
+    return [];
+}
+
+async function createNote(jobId) {
+    const titleInput = document.getElementById(`note-title-${jobId}`);
+    if (!titleInput) return;
+
+    const title = titleInput.value.trim();
+    if (!title) return;
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/notes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, content: '', agent: 'user' })
+        });
+
+        if (response.ok) {
+            const note = await response.json();
+            titleInput.value = '';
+            await loadJobNotes(jobId);
+            // Navigate to the new note
+            navigateFocus(`note-${jobId}-${note.id}`);
+        }
+    } catch (error) {
+        console.error('Failed to create note:', error);
+    }
+}
+
+function handleNoteCreateKeypress(event, jobId) {
+    if (event.key === 'Enter') {
+        createNote(jobId);
+    }
+}
+
+async function loadNoteContent(jobId, noteId) {
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/notes/${noteId}`);
+        if (response.ok) {
+            currentNoteData = await response.json();
+            currentNoteData.jobId = jobId;
+            return currentNoteData;
+        }
+    } catch (error) {
+        console.error('Failed to load note:', error);
+    }
+    return null;
+}
+
+async function saveNoteContent(jobId, noteId) {
+    const textarea = document.getElementById(`note-content-${noteId}`);
+    if (!textarea) return;
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/notes/${noteId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: textarea.value })
+        });
+
+        if (response.ok) {
+            // Refresh cache
+            await loadJobNotes(jobId);
+        }
+    } catch (error) {
+        console.error('Failed to save note:', error);
+    }
+}
+
+async function deleteNote(jobId, noteId) {
+    if (!confirm('Delete this note?')) return;
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/notes/${noteId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            await loadJobNotes(jobId);
+            // Navigate back to job
+            navigateFocus(`job-${jobId}`);
+        }
+    } catch (error) {
+        console.error('Failed to delete note:', error);
+    }
+}
+
+function formatNoteTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
 }
 
 // ============== Legacy Aliases ==============

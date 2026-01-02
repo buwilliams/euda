@@ -11,6 +11,7 @@ from ...tools.jobs import (
     complete_job, restore_job, archive_job, add_job_log, get_child_jobs, delete_job
 )
 from ...tools.assets import list_assets, read_asset, write_asset, delete_asset
+from ...tools.notes import list_notes, read_note, create_note, update_note, delete_note
 
 
 router = APIRouter()
@@ -166,6 +167,57 @@ def api_write_asset(job_id: str, filename: str, request: WriteAssetRequest):
 def api_delete_asset(job_id: str, filename: str):
     """Delete an asset."""
     result = delete_asset(job_id, filename)
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+# Note endpoints
+
+class CreateNoteRequest(BaseModel):
+    title: str
+    content: str
+    agent: str = "user"
+
+
+class UpdateNoteRequest(BaseModel):
+    content: str
+
+
+@router.get("/{job_id}/notes")
+def api_list_notes(job_id: str):
+    """List notes for a job."""
+    return list_notes(job_id)
+
+
+@router.get("/{job_id}/notes/{note_id}")
+def api_get_note(job_id: str, note_id: str):
+    """Get a note."""
+    result = read_note(job_id, note_id)
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+@router.post("/{job_id}/notes")
+def api_create_note(job_id: str, request: CreateNoteRequest):
+    """Create a new note."""
+    return create_note(job_id, request.title, request.content, request.agent)
+
+
+@router.put("/{job_id}/notes/{note_id}")
+def api_update_note(job_id: str, note_id: str, request: UpdateNoteRequest):
+    """Update a note."""
+    result = update_note(job_id, note_id, request.content)
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+@router.delete("/{job_id}/notes/{note_id}")
+def api_delete_note(job_id: str, note_id: str):
+    """Delete a note."""
+    result = delete_note(job_id, note_id)
     if isinstance(result, dict) and "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result

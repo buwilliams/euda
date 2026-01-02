@@ -879,28 +879,31 @@
 
         .task-detail-actions {
             display: flex;
-            flex-direction: column;
+            flex-wrap: wrap;
             gap: 0.5rem;
-            padding: 0.5rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 0.75rem;
         }
 
         .task-detail-action {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1rem;
+            gap: 0.25rem;
+            padding: 0.4rem 0.6rem;
             background: #f5f5f5;
             border: 1px solid #e0e0e0;
-            border-radius: 6px;
+            border-radius: 4px;
             cursor: pointer;
             font-family: inherit;
-            font-size: 0.9rem;
-            color: #333;
+            font-size: 0.8rem;
+            color: #555;
             transition: all 0.15s;
         }
 
         .task-detail-action:hover {
             background: #eee;
+            color: #333;
         }
 
         .task-detail-action.danger {
@@ -2746,4 +2749,215 @@
 
         .card-trash-btn:hover {
             opacity: 1;
+        }
+
+        /* Job Detail Sections */
+        .job-section {
+            margin-bottom: 1rem;
+        }
+
+        .job-section-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .job-section-action {
+            font-size: 0.75rem;
+            color: #007bff;
+            cursor: pointer;
+            text-transform: none;
+            font-weight: normal;
+        }
+
+        .job-section-action:hover {
+            text-decoration: underline;
+        }
+
+        /* Editable Job Name */
+        .job-name-display {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            padding: 0.5rem;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .job-name-display:hover {
+            background: #f9f9f9;
+            border-color: #eee;
+        }
+
+        .job-name-input {
+            font-size: 1rem;
+            font-weight: 600;
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        /* Editable Description */
+        .job-description-display {
+            padding: 0.5rem;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            min-height: 2rem;
+            color: #666;
+        }
+
+        .job-description-display:hover {
+            background: #f9f9f9;
+            border-color: #eee;
+        }
+
+        .job-description-display.empty {
+            font-style: italic;
+            color: #999;
+        }
+
+        .job-description-input {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.5rem;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            outline: none;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+        }
+
+        /* Assets Section */
+        .asset-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .asset-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.5rem;
+            background: #f9f9f9;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .asset-item-name {
+            flex: 1;
+            color: #333;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .asset-item-size {
+            color: #999;
+            font-size: 0.75rem;
+        }
+
+        .asset-item-delete {
+            background: none;
+            border: none;
+            color: #c00;
+            cursor: pointer;
+            padding: 0.25rem;
+            opacity: 0.5;
+        }
+
+        .asset-item-delete:hover {
+            opacity: 1;
+        }
+
+        .asset-upload {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .asset-upload-input {
+            flex: 1;
+        }
+
+        /* Notes/Activity Log */
+        .notes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .note-item {
+            padding: 0.5rem;
+            background: #f9f9f9;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .note-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+        }
+
+        .note-item-agent {
+            font-weight: 500;
+            color: #555;
+        }
+
+        .note-item-time {
+            color: #999;
+            font-size: 0.75rem;
+        }
+
+        .note-item-action {
+            color: #333;
+        }
+
+        .note-add {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .note-add-input {
+            flex: 1;
+            padding: 0.4rem 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .note-add-btn {
+            padding: 0.4rem 0.75rem;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .note-add-btn:hover {
+            background: #0056b3;
+        }
+
+        .empty-section {
+            color: #999;
+            font-style: italic;
+            font-size: 0.85rem;
+            padding: 0.5rem;
         }
