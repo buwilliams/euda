@@ -16,8 +16,7 @@
     "get_user_profile",
     "read_lifelog",
     "write_lifelog",
-    "send_notification",
-    "done_working"
+    "send_notification"
   ],
   "sleep_minutes": 0
 }
