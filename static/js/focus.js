@@ -233,9 +233,14 @@ function renderFocusMenu() {
                     <span class="focus-menu-icon">📁</span>
                     <span class="focus-menu-label">${escapeHtml(job.name)}</span>
                     <span class="focus-menu-count">${childCount}</span>
+                    <button class="card-trash-btn" onclick="quickDeleteJob(event, '${job.id}')" title="Delete job">🗑</button>
                     <span class="focus-menu-arrow">›</span>
                 </div>
             `}).join('')}
+        </div>
+        <div class="quick-add-section">
+            <input type="text" id="quick-add-root" class="quick-add-input" placeholder="Add new job..." onkeypress="handleQuickAddKeypress(event, 'quick-add-root')">
+            <button class="quick-add-btn" onclick="quickAddJob('quick-add-root')">+</button>
         </div>
     `;
 }
@@ -314,6 +319,7 @@ function renderMinimalJobCard(job) {
             <span class="card-title">${escapeHtml(displayName)}</span>
             ${childBadge}
             ${dueDateLabel}
+            <button class="card-trash-btn" onclick="quickDeleteJob(event, '${job.id}')" title="Delete job">🗑</button>
             <span class="card-arrow">›</span>
         </div>
     `;
@@ -433,10 +439,12 @@ function renderJobDetailView(jobId) {
                 <button class="card-archive-btn confirm" onclick="confirmArchiveJob('${job.id}')">Archive</button>
             </div>
             ` : ''}
-            ${childJobs.length > 0 ? `
-            <div class="section-header">CHILD JOBS (${childJobs.length})</div>
+            <div class="section-header">CHILD JOBS${childJobs.length > 0 ? ` (${childJobs.length})` : ''}</div>
             ${childJobs.map(child => renderJobCard(child)).join('')}
-            ` : ''}
+            <div class="quick-add-section">
+                <input type="text" id="quick-add-${job.id}" class="quick-add-input" placeholder="Add child job..." onkeypress="handleQuickAddKeypress(event, 'quick-add-${job.id}', '${job.id}')">
+                <button class="quick-add-btn" onclick="quickAddJob('quick-add-${job.id}', '${job.id}')">+</button>
+            </div>
         </div>
     `;
 }
@@ -691,9 +699,9 @@ async function setWhen(type, id, whenType, date = null) {
     } else if (whenType === 'date') {
         payload = { due_date: date, someday: false };
     } else if (whenType === 'someday') {
-        payload = { due_date: null, someday: true };
+        payload = { due_date: '', someday: true };  // Empty string means clear
     } else if (whenType === 'clear') {
-        payload = { due_date: null, someday: false };
+        payload = { due_date: '', someday: false };  // Empty string means clear
     }
 
     try {
@@ -805,6 +813,62 @@ async function deleteJob(event, jobId) {
             if (wasViewingJob) {
                 navigateFocusBack();
             }
+        }
+    } catch (error) {
+        console.error('Failed to delete job:', error);
+    }
+}
+
+async function quickAddJob(inputId, parentId = null) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    const name = input.value.trim();
+    if (!name) return;
+
+    try {
+        const body = { name };
+        if (parentId) {
+            body.parent_id = parentId;
+        }
+
+        const response = await fetch('/api/jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (response.ok) {
+            input.value = '';
+            await loadJobsData();
+            // Re-focus the input for rapid entry
+            setTimeout(() => {
+                const newInput = document.getElementById(inputId);
+                if (newInput) newInput.focus();
+            }, 50);
+        }
+    } catch (error) {
+        console.error('Failed to create job:', error);
+    }
+}
+
+function handleQuickAddKeypress(event, inputId, parentId = null) {
+    if (event.key === 'Enter') {
+        quickAddJob(inputId, parentId);
+    }
+}
+
+async function quickDeleteJob(event, jobId) {
+    event.stopPropagation();
+    if (!confirm('Delete this job and all children?')) return;
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}?delete_children=true`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            await loadJobsData();
         }
     } catch (error) {
         console.error('Failed to delete job:', error);

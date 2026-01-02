@@ -2692,3 +2692,58 @@
             color: #666;
             margin-bottom: 0.5rem;
         }
+
+        /* Quick Add Section */
+        .quick-add-section {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.75rem 0.5rem;
+            border-top: 1px solid #eee;
+            margin-top: 0.5rem;
+        }
+
+        .quick-add-input {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .quick-add-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+        }
+
+        .quick-add-btn {
+            padding: 0.5rem 1rem;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .quick-add-btn:hover {
+            background: #0056b3;
+        }
+
+        /* Trash Button on Cards */
+        .card-trash-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 0.5rem;
+            margin-right: 0.5rem;
+            opacity: 0.4;
+            flex-shrink: 0;
+        }
+
+        .card-trash-btn:hover {
+            opacity: 1;
+        }
