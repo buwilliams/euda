@@ -99,8 +99,8 @@ class AgentManager:
         """Run an agent's work loop - waits for triggers, no sleep."""
         while self.running:
             try:
-                # Wait for a trigger event (check shutdown every 60s)
-                event = agent.wait_for_trigger(timeout=60)
+                # Wait for a trigger event (check shutdown every 5s)
+                event = agent.wait_for_trigger(timeout=5)
 
                 if event:
                     agent._log("triggered", {"event": event})
