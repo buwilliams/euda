@@ -127,66 +127,30 @@ function renderSettings() {
         }
         // Set current value
         providerSelect.value = settingsData.llm.provider || 'anthropic';
-        renderProviderModels();
     }
 }
 
-function renderProviderModels() {
-    const container = document.getElementById('provider-models');
-    if (!container || !settingsData?.llm?.providers) return;
-
-    const providers = settingsData.llm.providers;
-    let html = '';
-
-    for (const [id, config] of Object.entries(providers)) {
-        const displayName = config.display_name || id;
-        html += `
-            <div class="settings-model-group">
-                <div class="settings-model-label">${displayName} Model</div>
-                <input type="text" class="settings-input" id="model-${id}"
-                       value="${config.default_model || ''}"
-                       placeholder="e.g., ${config.default_model || ''}">
-            </div>
-        `;
-    }
-
-    container.innerHTML = html;
-}
-
-function handleProviderChange() {
-    // Could add visual feedback here if needed
-}
-
-async function saveAISettings() {
+async function handleProviderChange() {
+    const providerSelect = document.getElementById('default-provider');
     const messageEl = document.getElementById('ai-message');
-    const defaultProvider = document.getElementById('default-provider').value;
-
-    // Collect model settings
-    const providers = {};
-    if (settingsData?.llm?.providers) {
-        for (const name of Object.keys(settingsData.llm.providers)) {
-            const modelInput = document.getElementById(`model-${name}`);
-            if (modelInput && modelInput.value.trim()) {
-                providers[name] = { default_model: modelInput.value.trim() };
-            }
-        }
-    }
+    const newProvider = providerSelect.value;
 
     try {
         const response = await fetch('/api/settings/llm', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ default_provider: defaultProvider, providers })
+            body: JSON.stringify({ default_provider: newProvider })
         });
 
         if (response.ok) {
-            messageEl.textContent = 'AI settings saved';
+            messageEl.textContent = 'Provider changed';
             messageEl.className = 'settings-message success';
-            // Reload settings
-            await loadSettingsData();
+            if (settingsData?.llm) {
+                settingsData.llm.provider = newProvider;
+            }
         } else {
             const data = await response.json();
-            messageEl.textContent = data.detail || 'Failed to save settings';
+            messageEl.textContent = data.detail || 'Failed to save';
             messageEl.className = 'settings-message error';
         }
     } catch (error) {
@@ -194,7 +158,7 @@ async function saveAISettings() {
         messageEl.className = 'settings-message error';
     }
 
-    setTimeout(() => { messageEl.textContent = ''; }, 3000);
+    setTimeout(() => { messageEl.textContent = ''; }, 2000);
 }
 
 async function handleChangePassword(event) {
