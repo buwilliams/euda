@@ -1026,12 +1026,16 @@ function hideNewFileForm() {
 }
 
 function generateFilenameFromContent(content) {
-    // Get first line or first few words
-    const firstLine = content.split('\n')[0].trim();
+    // Get first line
+    let firstLine = content.split('\n')[0].trim();
+    // Strip markdown heading characters and other common prefixes
+    firstLine = firstLine.replace(/^[#*\->\s]+/, '').trim();
     // Take first 5 words max
     const words = firstLine.split(/\s+/).slice(0, 5).join('_');
     // Remove special characters, keep alphanumeric and underscores
     let filename = words.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+    // Remove leading/trailing underscores
+    filename = filename.replace(/^_+|_+$/g, '');
     // Fallback if empty
     if (!filename) {
         filename = 'note_' + Date.now();
