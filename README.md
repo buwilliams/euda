@@ -36,18 +36,18 @@ Today's AI remembers facts about you. Euno understands who you are—your values
 
 ## Agents
 
-Six agents work together, each defined by config + persona + tools:
+Six agents work together, each defined by config + persona + tools + triggers:
 
-| Agent | Role | Mode |
-|-------|------|------|
-| **Archivist** | Preserves high-fidelity human data before interpretation | Scheduled (5 min) |
-| **Profiler** | Constructs the Profile from raw Lifelog data | Scheduled (30 min) |
-| **Curator** | Explores opportunities; guards attention; delivers what counts | Scheduled (15 min) |
-| **Friend** | Supports thinking without threatening identity coherence | Interactive |
-| **Worker** | Executes tasks without undermining agency | Scheduled (2 min) |
-| **Adaptor** | Refines agent identities to serve this specific user | Scheduled (60 min) |
+| Agent | Role | Triggers |
+|-------|------|----------|
+| **Worker** | Executes tasks without undermining agency | `job:assigned`, `time:morning` |
+| **Friend** | Supports thinking without threatening identity coherence | `chat:message` |
+| **Curator** | Explores opportunities; guards attention; delivers what counts | `time:morning` |
+| **Archivist** | Preserves high-fidelity human data before interpretation | `job:assigned`, `time:morning` |
+| **Profiler** | Constructs the Profile from raw Lifelog data | `lifelog:new`, `time:evening` |
+| **Adaptor** | Refines agent identities to serve this specific user | `time:evening` |
 
-Adding a new agent requires only a `config.json` and persona markdown file—no Python code.
+Agents wake only when their triggers fire—no polling or scheduled intervals. Adding a new agent requires only a `config.json` and persona markdown file—no Python code.
 
 ## Quick Start
 

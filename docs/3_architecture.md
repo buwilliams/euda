@@ -78,7 +78,7 @@ Each agent has a distinct persona defining its behavior, but all share the same 
 data/
 ├── agents/
 │   └── {agent-id}/
-│       ├── config.json                 # tools, sleep timer, enabled
+│       ├── config.json                 # tools, triggers, enabled
 │       ├── {agent-id}-persona.md       # identity/system prompt
 │       ├── logs/
 │       │   └── {date}.json             # activity logs by date
@@ -108,8 +108,12 @@ Global settings live in `data/system/config.json`:
   "version": "3.0.0",
   "initialized": true,
   "agents": {
-    "max_work_iterations": 20,
-    "min_sleep_seconds": 60
+    "max_work_iterations": 20
+  },
+  "schedules": {
+    "morning": "08:00",
+    "evening": "18:00",
+    "hourly": "every_hour"
   }
 }
 ```
@@ -117,7 +121,7 @@ Global settings live in `data/system/config.json`:
 | Setting | Description |
 |---------|-------------|
 | `agents.max_work_iterations` | Safety limit for autonomous work loop |
-| `agents.min_sleep_seconds` | Minimum sleep between work cycles |
+| `schedules` | Named time schedules that emit `time:{name}` events |
 
 ## Agents
 
@@ -146,7 +150,7 @@ Each agent has:
   "name": "The Archivist",
   "enabled": true,
   "tools": ["read_file", "write_file", "create_job", "complete_job", "done_working"],
-  "sleep_minutes": 5
+  "triggers": ["job:assigned", "time:morning"]
 }
 ```
 
@@ -156,35 +160,32 @@ Each agent has:
 | `name` | string | Display name |
 | `enabled` | boolean | Whether agent runs |
 | `tools` | string[] | Tools this agent can use |
-| `sleep_minutes` | number | Sleep duration between work cycles |
+| `triggers` | string[] | Events that wake this agent (see Event System) |
 
-### Autonomous Work Cycle
+### Event-Driven Work Cycle
 
-Each agent runs in its own thread:
+Each agent runs in its own thread, waiting for trigger events:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Agent Work Cycle                         │
+│                   Agent Work Cycle                           │
 ├─────────────────────────────────────────────────────────────┤
-│  1. Wake up                                                  │
-│  2. Check for jobs                                          │
-│  3. If no jobs → log "no_jobs" → sleep                      │
+│  1. Wait for trigger event (from subscribed triggers)       │
+│  2. Wake on event (e.g., job:assigned, time:morning)        │
+│  3. Check for jobs that need attention                      │
 │  4. If jobs exist:                                          │
 │     ┌──────────────────────────────────────────────────┐    │
 │     │  Autonomous Loop (until done_working called)      │    │
-│     │  ├── Send prompt to LLM                          │    │
-│     │  ├── Execute any tool calls                      │    │
-│     │  ├── Check if agent called done_working          │    │
-│     │  └── If not done, continue with follow-up prompt │    │
+│     │  ├── Send prompt to LLM with trigger context      │    │
+│     │  ├── Execute any tool calls                       │    │
+│     │  ├── Check if agent called done_working           │    │
+│     │  └── If not done, continue with follow-up prompt  │    │
 │     └──────────────────────────────────────────────────┘    │
-│  5. Log sleep duration and wake time                        │
-│  6. Sleep for configured duration                           │
-│  7. Log wake event                                          │
-│  8. Repeat                                                  │
+│  5. Return to waiting for next trigger                      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-The agent decides when it's done by calling `done_working`. This makes agents truly autonomous—they work until they determine there's nothing left to do.
+Agents are purely event-driven—they only wake when a subscribed event fires. No polling or sleeping. The agent decides when it's done by calling `done_working`.
 
 ### The done_working Tool
 
@@ -207,7 +208,8 @@ Each agent maintains activity logs in `logs/{date}.json`:
 
 ```json
 [
-  {"timestamp": "2026-01-02T04:30:00", "event": "work_cycle_start"},
+  {"timestamp": "2026-01-02T04:30:00", "event": "triggered", "details": {"event": {"event": "job:assigned", "data": {"job_id": "job-abc123"}}}},
+  {"timestamp": "2026-01-02T04:30:00", "event": "work_cycle_start", "details": {"trigger": {"event": "job:assigned"}}},
   {"timestamp": "2026-01-02T04:30:01", "event": "work_cycle_jobs_found", "details": {"count": 3}},
   {"timestamp": "2026-01-02T04:30:01", "event": "work_iteration", "details": {"iteration": 1}},
   {"timestamp": "2026-01-02T04:30:01", "event": "chat_start", "details": {"message_length": 245}},
@@ -215,14 +217,13 @@ Each agent maintains activity logs in `logs/{date}.json`:
   {"timestamp": "2026-01-02T04:30:03", "event": "tool_call", "details": {"tool": "list_jobs", "input": {"status": "todo"}}},
   {"timestamp": "2026-01-02T04:30:03", "event": "tool_result", "details": {"tool": "list_jobs", "success": true}},
   {"timestamp": "2026-01-02T04:30:05", "event": "done_working", "details": {"summary": "No jobs match my role"}},
-  {"timestamp": "2026-01-02T04:30:07", "event": "work_cycle_end", "details": {"reason": "done_working", "iterations": 1}},
-  {"timestamp": "2026-01-02T04:30:07", "event": "sleep", "details": {"duration_seconds": 300, "wake_at": "2026-01-02T04:35:07"}},
-  {"timestamp": "2026-01-02T04:35:07", "event": "wake"}
+  {"timestamp": "2026-01-02T04:30:07", "event": "work_cycle_end", "details": {"reason": "done_working", "iterations": 1}}
 ]
 ```
 
 | Event | Description |
 |-------|-------------|
+| `triggered` | Agent woke due to an event |
 | `work_cycle_start` | Agent began checking for work |
 | `work_cycle_end` | Work cycle finished |
 | `work_iteration` | Started a new iteration of the autonomous loop |
@@ -231,8 +232,6 @@ Each agent maintains activity logs in `logs/{date}.json`:
 | `tool_call` | Agent called a tool |
 | `tool_result` | Tool execution completed |
 | `done_working` | Agent signaled completion |
-| `sleep` | Going to sleep (includes duration and wake time) |
-| `wake` | Woke from sleep |
 | `error` | An error occurred |
 
 ### Agent Memory & Conversation
@@ -271,6 +270,60 @@ The Agent Manager orchestrates all agents:
 ```
 
 Each thread runs independently—one agent's work cannot block another.
+
+## Event System
+
+The event system enables agents to react to changes in the system without polling.
+
+### Event Format
+
+Events follow the pattern `{type}:{event}`:
+
+| Event | Emitted When | Scope |
+|-------|--------------|-------|
+| `job:created` | New job created | Broadcast |
+| `job:assigned` | Agent assigned to job | Scoped to agent |
+| `job:unassigned` | Agent removed from job | Scoped to agent |
+| `job:completed` | Job marked complete | Scoped to assignees |
+| `job:archived` | Job archived | Scoped to assignees |
+| `lifelog:new` | Lifelog entry added | Broadcast |
+| `chat:message` | User sends chat message | Broadcast |
+| `time:{schedule}` | Scheduled time reached | Broadcast |
+
+### Scoped vs Broadcast Events
+
+- **Broadcast events** wake all agents subscribed to that event type
+- **Scoped events** only wake the specific agent they're targeted to
+
+For example, `job:assigned` is scoped—when you assign a job to the worker agent, only the worker receives the event, not all agents subscribed to `job:assigned`.
+
+### Time Scheduler
+
+The manager runs a background time scheduler that emits `time:{name}` events based on the schedules in system config:
+
+```json
+{
+  "schedules": {
+    "morning": "08:00",
+    "evening": "18:00",
+    "hourly": "every_hour"
+  }
+}
+```
+
+- Exact times (e.g., `"08:00"`) fire once at that minute
+- `"every_hour"` fires at minute 0 of every hour
+
+### Default Agent Triggers
+
+| Agent | Triggers |
+|-------|----------|
+| worker | `job:assigned`, `time:morning` |
+| friend | `chat:message` |
+| archivist | `job:assigned`, `time:morning` |
+| profiler | `lifelog:new`, `time:evening` |
+| curator | `time:morning` |
+| adaptor | `time:evening` |
 
 ## Jobs
 
@@ -316,7 +369,9 @@ CREATE TABLE jobs (
     due_date TEXT,
     someday INTEGER NOT NULL DEFAULT 0,  -- boolean flag
     completed_at TEXT,
-    tags TEXT                         -- JSON array, e.g., '["research", "pricing"]'
+    tags TEXT,                        -- JSON array, e.g., '["research", "pricing"]'
+    assignees TEXT,                   -- JSON array of agent IDs, e.g., '["worker", "archivist"]'
+    in_progress_by TEXT               -- agent ID currently working on this job
 );
 
 CREATE TABLE job_logs (
@@ -359,14 +414,44 @@ Assets are stored in `data/jobs/assets/{job-id}/`:
 - Agents should create ONE comprehensive asset per job (not many fragments)
 - Referenced from job description or log entries
 
+### Job Assignment
+
+Jobs can be explicitly assigned to agents via the `assignees` field:
+
+```json
+{
+  "id": "job-abc123",
+  "name": "Research competitors",
+  "assignees": ["worker", "archivist"],
+  "in_progress_by": "worker"
+}
+```
+
+**How assignment works:**
+1. Jobs can have multiple assignees (agents responsible for the job)
+2. When assigned, the agent receives a `job:assigned` event and wakes immediately
+3. An agent can claim exclusive work on a job via `in_progress_by`
+4. Agents can self-assign using `assign_agent` or `claim_job` tools
+
+**Claim vs Assign:**
+- **Assignees** — Which agents are responsible for the job (multiple allowed)
+- **in_progress_by** — Which agent is actively working right now (exclusive)
+
+This prevents duplicate work when multiple agents could handle the same job.
+
 ### Job Handoff
 
-Jobs move between agents implicitly:
+Jobs can move between agents either implicitly or explicitly:
+
+**Implicit (persona-based):**
 1. Agent A finishes work, updates job log
-2. Agent B sees the job needs attention in its next cycle
+2. Agent B sees the job needs attention when triggered
 3. Agent B picks it up based on its persona
 
-No explicit assignment—agents decide based on their identity what jobs they should work on.
+**Explicit (assignment-based):**
+1. Job is assigned to specific agent(s)
+2. Assigned agents receive `job:assigned` event
+3. Agent claims job and works on it
 
 ## Tools
 
@@ -379,13 +464,17 @@ No explicit assignment—agents decide based on their identity what jobs they sh
 ### Tool Categories
 
 **Job Tools:**
-- `list_jobs` — Query jobs (with filters)
+- `list_jobs` — Query jobs (with filters for status, parent, tag, assignee)
 - `get_job` — Get job details
 - `create_job` — Create new job
 - `update_job` — Modify job
 - `complete_job` — Mark job completed
 - `archive_job` — Archive job
 - `add_job_log` — Add log entry
+- `assign_agent` — Assign an agent to a job (emits `job:assigned`)
+- `unassign_agent` — Remove agent from job (emits `job:unassigned`)
+- `claim_job` — Claim exclusive work on a job
+- `release_job` — Release a claimed job
 
 **Asset Tools:**
 - `list_assets` — List assets for a job
@@ -475,6 +564,7 @@ src/
 ├── main.py                 # Entry point, CLI
 ├── manager.py              # Agent Manager (thread-based)
 ├── agent.py                # Generic Agent
+├── events.py               # Event bus for agent triggers
 ├── auth.py                 # Password/session authentication
 ├── tools/
 │   ├── __init__.py         # Tool registry
@@ -505,7 +595,7 @@ src/
   "name": "The Researcher",
   "enabled": true,
   "tools": ["list_jobs", "get_job", "update_job", "add_job_log", "write_asset", "done_working"],
-  "sleep_minutes": 10
+  "triggers": ["job:assigned", "time:morning"]
 }
 ```
 
@@ -517,7 +607,7 @@ You are a research specialist. Your purpose is to gather information,
 synthesize findings, and document results.
 
 ## Behavior
-- Look for jobs tagged with "research"
+- Look for jobs assigned to you or tagged with "research"
 - Gather information from available sources
 - Document findings as job assets
 - Update job logs with progress
@@ -531,7 +621,7 @@ synthesize findings, and document results.
 
 4. Restart the application
 
-5. Agent starts working on research-tagged jobs
+5. Agent wakes when assigned jobs or at morning schedule
 
 ## Open Questions
 
