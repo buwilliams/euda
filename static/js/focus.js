@@ -10,6 +10,8 @@ let currentAssetData = null; // Currently viewed asset
 let editingAssetFilename = null; // Track if we're editing an asset
 let agentsCache = null;      // Cache of available agents
 let agentDataCache = {};     // Cache of agent persona and config
+let isViewAnimating = false; // Track if view animation is in progress
+let pendingRender = false;   // Track if a render is pending after animation
 
 // ============== Icons ==============
 
@@ -216,6 +218,12 @@ function renderFocusTab() {
     const container = document.getElementById('focus-content');
     if (!container) return;
 
+    // Defer render if animation is in progress
+    if (isViewAnimating) {
+        pendingRender = true;
+        return;
+    }
+
     let content;
     if (focusView === 'menu') {
         content = renderFocusMenu();
@@ -271,6 +279,8 @@ function animateViewTransition(container, newContent, direction) {
         return;
     }
 
+    isViewAnimating = true;
+
     const newView = document.createElement('div');
     newView.className = 'view-slide-container';
     newView.innerHTML = newContent;
@@ -298,6 +308,11 @@ function animateViewTransition(container, newContent, direction) {
     setTimeout(() => {
         if (oldView.parentNode) {
             oldView.remove();
+        }
+        isViewAnimating = false;
+        if (pendingRender) {
+            pendingRender = false;
+            renderFocusTab();
         }
     }, 300);
 }
