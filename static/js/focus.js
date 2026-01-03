@@ -10,6 +10,13 @@ let currentAssetData = null; // Currently viewed asset
 let editingAssetFilename = null; // Track if we're editing an asset
 let agentsCache = null;      // Cache of available agents
 
+// ============== Icons ==============
+
+function icon(name, className = '') {
+    const cls = className ? ` class="${className}"` : '';
+    return `<img src="/static/icons/${name}.svg" alt="${name}"${cls}>`;
+}
+
 // ============== Data Loading ==============
 
 async function loadJobsData() {
@@ -235,31 +242,31 @@ function renderFocusMenu() {
     return `
         <div class="focus-menu">
             <div class="focus-menu-item" onclick="navigateFocus('today')">
-                <span class="focus-menu-icon">☀️</span>
+                <span class="focus-menu-icon">${icon('sun')}</span>
                 <span class="focus-menu-label">Today</span>
                 <span class="focus-menu-count">${counts.today}</span>
                 <span class="focus-menu-arrow">›</span>
             </div>
             <div class="focus-menu-item" onclick="navigateFocus('upcoming')">
-                <span class="focus-menu-icon">📅</span>
+                <span class="focus-menu-icon">${icon('calendar')}</span>
                 <span class="focus-menu-label">Upcoming</span>
                 <span class="focus-menu-count">${counts.upcoming}</span>
                 <span class="focus-menu-arrow">›</span>
             </div>
             <div class="focus-menu-item" onclick="navigateFocus('anytime')">
-                <span class="focus-menu-icon">⏳</span>
+                <span class="focus-menu-icon">${icon('clock')}</span>
                 <span class="focus-menu-label">Anytime</span>
                 <span class="focus-menu-count">${counts.anytime}</span>
                 <span class="focus-menu-arrow">›</span>
             </div>
             <div class="focus-menu-item" onclick="navigateFocus('someday')">
-                <span class="focus-menu-icon">💭</span>
+                <span class="focus-menu-icon">${icon('cloud')}</span>
                 <span class="focus-menu-label">Someday</span>
                 <span class="focus-menu-count">${counts.someday}</span>
                 <span class="focus-menu-arrow">›</span>
             </div>
             <div class="focus-menu-item" onclick="navigateFocus('completed')">
-                <span class="focus-menu-icon">✓</span>
+                <span class="focus-menu-icon">${icon('check')}</span>
                 <span class="focus-menu-label">Completed</span>
                 <span class="focus-menu-count">${topLevelCompletedJobs.length}</span>
                 <span class="focus-menu-arrow">›</span>
@@ -267,15 +274,15 @@ function renderFocusMenu() {
             ${topLevelJobs.map(job => {
                 const childCount = jobsData.filter(j => j.parent_id === job.id).length;
                 const assignees = job.assignees || [];
-                const workingBadge = job.in_progress_by ? '<span class="menu-working-badge" title="Agent working">⚡</span>' : '';
-                const assignedBadge = !job.in_progress_by && assignees.length > 0 ? '<span class="menu-assigned-badge" title="Assigned">👤</span>' : '';
+                const workingBadge = job.in_progress_by ? '<span class="menu-working-badge" title="Agent working">' + icon('bolt') + '</span>' : '';
+                const assignedBadge = !job.in_progress_by && assignees.length > 0 ? '<span class="menu-assigned-badge" title="Assigned">' + icon('user') + '</span>' : '';
                 return `
                 <div class="focus-menu-item" onclick="navigateFocus('job-${job.id}')">
-                    <span class="focus-menu-icon">📁</span>
+                    <span class="focus-menu-icon">${icon('folder')}</span>
                     <span class="focus-menu-label">${escapeHtml(job.name)}</span>
                     ${workingBadge}${assignedBadge}
                     <span class="focus-menu-count">${childCount}</span>
-                    <button class="card-trash-btn" onclick="quickDeleteJob(event, '${job.id}')" title="Delete job">🗑</button>
+                    <button class="card-trash-btn" onclick="quickDeleteJob(event, '${job.id}')" title="Delete job">${icon('trash')}</button>
                     <span class="focus-menu-arrow">›</span>
                 </div>
             `}).join('')}
@@ -288,17 +295,17 @@ function renderFocusMenu() {
 }
 
 function getTimelineIcon(category) {
-    const icons = { today: '☀️', upcoming: '📅', anytime: '⏳', someday: '💭' };
-    return icons[category] || '';
+    const iconNames = { today: 'sun', upcoming: 'calendar', anytime: 'clock', someday: 'cloud' };
+    return iconNames[category] ? icon(iconNames[category]) : '';
 }
 
 function renderTimelineView(category, title) {
     const jobs = jobsData.filter(j => getJobCategory(j) === category);
-    const icon = getTimelineIcon(category);
+    const categoryIcon = getTimelineIcon(category);
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">←</span>
-            <span class="focus-view-title">${icon} ${title}</span>
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">${categoryIcon} ${title}</span>
         </div>
         <div class="focus-view-content">
             ${jobs.length === 0
@@ -315,8 +322,8 @@ function renderCompletedJobsView() {
     const rootCompletedJobs = completedJobsData.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">←</span>
-            <span class="focus-view-title">✓ Completed Jobs</span>
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">${icon('check')} Completed Jobs</span>
         </div>
         <div class="focus-view-content">
             ${rootCompletedJobs.length === 0
@@ -361,8 +368,8 @@ function renderMinimalJobCard(job) {
     const childCount = jobsData.filter(j => j.parent_id === job.id).length;
     const childBadge = childCount > 0 ? `<span class="card-badge">${childCount}</span>` : '';
     const assignees = job.assignees || [];
-    const workingIndicator = job.in_progress_by ? '<span class="card-working-indicator" title="Agent working">⚡</span>' : '';
-    const assignedIndicator = !job.in_progress_by && assignees.length > 0 ? `<span class="card-assigned-indicator" title="Assigned to ${assignees.join(', ')}">👤</span>` : '';
+    const workingIndicator = job.in_progress_by ? '<span class="card-working-indicator" title="Agent working">' + icon('bolt') + '</span>' : '';
+    const assignedIndicator = !job.in_progress_by && assignees.length > 0 ? '<span class="card-assigned-indicator" title="Assigned to ' + assignees.join(', ') + '">' + icon('user') + '</span>' : '';
 
     return `
         <div class="card card-minimal" data-job-id="${job.id}" onclick="navigateFocus('job-${job.id}')">
@@ -370,7 +377,7 @@ function renderMinimalJobCard(job) {
             <span class="card-title">${escapeHtml(displayName)}</span>
             ${childBadge}
             ${dueDateLabel}
-            <button class="card-trash-btn" onclick="quickDeleteJob(event, '${job.id}')" title="Delete job">🗑</button>
+            <button class="card-trash-btn" onclick="quickDeleteJob(event, '${job.id}')" title="Delete job">${icon('trash')}</button>
             <span class="card-arrow">›</span>
         </div>
     `;
@@ -402,7 +409,7 @@ function renderFullJobCard(job) {
                 ${childCount > 0 ? `<div class="card-meta">${childCount} child job${childCount !== 1 ? 's' : ''}</div>` : ''}
             </div>
             <div class="card-actions">
-                <button class="card-action" onclick="event.stopPropagation(); openWhenPicker('job', '${job.id}')">📅 ${escapeHtml(whenLabel)}</button>
+                <button class="card-action" onclick="event.stopPropagation(); openWhenPicker('job', '${job.id}')">${icon('calendar')} ${escapeHtml(whenLabel)}</button>
                 <button class="card-action" onclick="completeJob(event, '${job.id}')">Complete</button>
                 <button class="card-action" onclick="showArchiveInput(event, '${job.id}')">${isArchiving ? 'Cancel' : 'Archive'}</button>
                 <button class="card-action danger" onclick="deleteJob(event, '${job.id}')">Delete</button>
@@ -433,7 +440,7 @@ function renderJobDetailView(jobId) {
     if (!job) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">←</span>
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
                 <span class="focus-view-title">Job Not Found</span>
             </div>
             <div class="focus-empty">This job no longer exists.</div>
@@ -466,13 +473,13 @@ function renderJobDetailView(jobId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">←</span>
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
             <span class="focus-view-title">${escapeHtml(displayName)}</span>
         </div>
         <div class="focus-view-content">
             <!-- Actions Row -->
             <div class="task-detail-actions">
-                <button class="task-detail-action" onclick="openWhenPicker('job', '${job.id}')">📅 ${escapeHtml(whenLabel)}</button>
+                <button class="task-detail-action" onclick="openWhenPicker('job', '${job.id}')">${icon('calendar')} ${escapeHtml(whenLabel)}</button>
                 <button class="task-detail-action" onclick="openAssigneesPicker('${job.id}')">${getAssigneesLabel(job)}</button>
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
                 <button class="task-detail-action" onclick="openMorePicker('${job.id}')">••• More</button>
@@ -530,7 +537,7 @@ function renderJobDetailView(jobId) {
             ${parentName ? `
             <div class="job-section">
                 <div class="job-section-header">Parent</div>
-                <div class="card-project-link" onclick="navigateFocus('job-${job.parent_id}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(parentName)}</div>
+                <div class="card-project-link" onclick="navigateFocus('job-${job.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
             </div>
             ` : ''}
 
@@ -541,16 +548,16 @@ function renderJobDetailView(jobId) {
                 <div class="asset-list">
                     ${assets.map(asset => {
                         const isText = isTextAsset(asset);
-                        const icon = asset.filename.endsWith('.md') ? '📝' : '📄';
+                        const assetIcon = asset.filename.endsWith('.md') ? icon('pencil') : icon('document');
                         return isText ? `
                             <div class="asset-item clickable" onclick="navigateFocus('asset-${job.id}-${asset.filename}')" style="cursor: pointer;">
-                                <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
                                 <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
                             </div>
                         ` : `
                             <div class="asset-item">
-                                <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
                                 <button class="asset-item-delete" onclick="deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
                             </div>
@@ -568,7 +575,7 @@ function renderCompletedJobDetailView(jobId) {
     if (!job) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">←</span>
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
                 <span class="focus-view-title">Job Not Found</span>
             </div>
             <div class="focus-empty">This job no longer exists.</div>
@@ -605,19 +612,19 @@ function renderCompletedJobDetailView(jobId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">←</span>
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
             <span class="focus-view-title">${escapeHtml(displayName)}</span>
         </div>
         <div class="focus-view-content">
             <!-- Actions Row -->
             <div class="task-detail-actions">
-                <button class="task-detail-action" onclick="restoreJob(event, '${job.id}')">↩ Restore</button>
-                <button class="task-detail-action danger" onclick="deleteJob(event, '${job.id}')">🗑 Delete</button>
+                <button class="task-detail-action" onclick="restoreJob(event, '${job.id}')">${icon('arrow-uturn-left')} Restore</button>
+                <button class="task-detail-action danger" onclick="deleteJob(event, '${job.id}')">${icon('trash')} Delete</button>
             </div>
 
             <!-- Completed Badge -->
             <div class="job-section" style="background: #f0f8f0; border-radius: 6px; padding: 0.5rem 1rem;">
-                <span style="color: #4a8; font-weight: 500;">✓ Completed ${escapeHtml(completedDate)}</span>
+                <span style="color: #4a8; font-weight: 500;">${icon('check')} Completed ${escapeHtml(completedDate)}</span>
             </div>
 
             <!-- Name Section -->
@@ -672,7 +679,7 @@ function renderCompletedJobDetailView(jobId) {
             ${parentName ? `
             <div class="job-section">
                 <div class="job-section-header">Parent</div>
-                <div class="card-project-link" onclick="navigateFocus('${parentIsCompleted ? 'completed' : 'job'}-${job.parent_id}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(parentName)}</div>
+                <div class="card-project-link" onclick="navigateFocus('${parentIsCompleted ? 'completed' : 'job'}-${job.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
             </div>
             ` : ''}
 
@@ -683,16 +690,16 @@ function renderCompletedJobDetailView(jobId) {
                 <div class="asset-list">
                     ${assets.map(asset => {
                         const isText = isTextAsset(asset);
-                        const icon = asset.filename.endsWith('.md') ? '📝' : '📄';
+                        const assetIcon = asset.filename.endsWith('.md') ? icon('pencil') : icon('document');
                         return isText ? `
                             <div class="asset-item clickable" onclick="navigateFocus('asset-${job.id}-${asset.filename}')" style="cursor: pointer;">
-                                <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
                                 <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
                             </div>
                         ` : `
                             <div class="asset-item">
-                                <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
                                 <button class="asset-item-delete" onclick="deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
                             </div>
@@ -777,7 +784,7 @@ function renderAssetView(jobId, filename) {
         loadAssetContent(jobId, filename).then(() => renderFocusTab());
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">←</span>
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
                 <span class="focus-view-title">Loading...</span>
             </div>
             <div class="focus-view-content">
@@ -793,19 +800,19 @@ function renderAssetView(jobId, filename) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">←</span>
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
             <span class="focus-view-title">${escapeHtml(filename)}</span>
         </div>
         <div class="focus-view-content">
             <!-- Actions Row -->
             <div class="task-detail-actions">
                 ${isEditing ? `
-                    <button class="task-detail-action" onclick="saveAssetContent('${jobId}', '${escapeHtml(filename)}'); cancelEditingAsset();">💾 Save</button>
+                    <button class="task-detail-action" onclick="saveAssetContent('${jobId}', '${escapeHtml(filename)}'); cancelEditingAsset();">${icon('arrow-down-tray')} Save</button>
                     <button class="task-detail-action" onclick="cancelEditingAsset()">Cancel</button>
                 ` : `
-                    <button class="task-detail-action" onclick="startEditingAsset('${escapeHtml(filename)}')">✏️ Edit</button>
+                    <button class="task-detail-action" onclick="startEditingAsset('${escapeHtml(filename)}')">${icon('pencil')} Edit</button>
                 `}
-                <button class="task-detail-action danger" onclick="deleteAsset('${jobId}', '${escapeHtml(filename)}'); navigateFocusBack();">🗑 Delete</button>
+                <button class="task-detail-action danger" onclick="deleteAsset('${jobId}', '${escapeHtml(filename)}'); navigateFocusBack();">${icon('trash')} Delete</button>
             </div>
 
             <!-- Asset Content -->
@@ -824,7 +831,7 @@ function renderAssetView(jobId, filename) {
             <!-- Back Link -->
             <div class="job-section">
                 <div class="job-section-header">Job</div>
-                <div class="card-project-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'job'}-${jobId}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(jobName)}</div>
+                <div class="card-project-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'job'}-${jobId}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(jobName)}</div>
             </div>
         </div>
     `;
@@ -848,13 +855,13 @@ function renderAssetsListView(jobId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">←</span>
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
             <span class="focus-view-title">Assets</span>
         </div>
         <div class="focus-view-content">
             <div class="job-section">
                 <div class="job-section-header">Job</div>
-                <div class="card-project-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'job'}-${jobId}')" style="padding: 0.5rem; cursor: pointer;">📁 ${escapeHtml(jobName)}</div>
+                <div class="card-project-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'job'}-${jobId}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(jobName)}</div>
             </div>
 
             <div class="task-detail-actions">
@@ -868,16 +875,16 @@ function renderAssetsListView(jobId) {
                 <div class="asset-list">
                     ${assets.map(asset => {
                         const isText = isTextAsset(asset);
-                        const icon = asset.filename.endsWith('.md') ? '📝' : '📄';
+                        const assetIcon = asset.filename.endsWith('.md') ? icon('pencil') : icon('document');
                         return isText ? `
                             <div class="asset-item clickable" onclick="navigateFocus('asset-${jobId}-${asset.filename}')" style="cursor: pointer;">
-                                <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
                                 <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${jobId}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
                             </div>
                         ` : `
                             <div class="asset-item">
-                                <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
                                 <button class="asset-item-delete" onclick="deleteAsset('${jobId}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
                             </div>
@@ -906,7 +913,7 @@ function renderNewJobScreen(parentJobId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">←</span>
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
             <span class="focus-view-title">+ Jobs</span>
         </div>
         <div class="focus-view-content">
@@ -978,7 +985,7 @@ function renderAttachScreen(jobId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">←</span>
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
             <span class="focus-view-title">+ Assets</span>
         </div>
         <div class="focus-view-content">
@@ -986,12 +993,12 @@ function renderAttachScreen(jobId) {
                 <div class="job-section-header">Add to: ${escapeHtml(jobName)}</div>
 
                 <div class="attach-option" onclick="showNewFileForm('${jobId}')">
-                    <span class="attach-option-icon">📝</span>
+                    <span class="attach-option-icon">${icon('pencil')}</span>
                     <span class="attach-option-label">Create new file</span>
                 </div>
 
                 <label class="attach-option">
-                    <span class="attach-option-icon">📁</span>
+                    <span class="attach-option-icon">${icon('folder')}</span>
                     <span class="attach-option-label">Upload files</span>
                     <input type="file" multiple style="display: none;" onchange="handleMultiFileUpload(event, '${jobId}')">
                 </label>
@@ -1096,20 +1103,20 @@ function openWhenPicker(type, id) {
         <div class="when-picker-content">
             <div class="when-picker-header">When?</div>
             <div class="when-option" onclick="setWhen('${type}', '${id}', 'today')">
-                <span class="when-option-icon">☀️</span>
+                <span class="when-option-icon">${icon('sun')}</span>
                 <span class="when-option-label">Today</span>
             </div>
             <div class="when-option" onclick="toggleInlineCalendar()">
-                <span class="when-option-icon">📅</span>
+                <span class="when-option-icon">${icon('calendar')}</span>
                 <span class="when-option-label">Pick a date...</span>
             </div>
             <div id="inline-calendar-container"></div>
             <div class="when-option" onclick="setWhen('${type}', '${id}', 'someday')">
-                <span class="when-option-icon">💭</span>
+                <span class="when-option-icon">${icon('cloud')}</span>
                 <span class="when-option-label">Someday</span>
             </div>
             <div class="when-option" onclick="setWhen('${type}', '${id}', 'clear')">
-                <span class="when-option-icon">✕</span>
+                <span class="when-option-icon">${icon('x-mark')}</span>
                 <span class="when-option-label">Clear (Anytime)</span>
             </div>
         </div>
@@ -1672,15 +1679,15 @@ function handleNewAssetKeypress(event, jobId) {
 function getAssigneesLabel(job) {
     const assignees = job.assignees || [];
     if (job.in_progress_by) {
-        return `⚡ ${job.in_progress_by}`;
+        return `${icon('bolt')} ${job.in_progress_by}`;
     }
     if (assignees.length === 0) {
-        return '👤 Assign';
+        return `${icon('user')} Assign`;
     }
     if (assignees.length === 1) {
-        return `👤 ${assignees[0]}`;
+        return `${icon('user')} ${assignees[0]}`;
     }
-    return `👤 ${assignees.length} assigned`;
+    return `${icon('user')} ${assignees.length} assigned`;
 }
 
 async function openAssigneesPicker(jobId) {
@@ -1699,7 +1706,7 @@ async function openAssigneesPicker(jobId) {
             <div class="assignees-picker-header">Assign Agents</div>
             ${job.in_progress_by ? `
                 <div class="assignees-picker-working">
-                    <span class="assignees-picker-working-icon">⚡</span>
+                    <span class="assignees-picker-working-icon">${icon('bolt')}</span>
                     <span>Currently working: <strong>${escapeHtml(job.in_progress_by)}</strong></span>
                 </div>
             ` : ''}
@@ -1707,7 +1714,7 @@ async function openAssigneesPicker(jobId) {
                 const isAssigned = currentAssignees.includes(agent.id);
                 return `
                     <div class="assignees-option ${isAssigned ? 'assigned' : ''}" onclick="toggleAgentAssignment('${jobId}', '${agent.id}', ${isAssigned})">
-                        <span class="assignees-option-check">${isAssigned ? '✓' : ''}</span>
+                        <span class="assignees-option-check">${isAssigned ? icon('check') : ''}</span>
                         <span class="assignees-option-label">${escapeHtml(agent.name || agent.id)}</span>
                     </div>
                 `;
@@ -1759,11 +1766,11 @@ function openAddPicker(jobId) {
         <div class="picker-content">
             <div class="picker-header">Add</div>
             <div class="picker-option" onclick="closeAddPicker(); navigateFocus('newjob-${jobId}')">
-                <span class="picker-option-icon">📋</span>
+                <span class="picker-option-icon">${icon('queue-list')}</span>
                 <span class="picker-option-label">Child Jobs</span>
             </div>
             <div class="picker-option" onclick="closeAddPicker(); navigateFocus('attach-${jobId}')">
-                <span class="picker-option-icon">🔗</span>
+                <span class="picker-option-icon">${icon('link')}</span>
                 <span class="picker-option-label">Assets</span>
             </div>
         </div>
@@ -1787,15 +1794,15 @@ function openMorePicker(jobId) {
         <div class="picker-content">
             <div class="picker-header">Actions</div>
             <div class="picker-option" onclick="closeMorePicker(); completeJobDirect('${jobId}')">
-                <span class="picker-option-icon">✓</span>
+                <span class="picker-option-icon">${icon('check')}</span>
                 <span class="picker-option-label">Complete</span>
             </div>
             <div class="picker-option" onclick="closeMorePicker(); archiveJobDirect('${jobId}')">
-                <span class="picker-option-icon">📦</span>
+                <span class="picker-option-icon">${icon('archive-box')}</span>
                 <span class="picker-option-label">Archive</span>
             </div>
             <div class="picker-option danger" onclick="closeMorePicker(); deleteJobDirect('${jobId}')">
-                <span class="picker-option-icon">🗑</span>
+                <span class="picker-option-icon">${icon('trash')}</span>
                 <span class="picker-option-label">Delete</span>
             </div>
         </div>

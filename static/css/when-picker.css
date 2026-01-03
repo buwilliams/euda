@@ -56,9 +56,15 @@
 }
 
 .when-option-icon {
-    font-size: var(--font-size-2xl);
     width: 28px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.when-option-icon img {
+    width: 20px;
+    height: 20px;
 }
 
 .when-option-label {

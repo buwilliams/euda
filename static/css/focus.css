@@ -1,3 +1,31 @@
+/* ============== Icons ============== */
+
+.icon {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+    display: inline-block;
+}
+
+.icon-sm {
+    width: 14px;
+    height: 14px;
+}
+
+.icon-lg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Button icon alignment */
+.task-detail-action img,
+.card-action img {
+    width: 16px;
+    height: 16px;
+    vertical-align: text-bottom;
+    margin-right: 4px;
+}
+
 /* ============== Focus Tab ============== */
 
 .focus-content,
@@ -39,8 +67,16 @@
 
 .focus-menu-icon {
     width: 28px;
-    font-size: var(--font-size-2xl);
+    height: 20px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.focus-menu-icon img {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
 }
 
 .focus-menu-label {
@@ -84,10 +120,16 @@
 }
 
 .focus-back-btn {
-    font-size: var(--font-size-3xl);
     padding: var(--spacing-xs) var(--spacing-md);
     margin-right: var(--spacing-xs);
     color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+}
+
+.focus-back-btn img {
+    width: 24px;
+    height: 24px;
 }
 
 .focus-back-btn:hover {
@@ -380,11 +422,17 @@
     background: none;
     border: none;
     cursor: pointer;
-    font-size: var(--font-size-base);
     padding: var(--spacing-md);
     margin-right: var(--spacing-md);
     opacity: 0.4;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.card-trash-btn img {
+    width: 16px;
+    height: 16px;
 }
 
 .card-trash-btn:hover {
@@ -867,7 +915,13 @@
 }
 
 .assignees-picker-working-icon {
-    font-size: var(--font-size-lg);
+    display: inline-flex;
+    align-items: center;
+}
+
+.assignees-picker-working-icon img {
+    width: 18px;
+    height: 18px;
 }
 
 .assignees-option {
@@ -896,8 +950,12 @@
     justify-content: center;
     border: 2px solid var(--color-border);
     border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
     color: var(--color-accent);
+}
+
+.assignees-option-check img {
+    width: 14px;
+    height: 14px;
 }
 
 .assignees-option.assigned .assignees-option-check {
@@ -1009,9 +1067,15 @@
 }
 
 .attach-option-icon {
-    font-size: var(--font-size-2xl);
     width: 32px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.attach-option-icon img {
+    width: 22px;
+    height: 22px;
 }
 
 .attach-option-label {
@@ -1084,9 +1148,15 @@
 }
 
 .picker-option-icon {
-    font-size: var(--font-size-2xl);
     width: 28px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.picker-option-icon img {
+    width: 20px;
+    height: 20px;
 }
 
 .picker-option-label {
@@ -1098,8 +1168,15 @@
 .card-working-indicator,
 .card-assigned-indicator {
     flex-shrink: 0;
-    font-size: var(--font-size-base);
     margin-right: var(--spacing-xs);
+    display: inline-flex;
+    align-items: center;
+}
+
+.card-working-indicator img,
+.card-assigned-indicator img {
+    width: 16px;
+    height: 16px;
 }
 
 .card-working-indicator {
@@ -1113,8 +1190,15 @@
 /* Menu Assignment Badges */
 .menu-working-badge,
 .menu-assigned-badge {
-    font-size: var(--font-size-base);
     margin-right: var(--spacing-xs);
+    display: inline-flex;
+    align-items: center;
+}
+
+.menu-working-badge img,
+.menu-assigned-badge img {
+    width: 16px;
+    height: 16px;
 }
 
 .menu-working-badge {
