@@ -13,5 +13,5 @@
     "send_notification",
     "done_working"
   ],
-  "sleep_minutes": 15
+  "sleep_minutes": 60
 }

@@ -14,5 +14,5 @@
     "complete_job",
     "done_working"
   ],
-  "sleep_minutes": 30
+  "sleep_minutes": 120
 }

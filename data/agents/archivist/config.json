@@ -2,6 +2,7 @@
   "id": "archivist",
   "name": "The Archivist",
   "enabled": true,
+  "model": "gpt-4o-mini",
   "tools": [
     "write_lifelog",
     "read_lifelog",
@@ -16,5 +17,5 @@
     "list_assets",
     "done_working"
   ],
-  "sleep_minutes": 5
+  "sleep_minutes": 30
 }
