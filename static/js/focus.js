@@ -998,11 +998,10 @@ function renderAttachScreen(jobId) {
 
             <div id="new-file-form" class="job-section" style="display: none;">
                 <div class="job-section-header">New File</div>
-                <input type="text" class="multi-input" id="new-file-name" placeholder="Filename (e.g., notes.md)..." style="margin-bottom: 0.5rem;">
-                <textarea class="job-description-input" id="new-file-content" placeholder="Content..." style="min-height: 150px;"></textarea>
+                <textarea class="job-description-input" id="new-file-content" placeholder="Start writing..." style="min-height: 150px;"></textarea>
                 <div class="screen-actions" style="margin-top: 0.5rem;">
                     <button class="screen-action-btn" onclick="hideNewFileForm()">Cancel</button>
-                    <button class="screen-action-btn primary" onclick="createNewFileWithContent('${jobId}')">Create</button>
+                    <button class="screen-action-btn primary" onclick="createNewFileWithContent('${jobId}')">Save</button>
                 </div>
             </div>
         </div>
@@ -1011,27 +1010,40 @@ function renderAttachScreen(jobId) {
 
 function showNewFileForm(jobId) {
     document.getElementById('new-file-form').style.display = 'block';
-    document.getElementById('new-file-name').focus();
+    document.getElementById('new-file-content').focus();
 }
 
 function hideNewFileForm() {
     document.getElementById('new-file-form').style.display = 'none';
-    document.getElementById('new-file-name').value = '';
     document.getElementById('new-file-content').value = '';
 }
 
+function generateFilenameFromContent(content) {
+    // Get first line or first few words
+    const firstLine = content.split('\n')[0].trim();
+    // Take first 5 words max
+    const words = firstLine.split(/\s+/).slice(0, 5).join('_');
+    // Remove special characters, keep alphanumeric and underscores
+    let filename = words.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+    // Fallback if empty
+    if (!filename) {
+        filename = 'note_' + Date.now();
+    }
+    // Limit length
+    if (filename.length > 40) {
+        filename = filename.substring(0, 40);
+    }
+    return filename + '.md';
+}
+
 async function createNewFileWithContent(jobId) {
-    let filename = document.getElementById('new-file-name').value.trim();
     const content = document.getElementById('new-file-content').value;
 
-    if (!filename) {
+    if (!content.trim()) {
         return;
     }
 
-    // Add .md extension if no extension provided
-    if (!filename.includes('.')) {
-        filename = filename + '.md';
-    }
+    const filename = generateFilenameFromContent(content);
 
     try {
         const response = await fetch(`/api/jobs/${jobId}/assets/${encodeURIComponent(filename)}`, {
