@@ -362,7 +362,16 @@ function renderJobDetailView(jobId) {
     const hasDescription = job.description && job.description.length > 0;
     // Use context-aware filtering for child jobs (respects timeline context)
     const childJobs = getChildJobsForContext(job.id);
-    const completedChildJobs = completedJobsData.filter(j => j.parent_id === job.id);
+    // Get completed children - filter by timeline context if we're in one
+    const timelineContext = getTimelineContext();
+    const completedChildJobs = completedJobsData.filter(j => {
+        if (j.parent_id !== job.id) return false;
+        // If in timeline context, only show completed jobs that matched that context
+        if (timelineContext) {
+            return getJobCategory({ ...j, status: 'todo' }) === timelineContext;
+        }
+        return true;
+    });
     const assets = jobAssetsCache[jobId] || [];
     const isAgentJob = !!job.agent_id;
     const titleIcon = isAgentJob ? icon('bolt') : '';

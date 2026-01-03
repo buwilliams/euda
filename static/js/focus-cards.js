@@ -103,6 +103,7 @@ function renderCompletedJobCard(job, childCount = 0) {
             <span class="card-title" style="text-decoration: line-through; color: #888;">${escapeHtml(displayName)}</span>
             ${childBadge}
             ${completedDateLabel}
+            <button class="card-restore-btn" onclick="restoreJob(event, '${job.id}')" title="Restore to todo">${icon('arrow-uturn-left')}</button>
             <span class="card-arrow">›</span>
         </div>
     `;
