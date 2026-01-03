@@ -72,7 +72,11 @@ async function sendContextMessage() {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, agent_id: 'friend' })
+            body: JSON.stringify({
+                message,
+                agent_id: 'friend',
+                session_id: sessionId  // Include current session
+            })
         });
 
         const data = await response.json();
@@ -82,6 +86,12 @@ async function sendContextMessage() {
             addInlineMessage(`Something went wrong: ${data.detail || 'Unknown error'}`, 'friend');
             setContextWaiting(false);
             return;
+        }
+
+        // Store session ID from server (creates new one if we didn't have one)
+        if (data.session_id) {
+            sessionId = data.session_id;
+            localStorage.setItem('sessionId', sessionId);
         }
 
         removeInlineThinking();
@@ -197,6 +207,10 @@ function closeChat() {
 async function resetUI() {
     // Clear all messages
     inlineMessages.innerHTML = '';
+    // Clear session to start a new conversation
+    sessionId = null;
+    localStorage.removeItem('sessionId');
+    viewingHistorySessionId = null;
     // Switch to chat tab for new conversation
     switchTab('chat');
     // Clear expanded cards state

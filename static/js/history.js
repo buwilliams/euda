@@ -228,7 +228,7 @@ async function archiveConversation(targetSessionId) {
 
 async function deleteConversationById(targetSessionId) {
     try {
-        const response = await fetch(`/api/conversations/${targetSessionId}`, {
+        const response = await fetch(`/api/chat/conversations/${targetSessionId}`, {
             method: 'DELETE'
         });
         if (!response.ok) throw new Error('Failed to delete');

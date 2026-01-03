@@ -20,11 +20,13 @@ CONV_DIR = AGENTS_DIR / "friend" / "state" / "conversation"
 class ChatRequest(BaseModel):
     message: str
     agent_id: str = "assistant"
+    session_id: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
     response: str
     agent_id: str
+    session_id: str
 
 
 # Cache agent instances
@@ -42,6 +44,10 @@ def get_agent_instance(agent_id: str) -> Agent:
 def api_chat(request: ChatRequest) -> ChatResponse:
     """Send a message and get a response."""
     agent = get_agent_instance(request.agent_id)
+
+    # Set session - if None, agent will create a new one on first save
+    agent.set_session(request.session_id)
+
     response = agent.chat(request.message)
 
     # Emit chat:message event
@@ -50,7 +56,8 @@ def api_chat(request: ChatRequest) -> ChatResponse:
 
     return ChatResponse(
         response=response,
-        agent_id=request.agent_id
+        agent_id=request.agent_id,
+        session_id=agent.get_session_id()
     )
 
 
@@ -79,12 +86,21 @@ def get_recent_conversations(count: int = 20):
         files = sorted(CONV_DIR.glob("*.md"), reverse=True)[:count]
 
         for file in files:
-            date_str = file.stem
+            session_id = file.stem
             content = file.read_text()
 
-            # Extract first timestamp and preview
-            time_match = re.search(r'\((\d{2}:\d{2}):\d{2}\)', content)
-            time_str = time_match.group(1) if time_match else "00:00"
+            # Parse session ID format: YYYY-MM-DD_HHMMSS or legacy YYYY-MM-DD
+            if "_" in session_id:
+                # New format: 2026-01-03_143022
+                date_str, time_part = session_id.split("_", 1)
+                # Convert HHMMSS to HH:MM
+                time_str = f"{time_part[:2]}:{time_part[2:4]}" if len(time_part) >= 4 else "00:00"
+            else:
+                # Legacy format: just date
+                date_str = session_id
+                # Extract first timestamp from content
+                time_match = re.search(r'\((\d{2}:\d{2}):\d{2}\)', content)
+                time_str = time_match.group(1) if time_match else "00:00"
 
             preview = ""
             user_match = re.search(r'## User \([^)]+\)\n\n(.+?)(?:\n\n##|\Z)', content, re.DOTALL)
@@ -94,7 +110,7 @@ def get_recent_conversations(count: int = 20):
             message_count = len(re.findall(r'^## (User|Assistant)', content, re.MULTILINE))
 
             conversations.append({
-                "session_id": date_str,
+                "session_id": session_id,
                 "date": date_str,
                 "time": time_str,
                 "preview": preview,
@@ -134,3 +150,15 @@ def fork_conversation(request: ForkRequest):
         "new_session_id": request.session_id,
         "messages": messages
     }
+
+
+@router.delete("/conversations/{session_id}")
+def delete_conversation(session_id: str):
+    """Delete a conversation by session ID."""
+    conv_file = CONV_DIR / f"{session_id}.md"
+
+    if not conv_file.exists():
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    conv_file.unlink()
+    return {"status": "deleted", "session_id": session_id}

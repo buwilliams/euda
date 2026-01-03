@@ -23,12 +23,13 @@ AGENTS_DIR = DATA_DIR / "agents"
 class Agent:
     """A generic agent that operates based on its configuration."""
 
-    def __init__(self, agent_id: str, config: Optional[dict] = None):
+    def __init__(self, agent_id: str, config: Optional[dict] = None, session_id: Optional[str] = None):
         self.id = agent_id
         self.config = config or self._load_config()
         self.persona = self._load_persona()
         self.client = get_client()
         self._work_done = False
+        self._session_id = session_id
 
     def wait_for_trigger(self, timeout: float = None) -> Optional[dict]:
         """Wait for a trigger event from the event bus.
@@ -67,22 +68,37 @@ class Agent:
             return persona_path.read_text()
         return f"You are {self.config.get('name', self.id)}, a helpful assistant."
 
-    def _get_conversation_path(self) -> Path:
-        """Get path to today's conversation file."""
-        today = datetime.now().strftime("%Y-%m-%d")
+    def _get_conversation_dir(self) -> Path:
+        """Get conversation directory for this agent."""
         conv_dir = AGENTS_DIR / self.id / "state" / "conversation"
         conv_dir.mkdir(parents=True, exist_ok=True)
-        return conv_dir / f"{today}.md"
+        return conv_dir
+
+    def _get_conversation_path(self) -> Path:
+        """Get path to current session's conversation file."""
+        conv_dir = self._get_conversation_dir()
+        # Create session ID if not set
+        if not self._session_id:
+            self._session_id = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        return conv_dir / f"{self._session_id}.md"
+
+    def set_session(self, session_id: str):
+        """Set the current session ID."""
+        self._session_id = session_id
+
+    def get_session_id(self) -> Optional[str]:
+        """Get the current session ID."""
+        return self._session_id
 
     def _load_conversation_history(self) -> str:
-        """Load today's conversation history."""
+        """Load current session's conversation history."""
         path = self._get_conversation_path()
         if path.exists():
             return path.read_text()
         return ""
 
     def _save_conversation_turn(self, role: str, content: str):
-        """Append a conversation turn to today's file."""
+        """Append a conversation turn to session file."""
         path = self._get_conversation_path()
         timestamp = datetime.now().strftime("%H:%M:%S")
 
