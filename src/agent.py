@@ -254,7 +254,8 @@ class Agent:
             max_tokens=4096,
             system=system_prompt,
             tools=tools if tools else None,
-            messages=messages
+            messages=messages,
+            agent_id=self.id
         )
         self._log("llm_response", {
             "stop_reason": response.stop_reason,
@@ -272,7 +273,8 @@ class Agent:
                 max_tokens=4096,
                 system=system_prompt,
                 tools=tools if tools else None,
-                messages=messages
+                messages=messages,
+                agent_id=self.id
             )
             self._log("llm_response", {
                 "stop_reason": response.stop_reason,

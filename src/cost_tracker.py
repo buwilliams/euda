@@ -4,6 +4,8 @@ Cost Tracker - Tracks API usage and enforces budget limits.
 Provides global cost tracking across all LLM calls with configurable
 budget limits. When budget is exceeded, raises BudgetExceeded to
 trigger graceful shutdown.
+
+Also maintains a unified API call log at data/system/api_calls.jsonl
 """
 
 import json
@@ -13,6 +15,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+
+DATA_DIR = Path(__file__).parent.parent / "data"
+API_LOG_PATH = DATA_DIR / "system" / "api_calls.jsonl"
 
 # Pricing per million tokens (as of user-provided rates)
 PRICING = {
@@ -85,8 +90,15 @@ class CostTracker:
             if self.budget is not None and self.total_cost >= self.budget:
                 raise BudgetExceeded(self.budget, self.total_cost)
 
+    def _log_api_call(self, entry: dict):
+        """Append an API call entry to the unified log file."""
+        API_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(API_LOG_PATH, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+
     def record_usage(self, model: str, input_tokens: int, output_tokens: int,
-                     cached_input_tokens: int = 0):
+                     cached_input_tokens: int = 0, agent_id: str = None,
+                     stop_reason: str = None, duration_ms: int = None):
         """Record token usage and update cumulative cost.
 
         Args:
@@ -94,6 +106,9 @@ class CostTracker:
             input_tokens: Number of input tokens used
             output_tokens: Number of output tokens generated
             cached_input_tokens: Number of cached input tokens (if applicable)
+            agent_id: ID of the agent making the call (optional)
+            stop_reason: Why the LLM stopped (end_turn, tool_use, etc.)
+            duration_ms: How long the API call took in milliseconds
         """
         cost = self.calculate_cost(model, input_tokens, output_tokens, cached_input_tokens)
 
@@ -103,6 +118,23 @@ class CostTracker:
             self.total_output_tokens += output_tokens
             self.total_cost += cost
             self.call_count += 1
+            call_number = self.call_count
+
+            # Log the API call
+            log_entry = {
+                "timestamp": datetime.now().isoformat(),
+                "call_number": call_number,
+                "agent": agent_id,
+                "model": model,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "cached_input_tokens": cached_input_tokens,
+                "cost": round(cost, 6),
+                "cumulative_cost": round(self.total_cost, 6),
+                "stop_reason": stop_reason,
+                "duration_ms": duration_ms,
+            }
+            self._log_api_call(log_entry)
 
             # Check budget after recording
             if self.budget is not None:
@@ -185,9 +217,13 @@ def set_budget(dollars: float):
 
 
 def record_usage(model: str, input_tokens: int, output_tokens: int,
-                 cached_input_tokens: int = 0):
+                 cached_input_tokens: int = 0, agent_id: str = None,
+                 stop_reason: str = None, duration_ms: int = None):
     """Record usage to the global tracker."""
-    get_tracker().record_usage(model, input_tokens, output_tokens, cached_input_tokens)
+    get_tracker().record_usage(
+        model, input_tokens, output_tokens, cached_input_tokens,
+        agent_id, stop_reason, duration_ms
+    )
 
 
 def check_budget():

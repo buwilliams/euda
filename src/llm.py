@@ -8,6 +8,7 @@ Provides a unified interface across providers (Anthropic, OpenAI).
 """
 
 import json
+import time
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
@@ -143,12 +144,24 @@ class UnifiedClient:
         )
 
     def messages_create(self, model: str, max_tokens: int, system: str,
-                        tools: Optional[list], messages: list) -> UnifiedResponse:
-        """Create a message with unified interface."""
+                        tools: Optional[list], messages: list,
+                        agent_id: str = None) -> UnifiedResponse:
+        """Create a message with unified interface.
+
+        Args:
+            model: Model name to use
+            max_tokens: Maximum tokens in response
+            system: System prompt
+            tools: List of tool definitions (optional)
+            messages: Conversation messages
+            agent_id: ID of the calling agent for logging (optional)
+        """
         from .cost_tracker import check_budget, record_usage
 
         # Check budget before making API call
         check_budget()
+
+        start_time = time.time()
 
         if self.provider == "openai":
             # Build OpenAI messages with system prompt
@@ -198,12 +211,16 @@ class UnifiedClient:
                 tools=self._convert_tools_to_openai(tools) if tools else None
             )
             parsed = self._parse_openai_response(response)
+            duration_ms = int((time.time() - start_time) * 1000)
 
-            # Record usage for cost tracking
+            # Record usage for cost tracking and logging
             record_usage(
                 model=model,
                 input_tokens=parsed.usage.input_tokens,
-                output_tokens=parsed.usage.output_tokens
+                output_tokens=parsed.usage.output_tokens,
+                agent_id=agent_id,
+                stop_reason=parsed.stop_reason,
+                duration_ms=duration_ms
             )
 
             return parsed
@@ -218,20 +235,25 @@ class UnifiedClient:
             if tools:
                 kwargs["tools"] = tools
             response = self.client.messages.create(**kwargs)
+            duration_ms = int((time.time() - start_time) * 1000)
 
-            # Record usage for cost tracking
+            # Record usage for cost tracking and logging
             record_usage(
                 model=model,
                 input_tokens=response.usage.input_tokens,
-                output_tokens=response.usage.output_tokens
+                output_tokens=response.usage.output_tokens,
+                agent_id=agent_id,
+                stop_reason=response.stop_reason,
+                duration_ms=duration_ms
             )
 
             return response
 
     def create(self, model: str, max_tokens: int, system: str,
-                tools: Optional[list] = None, messages: list = None) -> UnifiedResponse:
+                tools: Optional[list] = None, messages: list = None,
+                agent_id: str = None) -> UnifiedResponse:
         """Alias for messages_create for API compatibility."""
-        return self.messages_create(model, max_tokens, system, tools, messages)
+        return self.messages_create(model, max_tokens, system, tools, messages, agent_id)
 
     @property
     def messages(self):
