@@ -46,6 +46,10 @@ async function loadJobsData() {
 
         renderFocusTab();
         updateTasksBadge();
+        // Load daily quote when showing the focus menu
+        if (focusView === 'menu') {
+            loadDailyQuote();
+        }
     } catch (error) {
         console.error('Failed to load jobs data:', error);
     }
