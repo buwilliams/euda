@@ -85,7 +85,7 @@ data/
 │       └── state/
 │           ├── memory.json             # persistent agent memory
 │           └── conversation/
-│               └── {date}.md           # conversation history by date
+│               └── {session-id}.md     # conversation history by session
 ├── jobs/
 │   ├── db.sqlite                       # SQLite database (jobs + job_logs tables)
 │   └── assets/
@@ -238,10 +238,12 @@ Each agent maintains activity logs in `logs/{date}.json`:
 
 Each agent maintains:
 
-**Conversation History** (`state/conversation/{date}.md`):
-- Daily markdown files
-- Full context preserved across sessions
-- Provides continuity
+**Conversation History** (`state/conversation/{session-id}.md`):
+- Session-based markdown files (format: `YYYY-MM-DD_HHMMSS`)
+- Each "New Chat" creates a new session
+- Full context preserved within a session
+- Multiple conversations per day supported
+- Legacy date-only files (`YYYY-MM-DD.md`) still supported
 
 **Memory** (`state/memory.json`):
 - Persistent facts the agent has learned
