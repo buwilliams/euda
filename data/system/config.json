@@ -2,7 +2,7 @@
   "version": "3.0.0",
   "initialized": true,
   "llm": {
-    "provider": "anthropic",
+    "provider": "openai",
     "models": {
       "anthropic": "claude-sonnet-4-20250514",
       "openai": "gpt-5.2"

@@ -20,8 +20,8 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
 
 # Defaults
-DEFAULT_PROVIDER = "anthropic"
-DEFAULT_MODEL = "claude-sonnet-4-20250514"
+DEFAULT_PROVIDER = "openai"
+DEFAULT_MODEL = "gpt-5.2"
 
 
 def _load_config() -> dict:
@@ -188,7 +188,7 @@ class UnifiedClient:
 
             response = self.client.chat.completions.create(
                 model=model,
-                max_tokens=max_tokens,
+                max_completion_tokens=max_tokens,
                 messages=openai_messages,
                 tools=self._convert_tools_to_openai(tools) if tools else None
             )
