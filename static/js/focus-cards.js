@@ -11,7 +11,8 @@ function renderMinimalJobCard(job) {
     const displayName = job.name || 'Untitled';
     const dueDate = job.due_date;
     const dueDateLabel = dueDate ? `<span class="card-due-date">${formatFriendlyDueDate(dueDate)}</span>` : '';
-    const childCount = jobsData.filter(j => j.parent_id === job.id).length;
+    // Use context-aware descendant count (all descendants matching timeline)
+    const childCount = getDescendantCountForContext(job.id);
     const childBadge = childCount > 0 ? `<span class="card-badge">${childCount}</span>` : '';
     const assignees = job.assignees || [];
     const workingIndicator = job.in_progress_by ? '<span class="card-working-indicator" title="Agent working">' + icon('bolt') + '</span>' : '';
@@ -34,7 +35,8 @@ function renderFullJobCard(job) {
     const isArchiving = archivingTaskId === job.id;
     const displayName = job.name || 'Untitled';
     const hasDescription = job.description && job.description.length > 0;
-    const childCount = jobsData.filter(j => j.parent_id === job.id).length;
+    // Use context-aware descendant count (all descendants matching timeline)
+    const childCount = getDescendantCountForContext(job.id);
 
     // Get parent job name for context
     let parentName = null;

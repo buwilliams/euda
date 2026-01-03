@@ -75,7 +75,8 @@ function getTimelineIcon(category) {
 }
 
 function renderTimelineView(category, title) {
-    const jobs = jobsData.filter(j => getJobCategory(j) === category);
+    // Get only root jobs that have descendants matching this category
+    const jobs = getRootJobsForCategory(category);
     const categoryIcon = getTimelineIcon(category);
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -359,7 +360,8 @@ function renderJobDetailView(jobId) {
     const isArchiving = archivingTaskId === job.id;
     const displayName = job.name || 'Untitled';
     const hasDescription = job.description && job.description.length > 0;
-    const childJobs = jobsData.filter(j => j.parent_id === job.id);
+    // Use context-aware filtering for child jobs (respects timeline context)
+    const childJobs = getChildJobsForContext(job.id);
     const completedChildJobs = completedJobsData.filter(j => j.parent_id === job.id);
     const assets = jobAssetsCache[jobId] || [];
     const isAgentJob = !!job.agent_id;

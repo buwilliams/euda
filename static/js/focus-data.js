@@ -149,6 +149,149 @@ function getJobCategory(job) {
     return 'anytime';
 }
 
+// ============== Job Hierarchy Helpers ==============
+
+function getJobById(id) {
+    return jobsData.find(j => j.id === id);
+}
+
+function getTimelineContext() {
+    // Look through navigation history to find the timeline context we came from
+    // Returns 'today', 'upcoming', 'anytime', 'someday', or null if not in timeline context
+    const timelineViews = ['today', 'upcoming', 'anytime', 'someday'];
+
+    // Check current view first
+    if (timelineViews.includes(focusView)) {
+        return focusView;
+    }
+
+    // Look back through history (most recent first)
+    for (let i = focusViewHistory.length - 1; i >= 0; i--) {
+        if (timelineViews.includes(focusViewHistory[i])) {
+            return focusViewHistory[i];
+        }
+    }
+
+    return null; // Not in a timeline context (e.g., navigated from Projects)
+}
+
+function getChildJobsForContext(parentId) {
+    // Get child jobs filtered by timeline context (if any)
+    const allChildren = jobsData.filter(j => j.parent_id === parentId);
+    const context = getTimelineContext();
+
+    if (!context) {
+        // No timeline context - show all children
+        return allChildren;
+    }
+
+    // Filter to only children (or descendants) that match the timeline context
+    return allChildren.filter(child => {
+        // Check if this child or any of its descendants match the context
+        if (child.status !== 'completed' && getJobCategory(child) === context) {
+            return true;
+        }
+        // Check descendants
+        const descendants = getAllDescendants(child.id);
+        return descendants.some(d => d.status !== 'completed' && getJobCategory(d) === context);
+    });
+}
+
+function getDescendantCountForContext(jobId) {
+    // Count ALL descendants (not just direct children) that match the timeline context
+    const context = getTimelineContext();
+    const allDescendants = getAllDescendants(jobId);
+
+    if (!context) {
+        // No timeline context - count all descendants
+        return allDescendants.length;
+    }
+
+    // Count only descendants that match the context and are incomplete
+    return allDescendants.filter(d =>
+        d.status !== 'completed' && getJobCategory(d) === context
+    ).length;
+}
+
+function getRootAncestor(job) {
+    // Walk up the parent chain to find the root job
+    // Stop at containers (system jobs, agent inboxes) - job under container is the effective root
+    let current = job;
+    while (current.parent_id) {
+        const parent = getJobById(current.parent_id);
+        if (!parent) break; // Parent not in active jobs, current is effectively root
+        if (isContainerJob(parent)) break; // Don't walk into containers
+        current = parent;
+    }
+    return current;
+}
+
+function getAllDescendants(jobId) {
+    // Get all descendants recursively (children, grandchildren, etc.)
+    const descendants = [];
+    const children = jobsData.filter(j => j.parent_id === jobId);
+
+    for (const child of children) {
+        descendants.push(child);
+        descendants.push(...getAllDescendants(child.id));
+    }
+
+    return descendants;
+}
+
+function getJobWithDescendants(jobId) {
+    // Get a job and all its descendants
+    const job = getJobById(jobId);
+    if (!job) return [];
+    return [job, ...getAllDescendants(jobId)];
+}
+
+function hasMatchingIncompleteDescendant(job, category) {
+    // Check if this job or any of its descendants:
+    // 1. Matches the category
+    // 2. Is not completed
+
+    // Check the job itself (only if it's a leaf or has the category set)
+    if (job.status !== 'completed' && getJobCategory(job) === category) {
+        return true;
+    }
+
+    // Check all descendants
+    const descendants = getAllDescendants(job.id);
+    for (const descendant of descendants) {
+        if (descendant.status !== 'completed' && getJobCategory(descendant) === category) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function getRootJobsForCategory(category) {
+    // Get root jobs that have at least one incomplete descendant matching the category
+    // A "root" job is one with no parent, or whose parent is not in jobsData (e.g., system container)
+
+    const rootJobs = new Map(); // Use Map to deduplicate by job ID
+
+    for (const job of jobsData) {
+        // Skip containers
+        if (isContainerJob(job)) continue;
+
+        // Check if this job matches the category and is incomplete
+        if (job.status !== 'completed' && getJobCategory(job) === category) {
+            // Find its root ancestor
+            const root = getRootAncestor(job);
+
+            // Skip if root is a container (system jobs, agent inboxes)
+            if (isContainerJob(root)) continue;
+
+            rootJobs.set(root.id, root);
+        }
+    }
+
+    return Array.from(rootJobs.values());
+}
+
 // ============== Date Formatting ==============
 
 function formatFriendlyDueDate(dateStr) {
@@ -195,15 +338,25 @@ function formatFriendlyPastDate(dateStr) {
 }
 
 function getFocusCounts() {
-    const counts = { today: 0, upcoming: 0, anytime: 0, someday: 0, toplevel: 0 };
+    // Temporal filters (today, upcoming, someday): count ALL matching jobs
+    // Anytime: count root jobs only
+    const counts = { today: 0, upcoming: 0, anytime: 0, someday: 0 };
 
     jobsData.forEach(job => {
+        // Skip containers
+        if (isContainerJob(job)) return;
+        // Skip completed
+        if (job.status === 'completed') return;
+
         const category = getJobCategory(job);
-        counts[category]++;
-        if (!job.parent_id) {
-            counts.toplevel++;
+        // For temporal categories, count all jobs
+        if (category === 'today' || category === 'upcoming' || category === 'someday') {
+            counts[category]++;
         }
     });
+
+    // For anytime, count root jobs only
+    counts.anytime = getRootJobsForCategory('anytime').length;
 
     return counts;
 }
