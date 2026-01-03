@@ -34,7 +34,7 @@ PROVIDERS: Dict[str, dict] = {
     "grok": {
         "id": "grok",
         "display_name": "Grok",
-        "default_model": "grok-4.1-fast",
+        "default_model": "grok-4-1-fast",
         "description": "xAI's Grok models"
     }
 }
