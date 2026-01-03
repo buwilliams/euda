@@ -19,5 +19,5 @@
     "write_lifelog",
     "send_notification"
   ],
-  "triggers": ["chat:message"]
+  "triggers": []
 }

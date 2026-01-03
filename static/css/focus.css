@@ -760,3 +760,187 @@
     font-size: var(--font-size-base);
     padding: var(--spacing-md);
 }
+
+/* Asset Add Row */
+.asset-add-row {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.asset-add-input {
+    flex: 1;
+    padding: 0.4rem var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    outline: none;
+}
+
+.asset-add-input:focus {
+    border-color: var(--color-accent);
+}
+
+.asset-add-btn {
+    padding: 0.4rem 0.8rem;
+    background: var(--color-accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.asset-add-btn:hover {
+    background: var(--color-accent-hover);
+}
+
+.asset-upload-btn {
+    padding: 0.4rem 0.8rem;
+    background: var(--color-bg-muted);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+}
+
+.asset-upload-btn:hover {
+    background: var(--color-border-light);
+    color: var(--color-text-primary);
+}
+
+/* Assignees Section */
+.assignees-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-md);
+}
+
+.assignee-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: 0.5rem var(--spacing-md);
+    background: var(--color-bg-subtle);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+}
+
+.assignee-name {
+    flex: 1;
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+.assignee-status {
+    font-size: var(--font-size-sm);
+    color: var(--color-accent);
+    background: rgba(0, 123, 255, 0.1);
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-sm);
+}
+
+.assignee-remove {
+    background: none;
+    border: none;
+    color: var(--color-text-placeholder);
+    cursor: pointer;
+    padding: var(--spacing-xs);
+    font-size: var(--font-size-base);
+    line-height: 1;
+    opacity: 0.5;
+    transition: opacity var(--transition-fast);
+}
+
+.assignee-remove:hover {
+    opacity: 1;
+    color: var(--color-danger);
+}
+
+.assignee-working {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 0.5rem var(--spacing-md);
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 152, 0, 0.1));
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.assignee-working-icon {
+    font-size: var(--font-size-lg);
+}
+
+.assignee-working-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.assignee-working-name {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.assignee-add {
+    margin-top: var(--spacing-sm);
+}
+
+.assignee-select {
+    width: 100%;
+    padding: 0.5rem var(--spacing-md);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-white);
+    font-family: inherit;
+    font-size: var(--font-size-base);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    outline: none;
+    transition: all var(--transition-fast);
+}
+
+.assignee-select:hover {
+    border-color: var(--color-accent);
+    color: var(--color-text-primary);
+}
+
+.assignee-select:focus {
+    border-color: var(--color-accent);
+    border-style: solid;
+}
+
+/* Card Assignment Indicators */
+.card-working-indicator,
+.card-assigned-indicator {
+    flex-shrink: 0;
+    font-size: var(--font-size-base);
+    margin-right: var(--spacing-xs);
+}
+
+.card-working-indicator {
+    color: #f59e0b;
+}
+
+.card-assigned-indicator {
+    opacity: 0.5;
+}
+
+/* Menu Assignment Badges */
+.menu-working-badge,
+.menu-assigned-badge {
+    font-size: var(--font-size-base);
+    margin-right: var(--spacing-xs);
+}
+
+.menu-working-badge {
+    color: #f59e0b;
+}
+
+.menu-assigned-badge {
+    opacity: 0.5;
+}
