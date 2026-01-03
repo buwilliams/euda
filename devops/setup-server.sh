@@ -102,6 +102,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=$REMOTE_DIR
+EnvironmentFile=$REMOTE_DIR/.env
 Environment=PATH=$REMOTE_DIR/venv/bin:/usr/bin:/bin
 ExecStart=$REMOTE_DIR/venv/bin/python main.py start
 Restart=always
