@@ -4,19 +4,20 @@ Agent Manager - Manages lifecycle of all agents.
 Responsibilities:
 - Load agent configurations
 - Start all enabled agents (each in its own thread)
-- Monitor agent health
-- Restart failed agents
+- Initialize event bus and subscribe agents to triggers
+- Run time scheduler for time-based events
 - Handle graceful shutdown
 """
 
 import json
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from .agent import Agent
+from .events import EventBus, set_event_bus, get_event_bus
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -26,7 +27,7 @@ AGENTS_DIR = DATA_DIR / "agents"
 _manager_instance: 'AgentManager' = None
 
 
-def get_manager() -> 'AgentManager':
+def get_manager() -> Optional['AgentManager']:
     """Get the global AgentManager instance."""
     return _manager_instance
 
@@ -44,6 +45,7 @@ class AgentManager:
         self.agents: Dict[str, Agent] = {}
         self.threads: Dict[str, threading.Thread] = {}
         self.running = False
+        self.event_bus = EventBus()
 
     def load_agent_configs(self) -> List[dict]:
         """Load all agent configurations from data/agents/*/config.json."""
@@ -65,10 +67,15 @@ class AgentManager:
     def start_agent(self, config: dict):
         """Start a single agent in its own thread."""
         agent_id = config["id"]
-        print(f"Starting agent: {agent_id}")
+        triggers = config.get("triggers", ["job:assigned"])
+
+        print(f"Starting agent: {agent_id} (triggers: {triggers})")
 
         agent = Agent(agent_id, config)
         self.agents[agent_id] = agent
+
+        # Subscribe agent to its triggers
+        self.event_bus.subscribe(agent_id, triggers)
 
         # Create thread for agent loop
         thread = threading.Thread(
@@ -89,32 +96,15 @@ class AgentManager:
         return {}
 
     def _run_agent_loop(self, agent: Agent):
-        """Run an agent's work loop in its own thread."""
-        system_config = self._get_system_config()
-        min_sleep = system_config.get("agents", {}).get("min_sleep_seconds", 60)
-
-        sleep_seconds = agent.config.get("sleep_minutes", 5) * 60
-        sleep_seconds = max(sleep_seconds, min_sleep)
-
+        """Run an agent's work loop - waits for triggers, no sleep."""
         while self.running:
             try:
-                # Do work cycle
-                agent.work_cycle_sync()
+                # Wait for a trigger event (check shutdown every 60s)
+                event = agent.wait_for_trigger(timeout=60)
 
-                # Calculate wake time
-                wake_time = datetime.now() + timedelta(seconds=sleep_seconds)
-                agent._log("sleep", {
-                    "duration_seconds": sleep_seconds,
-                    "wake_at": wake_time.isoformat()
-                })
-
-                # Wait for wake event or timeout
-                woken_early = agent.wait_for_wake(timeout=sleep_seconds)
-
-                if woken_early:
-                    agent._log("wake", {"reason": "triggered"})
-                else:
-                    agent._log("wake", {"reason": "timeout"})
+                if event:
+                    agent._log("triggered", {"event": event})
+                    agent.work_cycle_sync(trigger_context=event)
 
             except Exception as e:
                 agent._log("error", {"message": str(e)})
@@ -122,23 +112,60 @@ class AgentManager:
                 # Brief sleep before retry
                 time.sleep(5)
 
-    def wake_agent(self, agent_id: str) -> bool:
-        """Wake an agent immediately.
+    def _run_time_scheduler(self):
+        """Background thread that emits time events based on schedules."""
+        last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
 
-        Args:
-            agent_id: ID of agent to wake
+        while self.running:
+            try:
+                now = datetime.now()
+                current_time = now.strftime("%H:%M")
+                current_key = now.strftime("%Y-%m-%d-%H-%M")
 
-        Returns:
-            True if agent found and woken, False otherwise
-        """
-        if agent_id in self.agents:
-            self.agents[agent_id].wake()
-            return True
-        return False
+                schedules = self._get_system_config().get("schedules", {})
+
+                for name, schedule in schedules.items():
+                    fire_key = f"{name}:{current_key}"
+
+                    # Skip if already fired this minute
+                    if last_fired.get(name) == fire_key:
+                        continue
+
+                    should_fire = False
+
+                    if schedule == "every_hour":
+                        # Fire on the hour (minute 0)
+                        if now.minute == 0:
+                            should_fire = True
+                    elif schedule == current_time:
+                        # Exact time match
+                        should_fire = True
+
+                    if should_fire:
+                        last_fired[name] = fire_key
+                        print(f"[scheduler] Emitting time:{name}")
+                        self.event_bus.emit(f"time:{name}", data={"time": current_time})
+
+            except Exception as e:
+                print(f"Scheduler error: {e}")
+
+            time.sleep(10)  # Check every 10 seconds
 
     def run(self):
         """Run the agent manager."""
         self.running = True
+
+        # Initialize event bus globally
+        set_event_bus(self.event_bus)
+
+        # Start time scheduler
+        scheduler_thread = threading.Thread(
+            target=self._run_time_scheduler,
+            name="time-scheduler",
+            daemon=True
+        )
+        scheduler_thread.start()
+        print("Time scheduler started")
 
         # Load and start all enabled agents
         configs = self.load_agent_configs()
@@ -165,6 +192,10 @@ class AgentManager:
         """Gracefully shut down all agents."""
         print("Shutting down agents...")
         self.running = False
+
+        # Emit shutdown event to wake any waiting agents
+        for agent_id in self.agents:
+            self.event_bus.emit("system:shutdown", scope=agent_id)
 
         # Wait for threads to finish (they're daemons, so they'll die with main)
         for agent_id, thread in self.threads.items():

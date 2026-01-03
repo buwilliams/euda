@@ -9,7 +9,6 @@ An agent is defined by:
 
 import json
 import os
-import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -29,26 +28,23 @@ class Agent:
         self.config = config or self._load_config()
         self.persona = self._load_persona()
         self.client = get_client()
-        self._wake_event = threading.Event()
         self._work_done = False
 
-    def wake(self):
-        """Wake this agent from sleep immediately."""
-        self._log("wake_triggered")
-        self._wake_event.set()
-
-    def wait_for_wake(self, timeout: float) -> bool:
-        """Wait for wake event or timeout.
+    def wait_for_trigger(self, timeout: float = None) -> Optional[dict]:
+        """Wait for a trigger event from the event bus.
 
         Args:
-            timeout: Maximum seconds to wait
+            timeout: Maximum seconds to wait (None = wait forever)
 
         Returns:
-            True if woken by event, False if timed out
+            Event dict with keys: event, data, timestamp
+            None if timeout or not subscribed
         """
-        woken = self._wake_event.wait(timeout=timeout)
-        self._wake_event.clear()  # Reset for next cycle
-        return woken
+        from .events import get_event_bus
+        bus = get_event_bus()
+        if not bus:
+            return None
+        return bus.wait_for_event(self.id, timeout=timeout)
 
     def _load_config(self) -> dict:
         """Load agent configuration from disk."""
@@ -61,7 +57,7 @@ class Agent:
             "name": self.id.title(),
             "enabled": True,
             "tools": [],
-            "sleep_minutes": 5
+            "triggers": ["job:assigned"]
         }
 
     def _load_persona(self) -> str:
@@ -292,15 +288,26 @@ class Agent:
 
         return results
 
-    def work_cycle_sync(self):
-        """Perform one cycle of autonomous work (synchronous version for threads)."""
+    def work_cycle_sync(self, trigger_context: dict = None):
+        """Perform one cycle of autonomous work (synchronous version for threads).
+
+        Args:
+            trigger_context: Optional event data that triggered this cycle
+        """
         from .tools.jobs import list_jobs
 
-        self._log("work_cycle_start")
+        self._log("work_cycle_start", {"trigger": trigger_context})
         self._work_done = False
 
         # Get jobs that might need attention
         jobs = list_jobs(status="todo")
+
+        # Build trigger info for the prompt
+        trigger_info = ""
+        if trigger_context:
+            trigger_info = f"\n\nYou were triggered by event: {trigger_context.get('event')}"
+            if trigger_context.get('data'):
+                trigger_info += f"\nEvent data: {json.dumps(trigger_context['data'])}"
 
         if not jobs:
             self._log("work_cycle_end", {"reason": "no_jobs"})
@@ -309,12 +316,12 @@ class Agent:
         self._log("work_cycle_jobs_found", {"count": len(jobs)})
 
         # Initial prompt asking agent to check for work
-        prompt = f"""Check if any of these jobs need your attention based on your role:
+        prompt = f"""Check if any of these jobs need your attention based on your role:{trigger_info}
 
 Jobs:
 {json.dumps(jobs, indent=2)}
 
-Work on any jobs that match your role. When you're finished working (or if nothing matches your role), call the done_working tool to signal you're ready to sleep."""
+Work on any jobs that match your role. When you're finished working (or if nothing matches your role), call the done_working tool to signal you're done."""
 
         # Autonomous loop - keep working until agent calls done_working
         max_iterations = self._get_system_config().get("agents", {}).get("max_work_iterations", 20)

@@ -15,5 +15,5 @@
     "complete_job",
     "done_working"
   ],
-  "sleep_minutes": 30
+  "triggers": ["lifelog:new", "time:evening"]
 }

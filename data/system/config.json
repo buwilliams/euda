@@ -9,7 +9,11 @@
     }
   },
   "agents": {
-    "max_work_iterations": 20,
-    "min_sleep_seconds": 60
+    "max_work_iterations": 20
+  },
+  "schedules": {
+    "morning": "08:00",
+    "evening": "18:00",
+    "hourly": "every_hour"
   }
 }

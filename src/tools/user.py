@@ -109,6 +109,10 @@ def write_lifelog(content: str, date: str = None, agent: str = None) -> dict:
 
     lifelog_path.write_text(new_content)
 
+    # Emit lifelog:new event
+    from ..events import emit_event
+    emit_event("lifelog:new", data={"date": date, "agent": agent})
+
     return {"date": date, "status": "added", "agent": agent}
 
 

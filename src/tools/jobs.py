@@ -103,12 +103,10 @@ def _ensure_schema():
 _ensure_schema()
 
 
-def _wake_agent(agent_id: str):
-    """Wake an agent if it exists and is running."""
-    from ..manager import get_manager
-    manager = get_manager()
-    if manager:
-        manager.wake_agent(agent_id)
+def _emit_event(event: str, scope: str = None, data: dict = None):
+    """Emit an event to the event bus."""
+    from ..events import emit_event
+    emit_event(event, scope=scope, data=data)
 
 
 def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
@@ -243,11 +241,13 @@ def create_job(
             VALUES (?, ?, ?, 'created')
         ''', (job_id, now, created_by))
 
-    # Wake any assigned agents
+    # Emit job:created (broadcast) and job:assigned (scoped) events
+    job = _load_job(job_id)
+    _emit_event("job:created", data={"job_id": job_id, "name": name})
     for agent_id in (assignees or []):
-        _wake_agent(agent_id)
+        _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": name})
 
-    return _load_job(job_id)
+    return job
 
 
 @tool("update_job", "Update a job's fields")
@@ -298,12 +298,12 @@ def update_job(
     with _transaction() as conn:
         conn.execute(f"UPDATE jobs SET {', '.join(updates)} WHERE id = ?", params)
 
-    # Wake any newly assigned agents
+    # Emit job:assigned events for newly assigned agents
     if assignees is not None:
         old_assignees = set(job.get("assignees", []))
         new_assignees = set(assignees) - old_assignees
         for agent_id in new_assignees:
-            _wake_agent(agent_id)
+            _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": job["name"]})
 
     return _load_job(job_id)
 
@@ -327,6 +327,10 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
             INSERT INTO job_logs (job_id, timestamp, agent, action)
             VALUES (?, ?, ?, 'completed')
         ''', (job_id, now, agent))
+
+    # Emit job:completed to each assignee
+    for assignee in job.get("assignees", []):
+        _emit_event("job:completed", scope=assignee, data={"job_id": job_id, "name": job["name"]})
 
     return _load_job(job_id)
 
@@ -373,6 +377,10 @@ def archive_job(job_id: str, agent: str = "user") -> Optional[dict]:
             INSERT INTO job_logs (job_id, timestamp, agent, action)
             VALUES (?, ?, ?, 'archived')
         ''', (job_id, now, agent))
+
+    # Emit job:archived to each assignee
+    for assignee in job.get("assignees", []):
+        _emit_event("job:archived", scope=assignee, data={"job_id": job_id, "name": job["name"]})
 
     return _load_job(job_id)
 
@@ -451,8 +459,8 @@ def assign_agent(job_id: str, agent_id: str) -> Optional[dict]:
             (job_id, now, "system", f"assigned:{agent_id}")
         )
 
-    # Wake the agent
-    _wake_agent(agent_id)
+    # Emit job:assigned event to the agent
+    _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": job["name"]})
 
     return _load_job(job_id)
 
@@ -485,6 +493,9 @@ def unassign_agent(job_id: str, agent_id: str) -> Optional[dict]:
             "INSERT INTO job_logs (job_id, timestamp, agent, action) VALUES (?, ?, ?, ?)",
             (job_id, now, "system", f"unassigned:{agent_id}")
         )
+
+    # Emit job:unassigned event to the agent
+    _emit_event("job:unassigned", scope=agent_id, data={"job_id": job_id, "name": job["name"]})
 
     return _load_job(job_id)
 

@@ -79,8 +79,10 @@ def cmd_start(args):
     # Start agents in background thread
     def run_agents():
         from src.manager import set_manager
+        from src.events import set_event_bus
         manager = AgentManager()
         set_manager(manager)
+        set_event_bus(manager.event_bus)
         asyncio.run(manager.run())
 
     agent_thread = threading.Thread(target=run_agents, daemon=True)

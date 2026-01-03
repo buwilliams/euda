@@ -44,6 +44,10 @@ def api_chat(request: ChatRequest) -> ChatResponse:
     agent = get_agent_instance(request.agent_id)
     response = agent.chat(request.message)
 
+    # Emit chat:message event
+    from ...events import emit_event
+    emit_event("chat:message", data={"agent_id": request.agent_id})
+
     return ChatResponse(
         response=response,
         agent_id=request.agent_id

@@ -19,5 +19,5 @@
     "write_lifelog",
     "send_notification"
   ],
-  "sleep_minutes": 0
+  "triggers": ["chat:message"]
 }
