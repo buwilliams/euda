@@ -1,7 +1,7 @@
 {
   "id": "archivist",
   "name": "The Archivist",
-  "enabled": false,
+  "enabled": true,
   "order": 3,
   "tools": [
     "write_lifelog",

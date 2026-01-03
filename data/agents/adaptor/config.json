@@ -1,7 +1,7 @@
 {
   "id": "adaptor",
   "name": "The Adaptor",
-  "enabled": false,
+  "enabled": true,
   "order": 1,
   "tools": [
     "list_agents",

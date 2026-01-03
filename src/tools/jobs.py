@@ -109,6 +109,13 @@ def _emit_event(event: str, scope: str = None, data: dict = None):
     emit_event(event, scope=scope, data=data)
 
 
+def _emit_jobs_update():
+    """Notify UI clients that jobs have changed."""
+    from ..events import emit_ui_event
+    all_jobs = list_jobs()
+    emit_ui_event("jobs_update", {"jobs": all_jobs})
+
+
 def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
     """Convert a database row to a job dictionary."""
     # Handle columns that may not exist in older schemas
@@ -247,6 +254,9 @@ def create_job(
     for agent_id in (assignees or []):
         _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": name})
 
+    # Notify UI clients
+    _emit_jobs_update()
+
     return job
 
 
@@ -305,6 +315,9 @@ def update_job(
         for agent_id in new_assignees:
             _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": job["name"]})
 
+    # Notify UI clients
+    _emit_jobs_update()
+
     return _load_job(job_id)
 
 
@@ -332,6 +345,9 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
     for assignee in job.get("assignees", []):
         _emit_event("job:completed", scope=assignee, data={"job_id": job_id, "name": job["name"]})
 
+    # Notify UI clients
+    _emit_jobs_update()
+
     return _load_job(job_id)
 
 
@@ -354,6 +370,9 @@ def restore_job(job_id: str, agent: str = "user") -> Optional[dict]:
             INSERT INTO job_logs (job_id, timestamp, agent, action)
             VALUES (?, ?, ?, 'restored')
         ''', (job_id, now, agent))
+
+    # Notify UI clients
+    _emit_jobs_update()
 
     return _load_job(job_id)
 
@@ -382,6 +401,9 @@ def archive_job(job_id: str, agent: str = "user") -> Optional[dict]:
     for assignee in job.get("assignees", []):
         _emit_event("job:archived", scope=assignee, data={"job_id": job_id, "name": job["name"]})
 
+    # Notify UI clients
+    _emit_jobs_update()
+
     return _load_job(job_id)
 
 
@@ -400,6 +422,9 @@ def add_job_log(job_id: str, action: str, agent: str = "user") -> Optional[dict]
             INSERT INTO job_logs (job_id, timestamp, agent, action)
             VALUES (?, ?, ?, ?)
         ''', (job_id, now, agent, action))
+
+    # Notify UI clients
+    _emit_jobs_update()
 
     return _load_job(job_id)
 
@@ -426,6 +451,9 @@ def delete_job(job_id: str, delete_children: bool = False) -> dict:
     with _transaction() as conn:
         # Delete the job (logs cascade automatically via ON DELETE CASCADE)
         conn.execute("DELETE FROM jobs WHERE id = ?", (job_id,))
+
+    # Notify UI clients
+    _emit_jobs_update()
 
     return {"deleted": job_id, "children_deleted": delete_children}
 
@@ -462,6 +490,9 @@ def assign_agent(job_id: str, agent_id: str) -> Optional[dict]:
     # Emit job:assigned event to the agent
     _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": job["name"]})
 
+    # Notify UI clients
+    _emit_jobs_update()
+
     return _load_job(job_id)
 
 
@@ -496,6 +527,9 @@ def unassign_agent(job_id: str, agent_id: str) -> Optional[dict]:
 
     # Emit job:unassigned event to the agent
     _emit_event("job:unassigned", scope=agent_id, data={"job_id": job_id, "name": job["name"]})
+
+    # Notify UI clients
+    _emit_jobs_update()
 
     return _load_job(job_id)
 
@@ -547,6 +581,9 @@ def claim_job(job_id: str, agent_id: str) -> dict:
             (agent_id, now, job_id)
         )
 
+    # Notify UI clients
+    _emit_jobs_update()
+
     return {"claimed": True, "job_id": job_id, "agent": agent_id}
 
 
@@ -564,4 +601,8 @@ def release_job(job_id: str, agent_id: str) -> dict:
             "UPDATE jobs SET in_progress_by = NULL, updated_at = ? WHERE id = ? AND in_progress_by = ?",
             (now, job_id, agent_id)
         )
+
+    # Notify UI clients
+    _emit_jobs_update()
+
     return {"released": True, "job_id": job_id}

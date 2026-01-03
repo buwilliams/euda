@@ -154,12 +154,26 @@ def get_settings():
 
 async def event_generator():
     """Generate SSE events for real-time updates."""
+    from ...events import subscribe_ui, unsubscribe_ui
+
+    # Send initial state
     all_jobs = list_jobs()
     yield f"event: init\ndata: {json.dumps({'jobs': all_jobs})}\n\n"
 
-    while True:
-        await asyncio.sleep(30)
-        yield f"event: ping\ndata: {{}}\n\n"
+    # Subscribe to UI events
+    event_queue = subscribe_ui()
+
+    try:
+        while True:
+            try:
+                # Wait for events with timeout for ping
+                event = await asyncio.wait_for(event_queue.get(), timeout=30)
+                yield f"event: {event['type']}\ndata: {json.dumps(event['data'])}\n\n"
+            except asyncio.TimeoutError:
+                # Send ping to keep connection alive
+                yield f"event: ping\ndata: {{}}\n\n"
+    finally:
+        unsubscribe_ui(event_queue)
 
 
 @router.get("/events")

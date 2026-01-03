@@ -1,13 +1,16 @@
 """
-Event System - Central event bus for agent triggers.
+Event System - Central event bus for agent triggers and UI updates.
 
 Events follow the format: {type}:{event}
 Examples: job:assigned, lifelog:new, time:morning
 
 Scoped events only wake the specific agent they're scoped to.
 Unscoped events wake all agents subscribed to that event type.
+
+UI events are broadcast to all connected SSE clients.
 """
 
+import asyncio
 import queue
 import threading
 from dataclasses import dataclass, field
@@ -147,3 +150,40 @@ def emit_event(event: str, scope: str = None, data: dict = None):
     bus = get_event_bus()
     if bus:
         bus.emit(event, scope=scope, data=data)
+
+
+# ============== UI Event Broadcasting ==============
+# For pushing updates to SSE clients
+
+_ui_subscribers: List[asyncio.Queue] = []
+_ui_lock = threading.Lock()
+
+
+def subscribe_ui() -> asyncio.Queue:
+    """Subscribe to UI events. Returns a queue that will receive events."""
+    q = asyncio.Queue()
+    with _ui_lock:
+        _ui_subscribers.append(q)
+    return q
+
+
+def unsubscribe_ui(q: asyncio.Queue):
+    """Unsubscribe from UI events."""
+    with _ui_lock:
+        if q in _ui_subscribers:
+            _ui_subscribers.remove(q)
+
+
+def emit_ui_event(event_type: str, data: dict = None):
+    """Emit an event to all SSE clients.
+
+    Args:
+        event_type: Type of event (e.g., "jobs_update")
+        data: Event data to send
+    """
+    with _ui_lock:
+        for q in _ui_subscribers:
+            try:
+                q.put_nowait({"type": event_type, "data": data or {}})
+            except asyncio.QueueFull:
+                pass  # Skip if queue is full

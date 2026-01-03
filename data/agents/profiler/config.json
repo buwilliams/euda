@@ -1,7 +1,7 @@
 {
   "id": "profiler",
   "name": "The Profiler",
-  "enabled": false,
+  "enabled": true,
   "order": 2,
   "tools": [
     "get_user_profile",
