@@ -44,25 +44,22 @@ This is more than enough for a single-user Euno instance. The main resource usag
 
 ## Prerequisites
 
-1. **SSH key** — Generate one if you don't have it:
-   ```bash
-   ssh-keygen -t ed25519
-   ```
-
-   Copy your key to the server (after creating it):
-   ```bash
-   ssh-copy-id root@<server-ip>
-   ```
-
-   Or add your public key (`~/.ssh/id_ed25519.pub`) to Vultr when creating the server.
-
-2. **Server** — Create a Vultr instance:
+1. **Server** — Create a Vultr instance:
    - Choose "Cloud Compute - Shared CPU"
    - Select $5/month tier (1 CPU, 1GB RAM, 25GB)
    - Choose nearest location
    - Select Ubuntu 22.04 LTS
-   - Add your SSH key
-   - Deploy
+   - Deploy and note the IP address
+
+2. **SSH key** — Generate one if you don't have it:
+   ```bash
+   ssh-keygen -t ed25519
+   ```
+
+   Copy your key to the server:
+   ```bash
+   ssh-copy-id root@<server-ip>
+   ```
 
 3. **Local .env** — Configure your environment:
    ```bash
