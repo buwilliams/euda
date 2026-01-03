@@ -139,15 +139,24 @@ function setContextWaiting(waiting) {
     if (waiting) addInlineThinking();
 }
 
+let notificationTimeout = null;
+
 function showChatNotification() {
     // Only show notification if not on chat tab
     if (activeTab !== 'chat') {
         contextSendBtn.classList.add('has-notification');
+        // Auto-clear after 3 seconds to avoid being annoying
+        if (notificationTimeout) clearTimeout(notificationTimeout);
+        notificationTimeout = setTimeout(clearChatNotification, 3000);
     }
 }
 
 function clearChatNotification() {
     contextSendBtn.classList.remove('has-notification');
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+        notificationTimeout = null;
+    }
 }
 
 // Auto-expand context textarea
