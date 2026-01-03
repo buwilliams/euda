@@ -443,7 +443,7 @@
     cursor: pointer;
     padding: var(--spacing-md);
     margin-right: var(--spacing-md);
-    opacity: 0.4;
+    opacity: 0.5;
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -452,10 +452,6 @@
 .card-trash-btn img {
     width: 16px;
     height: 16px;
-}
-
-.card-trash-btn:hover {
-    opacity: 1;
 }
 
 /* Archive Form */
@@ -1368,12 +1364,7 @@
 }
 
 .child-job-card .card-trash-btn {
-    opacity: 0;
-    transition: opacity 0.15s;
-}
-
-.child-job-card:hover .card-trash-btn {
-    opacity: 1;
+    opacity: 0.5;
 }
 
 /* ============== Daily Quote in Focus ============== */
