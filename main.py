@@ -30,6 +30,7 @@ Commands:
 
 Examples:
   python main.py start             # Run web server + agents
+  python main.py start --breaker 1 # Run with $1 budget limit
   python main.py chat              # Chat with default agent (assistant)
   python main.py chat friend       # Chat with specific agent
   python main.py agents            # List agents
@@ -43,8 +44,15 @@ Examples:
     parser.add_argument("command", nargs="?", default="help",
                         help="Command to run")
     parser.add_argument("args", nargs="*", help="Command arguments")
+    parser.add_argument("--breaker", type=float, metavar="DOLLARS",
+                        help="Stop API requests after spending this amount (e.g., --breaker 1 for $1)")
 
     args = parser.parse_args()
+
+    # Set up cost tracking if breaker is specified
+    if args.breaker is not None:
+        from src.cost_tracker import set_budget
+        set_budget(args.breaker)
 
     commands = {
         "start": cmd_start,
@@ -98,6 +106,7 @@ def cmd_chat(args):
     """Interactive chat with an agent."""
     from src.agent import Agent
     from src.tools import get_tools_for_agent
+    from src.cost_tracker import BudgetExceeded, print_summary
 
     agent_id = args[0] if args else "assistant"
 
@@ -122,6 +131,11 @@ def cmd_chat(args):
             response = agent.chat(user_input)
             print(f"\n{agent_id}: {response}\n")
 
+        except BudgetExceeded as e:
+            print(f"\n\nBUDGET EXCEEDED: ${e.spent:.4f} spent of ${e.budget:.2f} limit")
+            print_summary()
+            print("\nExiting due to budget limit.")
+            break
         except KeyboardInterrupt:
             print("\n\nGoodbye!")
             break

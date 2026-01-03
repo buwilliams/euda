@@ -145,6 +145,11 @@ class UnifiedClient:
     def messages_create(self, model: str, max_tokens: int, system: str,
                         tools: Optional[list], messages: list) -> UnifiedResponse:
         """Create a message with unified interface."""
+        from .cost_tracker import check_budget, record_usage
+
+        # Check budget before making API call
+        check_budget()
+
         if self.provider == "openai":
             # Build OpenAI messages with system prompt
             openai_messages = [{"role": "system", "content": system}]
@@ -192,7 +197,16 @@ class UnifiedClient:
                 messages=openai_messages,
                 tools=self._convert_tools_to_openai(tools) if tools else None
             )
-            return self._parse_openai_response(response)
+            parsed = self._parse_openai_response(response)
+
+            # Record usage for cost tracking
+            record_usage(
+                model=model,
+                input_tokens=parsed.usage.input_tokens,
+                output_tokens=parsed.usage.output_tokens
+            )
+
+            return parsed
         else:
             # Anthropic - use native client
             kwargs = {
@@ -204,6 +218,14 @@ class UnifiedClient:
             if tools:
                 kwargs["tools"] = tools
             response = self.client.messages.create(**kwargs)
+
+            # Record usage for cost tracking
+            record_usage(
+                model=model,
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens
+            )
+
             return response
 
     def create(self, model: str, max_tokens: int, system: str,

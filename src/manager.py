@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from .agent import Agent
+from .cost_tracker import BudgetExceeded, print_summary as print_cost_summary
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -158,6 +159,17 @@ class AgentManager:
                 time.sleep(sleep_seconds)
 
                 agent._log("wake")
+
+            except BudgetExceeded as e:
+                # Budget exceeded - trigger graceful shutdown
+                agent._log("budget_exceeded", {
+                    "budget": e.budget,
+                    "spent": e.spent
+                })
+                print(f"\n[{agent.id}] BUDGET EXCEEDED: ${e.spent:.4f} spent of ${e.budget:.2f} limit")
+                print_cost_summary()
+                self.running = False  # Stop all agents
+                return  # Exit this agent's loop
 
             except Exception as e:
                 error_msg = str(e)
