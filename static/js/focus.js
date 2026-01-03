@@ -380,6 +380,7 @@ function renderFocusMenu() {
             </div>
             ` : ''}
         </div>
+        <div id="daily-quote-container"></div>
     `;
 }
 

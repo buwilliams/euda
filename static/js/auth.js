@@ -72,7 +72,7 @@ function initApp() {
     // Reset scroll positions to top (mobile browsers try to restore previous scroll)
     resetScrollPositions();
 
-    // Initialize with default tab (chat)
+    // Initialize with default tab (focus)
     switchTab(activeTab);
 
     // Load daily quote

@@ -1376,6 +1376,16 @@
     opacity: 1;
 }
 
+/* ============== Daily Quote in Focus ============== */
+
+#daily-quote-container {
+    padding: var(--spacing-lg) var(--spacing-md);
+}
+
+#daily-quote-container .quote-container {
+    margin-bottom: 0;
+}
+
 /* ============== Agent Config Editing ============== */
 
 .agent-config-display {

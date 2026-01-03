@@ -2,17 +2,19 @@
 
 // ============== Daily Quote ==============
 
-async function loadDailyQuote() {
-    // Remove any existing quote first
-    const existingQuote = document.getElementById('daily-quote');
-    if (existingQuote) existingQuote.remove();
+async function loadDailyQuote(retries = 3) {
+    // Find the quote container in Focus tab (may not exist yet if Focus hasn't rendered)
+    const container = document.getElementById('daily-quote-container');
+    if (!container) {
+        // Retry after a short delay if container doesn't exist yet
+        if (retries > 0) {
+            setTimeout(() => loadDailyQuote(retries - 1), 200);
+        }
+        return;
+    }
 
-    // Show loading state in messages area
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = 'daily-quote';
-    loadingDiv.className = 'quote-container';
-    loadingDiv.innerHTML = `<div class="quote-loading">Loading today's reflection...</div>`;
-    inlineMessages.insertBefore(loadingDiv, inlineMessages.firstChild);
+    // Show loading state
+    container.innerHTML = `<div id="daily-quote" class="quote-container"><div class="quote-loading">Loading today's reflection...</div></div>`;
 
     try {
         const response = await fetch('/api/daily-quote', {
@@ -39,15 +41,14 @@ async function loadDailyQuote() {
 }
 
 function renderQuote(data) {
-    const quoteDiv = document.getElementById('daily-quote');
-    if (quoteDiv) {
-        quoteDiv.innerHTML = `
-            <div class="quote-text">"${escapeHtml(data.quote)}"</div>
-            <div class="quote-author">— ${escapeHtml(data.author)}</div>
+    const container = document.getElementById('daily-quote-container');
+    if (container) {
+        container.innerHTML = `
+            <div id="daily-quote" class="quote-container">
+                <div class="quote-text">"${escapeHtml(data.quote)}"</div>
+                <div class="quote-author">— ${escapeHtml(data.author)}</div>
+            </div>
         `;
-        // Ensure chat stays scrolled to top after quote renders
-        const chatPane = document.getElementById('tab-chat');
-        if (chatPane) chatPane.scrollTop = 0;
     }
 }
 
@@ -179,10 +180,8 @@ function closeChat() {
 async function resetUI() {
     // Clear all messages
     inlineMessages.innerHTML = '';
-    // Switch to chat tab
+    // Switch to chat tab for new conversation
     switchTab('chat');
-    // Reload the quote
-    loadDailyQuote();
     // Clear expanded cards state
     expandedCards.clear();
 }
