@@ -48,7 +48,13 @@ This is more than enough for a single-user Euno instance. The main resource usag
    ```bash
    ssh-keygen -t ed25519
    ```
-   Add your public key (`~/.ssh/id_ed25519.pub`) to Vultr when creating the server.
+
+   Copy your key to the server (after creating it):
+   ```bash
+   ssh-copy-id root@<server-ip>
+   ```
+
+   Or add your public key (`~/.ssh/id_ed25519.pub`) to Vultr when creating the server.
 
 2. **Server** — Create a Vultr instance:
    - Choose "Cloud Compute - Shared CPU"
