@@ -1049,7 +1049,9 @@ async function createNewFileWithContent(jobId) {
         });
 
         if (response.ok) {
-            await loadJobAssets(jobId);
+            // Clear cache to force reload
+            delete jobAssetsCache[jobId];
+            // Navigate back to job detail (will trigger fresh asset load)
             navigateFocusBack();
         }
     } catch (error) {
@@ -1074,7 +1076,8 @@ async function handleMultiFileUpload(event, jobId) {
         }
     }
 
-    await loadJobAssets(jobId);
+    // Clear cache to force reload
+    delete jobAssetsCache[jobId];
     navigateFocusBack();
 }
 
