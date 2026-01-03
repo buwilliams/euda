@@ -22,7 +22,7 @@ PROVIDERS: Dict[str, dict] = {
     "anthropic": {
         "id": "anthropic",
         "display_name": "Claude",
-        "default_model": "claude-opus-4-5-20250514",
+        "default_model": "claude-opus-4-5-20251101",
         "description": "Anthropic's Claude models"
     },
     "openai": {
