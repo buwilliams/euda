@@ -17,7 +17,9 @@
     "write_asset",
     "delete_asset",
     "get_user_profile",
-    "done_working"
+    "done_working",
+    "parse_date",
+    "get_current_date"
   ],
   "triggers": ["job:assigned", "time:morning"]
 }

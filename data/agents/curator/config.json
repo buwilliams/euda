@@ -11,7 +11,9 @@
     "add_job_log",
     "get_user_profile",
     "read_lifelog",
-    "done_working"
+    "done_working",
+    "parse_date",
+    "get_current_date"
   ],
   "triggers": ["time:morning"]
 }

@@ -16,7 +16,9 @@
     "write_asset",
     "get_user_profile",
     "read_lifelog",
-    "write_lifelog"
+    "write_lifelog",
+    "parse_date",
+    "get_current_date"
   ],
   "triggers": []
 }
