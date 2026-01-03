@@ -22,7 +22,7 @@ PROVIDERS: Dict[str, dict] = {
     "anthropic": {
         "id": "anthropic",
         "display_name": "Claude",
-        "default_model": "claude-sonnet-4-20250514",
+        "default_model": "claude-opus-4-5-20250514",
         "description": "Anthropic's Claude models"
     },
     "openai": {
@@ -34,7 +34,7 @@ PROVIDERS: Dict[str, dict] = {
     "grok": {
         "id": "grok",
         "display_name": "Grok",
-        "default_model": "grok-3",
+        "default_model": "grok-4.1-fast",
         "description": "xAI's Grok models"
     }
 }
