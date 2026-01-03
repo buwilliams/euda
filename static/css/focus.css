@@ -512,19 +512,27 @@
 }
 
 .quick-add-btn {
-    padding: var(--spacing-md) var(--spacing-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
     background: var(--color-accent-dark);
-    color: white;
     border: none;
     border-radius: var(--radius-lg);
-    font-size: var(--font-size-2xl);
-    font-weight: bold;
     cursor: pointer;
     transition: background var(--transition-fast);
 }
 
 .quick-add-btn:hover {
     background: var(--color-accent-dark-hover);
+}
+
+.quick-add-btn img {
+    width: 20px;
+    height: 20px;
+    filter: invert(1);
 }
 
 /* Job Detail Sections */
@@ -831,18 +839,26 @@
 }
 
 .asset-add-btn {
-    padding: 0.4rem 0.8rem;
-    background: var(--color-accent);
-    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: var(--color-accent-dark);
     border: none;
     border-radius: var(--radius-md);
-    font-size: var(--font-size-base);
-    font-weight: bold;
     cursor: pointer;
 }
 
 .asset-add-btn:hover {
-    background: var(--color-accent-hover);
+    background: var(--color-accent-dark-hover);
+}
+
+.asset-add-btn img {
+    width: 16px;
+    height: 16px;
+    filter: invert(1);
 }
 
 .asset-upload-btn {

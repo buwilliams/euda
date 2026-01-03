@@ -289,7 +289,7 @@ function renderFocusMenu() {
         </div>
         <div class="quick-add-section">
             <input type="text" id="quick-add-root" class="quick-add-input" placeholder="Add new job..." onkeypress="handleQuickAddKeypress(event, 'quick-add-root')">
-            <button class="quick-add-btn" onclick="quickAddJob('quick-add-root')">+</button>
+            <button class="quick-add-btn" onclick="quickAddJob('quick-add-root')">${icon('plus')}</button>
         </div>
     `;
 }
@@ -895,7 +895,7 @@ function renderAssetsListView(jobId) {
 
             <div class="asset-add-row">
                 <input type="text" class="asset-add-input" id="new-asset-${jobId}" placeholder="New asset name..." onkeypress="handleNewAssetKeypress(event, '${jobId}')">
-                <button class="asset-add-btn" onclick="createNewAsset('${jobId}')">+</button>
+                <button class="asset-add-btn" onclick="createNewAsset('${jobId}')">${icon('plus')}</button>
                 <label class="asset-upload-btn">
                     Upload
                     <input type="file" style="display: none;" onchange="handleAssetUpload(event, '${jobId}')">
