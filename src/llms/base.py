@@ -173,11 +173,14 @@ def get_client() -> "UnifiedClient":
     """Get a unified LLM client for the configured provider.
 
     Returns cached client, creating one if cache was invalidated.
+    Client stores both provider and model at creation time to avoid race conditions.
     """
     global _cached_client
 
     if _cached_client is None:
-        _cached_client = UnifiedClient(get_provider())
+        provider = get_provider()
+        model = get_model()
+        _cached_client = UnifiedClient(provider, model)
 
     return _cached_client
 
@@ -192,8 +195,9 @@ def invalidate_client():
 class UnifiedClient:
     """Wrapper that delegates to the appropriate provider."""
 
-    def __init__(self, provider: str):
+    def __init__(self, provider: str, model: str):
         self.provider_name = provider
+        self.model_name = model
         self._provider = self._create_provider(provider)
 
     def _create_provider(self, provider: str) -> LLMProvider:

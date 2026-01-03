@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from .llms import get_client, get_model
+from .llms import get_client
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -231,11 +231,12 @@ class Agent:
         messages = [{"role": "user", "content": message}]
 
         # Get fresh client (respects current provider config)
+        # Client stores both provider and model to avoid race conditions
         client = get_client()
 
         # Call LLM with tools
         response = client.messages.create(
-            model=get_model(),
+            model=client.model_name,
             max_tokens=4096,
             system=system_prompt,
             tools=tools if tools else None,
@@ -253,7 +254,7 @@ class Agent:
             messages.append({"role": "user", "content": tool_results})
 
             response = client.messages.create(
-                model=get_model(),
+                model=client.model_name,
                 max_tokens=4096,
                 system=system_prompt,
                 tools=tools if tools else None,
