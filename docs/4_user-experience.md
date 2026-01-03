@@ -219,31 +219,49 @@ Chat expands and collapses in place - no screen switching. The context view rema
 
 ## Design Principles
 
-### 1. Ambient Over Interactive
+### 1. Minimize User Actions
+
+Every tap, click, and keystroke has a cost. Reduce friction by:
+
+**Instant feedback:** When a user creates something (job, file, note), it happens immediately. No "confirm" buttons, no batch operations, no extra steps.
+- Type job name → press Enter → job exists
+- Write content → click Save → file exists with auto-generated name
+- The result appears instantly in the list
+
+**Smart defaults:** Auto-generate what can be inferred:
+- Filenames from content (first 5 words, underscored, `.md` extension)
+- Timestamps when needed
+- Parent relationships from context
+
+**Progressive disclosure:** Show the minimum UI needed. Picker menus keep options organized without cluttering the main view.
+
+**Exception:** Picker menus (When, Add, Assignees) add a deliberate step to keep the interface clean. This is acceptable friction for organization.
+
+### 2. Ambient Over Interactive
 
 The interface delivers value before you interact. Open it, see what matters, close it. Or don't open it - push what's urgent.
 
-### 2. Context-Appropriate
+### 3. Context-Appropriate
 
 The UI morphs based on:
 - Time of day (morning orientation vs. evening closure)
 - What's coming (pre-meeting context)
 - Your state (protecting focus vs. available for interruption)
 
-### 3. Anticipatory, Not Reactive
+### 4. Anticipatory, Not Reactive
 
 Don't wait to be asked. Surface:
 - What's relevant now
 - What you might have forgotten
 - Patterns you can't see yourself
 
-### 4. Progressive Disclosure
+### 5. Progressive Disclosure
 
 - **Glance**: What matters right now (2 seconds)
 - **Scan**: More detail if you want it (10 seconds)
 - **Engage**: Full conversation when you're ready (unlimited)
 
-### 5. Conversation Is Depth
+### 6. Conversation Is Depth
 
 Chat isn't for commands. It's for:
 - Thinking through complex things
@@ -254,7 +272,7 @@ Chat isn't for commands. It's for:
 
 A caring collaborator who knows you and can go deep when you need it.
 
-### 6. Guards Your Attention
+### 7. Guards Your Attention
 
 Engagement algorithms are designed to hijack your attention. Euno stands between you and that.
 

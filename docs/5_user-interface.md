@@ -365,7 +365,14 @@ Bottom sheet for scheduling tasks/projects.
 - Cards/inputs: #fff (white, for contrast)
 - Text: #333 (primary), #666 (secondary), #999 (muted)
 - Borders: #e0e0e0 (standard), #e8e8e8 (subtle)
-- Send button: #333 background, #fff icon
+- Primary buttons: #333 background, #fff icon/text (dark, not blue)
+- Accent blue (#007bff) reserved for focus states and links only
+
+**Button Colors:**
+Primary action buttons (Send, Add, Save) use dark backgrounds (`--color-accent-dark: #333`) rather than blue. This provides a more professional, understated appearance. Blue accent color is reserved for:
+- Input focus rings
+- Links
+- Selected/active state indicators
 
 **Spacing:**
 - Base unit: 0.5rem (8px)
@@ -374,6 +381,22 @@ Bottom sheet for scheduling tasks/projects.
 
 **Transitions:**
 - Hover states: 0.15s ease
+
+**Icons:**
+All icons use [HeroIcons](https://heroicons.com/) (MIT licensed, by Tailwind Labs):
+- Style: 24px outline variants
+- Format: SVG with `stroke="currentColor"` for color inheritance
+- Location: `/static/icons/`
+
+Icon usage pattern in JavaScript:
+```javascript
+function icon(name, className = '') {
+    const cls = className ? ` class="${className}"` : '';
+    return `<img src="/static/icons/${name}.svg" alt="${name}"${cls}>`;
+}
+```
+
+For white icons on dark buttons, apply `filter: invert(1)` in CSS.
 
 **Animations:**
 
@@ -436,7 +459,17 @@ historyData        // Cached conversation list
 static/
 ├── index.html          # Main HTML shell
 ├── css/
-│   └── app.css         # All styles
+│   ├── variables.css   # CSS custom properties
+│   ├── base.css        # Reset and base styles
+│   ├── layout.css      # App structure and tabs
+│   ├── components.css  # Reusable components
+│   ├── chat.css        # Chat tab styles
+│   ├── focus.css       # Focus tab styles
+│   ├── when-picker.css # Date picker modal
+│   ├── history.css     # History tab styles
+│   ├── about.css       # About tab styles
+│   ├── auth.css        # Login/auth styles
+│   └── responsive.css  # Mobile adaptations
 ├── js/
 │   ├── init.js         # App initialization and routing
 │   ├── state.js        # Global state management
@@ -449,8 +482,17 @@ static/
 │   ├── about.js        # About tab
 │   ├── upload.js       # File upload handling
 │   └── utils.js        # Shared utilities
+├── icons/              # HeroIcons SVG files
+│   ├── sun.svg, calendar.svg, clock.svg, cloud.svg
+│   ├── check.svg, plus.svg, trash.svg, pencil.svg
+│   ├── folder.svg, document.svg, link.svg
+│   ├── bolt.svg, user.svg, chevron-left.svg
+│   ├── chat-bubble-left.svg, queue-list.svg
+│   ├── ellipsis-vertical.svg, cog-6-tooth.svg
+│   ├── arrow-path.svg, arrow-up-tray.svg
+│   └── ... (all from heroicons.com)
 └── images/
-    └── euno-logo-*.png # Logo variants
+    └── favicon.svg     # App favicon
 ```
 
-Modular JavaScript with no build step required.
+Modular CSS and JavaScript with no build step required.
