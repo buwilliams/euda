@@ -2,7 +2,7 @@
   "version": "3.0.0",
   "initialized": true,
   "llm": {
-    "provider": "grok",
+    "provider": "openai",
     "providers": {
       "anthropic": {
         "display_name": "Claude",
