@@ -86,7 +86,7 @@ ssh -T "$SERVER" "cd $REMOTE_DIR && source venv/bin/activate && pip install --no
 
 # Restart service
 echo "[6/6] Restarting service..."
-ssh "$SERVER" "sudo systemctl restart euno"
+timeout 30 ssh "$SERVER" "sudo systemctl restart euno" || echo "Warning: Restart timed out or failed, checking status..."
 
 # Check status
 sleep 2

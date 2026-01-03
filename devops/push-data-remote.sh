@@ -90,7 +90,7 @@ rsync -avz --delete \
 # Restart service if requested
 if [ "$RESTART" = true ]; then
     echo "[4/$STEPS] Restarting service..."
-    ssh "$SERVER" "sudo systemctl restart euno"
+    timeout 30 ssh "$SERVER" "sudo systemctl restart euno" || echo "Warning: Restart timed out or failed, checking status..."
     sleep 2
     echo ""
     echo "Service status:"
