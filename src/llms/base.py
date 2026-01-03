@@ -103,8 +103,12 @@ class LLMProvider(ABC):
 
 # ============== Configuration ==============
 
+# Cached configuration
+_config_cache: dict = None
+
+
 def _load_config() -> dict:
-    """Load system configuration."""
+    """Load system configuration (for internal/admin use, not cached)."""
     if CONFIG_PATH.exists():
         try:
             with open(CONFIG_PATH) as f:
@@ -114,15 +118,23 @@ def _load_config() -> dict:
     return {}
 
 
+def _get_cached_config() -> dict:
+    """Get cached config, loading from disk if needed."""
+    global _config_cache
+    if _config_cache is None:
+        _config_cache = _load_config()
+    return _config_cache
+
+
 def get_provider() -> str:
     """Get the configured LLM provider."""
-    config = _load_config()
+    config = _get_cached_config()
     return config.get("llm", {}).get("provider", DEFAULT_PROVIDER)
 
 
 def get_model() -> str:
     """Get the configured model for the current provider."""
-    config = _load_config()
+    config = _get_cached_config()
     llm_config = config.get("llm", {})
     provider = llm_config.get("provider", DEFAULT_PROVIDER)
     # First check config, then fall back to provider default
@@ -137,7 +149,7 @@ def get_providers_config() -> Dict[str, dict]:
 
     Returns provider metadata merged with any user-configured models.
     """
-    config = _load_config()
+    config = _get_cached_config()
     user_models = config.get("llm", {}).get("models", {})
 
     result = {}
@@ -153,9 +165,28 @@ def get_providers_config() -> Dict[str, dict]:
 
 # ============== Provider Factory ==============
 
+# Cached client instance
+_cached_client: "UnifiedClient" = None
+
+
 def get_client() -> "UnifiedClient":
-    """Get a unified LLM client for the configured provider."""
-    return UnifiedClient(get_provider())
+    """Get a unified LLM client for the configured provider.
+
+    Returns cached client, creating one if cache was invalidated.
+    """
+    global _cached_client
+
+    if _cached_client is None:
+        _cached_client = UnifiedClient(get_provider())
+
+    return _cached_client
+
+
+def invalidate_client():
+    """Invalidate cached client and config. Call when settings change."""
+    global _cached_client, _config_cache
+    _cached_client = None
+    _config_cache = None
 
 
 class UnifiedClient:

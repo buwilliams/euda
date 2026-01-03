@@ -14,6 +14,7 @@ from .base import (
     get_provider,
     get_model,
     get_providers_config,
+    invalidate_client,
     PROVIDERS,
 )
 
@@ -27,5 +28,6 @@ __all__ = [
     "get_provider",
     "get_model",
     "get_providers_config",
+    "invalidate_client",
     "PROVIDERS",
 ]

@@ -27,7 +27,6 @@ class Agent:
         self.id = agent_id
         self.config = config or self._load_config()
         self.persona = self._load_persona()
-        self.client = get_client()
         self._work_done = False
         self._session_id = session_id
 
@@ -231,8 +230,11 @@ class Agent:
 
         messages = [{"role": "user", "content": message}]
 
+        # Get fresh client (respects current provider config)
+        client = get_client()
+
         # Call LLM with tools
-        response = self.client.messages.create(
+        response = client.messages.create(
             model=get_model(),
             max_tokens=4096,
             system=system_prompt,
@@ -250,7 +252,7 @@ class Agent:
             messages.append({"role": "assistant", "content": response.content})
             messages.append({"role": "user", "content": tool_results})
 
-            response = self.client.messages.create(
+            response = client.messages.create(
                 model=get_model(),
                 max_tokens=4096,
                 system=system_prompt,

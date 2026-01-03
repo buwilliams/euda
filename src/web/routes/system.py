@@ -10,7 +10,7 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from ...llms import get_client, get_model, get_provider, get_providers_config, PROVIDERS
+from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client, PROVIDERS
 from ...llms.base import _load_config, CONFIG_PATH
 from ...tools.jobs import list_jobs
 from ...tools.user import get_user_profile
@@ -178,6 +178,9 @@ def update_llm_settings(data: dict):
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
+
+    # Invalidate cached client so next request uses new provider
+    invalidate_client()
 
     return {"success": True, "llm": config["llm"]}
 
