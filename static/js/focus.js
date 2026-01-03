@@ -141,7 +141,19 @@ async function saveAgentConfig(agentId, updates) {
 
 // ============== Job Categories (Timeline Views) ==============
 
+function isContainerJob(job) {
+    // Agent inbox jobs have agent_id set
+    if (job.agent_id) return true;
+    // System containers have system:agents or system:projects tags
+    const tags = job.tags || [];
+    if (tags.includes('system:agents') || tags.includes('system:projects')) return true;
+    return false;
+}
+
 function getJobCategory(job) {
+    // Container jobs don't belong in timeline categories
+    if (isContainerJob(job)) return 'container';
+
     const today = new Date().toISOString().split('T')[0];
     const dueDate = job.due_date;
     const someday = job.someday;
