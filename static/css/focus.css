@@ -786,10 +786,19 @@
 
 .asset-item-name {
     flex: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
     color: var(--color-text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.asset-item-name img {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
 }
 
 .asset-item-size {
@@ -800,10 +809,16 @@
 .asset-item-delete {
     background: none;
     border: none;
-    color: var(--color-danger);
     cursor: pointer;
     padding: var(--spacing-xs);
-    opacity: 0.5;
+    opacity: 0.4;
+    display: flex;
+    align-items: center;
+}
+
+.asset-item-delete img {
+    width: 14px;
+    height: 14px;
 }
 
 .asset-item-delete:hover {
