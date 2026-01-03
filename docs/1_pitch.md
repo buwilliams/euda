@@ -91,19 +91,23 @@ A business meeting. A video game. A walk in the park. A difficult conversation. 
 
 ---
 
-## Demo Cheat Sheet
+## Ways to Use Euno
 
-**Personal:**
-1. Upload files → show data ingestion
-2. "What do you know about me?" → show profile
-3. Have a real conversation → show personalization
+**Get Personal:**
+- Upload your files, photos, and documents — Euno learns who you are
+- Ask "What do you know about me?" — see your profile take shape
+- Have a real conversation — notice how it remembers and connects
 
-**Proactive:**
-1. "Remind me to..." → watch task appear in Focus tab
-2. "I want to learn..." → watch project created
-3. Show Focus tab → walk through timeline views
+**Let It Work:**
+- Say "Remind me to..." — watch it appear in your Focus tab
+- Say "I want to learn..." — watch a project get created with next steps
+- Check the Focus tab — see your life organized by when things matter
 
-**Curates:**
-1. "What should I focus on?" → energy-aware suggestions
-2. Show History tab → fork a conversation
-3. Explain 90/10 balance philosophy
+**Reclaim Your Attention:**
+- Ask "What should I focus on?" — get suggestions based on your energy
+- Revisit past conversations in History — fork and continue any thread
+- Let Euno filter the noise — spend less time scrolling, miss nothing important
+
+**Take It With You:**
+- Start a conversation on one device, continue on another
+- Same intelligence, same memory, wherever you are
