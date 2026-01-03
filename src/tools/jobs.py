@@ -497,6 +497,11 @@ def delete_job(job_id: str, delete_children: bool = False) -> dict:
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
+    # Prevent deletion of system containers
+    system_tags = {"system:agents", "system:projects"}
+    if any(tag in system_tags for tag in job.get("tags", [])):
+        return {"error": "Cannot delete system containers"}
+
     # Delete children if requested (must do before parent due to FK)
     if delete_children:
         children = get_child_jobs(job_id)
