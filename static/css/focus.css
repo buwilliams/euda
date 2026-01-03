@@ -812,106 +812,110 @@
     color: var(--color-text-primary);
 }
 
-/* Assignees Section */
-.assignees-list {
+/* Assignees Picker */
+.assignees-picker {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
     display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-    margin-bottom: var(--spacing-md);
+    align-items: flex-end;
+    justify-content: center;
 }
 
-.assignee-item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    padding: 0.5rem var(--spacing-md);
-    background: var(--color-bg-subtle);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-base);
+.assignees-picker-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
 }
 
-.assignee-name {
-    flex: 1;
-    color: var(--color-text-primary);
-    font-weight: 500;
+.assignees-picker-content {
+    position: relative;
+    background: var(--color-bg-white);
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    padding: var(--spacing-xl);
+    width: 100%;
+    max-width: var(--max-width-app);
+    box-shadow: var(--shadow-modal);
 }
 
-.assignee-status {
-    font-size: var(--font-size-sm);
-    color: var(--color-accent);
-    background: rgba(0, 123, 255, 0.1);
-    padding: 0.15rem 0.5rem;
-    border-radius: var(--radius-sm);
+.assignees-picker-header {
+    font-weight: 600;
+    font-size: var(--font-size-md);
+    color: var(--color-text-muted);
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border-light);
 }
 
-.assignee-remove {
-    background: none;
-    border: none;
-    color: var(--color-text-placeholder);
-    cursor: pointer;
-    padding: var(--spacing-xs);
-    font-size: var(--font-size-base);
-    line-height: 1;
-    opacity: 0.5;
-    transition: opacity var(--transition-fast);
-}
-
-.assignee-remove:hover {
-    opacity: 1;
-    color: var(--color-danger);
-}
-
-.assignee-working {
+.assignees-picker-working {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    padding: 0.5rem var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
     background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 152, 0, 0.1));
     border: 1px solid rgba(255, 193, 7, 0.3);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-xl);
     margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-base);
 }
 
-.assignee-working-icon {
+.assignees-picker-working-icon {
     font-size: var(--font-size-lg);
 }
 
-.assignee-working-label {
-    font-size: var(--font-size-sm);
-    color: var(--color-text-muted);
-}
-
-.assignee-working-name {
-    font-weight: 600;
-    color: var(--color-text-primary);
-}
-
-.assignee-add {
-    margin-top: var(--spacing-sm);
-}
-
-.assignee-select {
-    width: 100%;
-    padding: 0.5rem var(--spacing-md);
-    border: 1px dashed var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-white);
-    font-family: inherit;
-    font-size: var(--font-size-base);
-    color: var(--color-text-muted);
+.assignees-option {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-xl);
     cursor: pointer;
-    outline: none;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast);
 }
 
-.assignee-select:hover {
+.assignees-option:hover {
+    background: var(--color-bg-muted);
+}
+
+.assignees-option.assigned {
+    background: var(--color-bg-subtle);
+}
+
+.assignees-option-check {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-accent);
+}
+
+.assignees-option.assigned .assignees-option-check {
+    background: var(--color-accent);
     border-color: var(--color-accent);
+    color: white;
+}
+
+.assignees-option-label {
+    font-size: var(--font-size-lg);
     color: var(--color-text-primary);
 }
 
-.assignee-select:focus {
-    border-color: var(--color-accent);
-    border-style: solid;
+.assignees-empty {
+    text-align: center;
+    color: var(--color-text-placeholder);
+    font-style: italic;
+    padding: var(--spacing-xl);
 }
 
 /* Card Assignment Indicators */

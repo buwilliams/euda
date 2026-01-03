@@ -177,12 +177,6 @@ function renderFocusTab() {
     } else {
         container.innerHTML = `<div class="view-slide-container current">${content}</div>`;
     }
-
-    // Initialize assignee section if viewing a job detail
-    if (focusView.startsWith('job-')) {
-        const jobId = focusView.substring(4);
-        setTimeout(() => initAssigneeSection(jobId), 50);
-    }
 }
 
 function animateViewTransition(container, newContent, direction) {
@@ -471,6 +465,7 @@ function renderJobDetailView(jobId) {
             <!-- Actions Row -->
             <div class="task-detail-actions">
                 <button class="task-detail-action" onclick="openWhenPicker('job', '${job.id}')">📅 ${escapeHtml(whenLabel)}</button>
+                <button class="task-detail-action" onclick="openAssigneesPicker('${job.id}')">${getAssigneesLabel(job)}</button>
                 <button class="task-detail-action" onclick="completeJob(event, '${job.id}')">✓ Complete</button>
                 <button class="task-detail-action" onclick="showArchiveInput(event, '${job.id}')">${isArchiving ? 'Cancel' : '📦 Archive'}</button>
                 <button class="task-detail-action danger" onclick="deleteJob(event, '${job.id}')">🗑 Delete</button>
@@ -509,26 +504,6 @@ function renderJobDetailView(jobId) {
                         ${hasDescription ? marked.parse(job.description) : 'Click to add description...'}
                     </div>
                 `}
-            </div>
-
-            <!-- Assignees Section -->
-            <div class="job-section">
-                <div class="job-section-header">Assignees</div>
-                ${job.in_progress_by ? `
-                    <div class="assignee-working">
-                        <span class="assignee-working-icon">⚡</span>
-                        <span class="assignee-working-label">Working:</span>
-                        <span class="assignee-working-name">${escapeHtml(job.in_progress_by)}</span>
-                    </div>
-                ` : ''}
-                <div class="assignees-list" id="assignees-list-${job.id}">
-                    ${renderAssigneesList(job)}
-                </div>
-                <div class="assignee-add">
-                    <select class="assignee-select" id="assign-select-${job.id}" onchange="handleAssignAgent('${job.id}')">
-                        <option value="">+ Assign agent...</option>
-                    </select>
-                </div>
             </div>
 
             <!-- Child Jobs Section -->
@@ -1538,53 +1513,66 @@ function handleNewAssetKeypress(event, jobId) {
 
 // ============== Assignment Management ==============
 
-function renderAssigneesList(job) {
+function getAssigneesLabel(job) {
     const assignees = job.assignees || [];
-    if (assignees.length === 0) {
-        return '<div class="empty-section">No agents assigned</div>';
+    if (job.in_progress_by) {
+        return `⚡ ${job.in_progress_by}`;
     }
-    return assignees.map(agentId => `
-        <div class="assignee-item">
-            <span class="assignee-name">${escapeHtml(agentId)}</span>
-            ${job.in_progress_by === agentId ? '<span class="assignee-status">working</span>' : ''}
-            <button class="assignee-remove" onclick="unassignAgent('${job.id}', '${escapeHtml(agentId)}')" title="Remove assignment">x</button>
-        </div>
-    `).join('');
+    if (assignees.length === 0) {
+        return '👤 Assign';
+    }
+    if (assignees.length === 1) {
+        return `👤 ${assignees[0]}`;
+    }
+    return `👤 ${assignees.length} assigned`;
 }
 
-async function populateAgentSelect(jobId) {
-    const select = document.getElementById(`assign-select-${jobId}`);
-    if (!select) return;
+async function openAssigneesPicker(jobId) {
+    const job = jobsData.find(j => j.id === jobId) || completedJobsData.find(j => j.id === jobId);
+    if (!job) return;
 
     const agents = await loadAgents();
-    const job = jobsData.find(j => j.id === jobId) || completedJobsData.find(j => j.id === jobId);
-    const currentAssignees = job?.assignees || [];
+    const currentAssignees = job.assignees || [];
 
-    // Clear existing options except the first placeholder
-    while (select.options.length > 1) {
-        select.remove(1);
-    }
-
-    // Add available agents (not already assigned)
-    agents.forEach(agent => {
-        if (!currentAssignees.includes(agent.id)) {
-            const option = document.createElement('option');
-            option.value = agent.id;
-            option.textContent = agent.name || agent.id;
-            select.appendChild(option);
-        }
-    });
+    const picker = document.createElement('div');
+    picker.className = 'assignees-picker';
+    picker.id = 'assignees-picker';
+    picker.innerHTML = `
+        <div class="assignees-picker-backdrop" onclick="closeAssigneesPicker()"></div>
+        <div class="assignees-picker-content">
+            <div class="assignees-picker-header">Assign Agents</div>
+            ${job.in_progress_by ? `
+                <div class="assignees-picker-working">
+                    <span class="assignees-picker-working-icon">⚡</span>
+                    <span>Currently working: <strong>${escapeHtml(job.in_progress_by)}</strong></span>
+                </div>
+            ` : ''}
+            ${agents.map(agent => {
+                const isAssigned = currentAssignees.includes(agent.id);
+                return `
+                    <div class="assignees-option ${isAssigned ? 'assigned' : ''}" onclick="toggleAgentAssignment('${jobId}', '${agent.id}', ${isAssigned})">
+                        <span class="assignees-option-check">${isAssigned ? '✓' : ''}</span>
+                        <span class="assignees-option-label">${escapeHtml(agent.name || agent.id)}</span>
+                    </div>
+                `;
+            }).join('')}
+            ${agents.length === 0 ? '<div class="assignees-empty">No agents available</div>' : ''}
+        </div>
+    `;
+    document.body.appendChild(picker);
 }
 
-async function handleAssignAgent(jobId) {
-    const select = document.getElementById(`assign-select-${jobId}`);
-    if (!select) return;
+function closeAssigneesPicker() {
+    const picker = document.getElementById('assignees-picker');
+    if (picker) {
+        picker.remove();
+    }
+}
 
-    const agentId = select.value;
-    if (!agentId) return;
-
+async function toggleAgentAssignment(jobId, agentId, isCurrentlyAssigned) {
     try {
-        const response = await fetch(`/api/jobs/${jobId}/assign`, {
+        const endpoint = isCurrentlyAssigned ? 'unassign' : 'assign';
+        const response = await fetch(`/api/jobs/${jobId}/${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ agent_id: agentId })
@@ -1592,36 +1580,15 @@ async function handleAssignAgent(jobId) {
 
         if (response.ok) {
             await loadJobsData();
+            closeAssigneesPicker();
+            // Reopen picker to show updated state
+            openAssigneesPicker(jobId);
         } else {
             const error = await response.json();
-            console.error('Failed to assign agent:', error);
+            console.error(`Failed to ${endpoint} agent:`, error);
         }
     } catch (error) {
-        console.error('Failed to assign agent:', error);
+        console.error('Failed to toggle assignment:', error);
     }
-}
-
-async function unassignAgent(jobId, agentId) {
-    try {
-        const response = await fetch(`/api/jobs/${jobId}/unassign`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ agent_id: agentId })
-        });
-
-        if (response.ok) {
-            await loadJobsData();
-        } else {
-            const error = await response.json();
-            console.error('Failed to unassign agent:', error);
-        }
-    } catch (error) {
-        console.error('Failed to unassign agent:', error);
-    }
-}
-
-// Populate agent select when job detail view renders
-function initAssigneeSection(jobId) {
-    populateAgentSelect(jobId);
 }
 
