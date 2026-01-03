@@ -8,6 +8,11 @@ Entry point for the application.
 import argparse
 import asyncio
 import sys
+from pathlib import Path
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent / ".env")
 
 
 def main():
