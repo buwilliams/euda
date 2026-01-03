@@ -188,7 +188,7 @@ class UnifiedClient:
 
             response = self.client.chat.completions.create(
                 model=model,
-                max_tokens=max_tokens,
+                max_completion_tokens=max_tokens,
                 messages=openai_messages,
                 tools=self._convert_tools_to_openai(tools) if tools else None
             )
