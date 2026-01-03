@@ -1,0 +1,146 @@
+/* Euno - Focus Markdown Rendering */
+
+/* Rendered Markdown Content */
+.job-description-display h1,
+.job-description-display h2,
+.job-description-display h3,
+.job-description-display h4,
+.job-description-display h5,
+.job-description-display h6 {
+    color: var(--color-text-primary);
+    line-height: var(--line-height-tight);
+    margin: 1em 0 0.5em 0;
+}
+
+.job-description-display h1:first-child,
+.job-description-display h2:first-child,
+.job-description-display h3:first-child,
+.job-description-display h4:first-child {
+    margin-top: 0;
+}
+
+.job-description-display h1 { font-size: var(--font-size-4xl); font-weight: 600; }
+.job-description-display h2 { font-size: var(--font-size-3xl); font-weight: 600; }
+.job-description-display h3 { font-size: 1.05em; font-weight: 600; }
+.job-description-display h4 { font-size: var(--font-size-lg); font-weight: 600; }
+
+.job-description-display p {
+    margin: 0.6em 0;
+    line-height: var(--line-height-relaxed);
+    color: #444;
+}
+
+.job-description-display p:first-child { margin-top: 0; }
+.job-description-display p:last-child { margin-bottom: 0; }
+
+.job-description-display ul,
+.job-description-display ol {
+    margin: 0.6em 0;
+    padding-left: 1.5em;
+    color: #444;
+}
+
+.job-description-display li {
+    margin: 0.3em 0;
+    line-height: var(--line-height-base);
+}
+
+.job-description-display li > ul,
+.job-description-display li > ol {
+    margin: 0.25em 0;
+}
+
+.job-description-display strong {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.job-description-display em {
+    font-style: italic;
+}
+
+.job-description-display code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    background: var(--color-bg-muted);
+    padding: 0.15em 0.4em;
+    border-radius: var(--radius-sm);
+    color: var(--color-code);
+}
+
+.job-description-display pre {
+    margin: 0.75em 0;
+    padding: 0.75em 1em;
+    background: var(--color-bg-muted);
+    border-radius: var(--radius-lg);
+    overflow-x: auto;
+}
+
+.job-description-display pre code {
+    background: none;
+    padding: 0;
+    color: var(--color-text-primary);
+    font-size: 0.85em;
+    line-height: var(--line-height-base);
+}
+
+.job-description-display blockquote {
+    margin: 0.75em 0;
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-left: 3px solid #ddd;
+    background: var(--color-bg-subtle);
+    color: var(--color-text-muted);
+}
+
+.job-description-display blockquote p {
+    margin: 0.3em 0;
+}
+
+.job-description-display a {
+    color: var(--color-link);
+    text-decoration: none;
+}
+
+.job-description-display a:hover {
+    text-decoration: underline;
+}
+
+.job-description-display hr {
+    margin: 1em 0;
+    border: none;
+    border-top: 1px solid var(--color-border);
+}
+
+.job-description-display table {
+    margin: 0.75em 0;
+    border-collapse: collapse;
+    width: 100%;
+    font-size: var(--font-size-md);
+}
+
+.job-description-display th,
+.job-description-display td {
+    padding: 0.5em 0.75em;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.job-description-display th {
+    background: var(--color-bg-muted);
+    font-weight: 600;
+}
+
+.job-description-display img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+}
+
+.job-description-display input[type="checkbox"] {
+    margin-right: 0.5em;
+}
+
+.job-description-display li.task-list-item {
+    list-style: none;
+    margin-left: -1.25em;
+}
