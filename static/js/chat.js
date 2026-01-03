@@ -62,11 +62,6 @@ async function sendContextMessage() {
     const message = contextInput.value.trim();
     if (!message || isWaiting) return;
 
-    // Switch to chat tab if not already there
-    if (activeTab !== 'chat') {
-        switchTab('chat');
-    }
-
     // Add user message
     addInlineMessage(message, 'you');
     contextInput.value = '';
