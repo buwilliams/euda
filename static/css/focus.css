@@ -513,7 +513,7 @@
 
 .quick-add-btn {
     padding: var(--spacing-md) var(--spacing-xl);
-    background: var(--color-accent);
+    background: var(--color-accent-dark);
     color: white;
     border: none;
     border-radius: var(--radius-lg);
@@ -524,7 +524,7 @@
 }
 
 .quick-add-btn:hover {
-    background: var(--color-accent-hover);
+    background: var(--color-accent-dark-hover);
 }
 
 /* Job Detail Sections */
