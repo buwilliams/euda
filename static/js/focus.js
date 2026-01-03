@@ -554,6 +554,7 @@ function renderJobDetailView(jobId) {
                                 <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
                                 <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                                <span class="asset-item-arrow">${icon('chevron-right')}</span>
                             </div>
                         ` : `
                             <div class="asset-item">
@@ -696,6 +697,7 @@ function renderCompletedJobDetailView(jobId) {
                                 <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
                                 <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                                <span class="asset-item-arrow">${icon('chevron-right')}</span>
                             </div>
                         ` : `
                             <div class="asset-item">
@@ -831,7 +833,11 @@ function renderAssetView(jobId, filename) {
             <!-- Back Link -->
             <div class="job-section">
                 <div class="job-section-header">Job</div>
-                <div class="card-project-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'job'}-${jobId}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(jobName)}</div>
+                <div class="asset-back-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'job'}-${jobId}')">
+                    ${icon('folder')}
+                    <span>${escapeHtml(jobName)}</span>
+                    ${icon('chevron-right')}
+                </div>
             </div>
         </div>
     `;
@@ -881,6 +887,7 @@ function renderAssetsListView(jobId) {
                                 <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
                                 <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${jobId}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                                <span class="asset-item-arrow">${icon('chevron-right')}</span>
                             </div>
                         ` : `
                             <div class="asset-item">

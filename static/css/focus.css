@@ -825,6 +825,49 @@
     opacity: 1;
 }
 
+.asset-item-arrow {
+    display: flex;
+    align-items: center;
+    color: #ccc;
+}
+
+.asset-item-arrow img {
+    width: 16px;
+    height: 16px;
+}
+
+/* Asset Back Link */
+.asset-back-link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--color-bg-subtle);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.asset-back-link:hover {
+    background: var(--color-bg-muted);
+}
+
+.asset-back-link img {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.asset-back-link img:last-child {
+    margin-left: auto;
+    opacity: 0.4;
+}
+
+.asset-back-link span {
+    flex: 1;
+    color: var(--color-text-primary);
+}
+
 .empty-section {
     color: var(--color-text-placeholder);
     font-style: italic;
