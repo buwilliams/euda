@@ -10,7 +10,7 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from ...llm import get_client, get_model, get_provider
+from ...llm import get_client, get_model, get_provider, DEFAULT_MODELS, _load_config, CONFIG_PATH
 from ...tools.jobs import list_jobs
 from ...tools.user import get_user_profile
 
@@ -139,15 +139,59 @@ def daily_quote():
 
 # ============== Settings ==============
 
+AVAILABLE_PROVIDERS = ["anthropic", "openai", "grok"]
+
 @router.get("/settings")
 def get_settings():
-    """Get current LLM settings."""
+    """Get current LLM settings with all providers."""
+    config = _load_config()
+    llm_config = config.get("llm", {})
+    models = llm_config.get("models", DEFAULT_MODELS)
+
+    # Build providers dict with current model for each
+    providers = {}
+    for provider in AVAILABLE_PROVIDERS:
+        providers[provider] = {
+            "default_model": models.get(provider, DEFAULT_MODELS.get(provider, ""))
+        }
+
     return {
         "llm": {
             "provider": get_provider(),
-            "model": get_model()
+            "model": get_model(),
+            "providers": providers
         }
     }
+
+
+@router.put("/settings/llm")
+def update_llm_settings(data: dict):
+    """Update LLM settings (provider, models)."""
+    config = _load_config()
+
+    if "llm" not in config:
+        config["llm"] = {}
+
+    # Update provider if specified
+    if "default_provider" in data:
+        provider = data["default_provider"]
+        if provider in AVAILABLE_PROVIDERS:
+            config["llm"]["provider"] = provider
+
+    # Update models if specified
+    if "providers" in data:
+        if "models" not in config["llm"]:
+            config["llm"]["models"] = dict(DEFAULT_MODELS)
+        for provider, settings in data["providers"].items():
+            if provider in AVAILABLE_PROVIDERS and "default_model" in settings:
+                config["llm"]["models"][provider] = settings["default_model"]
+
+    # Save config
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=2)
+
+    return {"success": True, "llm": config["llm"]}
 
 
 # ============== SSE Events ==============

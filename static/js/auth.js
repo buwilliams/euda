@@ -117,10 +117,22 @@ function renderSettings() {
     // Set default provider dropdown
     const providerSelect = document.getElementById('default-provider');
     if (providerSelect && settingsData.llm) {
-        providerSelect.value = settingsData.llm.default_provider || 'anthropic';
+        providerSelect.value = settingsData.llm.provider || 'anthropic';
         renderProviderModels();
     }
 }
+
+const PROVIDER_DISPLAY_NAMES = {
+    'anthropic': 'Claude',
+    'openai': 'GPT',
+    'grok': 'Grok'
+};
+
+const PROVIDER_PLACEHOLDERS = {
+    'anthropic': 'claude-sonnet-4-20250514',
+    'openai': 'gpt-5.2',
+    'grok': 'grok-3'
+};
 
 function renderProviderModels() {
     const container = document.getElementById('provider-models');
@@ -130,13 +142,14 @@ function renderProviderModels() {
     let html = '';
 
     for (const [name, config] of Object.entries(providers)) {
-        const displayName = name === 'anthropic' ? 'Claude' : 'GPT';
+        const displayName = PROVIDER_DISPLAY_NAMES[name] || name;
+        const placeholder = PROVIDER_PLACEHOLDERS[name] || '';
         html += `
             <div class="settings-model-group">
                 <div class="settings-model-label">${displayName} Model</div>
                 <input type="text" class="settings-input" id="model-${name}"
                        value="${config.default_model || ''}"
-                       placeholder="e.g., ${name === 'anthropic' ? 'claude-sonnet-4-20250514' : 'gpt-4o'}">
+                       placeholder="e.g., ${placeholder}">
             </div>
         `;
     }
