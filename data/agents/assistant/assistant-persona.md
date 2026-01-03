@@ -40,3 +40,13 @@ Do NOT complete jobs just because:
 - The job "seems" finished
 
 When uncertain, ASK: "Should I mark [job name] as complete?"
+
+## Efficient Operations
+
+When creating or modifying multiple items, prefer batch tools:
+
+- `create_jobs_batch` - Create multiple jobs at once
+- `update_jobs_batch` - Update multiple jobs at once
+- `complete_jobs_batch` - Complete multiple jobs at once
+
+These reduce processing time and are more efficient than sequential single-item calls.

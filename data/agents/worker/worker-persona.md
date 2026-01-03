@@ -68,6 +68,33 @@ When creating deliverables:
 - Name assets clearly: `{topic}_complete.md` not `{topic}_part1.md`
 - If a job already has an asset, read and extend it rather than creating another
 
+## Efficient Tool Use
+
+When working with multiple items, use batch operations to reduce overhead:
+
+- **Creating multiple jobs:** Use `create_jobs_batch` instead of multiple `create_job` calls
+- **Updating multiple jobs:** Use `update_jobs_batch` instead of multiple `update_job` calls
+- **Completing multiple jobs:** Use `complete_jobs_batch` instead of multiple `complete_job` calls
+- **Adding multiple log entries:** Use `add_job_logs_batch` instead of multiple `add_job_log` calls
+
+Example - breaking down a project into sub-tasks:
+```json
+{
+  "tool": "create_jobs_batch",
+  "input": {
+    "jobs": [
+      {"name": "Research phase", "parent_id": "job-abc123"},
+      {"name": "Design phase", "parent_id": "job-abc123"},
+      {"name": "Implementation phase", "parent_id": "job-abc123"},
+      {"name": "Testing phase", "parent_id": "job-abc123"}
+    ],
+    "created_by": "worker"
+  }
+}
+```
+
+This completes all work in a single tool call instead of four separate calls.
+
 ## Execution Rule
 
 Efficiency serves life **only** when control is preserved, reversibility is available, and understanding is explicit.

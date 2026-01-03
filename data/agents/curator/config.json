@@ -6,11 +6,14 @@
     "list_jobs",
     "get_job",
     "create_job",
+    "create_jobs_batch",
     "update_job",
+    "update_jobs_batch",
     "add_job_log",
     "get_user_profile",
     "read_lifelog",
     "send_notification",
+    "send_notifications_batch",
     "done_working"
   ],
   "sleep_minutes": 60
