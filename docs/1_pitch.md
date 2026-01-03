@@ -67,7 +67,8 @@ Euno has six specialized agents, though they're still being developed:
 
 **What's Not Built Yet:**
 - No external integrations (calendar, email, social media, e-commerce)
-- No mobile app or wearable support — web only
+- No native mobile app — but the web app is mobile-first and works well in mobile browsers
+- No wearable or voice-first interfaces
 - Agents can't take actions outside the system (no ordering, scheduling, messaging)
 - Limited proactive behavior — mostly responds when you initiate
 
@@ -103,7 +104,7 @@ Eventually, that intelligence could live anywhere:
 
 The form factor changes. Euno doesn't. The same model of who you are, the same memory of your life, the same caring collaborator—present in whatever environment you're in.
 
-*This is the vision. Today, Euno is a web app you access from your browser.*
+*This is the vision. Today, Euno is a mobile-first web app you access from any browser.*
 
 ---
 
