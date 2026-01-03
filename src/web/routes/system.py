@@ -10,7 +10,7 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from ...llm import get_client, get_model, get_provider, DEFAULT_MODEL
+from ...llm import get_client, get_model, get_provider
 from ...tools.jobs import list_jobs
 from ...tools.user import get_user_profile
 
