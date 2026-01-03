@@ -482,7 +482,7 @@ function renderJobDetailView(jobId) {
                 <button class="task-detail-action" onclick="openWhenPicker('job', '${job.id}')">${icon('calendar')} ${escapeHtml(whenLabel)}</button>
                 <button class="task-detail-action" onclick="openAssigneesPicker('${job.id}')">${getAssigneesLabel(job)}</button>
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
-                <button class="task-detail-action" onclick="openMorePicker('${job.id}')">••• More</button>
+                <button class="task-detail-action" onclick="openMorePicker('${job.id}')">Actions</button>
             </div>
 
             <!-- Name Section -->
