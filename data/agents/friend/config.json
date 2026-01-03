@@ -8,7 +8,6 @@
     "get_job",
     "create_job",
     "update_job",
-    "complete_job",
     "add_job_log",
     "get_child_jobs",
     "list_assets",
