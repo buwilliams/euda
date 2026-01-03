@@ -1,7 +1,8 @@
 {
   "id": "curator",
   "name": "The Curator",
-  "enabled": true,
+  "enabled": false,
+  "order": 5,
   "tools": [
     "list_jobs",
     "get_job",

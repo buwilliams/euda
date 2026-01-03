@@ -8,7 +8,8 @@ from pydantic import BaseModel
 
 from ...tools.jobs import (
     list_jobs, get_job, create_job, update_job,
-    complete_job, restore_job, archive_job, add_job_log, get_child_jobs, delete_job
+    complete_job, restore_job, archive_job, add_job_log, get_child_jobs, delete_job,
+    assign_agent, unassign_agent, list_assignees
 )
 from ...tools.assets import list_assets, read_asset, write_asset, delete_asset
 
@@ -21,6 +22,7 @@ class CreateJobRequest(BaseModel):
     description: Optional[str] = None
     parent_id: Optional[str] = None
     tags: Optional[List[str]] = None
+    assignees: Optional[List[str]] = None
     due_date: Optional[str] = None
     someday: bool = False
 
@@ -30,8 +32,13 @@ class UpdateJobRequest(BaseModel):
     description: Optional[str] = None
     status: Optional[str] = None
     tags: Optional[List[str]] = None
+    assignees: Optional[List[str]] = None
     due_date: Optional[str] = None
     someday: Optional[bool] = None
+
+
+class AssignAgentRequest(BaseModel):
+    agent_id: str
 
 
 class AddLogRequest(BaseModel):
@@ -44,9 +51,9 @@ class WriteAssetRequest(BaseModel):
 
 
 @router.get("")
-def api_list_jobs(status: Optional[str] = None, parent_id: Optional[str] = None):
+def api_list_jobs(status: Optional[str] = None, parent_id: Optional[str] = None, assignee: Optional[str] = None):
     """List all jobs with optional filters."""
-    return list_jobs(status=status, parent_id=parent_id)
+    return list_jobs(status=status, parent_id=parent_id, assignee=assignee)
 
 
 @router.get("/{job_id}")
@@ -66,6 +73,7 @@ def api_create_job(request: CreateJobRequest):
         description=request.description,
         parent_id=request.parent_id,
         tags=request.tags,
+        assignees=request.assignees,
         due_date=request.due_date,
         someday=request.someday
     )
@@ -80,6 +88,7 @@ def api_update_job(job_id: str, request: UpdateJobRequest):
         description=request.description,
         status=request.status,
         tags=request.tags,
+        assignees=request.assignees,
         due_date=request.due_date,
         someday=request.someday
     )
@@ -137,6 +146,35 @@ def api_add_log(job_id: str, request: AddLogRequest):
 def api_get_children(job_id: str):
     """Get child jobs."""
     return get_child_jobs(job_id)
+
+
+# Assignment endpoints
+
+@router.get("/{job_id}/assignees")
+def api_list_assignees(job_id: str):
+    """List agents assigned to a job."""
+    result = list_assignees(job_id)
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+@router.post("/{job_id}/assign")
+def api_assign_agent(job_id: str, request: AssignAgentRequest):
+    """Assign an agent to a job."""
+    result = assign_agent(job_id, request.agent_id)
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+
+@router.post("/{job_id}/unassign")
+def api_unassign_agent(job_id: str, request: AssignAgentRequest):
+    """Remove an agent from a job."""
+    result = unassign_agent(job_id, request.agent_id)
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
 
 
 # Asset endpoints

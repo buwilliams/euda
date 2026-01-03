@@ -59,12 +59,11 @@ The Lifelog is intentionally raw and unprocessed. The Archivist's job is to pres
 
 ### Default Agents
 
-Euno includes seven default agents:
+Euno includes six default agents:
 
 | Agent | Purpose |
 |-------|---------|
 | **Friend** | Primary conversational interface. Supports thinking and decision-making while respecting identity. |
-| **Assistant** | Task-focused helper for managing jobs, organizing work, and tracking progress. |
 | **Worker** | Autonomous task executor. Handles work while preserving user agency over commitments. |
 | **Profiler** | Constructs the User Profile from Lifelog data. Focuses on observed behavior, not stated preferences. |
 | **Curator** | Manages attention as a scarce resource. Surfaces opportunities at appropriate times. |

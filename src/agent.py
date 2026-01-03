@@ -9,6 +9,7 @@ An agent is defined by:
 
 import json
 import os
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -28,6 +29,26 @@ class Agent:
         self.config = config or self._load_config()
         self.persona = self._load_persona()
         self.client = get_client()
+        self._wake_event = threading.Event()
+        self._work_done = False
+
+    def wake(self):
+        """Wake this agent from sleep immediately."""
+        self._log("wake_triggered")
+        self._wake_event.set()
+
+    def wait_for_wake(self, timeout: float) -> bool:
+        """Wait for wake event or timeout.
+
+        Args:
+            timeout: Maximum seconds to wait
+
+        Returns:
+            True if woken by event, False if timed out
+        """
+        woken = self._wake_event.wait(timeout=timeout)
+        self._wake_event.clear()  # Reset for next cycle
+        return woken
 
     def _load_config(self) -> dict:
         """Load agent configuration from disk."""

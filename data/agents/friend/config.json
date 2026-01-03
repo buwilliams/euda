@@ -2,6 +2,7 @@
   "id": "friend",
   "name": "The Friend",
   "enabled": true,
+  "order": 8,
   "tools": [
     "list_jobs",
     "get_job",

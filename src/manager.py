@@ -22,6 +22,20 @@ from .agent import Agent
 DATA_DIR = Path(__file__).parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
 
+# Global manager instance for tools to access
+_manager_instance: 'AgentManager' = None
+
+
+def get_manager() -> 'AgentManager':
+    """Get the global AgentManager instance."""
+    return _manager_instance
+
+
+def set_manager(manager: 'AgentManager'):
+    """Set the global AgentManager instance."""
+    global _manager_instance
+    _manager_instance = manager
+
 
 class AgentManager:
     """Manages the lifecycle of all agents."""
@@ -94,16 +108,33 @@ class AgentManager:
                     "wake_at": wake_time.isoformat()
                 })
 
-                # Sleep between cycles
-                time.sleep(sleep_seconds)
+                # Wait for wake event or timeout
+                woken_early = agent.wait_for_wake(timeout=sleep_seconds)
 
-                agent._log("wake")
+                if woken_early:
+                    agent._log("wake", {"reason": "triggered"})
+                else:
+                    agent._log("wake", {"reason": "timeout"})
 
             except Exception as e:
                 agent._log("error", {"message": str(e)})
                 print(f"Agent {agent.id} error: {e}")
                 # Brief sleep before retry
                 time.sleep(5)
+
+    def wake_agent(self, agent_id: str) -> bool:
+        """Wake an agent immediately.
+
+        Args:
+            agent_id: ID of agent to wake
+
+        Returns:
+            True if agent found and woken, False otherwise
+        """
+        if agent_id in self.agents:
+            self.agents[agent_id].wake()
+            return True
+        return False
 
     def run(self):
         """Run the agent manager."""
@@ -145,4 +176,5 @@ class AgentManager:
 def run_agent_manager():
     """Convenience function to run the agent manager."""
     manager = AgentManager()
+    set_manager(manager)
     manager.run()
