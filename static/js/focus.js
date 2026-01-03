@@ -978,7 +978,7 @@ function renderAttachScreen(jobId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">+ Assets</span>
+            <span class="focus-view-title">Add Assets</span>
         </div>
         <div class="focus-view-content">
             <div class="job-section">
@@ -1762,7 +1762,7 @@ function openAddPicker(jobId) {
             <div class="picker-header">Add</div>
             <div class="picker-option" onclick="closeAddPicker(); navigateFocus('newjob-${jobId}')">
                 <span class="picker-option-icon">${icon('queue-list')}</span>
-                <span class="picker-option-label">Child Jobs</span>
+                <span class="picker-option-label">Jobs</span>
             </div>
             <div class="picker-option" onclick="closeAddPicker(); navigateFocus('attach-${jobId}')">
                 <span class="picker-option-icon">${icon('link')}</span>
