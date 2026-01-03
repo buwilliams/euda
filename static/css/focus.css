@@ -140,6 +140,15 @@
     font-weight: 600;
     font-size: var(--font-size-xl);
     color: var(--color-text-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.focus-view-title img {
+    width: 1em;
+    height: 1em;
+    flex-shrink: 0;
 }
 
 /* Focus View Content */
@@ -358,11 +367,21 @@
     cursor: pointer;
     text-decoration: underline;
     text-decoration-style: dotted;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
 }
 
 .card-project-link:hover {
     color: var(--color-text-primary);
     text-decoration-style: solid;
+}
+
+.card-project-link img {
+    width: 1em;
+    height: 1em;
+    flex-shrink: 0;
+    text-decoration: none;
 }
 
 .card-description {
@@ -538,6 +557,14 @@
 /* Job Detail Sections */
 .job-section {
     margin-bottom: var(--spacing-xl);
+}
+
+/* Inline icons in job section content (e.g., completed badge) */
+.job-section > span img {
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+    margin-right: 0.25em;
 }
 
 .job-section-header {
