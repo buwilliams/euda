@@ -497,7 +497,6 @@ Jobs can move between agents either implicitly or explicitly:
 
 **System Tools:**
 - `get_config` — Read system config
-- `send_notification` — Notify user
 - `done_working` — Signal work completion
 
 ### Tool Registration

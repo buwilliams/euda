@@ -17,7 +17,6 @@
     "write_asset",
     "delete_asset",
     "get_user_profile",
-    "send_notification",
     "done_working"
   ],
   "triggers": ["job:assigned", "time:morning"]
