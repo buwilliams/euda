@@ -27,6 +27,7 @@ def tool(name: str, description: str):
                 continue
 
             param_type = "string"  # default
+            param_schema = None
             if param.annotation != inspect.Parameter.empty:
                 if param.annotation == int:
                     param_type = "integer"
@@ -34,10 +35,12 @@ def tool(name: str, description: str):
                     param_type = "boolean"
                 elif param.annotation == list:
                     param_type = "array"
+                    # OpenAI requires items for array types
+                    param_schema = {"type": "array", "items": {"type": "string"}}
                 elif param.annotation == dict:
                     param_type = "object"
 
-            properties[param_name] = {"type": param_type}
+            properties[param_name] = param_schema if param_schema else {"type": param_type}
 
             # Check if parameter has a default
             if param.default == inspect.Parameter.empty:
