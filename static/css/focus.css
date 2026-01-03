@@ -1311,3 +1311,144 @@
 }
 
 /* Agent inbox jobs - icon only, no special styling */
+
+/* Child job cards in system container views (Agents, Projects) */
+.child-jobs-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.child-job-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--color-bg-secondary);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+}
+
+.child-job-card:hover {
+    background: var(--color-bg-tertiary);
+}
+
+.child-job-icon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.child-job-icon img {
+    width: 1em;
+    height: 1em;
+}
+
+.child-job-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.child-job-count {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.child-job-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--color-text-tertiary);
+}
+
+.child-job-arrow img {
+    width: 1em;
+    height: 1em;
+}
+
+.child-job-card .card-trash-btn {
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.child-job-card:hover .card-trash-btn {
+    opacity: 1;
+}
+
+/* ============== Agent Config Editing ============== */
+
+.agent-config-display {
+    padding: 0.75rem;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast);
+}
+
+.agent-config-display:hover {
+    background: var(--color-bg-subtle);
+}
+
+.agent-config-row {
+    display: flex;
+    margin-bottom: 0.5rem;
+}
+
+.agent-config-row:last-child {
+    margin-bottom: 0;
+}
+
+.agent-config-key {
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    min-width: 80px;
+    flex-shrink: 0;
+}
+
+.agent-config-value {
+    color: var(--color-text-primary);
+    word-break: break-word;
+}
+
+.agent-config-value em {
+    color: var(--color-text-placeholder);
+    font-style: italic;
+}
+
+.agent-config-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.5rem;
+}
+
+.agent-config-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.agent-config-label span {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.agent-config-input {
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-base);
+    font-family: inherit;
+}
+
+.agent-config-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.agent-config-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 0.25rem;
+}

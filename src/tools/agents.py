@@ -84,3 +84,52 @@ def update_agent_memory(agent_id: str, key: str, value: str) -> dict:
         json.dump(memory, f, indent=2)
 
     return memory
+
+
+def get_agent_persona(agent_id: str) -> Optional[str]:
+    """Get an agent's persona markdown."""
+    persona_path = AGENTS_DIR / agent_id / f"{agent_id}-persona.md"
+    if persona_path.exists():
+        return persona_path.read_text()
+    return None
+
+
+def update_agent_persona(agent_id: str, persona: str) -> dict:
+    """Update an agent's persona markdown file."""
+    agent_dir = AGENTS_DIR / agent_id
+    if not agent_dir.exists():
+        return {"error": f"Agent not found: {agent_id}"}
+
+    persona_path = agent_dir / f"{agent_id}-persona.md"
+    persona_path.write_text(persona)
+
+    return {"updated": True, "agent_id": agent_id}
+
+
+def get_agent_config(agent_id: str) -> Optional[dict]:
+    """Get an agent's configuration."""
+    config_path = AGENTS_DIR / agent_id / "config.json"
+    if config_path.exists():
+        with open(config_path) as f:
+            return json.load(f)
+    return None
+
+
+def update_agent_config(agent_id: str, config: dict) -> dict:
+    """Update an agent's configuration.
+
+    Note: Changes to triggers require a restart to take effect.
+    """
+    agent_dir = AGENTS_DIR / agent_id
+    if not agent_dir.exists():
+        return {"error": f"Agent not found: {agent_id}"}
+
+    config_path = agent_dir / "config.json"
+
+    # Preserve the id field
+    config["id"] = agent_id
+
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=2)
+
+    return {"updated": True, "agent_id": agent_id, "config": config}

@@ -9,6 +9,7 @@ let editingJobField = null;  // Which field is being edited: {jobId, field}
 let currentAssetData = null; // Currently viewed asset
 let editingAssetFilename = null; // Track if we're editing an asset
 let agentsCache = null;      // Cache of available agents
+let agentDataCache = {};     // Cache of agent persona and config
 
 // ============== Icons ==============
 
@@ -65,6 +66,75 @@ async function loadAgents() {
         console.error('Failed to load agents:', error);
     }
     return [];
+}
+
+async function loadAgentData(agentId) {
+    try {
+        const [personaRes, configRes] = await Promise.all([
+            fetch(`/api/agents/${agentId}/persona`, { credentials: 'same-origin' }),
+            fetch(`/api/agents/${agentId}/config`, { credentials: 'same-origin' })
+        ]);
+
+        const data = { agentId };
+
+        if (personaRes.ok) {
+            const personaData = await personaRes.json();
+            data.persona = personaData.persona;
+        }
+
+        if (configRes.ok) {
+            data.config = await configRes.json();
+        }
+
+        agentDataCache[agentId] = data;
+        return data;
+    } catch (error) {
+        console.error('Failed to load agent data:', error);
+    }
+    return null;
+}
+
+async function saveAgentPersona(agentId, persona) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/persona`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ persona })
+        });
+
+        if (response.ok) {
+            // Update cache
+            if (agentDataCache[agentId]) {
+                agentDataCache[agentId].persona = persona;
+            }
+            return true;
+        }
+    } catch (error) {
+        console.error('Failed to save agent persona:', error);
+    }
+    return false;
+}
+
+async function saveAgentConfig(agentId, updates) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/config`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            // Update cache
+            if (agentDataCache[agentId]) {
+                agentDataCache[agentId].config = result.config;
+            }
+            return true;
+        }
+    } catch (error) {
+        console.error('Failed to save agent config:', error);
+    }
+    return false;
 }
 
 // ============== Job Categories (Timeline Views) ==============
@@ -485,6 +555,170 @@ function renderSystemContainerView(job, isAgentsContainer) {
     `;
 }
 
+function renderAgentDetailView(job) {
+    const agentId = job.agent_id;
+    const displayName = job.name || 'Untitled';
+    const childJobs = jobsData.filter(j => j.parent_id === job.id);
+    const completedChildJobs = completedJobsData.filter(j => j.parent_id === job.id);
+    const assets = jobAssetsCache[job.id] || [];
+
+    // Load agent data if not cached
+    const agentData = agentDataCache[agentId];
+    if (!agentData) {
+        loadAgentData(agentId).then(() => renderFocusTab());
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-view-title">${icon('bolt')}${escapeHtml(displayName)}</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading agent data...</div>
+            </div>
+        `;
+    }
+
+    // Load assets if not cached
+    if (!jobAssetsCache[job.id]) {
+        loadJobAssets(job.id).then(() => renderFocusTab());
+    }
+
+    const persona = agentData.persona || '';
+    const config = agentData.config || {};
+    const hasPersona = persona.length > 0;
+
+    // Check if we're editing
+    const isEditingPersona = editingJobField?.jobId === job.id && editingJobField?.field === 'persona';
+    const isEditingConfig = editingJobField?.jobId === job.id && editingJobField?.field === 'config';
+
+    // Format triggers and tools for display
+    const triggers = config.triggers || [];
+    const tools = config.tools || [];
+    const isEnabled = config.enabled !== false;
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">${icon('bolt')}${escapeHtml(displayName)}</span>
+        </div>
+        <div class="focus-view-content">
+            <!-- Actions Row -->
+            <div class="task-detail-actions">
+                <button class="task-detail-action" onclick="toggleAgentEnabled('${agentId}', ${!isEnabled})">${isEnabled ? icon('pause') + ' Disable' : icon('play') + ' Enable'}</button>
+                <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
+            </div>
+
+            <!-- Status Section -->
+            <div class="job-section" style="background: ${isEnabled ? '#f0f8f0' : '#f8f0f0'}; border-radius: 6px; padding: 0.5rem 1rem;">
+                <span style="color: ${isEnabled ? '#4a8' : '#a64'}; font-weight: 500;">
+                    ${isEnabled ? icon('check') + ' Agent Enabled' : icon('x-mark') + ' Agent Disabled'}
+                </span>
+            </div>
+
+            <!-- Persona Section -->
+            <div class="job-section">
+                <div class="job-section-header">
+                    Persona
+                    ${isEditingPersona ? `<span class="job-section-action" onclick="saveAgentPersonaField('${agentId}', '${job.id}')">Save</span>` : ''}
+                </div>
+                ${isEditingPersona ? `
+                    <textarea class="job-description-input" id="edit-persona-${job.id}"
+                        onkeydown="handleAgentPersonaKeypress(event, '${agentId}', '${job.id}')"
+                        placeholder="Define the agent's persona..."
+                        style="min-height: 200px;">${escapeHtml(persona)}</textarea>
+                ` : `
+                    <div class="job-description-display ${hasPersona ? '' : 'empty'}" onclick="startEditingField('${job.id}', 'persona')">
+                        ${hasPersona ? marked.parse(persona) : 'Click to define persona...'}
+                    </div>
+                `}
+            </div>
+
+            <!-- Configuration Section -->
+            <div class="job-section">
+                <div class="job-section-header">
+                    Configuration
+                    ${isEditingConfig ? `<span class="job-section-action" onclick="saveAgentConfigField('${agentId}', '${job.id}')">Save</span>` : ''}
+                </div>
+                ${isEditingConfig ? `
+                    <div class="agent-config-edit">
+                        <label class="agent-config-label">
+                            <span>Triggers (comma-separated)</span>
+                            <input type="text" class="agent-config-input" id="edit-triggers-${job.id}"
+                                value="${escapeHtml(triggers.join(', '))}"
+                                placeholder="e.g., job:assigned, time:morning">
+                        </label>
+                        <label class="agent-config-label">
+                            <span>Tools (comma-separated)</span>
+                            <input type="text" class="agent-config-input" id="edit-tools-${job.id}"
+                                value="${escapeHtml(tools.join(', '))}"
+                                placeholder="e.g., list_jobs, create_job">
+                        </label>
+                        <div class="agent-config-actions">
+                            <button class="task-detail-action" onclick="cancelEditing()">Cancel</button>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="agent-config-display" onclick="startEditingField('${job.id}', 'config')">
+                        <div class="agent-config-row">
+                            <span class="agent-config-key">Triggers:</span>
+                            <span class="agent-config-value">${triggers.length > 0 ? escapeHtml(triggers.join(', ')) : '<em>None</em>'}</span>
+                        </div>
+                        <div class="agent-config-row">
+                            <span class="agent-config-key">Tools:</span>
+                            <span class="agent-config-value">${tools.length > 0 ? escapeHtml(tools.join(', ')) : '<em>None</em>'}</span>
+                        </div>
+                    </div>
+                `}
+            </div>
+
+            <!-- Child Jobs Section (Agent's Tasks) -->
+            ${childJobs.length > 0 ? `
+            <div class="job-section">
+                <div class="job-section-header">Tasks (${childJobs.length})</div>
+                ${childJobs.map(child => renderJobCard(child)).join('')}
+            </div>
+            ` : ''}
+
+            <!-- Completed Child Jobs Section -->
+            ${completedChildJobs.length > 0 ? `
+            <div class="job-section">
+                <div class="job-section-header">Completed (${completedChildJobs.length})</div>
+                ${completedChildJobs.map(child => {
+                    const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
+                    return renderCompletedJobCard(child, grandchildCount);
+                }).join('')}
+            </div>
+            ` : ''}
+
+            <!-- Assets Section -->
+            ${assets.length > 0 ? `
+            <div class="job-section">
+                <div class="job-section-header">Assets (${assets.length})</div>
+                <div class="asset-list">
+                    ${assets.map(asset => {
+                        const isText = isTextAsset(asset);
+                        const assetIcon = asset.filename.endsWith('.md') ? icon('pencil') : icon('document');
+                        return isText ? `
+                            <div class="asset-item clickable" onclick="navigateFocus('asset-${job.id}-${asset.filename}')" style="cursor: pointer;">
+                                <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-size">${formatFileSize(asset.size)}</span>
+                                <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                                <span class="asset-item-arrow">${icon('chevron-right')}</span>
+                            </div>
+                        ` : `
+                            <div class="asset-item">
+                                <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-size">${formatFileSize(asset.size)}</span>
+                                <button class="asset-item-delete" onclick="deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+            ` : ''}
+        </div>
+    `;
+}
+
 function renderJobDetailView(jobId) {
     const job = jobsData.find(j => j.id === jobId);
     if (!job) {
@@ -505,6 +739,11 @@ function renderJobDetailView(jobId) {
     // For system containers, render a simplified view
     if (isSystemContainer) {
         return renderSystemContainerView(job, isAgentsContainer);
+    }
+
+    // For agent inbox jobs, render the agent detail view
+    if (job.agent_id) {
+        return renderAgentDetailView(job);
     }
 
     const whenLabel = getWhenLabel(job);
@@ -1613,6 +1852,53 @@ function handleCompletedDescriptionKeypress(event, jobId) {
     // Ctrl+Enter or Cmd+Enter to save
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
         saveCompletedJobField(jobId, 'description', event.target.value);
+    }
+}
+
+// ============== Agent Editing ==============
+
+async function toggleAgentEnabled(agentId, enabled) {
+    const success = await saveAgentConfig(agentId, { enabled });
+    if (success) {
+        renderFocusTab();
+    }
+}
+
+async function saveAgentPersonaField(agentId, jobId) {
+    const textarea = document.getElementById(`edit-persona-${jobId}`);
+    if (!textarea) return;
+
+    const success = await saveAgentPersona(agentId, textarea.value);
+    if (success) {
+        editingJobField = null;
+        renderFocusTab();
+    }
+}
+
+async function saveAgentConfigField(agentId, jobId) {
+    const triggersInput = document.getElementById(`edit-triggers-${jobId}`);
+    const toolsInput = document.getElementById(`edit-tools-${jobId}`);
+
+    if (!triggersInput || !toolsInput) return;
+
+    // Parse comma-separated values into arrays
+    const triggers = triggersInput.value.split(',').map(s => s.trim()).filter(s => s);
+    const tools = toolsInput.value.split(',').map(s => s.trim()).filter(s => s);
+
+    const success = await saveAgentConfig(agentId, { triggers, tools });
+    if (success) {
+        editingJobField = null;
+        renderFocusTab();
+    }
+}
+
+function handleAgentPersonaKeypress(event, agentId, jobId) {
+    if (event.key === 'Escape') {
+        cancelEditing();
+    }
+    // Ctrl+Enter or Cmd+Enter to save
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        saveAgentPersonaField(agentId, jobId);
     }
 }
 
