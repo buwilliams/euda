@@ -14,32 +14,8 @@ from typing import Optional, List, Dict
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
 
-
-# ============== Provider Registry ==============
-
-# Provider metadata: display_name, default_model, description
-PROVIDERS: Dict[str, dict] = {
-    "anthropic": {
-        "id": "anthropic",
-        "display_name": "Claude",
-        "default_model": "claude-opus-4-5",
-        "description": "Anthropic's Claude models"
-    },
-    "openai": {
-        "id": "openai",
-        "display_name": "GPT",
-        "default_model": "gpt-5.2",
-        "description": "OpenAI's GPT models"
-    },
-    "grok": {
-        "id": "grok",
-        "display_name": "Grok",
-        "default_model": "grok-4-1-fast",
-        "description": "xAI's Grok models"
-    }
-}
-
-DEFAULT_PROVIDER = "openai"
+# Valid provider IDs (must have corresponding provider class)
+VALID_PROVIDERS = {"anthropic", "openai", "grok"}
 
 
 # ============== Unified Response Classes ==============
@@ -107,15 +83,37 @@ class LLMProvider(ABC):
 _config_cache: dict = None
 
 
+class ConfigError(Exception):
+    """Raised when config.json is missing or invalid."""
+    pass
+
+
 def _load_config() -> dict:
-    """Load system configuration (for internal/admin use, not cached)."""
-    if CONFIG_PATH.exists():
-        try:
-            with open(CONFIG_PATH) as f:
-                return json.load(f)
-        except (json.JSONDecodeError, IOError):
-            pass
-    return {}
+    """Load and validate system configuration."""
+    if not CONFIG_PATH.exists():
+        raise ConfigError(f"Config file not found: {CONFIG_PATH}")
+
+    try:
+        with open(CONFIG_PATH) as f:
+            config = json.load(f)
+    except json.JSONDecodeError as e:
+        raise ConfigError(f"Invalid JSON in config file: {e}")
+
+    # Validate required structure
+    if "llm" not in config:
+        raise ConfigError("Config missing 'llm' section")
+    if "provider" not in config["llm"]:
+        raise ConfigError("Config missing 'llm.provider'")
+    if "providers" not in config["llm"]:
+        raise ConfigError("Config missing 'llm.providers'")
+
+    provider = config["llm"]["provider"]
+    if provider not in VALID_PROVIDERS:
+        raise ConfigError(f"Unknown provider '{provider}'. Valid: {VALID_PROVIDERS}")
+    if provider not in config["llm"]["providers"]:
+        raise ConfigError(f"Provider '{provider}' not configured in llm.providers")
+
+    return config
 
 
 def _get_cached_config() -> dict:
@@ -129,36 +127,28 @@ def _get_cached_config() -> dict:
 def get_provider() -> str:
     """Get the configured LLM provider."""
     config = _get_cached_config()
-    return config.get("llm", {}).get("provider", DEFAULT_PROVIDER)
+    return config["llm"]["provider"]
 
 
 def get_model() -> str:
     """Get the configured model for the current provider."""
     config = _get_cached_config()
-    llm_config = config.get("llm", {})
-    provider = llm_config.get("provider", DEFAULT_PROVIDER)
-    # First check config, then fall back to provider default
-    config_model = llm_config.get("models", {}).get(provider)
-    if config_model:
-        return config_model
-    return PROVIDERS.get(provider, {}).get("default_model", "")
+    provider = config["llm"]["provider"]
+    return config["llm"]["providers"][provider]["model"]
 
 
 def get_providers_config() -> Dict[str, dict]:
-    """Get full provider configuration for API/UI.
-
-    Returns provider metadata merged with any user-configured models.
-    """
+    """Get full provider configuration for API/UI."""
     config = _get_cached_config()
-    user_models = config.get("llm", {}).get("models", {})
+    providers = config["llm"]["providers"]
 
     result = {}
-    for provider_id, provider_info in PROVIDERS.items():
+    for provider_id, provider_info in providers.items():
         result[provider_id] = {
             "id": provider_id,
             "display_name": provider_info["display_name"],
             "description": provider_info["description"],
-            "default_model": user_models.get(provider_id, provider_info["default_model"])
+            "model": provider_info["model"]
         }
     return result
 

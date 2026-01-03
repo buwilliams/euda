@@ -72,6 +72,16 @@ def cmd_start(args):
     import uvicorn
     from src.manager import AgentManager
     from src.web.app import app
+    from src.llms import ConfigError
+    from src.llms.base import _load_config
+
+    # Validate config at startup
+    try:
+        _load_config()
+    except ConfigError as e:
+        print(f"Error: {e}")
+        print("\nPlease ensure data/system/config.json exists and is valid.")
+        sys.exit(1)
 
     print("=" * 60)
     print("Euno - Personal Intelligence System")
@@ -103,6 +113,16 @@ def cmd_chat(args):
     """Interactive chat with an agent."""
     from src.agent import Agent
     from src.tools import get_tools_for_agent
+    from src.llms import ConfigError
+    from src.llms.base import _load_config
+
+    # Validate config at startup
+    try:
+        _load_config()
+    except ConfigError as e:
+        print(f"Error: {e}")
+        print("\nPlease ensure data/system/config.json exists and is valid.")
+        sys.exit(1)
 
     agent_id = args[0] if args else "friend"
 

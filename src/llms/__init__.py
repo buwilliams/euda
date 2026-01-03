@@ -10,12 +10,12 @@ from .base import (
     Usage,
     TextBlock,
     ToolUseBlock,
+    ConfigError,
     get_client,
     get_provider,
     get_model,
     get_providers_config,
     invalidate_client,
-    PROVIDERS,
 )
 
 __all__ = [
@@ -24,10 +24,10 @@ __all__ = [
     "Usage",
     "TextBlock",
     "ToolUseBlock",
+    "ConfigError",
     "get_client",
     "get_provider",
     "get_model",
     "get_providers_config",
     "invalidate_client",
-    "PROVIDERS",
 ]

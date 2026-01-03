@@ -10,8 +10,8 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client, PROVIDERS
-from ...llms.base import _load_config, CONFIG_PATH
+from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client
+from ...llms.base import _load_config, CONFIG_PATH, VALID_PROVIDERS
 from ...tools.jobs import list_jobs
 from ...tools.user import get_user_profile
 
@@ -157,25 +157,19 @@ def update_llm_settings(data: dict):
     """Update LLM settings (provider, models)."""
     config = _load_config()
 
-    if "llm" not in config:
-        config["llm"] = {}
-
     # Update provider if specified
     if "default_provider" in data:
         provider = data["default_provider"]
-        if provider in PROVIDERS:
+        if provider in VALID_PROVIDERS:
             config["llm"]["provider"] = provider
 
     # Update models if specified
     if "providers" in data:
-        if "models" not in config["llm"]:
-            config["llm"]["models"] = {}
         for provider_id, settings in data["providers"].items():
-            if provider_id in PROVIDERS and "default_model" in settings:
-                config["llm"]["models"][provider_id] = settings["default_model"]
+            if provider_id in VALID_PROVIDERS and "model" in settings:
+                config["llm"]["providers"][provider_id]["model"] = settings["model"]
 
     # Save config
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
 
