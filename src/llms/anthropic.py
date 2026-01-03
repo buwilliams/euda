@@ -9,7 +9,7 @@ from typing import Optional
 
 import anthropic
 
-from .llm import LLMProvider, UnifiedResponse
+from .base import LLMProvider, UnifiedResponse
 
 
 class AnthropicProvider(LLMProvider):

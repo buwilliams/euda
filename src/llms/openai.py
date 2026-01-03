@@ -9,7 +9,7 @@ from typing import Optional
 
 import openai
 
-from .llm import LLMProvider, UnifiedResponse, Usage, TextBlock, ToolUseBlock
+from .base import LLMProvider, UnifiedResponse, Usage, TextBlock, ToolUseBlock
 
 
 class OpenAIProvider(LLMProvider):

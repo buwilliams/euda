@@ -9,7 +9,7 @@ import os
 
 import openai
 
-from .llm_openai import OpenAIProvider
+from .openai import OpenAIProvider
 
 
 class GrokProvider(OpenAIProvider):

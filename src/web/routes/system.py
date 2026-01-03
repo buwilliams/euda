@@ -10,7 +10,8 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from ...llm import get_client, get_model, get_provider, DEFAULT_MODELS, _load_config, CONFIG_PATH
+from ...llms import get_client, get_model, get_provider, get_providers_config, PROVIDERS
+from ...llms.base import _load_config, CONFIG_PATH
 from ...tools.jobs import list_jobs
 from ...tools.user import get_user_profile
 
@@ -139,27 +140,14 @@ def daily_quote():
 
 # ============== Settings ==============
 
-AVAILABLE_PROVIDERS = ["anthropic", "openai", "grok"]
-
 @router.get("/settings")
 def get_settings():
     """Get current LLM settings with all providers."""
-    config = _load_config()
-    llm_config = config.get("llm", {})
-    models = llm_config.get("models", DEFAULT_MODELS)
-
-    # Build providers dict with current model for each
-    providers = {}
-    for provider in AVAILABLE_PROVIDERS:
-        providers[provider] = {
-            "default_model": models.get(provider, DEFAULT_MODELS.get(provider, ""))
-        }
-
     return {
         "llm": {
             "provider": get_provider(),
             "model": get_model(),
-            "providers": providers
+            "providers": get_providers_config()
         }
     }
 
@@ -175,16 +163,16 @@ def update_llm_settings(data: dict):
     # Update provider if specified
     if "default_provider" in data:
         provider = data["default_provider"]
-        if provider in AVAILABLE_PROVIDERS:
+        if provider in PROVIDERS:
             config["llm"]["provider"] = provider
 
     # Update models if specified
     if "providers" in data:
         if "models" not in config["llm"]:
-            config["llm"]["models"] = dict(DEFAULT_MODELS)
-        for provider, settings in data["providers"].items():
-            if provider in AVAILABLE_PROVIDERS and "default_model" in settings:
-                config["llm"]["models"][provider] = settings["default_model"]
+            config["llm"]["models"] = {}
+        for provider_id, settings in data["providers"].items():
+            if provider_id in PROVIDERS and "default_model" in settings:
+                config["llm"]["models"][provider_id] = settings["default_model"]
 
     # Save config
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)

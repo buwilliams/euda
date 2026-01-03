@@ -114,25 +114,22 @@ async function loadSettingsData() {
 function renderSettings() {
     if (!settingsData) return;
 
-    // Set default provider dropdown
+    // Populate and set provider dropdown
     const providerSelect = document.getElementById('default-provider');
-    if (providerSelect && settingsData.llm) {
+    if (providerSelect && settingsData.llm?.providers) {
+        // Build options from API data
+        providerSelect.innerHTML = '';
+        for (const [id, config] of Object.entries(settingsData.llm.providers)) {
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = config.display_name || id;
+            providerSelect.appendChild(option);
+        }
+        // Set current value
         providerSelect.value = settingsData.llm.provider || 'anthropic';
         renderProviderModels();
     }
 }
-
-const PROVIDER_DISPLAY_NAMES = {
-    'anthropic': 'Claude',
-    'openai': 'GPT',
-    'grok': 'Grok'
-};
-
-const PROVIDER_PLACEHOLDERS = {
-    'anthropic': 'claude-sonnet-4-20250514',
-    'openai': 'gpt-5.2',
-    'grok': 'grok-3'
-};
 
 function renderProviderModels() {
     const container = document.getElementById('provider-models');
@@ -141,15 +138,14 @@ function renderProviderModels() {
     const providers = settingsData.llm.providers;
     let html = '';
 
-    for (const [name, config] of Object.entries(providers)) {
-        const displayName = PROVIDER_DISPLAY_NAMES[name] || name;
-        const placeholder = PROVIDER_PLACEHOLDERS[name] || '';
+    for (const [id, config] of Object.entries(providers)) {
+        const displayName = config.display_name || id;
         html += `
             <div class="settings-model-group">
                 <div class="settings-model-label">${displayName} Model</div>
-                <input type="text" class="settings-input" id="model-${name}"
+                <input type="text" class="settings-input" id="model-${id}"
                        value="${config.default_model || ''}"
-                       placeholder="e.g., ${placeholder}">
+                       placeholder="e.g., ${config.default_model || ''}">
             </div>
         `;
     }

@@ -1,29 +1,45 @@
 """
-LLM Configuration and Provider Factory
+LLM Base Classes and Configuration
 
-Centralized configuration for AI providers and models.
-Reads from data/system/config.json, falls back to defaults.
-
-Supported providers: anthropic, openai, grok
+Provides abstract base class, unified response types, and provider factory.
 """
 
 import json
 from abc import ABC, abstractmethod
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
 
-# Defaults
-DEFAULT_PROVIDER = "openai"
-DEFAULT_MODELS = {
-    "anthropic": "claude-sonnet-4-20250514",
-    "openai": "gpt-5.2",
-    "grok": "grok-3"
+
+# ============== Provider Registry ==============
+
+# Provider metadata: display_name, default_model, description
+PROVIDERS: Dict[str, dict] = {
+    "anthropic": {
+        "id": "anthropic",
+        "display_name": "Claude",
+        "default_model": "claude-sonnet-4-20250514",
+        "description": "Anthropic's Claude models"
+    },
+    "openai": {
+        "id": "openai",
+        "display_name": "GPT",
+        "default_model": "gpt-5.2",
+        "description": "OpenAI's GPT models"
+    },
+    "grok": {
+        "id": "grok",
+        "display_name": "Grok",
+        "default_model": "grok-3",
+        "description": "xAI's Grok models"
+    }
 }
+
+DEFAULT_PROVIDER = "openai"
 
 
 # ============== Unified Response Classes ==============
@@ -109,7 +125,30 @@ def get_model() -> str:
     config = _load_config()
     llm_config = config.get("llm", {})
     provider = llm_config.get("provider", DEFAULT_PROVIDER)
-    return llm_config.get("models", {}).get(provider, DEFAULT_MODELS.get(provider))
+    # First check config, then fall back to provider default
+    config_model = llm_config.get("models", {}).get(provider)
+    if config_model:
+        return config_model
+    return PROVIDERS.get(provider, {}).get("default_model", "")
+
+
+def get_providers_config() -> Dict[str, dict]:
+    """Get full provider configuration for API/UI.
+
+    Returns provider metadata merged with any user-configured models.
+    """
+    config = _load_config()
+    user_models = config.get("llm", {}).get("models", {})
+
+    result = {}
+    for provider_id, provider_info in PROVIDERS.items():
+        result[provider_id] = {
+            "id": provider_id,
+            "display_name": provider_info["display_name"],
+            "description": provider_info["description"],
+            "default_model": user_models.get(provider_id, provider_info["default_model"])
+        }
+    return result
 
 
 # ============== Provider Factory ==============
@@ -129,13 +168,13 @@ class UnifiedClient:
     def _create_provider(self, provider: str) -> LLMProvider:
         """Create the appropriate provider instance."""
         if provider == "anthropic":
-            from .llm_anthropic import AnthropicProvider
+            from .anthropic import AnthropicProvider
             return AnthropicProvider()
         elif provider == "openai":
-            from .llm_openai import OpenAIProvider
+            from .openai import OpenAIProvider
             return OpenAIProvider()
         elif provider == "grok":
-            from .llm_grok import GrokProvider
+            from .grok import GrokProvider
             return GrokProvider()
         else:
             raise ValueError(f"Unknown provider: {provider}")
