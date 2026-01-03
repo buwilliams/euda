@@ -34,10 +34,11 @@ Old architecture preserved in `old-architecture/` for reference.
 
 4. Run Euno:
    ```
-   python main.py serve    # Web server + agents
-   python main.py chat     # Interactive chat
-   python main.py start    # Agents only (no web)
+   python main.py start    # Web server + agents (run in background in Claude Code)
+   python main.py chat     # Interactive chat with an agent
    ```
+
+**Important for Claude Code:** When starting Euno during development, run it as a background task so the conversation can continue while the server runs.
 
 ## Project Structure
 
