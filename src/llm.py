@@ -20,8 +20,8 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
 
 # Defaults
-DEFAULT_PROVIDER = "anthropic"
-DEFAULT_MODEL = "claude-sonnet-4-20250514"
+DEFAULT_PROVIDER = "openai"
+DEFAULT_MODEL = "gpt-5.2"
 
 
 def _load_config() -> dict:
