@@ -631,7 +631,7 @@ function renderAgentDetailView(job) {
         <div class="focus-view-content">
             <!-- Actions Row -->
             <div class="task-detail-actions">
-                <button class="task-detail-action" onclick="toggleAgentEnabled('${agentId}', ${!isEnabled})">${isEnabled ? icon('pause') + ' Disable' : icon('play') + ' Enable'}</button>
+                <button class="task-detail-action" onclick="toggleAgentEnabled('${agentId}', ${!isEnabled})">${isEnabled ? icon('x-mark') + ' Disable' : icon('check') + ' Enable'}</button>
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
             </div>
 
