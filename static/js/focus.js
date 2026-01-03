@@ -910,71 +910,63 @@ function renderAssetsListView(jobId) {
 function renderNewJobScreen(parentJobId) {
     const parentJob = jobsData.find(j => j.id === parentJobId);
     const parentName = parentJob ? parentJob.name : 'Job';
+    const childJobs = jobsData.filter(j => j.parent_id === parentJobId);
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">+ Jobs</span>
+            <span class="focus-view-title">Add Jobs</span>
         </div>
         <div class="focus-view-content">
             <div class="job-section">
                 <div class="job-section-header">Add to: ${escapeHtml(parentName)}</div>
-                <div class="multi-input-container" id="new-jobs-container">
-                    <div class="multi-input-row">
-                        <input type="text" class="multi-input" placeholder="Job name..." onkeydown="handleNewJobInputKeydown(event, '${parentJobId}')">
-                    </div>
+                <div class="quick-add-section" style="margin-top: 0; padding-top: 0; border-top: none;">
+                    <input type="text" id="quick-add-child-${parentJobId}" class="quick-add-input" placeholder="New job name..." onkeypress="handleQuickAddChildKeypress(event, '${parentJobId}')">
+                    <button class="quick-add-btn" onclick="quickAddChildJob('${parentJobId}')">${icon('plus')}</button>
                 </div>
-                <div class="multi-input-hint">Press Enter to add another, or tap Create when done</div>
             </div>
-            <div class="screen-actions">
-                <button class="screen-action-btn primary" onclick="createMultipleJobs('${parentJobId}')">Create Jobs</button>
+            ${childJobs.length > 0 ? `
+            <div class="job-section">
+                <div class="job-section-header">Child Jobs (${childJobs.length})</div>
+                ${childJobs.map(job => renderJobCard(job)).join('')}
             </div>
+            ` : ''}
         </div>
     `;
 }
 
-function handleNewJobInputKeydown(event, parentJobId) {
+function handleQuickAddChildKeypress(event, parentJobId) {
     if (event.key === 'Enter') {
-        event.preventDefault();
-        const container = document.getElementById('new-jobs-container');
-        const inputs = container.querySelectorAll('.multi-input');
-        const lastInput = inputs[inputs.length - 1];
-
-        // Only add new row if current input has content
-        if (lastInput.value.trim()) {
-            const newRow = document.createElement('div');
-            newRow.className = 'multi-input-row';
-            newRow.innerHTML = `<input type="text" class="multi-input" placeholder="Job name..." onkeydown="handleNewJobInputKeydown(event, '${parentJobId}')">`;
-            container.appendChild(newRow);
-            newRow.querySelector('input').focus();
-        }
+        quickAddChildJob(parentJobId);
     }
 }
 
-async function createMultipleJobs(parentJobId) {
-    const container = document.getElementById('new-jobs-container');
-    const inputs = container.querySelectorAll('.multi-input');
-    const names = Array.from(inputs).map(i => i.value.trim()).filter(n => n);
+async function quickAddChildJob(parentJobId) {
+    const input = document.getElementById(`quick-add-child-${parentJobId}`);
+    if (!input) return;
 
-    if (names.length === 0) {
-        navigateFocusBack();
-        return;
-    }
+    const name = input.value.trim();
+    if (!name) return;
 
-    for (const name of names) {
-        try {
-            await fetch('/api/jobs', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, parent_id: parentJobId })
-            });
-        } catch (error) {
-            console.error('Failed to create job:', error);
+    try {
+        const response = await fetch('/api/jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, parent_id: parentJobId })
+        });
+
+        if (response.ok) {
+            input.value = '';
+            await loadJobsData();
+            // Re-focus the input for rapid entry
+            setTimeout(() => {
+                const newInput = document.getElementById(`quick-add-child-${parentJobId}`);
+                if (newInput) newInput.focus();
+            }, 50);
         }
+    } catch (error) {
+        console.error('Failed to create job:', error);
     }
-
-    await loadJobsData();
-    navigateFocusBack();
 }
 
 // ============== Attach Screen ==============
