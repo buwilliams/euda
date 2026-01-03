@@ -170,7 +170,10 @@ def get_client() -> "UnifiedClient":
     if _cached_client is None:
         provider = get_provider()
         model = get_model()
+        print(f"[DEBUG] get_client: Creating new client for provider={provider}, model={model}")
         _cached_client = UnifiedClient(provider, model)
+    else:
+        print(f"[DEBUG] get_client: Using cached client for provider={_cached_client.provider_name}, model={_cached_client.model_name}")
 
     return _cached_client
 
@@ -192,6 +195,7 @@ class UnifiedClient:
 
     def _create_provider(self, provider: str) -> LLMProvider:
         """Create the appropriate provider instance."""
+        print(f"[DEBUG] UnifiedClient._create_provider: Creating {provider} provider")
         if provider == "anthropic":
             from .anthropic import AnthropicProvider
             return AnthropicProvider()

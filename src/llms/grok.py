@@ -18,7 +18,9 @@ class GrokProvider(LLMProvider):
 
     def __init__(self):
         # Uses XAI_API_KEY environment variable automatically
+        print("[DEBUG] GrokProvider: Initializing xai-sdk client")
         self.client = Client()
+        print("[DEBUG] GrokProvider: Client initialized successfully")
 
     def create_message(
         self,
@@ -29,6 +31,7 @@ class GrokProvider(LLMProvider):
         tools: Optional[list] = None
     ) -> UnifiedResponse:
         """Create a message using xAI's native SDK."""
+        print(f"[DEBUG] GrokProvider.create_message: model={model}, tools={len(tools) if tools else 0}")
         # Convert messages to xai-sdk format
         xai_messages = self._convert_messages(system, messages)
 
@@ -44,8 +47,19 @@ class GrokProvider(LLMProvider):
         if xai_tools:
             kwargs["tools"] = xai_tools
 
-        chat = self.client.chat.create(**kwargs)
-        response = chat.sample()
+        try:
+            print(f"[DEBUG] GrokProvider: Calling xai-sdk chat.create with kwargs: {list(kwargs.keys())}")
+            chat = self.client.chat.create(**kwargs)
+            print(f"[DEBUG] GrokProvider: chat object type: {type(chat)}")
+            response = chat.sample()
+            print(f"[DEBUG] GrokProvider: response type: {type(response)}")
+            print(f"[DEBUG] GrokProvider: response attributes: {dir(response)}")
+            print(f"[DEBUG] GrokProvider: response content: {getattr(response, 'content', 'NO CONTENT ATTR')}")
+        except Exception as e:
+            print(f"[DEBUG] GrokProvider: ERROR - {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
 
         return self._parse_response(response)
 
@@ -97,14 +111,23 @@ class GrokProvider(LLMProvider):
 
     def _parse_response(self, response) -> UnifiedResponse:
         """Convert xai-sdk response to unified format."""
+        print(f"[DEBUG] GrokProvider._parse_response: parsing response")
+        print(f"[DEBUG]   finish_reason: {response.finish_reason}")
+        print(f"[DEBUG]   content (repr): {repr(response.content)}")
+        print(f"[DEBUG]   tool_calls: {response.tool_calls}")
+        print(f"[DEBUG]   server_side_tool_usage: {getattr(response, 'server_side_tool_usage', 'N/A')}")
         content = []
 
         # Handle text content
         if response.content:
+            print(f"[DEBUG] GrokProvider._parse_response: found text content: {response.content[:100]}...")
             content.append(TextBlock(text=response.content))
+        else:
+            print(f"[DEBUG] GrokProvider._parse_response: NO text content")
 
         # Handle tool calls
         if response.tool_calls:
+            print(f"[DEBUG] GrokProvider._parse_response: found {len(response.tool_calls)} tool calls")
             for tc in response.tool_calls:
                 content.append(ToolUseBlock(
                     id=tc.id,
@@ -119,7 +142,7 @@ class GrokProvider(LLMProvider):
         elif response.finish_reason in ("FINISH_REASON_STOP", "FINISH_REASON_EOS_TOKEN"):
             stop_reason = "end_turn"
 
-        return UnifiedResponse(
+        result = UnifiedResponse(
             content=content,
             stop_reason=stop_reason,
             usage=Usage(
@@ -127,3 +150,5 @@ class GrokProvider(LLMProvider):
                 output_tokens=response.usage.completion_tokens
             )
         )
+        print(f"[DEBUG] GrokProvider._parse_response: returning stop_reason={stop_reason}, content_blocks={len(content)}")
+        return result
