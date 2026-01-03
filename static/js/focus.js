@@ -163,6 +163,14 @@ function renderFocusTab() {
         const jobId = rest.substring(0, 12);
         const filename = rest.substring(13); // skip jobId + "-"
         content = renderAssetView(jobId, filename);
+    } else if (focusView.startsWith('newjob-')) {
+        // newjob-{jobId} - create new child jobs
+        const jobId = focusView.substring(7);
+        content = renderNewJobScreen(jobId);
+    } else if (focusView.startsWith('attach-')) {
+        // attach-{jobId} - attach assets to a job
+        const jobId = focusView.substring(7);
+        content = renderAttachScreen(jobId);
     } else if (focusView.startsWith('job-')) {
         const jobId = focusView.substring(4);
         content = renderJobDetailView(jobId);
@@ -466,16 +474,9 @@ function renderJobDetailView(jobId) {
             <div class="task-detail-actions">
                 <button class="task-detail-action" onclick="openWhenPicker('job', '${job.id}')">📅 ${escapeHtml(whenLabel)}</button>
                 <button class="task-detail-action" onclick="openAssigneesPicker('${job.id}')">${getAssigneesLabel(job)}</button>
-                <button class="task-detail-action" onclick="completeJob(event, '${job.id}')">✓ Complete</button>
-                <button class="task-detail-action" onclick="showArchiveInput(event, '${job.id}')">${isArchiving ? 'Cancel' : '📦 Archive'}</button>
-                <button class="task-detail-action danger" onclick="deleteJob(event, '${job.id}')">🗑 Delete</button>
+                <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
+                <button class="task-detail-action" onclick="openMorePicker('${job.id}')">••• More</button>
             </div>
-            ${isArchiving ? `
-            <div class="card-archive-form">
-                <input type="text" class="card-archive-input" id="archive-reason-${job.id}" placeholder="Reason (optional)..." onkeypress="if(event.key==='Enter')confirmArchiveJob('${job.id}')">
-                <button class="card-archive-btn confirm" onclick="confirmArchiveJob('${job.id}')">Archive</button>
-            </div>
-            ` : ''}
 
             <!-- Name Section -->
             <div class="job-section">
@@ -507,14 +508,12 @@ function renderJobDetailView(jobId) {
             </div>
 
             <!-- Child Jobs Section -->
+            ${childJobs.length > 0 ? `
             <div class="job-section">
-                <div class="job-section-header">Child Jobs${childJobs.length > 0 ? ` (${childJobs.length})` : ''}</div>
+                <div class="job-section-header">Child Jobs (${childJobs.length})</div>
                 ${childJobs.map(child => renderJobCard(child)).join('')}
-                <div class="quick-add-section" style="border-top: none; margin-top: 0;">
-                    <input type="text" id="quick-add-${job.id}" class="quick-add-input" placeholder="Add child job..." onkeypress="handleQuickAddKeypress(event, 'quick-add-${job.id}', '${job.id}')">
-                    <button class="quick-add-btn" onclick="quickAddJob('quick-add-${job.id}', '${job.id}')">+</button>
-                </div>
             </div>
+            ` : ''}
 
             <!-- Completed Child Jobs Section -->
             ${completedChildJobs.length > 0 ? `
@@ -536,38 +535,30 @@ function renderJobDetailView(jobId) {
             ` : ''}
 
             <!-- Assets Section -->
+            ${assets.length > 0 ? `
             <div class="job-section">
-                <div class="job-section-header">Assets${assets.length > 0 ? ` (${assets.length})` : ''}</div>
-                ${assets.length > 0 ? `
-                    <div class="asset-list">
-                        ${assets.map(asset => {
-                            const isText = isTextAsset(asset);
-                            const icon = asset.filename.endsWith('.md') ? '📝' : '📄';
-                            return isText ? `
-                                <div class="asset-item clickable" onclick="navigateFocus('asset-${job.id}-${asset.filename}')" style="cursor: pointer;">
-                                    <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
-                                    <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                    <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
-                                </div>
-                            ` : `
-                                <div class="asset-item">
-                                    <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
-                                    <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                    <button class="asset-item-delete" onclick="deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                ` : ''}
-                <div class="asset-add-row">
-                    <input type="text" class="asset-add-input" id="new-asset-${job.id}" placeholder="New asset name..." onkeypress="handleNewAssetKeypress(event, '${job.id}')">
-                    <button class="asset-add-btn" onclick="createNewAsset('${job.id}')">+</button>
-                    <label class="asset-upload-btn">
-                        Upload
-                        <input type="file" style="display: none;" onchange="handleAssetUpload(event, '${job.id}')">
-                    </label>
+                <div class="job-section-header">Assets (${assets.length})</div>
+                <div class="asset-list">
+                    ${assets.map(asset => {
+                        const isText = isTextAsset(asset);
+                        const icon = asset.filename.endsWith('.md') ? '📝' : '📄';
+                        return isText ? `
+                            <div class="asset-item clickable" onclick="navigateFocus('asset-${job.id}-${asset.filename}')" style="cursor: pointer;">
+                                <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-size">${formatFileSize(asset.size)}</span>
+                                <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
+                            </div>
+                        ` : `
+                            <div class="asset-item">
+                                <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-size">${formatFileSize(asset.size)}</span>
+                                <button class="asset-item-delete" onclick="deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
             </div>
+            ` : ''}
         </div>
     `;
 }
@@ -686,38 +677,30 @@ function renderCompletedJobDetailView(jobId) {
             ` : ''}
 
             <!-- Assets Section -->
+            ${assets.length > 0 ? `
             <div class="job-section">
-                <div class="job-section-header">Assets${assets.length > 0 ? ` (${assets.length})` : ''}</div>
-                ${assets.length > 0 ? `
-                    <div class="asset-list">
-                        ${assets.map(asset => {
-                            const isText = isTextAsset(asset);
-                            const icon = asset.filename.endsWith('.md') ? '📝' : '📄';
-                            return isText ? `
-                                <div class="asset-item clickable" onclick="navigateFocus('asset-${job.id}-${asset.filename}')" style="cursor: pointer;">
-                                    <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
-                                    <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                    <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
-                                </div>
-                            ` : `
-                                <div class="asset-item">
-                                    <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
-                                    <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                    <button class="asset-item-delete" onclick="deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                ` : ''}
-                <div class="asset-add-row">
-                    <input type="text" class="asset-add-input" id="new-asset-${job.id}" placeholder="New asset name..." onkeypress="handleNewAssetKeypress(event, '${job.id}')">
-                    <button class="asset-add-btn" onclick="createNewAsset('${job.id}')">+</button>
-                    <label class="asset-upload-btn">
-                        Upload
-                        <input type="file" style="display: none;" onchange="handleAssetUpload(event, '${job.id}')">
-                    </label>
+                <div class="job-section-header">Assets (${assets.length})</div>
+                <div class="asset-list">
+                    ${assets.map(asset => {
+                        const isText = isTextAsset(asset);
+                        const icon = asset.filename.endsWith('.md') ? '📝' : '📄';
+                        return isText ? `
+                            <div class="asset-item clickable" onclick="navigateFocus('asset-${job.id}-${asset.filename}')" style="cursor: pointer;">
+                                <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-size">${formatFileSize(asset.size)}</span>
+                                <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
+                            </div>
+                        ` : `
+                            <div class="asset-item">
+                                <span class="asset-item-name">${icon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-size">${formatFileSize(asset.size)}</span>
+                                <button class="asset-item-delete" onclick="deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">x</button>
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
             </div>
+            ` : ''}
         </div>
     `;
 }
@@ -913,6 +896,179 @@ function renderAssetsListView(jobId) {
             </div>
         </div>
     `;
+}
+
+// ============== New Job Screen ==============
+
+function renderNewJobScreen(parentJobId) {
+    const parentJob = jobsData.find(j => j.id === parentJobId);
+    const parentName = parentJob ? parentJob.name : 'Job';
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">←</span>
+            <span class="focus-view-title">+ Jobs</span>
+        </div>
+        <div class="focus-view-content">
+            <div class="job-section">
+                <div class="job-section-header">Add to: ${escapeHtml(parentName)}</div>
+                <div class="multi-input-container" id="new-jobs-container">
+                    <div class="multi-input-row">
+                        <input type="text" class="multi-input" placeholder="Job name..." onkeydown="handleNewJobInputKeydown(event, '${parentJobId}')">
+                    </div>
+                </div>
+                <div class="multi-input-hint">Press Enter to add another, or tap Create when done</div>
+            </div>
+            <div class="screen-actions">
+                <button class="screen-action-btn primary" onclick="createMultipleJobs('${parentJobId}')">Create Jobs</button>
+            </div>
+        </div>
+    `;
+}
+
+function handleNewJobInputKeydown(event, parentJobId) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        const container = document.getElementById('new-jobs-container');
+        const inputs = container.querySelectorAll('.multi-input');
+        const lastInput = inputs[inputs.length - 1];
+
+        // Only add new row if current input has content
+        if (lastInput.value.trim()) {
+            const newRow = document.createElement('div');
+            newRow.className = 'multi-input-row';
+            newRow.innerHTML = `<input type="text" class="multi-input" placeholder="Job name..." onkeydown="handleNewJobInputKeydown(event, '${parentJobId}')">`;
+            container.appendChild(newRow);
+            newRow.querySelector('input').focus();
+        }
+    }
+}
+
+async function createMultipleJobs(parentJobId) {
+    const container = document.getElementById('new-jobs-container');
+    const inputs = container.querySelectorAll('.multi-input');
+    const names = Array.from(inputs).map(i => i.value.trim()).filter(n => n);
+
+    if (names.length === 0) {
+        navigateFocusBack();
+        return;
+    }
+
+    for (const name of names) {
+        try {
+            await fetch('/api/jobs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, parent_id: parentJobId })
+            });
+        } catch (error) {
+            console.error('Failed to create job:', error);
+        }
+    }
+
+    await loadJobsData();
+    navigateFocusBack();
+}
+
+// ============== Attach Screen ==============
+
+function renderAttachScreen(jobId) {
+    const job = jobsData.find(j => j.id === jobId);
+    const jobName = job ? job.name : 'Job';
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">←</span>
+            <span class="focus-view-title">+ Assets</span>
+        </div>
+        <div class="focus-view-content">
+            <div class="job-section">
+                <div class="job-section-header">Add to: ${escapeHtml(jobName)}</div>
+
+                <div class="attach-option" onclick="showNewFileForm('${jobId}')">
+                    <span class="attach-option-icon">📝</span>
+                    <span class="attach-option-label">Create new file</span>
+                </div>
+
+                <label class="attach-option">
+                    <span class="attach-option-icon">📁</span>
+                    <span class="attach-option-label">Upload files</span>
+                    <input type="file" multiple style="display: none;" onchange="handleMultiFileUpload(event, '${jobId}')">
+                </label>
+            </div>
+
+            <div id="new-file-form" class="job-section" style="display: none;">
+                <div class="job-section-header">New File</div>
+                <input type="text" class="multi-input" id="new-file-name" placeholder="Filename (e.g., notes.md)..." style="margin-bottom: 0.5rem;">
+                <textarea class="job-description-input" id="new-file-content" placeholder="Content..." style="min-height: 150px;"></textarea>
+                <div class="screen-actions" style="margin-top: 0.5rem;">
+                    <button class="screen-action-btn" onclick="hideNewFileForm()">Cancel</button>
+                    <button class="screen-action-btn primary" onclick="createNewFileWithContent('${jobId}')">Create</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function showNewFileForm(jobId) {
+    document.getElementById('new-file-form').style.display = 'block';
+    document.getElementById('new-file-name').focus();
+}
+
+function hideNewFileForm() {
+    document.getElementById('new-file-form').style.display = 'none';
+    document.getElementById('new-file-name').value = '';
+    document.getElementById('new-file-content').value = '';
+}
+
+async function createNewFileWithContent(jobId) {
+    let filename = document.getElementById('new-file-name').value.trim();
+    const content = document.getElementById('new-file-content').value;
+
+    if (!filename) {
+        return;
+    }
+
+    // Add .md extension if no extension provided
+    if (!filename.includes('.')) {
+        filename = filename + '.md';
+    }
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/assets/${encodeURIComponent(filename)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content })
+        });
+
+        if (response.ok) {
+            await loadJobAssets(jobId);
+            navigateFocusBack();
+        }
+    } catch (error) {
+        console.error('Failed to create file:', error);
+    }
+}
+
+async function handleMultiFileUpload(event, jobId) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    for (const file of files) {
+        try {
+            const content = await file.text();
+            await fetch(`/api/jobs/${jobId}/assets/${encodeURIComponent(file.name)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            });
+        } catch (error) {
+            console.error('Failed to upload file:', error);
+        }
+    }
+
+    await loadJobAssets(jobId);
+    navigateFocusBack();
 }
 
 // ============== When Picker ==============
@@ -1589,6 +1745,103 @@ async function toggleAgentAssignment(jobId, agentId, isCurrentlyAssigned) {
         }
     } catch (error) {
         console.error('Failed to toggle assignment:', error);
+    }
+}
+
+// ============== Add Picker ==============
+
+function openAddPicker(jobId) {
+    const picker = document.createElement('div');
+    picker.className = 'picker-modal';
+    picker.id = 'add-picker';
+    picker.innerHTML = `
+        <div class="picker-backdrop" onclick="closeAddPicker()"></div>
+        <div class="picker-content">
+            <div class="picker-header">Add</div>
+            <div class="picker-option" onclick="closeAddPicker(); navigateFocus('newjob-${jobId}')">
+                <span class="picker-option-icon">📋</span>
+                <span class="picker-option-label">Child Jobs</span>
+            </div>
+            <div class="picker-option" onclick="closeAddPicker(); navigateFocus('attach-${jobId}')">
+                <span class="picker-option-icon">🔗</span>
+                <span class="picker-option-label">Assets</span>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(picker);
+}
+
+function closeAddPicker() {
+    const picker = document.getElementById('add-picker');
+    if (picker) picker.remove();
+}
+
+// ============== More Picker ==============
+
+function openMorePicker(jobId) {
+    const picker = document.createElement('div');
+    picker.className = 'picker-modal';
+    picker.id = 'more-picker';
+    picker.innerHTML = `
+        <div class="picker-backdrop" onclick="closeMorePicker()"></div>
+        <div class="picker-content">
+            <div class="picker-header">Actions</div>
+            <div class="picker-option" onclick="closeMorePicker(); completeJobDirect('${jobId}')">
+                <span class="picker-option-icon">✓</span>
+                <span class="picker-option-label">Complete</span>
+            </div>
+            <div class="picker-option" onclick="closeMorePicker(); archiveJobDirect('${jobId}')">
+                <span class="picker-option-icon">📦</span>
+                <span class="picker-option-label">Archive</span>
+            </div>
+            <div class="picker-option danger" onclick="closeMorePicker(); deleteJobDirect('${jobId}')">
+                <span class="picker-option-icon">🗑</span>
+                <span class="picker-option-label">Delete</span>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(picker);
+}
+
+function closeMorePicker() {
+    const picker = document.getElementById('more-picker');
+    if (picker) picker.remove();
+}
+
+async function completeJobDirect(jobId) {
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/complete`, { method: 'POST' });
+        if (response.ok) {
+            await loadJobsData();
+            navigateFocusBack();
+        }
+    } catch (error) {
+        console.error('Failed to complete job:', error);
+    }
+}
+
+async function archiveJobDirect(jobId) {
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/archive`, { method: 'POST' });
+        if (response.ok) {
+            await loadJobsData();
+            navigateFocusBack();
+        }
+    } catch (error) {
+        console.error('Failed to archive job:', error);
+    }
+}
+
+async function deleteJobDirect(jobId) {
+    if (!confirm('Delete this job?')) return;
+    try {
+        const response = await fetch(`/api/jobs/${jobId}`, { method: 'DELETE' });
+        if (response.ok) {
+            await loadJobsData();
+            navigateFocusBack();
+        }
+    } catch (error) {
+        console.error('Failed to delete job:', error);
     }
 }
 
