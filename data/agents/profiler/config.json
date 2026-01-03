@@ -1,6 +1,6 @@
 {
   "id": "profiler",
-  "name": "The Profiler",
+  "name": "Profiler",
   "enabled": true,
   "order": 2,
   "tools": [

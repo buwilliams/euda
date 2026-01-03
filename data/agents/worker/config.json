@@ -1,6 +1,6 @@
 {
   "id": "worker",
-  "name": "The Worker",
+  "name": "Worker",
   "enabled": true,
   "order": 10,
   "tools": [

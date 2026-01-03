@@ -2,8 +2,8 @@
 Upload API Route
 
 Handles file uploads by:
-1. Finding or creating an Inbox root job
-2. Creating an ingest job as a child of Inbox
+1. Finding the Archivist's inbox job (under Agents)
+2. Creating an ingest job as a child of Archivist's inbox
 3. Saving the file as an asset attached to that job
 """
 
@@ -11,49 +11,38 @@ from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File
 
-from ...tools.jobs import create_job, list_jobs
+from ...tools.jobs import create_job, get_agent_inbox_job
 from ...tools.assets import ASSETS_DIR
 
 
 router = APIRouter()
 
-# Name of the root job that holds all ingest jobs
-INBOX_JOB_NAME = "Inbox"
 
-
-def get_or_create_inbox_job() -> dict:
-    """Find or create the Inbox root job for uploaded files."""
-    # Look for existing Inbox job (root level, not archived)
-    all_jobs = list_jobs()
-    for job in all_jobs:
-        if job["name"] == INBOX_JOB_NAME and job["parent_id"] is None and job["status"] != "archived":
-            return job
-
-    # Create new Inbox job
-    return create_job(
-        name=INBOX_JOB_NAME,
-        description="Files uploaded for processing",
-        tags=["system", "inbox"],
-        created_by="system"
-    )
+def get_archivist_inbox() -> dict:
+    """Get the Archivist's inbox job for uploaded files."""
+    inbox = get_agent_inbox_job("archivist")
+    if not inbox:
+        raise RuntimeError("Archivist inbox not found. Ensure agents are synced.")
+    return inbox
 
 
 @router.post("")
 async def upload_file(file: UploadFile = File(...)):
     """Upload a file for processing.
 
-    Creates an ingest job under the Inbox and saves the file as an asset.
+    Creates an ingest job under the Archivist's inbox and saves the file as an asset.
     The archivist will process the file and add it to the lifelog.
     """
-    # Get or create the Inbox parent job
-    inbox = get_or_create_inbox_job()
+    # Get the Archivist's inbox
+    archivist_inbox = get_archivist_inbox()
 
-    # Create an ingest job as a child of Inbox
+    # Create an ingest job as a child of Archivist's inbox
     job = create_job(
         name=f"Ingest: {file.filename}",
         description=f"Process uploaded file: {file.filename}",
-        parent_id=inbox["id"],
+        parent_id=archivist_inbox["id"],
         tags=["ingest"],
+        assignees=["archivist"],
         created_by="user"
     )
 
@@ -71,6 +60,6 @@ async def upload_file(file: UploadFile = File(...)):
         "status": "uploaded",
         "filename": file.filename,
         "job_id": job_id,
-        "inbox_id": inbox["id"],
+        "archivist_inbox_id": archivist_inbox["id"],
         "message": f"File queued for processing. The archivist will review it shortly."
     }

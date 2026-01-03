@@ -1,6 +1,6 @@
 {
   "id": "archivist",
-  "name": "The Archivist",
+  "name": "Archivist",
   "enabled": true,
   "order": 3,
   "tools": [

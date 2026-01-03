@@ -1,6 +1,6 @@
 {
   "id": "curator",
-  "name": "The Curator",
+  "name": "Curator",
   "enabled": true,
   "order": 5,
   "tools": [

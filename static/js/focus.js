@@ -234,10 +234,17 @@ function animateViewTransition(container, newContent, direction) {
 
 function renderFocusMenu() {
     const counts = getFocusCounts();
-    const topLevelJobs = jobsData.filter(j => !j.parent_id);
     // Root completed jobs: no parent OR parent is not in completed list (parent still active/archived)
     const completedJobIds = new Set(completedJobsData.map(j => j.id));
     const topLevelCompletedJobs = completedJobsData.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
+
+    // Find system containers
+    const agentsContainer = jobsData.find(j => j.tags && j.tags.includes('system:agents') && !j.parent_id);
+    const projectsContainer = jobsData.find(j => j.tags && j.tags.includes('system:projects') && !j.parent_id);
+
+    // Count children of each container
+    const agentsCount = agentsContainer ? jobsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
+    const projectsCount = projectsContainer ? jobsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
 
     return `
         <div class="focus-menu">
@@ -271,25 +278,22 @@ function renderFocusMenu() {
                 <span class="focus-menu-count">${topLevelCompletedJobs.length}</span>
                 <span class="focus-menu-arrow">›</span>
             </div>
-            ${topLevelJobs.map(job => {
-                const childCount = jobsData.filter(j => j.parent_id === job.id).length;
-                const assignees = job.assignees || [];
-                const workingBadge = job.in_progress_by ? '<span class="menu-working-badge" title="Agent working">' + icon('bolt') + '</span>' : '';
-                const assignedBadge = !job.in_progress_by && assignees.length > 0 ? '<span class="menu-assigned-badge" title="Assigned">' + icon('user') + '</span>' : '';
-                return `
-                <div class="focus-menu-item" onclick="navigateFocus('job-${job.id}')">
-                    <span class="focus-menu-icon">${icon('folder')}</span>
-                    <span class="focus-menu-label">${escapeHtml(job.name)}</span>
-                    ${workingBadge}${assignedBadge}
-                    <span class="focus-menu-count">${childCount}</span>
-                    <button class="card-trash-btn" onclick="quickDeleteJob(event, '${job.id}')" title="Delete job">${icon('trash')}</button>
-                    <span class="focus-menu-arrow">›</span>
-                </div>
-            `}).join('')}
-        </div>
-        <div class="quick-add-section">
-            <input type="text" id="quick-add-root" class="quick-add-input" placeholder="Add new job..." onkeypress="handleQuickAddKeypress(event, 'quick-add-root')">
-            <button class="quick-add-btn" onclick="quickAddJob('quick-add-root')">${icon('plus')}</button>
+            ${agentsContainer ? `
+            <div class="focus-menu-item" onclick="navigateFocus('job-${agentsContainer.id}')">
+                <span class="focus-menu-icon">${icon('bolt')}</span>
+                <span class="focus-menu-label">Agents</span>
+                <span class="focus-menu-count">${agentsCount}</span>
+                <span class="focus-menu-arrow">›</span>
+            </div>
+            ` : ''}
+            ${projectsContainer ? `
+            <div class="focus-menu-item" onclick="navigateFocus('job-${projectsContainer.id}')">
+                <span class="focus-menu-icon">${icon('folder')}</span>
+                <span class="focus-menu-label">Projects</span>
+                <span class="focus-menu-count">${projectsCount}</span>
+                <span class="focus-menu-arrow">›</span>
+            </div>
+            ` : ''}
         </div>
     `;
 }
@@ -435,6 +439,52 @@ function getWhenLabel(job) {
     return 'Anytime';
 }
 
+function renderSystemContainerView(job, isAgentsContainer) {
+    const childJobs = jobsData.filter(j => j.parent_id === job.id);
+    const titleIcon = isAgentsContainer ? icon('bolt') : icon('folder');
+    const containerName = isAgentsContainer ? 'Agents' : 'Projects';
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">${titleIcon}${containerName}</span>
+        </div>
+        <div class="focus-view-content">
+            <!-- Child Jobs -->
+            <div class="job-section">
+                ${childJobs.length === 0 ? `
+                    <div class="focus-empty">No ${isAgentsContainer ? 'agent inboxes' : 'projects'} yet.</div>
+                ` : `
+                    <div class="child-jobs-list">
+                        ${childJobs.map(child => {
+                            const grandchildCount = jobsData.filter(j => j.parent_id === child.id).length;
+                            const isAgentInbox = !!child.agent_id;
+                            const childIcon = isAgentInbox ? icon('bolt') : icon('folder');
+                            const trashBtn = isAgentInbox ? '' : `<button class="card-trash-btn" onclick="quickDeleteJob(event, '${child.id}')" title="Delete">${icon('trash')}</button>`;
+                            return `
+                                <div class="child-job-card" onclick="navigateFocus('job-${child.id}')">
+                                    <span class="child-job-icon">${childIcon}</span>
+                                    <span class="child-job-name">${escapeHtml(child.name)}</span>
+                                    <span class="child-job-count">${grandchildCount}</span>
+                                    ${trashBtn}
+                                    <span class="child-job-arrow">${icon('chevron-right')}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `}
+            </div>
+            ${!isAgentsContainer ? `
+            <!-- Quick Add for Projects -->
+            <div class="quick-add-section">
+                <input type="text" id="quick-add-${job.id}" class="quick-add-input" placeholder="Add new project..." onkeypress="handleQuickAddKeypress(event, 'quick-add-${job.id}', '${job.id}')">
+                <button class="quick-add-btn" onclick="quickAddJob('quick-add-${job.id}', '${job.id}')">${icon('plus')}</button>
+            </div>
+            ` : ''}
+        </div>
+    `;
+}
+
 function renderJobDetailView(jobId) {
     const job = jobsData.find(j => j.id === jobId);
     if (!job) {
@@ -447,6 +497,16 @@ function renderJobDetailView(jobId) {
         `;
     }
 
+    // Check if this is a system container
+    const isAgentsContainer = job.tags && job.tags.includes('system:agents');
+    const isProjectsContainer = job.tags && job.tags.includes('system:projects');
+    const isSystemContainer = isAgentsContainer || isProjectsContainer;
+
+    // For system containers, render a simplified view
+    if (isSystemContainer) {
+        return renderSystemContainerView(job, isAgentsContainer);
+    }
+
     const whenLabel = getWhenLabel(job);
     const isArchiving = archivingTaskId === job.id;
     const displayName = job.name || 'Untitled';
@@ -454,6 +514,8 @@ function renderJobDetailView(jobId) {
     const childJobs = jobsData.filter(j => j.parent_id === job.id);
     const completedChildJobs = completedJobsData.filter(j => j.parent_id === job.id);
     const assets = jobAssetsCache[jobId] || [];
+    const isAgentJob = !!job.agent_id;
+    const titleIcon = isAgentJob ? icon('bolt') : '';
 
     // Check if we're editing this job
     const isEditingName = editingJobField?.jobId === jobId && editingJobField?.field === 'name';
@@ -474,7 +536,7 @@ function renderJobDetailView(jobId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">${escapeHtml(displayName)}</span>
+            <span class="focus-view-title${isAgentJob ? ' agent-job-title' : ''}">${titleIcon}${escapeHtml(displayName)}</span>
         </div>
         <div class="focus-view-content">
             <!-- Actions Row -->
@@ -482,7 +544,7 @@ function renderJobDetailView(jobId) {
                 <button class="task-detail-action" onclick="openWhenPicker('job', '${job.id}')">${icon('calendar')} ${escapeHtml(whenLabel)}</button>
                 <button class="task-detail-action" onclick="openAssigneesPicker('${job.id}')">${getAssigneesLabel(job)}</button>
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
-                <button class="task-detail-action" onclick="openMorePicker('${job.id}')">Actions</button>
+                ${isAgentJob ? '' : `<button class="task-detail-action" onclick="openMorePicker('${job.id}')">Actions</button>`}
             </div>
 
             <!-- Name Section -->

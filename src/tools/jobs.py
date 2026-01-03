@@ -98,6 +98,13 @@ def _ensure_schema():
         conn.execute("ALTER TABLE jobs ADD COLUMN in_progress_by TEXT")
         conn.commit()
 
+    # Migration: add agent_id column if it doesn't exist (for agent inbox jobs)
+    try:
+        conn.execute("SELECT agent_id FROM jobs LIMIT 1")
+    except sqlite3.OperationalError:
+        conn.execute("ALTER TABLE jobs ADD COLUMN agent_id TEXT")
+        conn.commit()
+
 
 # Initialize schema on module import
 _ensure_schema()
@@ -121,6 +128,7 @@ def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
     # Handle columns that may not exist in older schemas
     assignees_raw = row["assignees"] if "assignees" in row.keys() else None
     in_progress_by = row["in_progress_by"] if "in_progress_by" in row.keys() else None
+    agent_id = row["agent_id"] if "agent_id" in row.keys() else None
 
     job = {
         "id": row["id"],
@@ -136,6 +144,7 @@ def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
         "tags": json.loads(row["tags"]) if row["tags"] else [],
         "assignees": json.loads(assignees_raw) if assignees_raw else [],
         "in_progress_by": in_progress_by,
+        "agent_id": agent_id,
         "log": logs if logs is not None else []
     }
     if row["completed_at"]:
@@ -217,6 +226,42 @@ def get_job(job_id: str) -> Optional[dict]:
     return _load_job(job_id)
 
 
+def get_agent_inbox_job(agent_id: str) -> Optional[dict]:
+    """Get an agent's inbox job (under the Agents container)."""
+    all_jobs = list_jobs()
+    for job in all_jobs:
+        if job.get("agent_id") == agent_id:
+            return job
+    return None
+
+
+def _get_default_parent_for_creator(created_by: str) -> Optional[str]:
+    """Get the default parent job ID based on who is creating the job.
+
+    - user/friend -> Projects container
+    - other agents -> their agent inbox job
+    """
+    from .agents import list_agents
+
+    # User or Friend agent -> Projects
+    if created_by in ("user", "friend", "system"):
+        projects = get_projects_container()
+        return projects["id"] if projects else None
+
+    # Check if created_by is a known agent
+    agents = list_agents()
+    agent_ids = {a["id"] for a in agents}
+
+    if created_by in agent_ids:
+        # Agent -> their inbox job
+        inbox = get_agent_inbox_job(created_by)
+        return inbox["id"] if inbox else None
+
+    # Unknown creator -> Projects as fallback
+    projects = get_projects_container()
+    return projects["id"] if projects else None
+
+
 @tool("create_job", "Create a new job")
 def create_job(
     name: str,
@@ -228,9 +273,19 @@ def create_job(
     someday: bool = False,
     created_by: str = "user"
 ) -> dict:
-    """Create a new job."""
+    """Create a new job.
+
+    If no parent_id is provided:
+    - Jobs created by user/friend go under Projects
+    - Jobs created by other agents go under their agent inbox
+    """
     now = datetime.utcnow().isoformat() + "Z"
     job_id = f"job-{uuid.uuid4().hex[:8]}"
+
+    # Set default parent if none provided
+    effective_parent_id = parent_id
+    if effective_parent_id is None:
+        effective_parent_id = _get_default_parent_for_creator(created_by)
 
     with _transaction() as conn:
         conn.execute('''
@@ -238,7 +293,7 @@ def create_job(
                             created_by, description, due_date, someday, tags, assignees)
             VALUES (?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
-            job_id, name, parent_id, now, now, created_by,
+            job_id, name, effective_parent_id, now, now, created_by,
             description, due_date, int(someday), json.dumps(tags or []),
             json.dumps(assignees or [])
         ))
@@ -585,6 +640,159 @@ def claim_job(job_id: str, agent_id: str) -> dict:
     _emit_jobs_update()
 
     return {"claimed": True, "job_id": job_id, "agent": agent_id}
+
+
+def get_or_create_system_job(name: str, system_tag: str) -> dict:
+    """Get or create a system container job (Agents or Projects).
+
+    Args:
+        name: Display name for the job
+        system_tag: Tag to identify this system job (e.g., "system:agents")
+
+    Returns:
+        The system job dict
+    """
+    all_jobs = list_jobs()
+
+    # Find existing system job by tag
+    for job in all_jobs:
+        if system_tag in job.get("tags", []) and job["parent_id"] is None:
+            return job
+
+    # Create new system job
+    now = datetime.utcnow().isoformat() + "Z"
+    job_id = f"job-{uuid.uuid4().hex[:8]}"
+
+    with _transaction() as conn:
+        conn.execute('''
+            INSERT INTO jobs (id, name, parent_id, status, created_at, updated_at,
+                            created_by, description, tags)
+            VALUES (?, ?, NULL, 'todo', ?, ?, 'system', ?, ?)
+        ''', (
+            job_id, name, now, now,
+            f"System container for {name.lower()}",
+            json.dumps([system_tag])
+        ))
+
+    print(f"Created system job: {name}")
+    return _load_job(job_id)
+
+
+def get_agents_container() -> dict:
+    """Get or create the Agents container job."""
+    return get_or_create_system_job("Agents", "system:agents")
+
+
+def get_projects_container() -> dict:
+    """Get or create the Projects container job."""
+    return get_or_create_system_job("Projects", "system:projects")
+
+
+def sync_agent_inbox_jobs():
+    """Sync agent inbox jobs with current agents.
+
+    Creates inbox jobs for new agents under the Agents container,
+    archives orphaned ones, and updates names if agents were renamed.
+    Also migrates any orphaned user jobs under Projects.
+    """
+    from .agents import list_agents
+
+    # Ensure system containers exist
+    agents_container = get_agents_container()
+    projects_container = get_projects_container()
+
+    agents = list_agents()
+    agent_ids = {a["id"] for a in agents}
+    agent_names = {a["id"]: a.get("name", a["id"]) for a in agents}
+
+    all_jobs = list_jobs()
+    now = datetime.utcnow().isoformat() + "Z"
+    changes_made = False
+
+    # Get existing agent inbox jobs (jobs with agent_id set)
+    inbox_jobs = {j["agent_id"]: j for j in all_jobs if j.get("agent_id")}
+
+    # Create inbox jobs for agents that don't have one
+    for agent in agents:
+        agent_id = agent["id"]
+        agent_name = agent.get("name", agent_id)
+
+        if agent_id not in inbox_jobs:
+            # Create new inbox job under Agents container
+            job_id = f"job-{uuid.uuid4().hex[:8]}"
+            with _transaction() as conn:
+                conn.execute('''
+                    INSERT INTO jobs (id, name, parent_id, status, created_at, updated_at,
+                                    created_by, description, tags, agent_id)
+                    VALUES (?, ?, ?, 'todo', ?, ?, 'system', ?, ?, ?)
+                ''', (
+                    job_id, agent_name, agents_container["id"], now, now,
+                    f"Inbox for {agent_name}",
+                    json.dumps(["agent-inbox"]),
+                    agent_id
+                ))
+            print(f"Created inbox job for agent: {agent_id}")
+            changes_made = True
+
+        else:
+            job = inbox_jobs[agent_id]
+            updates_needed = []
+
+            # Check if name changed
+            if job["name"] != agent_name:
+                updates_needed.append(("name", agent_name))
+                updates_needed.append(("description", f"Inbox for {agent_name}"))
+
+            # Check if needs to be moved under Agents container
+            if job["parent_id"] != agents_container["id"]:
+                updates_needed.append(("parent_id", agents_container["id"]))
+
+            if updates_needed:
+                set_clauses = ", ".join(f"{k} = ?" for k, v in updates_needed)
+                values = [v for k, v in updates_needed] + [now, job["id"]]
+                with _transaction() as conn:
+                    conn.execute(
+                        f"UPDATE jobs SET {set_clauses}, updated_at = ? WHERE id = ?",
+                        values
+                    )
+                print(f"Updated inbox job for agent: {agent_id}")
+                changes_made = True
+
+    # Archive inbox jobs for deleted agents
+    for agent_id, job in inbox_jobs.items():
+        if agent_id not in agent_ids and job["status"] != "archived":
+            with _transaction() as conn:
+                conn.execute(
+                    "UPDATE jobs SET status = 'archived', updated_at = ? WHERE id = ?",
+                    (now, job["id"])
+                )
+            print(f"Archived inbox job for deleted agent: {agent_id}")
+            changes_made = True
+
+    # Migrate orphaned root jobs (user-created, not system) under Projects
+    system_tags = {"system:agents", "system:projects"}
+    for job in all_jobs:
+        # Skip if not a root job, or if it's a system container, or already under Projects
+        if job["parent_id"] is not None:
+            continue
+        if any(tag in system_tags for tag in job.get("tags", [])):
+            continue
+        if job.get("agent_id"):  # Agent inbox jobs handled above
+            continue
+
+        # This is a user root job - move it under Projects
+        with _transaction() as conn:
+            conn.execute(
+                "UPDATE jobs SET parent_id = ?, updated_at = ? WHERE id = ?",
+                (projects_container["id"], now, job["id"])
+            )
+        print(f"Moved job '{job['name']}' under Projects")
+        changes_made = True
+
+    if changes_made:
+        _emit_jobs_update()
+
+    return {"synced": True, "agent_count": len(agents)}
 
 
 @tool("release_job", "Release a claimed job")

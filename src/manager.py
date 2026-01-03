@@ -173,6 +173,11 @@ class AgentManager:
 
         print(f"Found {len(configs)} agents, {len(enabled)} enabled")
 
+        # Sync agent inbox jobs
+        from .tools.jobs import sync_agent_inbox_jobs
+        sync_agent_inbox_jobs()
+        print("Agent inbox jobs synced")
+
         for config in enabled:
             self.start_agent(config)
 
