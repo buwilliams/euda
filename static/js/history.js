@@ -56,9 +56,12 @@ function navigateHistoryBack() {
 
 async function loadHistoryData() {
     try {
+        console.log('Loading history data...');
         const response = await fetch('/api/chat/conversations/recent?count=20');
         const data = await response.json();
+        console.log('History data received:', data);
         historyData = data.conversations || [];
+        console.log('Conversations count:', historyData.length);
         renderHistory();
     } catch (error) {
         console.error('Failed to load history:', error);
