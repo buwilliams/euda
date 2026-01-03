@@ -86,6 +86,7 @@ async function sendContextMessage() {
 
         removeInlineThinking();
         addInlineMessage(data.response, 'friend');
+        showChatNotification();
 
         // If the agent cleared the conversation, clear the UI after showing the response
         if (data.clear_chat) {
@@ -98,6 +99,7 @@ async function sendContextMessage() {
         console.error('Chat error:', error);
         removeInlineThinking();
         addInlineMessage('I had trouble processing that. Could you try again?', 'friend');
+        showChatNotification();
     }
 
     setContextWaiting(false);
@@ -135,6 +137,17 @@ function setContextWaiting(waiting) {
     contextInput.disabled = waiting;
     contextSendBtn.disabled = waiting;
     if (waiting) addInlineThinking();
+}
+
+function showChatNotification() {
+    // Only show notification if not on chat tab
+    if (activeTab !== 'chat') {
+        contextSendBtn.classList.add('has-notification');
+    }
+}
+
+function clearChatNotification() {
+    contextSendBtn.classList.remove('has-notification');
 }
 
 // Auto-expand context textarea

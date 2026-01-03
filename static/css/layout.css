@@ -292,6 +292,21 @@
     stroke-linejoin: round;
 }
 
+#context-send-btn.has-notification {
+    animation: send-btn-pulse 1s ease-in-out infinite;
+}
+
+@keyframes send-btn-pulse {
+    0%, 100% {
+        background: var(--color-accent-dark);
+        transform: scale(1);
+    }
+    50% {
+        background: var(--color-primary);
+        transform: scale(1.1);
+    }
+}
+
 /* Slide Containers for Navigation */
 .view-slide-container {
     display: flex;

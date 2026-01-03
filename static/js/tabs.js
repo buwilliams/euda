@@ -83,6 +83,10 @@ function switchTab(tabName) {
     activeTab = tabName;
 
     // Load data for tab
+    if (tabName === 'chat') {
+        // Clear notification when switching to chat
+        clearChatNotification();
+    }
     if (tabName === 'focus') {
         // Reset focus view to menu when clicking tab
         focusView = 'menu';
