@@ -9,6 +9,7 @@ Provides a unified interface across providers (Anthropic, OpenAI).
 
 import json
 import time
+from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
@@ -19,6 +20,25 @@ import openai
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
+PROMPT_LOG_PATH = DATA_DIR / "system" / "prompts.jsonl"
+
+
+def _log_prompt(agent_id: str, model: str, system: str, messages: list, tools: list = None):
+    """Log the full prompt submitted to the API."""
+    PROMPT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        "agent": agent_id,
+        "model": model,
+        "system_prompt": system,
+        "system_prompt_length": len(system),
+        "messages": messages,
+        "tools": [t.get("name") for t in tools] if tools else None,
+    }
+
+    with open(PROMPT_LOG_PATH, "a") as f:
+        f.write(json.dumps(entry, default=str) + "\n")
 
 # Defaults
 DEFAULT_PROVIDER = "openai"
@@ -160,6 +180,9 @@ class UnifiedClient:
 
         # Check budget before making API call
         check_budget()
+
+        # Log the prompt being submitted
+        _log_prompt(agent_id, model, system, messages, tools)
 
         start_time = time.time()
 
