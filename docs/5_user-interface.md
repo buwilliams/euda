@@ -28,9 +28,10 @@ On app load, an animated splash screen displays before the main UI:
 **Animation sequence:**
 1. Letters "E", "u", "n", "o" fade in one at a time (150ms each)
 2. Pause (500ms)
-3. Pronunciation and tagline fade in (400ms)
-4. Hold (800ms)
-5. Crossfade to login modal or main app
+3. Tagline fades in (400ms)
+4. Pronunciation ("you-know") fades in below (300ms)
+5. Hold (800ms)
+6. Crossfade to login modal or main app
 
 ---
 
@@ -49,16 +50,16 @@ On app load, an animated splash screen displays before the main UI:
 │  │  │              tabs-container                         │  │  │
 │  │  │  ┌───────────────────────────────────────────────┐  │  │  │
 │  │  │  │           tab-content                         │  │  │  │
-│  │  │  │    (Chat / Focus / About / History)           │  │  │  │
+│  │  │  │    (Focus / Chat / History / About / Settings)│  │  │  │
 │  │  │  └───────────────────────────────────────────────┘  │  │  │
 │  │  │  ┌───────────────────────────────────────────────┐  │  │  │
 │  │  │  │           tab-menu                            │  │  │  │
-│  │  │  │   [💬 Chat] [☐ Focus 3] [ℹ About] [◷ History] │  │  │  │
+│  │  │  │       [☐ Focus 3] [💬 Chat] [••• More]        │  │  │  │
 │  │  │  └───────────────────────────────────────────────┘  │  │  │
 │  │  └─────────────────────────────────────────────────────┘  │  │
 │  │  ┌─────────────────────────────────────────────────────┐  │  │
 │  │  │              input-bar                              │  │  │
-│  │  │   [What's on your mind?              ] [➤] [×]      │  │  │
+│  │  │   [What's on your mind?              ] [➤]          │  │  │
 │  │  └─────────────────────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
@@ -67,7 +68,8 @@ On app load, an animated splash screen displays before the main UI:
 **Layout notes:**
 - Single-column centered layout (max 640px)
 - Off-white background (#f8f8f8) with white cards/inputs for contrast
-- Tab-based navigation replaces side panels
+- Three main tabs: Focus (default), Chat, More (overflow menu)
+- More menu contains: History, About, Settings, New Chat
 
 ---
 
@@ -90,33 +92,41 @@ The top content area showing the daily quote.
 
 ### Tab System
 
-Four tabs provide the main navigation:
+Three main tabs with an overflow menu:
 
 | Tab | Icon | Purpose |
 |-----|------|---------|
-| Chat | 💬 | Conversation with Euno |
-| Focus | ☐ | Task and project management (Things-like) |
-| About | ℹ | About page (docs/1_pitch.md content) |
-| History | ◷ | Past conversation browser |
+| Focus | queue-list | Task and project management (Things-like) — **default tab** |
+| Chat | chat-bubble-left | Conversation with Euno |
+| More | ellipsis-vertical | Overflow menu for less-used screens |
+
+**Overflow Menu (More):**
+| Item | Icon | Purpose |
+|------|------|---------|
+| History | clock | Past conversation browser |
+| About | information-circle | About page (docs/1_pitch.md content) |
+| Settings | cog-6-tooth | App settings and agent management |
+| New Chat | arrow-path | Start a new conversation session |
 
 **Focus badge:** Shows count of tasks due today
 
+**Chat notification:** Send button pulses when a response arrives while on another tab (auto-clears after 3 seconds)
+
 ### Input Bar
 
-Bottom-anchored bar with text input and action buttons.
+Bottom-anchored bar with text input and send button.
 
 ```
 ┌─────────────────────────────────────────────┐
-│  ┌─────────────────────────────────┐ ┌──┐ ┌──┐ │
-│  │ What's on your mind?            │ │➤│ │×│ │
-│  └─────────────────────────────────┘ └──┘ └──┘ │
+│  ┌─────────────────────────────────────┐ ┌──┐ │
+│  │ What's on your mind?                │ │➤│ │
+│  └─────────────────────────────────────┘ └──┘ │
 └─────────────────────────────────────────────┘
 ```
 
 **Components:**
 - **Text input** — Auto-expanding textarea with placeholder "What's on your mind?"
-- **Send button** — Paper plane icon, black background (#333)
-- **Clear button** — X icon, clears chat and creates new session
+- **Send button** — Paper plane icon, black background (#333); pulses on new response
 
 **Keyboard shortcuts:**
 - Enter — Send message
@@ -287,31 +297,70 @@ Displays the product pitch from `docs/1_pitch.md`.
 
 ### History Tab
 
-Past conversation browser.
+Past conversation browser with session-based storage.
 
 ```
 ┌──────────────────────────────────────┐
-│ 2025-12-27 14:30                     │
+│ Today 14:30                          │
 │ What should I focus...               │
 ├──────────────────────────────────────┤
-│ 2025-12-27 09:15                     │
+│ Today 09:15                          │
 │ Good morning, I wanted to talk...    │
 ├──────────────────────────────────────┤
-│ 2025-12-26 16:45                     │
+│ Yesterday 16:45                      │
 │ Can you help me plan...              │
 └──────────────────────────────────────┘
 ```
 
-**List Items:**
-- Date and time of conversation
-- Preview of first message (truncated)
-- Click to fork into new session
+**Session Storage:**
+- Each conversation is stored as `{session-id}.md`
+- Session ID format: `YYYY-MM-DD_HHMMSS` (e.g., `2026-01-03_143022`)
+- Multiple conversations per day supported
+- "New Chat" (in More menu) creates a new session
+- Legacy date-only files (`YYYY-MM-DD.md`) supported for backwards compatibility
 
-**Fork Behavior:**
-- Creates new session with new ID
-- Pre-populates agent context with old messages
-- Loads messages into chat UI
-- Original conversation preserved unchanged
+**List Items:**
+- Friendly date (Today/Yesterday/date) and time
+- Preview of first user message (truncated to 100 chars)
+- Message count
+- Click to view details
+
+**Detail View:**
+- Full preview and message count
+- Continue Conversation — loads messages into chat, continues in same session
+- Archive — removes from history (currently same as delete)
+- Delete — permanently removes conversation file
+
+**Continue Behavior:**
+- Sets session ID to the selected conversation
+- Loads all messages into chat UI
+- New messages append to the same session file
+
+### Settings Tab
+
+Application settings and agent management.
+
+```
+┌──────────────────────────────────────┐
+│ Agents                               │
+├──────────────────────────────────────┤
+│ ✓ Friend                         → │
+│ ✓ Worker                         → │
+│ ○ Curator                        → │
+│ ○ Profiler                       → │
+└──────────────────────────────────────┘
+```
+
+**Agent List:**
+- Shows all configured agents with enabled/disabled status
+- Toggle icon: check (enabled) or circle (disabled)
+- Click to view/edit agent details
+
+**Agent Detail View:**
+- Enable/disable toggle
+- View and edit persona (markdown)
+- View and edit config (JSON)
+- Changes saved immediately to disk
 
 ---
 
@@ -365,7 +414,14 @@ Bottom sheet for scheduling tasks/projects.
 - Cards/inputs: #fff (white, for contrast)
 - Text: #333 (primary), #666 (secondary), #999 (muted)
 - Borders: #e0e0e0 (standard), #e8e8e8 (subtle)
-- Send button: #333 background, #fff icon
+- Primary buttons: #333 background, #fff icon/text (dark, not blue)
+- Accent blue (#007bff) reserved for focus states and links only
+
+**Button Colors:**
+Primary action buttons (Send, Add, Save) use dark backgrounds (`--color-accent-dark: #333`) rather than blue. This provides a more professional, understated appearance. Blue accent color is reserved for:
+- Input focus rings
+- Links
+- Selected/active state indicators
 
 **Spacing:**
 - Base unit: 0.5rem (8px)
@@ -374,6 +430,22 @@ Bottom sheet for scheduling tasks/projects.
 
 **Transitions:**
 - Hover states: 0.15s ease
+
+**Icons:**
+All icons use [HeroIcons](https://heroicons.com/) (MIT licensed, by Tailwind Labs):
+- Style: 24px outline variants
+- Format: SVG with `stroke="currentColor"` for color inheritance
+- Location: `/static/icons/`
+
+Icon usage pattern in JavaScript:
+```javascript
+function icon(name, className = '') {
+    const cls = className ? ` class="${className}"` : '';
+    return `<img src="/static/icons/${name}.svg" alt="${name}"${cls}>`;
+}
+```
+
+For white icons on dark buttons, apply `filter: invert(1)` in CSS.
 
 **Animations:**
 
@@ -388,9 +460,9 @@ All navigation uses slide animations for spatial continuity:
 | History view deeper | Slide left | 0.3s |
 | History view back | Slide right | 0.3s |
 
-Tab order for direction: Chat (0) → Focus (1) → About (2) → History (3)
+Tab order for direction: Focus (0) → Chat (1) → History (2) → About (3) → Settings (4)
 
-Switching from Chat to Focus slides left; Focus to Chat slides right.
+Switching from Focus to Chat slides left; Chat to Focus slides right.
 
 ---
 
@@ -398,12 +470,14 @@ Switching from Chat to Focus slides left; Focus to Chat slides right.
 
 **Client-side state:**
 ```javascript
-sessionId          // Current chat session UUID (localStorage)
-activeTab          // 'chat' | 'focus' | 'about' | 'history'
+sessionId          // Current chat session ID, format: YYYY-MM-DD_HHMMSS (localStorage)
+                   // null when starting new conversation (server generates new ID)
+viewingHistorySessionId  // Session being viewed from history (for UI state)
+activeTab          // 'focus' | 'chat' | 'history' | 'about' | 'settings'
 previousTab        // Previous tab for animation direction
 focusView          // 'menu' | 'today' | 'upcoming' | 'anytime' | 'someday' | 'completed' | 'job-{id}' | 'completed-{id}' | 'assets-{id}' | 'asset-{id}-{filename}'
 focusViewHistory   // Stack for back navigation
-historyView        // 'list' | 'detail'
+historyView        // 'list' | 'conversation-{session-id}'
 jobsData           // Cached active jobs
 completedJobsData  // Cached completed jobs
 jobAssetsCache     // Cached assets per job
@@ -436,7 +510,17 @@ historyData        // Cached conversation list
 static/
 ├── index.html          # Main HTML shell
 ├── css/
-│   └── app.css         # All styles
+│   ├── variables.css   # CSS custom properties
+│   ├── base.css        # Reset and base styles
+│   ├── layout.css      # App structure and tabs
+│   ├── components.css  # Reusable components
+│   ├── chat.css        # Chat tab styles
+│   ├── focus.css       # Focus tab styles
+│   ├── when-picker.css # Date picker modal
+│   ├── history.css     # History tab styles
+│   ├── about.css       # About tab styles
+│   ├── auth.css        # Login/auth styles
+│   └── responsive.css  # Mobile adaptations
 ├── js/
 │   ├── init.js         # App initialization and routing
 │   ├── state.js        # Global state management
@@ -449,8 +533,17 @@ static/
 │   ├── about.js        # About tab
 │   ├── upload.js       # File upload handling
 │   └── utils.js        # Shared utilities
+├── icons/              # HeroIcons SVG files
+│   ├── sun.svg, calendar.svg, clock.svg, cloud.svg
+│   ├── check.svg, plus.svg, trash.svg, pencil.svg
+│   ├── folder.svg, document.svg, link.svg
+│   ├── bolt.svg, user.svg, chevron-left.svg
+│   ├── chat-bubble-left.svg, queue-list.svg
+│   ├── ellipsis-vertical.svg, cog-6-tooth.svg
+│   ├── arrow-path.svg, arrow-up-tray.svg
+│   └── ... (all from heroicons.com)
 └── images/
-    └── euno-logo-*.png # Logo variants
+    └── favicon.svg     # App favicon
 ```
 
-Modular JavaScript with no build step required.
+Modular CSS and JavaScript with no build step required.

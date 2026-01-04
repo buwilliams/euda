@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from .llm import get_client, get_model
+from .llms import get_client
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -23,11 +23,28 @@ AGENTS_DIR = DATA_DIR / "agents"
 class Agent:
     """A generic agent that operates based on its configuration."""
 
-    def __init__(self, agent_id: str, config: Optional[dict] = None):
+    def __init__(self, agent_id: str, config: Optional[dict] = None, session_id: Optional[str] = None):
         self.id = agent_id
         self.config = config or self._load_config()
         self.persona = self._load_persona()
-        self.client = get_client()
+        self._work_done = False
+        self._session_id = session_id
+
+    def wait_for_trigger(self, timeout: float = None) -> Optional[dict]:
+        """Wait for a trigger event from the event bus.
+
+        Args:
+            timeout: Maximum seconds to wait (None = wait forever)
+
+        Returns:
+            Event dict with keys: event, data, timestamp
+            None if timeout or not subscribed
+        """
+        from .events import get_event_bus
+        bus = get_event_bus()
+        if not bus:
+            return None
+        return bus.wait_for_event(self.id, timeout=timeout)
 
     def _load_config(self) -> dict:
         """Load agent configuration from disk."""
@@ -40,7 +57,7 @@ class Agent:
             "name": self.id.title(),
             "enabled": True,
             "tools": [],
-            "sleep_minutes": 5
+            "triggers": ["job:assigned"]
         }
 
     def _load_persona(self) -> str:
@@ -50,22 +67,37 @@ class Agent:
             return persona_path.read_text()
         return f"You are {self.config.get('name', self.id)}, a helpful assistant."
 
-    def _get_conversation_path(self) -> Path:
-        """Get path to today's conversation file."""
-        today = datetime.now().strftime("%Y-%m-%d")
+    def _get_conversation_dir(self) -> Path:
+        """Get conversation directory for this agent."""
         conv_dir = AGENTS_DIR / self.id / "state" / "conversation"
         conv_dir.mkdir(parents=True, exist_ok=True)
-        return conv_dir / f"{today}.md"
+        return conv_dir
+
+    def _get_conversation_path(self) -> Path:
+        """Get path to current session's conversation file."""
+        conv_dir = self._get_conversation_dir()
+        # Create session ID if not set
+        if not self._session_id:
+            self._session_id = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        return conv_dir / f"{self._session_id}.md"
+
+    def set_session(self, session_id: str):
+        """Set the current session ID."""
+        self._session_id = session_id
+
+    def get_session_id(self) -> Optional[str]:
+        """Get the current session ID."""
+        return self._session_id
 
     def _load_conversation_history(self) -> str:
-        """Load today's conversation history."""
+        """Load current session's conversation history."""
         path = self._get_conversation_path()
         if path.exists():
             return path.read_text()
         return ""
 
     def _save_conversation_turn(self, role: str, content: str):
-        """Append a conversation turn to today's file."""
+        """Append a conversation turn to session file."""
         path = self._get_conversation_path()
         timestamp = datetime.now().strftime("%H:%M:%S")
 
@@ -176,81 +208,35 @@ class Agent:
 
         return "\n".join(parts)
 
-    def _build_system_prompt_from_cache(self, cache: dict) -> str:
-        """Build system prompt using pre-loaded cached context.
-
-        Args:
-            cache: Dict with keys: persona, profile, memory
-
-        Returns:
-            System prompt string
-        """
-        parts = [cache["persona"]]
-
-        # Use cached profile
-        profile = cache.get("profile", {})
-        if profile.get("exists") and profile.get("content"):
-            parts.append("\n## User Profile\n")
-            parts.append(profile["content"])
-
-        # Use cached memory
-        memory = cache.get("memory", {})
-        if memory:
-            parts.append("\n## Your Memory\n")
-            for key, value in memory.items():
-                parts.append(f"- {key}: {value}")
-
-        # Conversation history still loaded fresh (changes during work cycle)
-        history = self._load_conversation_history()
-        if history:
-            # Include last portion of history to stay within context limits
-            lines = history.split("\n")
-            if len(lines) > 100:
-                lines = lines[-100:]
-            parts.append("\n## Recent Conversation\n")
-            parts.append("\n".join(lines))
-
-        return "\n".join(parts)
-
     def _get_tools(self) -> list:
         """Get tool definitions for this agent."""
         from .tools import get_tools_for_agent
         return get_tools_for_agent(self.config.get("tools", []))
 
-    def _get_model(self) -> str:
-        """Get the model for this agent (supports per-agent override)."""
-        # Check if agent config specifies a model override
-        if "model" in self.config:
-            return self.config["model"]
-        # Otherwise use system default
-        return get_model()
-
-    def chat(self, message: str, log_to_lifelog: bool = True, save_to_history: bool = True, cached_context: Optional[dict] = None) -> str:
+    def chat(self, message: str, log_to_lifelog: bool = True, save_to_history: bool = True) -> str:
         """Process a chat message and return response.
 
         Args:
             message: The user message
             log_to_lifelog: Whether to log this conversation to lifelog (default True)
             save_to_history: Whether to save to conversation history (default True)
-            cached_context: Optional pre-loaded context (persona, profile, memory) to avoid re-reading files
         """
         self._log("chat_start", {"message_length": len(message)})
         if save_to_history:
             self._save_conversation_turn("user", message)
 
         tools = self._get_tools()
-
-        # Use cached context if provided, otherwise load fresh
-        if cached_context:
-            system_prompt = self._build_system_prompt_from_cache(cached_context)
-        else:
-            system_prompt = self._build_system_prompt()
+        system_prompt = self._build_system_prompt()
 
         messages = [{"role": "user", "content": message}]
 
+        # Get fresh client (respects current provider config)
+        # Client stores both provider and model to avoid race conditions
+        client = get_client()
+
         # Call LLM with tools
-        response = self.client.messages.create(
-            model=self._get_model(),
+        response = client.messages.create(
+            model=client.model_name,
             max_tokens=4096,
             system=system_prompt,
             tools=tools if tools else None,
@@ -268,8 +254,8 @@ class Agent:
             messages.append({"role": "assistant", "content": response.content})
             messages.append({"role": "user", "content": tool_results})
 
-            response = self.client.messages.create(
-                model=self._get_model(),
+            response = client.messages.create(
+                model=client.model_name,
                 max_tokens=4096,
                 system=system_prompt,
                 tools=tools if tools else None,
@@ -323,16 +309,26 @@ class Agent:
 
         return results
 
-    def work_cycle_sync(self):
-        """Perform one cycle of autonomous work (synchronous version for threads)."""
-        from .tools.jobs import list_jobs
-        from .tools.user import get_user_profile
+    def work_cycle_sync(self, trigger_context: dict = None):
+        """Perform one cycle of autonomous work (synchronous version for threads).
 
-        self._log("work_cycle_start")
+        Args:
+            trigger_context: Optional event data that triggered this cycle
+        """
+        from .tools.jobs import list_jobs
+
+        self._log("work_cycle_start", {"trigger": trigger_context})
         self._work_done = False
 
         # Get jobs that might need attention
         jobs = list_jobs(status="todo")
+
+        # Build trigger info for the prompt
+        trigger_info = ""
+        if trigger_context:
+            trigger_info = f"\n\nYou were triggered by event: {trigger_context.get('event')}"
+            if trigger_context.get('data'):
+                trigger_info += f"\nEvent data: {json.dumps(trigger_context['data'])}"
 
         if not jobs:
             self._log("work_cycle_end", {"reason": "no_jobs"})
@@ -340,24 +336,13 @@ class Agent:
 
         self._log("work_cycle_jobs_found", {"count": len(jobs)})
 
-        # Cache static context once per work cycle (optimization: avoid re-reading files)
-        cached_context = {
-            "persona": self.persona,
-            "profile": get_user_profile(),
-            "memory": self._load_memory()
-        }
-        self._log("context_cached", {
-            "has_profile": cached_context["profile"].get("exists", False),
-            "memory_items": len(cached_context["memory"])
-        })
-
         # Initial prompt asking agent to check for work
-        prompt = f"""Check if any of these jobs need your attention based on your role:
+        prompt = f"""Check if any of these jobs need your attention based on your role:{trigger_info}
 
 Jobs:
 {json.dumps(jobs, indent=2)}
 
-Work on any jobs that match your role. When you're finished working (or if nothing matches your role), call the done_working tool to signal you're ready to sleep."""
+Work on any jobs that match your role. When you're finished working (or if nothing matches your role), call the done_working tool to signal you're done."""
 
         # Autonomous loop - keep working until agent calls done_working
         max_iterations = self._get_system_config().get("agents", {}).get("max_work_iterations", 20)
@@ -368,8 +353,7 @@ Work on any jobs that match your role. When you're finished working (or if nothi
             self._log("work_iteration", {"iteration": iteration})
 
             # Don't log autonomous work cycles to lifelog or history - only user conversations
-            # Use cached context to avoid re-reading profile/memory on each iteration
-            response = self.chat(prompt, log_to_lifelog=False, save_to_history=False, cached_context=cached_context)
+            response = self.chat(prompt, log_to_lifelog=False, save_to_history=False)
             print(f"[{self.id}] {response[:100]}...")
 
             if self._work_done:

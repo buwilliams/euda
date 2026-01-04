@@ -10,7 +10,7 @@ Euno is a personal intelligence that learns to anticipate you: doing tasks for y
 
 Unified agent system where everything is either an Agent or a Job. Key files:
 - `README.md` - Product specification
-- `docs/architecture-v3.md` - Current architecture documentation
+- `docs/3_architecture.md` - Current architecture documentation
 - `main.py` - Entry point
 
 Old architecture preserved in `old-architecture/` for reference.
@@ -34,10 +34,11 @@ Old architecture preserved in `old-architecture/` for reference.
 
 4. Run Euno:
    ```
-   python main.py serve    # Web server + agents
-   python main.py chat     # Interactive chat
-   python main.py start    # Agents only (no web)
+   python main.py start    # Web server + agents (run in background in Claude Code)
+   python main.py chat     # Interactive chat with an agent
    ```
+
+**Important for Claude Code:** When starting Euno during development, run it as a background task so the conversation can continue while the server runs.
 
 ## Project Structure
 
@@ -78,12 +79,12 @@ euno/
 ## Core Concepts
 
 ### Agents
-An agent is: **config + persona + tools + loop**
+An agent is: **config + persona + tools + triggers**
 
-- Config (`config.json`): id, name, enabled, tools list, sleep_minutes
+- Config (`config.json`): id, name, enabled, tools list, triggers
 - Persona (`{agent}-persona.md`): System prompt defining behavior
 - Tools: Functions the agent can call (controlled by config)
-- Loop: Wake, check for work, do work, sleep, repeat
+- Triggers: Events that wake the agent (e.g., `job:assigned`, `time:morning`)
 
 ### Jobs
 Jobs replace projects and tasks. A single hierarchical structure:
@@ -106,7 +107,7 @@ The user is conceptually an agent too - just with a different interface (Web UI/
      "name": "My Agent",
      "enabled": true,
      "tools": ["list_jobs", "create_job", ...],
-     "sleep_minutes": 5
+     "triggers": ["job:assigned", "time:morning"]
    }
    ```
 3. Create `{agent-id}-persona.md` with the agent's identity

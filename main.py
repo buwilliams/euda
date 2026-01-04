@@ -8,10 +8,11 @@ Entry point for the application.
 import argparse
 import asyncio
 import sys
-from dotenv import load_dotenv
+from pathlib import Path
 
 # Load environment variables from .env file
-load_dotenv()
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent / ".env")
 
 
 def main():
@@ -31,7 +32,7 @@ Commands:
 Examples:
   python main.py start             # Run web server + agents
   python main.py start --breaker 1 # Run with $1 budget limit
-  python main.py chat              # Chat with default agent (assistant)
+  python main.py chat              # Chat with default agent (friend)
   python main.py chat friend       # Chat with specific agent
   python main.py agents            # List agents
   python main.py jobs              # List jobs
@@ -79,6 +80,16 @@ def cmd_start(args):
     import uvicorn
     from src.manager import AgentManager
     from src.web.app import app
+    from src.llms import ConfigError
+    from src.llms.base import _load_config
+
+    # Validate config at startup
+    try:
+        _load_config()
+    except ConfigError as e:
+        print(f"Error: {e}")
+        print("\nPlease ensure data/system/config.json exists and is valid.")
+        sys.exit(1)
 
     print("=" * 60)
     print("Euno - Personal Intelligence System")
@@ -90,7 +101,11 @@ def cmd_start(args):
 
     # Start agents in background thread
     def run_agents():
+        from src.manager import set_manager
+        from src.events import set_event_bus
         manager = AgentManager()
+        set_manager(manager)
+        set_event_bus(manager.event_bus)
         asyncio.run(manager.run())
 
     agent_thread = threading.Thread(target=run_agents, daemon=True)
@@ -107,8 +122,18 @@ def cmd_chat(args):
     from src.agent import Agent
     from src.tools import get_tools_for_agent
     from src.cost_tracker import BudgetExceeded, print_summary
+    from src.llms import ConfigError
+    from src.llms.base import _load_config
 
-    agent_id = args[0] if args else "assistant"
+    # Validate config at startup
+    try:
+        _load_config()
+    except ConfigError as e:
+        print(f"Error: {e}")
+        print("\nPlease ensure data/system/config.json exists and is valid.")
+        sys.exit(1)
+
+    agent_id = args[0] if args else "friend"
 
     print("=" * 60)
     print(f"Euno - Chat with {agent_id}")

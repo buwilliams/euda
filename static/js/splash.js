@@ -16,8 +16,8 @@ function runSplashAnimation() {
 
         // Timeline:
         // 0-1200ms: Letters fade in (300ms apart)
-        // 1600ms: Pronunciation fades in
-        // 2400ms: Tagline fades in
+        // 1600ms: Tagline fades in
+        // 2400ms: Pronunciation fades in
         // 3200ms: Animation complete
 
         // Animate letters one by one
@@ -27,14 +27,14 @@ function runSplashAnimation() {
             }, index * 300);
         });
 
-        // Animate pronunciation after letters
-        setTimeout(() => {
-            pronunciation.classList.add('visible');
-        }, 1600);
-
-        // Animate tagline after pronunciation
+        // Animate tagline after letters
         setTimeout(() => {
             tagline.classList.add('visible');
+        }, 1600);
+
+        // Animate pronunciation after tagline
+        setTimeout(() => {
+            pronunciation.classList.add('visible');
         }, 2400);
 
         // Mark animation complete and resolve

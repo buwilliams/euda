@@ -48,8 +48,8 @@ case "$ACTION" in
         ;;
     restart)
         echo "Restarting Euno on $SERVER..."
-        ssh "$SERVER" "sudo systemctl restart euno"
-        echo "Restarted."
+        timeout 30 ssh "$SERVER" "sudo systemctl restart euno" || echo "Warning: Restart timed out, checking status..."
+        ssh "$SERVER" "sudo systemctl status euno --no-pager -l" | head -10
         ;;
     status)
         ssh "$SERVER" "sudo systemctl status euno --no-pager -l"

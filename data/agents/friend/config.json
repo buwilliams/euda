@@ -1,7 +1,8 @@
 {
   "id": "friend",
-  "name": "The Friend",
+  "name": "Friend",
   "enabled": true,
+  "order": 8,
   "tools": [
     "list_jobs",
     "get_job",
@@ -19,7 +20,8 @@
     "write_lifelog",
     "send_notification",
     "send_notifications_batch",
-    "done_working"
+    "parse_date",
+    "get_current_date"
   ],
-  "sleep_minutes": 5
+  "triggers": []
 }

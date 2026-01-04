@@ -36,19 +36,18 @@ Today's AI remembers facts about you. Euno understands who you are—your values
 
 ## Agents
 
-Seven agents work together, each defined by config + persona + tools:
+Six agents work together, each defined by config + persona + tools + triggers:
 
-| Agent | Role | Mode |
-|-------|------|------|
-| **Archivist** | Preserves high-fidelity human data before interpretation | Scheduled (5 min) |
-| **Profiler** | Constructs the Profile from raw Lifelog data | Scheduled (30 min) |
-| **Curator** | Explores opportunities; guards attention; delivers what counts | Scheduled (15 min) |
-| **Friend** | Supports thinking without threatening identity coherence | Interactive |
-| **Worker** | Executes tasks without undermining agency | Scheduled (2 min) |
-| **Adaptor** | Refines agent identities to serve this specific user | Scheduled (60 min) |
-| **Assistant** | General purpose helper for direct requests | Interactive |
+| Agent | Role | Triggers |
+|-------|------|----------|
+| **Worker** | Executes tasks without undermining agency | `job:assigned`, `time:morning` |
+| **Friend** | Supports thinking without threatening identity coherence | `chat:message` |
+| **Curator** | Explores opportunities; guards attention; delivers what counts | `time:morning` |
+| **Archivist** | Preserves high-fidelity human data before interpretation | `job:assigned`, `time:morning` |
+| **Profiler** | Constructs the Profile from raw Lifelog data | `lifelog:new`, `time:evening` |
+| **Adaptor** | Refines agent identities to serve this specific user | `time:evening` |
 
-Adding a new agent requires only a `config.json` and persona markdown file—no Python code.
+Agents wake only when their triggers fire—no polling or scheduled intervals. Adding a new agent requires only a `config.json` and persona markdown file—no Python code.
 
 ## Quick Start
 
@@ -58,12 +57,11 @@ cp .env.example .env      # Add your ANTHROPIC_API_KEY
 pip install -r requirements.txt
 
 # Run
-python main.py serve      # Web server + background agents
-python main.py chat       # Interactive chat with assistant
-python main.py chat friend  # Chat with The Friend
+python main.py start      # Web server + background agents
+python main.py chat       # Interactive chat with friend
+python main.py chat worker  # Chat with a specific agent
 python main.py agents     # List all agents
 python main.py jobs       # List all jobs
-python main.py start      # Run agents only (no web)
 ```
 
 ## Architecture

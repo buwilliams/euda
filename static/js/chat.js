@@ -2,17 +2,19 @@
 
 // ============== Daily Quote ==============
 
-async function loadDailyQuote() {
-    // Remove any existing quote first
-    const existingQuote = document.getElementById('daily-quote');
-    if (existingQuote) existingQuote.remove();
+async function loadDailyQuote(retries = 3) {
+    // Find the quote container in Focus tab (may not exist yet if Focus hasn't rendered)
+    const container = document.getElementById('daily-quote-container');
+    if (!container) {
+        // Retry after a short delay if container doesn't exist yet
+        if (retries > 0) {
+            setTimeout(() => loadDailyQuote(retries - 1), 200);
+        }
+        return;
+    }
 
-    // Show loading state in messages area
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = 'daily-quote';
-    loadingDiv.className = 'quote-container';
-    loadingDiv.innerHTML = `<div class="quote-loading">Loading today's reflection...</div>`;
-    inlineMessages.insertBefore(loadingDiv, inlineMessages.firstChild);
+    // Show loading state
+    container.innerHTML = `<div id="daily-quote" class="quote-container"><div class="quote-loading">Loading today's reflection...</div></div>`;
 
     try {
         const response = await fetch('/api/daily-quote', {
@@ -39,15 +41,14 @@ async function loadDailyQuote() {
 }
 
 function renderQuote(data) {
-    const quoteDiv = document.getElementById('daily-quote');
-    if (quoteDiv) {
-        quoteDiv.innerHTML = `
-            <div class="quote-text">"${escapeHtml(data.quote)}"</div>
-            <div class="quote-author">— ${escapeHtml(data.author)}</div>
+    const container = document.getElementById('daily-quote-container');
+    if (container) {
+        container.innerHTML = `
+            <div id="daily-quote" class="quote-container">
+                <div class="quote-text">"${escapeHtml(data.quote)}"</div>
+                <div class="quote-author">— ${escapeHtml(data.author)}</div>
+            </div>
         `;
-        // Ensure chat stays scrolled to top after quote renders
-        const chatPane = document.getElementById('tab-chat');
-        if (chatPane) chatPane.scrollTop = 0;
     }
 }
 
@@ -61,11 +62,6 @@ async function sendContextMessage() {
     const message = contextInput.value.trim();
     if (!message || isWaiting) return;
 
-    // Switch to chat tab if not already there
-    if (activeTab !== 'chat') {
-        switchTab('chat');
-    }
-
     // Add user message
     addInlineMessage(message, 'you');
     contextInput.value = '';
@@ -76,7 +72,11 @@ async function sendContextMessage() {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, agent_id: 'friend' })
+            body: JSON.stringify({
+                message,
+                agent_id: 'friend',
+                session_id: sessionId  // Include current session
+            })
         });
 
         const data = await response.json();
@@ -88,8 +88,15 @@ async function sendContextMessage() {
             return;
         }
 
+        // Store session ID from server (creates new one if we didn't have one)
+        if (data.session_id) {
+            sessionId = data.session_id;
+            localStorage.setItem('sessionId', sessionId);
+        }
+
         removeInlineThinking();
         addInlineMessage(data.response, 'friend');
+        showChatNotification();
 
         // If the agent cleared the conversation, clear the UI after showing the response
         if (data.clear_chat) {
@@ -102,6 +109,7 @@ async function sendContextMessage() {
         console.error('Chat error:', error);
         removeInlineThinking();
         addInlineMessage('I had trouble processing that. Could you try again?', 'friend');
+        showChatNotification();
     }
 
     setContextWaiting(false);
@@ -139,6 +147,26 @@ function setContextWaiting(waiting) {
     contextInput.disabled = waiting;
     contextSendBtn.disabled = waiting;
     if (waiting) addInlineThinking();
+}
+
+let notificationTimeout = null;
+
+function showChatNotification() {
+    // Only show notification if not on chat tab
+    if (activeTab !== 'chat') {
+        contextSendBtn.classList.add('has-notification');
+        // Auto-clear after 3 seconds to avoid being annoying
+        if (notificationTimeout) clearTimeout(notificationTimeout);
+        notificationTimeout = setTimeout(clearChatNotification, 3000);
+    }
+}
+
+function clearChatNotification() {
+    contextSendBtn.classList.remove('has-notification');
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+        notificationTimeout = null;
+    }
 }
 
 // Auto-expand context textarea
@@ -179,10 +207,12 @@ function closeChat() {
 async function resetUI() {
     // Clear all messages
     inlineMessages.innerHTML = '';
-    // Switch to chat tab
+    // Clear session to start a new conversation
+    sessionId = null;
+    localStorage.removeItem('sessionId');
+    viewingHistorySessionId = null;
+    // Switch to chat tab for new conversation
     switchTab('chat');
-    // Reload the quote
-    loadDailyQuote();
     // Clear expanded cards state
     expandedCards.clear();
 }

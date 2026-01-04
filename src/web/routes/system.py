@@ -10,7 +10,8 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from ...llm import get_client, get_model, get_provider, DEFAULT_MODEL
+from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client
+from ...llms.base import _load_config, CONFIG_PATH, VALID_PROVIDERS
 from ...tools.jobs import list_jobs
 from ...tools.user import get_user_profile
 
@@ -86,7 +87,7 @@ Respond with ONLY a JSON object in this exact format (no markdown, no explanatio
 The quote can be from a famous person, philosopher, writer, or you can compose an original one attributed to "Unknown" or "Ancient Wisdom". Make it meaningful and relevant to the user's interests, goals, or values."""
 
     response = client.messages.create(
-        model=get_model(),
+        model=client.model_name,
         max_tokens=256,
         system="You are a helpful assistant that provides inspiring quotes.",
         messages=[{"role": "user", "content": prompt}]
@@ -141,25 +142,67 @@ def daily_quote():
 
 @router.get("/settings")
 def get_settings():
-    """Get current LLM settings."""
+    """Get current LLM settings with all providers."""
     return {
         "llm": {
             "provider": get_provider(),
-            "model": get_model()
+            "model": get_model(),
+            "providers": get_providers_config()
         }
     }
+
+
+@router.put("/settings/llm")
+def update_llm_settings(data: dict):
+    """Update LLM settings (provider, models)."""
+    config = _load_config()
+
+    # Update provider if specified
+    if "default_provider" in data:
+        provider = data["default_provider"]
+        if provider in VALID_PROVIDERS:
+            config["llm"]["provider"] = provider
+
+    # Update models if specified
+    if "providers" in data:
+        for provider_id, settings in data["providers"].items():
+            if provider_id in VALID_PROVIDERS and "model" in settings:
+                config["llm"]["providers"][provider_id]["model"] = settings["model"]
+
+    # Save config
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=2)
+
+    # Invalidate cached client so next request uses new provider
+    invalidate_client()
+
+    return {"success": True, "llm": config["llm"]}
 
 
 # ============== SSE Events ==============
 
 async def event_generator():
     """Generate SSE events for real-time updates."""
+    from ...events import subscribe_ui, unsubscribe_ui
+
+    # Send initial state
     all_jobs = list_jobs()
     yield f"event: init\ndata: {json.dumps({'jobs': all_jobs})}\n\n"
 
-    while True:
-        await asyncio.sleep(30)
-        yield f"event: ping\ndata: {{}}\n\n"
+    # Subscribe to UI events
+    event_queue = subscribe_ui()
+
+    try:
+        while True:
+            try:
+                # Wait for events with timeout for ping
+                event = await asyncio.wait_for(event_queue.get(), timeout=30)
+                yield f"event: {event['type']}\ndata: {json.dumps(event['data'])}\n\n"
+            except asyncio.TimeoutError:
+                # Send ping to keep connection alive
+                yield f"event: ping\ndata: {{}}\n\n"
+    finally:
+        unsubscribe_ui(event_queue)
 
 
 @router.get("/events")

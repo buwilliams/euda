@@ -1,7 +1,8 @@
 {
   "id": "curator",
-  "name": "The Curator",
+  "name": "Curator",
   "enabled": true,
+  "order": 5,
   "tools": [
     "list_jobs",
     "get_job",
@@ -12,9 +13,11 @@
     "add_job_log",
     "get_user_profile",
     "read_lifelog",
-    "send_notification",
-    "send_notifications_batch",
-    "done_working"
+    "done_working",
+    "parse_date",
+    "get_current_date"
   ],
-  "sleep_minutes": 60
+  "triggers": [
+    "time:morning"
+  ]
 }

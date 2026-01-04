@@ -4,8 +4,8 @@ Agent Manager - Manages lifecycle of all agents.
 Responsibilities:
 - Load agent configurations
 - Start all enabled agents (each in its own thread)
-- Monitor agent health
-- Restart failed agents
+- Initialize event bus and subscribe agents to triggers
+- Run time scheduler for time-based events
 - Handle graceful shutdown
 """
 
@@ -14,14 +14,29 @@ import threading
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from .agent import Agent
 from .cost_tracker import BudgetExceeded, print_summary as print_cost_summary
+from .events import EventBus, set_event_bus, get_event_bus
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
+
+# Global manager instance for tools to access
+_manager_instance: 'AgentManager' = None
+
+
+def get_manager() -> Optional['AgentManager']:
+    """Get the global AgentManager instance."""
+    return _manager_instance
+
+
+def set_manager(manager: 'AgentManager'):
+    """Set the global AgentManager instance."""
+    global _manager_instance
+    _manager_instance = manager
 
 
 class AgentManager:
@@ -32,6 +47,7 @@ class AgentManager:
         self.threads: Dict[str, threading.Thread] = {}
         self.running = False
         self.error_backoff: Dict[str, dict] = {}  # Track backoff state per agent
+        self.event_bus = EventBus()
 
     def load_agent_configs(self) -> List[dict]:
         """Load all agent configurations from data/agents/*/config.json."""
@@ -53,10 +69,15 @@ class AgentManager:
     def start_agent(self, config: dict):
         """Start a single agent in its own thread."""
         agent_id = config["id"]
-        print(f"Starting agent: {agent_id}")
+        triggers = config.get("triggers", ["job:assigned"])
+
+        print(f"Starting agent: {agent_id} (triggers: {triggers})")
 
         agent = Agent(agent_id, config)
         self.agents[agent_id] = agent
+
+        # Subscribe agent to its triggers
+        self.event_bus.subscribe(agent_id, triggers)
 
         # Create thread for agent loop
         thread = threading.Thread(
@@ -118,13 +139,7 @@ class AgentManager:
             del self.error_backoff[agent_id]
 
     def _run_agent_loop(self, agent: Agent):
-        """Run an agent's work loop with intelligent error handling and backoff."""
-        system_config = self._get_system_config()
-        min_sleep = system_config.get("agents", {}).get("min_sleep_seconds", 60)
-
-        sleep_seconds = agent.config.get("sleep_minutes", 5) * 60
-        sleep_seconds = max(sleep_seconds, min_sleep)
-
+        """Run an agent's work loop - waits for triggers with backoff support."""
         while self.running:
             try:
                 # Check if we're in backoff period
@@ -142,23 +157,14 @@ class AgentManager:
                         time.sleep(min(remaining, 60))
                         continue
 
-                # Do work cycle
-                agent.work_cycle_sync()
+                # Wait for a trigger event (check shutdown every 5s)
+                event = agent.wait_for_trigger(timeout=5)
 
-                # Success - reset backoff
-                self._reset_backoff(agent.id)
-
-                # Calculate wake time
-                wake_time = datetime.now() + timedelta(seconds=sleep_seconds)
-                agent._log("sleep", {
-                    "duration_seconds": sleep_seconds,
-                    "wake_at": wake_time.isoformat()
-                })
-
-                # Sleep between cycles
-                time.sleep(sleep_seconds)
-
-                agent._log("wake")
+                if event:
+                    agent._log("triggered", {"event": event})
+                    agent.work_cycle_sync(trigger_context=event)
+                    # Success - reset backoff
+                    self._reset_backoff(agent.id)
 
             except BudgetExceeded as e:
                 # Budget exceeded - trigger graceful shutdown
@@ -197,15 +203,71 @@ class AgentManager:
                     agent._log("transient_error_retry", {"delay_seconds": 5})
                     time.sleep(5)
 
+    def _run_time_scheduler(self):
+        """Background thread that emits time events based on schedules."""
+        last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
+
+        while self.running:
+            try:
+                now = datetime.now()
+                current_time = now.strftime("%H:%M")
+                current_key = now.strftime("%Y-%m-%d-%H-%M")
+
+                schedules = self._get_system_config().get("schedules", {})
+
+                for name, schedule in schedules.items():
+                    fire_key = f"{name}:{current_key}"
+
+                    # Skip if already fired this minute
+                    if last_fired.get(name) == fire_key:
+                        continue
+
+                    should_fire = False
+
+                    if schedule == "every_hour":
+                        # Fire on the hour (minute 0)
+                        if now.minute == 0:
+                            should_fire = True
+                    elif schedule == current_time:
+                        # Exact time match
+                        should_fire = True
+
+                    if should_fire:
+                        last_fired[name] = fire_key
+                        print(f"[scheduler] Emitting time:{name}")
+                        self.event_bus.emit(f"time:{name}", data={"time": current_time})
+
+            except Exception as e:
+                print(f"Scheduler error: {e}")
+
+            time.sleep(10)  # Check every 10 seconds
+
     def run(self):
         """Run the agent manager."""
         self.running = True
+
+        # Initialize event bus globally
+        set_event_bus(self.event_bus)
+
+        # Start time scheduler
+        scheduler_thread = threading.Thread(
+            target=self._run_time_scheduler,
+            name="time-scheduler",
+            daemon=True
+        )
+        scheduler_thread.start()
+        print("Time scheduler started")
 
         # Load and start all enabled agents
         configs = self.load_agent_configs()
         enabled = [c for c in configs if c.get("enabled", True)]
 
         print(f"Found {len(configs)} agents, {len(enabled)} enabled")
+
+        # Sync agent inbox jobs
+        from .tools.jobs import sync_agent_inbox_jobs
+        sync_agent_inbox_jobs()
+        print("Agent inbox jobs synced")
 
         for config in enabled:
             self.start_agent(config)
@@ -227,6 +289,10 @@ class AgentManager:
         print("Shutting down agents...")
         self.running = False
 
+        # Emit shutdown event to wake any waiting agents
+        for agent_id in self.agents:
+            self.event_bus.emit("system:shutdown", scope=agent_id)
+
         # Wait for threads to finish (they're daemons, so they'll die with main)
         for agent_id, thread in self.threads.items():
             thread.join(timeout=2)
@@ -237,4 +303,5 @@ class AgentManager:
 def run_agent_manager():
     """Convenience function to run the agent manager."""
     manager = AgentManager()
+    set_manager(manager)
     manager.run()

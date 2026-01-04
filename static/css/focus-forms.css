@@ -1,0 +1,123 @@
+/* Euno - Focus Forms (Quick Add, Multi-input, Screen Actions) */
+
+/* Quick Add Section */
+.quick-add-section {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg) var(--spacing-md);
+    border-top: 1px solid var(--color-border-light);
+    margin-top: var(--spacing-md);
+}
+
+.quick-add-input {
+    flex: 1;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 1px solid #ddd;
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-md);
+    outline: none;
+}
+
+.quick-add-input:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+}
+
+.quick-add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: var(--color-accent-dark);
+    border: none;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.quick-add-btn:hover {
+    background: var(--color-accent-dark-hover);
+}
+
+.quick-add-btn img {
+    width: 20px;
+    height: 20px;
+    filter: invert(1);
+}
+
+/* Job Add Actions */
+.job-add-actions {
+    margin-top: var(--spacing-xl);
+    border-top: 1px solid var(--color-border-light);
+    padding-top: var(--spacing-md);
+}
+
+/* Multi-input for batch creation */
+.multi-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.multi-input-row {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.multi-input {
+    flex: 1;
+    padding: var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: var(--font-size-base);
+    outline: none;
+}
+
+.multi-input:focus {
+    border-color: var(--color-accent);
+}
+
+.multi-input-hint {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-placeholder);
+    font-style: italic;
+    margin-top: var(--spacing-sm);
+}
+
+/* Screen action buttons */
+.screen-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg) 0;
+}
+
+.screen-action-btn {
+    flex: 1;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-white);
+    font-family: inherit;
+    font-size: var(--font-size-base);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.screen-action-btn:hover {
+    background: var(--color-bg-subtle);
+    color: var(--color-text-primary);
+}
+
+.screen-action-btn.primary {
+    background: #000;
+    color: white;
+    border-color: #000;
+}
+
+.screen-action-btn.primary:hover {
+    background: var(--color-accent-dark);
+}

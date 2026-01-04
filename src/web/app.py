@@ -21,6 +21,7 @@ PUBLIC_PATHS = {
     "/",
     "/api/auth/check",
     "/api/auth/login",
+    "/api/health",
 }
 
 

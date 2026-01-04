@@ -12,21 +12,23 @@ From *Eudaimonia* (you-dye-MOH-nee-ah)—ancient Greek for "human flourishing." 
 
 ---
 
-## In One Minute
+## The Vision
 
 > Today's AI can remember facts about you—your dog's name, your meeting preferences. But it doesn't actually know you. It can't anticipate what you need because it hasn't studied your life deeply enough to understand who you are.
 >
-> Euno is different. **It's personal.** It ingests your writing, photos, messages, and behaviors to build a real model of your identity—your values, your patterns, your failure modes. Not who you say you are. Who you actually are.
+> Euno is different.
 >
-> **It's proactive.** It doesn't wait for you to ask. It highlights what matters, notices what you're avoiding, and actually does tasks for you—research, scheduling, ordering, follow-ups. Real work, off your plate, before you think to ask.
+> You mention feeling overwhelmed, and Euno notices you've said that three times this week—always after back-to-back meetings. It suggests protecting tomorrow morning. **It's personal.** Euno ingests your writing, photos, messages, and behaviors to build a real model of your identity—your values, your patterns, your failure modes. Not who you say you are. Who you actually are.
 >
-> **It curates.** Engagement algorithms are designed to hijack your attention. Euno stands between you and that—reading your feeds, extracting what's important, shielding you from the rest. Less screen time, less brain-rot, without losing touch.
+> You wake up to find Euno has already researched the three books you mentioned wanting to read, compared prices, and drafted an order—waiting for your approval. **It's proactive.** It doesn't wait for you to ask. It highlights what matters, notices what you're avoiding, and actually does tasks for you—research, scheduling, ordering, follow-ups. Real work, off your plate, before you think to ask.
 >
-> **It travels.** Not trapped in one app or device. Euno moves with you—from your phone to your desk to a wearable to whatever comes next. One intelligence that knows you, present wherever you are.
+> Instead of scrolling Twitter for an hour, you get a 2-minute summary: one thread relevant to your project, a friend's announcement you'd want to see, and a reminder that doomscrolling tanks your energy. **It curates.** Engagement algorithms are designed to hijack your attention. Euno stands between you and that—reading your feeds, extracting what's important, shielding you from the rest. Less screen time, less brain-rot, without losing touch.
+>
+> Walking to lunch, you ask your earbuds about tonight's dinner plans. At your desk, you pick up the same conversation on your laptop. In VR, Euno floats beside you with context about the world you're exploring. **It travels.** Not trapped in one app or device. Euno moves with you—from your phone to your desk to a wearable to whatever comes next. One intelligence that knows you, present wherever you are.
 >
 > The goal isn't productivity. It's flourishing. Wake up rested, your life organized, your concerns addressed. Free to explore what matters—new experiences, personal growth, deeper connection. That's the space Euno creates.
 >
-> That's Euno.
+> That's where Euno is heading.
 
 ---
 
@@ -44,14 +46,31 @@ The building blocks exist. What's missing is software that puts them together in
 
 ## What It Does Today
 
-Euno is a working system with six specialized agents that handle different aspects of your life:
+Euno is in early development. It's a self-hosted web app with a conversational interface and task management. Here's what actually works:
 
-- **The Archivist** — Reads your life data (photos, documents, exports) and preserves it with high fidelity
-- **The Profiler** — Builds a predictive model of who you are: values, patterns, rhythms
-- **The Curator** — Explores opportunities that fit you; guards your attention; delivers what counts
-- **The Friend** — Talks with you like someone who actually knows you; goes deep when you need it
-- **The Worker** — Handles work autonomously; asks before acting on anything important
-- **The Adaptor** — Continuously refines the system to serve you better
+**The Foundation:**
+- **Chat** — Conversational interface powered by your choice of LLM (Anthropic Claude)
+- **Jobs** — Hierarchical task/project management with timeline views (Today, Upcoming, Anytime, Someday)
+- **User Profile** — A markdown file that captures who you are, referenced in every conversation
+- **Lifelog** — Daily records of your interactions and reflections
+- **File Upload** — Attach documents, images, and files to any job
+
+**The Agents:**
+Euno has six specialized agents, though they're still being developed:
+
+- **The Friend** — Your conversational interface; knows your profile; helps you think
+- **The Worker** — Can work on jobs autonomously; still learning what's useful
+- **The Profiler** — Updates your profile based on conversations
+- **The Curator** — Intended for opportunity discovery (limited functionality today)
+- **The Archivist** — Processes uploaded files into your lifelog
+- **The Adaptor** — Refines the system based on usage (experimental)
+
+**What's Not Built Yet:**
+- No external integrations (calendar, email, social media, e-commerce)
+- No native mobile app — but the web app is mobile-first and works well in mobile browsers
+- No wearable or voice-first interfaces
+- Agents can't take actions outside the system (no ordering, scheduling, messaging)
+- Limited proactive behavior — mostly responds when you initiate
 
 ---
 
@@ -71,11 +90,11 @@ Different lives, different needs—Euno adapts to serve yours.
 
 ---
 
-## A Traveling Intelligence
+## A Traveling Intelligence (Future)
 
-What you're seeing here is one expression—a web app with chat and tasks. But Euno isn't the interface. Euno is the intelligence behind it.
+What you're seeing today is one expression—a web app with chat and tasks. But Euno isn't the interface. Euno is the intelligence behind it.
 
-That intelligence can live anywhere:
+Eventually, that intelligence could live anywhere:
 
 - **In your pocket** — A mobile app that's always with you
 - **On your wrist** — A screenless wearable you talk to, adding conversations to your life log
@@ -85,23 +104,29 @@ That intelligence can live anywhere:
 
 The form factor changes. Euno doesn't. The same model of who you are, the same memory of your life, the same caring collaborator—present in whatever environment you're in.
 
-A business meeting. A video game. A walk in the park. A difficult conversation. Euno travels with you through life, not just through apps.
+*This is the vision. Today, Euno is a mobile-first web app you access from any browser.*
 
 ---
 
-## Demo Cheat Sheet
+## Ways to Use Euno Today
 
-**Personal:**
-1. Upload files → show data ingestion
-2. "What do you know about me?" → show profile
-3. Have a real conversation → show personalization
+**Have Real Conversations:**
+- Talk through decisions, problems, or ideas with someone who knows your context
+- Ask "What do you know about me?" — see your profile and how Euno understands you
+- Your profile shapes every response — conversations feel personal, not generic
 
-**Proactive:**
-1. "Remind me to..." → watch task appear in Focus tab
-2. "I want to learn..." → watch project created
-3. Show Focus tab → walk through timeline views
+**Organize Your Work:**
+- Create jobs and sub-jobs to break down projects
+- Use timeline views: Today, Upcoming, Anytime, Someday
+- Attach files and notes to any job
+- Say "I need to..." or "Remind me to..." — watch jobs get created
 
-**Curates:**
-1. "What should I focus on?" → energy-aware suggestions
-2. Show History tab → fork a conversation
-3. Explain 90/10 balance philosophy
+**Build Your Record:**
+- Upload documents, photos, and files
+- Write to your lifelog — capture thoughts, reflections, decisions
+- Over time, Euno learns your patterns and preferences
+
+**Let Agents Help:**
+- The Worker can pick up jobs and make progress autonomously
+- Review what agents have done and guide their work
+- Agents are still learning — expect to teach them what's useful

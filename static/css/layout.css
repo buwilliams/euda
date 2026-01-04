@@ -119,19 +119,16 @@
     border-top: 1px solid var(--color-bg-app);
 }
 
-.tab-btn svg {
+.tab-btn img {
     width: 16px;
     height: 16px;
-    stroke: currentColor;
-    fill: none;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
     flex-shrink: 0;
+    opacity: 0.6;
 }
 
-.tab-btn svg rect {
-    fill: none;
+.tab-btn:hover img,
+.tab-btn.active img {
+    opacity: 1;
 }
 
 .tab-btn span {
@@ -217,14 +214,9 @@
     color: #000;
 }
 
-.overflow-item svg {
+.overflow-item img {
     width: 18px;
     height: 18px;
-    stroke: currentColor;
-    fill: none;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
     flex-shrink: 0;
 }
 
@@ -298,6 +290,21 @@
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
+}
+
+#context-send-btn.has-notification {
+    animation: send-btn-pulse 1s ease-in-out infinite;
+}
+
+@keyframes send-btn-pulse {
+    0%, 100% {
+        background: var(--color-accent-dark);
+        transform: scale(1);
+    }
+    50% {
+        background: var(--color-primary);
+        transform: scale(1.1);
+    }
 }
 
 /* Slide Containers for Navigation */

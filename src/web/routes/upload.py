@@ -2,33 +2,47 @@
 Upload API Route
 
 Handles file uploads by:
-1. Creating an ingest job for the archivist
-2. Saving the file as an asset attached to that job
+1. Finding the Archivist's inbox job (under Agents)
+2. Creating an ingest job as a child of Archivist's inbox
+3. Saving the file as an asset attached to that job
 """
 
 from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File
 
-from ...tools.jobs import create_job
+from ...tools.jobs import create_job, get_agent_inbox_job
 from ...tools.assets import ASSETS_DIR
 
 
 router = APIRouter()
 
 
+def get_archivist_inbox() -> dict:
+    """Get the Archivist's inbox job for uploaded files."""
+    inbox = get_agent_inbox_job("archivist")
+    if not inbox:
+        raise RuntimeError("Archivist inbox not found. Ensure agents are synced.")
+    return inbox
+
+
 @router.post("")
 async def upload_file(file: UploadFile = File(...)):
     """Upload a file for processing.
 
-    Creates an ingest job and saves the file as an asset.
+    Creates an ingest job under the Archivist's inbox and saves the file as an asset.
     The archivist will process the file and add it to the lifelog.
     """
-    # Create an ingest job for the archivist
+    # Get the Archivist's inbox
+    archivist_inbox = get_archivist_inbox()
+
+    # Create an ingest job as a child of Archivist's inbox
     job = create_job(
         name=f"Ingest: {file.filename}",
         description=f"Process uploaded file: {file.filename}",
+        parent_id=archivist_inbox["id"],
         tags=["ingest"],
+        assignees=["archivist"],
         created_by="user"
     )
 
@@ -46,5 +60,6 @@ async def upload_file(file: UploadFile = File(...)):
         "status": "uploaded",
         "filename": file.filename,
         "job_id": job_id,
+        "archivist_inbox_id": archivist_inbox["id"],
         "message": f"File queued for processing. The archivist will review it shortly."
     }

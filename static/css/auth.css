@@ -147,7 +147,7 @@
 .splash-pronunciation {
     font-size: var(--font-size-2xl);
     color: var(--color-text-light);
-    margin: var(--spacing-md) 0 0 0;
+    margin: var(--spacing-2xl) 0 0 0;
     font-weight: 300;
     opacity: 0;
     transform: translateY(8px);
@@ -162,7 +162,7 @@
 .splash-tagline {
     font-size: var(--font-size-base);
     color: var(--color-bg-white);
-    margin: var(--spacing-2xl) 0 0 0;
+    margin: var(--spacing-md) 0 0 0;
     font-weight: 400;
     letter-spacing: 0.25em;
     opacity: 0;

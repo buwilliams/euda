@@ -12,7 +12,7 @@ marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
 let sessionId = localStorage.getItem('sessionId') || null;
 let viewingHistorySessionId = null;
 let isWaiting = false;
-let activeTab = 'chat';  // Always start fresh on page load
+let activeTab = 'focus';  // Always start fresh on page load
 let expandedCards = new Set();
 let tasksData = [];
 let completedTasksData = [];
@@ -28,7 +28,7 @@ let focusViewHistory = [];
 let archivingTaskId = null;
 
 // Tab order for slide animations (left to right)
-const TAB_ORDER = ['chat', 'focus', 'history', 'about', 'settings'];
+const TAB_ORDER = ['focus', 'chat', 'history', 'about', 'settings'];
 let previousTab = activeTab;
 
 // History tab navigation state

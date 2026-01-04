@@ -44,7 +44,7 @@ def tool(name: str, description: str, input_schema: dict = None):
                 continue
 
             param_type = "string"  # default
-            param_schema = {}
+            param_schema = None
             if param.annotation != inspect.Parameter.empty:
                 if param.annotation == int:
                     param_type = "integer"
@@ -52,15 +52,12 @@ def tool(name: str, description: str, input_schema: dict = None):
                     param_type = "boolean"
                 elif param.annotation == list:
                     param_type = "array"
-                    # OpenAI requires 'items' field for arrays
-                    param_schema = {"type": param_type, "items": {"type": "string"}}
+                    # OpenAI requires items for array types
+                    param_schema = {"type": "array", "items": {"type": "string"}}
                 elif param.annotation == dict:
                     param_type = "object"
 
-            if not param_schema:
-                param_schema = {"type": param_type}
-
-            properties[param_name] = param_schema
+            properties[param_name] = param_schema if param_schema else {"type": param_type}
 
             # Check if parameter has a default
             if param.default == inspect.Parameter.empty:
@@ -124,3 +121,4 @@ from . import agents
 from . import assets
 from . import user
 from . import system
+from . import dates

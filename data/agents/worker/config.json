@@ -1,7 +1,8 @@
 {
   "id": "worker",
-  "name": "The Worker",
+  "name": "Worker",
   "enabled": true,
+  "order": 10,
   "tools": [
     "list_jobs",
     "get_job",
@@ -20,8 +21,12 @@
     "write_asset",
     "delete_asset",
     "get_user_profile",
-    "send_notification",
-    "done_working"
+    "done_working",
+    "parse_date",
+    "get_current_date"
   ],
-  "sleep_minutes": 20
+  "triggers": [
+    "job:assigned",
+    "time:morning"
+  ]
 }
