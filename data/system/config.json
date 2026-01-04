@@ -27,6 +27,10 @@
   "schedules": {
     "morning": "08:00",
     "evening": "18:00",
-    "hourly": "every_hour"
+    "hourly": "every_hour",
+    "profiler_00": "00:00",
+    "profiler_06": "06:00",
+    "profiler_12": "12:00",
+    "profiler_18": "18:00"
   }
 }
