@@ -89,13 +89,13 @@ src/
 
 ## Documentation
 
-- **[Business Plan](docs/0_business-plan.md)** — Vision and staged growth model for contributors
 - **[Pitch](docs/1_pitch.md)** — Introduction and vision overview
-- **[Profile](docs/2_profile.md)** — Profile system and agent personas
-- **[Architecture](docs/3_architecture.md)** — Technical design and implementation
-- **[User Experience](docs/4_user-experience.md)** — UI/UX philosophy and vision
-- **[User Interface](docs/5_user-interface.md)** — Current UI components and layout
-- **[DevOps](docs/6_devops.md)** — Deployment and operations
+- **[Business Plan](docs/2_business-plan.md)** — Vision and staged growth model for contributors
+- **[Profile](docs/3_profile.md)** — Profile system and agent personas
+- **[Architecture](docs/4_architecture.md)** — Technical design and implementation
+- **[User Experience](docs/5_user-experience.md)** — UI/UX philosophy and vision
+- **[User Interface](docs/6_user-interface.md)** — Current UI components and layout
+- **[DevOps](docs/7_devops.md)** — Deployment and operations
 
 ## Privacy
 
