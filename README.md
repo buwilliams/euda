@@ -89,6 +89,7 @@ src/
 
 ## Documentation
 
+- **[Business Plan](docs/0_business-plan.md)** — Vision and staged growth model for contributors
 - **[Pitch](docs/1_pitch.md)** — Introduction and vision overview
 - **[Profile](docs/2_profile.md)** — Profile system and agent personas
 - **[Architecture](docs/3_architecture.md)** — Technical design and implementation

@@ -1,5 +1,7 @@
 # Euno Business Plan
 
+*This is a living document that will be updated as the project matures.*
+
 ## Vision
 
 **A personal intelligence that anticipates you.**
@@ -14,7 +16,7 @@ Each stage below acts as a gate. You must pass each filter before moving forward
 
 **Target:** Build for the creator, Buddy Williams.
 
-**Signal:** Does Buddy want to use Euno every day?
+**Signal:** Is Euno the go-to AI? Do we prefer using it over other frontier AIs?
 
 **Current Status:** No.
 
@@ -27,11 +29,14 @@ Each stage below acts as a gate. You must pass each filter before moving forward
 **Target:** Invite others to contribute.
 
 **Signals:**
+- Is Euno our go-to AI? Do we prefer using it over other frontier AIs?
 - Are they excited by the vision?
 - Do they regularly contribute to the project's success?
 - Do they spend their own money to contribute (API costs, etc.)?
 - Do they share what they're working on with others?
 - Do they generate interest in the project—for contributing, and especially for using?
+
+**Success Criteria:** 2-3 weekly contributors sustained for 3 months.
 
 **Forms of Contribution:**
 - Business
@@ -45,43 +50,39 @@ Each stage below acts as a gate. You must pass each filter before moving forward
 
 ---
 
-## Stage 3: Friends
+## Stage 3: Users
 
-**Target:** Show it to people we know.
+**Target:** Friends and strangers who want Euno for themselves.
 
 **Signals:**
 - Do they want it for themselves?
 - Is their reaction curiosity ("that's neat") or desire (inspired/longing/lust)?
+- Do people we don't know ask for Euno unprompted?
+- Are they willing to pay for it? How much? When do they want it?
 
-**Reward:** We have new users and start thinking about scaling.
+**Success Criteria:**
+- Each contributor has told 10 people about Euno, with at least 1 becoming a user.
+- 50-100 total users.
 
----
+Growth comes organically over time. Buddy will likely generate the most users given his sales experience. We stay at this stage until we reach the user target.
 
-## Stage 4: Strangers
-
-**Target:** People we don't know.
-
-**Signals:**
-- Do they ask for Euno unprompted?
-- Are they willing to pay for it?
-- How much?
-- When do they want it?
-
-**Reward:** Market validation.
+**Reward:** Market validation. We start thinking about scaling.
 
 ---
 
-## Stage 5: Investors
+## Stage 4: Investors
 
 **Target:** Pitch Euno to investors.
 
 **Signal:** Do they want a piece of the action?
 
+**Success Criteria:** An investor wants to invest $500k.
+
 **Reward:** Investor validation.
 
 ---
 
-## Stage 6: Scale
+## Stage 5: Scale
 
 **Target:** Form a business to scale.
 
@@ -93,8 +94,16 @@ Each stage below acts as a gate. You must pass each filter before moving forward
 
 ---
 
+## Governance
+
+Buddy Williams handles all disputes and final decisions on project direction.
+
+## Affordable Loss
+
+TBD—we are in early days.
+
 ## Principles
 
-This plan follows effectuation principles. See: https://effectuation.org/
+This plan loosely uses [effectuation principles](https://effectuation.org/).
 
 Key idea: Start with who you are, what you know, and whom you know—then expand from there based on what works, not a predetermined plan.
