@@ -16,9 +16,9 @@ Each stage below acts as a gate. You must pass each filter before moving forward
 
 **Target:** Build for the creator, Buddy Williams.
 
-**Signal:** Is Euno the go-to AI? Do we prefer using it over other frontier AIs?
+**Signal:** Buddy has built the platform, documentation, and vision. It's ready to grow.
 
-**Current Status:** No.
+**Current Status:** Complete.
 
 **Reward:** A trophy—Buddy has built a project he's proud of.
 
@@ -29,7 +29,7 @@ Each stage below acts as a gate. You must pass each filter before moving forward
 **Target:** Invite others to contribute.
 
 **Signals:**
-- Is Euno our go-to AI? Do we prefer using it over other frontier AIs?
+- If Euno went down, would you feel the loss—or just switch to ChatGPT without noticing? Must feel this way for at least a week.
 - Are they excited by the vision?
 - Do they regularly contribute to the project's success?
 - Do they spend their own money to contribute (API costs, etc.)?
@@ -37,6 +37,8 @@ Each stage below acts as a gate. You must pass each filter before moving forward
 - Do they generate interest in the project—for contributing, and especially for using?
 
 **Success Criteria:** 2-3 weekly contributors sustained for 3 months.
+
+**Current Status:** Not met.
 
 **Forms of Contribution:**
 - Business
@@ -62,31 +64,29 @@ Each stage below acts as a gate. You must pass each filter before moving forward
 
 **Success Criteria:**
 - Each contributor has told 10 people about Euno, with at least 1 becoming a user.
-- 50-100 total users.
+- 100 paying users.
 
 Growth comes organically over time. Buddy will likely generate the most users given his sales experience. We stay at this stage until we reach the user target.
+
+**Pricing Model:** Users pay for hosting, AI API costs, and profit margin. Likely limit-based pricing similar to AI companies. Target price point is ~$100/month—if users aren't willing to pay that, Euno hasn't met its goal. Margin is TBD—too early to know.
+
+We stay at Stage 3 as long as needed to ensure we understand demand before scaling.
+
+**Current Status:** Not met.
 
 **Reward:** Market validation. We start thinking about scaling.
 
 ---
 
-## Stage 4: Investors
-
-**Target:** Pitch Euno to investors.
-
-**Signal:** Do they want a piece of the action?
-
-**Success Criteria:** An investor wants to invest $500k.
-
-**Reward:** Investor validation.
-
----
-
-## Stage 5: Scale
+## Stage 4: Scale
 
 **Target:** Form a business to scale.
 
-**Decision:** Bootstrap or take funding.
+**Success Criteria (either/or):**
+- $500k ARR projected from 3 months of revenue (bootstrap path), OR
+- $500k aggregate investment (funding path)
+
+**Current Status:** Not met.
 
 **Reward:** We've created something the world wants. Time to scale and be rewarded.
 
