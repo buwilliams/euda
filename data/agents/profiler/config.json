@@ -1,8 +1,7 @@
 {
   "id": "profiler",
-  "name": "Profiler",
+  "name": "The Profiler",
   "enabled": true,
-  "order": 2,
   "tools": [
     "get_user_profile",
     "update_user_profile",
@@ -13,9 +12,7 @@
     "create_job",
     "add_job_log",
     "complete_job",
-    "done_working",
-    "get_agent_memory",
-    "update_agent_memory"
+    "done_working"
   ],
-  "triggers": ["lifelog:new", "time:profiler_00", "time:profiler_06", "time:profiler_12", "time:profiler_18"]
+  "sleep_minutes": 30
 }

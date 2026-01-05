@@ -31,7 +31,6 @@ Commands:
 
 Examples:
   python main.py start             # Run web server + agents
-  python main.py start --breaker 1 # Run with $1 budget limit
   python main.py chat              # Chat with default agent (friend)
   python main.py chat friend       # Chat with specific agent
   python main.py agents            # List agents
@@ -45,15 +44,8 @@ Examples:
     parser.add_argument("command", nargs="?", default="help",
                         help="Command to run")
     parser.add_argument("args", nargs="*", help="Command arguments")
-    parser.add_argument("--breaker", type=float, metavar="DOLLARS",
-                        help="Stop API requests after spending this amount (e.g., --breaker 1 for $1)")
 
     args = parser.parse_args()
-
-    # Set up cost tracking if breaker is specified
-    if args.breaker is not None:
-        from src.cost_tracker import set_budget
-        set_budget(args.breaker)
 
     commands = {
         "start": cmd_start,

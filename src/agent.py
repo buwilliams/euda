@@ -288,26 +288,29 @@ class Agent:
         """Execute tool calls and return results."""
         from .tools import execute_tool
         from .tools.system import set_agent_context, clear_agent_context
+        from .tool_batcher import execute_tools_batched
 
         # Set agent context so tools can access this agent
         set_agent_context(self)
 
-        results = []
         try:
-            for block in response.content:
-                if block.type == "tool_use":
-                    self._log("tool_call", {"tool": block.name, "input": block.input})
-                    result = execute_tool(block.name, block.input)
-                    self._log("tool_result", {"tool": block.name, "success": not isinstance(result, dict) or "error" not in result})
-                    results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": json.dumps(result) if isinstance(result, (dict, list)) else str(result)
-                    })
+            # Collect all tool calls
+            tool_calls = [block for block in response.content if block.type == "tool_use"]
+
+            # Log individual calls for debugging
+            for block in tool_calls:
+                self._log("tool_call", {"tool": block.name, "input": block.input})
+
+            # Execute with automatic batching
+            results = execute_tools_batched(tool_calls, execute_tool, agent_id=self.id)
+
+            # Log results
+            for block, result in zip(tool_calls, results):
+                self._log("tool_result", {"tool": block.name, "success": "error" not in result.get("content", "")})
+
+            return results
         finally:
             clear_agent_context()
-
-        return results
 
     def work_cycle_sync(self, trigger_context: dict = None):
         """Perform one cycle of autonomous work (synchronous version for threads).

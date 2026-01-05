@@ -17,7 +17,22 @@ from typing import Optional
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
+CONFIG_PATH = DATA_DIR / "system" / "config.json"
 API_LOG_PATH = DATA_DIR / "system" / "api_calls.jsonl"
+
+
+def _load_budget_from_config() -> Optional[float]:
+    """Load budget limit from system config."""
+    if CONFIG_PATH.exists():
+        try:
+            with open(CONFIG_PATH) as f:
+                config = json.load(f)
+            budget = config.get("cost", {}).get("budget_limit")
+            if budget is not None and budget > 0:
+                return float(budget)
+        except (json.JSONDecodeError, IOError):
+            pass
+    return None
 
 # Pricing per million tokens (as of user-provided rates)
 PRICING = {
@@ -208,6 +223,10 @@ def get_tracker() -> CostTracker:
     with _tracker_lock:
         if _tracker is None:
             _tracker = CostTracker()
+            # Load budget from config on first initialization
+            budget = _load_budget_from_config()
+            if budget is not None:
+                _tracker.set_budget(budget)
         return _tracker
 
 

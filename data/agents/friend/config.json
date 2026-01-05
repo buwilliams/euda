@@ -1,15 +1,13 @@
 {
   "id": "friend",
-  "name": "Friend",
+  "name": "The Friend",
   "enabled": true,
-  "order": 8,
   "tools": [
     "list_jobs",
     "get_job",
     "create_job",
-    "create_jobs_batch",
     "update_job",
-    "update_jobs_batch",
+    "complete_job",
     "add_job_log",
     "get_child_jobs",
     "list_assets",
@@ -18,10 +16,7 @@
     "get_user_profile",
     "read_lifelog",
     "write_lifelog",
-    "send_notification",
-    "send_notifications_batch",
-    "parse_date",
-    "get_current_date"
+    "send_notification"
   ],
-  "triggers": []
+  "sleep_minutes": 0
 }
