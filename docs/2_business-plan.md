@@ -1,6 +1,6 @@
 # Euno Business Plan
 
-*This is a living document that will be updated as the project matures.*
+*This is a living document that will be updated as the project matures. There is no formal business entity yet—this is an aspirational plan for how Euno will operate if and when it becomes a business.*
 
 ## Vision
 
@@ -136,6 +136,10 @@ Contributors do not receive equity. They receive profit-sharing through the bonu
 ## Governance
 
 Buddy Williams handles all disputes and final decisions on project direction.
+
+## Intellectual Property
+
+All contributions to Euno are assigned to the project (and any future business entity). By contributing, you agree that your work belongs to Euno, not to you individually. This is standard for collaborative projects and necessary for future investment or acquisition.
 
 ## Affordable Loss
 
