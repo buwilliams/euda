@@ -14,21 +14,39 @@ From *Eudaimonia* (you-dye-MOH-nee-ah)—ancient Greek for "human flourishing." 
 
 ## The Vision
 
-> Today's AI can remember facts about you—your dog's name, your meeting preferences. But it doesn't actually know you. It can't anticipate what you need because it hasn't studied your life deeply enough to understand who you are.
+> Today's AI remembers facts about you. But it doesn't *know* you, so it can't anticipate you.
 >
 > Euno is different.
 >
-> You mention feeling overwhelmed, and Euno notices you've said that three times this week—always after back-to-back meetings. It suggests protecting tomorrow morning. **It's personal.** Euno ingests your writing, photos, messages, and behaviors to build a real model of your identity—your values, your patterns, your failure modes. Not who you say you are. Who you actually are.
+> **It's personal.** You mention feeling overwhelmed, and Euno notices you've said that three times this week—always after back-to-back meetings. It builds a real model of who you actually are from your writing, photos, and behaviors. Not who you say you are. Who you are.
 >
-> You wake up to find Euno has already researched the three books you mentioned wanting to read, compared prices, and drafted an order—waiting for your approval. **It's proactive.** It doesn't wait for you to ask. It highlights what matters, notices what you're avoiding, and actually does tasks for you—research, scheduling, ordering, follow-ups. Real work, off your plate, before you think to ask.
+> **It's proactive.** You wake up to find Euno has already researched those books you mentioned, compared prices, and drafted an order—waiting for your approval. Real work, off your plate, before you think to ask.
 >
-> Instead of scrolling Twitter for an hour, you get a 2-minute summary: one thread relevant to your project, a friend's announcement you'd want to see, and a reminder that doomscrolling tanks your energy. **It curates.** Engagement algorithms are designed to hijack your attention. Euno stands between you and that—reading your feeds, extracting what's important, shielding you from the rest. Less screen time, less brain-rot, without losing touch.
+> **It curates.** Instead of scrolling Twitter for an hour, you get a 2-minute summary: one relevant thread, a friend's announcement, and a reminder that doomscrolling tanks your energy. Less screen time without losing touch.
 >
-> Walking to lunch, you ask your earbuds about tonight's dinner plans. At your desk, you pick up the same conversation on your laptop. In VR, Euno floats beside you with context about the world you're exploring. **It travels.** Not trapped in one app or device. Euno moves with you—from your phone to your desk to a wearable to whatever comes next. One intelligence that knows you, present wherever you are.
+> **It travels.** Ask your earbuds about dinner plans, then pick up the same conversation on your laptop. One intelligence that knows you, present wherever you are.
 >
-> The goal isn't productivity. It's flourishing. Wake up rested, your life organized, your concerns addressed. Free to explore what matters—new experiences, personal growth, deeper connection. That's the space Euno creates.
->
-> That's where Euno is heading.
+> The goal isn't productivity. It's flourishing—your life organized, your concerns addressed, free to explore what matters.
+
+---
+
+## How It Works
+
+1. **Learns** from your data and behaviors
+2. **Understands** who you really are—values, patterns, rhythms
+3. **Anticipates** what you need before you ask
+
+---
+
+## What It Does
+
+- **Reads your life data** — photos, documents, exports from any platform
+- **Maintains a life log** — one unified record of everything, searchable and private
+- **Learns who you are** — values, patterns, rhythms—discovered from behavior, not just what you say
+- **Surfaces what matters** — the right thing at the right moment, respecting your energy
+- **Guards your attention** — reads your feeds, shields you from engagement algorithms, less screen time without losing touch
+- **Executes tasks** — handles work autonomously, asks before acting on anything important
+- **Talks like a friend** — not a chatbot, not an assistant—a caring collaborator who knows you and goes deep when you need it
 
 ---
 

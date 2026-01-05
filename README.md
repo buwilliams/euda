@@ -8,22 +8,6 @@ _Euno [you-know], from Eudaimonia—ancient Greek for "human flourishing." A dee
 
 Today's AI remembers facts about you. Euno understands who you are—your values, your patterns, your rhythms.
 
-## How It Works
-
-1. **Learns** from your data and behaviors
-2. **Understands** who you really are—values, patterns, rhythms
-3. **Anticipates** what you need before you ask
-
-## What It Does
-
-- **Reads your life data** — photos, documents, exports from any platform
-- **Maintains a life log** — one unified record of everything, searchable and private
-- **Learns who you are** — values, patterns, rhythms—discovered from behavior, not just what you say
-- **Surfaces what matters** — the right thing at the right moment, respecting your energy
-- **Guards your attention** — reads your feeds, shields you from engagement algorithms, less screen time without losing touch
-- **Executes tasks** — handles work autonomously, asks before acting on anything important
-- **Talks like a friend** — not a chatbot, not an assistant—a caring collaborator who knows you and goes deep when you need it
-
 ## Contributing
 
 1. **Get access** — Request access to the [repo](https://github.com/buwilliams/Euno) and [GitHub Projects](https://github.com/users/buwilliams/projects/1)
