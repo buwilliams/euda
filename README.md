@@ -42,3 +42,4 @@ Today's AI remembers facts about you. Euno understands who you are—your values
 - **[User Experience](docs/5_user-experience.md)** — UI/UX philosophy and vision
 - **[User Interface](docs/6_user-interface.md)** — Current UI components and layout
 - **[DevOps](docs/7_devops.md)** — Deployment and operations
+- **[Roadmap](docs/9_roadmap.md)** — Product roadmap

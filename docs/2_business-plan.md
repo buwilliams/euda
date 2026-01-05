@@ -94,17 +94,6 @@ We stay at Stage 3 as long as needed to ensure we understand demand before scali
 
 ---
 
-## Product Roadmap
-
-1. **Chat** — As good as current LLMs
-2. **Todo List** — Can use as daily work driver
-3. **Profiles** — Understands and knows you well
-4. **Agents** — They do the jobs we expect and manage our energy and attention effectively
-5. **Integrations** — Gathers data, takes action on your behalf, surfaces the right things
-6. **Social Media Platform** — Offers non-engagement driven interactions and content
-
----
-
 ## Governance
 
 Buddy Williams handles all disputes and final decisions on project direction.
