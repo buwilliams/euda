@@ -12,9 +12,9 @@ Contributors do not receive equity. They receive profit-sharing through the bonu
 
 ## Contributor Rewards
 
-**Stages 1-3:** Voluntary contributions only. No financial compensation. The reward is the trophy—something to put on resumes, talk about, and show off.
+**Gates 1-3:** Voluntary contributions only. No financial compensation. The reward is the trophy—something to put on resumes, talk about, and show off.
 
-**Stage 4+:** Quarterly bonus pool begins.
+**Gate 4+:** Quarterly bonus pool begins.
 
 **How the bonus pool works:**
 - Each quarter, Buddy determines a bonus pool from his share of profits (percentage based on business needs, balancing reinvestment and rewards)
@@ -33,7 +33,7 @@ Contributors do not receive equity. They receive profit-sharing through the bonu
 | Business/sales contribution | 10-50 |
 | Month of active contribution | 10 |
 
-**Process:** Contributors submit their points for approval. Buddy reviews and finalizes point allocations each quarter. Points are tracked privately by Buddy and shared with each contributor individually. Points are retroactively assigned for contributions made before Stage 4, so early contributors accumulate points from the start.
+**Process:** Contributors submit their points for approval. Buddy reviews and finalizes point allocations each quarter. Points are tracked privately by Buddy and shared with each contributor individually. Points are retroactively assigned for contributions made before Gate 4, so early contributors accumulate points from the start.
 
 **Dilution:** As more contributors earn points, individual shares decrease. This is accepted as fair—new contribution deserves reward, and more contributors should grow the overall pie.
 
