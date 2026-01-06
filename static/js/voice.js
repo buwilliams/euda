@@ -1,4 +1,4 @@
-// Euno - Voice Input (Speech-to-Text) with Voice Activity Detection
+// Euno - Voice Input (Speech-to-Text) with Adaptive Voice Activity Detection
 
 // ============== Voice Recording State ==============
 let isRecording = false;
@@ -16,16 +16,35 @@ let audioContext = null;
 let analyser = null;
 let vadInterval = null;
 
-// VAD Configuration
+// Industry-standard VAD Configuration
 const VAD_CONFIG = {
-    silenceThreshold: 15,      // Volume level below which is silence (0-255)
-    silenceDurationMs: 4500,   // Auto-stop after this much silence (4.5 seconds)
-    minSpeechDurationMs: 500,  // Minimum recording time before auto-stop kicks in
-    checkIntervalMs: 100       // How often to check audio levels
+    // Volume thresholds (0-255 scale)
+    silenceThreshold: 15,       // Below this = silence
+    minSpeechVolume: 18,        // Must exceed this to count as real speech (filters noise/accidental presses)
+
+    // Adaptive timeout bounds (industry standard for dictation/transcription)
+    minTimeoutMs: 800,       // Minimum silence before auto-stop (quick speakers)
+    baseTimeoutMs: 1500,     // Default silence timeout (standard)
+    maxTimeoutMs: 3000,      // Maximum silence timeout (thoughtful speakers)
+
+    // Timing
+    minSpeechDurationMs: 300,  // Minimum speech before allowing auto-stop
+    checkIntervalMs: 50,       // Audio level check frequency (50ms = responsive)
+
+    // Pattern detection
+    shortPauseThresholdMs: 400,   // Pauses shorter than this = quick speaker
+    longPauseThresholdMs: 1000,   // Pauses longer than this = thoughtful speaker
+    recentSpeechBonusMs: 500,     // Extra wait time if speech was recent
+    recentSpeechWindowMs: 2000    // "Recent" = within last 2 seconds
 };
 
+// VAD State
 let silenceStartTime = null;
 let hasSpeechStarted = false;
+let lastSpeechTime = null;
+let speechSegments = [];        // Track speech/silence patterns
+let currentTimeout = VAD_CONFIG.baseTimeoutMs;
+let maxVolumeDetected = 0;      // Track peak volume to filter accidental presses
 
 // ============== Voice Recording Functions ==============
 
@@ -58,8 +77,14 @@ async function startRecording() {
 
         audioChunks = [];
         recordingStartTime = Date.now();
+
+        // Reset VAD state
         silenceStartTime = null;
         hasSpeechStarted = false;
+        lastSpeechTime = null;
+        speechSegments = [];
+        currentTimeout = VAD_CONFIG.baseTimeoutMs;
+        maxVolumeDetected = 0;
 
         mediaRecorder.ondataavailable = (event) => {
             if (event.data.size > 0) {
@@ -75,6 +100,14 @@ async function startRecording() {
             if (audioStream) {
                 audioStream.getTracks().forEach(track => track.stop());
                 audioStream = null;
+            }
+
+            // Check if we detected real speech (filters accidental mic presses)
+            if (maxVolumeDetected < VAD_CONFIG.minSpeechVolume) {
+                console.log(`VAD: Skipping transcription - max volume ${maxVolumeDetected} below threshold ${VAD_CONFIG.minSpeechVolume}`);
+                showVoiceError('No speech detected. Please try again.');
+                clearRecordingTimeout();
+                return;
             }
 
             if (audioChunks.length > 0) {
@@ -136,7 +169,7 @@ function clearRecordingTimeout() {
     }
 }
 
-// ============== Voice Activity Detection ==============
+// ============== Adaptive Voice Activity Detection ==============
 
 function startVAD(stream) {
     try {
@@ -144,12 +177,14 @@ function startVAD(stream) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.5;
+        analyser.smoothingTimeConstant = 0.3;  // More responsive
 
         const source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
 
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        let wasSpeak = false;
+        let speechStartTime = null;
 
         // Check audio levels periodically
         vadInterval = setInterval(() => {
@@ -163,21 +198,70 @@ function startVAD(stream) {
             // Calculate average volume
             const avgVolume = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
 
+            // Track peak volume (used to filter accidental presses)
+            if (avgVolume > maxVolumeDetected) {
+                maxVolumeDetected = avgVolume;
+            }
+
+            // isSpeaking = above silence threshold (detects any sound)
+            // isRealSpeech = above minSpeechVolume (filters quiet noise/accidental presses)
+            const isSpeaking = avgVolume > VAD_CONFIG.silenceThreshold;
+            const isRealSpeech = avgVolume > VAD_CONFIG.minSpeechVolume;
+
             const now = Date.now();
             const recordingDuration = now - recordingStartTime;
 
-            if (avgVolume > VAD_CONFIG.silenceThreshold) {
+            if (isSpeaking) {
                 // Speech detected
-                hasSpeechStarted = true;
+                if (!wasSpeak) {
+                    // Speech just started
+                    speechStartTime = now;
+
+                    // Record the pause duration if we were in silence
+                    if (silenceStartTime !== null && hasSpeechStarted) {
+                        const pauseDuration = now - silenceStartTime;
+                        speechSegments.push({ type: 'pause', duration: pauseDuration });
+
+                        // Adapt timeout based on observed pause patterns
+                        adaptTimeout();
+                    }
+                }
+
+                // Only mark speech as started if volume exceeds minSpeechVolume
+                // This filters out quiet noise and accidental mic presses
+                if (isRealSpeech) {
+                    hasSpeechStarted = true;
+                }
+                lastSpeechTime = now;
                 silenceStartTime = null;
-            } else if (hasSpeechStarted && recordingDuration > VAD_CONFIG.minSpeechDurationMs) {
-                // Silence detected after speech started
-                if (silenceStartTime === null) {
-                    silenceStartTime = now;
-                } else if (now - silenceStartTime >= VAD_CONFIG.silenceDurationMs) {
-                    // Silence duration exceeded - auto-stop
-                    console.log('VAD: Auto-stopping after silence');
-                    stopRecording();
+                wasSpeak = true;
+
+            } else {
+                // Silence detected
+                if (wasSpeak && speechStartTime) {
+                    // Speech just ended - record speech duration
+                    const speechDuration = now - speechStartTime;
+                    speechSegments.push({ type: 'speech', duration: speechDuration });
+                    speechStartTime = null;
+                }
+
+                wasSpeak = false;
+
+                if (hasSpeechStarted && recordingDuration > VAD_CONFIG.minSpeechDurationMs) {
+                    // Start or continue silence timer
+                    if (silenceStartTime === null) {
+                        silenceStartTime = now;
+                    }
+
+                    // Calculate effective timeout with bonuses
+                    const effectiveTimeout = calculateEffectiveTimeout(now);
+                    const silenceDuration = now - silenceStartTime;
+
+                    if (silenceDuration >= effectiveTimeout) {
+                        // Silence duration exceeded - auto-stop
+                        console.log(`VAD: Auto-stopping after ${silenceDuration}ms silence (timeout: ${effectiveTimeout}ms)`);
+                        stopRecording();
+                    }
                 }
             }
         }, VAD_CONFIG.checkIntervalMs);
@@ -186,6 +270,52 @@ function startVAD(stream) {
         console.error('Failed to start VAD:', error);
         // VAD is optional - recording still works without it
     }
+}
+
+function adaptTimeout() {
+    // Get recent pauses (last 5)
+    const recentPauses = speechSegments
+        .filter(s => s.type === 'pause')
+        .slice(-5);
+
+    if (recentPauses.length === 0) {
+        currentTimeout = VAD_CONFIG.baseTimeoutMs;
+        return;
+    }
+
+    // Calculate average pause duration
+    const avgPause = recentPauses.reduce((sum, p) => sum + p.duration, 0) / recentPauses.length;
+
+    if (avgPause < VAD_CONFIG.shortPauseThresholdMs) {
+        // Quick speaker - shorter timeout
+        currentTimeout = VAD_CONFIG.minTimeoutMs;
+    } else if (avgPause > VAD_CONFIG.longPauseThresholdMs) {
+        // Thoughtful speaker - longer timeout
+        currentTimeout = VAD_CONFIG.maxTimeoutMs;
+    } else {
+        // Normal speaker - interpolate between min and max
+        const ratio = (avgPause - VAD_CONFIG.shortPauseThresholdMs) /
+                      (VAD_CONFIG.longPauseThresholdMs - VAD_CONFIG.shortPauseThresholdMs);
+        currentTimeout = VAD_CONFIG.minTimeoutMs +
+                        ratio * (VAD_CONFIG.maxTimeoutMs - VAD_CONFIG.minTimeoutMs);
+    }
+
+    // Clamp to bounds
+    currentTimeout = Math.max(VAD_CONFIG.minTimeoutMs,
+                     Math.min(VAD_CONFIG.maxTimeoutMs, currentTimeout));
+}
+
+function calculateEffectiveTimeout(now) {
+    let timeout = currentTimeout;
+
+    // Add bonus time if speech was very recent (user might just be pausing)
+    if (lastSpeechTime && (now - lastSpeechTime) < VAD_CONFIG.recentSpeechWindowMs) {
+        // The more recent the speech, the more bonus time
+        const recency = 1 - ((now - lastSpeechTime) / VAD_CONFIG.recentSpeechWindowMs);
+        timeout += recency * VAD_CONFIG.recentSpeechBonusMs;
+    }
+
+    return Math.min(timeout, VAD_CONFIG.maxTimeoutMs + VAD_CONFIG.recentSpeechBonusMs);
 }
 
 function stopVAD() {
@@ -202,6 +332,11 @@ function stopVAD() {
     analyser = null;
     silenceStartTime = null;
     hasSpeechStarted = false;
+    lastSpeechTime = null;
+    speechSegments = [];
+    currentTimeout = VAD_CONFIG.baseTimeoutMs;
+    // Note: maxVolumeDetected is intentionally NOT reset here
+    // It's checked in onstop handler after VAD stops
 }
 
 function getSupportedMimeType() {
@@ -343,3 +478,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+

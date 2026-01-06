@@ -73,7 +73,7 @@ async def transcribe_audio(audio: UploadFile = File(...)):
         # Call OpenAI transcription API
         with open(tmp_path, 'rb') as audio_file:
             response = client.audio.transcriptions.create(
-                model="gpt-4o-mini-transcribe",
+                model="gpt-4o-transcribe",
                 file=audio_file,
                 response_format="text"
             )
