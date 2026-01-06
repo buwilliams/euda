@@ -49,21 +49,37 @@
 .child-jobs-list {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
 }
 
 .child-job-card {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
-    padding: var(--spacing-md);
-    background: var(--color-bg-secondary);
-    border-radius: var(--border-radius);
+    padding: var(--spacing-lg) var(--spacing-md);
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border-light);
+    border-top: none;
     cursor: pointer;
+    line-height: var(--line-height-base);
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+.child-job-card:first-child {
+    border-top: 1px solid var(--color-border-light);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.child-job-card:last-child {
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+.child-job-card:only-child {
+    border-radius: var(--radius-xl);
 }
 
 .child-job-card:hover {
-    background: var(--color-bg-tertiary);
+    background: var(--color-bg-subtle);
 }
 
 .child-job-icon {

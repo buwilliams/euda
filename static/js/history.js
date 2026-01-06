@@ -39,20 +39,21 @@ function navigateHistory(view) {
 }
 
 function navigateHistoryBack() {
+    // If we're at the root (list view) and have a return tab, go back to it
+    if (historyViewHistory.length === 0 && historyView === 'list' && moreMenuReturnTab) {
+        const returnTab = moreMenuReturnTab;
+        moreMenuReturnTab = null;
+        switchTab(returnTab);
+        return;
+    }
+
+    // Otherwise navigate back in history stack
     if (historyViewHistory.length > 0) {
         historyView = historyViewHistory.pop();
     } else {
         historyView = 'list';
     }
     historySlideDirection = 'back';
-
-    // If returning to list, go back to previous tab
-    if (historyView === 'list' && moreMenuReturnTab) {
-        const returnTab = moreMenuReturnTab;
-        moreMenuReturnTab = null;
-        switchTab(returnTab);
-        return;
-    }
 
     renderHistory();
 }
@@ -244,27 +245,29 @@ let historySwipeElement = null;
 let historySwipeCard = null;
 let historySwipeSessionId = null;
 
+let historySwipeHandlersInitialized = false;
+
 function initHistorySwipeHandlers() {
     const historyContent = document.getElementById('history-content');
     if (!historyContent) return;
 
-    // Remove old listeners by cloning
-    const newContent = historyContent.cloneNode(true);
-    historyContent.parentNode.replaceChild(newContent, historyContent);
+    // Only initialize once - use event delegation
+    if (historySwipeHandlersInitialized) return;
+    historySwipeHandlersInitialized = true;
 
     // Touch events
-    newContent.addEventListener('touchstart', handleHistorySwipeStart, { passive: true });
-    newContent.addEventListener('touchmove', handleHistorySwipeMove, { passive: false });
-    newContent.addEventListener('touchend', handleHistorySwipeEnd, { passive: true });
-    newContent.addEventListener('touchcancel', handleHistorySwipeCancel, { passive: true });
+    historyContent.addEventListener('touchstart', handleHistorySwipeStart, { passive: true });
+    historyContent.addEventListener('touchmove', handleHistorySwipeMove, { passive: false });
+    historyContent.addEventListener('touchend', handleHistorySwipeEnd, { passive: true });
+    historyContent.addEventListener('touchcancel', handleHistorySwipeCancel, { passive: true });
 
     // Mouse events
-    newContent.addEventListener('mousedown', handleHistoryMouseDown, { passive: true });
+    historyContent.addEventListener('mousedown', handleHistoryMouseDown, { passive: true });
     document.addEventListener('mousemove', handleHistoryMouseMove, { passive: false });
     document.addEventListener('mouseup', handleHistoryMouseUp, { passive: true });
 
     // Prevent click after swipe
-    newContent.addEventListener('click', handleHistorySwipeClick, { capture: true });
+    historyContent.addEventListener('click', handleHistorySwipeClick, { capture: true });
 }
 
 let historyIsMouseDown = false;

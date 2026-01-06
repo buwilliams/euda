@@ -15,19 +15,38 @@
     align-items: center;
     gap: var(--spacing-md);
     cursor: pointer;
-    background: none;
-    border: none;
-    border-bottom: 1px solid var(--color-border-light);
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border-light);
+    border-top: none;
     border-radius: 0;
     box-shadow: none;
+    line-height: var(--line-height-base);
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+/* When not inside swipe-container, handle border-radius directly */
+.card-minimal:first-child {
+    border-top: 1px solid var(--color-border-light);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.card-minimal:last-child {
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+.card-minimal:only-child {
+    border-radius: var(--radius-xl);
+}
+
+/* When inside swipe-container, swipe-card handles borders */
+.swipe-container .card-minimal {
+    border: none;
+    border-radius: 0;
 }
 
 .card-minimal:hover {
     background: var(--color-bg-subtle);
-}
-
-.card-minimal:last-child {
-    border-bottom: none;
 }
 
 .card-title {
@@ -74,6 +93,14 @@
     color: #ccc;
     font-size: var(--font-size-xl);
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.card-arrow img {
+    width: 16px;
+    height: 16px;
+    opacity: 0.4;
 }
 
 .card-date {
@@ -218,8 +245,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    padding: var(--spacing-md);
-    margin-right: var(--spacing-md);
+    padding: 0 var(--spacing-sm);
     opacity: 0.5;
     flex-shrink: 0;
     display: flex;
@@ -236,8 +262,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    padding: var(--spacing-md);
-    margin-right: var(--spacing-md);
+    padding: 0 var(--spacing-sm);
     opacity: 0.5;
     flex-shrink: 0;
     display: flex;
