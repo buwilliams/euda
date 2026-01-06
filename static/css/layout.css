@@ -316,6 +316,8 @@
     position: absolute;
     top: 0;
     left: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
     transition: transform var(--transition-slow), opacity var(--transition-slow);
 }
 
