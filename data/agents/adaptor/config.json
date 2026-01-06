@@ -1,7 +1,8 @@
 {
   "id": "adaptor",
-  "name": "The Adaptor",
+  "name": "Adaptor",
   "enabled": true,
+  "order": 1,
   "tools": [
     "list_agents",
     "get_agent",
@@ -16,5 +17,5 @@
     "send_notification",
     "done_working"
   ],
-  "sleep_minutes": 60
+  "triggers": ["time:evening"]
 }

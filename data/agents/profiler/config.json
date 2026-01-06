@@ -1,7 +1,8 @@
 {
   "id": "profiler",
-  "name": "The Profiler",
+  "name": "Profiler",
   "enabled": true,
+  "order": 2,
   "tools": [
     "get_user_profile",
     "update_user_profile",
@@ -14,5 +15,5 @@
     "complete_job",
     "done_working"
   ],
-  "sleep_minutes": 30
+  "triggers": ["lifelog:new", "time:evening"]
 }
