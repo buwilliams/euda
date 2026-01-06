@@ -19,7 +19,7 @@ let vadInterval = null;
 // VAD Configuration
 const VAD_CONFIG = {
     silenceThreshold: 15,      // Volume level below which is silence (0-255)
-    silenceDurationMs: 1500,   // Auto-stop after this much silence
+    silenceDurationMs: 4500,   // Auto-stop after this much silence (4.5 seconds)
     minSpeechDurationMs: 500,  // Minimum recording time before auto-stop kicks in
     checkIntervalMs: 100       // How often to check audio levels
 };
