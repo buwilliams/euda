@@ -13,6 +13,7 @@ Today's AI remembers facts about you, but it doesn't know you. Euno understands 
 3. **Set up your remote server** — See [DevOps](docs/7_devops.md) for deployment instructions
 4. **Work on your first feature** — Pick a task from GitHub Projects and get started
 5. **[Track your contribution points](contrib/)** — Add entries to your file in contrib/ with each PR
+6. **Submit your PR** — Once approved by Buddy, your contribution points are finalized
 
 **Time & cost expectations:** See [Affordable Loss](docs/2_business-plan.md#vision) in the Business Plan for expected time and financial commitments. We're all investing our own resources because we believe in the vision. See the [Operating Agreement](docs/10_operating-agreement.md) for what contributors get in return.
 
