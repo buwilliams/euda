@@ -152,9 +152,16 @@ class CostTracker:
 
     def calculate_cost(self, model: str, input_tokens: int, output_tokens: int,
                        cached_input_tokens: int = 0) -> float:
-        """Calculate cost for a single API call."""
+        """Calculate cost for a single API call.
+
+        Note: input_tokens is the TOTAL prompt tokens (includes cached).
+        cached_input_tokens is the subset that was cached.
+        We charge non-cached at full price, cached at discounted price.
+        """
         pricing = self.get_pricing(model)
-        input_cost = (input_tokens / 1_000_000) * pricing["input"]
+        # Subtract cached from total to get non-cached input tokens
+        non_cached_input = max(0, input_tokens - cached_input_tokens)
+        input_cost = (non_cached_input / 1_000_000) * pricing["input"]
         cached_cost = (cached_input_tokens / 1_000_000) * pricing["cached_input"]
         output_cost = (output_tokens / 1_000_000) * pricing["output"]
         return input_cost + cached_cost + output_cost
