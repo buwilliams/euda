@@ -109,7 +109,6 @@ function resetScrollPositions() {
 // ============== Settings ==============
 
 let costsData = null;
-let selectedCostPeriod = 'session';
 
 async function loadSettingsData() {
     try {
@@ -132,32 +131,30 @@ async function loadCostsData() {
     }
 }
 
-function selectCostPeriod(period) {
-    selectedCostPeriod = period;
-    document.querySelectorAll('.costs-tab').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.period === period);
-    });
-    renderCosts();
+function renderCostRow(elementId, periodData) {
+    const row = document.getElementById(elementId);
+    if (!row || !periodData) return;
+
+    const amountEl = row.querySelector('.costs-amount');
+    const callsEl = row.querySelector('.costs-calls');
+
+    const cost = periodData.cost || 0;
+    const calls = periodData.calls || 0;
+
+    amountEl.textContent = `$${cost.toFixed(2)}`;
+    callsEl.textContent = `${calls.toLocaleString()} call${calls !== 1 ? 's' : ''}`;
 }
 
 function renderCosts() {
     if (!costsData) return;
 
-    const amountEl = document.getElementById('costs-amount');
-    const callsEl = document.getElementById('costs-calls');
-    const budgetEl = document.getElementById('costs-budget');
-
-    // Get data for selected period
-    const periodData = costsData[selectedCostPeriod];
-    if (periodData) {
-        const cost = periodData.cost || 0;
-        const calls = periodData.calls || 0;
-
-        amountEl.textContent = `$${cost.toFixed(2)}`;
-        callsEl.textContent = `${calls.toLocaleString()} API call${calls !== 1 ? 's' : ''}`;
-    }
+    // Render all three periods
+    renderCostRow('costs-session', costsData.session);
+    renderCostRow('costs-seven-days', costsData.seven_days);
+    renderCostRow('costs-month', costsData.month);
 
     // Show budget info if set
+    const budgetEl = document.getElementById('costs-budget');
     if (costsData.budget) {
         const remaining = costsData.budget - (costsData.session?.cost || 0);
         budgetEl.textContent = `Budget: $${costsData.budget.toFixed(2)} ($${remaining.toFixed(2)} remaining)`;

@@ -1,29 +1,3 @@
 # Logan Owens
 
-- [2026-01-06][5] - Update agent configs to use triggers instead of sleep_minutes
-- [2026-01-05][20] - Add API costs display to Settings page
-- [2026-01-05][35] - Refactor cost tracking to agent layer with config-based pricing
-- [2026-01-05][30] - Implement transparent tool batching and PR review changes
-- [2026-01-04][10] - Add batched analysis for profiler agent
-- [2026-01-03][10] - Add prompt logging for API debugging
-- [2026-01-03][10] - Fix friend agent efficiency and job completion issues
-- [2026-01-03][15] - Add unified API call log
-- [2026-01-03][15] - Add --breaker flag for API cost budget limits
-- [2026-01-03][20] - Add batch tool operations for improved efficiency
-- [2026-01-03][20] - Add agent backoff handling and tune agent cadence
-- [2026-01-02][15] - Switch from Anthropic to OpenAI as default LLM provider
-- [2026-01-02][5] - Fix deploy script hanging at pip install
-- [2026-01-02][5] - Remove done_working tool from friend agent
-- [2026-01-02][5] - Fix UnifiedClient to handle missing tools parameter
-- [2026-01-02][20] - Add OpenAI/ChatGPT 5.2 as LLM provider option
-- [2026-01-02][15] - Centralize LLM configuration in src/llm.py
-- [2026-01-02][15] - Implement personalized daily quotes with backend state
-- [2026-01-02][5] - Cache daily quote in localStorage, fetch only once per day
-- [2026-01-02][5] - Remove unused legacy task aliases from focus.js
-- [2026-01-02][20] - Add authentication middleware to protect all routes
-- [2026-01-02][5] - Don't save work cycle prompts to conversation history
-- [2026-01-02][5] - Fix setup-server.sh to use 'start' command
-- [2026-01-02][10] - Include user profile in all agent system prompts
-- [2026-01-02][10] - Add fresh-start CLI command to reset user data
-- [2026-01-02][20] - Add file upload endpoint and ingest job flow
-- [2026-01-02][5] - Move parent link to end of Job UI, remove migration script
+- [2026-01-05][10] - Batch API calling
