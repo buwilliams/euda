@@ -167,15 +167,13 @@ class AgentManager:
                     self._reset_backoff(agent.id)
 
             except BudgetExceeded as e:
-                # Budget exceeded - trigger graceful shutdown
+                # Budget exceeded - log warning but continue running
                 agent._log("budget_exceeded", {
                     "budget": e.budget,
                     "spent": e.spent
                 })
-                print(f"\n[{agent.id}] BUDGET EXCEEDED: ${e.spent:.4f} spent of ${e.budget:.2f} limit")
-                print_cost_summary()
-                self.running = False  # Stop all agents
-                return  # Exit this agent's loop
+                print(f"\n[{agent.id}] BUDGET WARNING: ${e.spent:.4f} spent of ${e.budget:.2f} limit")
+                # Continue running - don't hard exit
 
             except Exception as e:
                 error_msg = str(e)
