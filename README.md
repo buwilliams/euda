@@ -9,7 +9,7 @@ Today's AI remembers facts about you, but it doesn't know you. Euno understands 
 ## Contributing
 
 1. **Get access** — Request access to the [repo](https://github.com/buwilliams/Euno) and [GitHub Projects](https://github.com/users/buwilliams/projects/1)
-2. **Read the docs** — Start with [Pitch](docs/1_pitch.md), [Business Plan](docs/2_business-plan.md), and [Contribute](docs/3_contribute.md), then read the remaining docs
+2. **Read the docs** — Start with [Pitch](docs/1_pitch.md), [Business Plan](docs/2_business-plan.md), and [Contribute](docs/3_contribute.md), then read any docs applicable to how you want to contribute
 3. **Set up your remote server** — See [DevOps](docs/8_devops.md) for deployment instructions
 4. **Work on your first feature** — Pick a task from GitHub Projects and get started
 5. **[Track your contribution points](docs/3_contribute.md)** — Add entries to your file in [contrib/](contrib/) with each PR
