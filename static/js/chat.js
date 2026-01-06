@@ -2,7 +2,17 @@
 
 // ============== Daily Quote ==============
 
+// Cache the quote data for reuse
+let focusQuoteData = null;
+
 async function loadDailyQuote(retries = 3) {
+    // Check if quote was dismissed this session
+    if (sessionStorage.getItem('quoteDismissed')) {
+        const container = document.getElementById('daily-quote-container');
+        if (container) container.innerHTML = '';
+        return;
+    }
+
     // Find the quote container in Focus tab (may not exist yet if Focus hasn't rendered)
     const container = document.getElementById('daily-quote-container');
     if (!container) {
@@ -26,6 +36,7 @@ async function loadDailyQuote(retries = 3) {
         }
         const data = await response.json();
         if (data.quote) {
+            focusQuoteData = data;
             renderQuote(data);
         } else {
             throw new Error('No quote in response');
@@ -33,23 +44,136 @@ async function loadDailyQuote(retries = 3) {
     } catch (error) {
         console.error('Failed to load daily quote:', error);
         // Fallback
-        renderQuote({
+        focusQuoteData = {
             quote: "The only way to do great work is to love what you do.",
             author: "Steve Jobs"
-        });
+        };
+        renderQuote(focusQuoteData);
     }
 }
 
 function renderQuote(data) {
+    // Check if dismissed
+    if (sessionStorage.getItem('quoteDismissed')) {
+        const container = document.getElementById('daily-quote-container');
+        if (container) container.innerHTML = '';
+        return;
+    }
+
     const container = document.getElementById('daily-quote-container');
     if (container) {
         container.innerHTML = `
-            <div id="daily-quote" class="quote-container">
+            <div id="daily-quote" class="quote-container quote-swipeable">
                 <div class="quote-text">"${escapeHtml(data.quote)}"</div>
                 <div class="quote-author">— ${escapeHtml(data.author)}</div>
             </div>
         `;
+        initQuoteSwipe();
     }
+}
+
+function dismissQuote() {
+    sessionStorage.setItem('quoteDismissed', 'true');
+    const container = document.getElementById('daily-quote-container');
+    if (container) {
+        const quote = container.querySelector('.quote-container');
+        if (quote) {
+            quote.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+            quote.style.opacity = '0';
+            quote.style.transform = 'translateX(50px)';
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 200);
+        }
+    }
+}
+
+// Quote swipe handling
+let quoteSwipeStartX = 0;
+let quoteSwipeElement = null;
+let quoteSwipeActive = false;
+
+function initQuoteSwipe() {
+    const quote = document.getElementById('daily-quote');
+    if (!quote) return;
+
+    quote.addEventListener('touchstart', handleQuoteSwipeStart, { passive: true });
+    quote.addEventListener('touchmove', handleQuoteSwipeMove, { passive: false });
+    quote.addEventListener('touchend', handleQuoteSwipeEnd, { passive: true });
+
+    quote.addEventListener('mousedown', handleQuoteMouseDown);
+}
+
+function handleQuoteSwipeStart(e) {
+    quoteSwipeElement = e.currentTarget;
+    quoteSwipeStartX = e.touches[0].clientX;
+    quoteSwipeActive = false;
+    quoteSwipeElement.style.transition = 'none';
+}
+
+function handleQuoteSwipeMove(e) {
+    if (!quoteSwipeElement) return;
+    const deltaX = e.touches[0].clientX - quoteSwipeStartX;
+    if (Math.abs(deltaX) > 10) {
+        quoteSwipeActive = true;
+        e.preventDefault();
+        quoteSwipeElement.style.transform = `translateX(${deltaX}px)`;
+        quoteSwipeElement.style.opacity = Math.max(0, 1 - Math.abs(deltaX) / 150);
+    }
+}
+
+function handleQuoteSwipeEnd(e) {
+    if (!quoteSwipeElement) return;
+    const deltaX = e.changedTouches ? e.changedTouches[0].clientX - quoteSwipeStartX : 0;
+
+    if (quoteSwipeActive && Math.abs(deltaX) > 80) {
+        dismissQuote();
+    } else {
+        quoteSwipeElement.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+        quoteSwipeElement.style.transform = 'translateX(0)';
+        quoteSwipeElement.style.opacity = '1';
+    }
+    quoteSwipeElement = null;
+    quoteSwipeActive = false;
+}
+
+function handleQuoteMouseDown(e) {
+    if (e.button !== 0) return;
+    quoteSwipeElement = e.currentTarget;
+    quoteSwipeStartX = e.clientX;
+    quoteSwipeActive = false;
+    quoteSwipeElement.style.transition = 'none';
+
+    document.addEventListener('mousemove', handleQuoteMouseMove);
+    document.addEventListener('mouseup', handleQuoteMouseUp);
+}
+
+function handleQuoteMouseMove(e) {
+    if (!quoteSwipeElement) return;
+    const deltaX = e.clientX - quoteSwipeStartX;
+    if (Math.abs(deltaX) > 5) {
+        quoteSwipeActive = true;
+        quoteSwipeElement.style.transform = `translateX(${deltaX}px)`;
+        quoteSwipeElement.style.opacity = Math.max(0, 1 - Math.abs(deltaX) / 150);
+    }
+}
+
+function handleQuoteMouseUp(e) {
+    document.removeEventListener('mousemove', handleQuoteMouseMove);
+    document.removeEventListener('mouseup', handleQuoteMouseUp);
+
+    if (!quoteSwipeElement) return;
+    const deltaX = e.clientX - quoteSwipeStartX;
+
+    if (quoteSwipeActive && Math.abs(deltaX) > 80) {
+        dismissQuote();
+    } else {
+        quoteSwipeElement.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+        quoteSwipeElement.style.transform = 'translateX(0)';
+        quoteSwipeElement.style.opacity = '1';
+    }
+    quoteSwipeElement = null;
+    quoteSwipeActive = false;
 }
 
 // ============== Inline Chat ==============
@@ -58,65 +182,148 @@ const contextInput = document.getElementById('context-input');
 const contextSendBtn = document.getElementById('context-send-btn');
 const inlineMessages = document.getElementById('inline-messages');
 
-async function sendContextMessage() {
-    const message = contextInput.value.trim();
-    if (!message || isWaiting) return;
+// Message queue for sequential processing
+let messageQueue = [];
+let isProcessingQueue = false;
 
-    // Add user message
+// Cached quote for chat empty state
+let cachedChatQuote = null;
+
+// Show empty state with quote when chat is empty
+function showChatEmptyState() {
+    // Only show if there are no messages (empty state doesn't count as a message)
+    const hasMessages = Array.from(inlineMessages.children).some(
+        child => !child.classList.contains('chat-empty-state')
+    );
+    if (hasMessages) return;
+
+    const quoteHtml = cachedChatQuote
+        ? `<div class="chat-empty-quote">
+               <div class="quote-text">"${escapeHtml(cachedChatQuote.quote)}"</div>
+               <div class="quote-author">— ${escapeHtml(cachedChatQuote.author)}</div>
+           </div>`
+        : '<div class="chat-empty-quote"><div class="quote-text" style="color: #999;">Loading...</div></div>';
+
+    inlineMessages.innerHTML = `
+        <div class="chat-empty-state" id="chat-empty-state">
+            <div class="chat-empty-greeting">What's on your mind?</div>
+            ${quoteHtml}
+        </div>
+    `;
+}
+
+// Load quote for chat empty state
+async function loadChatQuote() {
+    try {
+        const response = await fetch('/api/daily-quote', { credentials: 'same-origin' });
+        if (response.ok) {
+            const data = await response.json();
+            if (data.quote) {
+                cachedChatQuote = data;
+                // Re-render empty state if it's showing
+                const emptyState = document.getElementById('chat-empty-state');
+                if (emptyState) {
+                    showChatEmptyState();
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load chat quote:', error);
+    }
+}
+
+// Remove empty state when messages are added
+function removeChatEmptyState() {
+    const emptyState = document.getElementById('chat-empty-state');
+    if (emptyState) {
+        emptyState.remove();
+    }
+}
+
+function sendContextMessage() {
+    const message = contextInput.value.trim();
+    if (!message) return;
+
+    // Add user message to UI immediately
     addInlineMessage(message, 'you');
     contextInput.value = '';
     contextInput.style.height = 'auto';
-    setContextWaiting(true);
 
-    try {
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message,
-                agent_id: 'friend',
-                session_id: sessionId  // Include current session
-            })
-        });
+    // Queue the message for processing
+    messageQueue.push(message);
+    processMessageQueue();
+}
 
-        const data = await response.json();
+async function processMessageQueue() {
+    // If already processing or queue is empty, return
+    if (isProcessingQueue || messageQueue.length === 0) return;
 
-        if (!response.ok) {
+    isProcessingQueue = true;
+    addInlineThinking();
+
+    while (messageQueue.length > 0) {
+        const message = messageQueue.shift();
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message,
+                    agent_id: 'friend',
+                    session_id: sessionId
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                removeInlineThinking();
+                addInlineMessage(`Something went wrong: ${data.detail || 'Unknown error'}`, 'friend');
+                if (messageQueue.length > 0) addInlineThinking();
+                continue;
+            }
+
+            // Store session ID from server
+            if (data.session_id) {
+                sessionId = data.session_id;
+                localStorage.setItem('sessionId', sessionId);
+            }
+
             removeInlineThinking();
-            addInlineMessage(`Something went wrong: ${data.detail || 'Unknown error'}`, 'friend');
-            setContextWaiting(false);
-            return;
-        }
+            addInlineMessage(data.response, 'friend');
+            showChatNotification();
 
-        // Store session ID from server (creates new one if we didn't have one)
-        if (data.session_id) {
-            sessionId = data.session_id;
-            localStorage.setItem('sessionId', sessionId);
-        }
+            // If the agent cleared the conversation, clear the UI
+            if (data.clear_chat) {
+                messageQueue = []; // Clear any pending messages
+                setTimeout(() => {
+                    inlineMessages.innerHTML = '';
+                    showChatEmptyState();
+                }, 1500);
+                break;
+            }
 
-        removeInlineThinking();
-        addInlineMessage(data.response, 'friend');
-        showChatNotification();
+            // Show thinking again if more messages in queue
+            if (messageQueue.length > 0) addInlineThinking();
 
-        // If the agent cleared the conversation, clear the UI after showing the response
-        if (data.clear_chat) {
-            setTimeout(() => {
-                inlineMessages.innerHTML = '';
-                loadDailyQuote();
-            }, 1500);  // Brief delay so user sees the confirmation
+        } catch (error) {
+            console.error('Chat error:', error);
+            removeInlineThinking();
+            addInlineMessage('I had trouble processing that. Could you try again?', 'friend');
+            showChatNotification();
+            if (messageQueue.length > 0) addInlineThinking();
         }
-    } catch (error) {
-        console.error('Chat error:', error);
-        removeInlineThinking();
-        addInlineMessage('I had trouble processing that. Could you try again?', 'friend');
-        showChatNotification();
     }
 
-    setContextWaiting(false);
-    contextInput.focus();
+    isProcessingQueue = false;
+    removeInlineThinking();
 }
 
 function addInlineMessage(content, role) {
+    // Remove empty state when first message is added
+    removeChatEmptyState();
+
     const div = document.createElement('div');
     div.className = `inline-message inline-message-${role}`;
     const html = role === 'friend' ? marked.parse(content) : escapeHtml(content);
@@ -142,30 +349,40 @@ function removeInlineThinking() {
     if (el) el.remove();
 }
 
-function setContextWaiting(waiting) {
-    isWaiting = waiting;
-    contextInput.disabled = waiting;
-    contextSendBtn.disabled = waiting;
-    if (waiting) addInlineThinking();
-}
-
 let notificationTimeout = null;
 
 function showChatNotification() {
     // Only show notification if not on chat tab
     if (activeTab !== 'chat') {
+        // Increment unseen counter and update badge
+        unseenChatMessages++;
+        updateChatBadge();
+        // Also pulse the send button
         contextSendBtn.classList.add('has-notification');
-        // Auto-clear after 3 seconds to avoid being annoying
+        // Auto-clear pulse after 3 seconds to avoid being annoying
         if (notificationTimeout) clearTimeout(notificationTimeout);
-        notificationTimeout = setTimeout(clearChatNotification, 3000);
+        notificationTimeout = setTimeout(() => {
+            contextSendBtn.classList.remove('has-notification');
+        }, 3000);
     }
 }
 
 function clearChatNotification() {
+    // Reset counter and hide badge
+    unseenChatMessages = 0;
+    updateChatBadge();
     contextSendBtn.classList.remove('has-notification');
     if (notificationTimeout) {
         clearTimeout(notificationTimeout);
         notificationTimeout = null;
+    }
+}
+
+function updateChatBadge() {
+    const badge = document.getElementById('chat-badge');
+    if (badge) {
+        badge.textContent = unseenChatMessages;
+        badge.style.display = unseenChatMessages > 0 ? 'inline' : 'none';
     }
 }
 
@@ -177,7 +394,7 @@ contextInput.addEventListener('input', () => {
 
 // Enter to send in context input
 contextInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey && !isWaiting) {
+    if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendContextMessage();
     }
@@ -207,6 +424,8 @@ function closeChat() {
 async function resetUI() {
     // Clear all messages
     inlineMessages.innerHTML = '';
+    // Show empty state with quote
+    showChatEmptyState();
     // Clear session to start a new conversation
     sessionId = null;
     localStorage.removeItem('sessionId');

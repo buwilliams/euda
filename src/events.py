@@ -156,22 +156,35 @@ def emit_event(event: str, scope: str = None, data: dict = None):
 # For pushing updates to SSE clients
 
 _ui_subscribers: List[asyncio.Queue] = []
+_ui_shutdown_events: List[asyncio.Event] = []  # One event per subscriber for immediate wakeup
 _ui_lock = threading.Lock()
 
 
-def subscribe_ui() -> asyncio.Queue:
-    """Subscribe to UI events. Returns a queue that will receive events."""
+def subscribe_ui() -> tuple:
+    """Subscribe to UI events. Returns (queue, shutdown_event) tuple."""
     q = asyncio.Queue()
+    shutdown_event = asyncio.Event()
     with _ui_lock:
         _ui_subscribers.append(q)
-    return q
+        _ui_shutdown_events.append(shutdown_event)
+    return q, shutdown_event
 
 
-def unsubscribe_ui(q: asyncio.Queue):
+def unsubscribe_ui(q: asyncio.Queue, shutdown_event: asyncio.Event):
     """Unsubscribe from UI events."""
     with _ui_lock:
         if q in _ui_subscribers:
             _ui_subscribers.remove(q)
+        if shutdown_event in _ui_shutdown_events:
+            _ui_shutdown_events.remove(shutdown_event)
+
+
+def trigger_shutdown():
+    """Signal all SSE connections to close immediately."""
+    with _ui_lock:
+        # Set all shutdown events to wake up any waiting generators
+        for event in _ui_shutdown_events:
+            event.set()
 
 
 def emit_ui_event(event_type: str, data: dict = None):
@@ -187,3 +200,13 @@ def emit_ui_event(event_type: str, data: dict = None):
                 q.put_nowait({"type": event_type, "data": data or {}})
             except asyncio.QueueFull:
                 pass  # Skip if queue is full
+
+
+def has_connected_clients() -> bool:
+    """Check if any SSE clients are currently connected.
+
+    Returns:
+        True if at least one client is connected
+    """
+    with _ui_lock:
+        return len(_ui_subscribers) > 0

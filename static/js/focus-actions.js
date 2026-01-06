@@ -36,7 +36,7 @@ async function confirmArchiveJob(jobId) {
 }
 
 async function completeJob(event, jobId) {
-    event.stopPropagation();
+    if (event) event.stopPropagation();
 
     try {
         const response = await fetch(`/api/jobs/${jobId}/complete`, {
@@ -56,7 +56,7 @@ async function completeJob(event, jobId) {
 }
 
 async function restoreJob(event, jobId) {
-    event.stopPropagation();
+    if (event) event.stopPropagation();
 
     try {
         const response = await fetch(`/api/jobs/${jobId}/restore`, {
@@ -76,7 +76,7 @@ async function restoreJob(event, jobId) {
 }
 
 async function deleteJob(event, jobId) {
-    event.stopPropagation();
+    if (event) event.stopPropagation();
     if (!confirm('Delete this job?')) return;
 
     const wasViewingJob = focusView === `job-${jobId}` || focusView === `completed-${jobId}`;

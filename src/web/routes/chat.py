@@ -3,6 +3,7 @@ Chat API Routes
 """
 
 import re
+from datetime import datetime
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -83,24 +84,18 @@ def get_recent_conversations(count: int = 20):
     conversations = []
 
     if CONV_DIR.exists():
-        files = sorted(CONV_DIR.glob("*.md"), reverse=True)[:count]
+        # Sort by modification time (most recent first)
+        files = sorted(CONV_DIR.glob("*.md"), key=lambda f: f.stat().st_mtime, reverse=True)[:count]
 
         for file in files:
             session_id = file.stem
             content = file.read_text()
 
-            # Parse session ID format: YYYY-MM-DD_HHMMSS or legacy YYYY-MM-DD
-            if "_" in session_id:
-                # New format: 2026-01-03_143022
-                date_str, time_part = session_id.split("_", 1)
-                # Convert HHMMSS to HH:MM
-                time_str = f"{time_part[:2]}:{time_part[2:4]}" if len(time_part) >= 4 else "00:00"
-            else:
-                # Legacy format: just date
-                date_str = session_id
-                # Extract first timestamp from content
-                time_match = re.search(r'\((\d{2}:\d{2}):\d{2}\)', content)
-                time_str = time_match.group(1) if time_match else "00:00"
+            # Use file modification time for display (when conversation was last active)
+            mtime = file.stat().st_mtime
+            mod_dt = datetime.fromtimestamp(mtime)
+            date_str = mod_dt.strftime("%Y-%m-%d")
+            time_str = mod_dt.strftime("%H:%M")
 
             preview = ""
             user_match = re.search(r'## User \([^)]+\)\n\n(.+?)(?:\n\n##|\Z)', content, re.DOTALL)

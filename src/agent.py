@@ -30,6 +30,7 @@ class Agent:
         self.persona = self._load_persona()
         self._work_done = False
         self._session_id = session_id
+        self._current_job_id = None
 
     def wait_for_trigger(self, timeout: float = None) -> Optional[dict]:
         """Wait for a trigger event from the event bus.
@@ -89,6 +90,52 @@ class Agent:
     def get_session_id(self) -> Optional[str]:
         """Get the current session ID."""
         return self._session_id
+
+    def set_job_context(self, job_id: str):
+        """Set the current job context for the agent."""
+        self._current_job_id = job_id
+
+    def clear_job_context(self):
+        """Clear the current job context."""
+        self._current_job_id = None
+
+    def _get_job_context_for_prompt(self) -> str:
+        """Build job context string for system prompt."""
+        if not self._current_job_id:
+            return ""
+
+        from .tools.jobs import get_job
+        from .tools.assets import list_assets, read_asset
+
+        job = get_job(self._current_job_id)
+        if not job:
+            return ""
+
+        parts = ["## Current Job Context\n"]
+        parts.append(f"**Job:** {job.get('name', 'Untitled')}")
+
+        if job.get('description'):
+            parts.append(f"\n**Description:** {job['description']}")
+
+        if job.get('due_date'):
+            parts.append(f"\n**Due:** {job['due_date']}")
+
+        # Get text-based assets
+        assets = list_assets(self._current_job_id)
+        text_assets = []
+        for asset in assets:
+            mime = asset.get('mime_type', '')
+            if mime and (mime.startswith('text/') or mime in ['application/json', 'application/xml']):
+                text_assets.append(asset)
+
+        if text_assets:
+            parts.append("\n\n### Attached Files\n")
+            for asset in text_assets:
+                content = read_asset(self._current_job_id, asset['filename'])
+                if content and 'content' in content:
+                    parts.append(f"\n**{asset['filename']}:**\n```\n{content['content']}\n```")
+
+        return "\n".join(parts)
 
     def _load_conversation_history(self) -> str:
         """Load current session's conversation history."""
@@ -181,6 +228,7 @@ class Agent:
     def _build_system_prompt(self) -> str:
         """Build the system prompt from persona and context."""
         from .tools.user import get_user_profile
+        from .tools.top_of_mind import get_top_of_mind_for_prompt
 
         parts = [self.persona]
 
@@ -189,6 +237,16 @@ class Agent:
         if profile.get("exists") and profile.get("content"):
             parts.append("\n## User Profile\n")
             parts.append(profile["content"])
+
+        # Add top-of-mind items for context about what user is focused on
+        top_of_mind = get_top_of_mind_for_prompt()
+        if top_of_mind:
+            parts.append("\n" + top_of_mind)
+
+        # Add current job context if working on a specific job
+        job_context = self._get_job_context_for_prompt()
+        if job_context:
+            parts.append("\n" + job_context)
 
         # Add memory context if present
         memory = self._load_memory()

@@ -143,7 +143,7 @@ function getJobCategory(job) {
     const someday = job.someday;
 
     if (job.status === 'completed') return 'logbook';
-    if (dueDate === today) return 'today';
+    if (dueDate && dueDate <= today) return 'today';  // Includes past due
     if (dueDate && dueDate > today) return 'upcoming';
     if (!dueDate && someday) return 'someday';
     return 'anytime';

@@ -14,6 +14,7 @@ let viewingHistorySessionId = null;
 let isWaiting = false;
 let activeTab = 'focus';  // Always start fresh on page load
 let expandedCards = new Set();
+let unseenChatMessages = 0;  // Counter for chat badge
 let tasksData = [];
 let completedTasksData = [];
 let projectsData = [];
@@ -30,6 +31,9 @@ let archivingTaskId = null;
 // Tab order for slide animations (left to right)
 const TAB_ORDER = ['focus', 'chat', 'history', 'about', 'settings'];
 let previousTab = activeTab;
+
+// Track which tab to return to when exiting a More menu screen
+let moreMenuReturnTab = null;
 
 // History tab navigation state
 let historyView = 'list';

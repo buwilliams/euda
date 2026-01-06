@@ -2,7 +2,7 @@
 
 *Current UI implementation and component reference*
 
-Euno's interface is designed to surface what matters before you ask, guard your attention, and feel like a caring friend who knows you. This document describes the current implementation. For the vision and philosophy behind the design, see [4_user-experience.md](4_user-experience.md).
+Euno's interface is designed to surface what matters before you ask, guard your attention, and feel like a caring friend who knows you. This document describes the current implementation. For the vision and philosophy behind the design, see [6_user-experience.md](6_user-experience.md).
 
 ---
 
@@ -504,6 +504,47 @@ historyData        // Cached conversation list
 
 ---
 
+## Swipe & Drag Gestures
+
+Job cards support swipe (mobile) and click-drag (desktop) gestures for quick actions.
+
+**Active Jobs:**
+| Gesture | Action |
+|---------|--------|
+| Swipe/drag left | Complete job |
+| Swipe/drag right | Open When picker |
+
+**Completed Jobs:**
+| Gesture | Action |
+|---------|--------|
+| Swipe/drag left | Delete job |
+| Swipe/drag right | Restore to active |
+
+**Visual Feedback:**
+- Light gray background with icon appears during gesture
+- Icon and background change color when threshold is reached:
+  - Green tint for Complete/Restore
+  - Blue tint for When picker
+  - Red tint for Delete
+- If gesture doesn't reach threshold, card springs back (action cancelled)
+- Desktop: cursor changes to "grab" to indicate draggable
+
+**Where swipe/drag is enabled:**
+- Today jobs on Focus landing
+- Timeline views (Upcoming, Anytime, Someday)
+- Completed jobs list
+- Child jobs in job detail views
+- Child jobs in agent inbox views
+- Child jobs in "Add Jobs" screen
+
+**Implementation notes:**
+- Threshold: 80px horizontal movement to trigger action
+- Max distance: 120px (clamped)
+- Vertical movement cancels horizontal swipe (allows scrolling)
+- Click navigation still works if no drag occurred
+
+---
+
 ## File Structure
 
 ```
@@ -516,6 +557,7 @@ static/
 │   ├── components.css  # Reusable components
 │   ├── chat.css        # Chat tab styles
 │   ├── focus.css       # Focus tab styles
+│   ├── swipe.css       # Swipe gesture styles
 │   ├── when-picker.css # Date picker modal
 │   ├── history.css     # History tab styles
 │   ├── about.css       # About tab styles
@@ -529,6 +571,7 @@ static/
 │   ├── tabs.js         # Tab navigation with animations
 │   ├── chat.js         # Chat tab functionality
 │   ├── focus.js        # Focus tab (tasks/projects)
+│   ├── swipe.js        # Swipe/drag gesture handling
 │   ├── history.js      # History tab
 │   ├── about.js        # About tab
 │   ├── upload.js       # File upload handling

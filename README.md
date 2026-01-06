@@ -2,100 +2,35 @@
   <img src="static/images/euno-logo-with-subtitle.png" alt="Euno" width="50%">
 </p>
 
-_Euno [you-know], from Eudaimonia—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities._
+_Euno (you-know), from Eudaimonia (you-dye-MOH-nee-ah)—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities._
 
-**Euno is a personal intelligence that learns to anticipate you.** It understands who you are, proactively does tasks for you, and curates what deserves your attention.
+Today's AI remembers facts about you, but it doesn't know you. Euno understands who you are—your values, your patterns, your rhythms. **Euno is a personal intelligence that learns to anticipate you.** It understands who you are, proactively does tasks for you, and curates what deserves your attention.
 
-Today's AI remembers facts about you. Euno understands who you are—your values, your patterns, your rhythms.
+## Contributing
 
-## How It Works
+1. **Get access** — Request access to the [repo](https://github.com/buwilliams/Euno) and [GitHub Projects](https://github.com/users/buwilliams/projects/1)
+2. **Read the docs** — Start with [Pitch](docs/1_pitch.md), [Business Plan](docs/2_business-plan.md), and [Contribute](docs/3_contribute.md), then read any docs applicable to how you want to contribute
+3. **Set up your remote server** — See [DevOps](docs/8_devops.md) for deployment instructions
+4. **Work on your first feature** — Pick a task from [GitHub Projects](https://github.com/users/buwilliams/projects/1) and get started
+5. **[Track your contribution points](docs/3_contribute.md)** — Add entries to your file in [contrib/](contrib/) with each PR
+6. **Submit your PR** — Once approved by Buddy, your contribution points are finalized
 
-1. **Learns** from your data and behaviors
-2. **Understands** who you really are—values, patterns, rhythms
-3. **Anticipates** what you need before you ask
-
-## What It Does
-
-- **Reads your life data** — photos, documents, exports from any platform
-- **Maintains a life log** — one unified record of everything, searchable and private
-- **Learns who you are** — values, patterns, rhythms—discovered from behavior, not just what you say
-- **Surfaces what matters** — the right thing at the right moment, respecting your energy
-- **Guards your attention** — reads your feeds, shields you from engagement algorithms, less screen time without losing touch
-- **Executes tasks** — handles work autonomously, asks before acting on anything important
-- **Talks like a friend** — not a chatbot, not an assistant—a caring collaborator who knows you and goes deep when you need it
-
-## Core Ideas
-
-**Promotion of Life** — The foundation: promote life. Not fatalistic, not nihilistic. A life that is safe AND surprising.
-
-**90/10 Balance** — ~90% grounded in your values; ~10% novelty that challenges and expands. Too much surprise → anxiety. Too little → stagnation.
-
-**Stated vs Revealed** — What you say matters vs what your behavior shows. The gap isn't hypocrisy—it's tension to understand.
-
-**Energy Awareness** — Models your energy (physical, mental, emotional, social). Adjusts what it surfaces based on your capacity.
-
-## Agents
-
-Six agents work together, each defined by config + persona + tools + triggers:
-
-| Agent | Role | Triggers |
-|-------|------|----------|
-| **Worker** | Executes tasks without undermining agency | `job:assigned`, `time:morning` |
-| **Friend** | Supports thinking without threatening identity coherence | `chat:message` |
-| **Curator** | Explores opportunities; guards attention; delivers what counts | `time:morning` |
-| **Archivist** | Preserves high-fidelity human data before interpretation | `job:assigned`, `time:morning` |
-| **Profiler** | Constructs the Profile from raw Lifelog data | `lifelog:new`, `time:evening` |
-| **Adaptor** | Refines agent identities to serve this specific user | `time:evening` |
-
-Agents wake only when their triggers fire—no polling or scheduled intervals. Adding a new agent requires only a `config.json` and persona markdown file—no Python code.
-
-## Quick Start
-
-```bash
-# Setup
-cp .env.example .env      # Add your ANTHROPIC_API_KEY
-pip install -r requirements.txt
-
-# Run
-python main.py start      # Web server + background agents
-python main.py chat       # Interactive chat with friend
-python main.py chat worker  # Chat with a specific agent
-python main.py agents     # List all agents
-python main.py jobs       # List all jobs
-```
-
-## Architecture
-
-Everything is either an **Agent** or a **Job**.
-
-```
-data/
-├── agents/           # Agent configs and personas (code)
-│   └── {agent}/
-│       ├── config.json
-│       └── {agent}-persona.md
-├── jobs/
-│   ├── db.sqlite     # SQLite database for jobs
-│   └── assets/       # Files attached to jobs (per job-id)
-├── user/             # Profile and lifelog
-└── system/           # Global config
-
-src/
-├── agent.py          # Generic agent: config + persona + tools + loop
-├── manager.py        # Starts/stops all agents
-├── tools/            # All tools with @tool decorator
-└── web/              # FastAPI + routes
-```
+**Time & cost expectations:** See [Affordable Loss](docs/2_business-plan.md#vision) in the Business Plan for expected time and financial commitments. We're all investing our own resources because we believe in the vision. See the [Operating Agreement](docs/11_operating-agreement.md) for what contributors get in return.
 
 ## Documentation
 
-- **[Pitch](docs/1_pitch.md)** — Introduction and vision overview
-- **[Profile](docs/2_profile.md)** — Profile system and agent personas
-- **[Architecture](docs/3_architecture.md)** — Technical design and implementation
-- **[User Experience](docs/4_user-experience.md)** — UI/UX philosophy and vision
-- **[User Interface](docs/5_user-interface.md)** — Current UI components and layout
-- **[DevOps](docs/6_devops.md)** — Deployment and operations
+1. **[Pitch](docs/1_pitch.md)** — Introduction and vision overview
+2. **[Business Plan](docs/2_business-plan.md)** — Vision and growth gates
+3. **[Contribute](docs/3_contribute.md)** — Contribution tracking and points
+4. **[Profile](docs/4_profile.md)** — Profile system and agent personas
+5. **[Architecture](docs/5_architecture.md)** — Technical design and implementation
+6. **[User Experience](docs/6_user-experience.md)** — UI/UX philosophy and vision
+7. **[User Interface](docs/7_user-interface.md)** — Current UI components and layout
+8. **[DevOps](docs/8_devops.md)** — Deployment and operations
+9. **[Rules](docs/9_rules.md)** — Development rules and guidelines
+10. **[Roadmap](docs/10_roadmap.md)** — Product roadmap
+11. **[Operating Agreement](docs/11_operating-agreement.md)** — Ownership, contributor rewards, and governance
 
-## Privacy
+## License
 
-Your data stays local. Processing uses AI APIs (requires trusting those providers). The tradeoff: you get a personal intelligence working for *your* interests, not an algorithm optimizing for engagement.
+This project is proprietary software. See [LICENSE](LICENSE) for terms. By contributing, you agree to assign your contributions to the project.

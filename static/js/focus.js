@@ -58,6 +58,9 @@ function renderFocusTab() {
         const jobId = rest.substring(0, 12);
         const filename = rest.substring(13); // skip jobId + "-"
         content = renderAssetView(jobId, filename);
+    } else if (focusView === 'newjob') {
+        // Standalone new job creator screen
+        content = renderNewJobCreatorScreen();
     } else if (focusView.startsWith('newjob-')) {
         // newjob-{jobId} - create new child jobs
         const jobId = focusView.substring(7);
@@ -141,5 +144,14 @@ function navigateFocusBack() {
         focusView = 'menu';
     }
     focusSlideDirection = 'back';
+
+    // If returning to menu from a More menu screen, go back to the original tab
+    if (focusView === 'menu' && moreMenuReturnTab) {
+        const returnTab = moreMenuReturnTab;
+        moreMenuReturnTab = null;
+        switchTab(returnTab);
+        return;
+    }
+
     renderFocusTab();
 }

@@ -41,6 +41,15 @@ function connectSSE() {
 
     eventSource.addEventListener('ping', () => {});
 
+    // Handle agent messages (proactive notifications from Curator, etc.)
+    eventSource.addEventListener('agent_message', (e) => {
+        const data = JSON.parse(e.data);
+        // Add message to chat as if from the agent
+        addInlineMessage(data.message, 'friend');
+        // Show notification if not on chat tab
+        showChatNotification();
+    });
+
     eventSource.onerror = () => {
         eventSource.close();
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);

@@ -14,7 +14,7 @@ Euno is built on two core abstractions: **Agents** and **Jobs**. Agents are auto
 
 ## Personal Intelligence
 
-To achieve true personal intelligence, every agent must understand the user. Every LLM API call includes the user's profile in the system prompt:
+To achieve true personal intelligence, every agent must understand the user and their current context. Every LLM API call includes rich context in the system prompt:
 
 ```
 ┌─────────────────────────────────┐
@@ -22,13 +22,27 @@ To achieve true personal intelligence, every agent must understand the user. Eve
 ├─────────────────────────────────┤
 │  1. Agent Persona               │  ← Who the agent is
 │  2. User Profile                │  ← Who the user is
-│  3. Conversation Context        │  ← Recent history
+│  3. Top of Mind                 │  ← What the user is focused on
+│  4. Job Context                 │  ← Current job details + assets
+│  5. Conversation Context        │  ← Recent history
 └─────────────────────────────────┘
 ```
 
 This means every agent—whether it's handling tasks, curating content, or just chatting—knows the user's preferences, patterns, and values. The intelligence is personal because it's grounded in a real model of who the user is.
 
-The **User Profile** (`data/user/user-profile.md`) is built and maintained by the Profiler agent, which examines the Lifelog to identify patterns, preferences, and behaviors over time.
+**System Prompt Components:**
+
+| Component | Source | Description |
+|-----------|--------|-------------|
+| **Persona** | `data/agents/{id}/{id}-persona.md` | Agent's identity and behavioral rules |
+| **User Profile** | `data/user/user-profile.md` | User's preferences, patterns, values |
+| **Top of Mind** | `data/user/top-of-mind.jsonl` | People, goals, concerns user is tracking |
+| **Job Context** | Job details + text assets | When agent picks up a job, includes name, description, and text-based assets (markdown, etc.) |
+| **Conversation** | `data/agents/{id}/state/conversation/` | Recent conversation history for continuity |
+
+The **User Profile** is built and maintained by the Profiler agent, which examines the Lifelog to identify patterns, preferences, and behaviors over time.
+
+**Top of Mind** tracks important items the user mentions—people to follow up with, goals they're working toward, concerns on their mind. Agents proactively add items during conversations and use them for relevant follow-ups.
 
 ### The Lifelog
 

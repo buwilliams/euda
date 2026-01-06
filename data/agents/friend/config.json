@@ -1,13 +1,13 @@
 {
   "id": "friend",
-  "name": "The Friend",
+  "name": "Friend",
   "enabled": true,
+  "order": 8,
   "tools": [
     "list_jobs",
     "get_job",
     "create_job",
     "update_job",
-    "complete_job",
     "add_job_log",
     "get_child_jobs",
     "list_assets",
@@ -16,7 +16,11 @@
     "get_user_profile",
     "read_lifelog",
     "write_lifelog",
-    "send_notification"
+    "parse_date",
+    "get_current_date",
+    "add_top_of_mind",
+    "list_top_of_mind",
+    "remove_top_of_mind"
   ],
-  "sleep_minutes": 0
+  "triggers": []
 }

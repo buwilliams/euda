@@ -1,9 +1,23 @@
 // Euno - Focus View Renderers
 
+// ============== Collapsible Sections ==============
+
+function isSectionOpen(sectionId) {
+    // Default to closed
+    return sessionStorage.getItem(`focus-section-${sectionId}`) === 'open';
+}
+
+function toggleSection(sectionId) {
+    const isOpen = isSectionOpen(sectionId);
+    sessionStorage.setItem(`focus-section-${sectionId}`, isOpen ? 'closed' : 'open');
+    renderFocusTab();
+}
+
 // ============== Menu & Timeline Views ==============
 
 function renderFocusMenu() {
     const counts = getFocusCounts();
+    const todayJobs = getRootJobsForCategory('today');
     // Root completed jobs: no parent OR parent is not in completed list (parent still active/archived)
     const completedJobIds = new Set(completedJobsData.map(j => j.id));
     const topLevelCompletedJobs = completedJobsData.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
@@ -16,56 +30,97 @@ function renderFocusMenu() {
     const agentsCount = agentsContainer ? jobsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
     const projectsCount = projectsContainer ? jobsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
 
-    return `
-        <div class="focus-menu">
-            <div class="focus-menu-item" onclick="navigateFocus('today')">
-                <span class="focus-menu-icon">${icon('sun')}</span>
-                <span class="focus-menu-label">Today</span>
-                <span class="focus-menu-count">${counts.today}</span>
-                <span class="focus-menu-arrow">›</span>
+    // Check collapsed states
+    const timelinesOpen = isSectionOpen('timelines');
+    const collectionsOpen = isSectionOpen('collections');
+
+    // Build today section using same format as other menu sections
+    let todaySection = '';
+    if (todayJobs.length > 0) {
+        todaySection = `
+            <div class="focus-menu-section">
+                <div class="focus-menu-section-label">Today</div>
+                <div class="focus-today-jobs">
+                    ${todayJobs.map(job => renderJobCard(job, true)).join('')}
+                </div>
             </div>
-            <div class="focus-menu-item" onclick="navigateFocus('upcoming')">
-                <span class="focus-menu-icon">${icon('calendar')}</span>
-                <span class="focus-menu-label">Upcoming</span>
-                <span class="focus-menu-count">${counts.upcoming}</span>
-                <span class="focus-menu-arrow">›</span>
+        `;
+    } else {
+        todaySection = `
+            <div class="focus-menu-section">
+                <div class="focus-menu-section-label">Today</div>
+                <div class="focus-free-message">
+                    <span class="focus-free-text">Your day is free.</span>
+                </div>
             </div>
-            <div class="focus-menu-item" onclick="navigateFocus('anytime')">
-                <span class="focus-menu-icon">${icon('clock')}</span>
-                <span class="focus-menu-label">Anytime</span>
-                <span class="focus-menu-count">${counts.anytime}</span>
-                <span class="focus-menu-arrow">›</span>
+        `;
+    }
+
+    // Build system section (Agents + Projects) if either exists
+    const hasSystemSection = agentsContainer || projectsContainer;
+    const systemSection = hasSystemSection ? `
+        <div class="focus-menu-section">
+            <div class="focus-menu-section-label collapsible ${collectionsOpen ? 'open' : ''}" onclick="toggleSection('collections')">
+                <span>Collections</span>
+                <span class="section-toggle">${icon('chevron-right')}</span>
             </div>
-            <div class="focus-menu-item" onclick="navigateFocus('someday')">
-                <span class="focus-menu-icon">${icon('cloud')}</span>
-                <span class="focus-menu-label">Someday</span>
-                <span class="focus-menu-count">${counts.someday}</span>
-                <span class="focus-menu-arrow">›</span>
+            <div class="focus-menu collapsible-content ${collectionsOpen ? 'open' : ''}">
+                ${agentsContainer ? `
+                <div class="focus-menu-item" onclick="navigateFocus('job-${agentsContainer.id}')">
+                    <span class="focus-menu-icon">${icon('bolt')}</span>
+                    <span class="focus-menu-label">Agents</span>
+                    <span class="focus-menu-count">${agentsCount}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                ` : ''}
+                ${projectsContainer ? `
+                <div class="focus-menu-item" onclick="navigateFocus('job-${projectsContainer.id}')">
+                    <span class="focus-menu-icon">${icon('folder')}</span>
+                    <span class="focus-menu-label">Projects</span>
+                    <span class="focus-menu-count">${projectsCount}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                ` : ''}
             </div>
-            <div class="focus-menu-item" onclick="navigateFocus('completed')">
-                <span class="focus-menu-icon">${icon('check')}</span>
-                <span class="focus-menu-label">Completed</span>
-                <span class="focus-menu-count">${topLevelCompletedJobs.length}</span>
-                <span class="focus-menu-arrow">›</span>
-            </div>
-            ${agentsContainer ? `
-            <div class="focus-menu-item" onclick="navigateFocus('job-${agentsContainer.id}')">
-                <span class="focus-menu-icon">${icon('bolt')}</span>
-                <span class="focus-menu-label">Agents</span>
-                <span class="focus-menu-count">${agentsCount}</span>
-                <span class="focus-menu-arrow">›</span>
-            </div>
-            ` : ''}
-            ${projectsContainer ? `
-            <div class="focus-menu-item" onclick="navigateFocus('job-${projectsContainer.id}')">
-                <span class="focus-menu-icon">${icon('folder')}</span>
-                <span class="focus-menu-label">Projects</span>
-                <span class="focus-menu-count">${projectsCount}</span>
-                <span class="focus-menu-arrow">›</span>
-            </div>
-            ` : ''}
         </div>
+    ` : '';
+
+    return `
         <div id="daily-quote-container"></div>
+        ${todaySection}
+        <div class="focus-menu-section">
+            <div class="focus-menu-section-label collapsible ${timelinesOpen ? 'open' : ''}" onclick="toggleSection('timelines')">
+                <span>Timelines</span>
+                <span class="section-toggle">${icon('chevron-right')}</span>
+            </div>
+            <div class="focus-menu collapsible-content ${timelinesOpen ? 'open' : ''}">
+                <div class="focus-menu-item" onclick="navigateFocus('upcoming')">
+                    <span class="focus-menu-icon">${icon('calendar')}</span>
+                    <span class="focus-menu-label">Upcoming</span>
+                    <span class="focus-menu-count">${counts.upcoming}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                <div class="focus-menu-item" onclick="navigateFocus('anytime')">
+                    <span class="focus-menu-icon">${icon('clock')}</span>
+                    <span class="focus-menu-label">Anytime</span>
+                    <span class="focus-menu-count">${counts.anytime}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                <div class="focus-menu-item" onclick="navigateFocus('someday')">
+                    <span class="focus-menu-icon">${icon('cloud')}</span>
+                    <span class="focus-menu-label">Someday</span>
+                    <span class="focus-menu-count">${counts.someday}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                <div class="focus-menu-item" onclick="navigateFocus('completed')">
+                    <span class="focus-menu-icon">${icon('check')}</span>
+                    <span class="focus-menu-label">Completed</span>
+                    <span class="focus-menu-count">${topLevelCompletedJobs.length}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+            </div>
+        </div>
+        ${systemSection}
     `;
 }
 
@@ -76,7 +131,17 @@ function getTimelineIcon(category) {
 
 function renderTimelineView(category, title) {
     // Get only root jobs that have descendants matching this category
-    const jobs = getRootJobsForCategory(category);
+    let jobs = getRootJobsForCategory(category);
+
+    // Sort upcoming jobs by due date ascending (nearest first)
+    if (category === 'upcoming') {
+        jobs = jobs.slice().sort((a, b) => {
+            const dateA = a.due_date || '9999-12-31';
+            const dateB = b.due_date || '9999-12-31';
+            return dateA.localeCompare(dateB);
+        });
+    }
+
     const categoryIcon = getTimelineIcon(category);
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -86,7 +151,7 @@ function renderTimelineView(category, title) {
         <div class="focus-view-content">
             ${jobs.length === 0
                 ? '<div class="focus-empty">No jobs</div>'
-                : jobs.map(job => renderJobCard(job)).join('')
+                : jobs.map(job => renderJobCard(job, true)).join('')
             }
         </div>
     `;
@@ -106,7 +171,7 @@ function renderCompletedJobsView() {
                 ? '<div class="focus-empty">No completed jobs</div>'
                 : rootCompletedJobs.map(job => {
                     const childCount = completedJobsData.filter(j => j.parent_id === job.id).length;
-                    return renderCompletedJobCard(job, childCount);
+                    return renderCompletedJobCard(job, childCount, true);
                 }).join('')
             }
         </div>
@@ -282,7 +347,7 @@ function renderAgentDetailView(job) {
             ${childJobs.length > 0 ? `
             <div class="job-section">
                 <div class="job-section-header">Tasks (${childJobs.length})</div>
-                ${childJobs.map(child => renderJobCard(child)).join('')}
+                ${childJobs.map(child => renderJobCard(child, true)).join('')}
             </div>
             ` : ''}
 
@@ -292,7 +357,7 @@ function renderAgentDetailView(job) {
                 <div class="job-section-header">Completed (${completedChildJobs.length})</div>
                 ${completedChildJobs.map(child => {
                     const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                    return renderCompletedJobCard(child, grandchildCount);
+                    return renderCompletedJobCard(child, grandchildCount, true);
                 }).join('')}
             </div>
             ` : ''}
@@ -439,7 +504,7 @@ function renderJobDetailView(jobId) {
             ${childJobs.length > 0 ? `
             <div class="job-section">
                 <div class="job-section-header">Child Jobs (${childJobs.length})</div>
-                ${childJobs.map(child => renderJobCard(child)).join('')}
+                ${childJobs.map(child => renderJobCard(child, true)).join('')}
             </div>
             ` : ''}
 
@@ -449,7 +514,7 @@ function renderJobDetailView(jobId) {
                 <div class="job-section-header">Completed (${completedChildJobs.length})</div>
                 ${completedChildJobs.map(child => {
                     const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                    return renderCompletedJobCard(child, grandchildCount);
+                    return renderCompletedJobCard(child, grandchildCount, true);
                 }).join('')}
             </div>
             ` : ''}
@@ -584,7 +649,7 @@ function renderCompletedJobDetailView(jobId) {
             ${activeChildJobs.length > 0 ? `
             <div class="job-section">
                 <div class="job-section-header">Active Children (${activeChildJobs.length})</div>
-                ${activeChildJobs.map(child => renderJobCard(child)).join('')}
+                ${activeChildJobs.map(child => renderJobCard(child, true)).join('')}
             </div>
             ` : ''}
 
@@ -594,7 +659,7 @@ function renderCompletedJobDetailView(jobId) {
                 <div class="job-section-header">Completed Children (${completedChildJobs.length})</div>
                 ${completedChildJobs.map(child => {
                     const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                    return renderCompletedJobCard(child, grandchildCount);
+                    return renderCompletedJobCard(child, grandchildCount, true);
                 }).join('')}
             </div>
             ` : ''}
