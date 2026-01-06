@@ -5,7 +5,6 @@ Provides abstract base class, unified response types, and provider factory.
 """
 
 import json
-import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -45,6 +44,7 @@ VALID_PROVIDERS = {"anthropic", "openai", "grok"}
 class Usage:
     input_tokens: int
     output_tokens: int
+    cached_input_tokens: int = 0
 
 
 @dataclass
@@ -230,8 +230,7 @@ class UnifiedClient:
             raise ValueError(f"Unknown provider: {provider}")
 
     def messages_create(self, model: str, max_tokens: int, system: str,
-                        tools: Optional[list], messages: list,
-                        agent_id: str = None) -> UnifiedResponse:
+                        tools: Optional[list], messages: list) -> UnifiedResponse:
         """Create a message with unified interface.
 
         Args:
@@ -240,17 +239,11 @@ class UnifiedClient:
             system: System prompt
             tools: List of tool definitions (optional)
             messages: Conversation messages
-            agent_id: ID of the calling agent for logging (optional)
+
+        Note: Cost tracking is handled at the agent layer, not here.
         """
-        from ..cost_tracker import check_budget, record_usage
-
-        # Check budget before making API call
-        check_budget()
-
-        # Log the prompt being submitted
-        _log_prompt(agent_id, model, system, messages, tools)
-
-        start_time = time.time()
+        # Log the prompt being submitted (for debugging)
+        _log_prompt(None, model, system, messages, tools)
 
         response = self._provider.create_message(
             model=model,
@@ -260,25 +253,12 @@ class UnifiedClient:
             tools=tools
         )
 
-        duration_ms = int((time.time() - start_time) * 1000)
-
-        # Record usage for cost tracking and logging
-        record_usage(
-            model=model,
-            input_tokens=response.usage.input_tokens,
-            output_tokens=response.usage.output_tokens,
-            agent_id=agent_id,
-            stop_reason=response.stop_reason,
-            duration_ms=duration_ms
-        )
-
         return response
 
     def create(self, model: str, max_tokens: int, system: str,
-               tools: Optional[list] = None, messages: list = None,
-               agent_id: str = None) -> UnifiedResponse:
+               tools: Optional[list] = None, messages: list = None) -> UnifiedResponse:
         """Alias for messages_create for API compatibility."""
-        return self.messages_create(model, max_tokens, system, tools, messages, agent_id)
+        return self.messages_create(model, max_tokens, system, tools, messages)
 
     @property
     def messages(self):

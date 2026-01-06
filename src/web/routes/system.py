@@ -138,6 +138,22 @@ def daily_quote():
     return quote
 
 
+# ============== Costs ==============
+
+@router.get("/costs")
+def get_costs():
+    """Get cost summary for session, today, 7 days, and this month."""
+    from ...cost_tracker import get_cost_summary
+    return get_cost_summary()
+
+
+@router.get("/costs/by-agent")
+def get_costs_by_agent(days: int = 30):
+    """Get cost breakdown by agent for the specified number of days."""
+    from ...cost_tracker import get_costs_by_agent
+    return get_costs_by_agent(days)
+
+
 # ============== Settings ==============
 
 @router.get("/settings")

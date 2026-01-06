@@ -9,7 +9,7 @@ from typing import Optional
 
 import anthropic
 
-from .base import LLMProvider, UnifiedResponse
+from .base import LLMProvider, UnifiedResponse, Usage
 
 
 class AnthropicProvider(LLMProvider):
@@ -39,5 +39,18 @@ class AnthropicProvider(LLMProvider):
         if tools:
             kwargs["tools"] = tools
 
-        # Anthropic's response already matches our UnifiedResponse format
-        return self.client.messages.create(**kwargs)
+        response = self.client.messages.create(**kwargs)
+
+        # Extract cached tokens (Anthropic tracks cache_read and cache_creation separately)
+        cached_tokens = getattr(response.usage, 'cache_read_input_tokens', 0) or 0
+
+        # Return with proper Usage object that includes cached tokens
+        return UnifiedResponse(
+            content=response.content,
+            stop_reason=response.stop_reason,
+            usage=Usage(
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+                cached_input_tokens=cached_tokens
+            )
+        )

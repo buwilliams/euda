@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from .agent import Agent
-from .cost_tracker import BudgetExceeded, print_summary as print_cost_summary
+from .cost_tracker import BudgetExceeded, print_cost_summary
 from .events import EventBus, set_event_bus, get_event_bus
 
 

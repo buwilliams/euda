@@ -134,11 +134,17 @@ class OpenAIProvider(LLMProvider):
         elif choice.finish_reason == "stop":
             stop_reason = "end_turn"
 
+        # Extract cached tokens if available (OpenAI's prompt caching)
+        cached_tokens = 0
+        if hasattr(response.usage, 'prompt_tokens_details') and response.usage.prompt_tokens_details:
+            cached_tokens = getattr(response.usage.prompt_tokens_details, 'cached_tokens', 0) or 0
+
         return UnifiedResponse(
             content=content,
             stop_reason=stop_reason,
             usage=Usage(
                 input_tokens=response.usage.prompt_tokens,
-                output_tokens=response.usage.completion_tokens
+                output_tokens=response.usage.completion_tokens,
+                cached_input_tokens=cached_tokens
             )
         )

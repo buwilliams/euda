@@ -8,12 +8,13 @@ An agent is defined by:
 """
 
 import json
-import os
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 from .llms import get_client
+from .cost_tracker import record_usage, check_budget
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -234,15 +235,31 @@ class Agent:
         # Client stores both provider and model to avoid race conditions
         client = get_client()
 
+        # Check budget before making API call
+        check_budget()
+
         # Call LLM with tools
+        start_time = time.time()
         response = client.messages.create(
             model=client.model_name,
             max_tokens=4096,
             system=system_prompt,
             tools=tools if tools else None,
-            messages=messages,
-            agent_id=self.id
+            messages=messages
         )
+        duration_ms = int((time.time() - start_time) * 1000)
+
+        # Record cost - agent owns its tracking
+        record_usage(
+            model=client.model_name,
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+            cached_input_tokens=response.usage.cached_input_tokens,
+            agent_id=self.id,
+            stop_reason=response.stop_reason,
+            duration_ms=duration_ms
+        )
+
         self._log("llm_response", {
             "stop_reason": response.stop_reason,
             "usage": {"input": response.usage.input_tokens, "output": response.usage.output_tokens}
@@ -254,14 +271,30 @@ class Agent:
             messages.append({"role": "assistant", "content": response.content})
             messages.append({"role": "user", "content": tool_results})
 
+            # Check budget before making API call
+            check_budget()
+
+            start_time = time.time()
             response = client.messages.create(
                 model=client.model_name,
                 max_tokens=4096,
                 system=system_prompt,
                 tools=tools if tools else None,
-                messages=messages,
-                agent_id=self.id
+                messages=messages
             )
+            duration_ms = int((time.time() - start_time) * 1000)
+
+            # Record cost - agent owns its tracking
+            record_usage(
+                model=client.model_name,
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+                cached_input_tokens=response.usage.cached_input_tokens,
+                agent_id=self.id,
+                stop_reason=response.stop_reason,
+                duration_ms=duration_ms
+            )
+
             self._log("llm_response", {
                 "stop_reason": response.stop_reason,
                 "usage": {"input": response.usage.input_tokens, "output": response.usage.output_tokens}

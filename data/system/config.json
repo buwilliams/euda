@@ -25,7 +25,64 @@
     "max_work_iterations": 20
   },
   "cost": {
-    "budget_limit": null
+    "budget_limit": null,
+    "pricing": {
+      "gpt-5.2": {
+        "input": 1.75,
+        "cached_input": 0.175,
+        "output": 14.00
+      },
+      "claude-opus-4-5": {
+        "input": 5.00,
+        "cached_input": 0.50,
+        "output": 25.00
+      },
+      "claude-opus-4.5": {
+        "input": 5.00,
+        "cached_input": 0.50,
+        "output": 25.00
+      },
+      "claude-opus-4-1": {
+        "input": 15.00,
+        "cached_input": 1.50,
+        "output": 75.00
+      },
+      "claude-opus-4.1": {
+        "input": 15.00,
+        "cached_input": 1.50,
+        "output": 75.00
+      },
+      "claude-opus-4": {
+        "input": 15.00,
+        "cached_input": 1.50,
+        "output": 75.00
+      },
+      "claude-sonnet-4-5": {
+        "input": 3.00,
+        "cached_input": 0.30,
+        "output": 15.00
+      },
+      "claude-sonnet-4.5": {
+        "input": 3.00,
+        "cached_input": 0.30,
+        "output": 15.00
+      },
+      "claude-sonnet-4": {
+        "input": 3.00,
+        "cached_input": 0.30,
+        "output": 15.00
+      },
+      "grok": {
+        "input": 0.20,
+        "cached_input": 0.05,
+        "output": 0.50
+      },
+      "default": {
+        "input": 3.00,
+        "cached_input": 0.30,
+        "output": 15.00
+      }
+    }
   },
   "schedules": {
     "morning": "08:00",

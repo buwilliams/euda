@@ -142,12 +142,16 @@ class GrokProvider(LLMProvider):
         elif response.finish_reason in ("FINISH_REASON_STOP", "FINISH_REASON_EOS_TOKEN"):
             stop_reason = "end_turn"
 
+        # Grok doesn't currently support prompt caching
+        cached_tokens = getattr(response.usage, 'cached_tokens', 0) or 0
+
         result = UnifiedResponse(
             content=content,
             stop_reason=stop_reason,
             usage=Usage(
                 input_tokens=response.usage.prompt_tokens,
-                output_tokens=response.usage.completion_tokens
+                output_tokens=response.usage.completion_tokens,
+                cached_input_tokens=cached_tokens
             )
         )
         print(f"[DEBUG] GrokProvider._parse_response: returning stop_reason={stop_reason}, content_blocks={len(content)}")
