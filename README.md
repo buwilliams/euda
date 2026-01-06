@@ -26,3 +26,7 @@ Today's AI remembers facts about you, but it doesn't know you. Euno understands 
 7. **[DevOps](docs/7_devops.md)** — Deployment and operations
 9. **[Roadmap](docs/9_roadmap.md)** — Product roadmap
 10. **[Operating Agreement](docs/10_operating-agreement.md)** — Ownership, contributor rewards, and governance
+
+## License
+
+This project is proprietary software. See [LICENSE](LICENSE) for terms. By contributing, you agree to assign your contributions to the project.

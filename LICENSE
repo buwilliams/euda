@@ -1,0 +1,53 @@
+Euno Proprietary License
+
+Copyright (c) 2024-present Buddy Williams. All rights reserved.
+
+TERMS AND CONDITIONS
+
+1. Definitions
+
+   "Software" means the Euno source code, documentation, and associated files
+   in this repository.
+
+   "Owner" means Buddy Williams, the copyright holder.
+
+   "Contributor" means any person who submits changes to this repository with
+   the Owner's approval.
+
+2. Grant of Rights
+
+   Permission is granted to view and study this Software for personal,
+   educational, and evaluation purposes only.
+
+   Contributors are granted permission to modify and submit changes to this
+   Software, subject to the Contributor Agreement below.
+
+3. Restrictions
+
+   You may NOT:
+   - Use this Software for commercial purposes without written permission
+   - Distribute, sublicense, or sell copies of this Software
+   - Use this Software to provide services to third parties
+   - Remove or alter any copyright notices
+
+4. Contributor Agreement
+
+   By submitting contributions to this repository, you agree that:
+   - All contributions are assigned to the Owner and become part of the Software
+   - You have the right to make such contributions
+   - Your contributions may be used, modified, and distributed by the Owner
+     without restriction
+
+   See docs/10_operating-agreement.md for contributor rewards and terms.
+
+5. No Warranty
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED. IN NO EVENT SHALL THE OWNER BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+   OTHER LIABILITY ARISING FROM THE USE OF THIS SOFTWARE.
+
+6. Termination
+
+   This license terminates automatically if you violate any of its terms.
+
+For licensing inquiries or commercial use permissions, contact Buddy Williams.
