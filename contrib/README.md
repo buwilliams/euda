@@ -60,6 +60,15 @@ Points are retroactively assigned for contributions made before Gate 4, so early
 
 **Note:** Buddy does not participate in the contribution points system. As primary owner, his compensation comes from ownership, not the bonus pool.
 
+## Checking Your Points
+
+Use the CLI to see contribution points:
+
+```bash
+python main.py points           # Show all contributors
+python main.py points logan     # Filter by name (fuzzy match)
+```
+
 ## Related Documents
 
 - [Business Plan](../docs/2_business-plan.md) — Vision and growth gates
