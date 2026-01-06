@@ -1,8 +1,38 @@
 # Buddy Williams
 
-- [2025-01-06][--] - Add contribution tracking system
-- [2025-01-06][--] - Add top-of-mind feature and notifications infrastructure
-- [2025-01-06][--] - Rebuild History tab with swipe gestures
-- [2025-01-05][--] - Implement Focus landing page redesign
-- [2025-01-04][--] - Add chat badges and SSE messaging
-- [2024-12-19][--] - Initial project creation and architecture
+- [2026-01-06][--] - Add contribution tracking system with points CLI command
+- [2026-01-06][--] - Add proprietary license and operating agreement
+- [2026-01-06][--] - Move contribution docs to docs/3_contribute.md, renumber all docs
+- [2026-01-06][--] - Add job context to agent system prompts
+- [2026-01-06][--] - Add top-of-mind tracking feature and friend persona updates
+- [2026-01-06][--] - Fix History to show last activity time, fix mobile overscroll
+- [2026-01-06][--] - Rebuild History tab with Focus-style navigation and swipe gestures
+- [2026-01-06][--] - Add swipe/drag gestures for job cards and dismissable quote
+- [2026-01-06][--] - Add New Job quick creator screen to More menu
+- [2026-01-06][--] - Add graceful shutdown for SSE connections
+- [2026-01-05][--] - Add business plan with staged growth model (Gates 1-4)
+- [2026-01-05][--] - Add ownership structure and contributor rewards
+- [2026-01-05][--] - Consolidate pitch document, add roadmap
+- [2026-01-05][--] - Simplify README and add contributing guide
+- [2026-01-03][--] - Add parse_date tool for proper date handling
+- [2026-01-03][--] - Implement session-based conversation storage
+- [2026-01-03][--] - Split focus.js and focus.css into modular files
+- [2026-01-03][--] - Add agent persona and config editing via UI
+- [2026-01-03][--] - Add Agents and Projects containers, reorganize job hierarchy
+- [2026-01-03][--] - Add real-time job updates via SSE
+- [2026-01-03][--] - Refactor LLM into provider-based architecture (Claude, OpenAI, Grok)
+- [2026-01-03][--] - Add rules document for detecting implementation drift
+- [2026-01-03][--] - Reorder tabs: Focus, Chat, More - make Focus default
+- [2026-01-03][--] - Add job creation guidelines to Friend persona
+- [2025-12-23][--] - Rename project from meandus to Euno
+- [2025-12-22][--] - Add file upload support with streaming and drag-drop
+- [2025-12-22][--] - Rewrite README and design documentation
+- [2025-12-22][--] - Add large-scale ingestion strategy for 72GB+ data
+- [2025-12-20][--] - Add dual-panel UI for Attention and Tasks
+- [2025-12-20][--] - Add task management tools and project cleanup
+- [2025-12-20][--] - Add agent activity logging system
+- [2025-12-20][--] - Add proactive notifications and conversation history
+- [2025-12-20][--] - Add Introspection Agent for system self-awareness
+- [2025-12-19][--] - Implement full agent system and web interface
+- [2025-12-19][--] - Add Agent Manager for orchestrating all agents
+- [2025-12-19][--] - Initial project creation and architecture
