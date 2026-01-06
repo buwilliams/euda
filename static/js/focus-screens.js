@@ -8,8 +8,25 @@ let newJobSessionIds = [];
 function openNewJobScreen() {
     // Reset session tracking
     newJobSessionIds = [];
-    // Switch to Focus tab and navigate to new job creator
-    switchTab('focus');
+
+    // Show focus tab pane but keep More button active (since New Job is in More menu)
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.remove('active', 'slide-left', 'slide-right');
+        if (pane.id === 'tab-focus') {
+            pane.classList.add('active');
+        } else {
+            pane.classList.add('slide-left');
+        }
+    });
+
+    // Activate the More button
+    const overflowBtn = document.getElementById('overflow-btn');
+    if (overflowBtn) overflowBtn.classList.add('active');
+
+    // Navigate to new job creator
+    previousTab = 'focus';
+    activeTab = 'focus';
     navigateFocus('newjob');
 }
 
