@@ -13,16 +13,16 @@ Today's AI remembers facts about you, but it doesn't know you. Euno understands 
 3. **Set up your remote server** — See [DevOps](docs/7_devops.md) for deployment instructions
 4. **Work on your first feature** — Pick a task from GitHub Projects and get started
 
-**Cost expectations:** Contributors pay for their own LLM API costs, coding agent (e.g., Claude Code, Cursor), and hosting. This is an early-stage project—we're all investing our own resources because we believe in the vision. See the [Operating Agreement](docs/10_operating-agreement.md) for what contributors get in return.
+**Time & cost expectations:** See [Affordable Loss](docs/2_business-plan.md#affordable-loss-effectuation-principle) in the Business Plan for expected time and financial commitments. We're all investing our own resources because we believe in the vision. See the [Operating Agreement](docs/10_operating-agreement.md) for what contributors get in return.
 
 ## Documentation
 
-- **[Pitch](docs/1_pitch.md)** — Introduction and vision overview
-- **[Business Plan](docs/2_business-plan.md)** — Vision and staged growth gates
-- **[Profile](docs/3_profile.md)** — Profile system and agent personas
-- **[Architecture](docs/4_architecture.md)** — Technical design and implementation
-- **[User Experience](docs/5_user-experience.md)** — UI/UX philosophy and vision
-- **[User Interface](docs/6_user-interface.md)** — Current UI components and layout
-- **[DevOps](docs/7_devops.md)** — Deployment and operations
-- **[Roadmap](docs/9_roadmap.md)** — Product roadmap
-- **[Operating Agreement](docs/10_operating-agreement.md)** — Ownership, contributor rewards, and governance
+1. **[Pitch](docs/1_pitch.md)** — Introduction and vision overview
+2. **[Business Plan](docs/2_business-plan.md)** — Vision and staged growth gates
+3. **[Profile](docs/3_profile.md)** — Profile system and agent personas
+4. **[Architecture](docs/4_architecture.md)** — Technical design and implementation
+5. **[User Experience](docs/5_user-experience.md)** — UI/UX philosophy and vision
+6. **[User Interface](docs/6_user-interface.md)** — Current UI components and layout
+7. **[DevOps](docs/7_devops.md)** — Deployment and operations
+9. **[Roadmap](docs/9_roadmap.md)** — Product roadmap
+10. **[Operating Agreement](docs/10_operating-agreement.md)** — Ownership, contributor rewards, and governance
