@@ -180,6 +180,7 @@ class Agent:
     def _build_system_prompt(self) -> str:
         """Build the system prompt from persona and context."""
         from .tools.user import get_user_profile
+        from .tools.top_of_mind import get_top_of_mind_for_prompt
 
         parts = [self.persona]
 
@@ -188,6 +189,11 @@ class Agent:
         if profile.get("exists") and profile.get("content"):
             parts.append("\n## User Profile\n")
             parts.append(profile["content"])
+
+        # Add top-of-mind items for context about what user is focused on
+        top_of_mind = get_top_of_mind_for_prompt()
+        if top_of_mind:
+            parts.append("\n" + top_of_mind)
 
         # Add memory context if present
         memory = self._load_memory()

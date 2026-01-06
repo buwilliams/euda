@@ -59,6 +59,12 @@ async function loadHistoryData() {
         const response = await fetch('/api/chat/conversations/recent?count=20');
         const data = await response.json();
         historyData = data.conversations || [];
+        // Sort by date and time descending (most recent first)
+        historyData.sort((a, b) => {
+            const dateTimeA = `${a.date}T${a.time}`;
+            const dateTimeB = `${b.date}T${b.time}`;
+            return dateTimeB.localeCompare(dateTimeA);
+        });
         renderHistory();
     } catch (error) {
         console.error('Failed to load history:', error);

@@ -17,7 +17,10 @@
     "read_lifelog",
     "write_lifelog",
     "parse_date",
-    "get_current_date"
+    "get_current_date",
+    "add_top_of_mind",
+    "list_top_of_mind",
+    "remove_top_of_mind"
   ],
   "triggers": []
 }

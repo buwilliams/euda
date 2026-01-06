@@ -111,6 +111,72 @@
     margin: var(--spacing-md) 0;
 }
 
+/* Focus Menu Sections */
+.focus-menu-section {
+    margin-top: var(--spacing-lg);
+}
+
+.focus-menu-section-label {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+
+/* Today Section (on Focus landing) */
+.focus-today-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.focus-section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.focus-section-icon img {
+    width: 20px;
+    height: 20px;
+}
+
+.focus-section-title {
+    font-size: var(--font-size-lg);
+}
+
+.focus-today-jobs {
+    display: flex;
+    flex-direction: column;
+}
+
+.focus-free-section {
+    padding: var(--spacing-xl) var(--spacing-md);
+    text-align: center;
+}
+
+.focus-free-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--color-text-muted);
+}
+
+.focus-free-icon img {
+    width: 48px;
+    height: 48px;
+    opacity: 0.5;
+}
+
+.focus-free-text {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-light);
+}
+
 /* Focus View Header */
 .focus-view-header {
     display: flex;

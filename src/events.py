@@ -187,3 +187,13 @@ def emit_ui_event(event_type: str, data: dict = None):
                 q.put_nowait({"type": event_type, "data": data or {}})
             except asyncio.QueueFull:
                 pass  # Skip if queue is full
+
+
+def has_connected_clients() -> bool:
+    """Check if any SSE clients are currently connected.
+
+    Returns:
+        True if at least one client is connected
+    """
+    with _ui_lock:
+        return len(_ui_subscribers) > 0

@@ -14,6 +14,7 @@ let viewingHistorySessionId = null;
 let isWaiting = false;
 let activeTab = 'focus';  // Always start fresh on page load
 let expandedCards = new Set();
+let unseenChatMessages = 0;  // Counter for chat badge
 let tasksData = [];
 let completedTasksData = [];
 let projectsData = [];

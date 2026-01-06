@@ -75,8 +75,12 @@ function initApp() {
     // Initialize with default tab (focus)
     switchTab(activeTab);
 
-    // Load daily quote
+    // Load daily quote for Focus tab
     loadDailyQuote();
+
+    // Load quote and show empty state for Chat tab
+    loadChatQuote();
+    showChatEmptyState();
 
     // Connect SSE
     connectSSE();

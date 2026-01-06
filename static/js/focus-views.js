@@ -4,6 +4,7 @@
 
 function renderFocusMenu() {
     const counts = getFocusCounts();
+    const todayJobs = getRootJobsForCategory('today');
     // Root completed jobs: no parent OR parent is not in completed list (parent still active/archived)
     const completedJobIds = new Set(completedJobsData.map(j => j.id));
     const topLevelCompletedJobs = completedJobsData.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
@@ -16,56 +17,90 @@ function renderFocusMenu() {
     const agentsCount = agentsContainer ? jobsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
     const projectsCount = projectsContainer ? jobsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
 
-    return `
-        <div class="focus-menu">
-            <div class="focus-menu-item" onclick="navigateFocus('today')">
-                <span class="focus-menu-icon">${icon('sun')}</span>
-                <span class="focus-menu-label">Today</span>
-                <span class="focus-menu-count">${counts.today}</span>
-                <span class="focus-menu-arrow">›</span>
+    // Build today section - show jobs directly or "Your time is free" message
+    let todaySection = '';
+    if (todayJobs.length > 0) {
+        todaySection = `
+            <div class="focus-today-section">
+                <div class="focus-section-header">
+                    <span class="focus-section-icon">${icon('sun')}</span>
+                    <span class="focus-section-title">Today</span>
+                </div>
+                <div class="focus-today-jobs">
+                    ${todayJobs.map(job => renderJobCard(job)).join('')}
+                </div>
             </div>
-            <div class="focus-menu-item" onclick="navigateFocus('upcoming')">
-                <span class="focus-menu-icon">${icon('calendar')}</span>
-                <span class="focus-menu-label">Upcoming</span>
-                <span class="focus-menu-count">${counts.upcoming}</span>
-                <span class="focus-menu-arrow">›</span>
+        `;
+    } else {
+        todaySection = `
+            <div class="focus-free-section">
+                <div class="focus-free-message">
+                    <span class="focus-free-icon">${icon('sun')}</span>
+                    <span class="focus-free-text">Your day is free.</span>
+                </div>
             </div>
-            <div class="focus-menu-item" onclick="navigateFocus('anytime')">
-                <span class="focus-menu-icon">${icon('clock')}</span>
-                <span class="focus-menu-label">Anytime</span>
-                <span class="focus-menu-count">${counts.anytime}</span>
-                <span class="focus-menu-arrow">›</span>
+        `;
+    }
+
+    // Build system section (Agents + Projects) if either exists
+    const hasSystemSection = agentsContainer || projectsContainer;
+    const systemSection = hasSystemSection ? `
+        <div class="focus-menu-section">
+            <div class="focus-menu-section-label">Collections</div>
+            <div class="focus-menu">
+                ${agentsContainer ? `
+                <div class="focus-menu-item" onclick="navigateFocus('job-${agentsContainer.id}')">
+                    <span class="focus-menu-icon">${icon('bolt')}</span>
+                    <span class="focus-menu-label">Agents</span>
+                    <span class="focus-menu-count">${agentsCount}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                ` : ''}
+                ${projectsContainer ? `
+                <div class="focus-menu-item" onclick="navigateFocus('job-${projectsContainer.id}')">
+                    <span class="focus-menu-icon">${icon('folder')}</span>
+                    <span class="focus-menu-label">Projects</span>
+                    <span class="focus-menu-count">${projectsCount}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                ` : ''}
             </div>
-            <div class="focus-menu-item" onclick="navigateFocus('someday')">
-                <span class="focus-menu-icon">${icon('cloud')}</span>
-                <span class="focus-menu-label">Someday</span>
-                <span class="focus-menu-count">${counts.someday}</span>
-                <span class="focus-menu-arrow">›</span>
-            </div>
-            <div class="focus-menu-item" onclick="navigateFocus('completed')">
-                <span class="focus-menu-icon">${icon('check')}</span>
-                <span class="focus-menu-label">Completed</span>
-                <span class="focus-menu-count">${topLevelCompletedJobs.length}</span>
-                <span class="focus-menu-arrow">›</span>
-            </div>
-            ${agentsContainer ? `
-            <div class="focus-menu-item" onclick="navigateFocus('job-${agentsContainer.id}')">
-                <span class="focus-menu-icon">${icon('bolt')}</span>
-                <span class="focus-menu-label">Agents</span>
-                <span class="focus-menu-count">${agentsCount}</span>
-                <span class="focus-menu-arrow">›</span>
-            </div>
-            ` : ''}
-            ${projectsContainer ? `
-            <div class="focus-menu-item" onclick="navigateFocus('job-${projectsContainer.id}')">
-                <span class="focus-menu-icon">${icon('folder')}</span>
-                <span class="focus-menu-label">Projects</span>
-                <span class="focus-menu-count">${projectsCount}</span>
-                <span class="focus-menu-arrow">›</span>
-            </div>
-            ` : ''}
         </div>
+    ` : '';
+
+    return `
+        ${todaySection}
         <div id="daily-quote-container"></div>
+        <div class="focus-menu-section">
+            <div class="focus-menu-section-label">Timelines</div>
+            <div class="focus-menu">
+                <div class="focus-menu-item" onclick="navigateFocus('upcoming')">
+                    <span class="focus-menu-icon">${icon('calendar')}</span>
+                    <span class="focus-menu-label">Upcoming</span>
+                    <span class="focus-menu-count">${counts.upcoming}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                <div class="focus-menu-item" onclick="navigateFocus('anytime')">
+                    <span class="focus-menu-icon">${icon('clock')}</span>
+                    <span class="focus-menu-label">Anytime</span>
+                    <span class="focus-menu-count">${counts.anytime}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                <div class="focus-menu-item" onclick="navigateFocus('someday')">
+                    <span class="focus-menu-icon">${icon('cloud')}</span>
+                    <span class="focus-menu-label">Someday</span>
+                    <span class="focus-menu-count">${counts.someday}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                <div class="focus-menu-item" onclick="navigateFocus('completed')">
+                    <span class="focus-menu-icon">${icon('check')}</span>
+                    <span class="focus-menu-label">Completed</span>
+                    <span class="focus-menu-count">${topLevelCompletedJobs.length}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+            </div>
+        </div>
+        ${systemSection}
     `;
 }
 
@@ -76,7 +111,17 @@ function getTimelineIcon(category) {
 
 function renderTimelineView(category, title) {
     // Get only root jobs that have descendants matching this category
-    const jobs = getRootJobsForCategory(category);
+    let jobs = getRootJobsForCategory(category);
+
+    // Sort upcoming jobs by due date ascending (nearest first)
+    if (category === 'upcoming') {
+        jobs = jobs.slice().sort((a, b) => {
+            const dateA = a.due_date || '9999-12-31';
+            const dateB = b.due_date || '9999-12-31';
+            return dateA.localeCompare(dateB);
+        });
+    }
+
     const categoryIcon = getTimelineIcon(category);
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
