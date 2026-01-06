@@ -113,6 +113,17 @@
     font-style: italic;
 }
 
+.quote-swipeable {
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    will-change: transform, opacity;
+}
+
+.quote-swipeable:active {
+    cursor: grabbing;
+}
+
 /* Upload Progress */
 .upload-progress {
     display: none;

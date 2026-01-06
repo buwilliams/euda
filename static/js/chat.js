@@ -2,7 +2,17 @@
 
 // ============== Daily Quote ==============
 
+// Cache the quote data for reuse
+let focusQuoteData = null;
+
 async function loadDailyQuote(retries = 3) {
+    // Check if quote was dismissed this session
+    if (sessionStorage.getItem('quoteDismissed')) {
+        const container = document.getElementById('daily-quote-container');
+        if (container) container.innerHTML = '';
+        return;
+    }
+
     // Find the quote container in Focus tab (may not exist yet if Focus hasn't rendered)
     const container = document.getElementById('daily-quote-container');
     if (!container) {
@@ -26,6 +36,7 @@ async function loadDailyQuote(retries = 3) {
         }
         const data = await response.json();
         if (data.quote) {
+            focusQuoteData = data;
             renderQuote(data);
         } else {
             throw new Error('No quote in response');
@@ -33,23 +44,136 @@ async function loadDailyQuote(retries = 3) {
     } catch (error) {
         console.error('Failed to load daily quote:', error);
         // Fallback
-        renderQuote({
+        focusQuoteData = {
             quote: "The only way to do great work is to love what you do.",
             author: "Steve Jobs"
-        });
+        };
+        renderQuote(focusQuoteData);
     }
 }
 
 function renderQuote(data) {
+    // Check if dismissed
+    if (sessionStorage.getItem('quoteDismissed')) {
+        const container = document.getElementById('daily-quote-container');
+        if (container) container.innerHTML = '';
+        return;
+    }
+
     const container = document.getElementById('daily-quote-container');
     if (container) {
         container.innerHTML = `
-            <div id="daily-quote" class="quote-container">
+            <div id="daily-quote" class="quote-container quote-swipeable">
                 <div class="quote-text">"${escapeHtml(data.quote)}"</div>
                 <div class="quote-author">— ${escapeHtml(data.author)}</div>
             </div>
         `;
+        initQuoteSwipe();
     }
+}
+
+function dismissQuote() {
+    sessionStorage.setItem('quoteDismissed', 'true');
+    const container = document.getElementById('daily-quote-container');
+    if (container) {
+        const quote = container.querySelector('.quote-container');
+        if (quote) {
+            quote.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+            quote.style.opacity = '0';
+            quote.style.transform = 'translateX(50px)';
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 200);
+        }
+    }
+}
+
+// Quote swipe handling
+let quoteSwipeStartX = 0;
+let quoteSwipeElement = null;
+let quoteSwipeActive = false;
+
+function initQuoteSwipe() {
+    const quote = document.getElementById('daily-quote');
+    if (!quote) return;
+
+    quote.addEventListener('touchstart', handleQuoteSwipeStart, { passive: true });
+    quote.addEventListener('touchmove', handleQuoteSwipeMove, { passive: false });
+    quote.addEventListener('touchend', handleQuoteSwipeEnd, { passive: true });
+
+    quote.addEventListener('mousedown', handleQuoteMouseDown);
+}
+
+function handleQuoteSwipeStart(e) {
+    quoteSwipeElement = e.currentTarget;
+    quoteSwipeStartX = e.touches[0].clientX;
+    quoteSwipeActive = false;
+    quoteSwipeElement.style.transition = 'none';
+}
+
+function handleQuoteSwipeMove(e) {
+    if (!quoteSwipeElement) return;
+    const deltaX = e.touches[0].clientX - quoteSwipeStartX;
+    if (Math.abs(deltaX) > 10) {
+        quoteSwipeActive = true;
+        e.preventDefault();
+        quoteSwipeElement.style.transform = `translateX(${deltaX}px)`;
+        quoteSwipeElement.style.opacity = Math.max(0, 1 - Math.abs(deltaX) / 150);
+    }
+}
+
+function handleQuoteSwipeEnd(e) {
+    if (!quoteSwipeElement) return;
+    const deltaX = e.changedTouches ? e.changedTouches[0].clientX - quoteSwipeStartX : 0;
+
+    if (quoteSwipeActive && Math.abs(deltaX) > 80) {
+        dismissQuote();
+    } else {
+        quoteSwipeElement.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+        quoteSwipeElement.style.transform = 'translateX(0)';
+        quoteSwipeElement.style.opacity = '1';
+    }
+    quoteSwipeElement = null;
+    quoteSwipeActive = false;
+}
+
+function handleQuoteMouseDown(e) {
+    if (e.button !== 0) return;
+    quoteSwipeElement = e.currentTarget;
+    quoteSwipeStartX = e.clientX;
+    quoteSwipeActive = false;
+    quoteSwipeElement.style.transition = 'none';
+
+    document.addEventListener('mousemove', handleQuoteMouseMove);
+    document.addEventListener('mouseup', handleQuoteMouseUp);
+}
+
+function handleQuoteMouseMove(e) {
+    if (!quoteSwipeElement) return;
+    const deltaX = e.clientX - quoteSwipeStartX;
+    if (Math.abs(deltaX) > 5) {
+        quoteSwipeActive = true;
+        quoteSwipeElement.style.transform = `translateX(${deltaX}px)`;
+        quoteSwipeElement.style.opacity = Math.max(0, 1 - Math.abs(deltaX) / 150);
+    }
+}
+
+function handleQuoteMouseUp(e) {
+    document.removeEventListener('mousemove', handleQuoteMouseMove);
+    document.removeEventListener('mouseup', handleQuoteMouseUp);
+
+    if (!quoteSwipeElement) return;
+    const deltaX = e.clientX - quoteSwipeStartX;
+
+    if (quoteSwipeActive && Math.abs(deltaX) > 80) {
+        dismissQuote();
+    } else {
+        quoteSwipeElement.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+        quoteSwipeElement.style.transform = 'translateX(0)';
+        quoteSwipeElement.style.opacity = '1';
+    }
+    quoteSwipeElement = null;
+    quoteSwipeActive = false;
 }
 
 // ============== Inline Chat ==============

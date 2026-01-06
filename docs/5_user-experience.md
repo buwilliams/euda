@@ -219,6 +219,18 @@ Chat expands and collapses in place - no screen switching. The context view rema
 
 ## Design Principles
 
+### Core UX Tenets
+
+These three principles guide every design decision:
+
+1. **Don't make the user think.** The interface should be immediately obvious. If someone has to stop and figure out how to do something, the design has failed.
+
+2. **Don't make the user work.** Every tap, swipe, and keystroke has a cost. If the system can do something for the user, it should. If an action requires multiple steps, find a way to reduce it.
+
+3. **Consistent, learnable navigation.** Patterns should work the same way everywhere. Once you learn how to do something in one place, it should work identically everywhere else. Swipe left always completes. Back always goes back. Muscle memory should form quickly.
+
+---
+
 ### 1. Minimize User Actions
 
 Every tap, click, and keystroke has a cost. Reduce friction by:

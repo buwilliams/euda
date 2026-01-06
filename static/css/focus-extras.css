@@ -106,11 +106,12 @@
 
 /* ============== Daily Quote in Focus ============== */
 
-#daily-quote-container {
-    padding: var(--spacing-lg) var(--spacing-md);
+#daily-quote-container:empty {
+    display: none;
 }
 
 #daily-quote-container .quote-container {
+    padding: var(--spacing-lg) var(--spacing-md);
     margin-bottom: 0;
 }
 

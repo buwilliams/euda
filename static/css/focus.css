@@ -153,27 +153,14 @@
     flex-direction: column;
 }
 
-.focus-free-section {
-    padding: var(--spacing-xl) var(--spacing-md);
-    text-align: center;
-}
-
 .focus-free-message {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
     color: var(--color-text-muted);
-}
-
-.focus-free-icon img {
-    width: 48px;
-    height: 48px;
-    opacity: 0.5;
+    font-style: italic;
 }
 
 .focus-free-text {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-base);
     color: var(--color-text-light);
 }
 

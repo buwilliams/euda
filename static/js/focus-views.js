@@ -17,25 +17,22 @@ function renderFocusMenu() {
     const agentsCount = agentsContainer ? jobsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
     const projectsCount = projectsContainer ? jobsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
 
-    // Build today section - show jobs directly or "Your time is free" message
+    // Build today section using same format as other menu sections
     let todaySection = '';
     if (todayJobs.length > 0) {
         todaySection = `
-            <div class="focus-today-section">
-                <div class="focus-section-header">
-                    <span class="focus-section-icon">${icon('sun')}</span>
-                    <span class="focus-section-title">Today</span>
-                </div>
+            <div class="focus-menu-section">
+                <div class="focus-menu-section-label">Today</div>
                 <div class="focus-today-jobs">
-                    ${todayJobs.map(job => renderJobCard(job)).join('')}
+                    ${todayJobs.map(job => renderJobCard(job, true)).join('')}
                 </div>
             </div>
         `;
     } else {
         todaySection = `
-            <div class="focus-free-section">
+            <div class="focus-menu-section">
+                <div class="focus-menu-section-label">Today</div>
                 <div class="focus-free-message">
-                    <span class="focus-free-icon">${icon('sun')}</span>
                     <span class="focus-free-text">Your day is free.</span>
                 </div>
             </div>
@@ -69,8 +66,8 @@ function renderFocusMenu() {
     ` : '';
 
     return `
-        ${todaySection}
         <div id="daily-quote-container"></div>
+        ${todaySection}
         <div class="focus-menu-section">
             <div class="focus-menu-section-label">Timelines</div>
             <div class="focus-menu">
@@ -131,7 +128,7 @@ function renderTimelineView(category, title) {
         <div class="focus-view-content">
             ${jobs.length === 0
                 ? '<div class="focus-empty">No jobs</div>'
-                : jobs.map(job => renderJobCard(job)).join('')
+                : jobs.map(job => renderJobCard(job, true)).join('')
             }
         </div>
     `;
@@ -151,7 +148,7 @@ function renderCompletedJobsView() {
                 ? '<div class="focus-empty">No completed jobs</div>'
                 : rootCompletedJobs.map(job => {
                     const childCount = completedJobsData.filter(j => j.parent_id === job.id).length;
-                    return renderCompletedJobCard(job, childCount);
+                    return renderCompletedJobCard(job, childCount, true);
                 }).join('')
             }
         </div>
@@ -327,7 +324,7 @@ function renderAgentDetailView(job) {
             ${childJobs.length > 0 ? `
             <div class="job-section">
                 <div class="job-section-header">Tasks (${childJobs.length})</div>
-                ${childJobs.map(child => renderJobCard(child)).join('')}
+                ${childJobs.map(child => renderJobCard(child, true)).join('')}
             </div>
             ` : ''}
 
@@ -337,7 +334,7 @@ function renderAgentDetailView(job) {
                 <div class="job-section-header">Completed (${completedChildJobs.length})</div>
                 ${completedChildJobs.map(child => {
                     const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                    return renderCompletedJobCard(child, grandchildCount);
+                    return renderCompletedJobCard(child, grandchildCount, true);
                 }).join('')}
             </div>
             ` : ''}
@@ -484,7 +481,7 @@ function renderJobDetailView(jobId) {
             ${childJobs.length > 0 ? `
             <div class="job-section">
                 <div class="job-section-header">Child Jobs (${childJobs.length})</div>
-                ${childJobs.map(child => renderJobCard(child)).join('')}
+                ${childJobs.map(child => renderJobCard(child, true)).join('')}
             </div>
             ` : ''}
 
@@ -494,7 +491,7 @@ function renderJobDetailView(jobId) {
                 <div class="job-section-header">Completed (${completedChildJobs.length})</div>
                 ${completedChildJobs.map(child => {
                     const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                    return renderCompletedJobCard(child, grandchildCount);
+                    return renderCompletedJobCard(child, grandchildCount, true);
                 }).join('')}
             </div>
             ` : ''}
@@ -629,7 +626,7 @@ function renderCompletedJobDetailView(jobId) {
             ${activeChildJobs.length > 0 ? `
             <div class="job-section">
                 <div class="job-section-header">Active Children (${activeChildJobs.length})</div>
-                ${activeChildJobs.map(child => renderJobCard(child)).join('')}
+                ${activeChildJobs.map(child => renderJobCard(child, true)).join('')}
             </div>
             ` : ''}
 
@@ -639,7 +636,7 @@ function renderCompletedJobDetailView(jobId) {
                 <div class="job-section-header">Completed Children (${completedChildJobs.length})</div>
                 ${completedChildJobs.map(child => {
                     const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                    return renderCompletedJobCard(child, grandchildCount);
+                    return renderCompletedJobCard(child, grandchildCount, true);
                 }).join('')}
             </div>
             ` : ''}

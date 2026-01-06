@@ -82,6 +82,9 @@ function initApp() {
     loadChatQuote();
     showChatEmptyState();
 
+    // Initialize swipe gesture handlers
+    initSwipeHandlers();
+
     // Connect SSE
     connectSSE();
 

@@ -23,7 +23,7 @@ function renderNewJobScreen(parentJobId) {
             ${childJobs.length > 0 ? `
             <div class="job-section">
                 <div class="job-section-header">Child Jobs (${childJobs.length})</div>
-                ${childJobs.map(job => renderJobCard(job)).join('')}
+                ${childJobs.map(job => renderJobCard(job, true)).join('')}
             </div>
             ` : ''}
         </div>
