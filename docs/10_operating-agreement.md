@@ -22,6 +22,8 @@ Contributors do not receive equity. They receive profit-sharing through the bonu
 - Pool is distributed based on contribution points
 - Your share = your points / total points
 
+**Note:** Buddy does not participate in the contribution points system. As primary owner, his compensation comes from ownership, not the bonus pool. The bonus pool is exclusively for other contributors.
+
 **Point values (subject to change):**
 
 | Contribution | Points |
