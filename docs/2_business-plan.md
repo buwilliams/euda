@@ -16,7 +16,7 @@ Instead of chasing expected returns, we commit only what we can afford to lose. 
 - **Buddy's upstart costs (December 2024):** OpenAI API $120.24 + $20 subscription, Claude API $282.43 + $20 subscription, Cursor $20, Vultr $6, ~80 hours personal time @ $500/hr ($40,000). **Total: ~$40,469**
 - **Contributor expectations:** Similar commitment level—your own time and any tools/API costs you choose to use.
 - **Timeline:** December 19, 2025 – June 30, 2026
-- **Exit criteria:** If by June 30, 2026 we do not have 100 users, we stop at whatever stage we've reached—unless there are significant reasons to continue. 100 users is ambitious for a new project with no initial interest. It may be tempting to continue, but pace of growth—not just some growth—must prove demand is real and worth pursuing.
+- **Exit criteria:** If by June 30, 2026 we do not have 100 users, we stop at whatever gate we've reached—unless there are significant reasons to continue. 100 users is ambitious for a new project with no initial interest. It may be tempting to continue, but pace of growth—not just some growth—must prove demand is real and worth pursuing.
 
 **Crazy Quilt** ([effectuation principle](https://effectuation.org/))
 
@@ -24,17 +24,17 @@ We don't recruit for predefined roles—we welcome self-selected contributors wh
 
 **Gates**
 
-Each stage below acts as a gate. We must pass each gate before moving forward. The gates act as a compass for our work. For example, optimizing performance is premature if we haven't yet generated genuine interest.
+Each gate below is a checkpoint. We must pass each gate before moving forward. The gates act as a compass for our work. For example, optimizing performance is premature if we haven't yet generated genuine interest.
 
-**Stage attributes:**
-- **Target** – The goal of this stage
+**Gate attributes:**
+- **Target** – The goal of this gate
 - **Signal** – How we know we've met the target
 - **Current Status** – Where we are now
-- **Reward** – What we gain by completing this stage
+- **Reward** – What we gain by completing this gate
 
 ---
 
-## Stage 1: Self
+## Gate 1: Self
 
 **Target:** Build for the creator, Buddy Williams.
 
@@ -46,7 +46,7 @@ Each stage below acts as a gate. We must pass each gate before moving forward. T
 
 ---
 
-## Stage 2: Contributors
+## Gate 2: Contributors
 
 **Target:** Invite others to contribute.
 
@@ -74,7 +74,7 @@ Each stage below acts as a gate. We must pass each gate before moving forward. T
 
 ---
 
-## Stage 3: Users
+## Gate 3: Users
 
 **Target:** Friends and strangers who want Euno for themselves.
 
@@ -88,11 +88,11 @@ Each stage below acts as a gate. We must pass each gate before moving forward. T
 - Each contributor has told 10 people about Euno, with at least 1 becoming a user.
 - 100 paying users.
 
-Growth comes organically over time. Buddy will likely generate the most users given his sales experience. We stay at this stage until we reach the user target.
+Growth comes organically over time. Buddy will likely generate the most users given his sales experience. We stay at this gate until we reach the user target.
 
 **Pricing Model:** Users pay for hosting, AI API costs, and profit margin. Likely limit-based pricing similar to AI companies. Target price point is ~$100/month—if users aren't willing to pay that, Euno hasn't met its goal. Margin is TBD—too early to know.
 
-We stay at Stage 3 as long as needed to ensure we understand demand before scaling.
+We stay at Gate 3 as long as needed to ensure we understand demand before scaling.
 
 **Current Status:** Not met.
 
@@ -100,7 +100,7 @@ We stay at Stage 3 as long as needed to ensure we understand demand before scali
 
 ---
 
-## Stage 4: Scale
+## Gate 4: Scale
 
 **Target:** Form a business to scale.
 
@@ -112,4 +112,4 @@ We stay at Stage 3 as long as needed to ensure we understand demand before scali
 
 **Reward:** We've created something the world wants. Time to scale and be rewarded.
 
-*A new business plan will be drafted at this stage.*
+*A new business plan will be drafted at this gate.*
