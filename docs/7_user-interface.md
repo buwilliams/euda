@@ -2,7 +2,7 @@
 
 *Current UI implementation and component reference*
 
-Euno's interface is designed to surface what matters before you ask, guard your attention, and feel like a caring friend who knows you. This document describes the current implementation. For the vision and philosophy behind the design, see [4_user-experience.md](4_user-experience.md).
+Euno's interface is designed to surface what matters before you ask, guard your attention, and feel like a caring friend who knows you. This document describes the current implementation. For the vision and philosophy behind the design, see [6_user-experience.md](6_user-experience.md).
 
 ---
 

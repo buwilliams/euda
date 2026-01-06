@@ -10,7 +10,7 @@ Euno is a personal intelligence that learns to anticipate you: doing tasks for y
 
 Unified agent system where everything is either an Agent or a Job. Key files:
 - `docs/1_pitch.md` - Product specification and vision
-- `docs/4_architecture.md` - Current architecture documentation
+- `docs/5_architecture.md` - Current architecture documentation
 - `main.py` - Entry point
 
 Old architecture preserved in `old-architecture/` for reference.

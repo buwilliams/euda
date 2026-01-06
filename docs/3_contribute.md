@@ -1,6 +1,6 @@
 # Contributions
 
-This folder tracks all contributions to Euno. Each contributor has a markdown file recording their work.
+The [contrib/](../contrib/) folder tracks all contributions to Euno. Each contributor has a markdown file recording their work.
 
 ## Purpose
 
@@ -9,11 +9,11 @@ Contributions are tracked here so that:
 - Point allocations are transparent
 - Early contributions are preserved for retroactive rewards at Gate 4
 
-See the [Operating Agreement](../docs/10_operating-agreement.md) for how contribution points translate to bonus pool distributions.
+See the [Operating Agreement](11_operating-agreement.md) for how contribution points translate to bonus pool distributions.
 
 ## File Format
 
-Each contributor has a file named `firstname-lastname.md` with the format:
+Each contributor has a file named `firstname-lastname.md` in the [contrib/](../contrib/) folder with the format:
 
 ```markdown
 # Firstname Lastname
@@ -71,6 +71,6 @@ python main.py points logan     # Filter by name (fuzzy match)
 
 ## Related Documents
 
-- [Business Plan](../docs/2_business-plan.md) — Vision and growth gates
-- [Operating Agreement](../docs/10_operating-agreement.md) — Ownership, rewards, and governance
+- [Business Plan](2_business-plan.md) — Vision and growth gates
+- [Operating Agreement](11_operating-agreement.md) — Ownership, rewards, and governance
 - [License](../LICENSE) — Terms for using and contributing to Euno
