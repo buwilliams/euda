@@ -12,7 +12,7 @@ Today's AI remembers facts about you, but it doesn't know you. Euno understands 
 2. **Read the docs** — Start with [Pitch](docs/1_pitch.md), [Business Plan](docs/2_business-plan.md), and [DevOps](docs/7_devops.md), then read the remaining docs
 3. **Set up your remote server** — See [DevOps](docs/7_devops.md) for deployment instructions
 4. **Work on your first feature** — Pick a task from GitHub Projects and get started
-5. **Track your work** — Add entries to your file in [contrib/](contrib/) with each PR
+5. **[Track your contribution points](contrib/)** — Add entries to your file in contrib/ with each PR
 
 **Time & cost expectations:** See [Affordable Loss](docs/2_business-plan.md#vision) in the Business Plan for expected time and financial commitments. We're all investing our own resources because we believe in the vision. See the [Operating Agreement](docs/10_operating-agreement.md) for what contributors get in return.
 

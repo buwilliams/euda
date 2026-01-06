@@ -31,7 +31,34 @@ Entries are ordered by date descending (most recent first).
 3. **Submit a PR** — Every pull request should include updates to your contrib file
 4. **Get approval** — Buddy Williams reviews and approves all PRs before merging to main
 
-Points are assigned by Buddy during PR review based on the [point values](../docs/10_operating-agreement.md#contributor-rewards) in the Operating Agreement.
+Points are assigned by Buddy during PR review based on the point values below.
+
+## Point Values
+
+| Contribution | Points |
+|-------------|--------|
+| Feature shipped | 10-50 (based on size) |
+| Bug fix | 5-15 |
+| Documentation | 5-10 |
+| Design/UI/UX work | 10-30 |
+| Business/sales contribution | 10-50 |
+| Month of active contribution | 10 |
+
+Point values are subject to change.
+
+## How Points Work
+
+**Gates 1-3:** Points are tracked but not paid out. The reward is the trophy—something to put on resumes, talk about, and show off.
+
+**Gate 4+:** Quarterly bonus pool begins.
+- Each quarter, Buddy determines a bonus pool from his share of profits
+- If there's no profit, there's no bonus pool that quarter
+- Pool is distributed based on contribution points
+- Your share = your points / total points
+
+Points are retroactively assigned for contributions made before Gate 4, so early contributors accumulate points from the start.
+
+**Note:** Buddy does not participate in the contribution points system. As primary owner, his compensation comes from ownership, not the bonus pool.
 
 ## Related Documents
 

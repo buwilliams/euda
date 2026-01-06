@@ -24,18 +24,9 @@ Contributors do not receive equity. They receive profit-sharing through the bonu
 
 **Note:** Buddy does not participate in the contribution points system. As primary owner, his compensation comes from ownership, not the bonus pool. The bonus pool is exclusively for other contributors.
 
-**Point values (subject to change):**
+**Point values:** See [contrib/](../contrib/) for point values and tracking.
 
-| Contribution | Points |
-|-------------|--------|
-| Feature shipped | 10-50 (based on size) |
-| Bug fix | 5-15 |
-| Documentation | 5-10 |
-| Design/UI/UX work | 10-30 |
-| Business/sales contribution | 10-50 |
-| Month of active contribution | 10 |
-
-**Process:** Contributors submit their points for approval. Buddy reviews and finalizes point allocations each quarter. Points are tracked privately by Buddy and shared with each contributor individually. Points are retroactively assigned for contributions made before Gate 4, so early contributors accumulate points from the start.
+**Process:** Contributors record their work in [contrib/](../contrib/) with each PR. Buddy reviews and assigns points during PR approval. Points are retroactively assigned for contributions made before Gate 4, so early contributors accumulate points from the start.
 
 **Dilution:** As more contributors earn points, individual shares decrease. This is accepted as fair—new contribution deserves reward, and more contributors should grow the overall pie.
 
