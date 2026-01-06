@@ -112,4 +112,6 @@ We stay at Gate 3 as long as needed to ensure we understand demand before scalin
 
 **Reward:** We've created something the world wants. Time to scale and be rewarded.
 
+**Exit Strategy:** If Euno is acquired, Buddy's ownership stake at exit is split 40% to Buddy personally and 60% to contributors based on their point ratios. See the [Operating Agreement](11_operating-agreement.md) for details.
+
 *A new business plan will be drafted at this gate.*

@@ -34,6 +34,21 @@ Contributors do not receive equity. They receive profit-sharing through the bonu
 
 ---
 
+## Exit (Acquisition)
+
+If Euno is acquired, Buddy Williams' ownership stake at the time of exit is split:
+- **40%** to Buddy Williams personally
+- **60%** distributed to contributors based on their point ratios
+
+**Example:** If Buddy retains 60% ownership at exit (40% having gone to investors) and the company sells for $10M:
+- Investors receive $4M (their 40%)
+- Buddy receives 40% of his 60% = $2.4M
+- Contributors share 60% of his 60% = $3.6M (distributed by point ratios)
+
+This gives contributors meaningful upside in an exit event, aligning incentives and rewarding those who helped build Euno from the start.
+
+---
+
 ## Governance
 
 Buddy Williams handles all disputes and final decisions on project direction.
