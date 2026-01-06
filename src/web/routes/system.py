@@ -189,20 +189,42 @@ async def event_generator():
     all_jobs = list_jobs()
     yield f"event: init\ndata: {json.dumps({'jobs': all_jobs})}\n\n"
 
-    # Subscribe to UI events
-    event_queue = subscribe_ui()
+    # Subscribe to UI events (returns queue and shutdown event)
+    event_queue, shutdown_event = subscribe_ui()
 
     try:
         while True:
-            try:
-                # Wait for events with timeout for ping
-                event = await asyncio.wait_for(event_queue.get(), timeout=30)
+            # Wait for either: queue event, shutdown signal, or timeout
+            queue_task = asyncio.create_task(event_queue.get())
+            shutdown_task = asyncio.create_task(shutdown_event.wait())
+
+            done, pending = await asyncio.wait(
+                [queue_task, shutdown_task],
+                timeout=30,
+                return_when=asyncio.FIRST_COMPLETED
+            )
+
+            # Cancel any pending tasks
+            for task in pending:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+
+            # Check if shutdown was signaled
+            if shutdown_task in done:
+                break
+
+            # Check if we got an event from the queue
+            if queue_task in done:
+                event = queue_task.result()
                 yield f"event: {event['type']}\ndata: {json.dumps(event['data'])}\n\n"
-            except asyncio.TimeoutError:
-                # Send ping to keep connection alive
+            else:
+                # Timeout - send ping to keep connection alive
                 yield f"event: ping\ndata: {{}}\n\n"
     finally:
-        unsubscribe_ui(event_queue)
+        unsubscribe_ui(event_queue, shutdown_event)
 
 
 @router.get("/events")

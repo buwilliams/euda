@@ -1,6 +1,143 @@
 // Euno - Focus Feature Screens (New Job, Attach)
 
-// ============== New Job Screen ==============
+// ============== New Job Creator Screen ==============
+
+// Track jobs created in the current new job session
+let newJobSessionIds = [];
+
+function openNewJobScreen() {
+    // Reset session tracking
+    newJobSessionIds = [];
+
+    // Remember which tab to return to
+    moreMenuReturnTab = activeTab;
+
+    // Show focus tab pane but keep More button active (since New Job is in More menu)
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.remove('active', 'slide-left', 'slide-right');
+        if (pane.id === 'tab-focus') {
+            pane.classList.add('active');
+        } else {
+            pane.classList.add('slide-left');
+        }
+    });
+
+    // Activate the More button
+    const overflowBtn = document.getElementById('overflow-btn');
+    if (overflowBtn) overflowBtn.classList.add('active');
+
+    // Navigate to new job creator
+    previousTab = 'focus';
+    activeTab = 'focus';
+    navigateFocus('newjob');
+}
+
+function getProjectsContainerId() {
+    const projectsContainer = jobsData.find(j => j.tags && j.tags.includes('system:projects') && !j.parent_id);
+    return projectsContainer ? projectsContainer.id : null;
+}
+
+function renderNewJobCreatorScreen() {
+    // Get jobs created this session (filter from jobsData)
+    const sessionJobs = jobsData.filter(j => newJobSessionIds.includes(j.id));
+
+    // Build hierarchical tree of session jobs
+    const rootJobs = sessionJobs.filter(j => {
+        // Root if parent is the Projects container or no parent
+        const projectsId = getProjectsContainerId();
+        return j.parent_id === projectsId || !j.parent_id;
+    });
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">New Job</span>
+        </div>
+        <div class="focus-view-content">
+            <div class="quick-add-section" style="margin-top: 0; border-top: none;">
+                <input type="text" id="new-job-input" class="quick-add-input" placeholder="What needs to be done?" onkeypress="handleNewJobKeypress(event)" autofocus>
+                <button class="quick-add-btn" onclick="createNewJobFromInput()">${icon('plus')}</button>
+            </div>
+            ${sessionJobs.length > 0 ? `
+            <div class="job-section" style="margin-top: var(--spacing-md);">
+                <div class="job-section-header">Created Jobs (${sessionJobs.length})</div>
+                ${renderNewJobTree(rootJobs, sessionJobs, 0)}
+            </div>
+            ` : `
+            <div class="new-job-empty" style="padding: var(--spacing-xl); text-align: center; color: var(--color-text-placeholder);">
+                <p>Type a job name above and press Enter</p>
+                <p style="font-size: var(--font-size-sm); margin-top: var(--spacing-md);">Jobs will be added to your Projects.</p>
+            </div>
+            `}
+        </div>
+    `;
+}
+
+function renderNewJobTree(jobs, allSessionJobs, depth = 0) {
+    if (jobs.length === 0) return '';
+
+    return jobs.map(job => {
+        // Find child jobs created this session
+        const children = allSessionJobs.filter(j => j.parent_id === job.id);
+        const indentStyle = depth > 0 ? `style="margin-left: ${depth * 20}px;"` : '';
+
+        // Render the job card with swipe support and indent
+        const cardHtml = `
+            <div class="new-job-item" ${indentStyle}>
+                ${renderJobCard(job, true)}
+            </div>
+        `;
+
+        // Render children recursively
+        const childrenHtml = children.length > 0 ? renderNewJobTree(children, allSessionJobs, depth + 1) : '';
+
+        return cardHtml + childrenHtml;
+    }).join('');
+}
+
+function handleNewJobKeypress(event) {
+    if (event.key === 'Enter') {
+        createNewJobFromInput();
+    }
+}
+
+async function createNewJobFromInput() {
+    const input = document.getElementById('new-job-input');
+    if (!input) return;
+
+    const name = input.value.trim();
+    if (!name) return;
+
+    const projectsId = getProjectsContainerId();
+
+    try {
+        const response = await fetch('/api/jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name,
+                parent_id: projectsId
+            })
+        });
+
+        if (response.ok) {
+            const newJob = await response.json();
+            newJobSessionIds.push(newJob.id);
+            input.value = '';
+            await loadJobsData();
+            // Re-focus input for rapid entry
+            setTimeout(() => {
+                const newInput = document.getElementById('new-job-input');
+                if (newInput) newInput.focus();
+            }, 50);
+        }
+    } catch (error) {
+        console.error('Failed to create job:', error);
+    }
+}
+
+// ============== New Child Job Screen ==============
 
 function renderNewJobScreen(parentJobId) {
     const parentJob = jobsData.find(j => j.id === parentJobId);
@@ -23,7 +160,7 @@ function renderNewJobScreen(parentJobId) {
             ${childJobs.length > 0 ? `
             <div class="job-section">
                 <div class="job-section-header">Child Jobs (${childJobs.length})</div>
-                ${childJobs.map(job => renderJobCard(job)).join('')}
+                ${childJobs.map(job => renderJobCard(job, true)).join('')}
             </div>
             ` : ''}
         </div>

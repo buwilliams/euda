@@ -41,6 +41,47 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// ============== More Menu Screen Navigation ==============
+
+function openMoreMenuScreen(tabName) {
+    // Remember which tab to return to
+    moreMenuReturnTab = activeTab;
+
+    // Show the target tab pane but keep More button active
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.remove('active', 'slide-left', 'slide-right');
+        if (pane.id === `tab-${tabName}`) {
+            pane.classList.add('active');
+        } else {
+            pane.classList.add('slide-left');
+        }
+    });
+
+    // Activate the More button
+    const overflowBtn = document.getElementById('overflow-btn');
+    if (overflowBtn) overflowBtn.classList.add('active');
+
+    // Load data for the screen
+    if (tabName === 'history') {
+        historyView = 'list';
+        historyViewHistory = [];
+        loadHistoryData();
+    }
+    if (tabName === 'about') loadAboutData();
+    if (tabName === 'settings') loadSettingsData();
+}
+
+function navigateMoreMenuBack() {
+    if (moreMenuReturnTab) {
+        const returnTab = moreMenuReturnTab;
+        moreMenuReturnTab = null;
+        switchTab(returnTab);
+    } else {
+        switchTab('focus');
+    }
+}
+
 // ============== Tab Functions ==============
 
 function switchTab(tabName) {

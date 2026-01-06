@@ -6,10 +6,21 @@ let splashAnimationPromise = null;
 
 // Run the splash screen animation
 // Returns a promise that resolves when animation is complete
+// Only shows once per browser session
 function runSplashAnimation() {
     if (splashAnimationPromise) return splashAnimationPromise;
 
     splashAnimationPromise = new Promise((resolve) => {
+        // Check if splash was already shown this session
+        if (sessionStorage.getItem('splashShown')) {
+            // Skip animation - immediately hide splash and resolve
+            const splashScreen = document.getElementById('splash-screen');
+            splashScreen.classList.add('hidden');
+            splashAnimationComplete = true;
+            resolve();
+            return;
+        }
+
         const letters = document.querySelectorAll('.splash-letter');
         const pronunciation = document.getElementById('splash-pronunciation');
         const tagline = document.getElementById('splash-tagline');
@@ -40,6 +51,7 @@ function runSplashAnimation() {
         // Mark animation complete and resolve
         setTimeout(() => {
             splashAnimationComplete = true;
+            sessionStorage.setItem('splashShown', 'true');
             resolve();
         }, 3200);
     });

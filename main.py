@@ -68,12 +68,14 @@ Examples:
 
 def cmd_start(args):
     """Start web server with agents."""
+    import signal
     import threading
     import uvicorn
     from src.manager import AgentManager
     from src.web.app import app
     from src.llms import ConfigError
     from src.llms.base import _load_config
+    from src.events import trigger_shutdown
 
     # Validate config at startup
     try:
@@ -105,8 +107,23 @@ def cmd_start(args):
     print("Agents running in background")
     print()
 
-    # Run web server
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Run web server with custom signal handling
+    async def serve():
+        config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="info")
+        server = uvicorn.Server(config)
+
+        # Custom signal handler: close SSE connections BEFORE uvicorn shutdown
+        def handle_signal():
+            trigger_shutdown()  # Close SSE connections immediately
+            server.should_exit = True
+
+        loop = asyncio.get_event_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, handle_signal)
+
+        await server.serve()
+
+    asyncio.run(serve())
 
 
 def cmd_chat(args):

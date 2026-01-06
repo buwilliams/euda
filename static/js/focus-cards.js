@@ -2,9 +2,15 @@
 
 // ============== Job Cards ==============
 
-function renderJobCard(job) {
+function renderJobCard(job, swipeable = false) {
     const isExpanded = expandedCards.has(`job-${job.id}`);
-    return isExpanded ? renderFullJobCard(job) : renderMinimalJobCard(job);
+    const cardHtml = isExpanded ? renderFullJobCard(job) : renderMinimalJobCard(job);
+
+    // Wrap in swipe container if enabled
+    if (swipeable && !isExpanded) {
+        return wrapCardForSwipe(cardHtml, job.id, false);
+    }
+    return cardHtml;
 }
 
 function renderMinimalJobCard(job) {
@@ -93,12 +99,12 @@ function toggleJobCard(jobId) {
     renderFocusTab();
 }
 
-function renderCompletedJobCard(job, childCount = 0) {
+function renderCompletedJobCard(job, childCount = 0, swipeable = false) {
     const displayName = job.name || 'Untitled';
     const completedDateLabel = job.completed_at ? `<span class="card-due-date">${formatFriendlyPastDate(job.completed_at)}</span>` : '';
     const childBadge = childCount > 0 ? `<span class="card-badge">${childCount}</span>` : '';
 
-    return `
+    const cardHtml = `
         <div class="card card-minimal" data-job-id="${job.id}" onclick="navigateFocus('completed-${job.id}')">
             <span class="card-title" style="text-decoration: line-through; color: #888;">${escapeHtml(displayName)}</span>
             ${childBadge}
@@ -107,4 +113,10 @@ function renderCompletedJobCard(job, childCount = 0) {
             <span class="card-arrow">›</span>
         </div>
     `;
+
+    // Wrap in swipe container if enabled
+    if (swipeable) {
+        return wrapCardForSwipe(cardHtml, job.id, true);
+    }
+    return cardHtml;
 }

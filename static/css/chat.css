@@ -248,3 +248,38 @@
 .message-content table { margin: 0.75em 0; border-collapse: collapse; width: 100%; }
 .message-content th, .message-content td { padding: 0.5em 0.75em; border: 1px solid #ddd; text-align: left; }
 .message-content th { background: var(--color-bg-subtle); font-weight: 600; }
+
+/* Chat Empty State */
+.chat-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    height: 100%;
+    animation: fadeIn var(--transition-slow);
+}
+
+.chat-empty-greeting {
+    font-size: var(--font-size-xl);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-2xl);
+}
+
+.chat-empty-quote {
+    max-width: 320px;
+}
+
+.chat-empty-quote .quote-text {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-muted);
+    font-style: italic;
+    line-height: var(--line-height-relaxed);
+    margin-bottom: var(--spacing-sm);
+}
+
+.chat-empty-quote .quote-author {
+    font-size: var(--font-size-base);
+    color: var(--color-text-placeholder);
+}

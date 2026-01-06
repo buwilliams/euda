@@ -30,11 +30,35 @@
 
 /* ============== Focus Tab ============== */
 
-.focus-content,
+.focus-content {
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
+
+/* More Menu Screen Tab Panes */
+#tab-about,
+#tab-settings {
+    display: flex;
+    flex-direction: column;
+}
+
+#tab-about > .focus-view-header,
+#tab-settings > .focus-view-header {
+    flex-shrink: 0;
+    margin: 0;
+    margin-bottom: var(--spacing-lg);
+}
+
 .history-content {
     position: relative;
     overflow: hidden;
     height: 100%;
+}
+
+.about-content,
+.settings-content {
+    flex: 1;
 }
 
 .focus-empty {
@@ -109,6 +133,99 @@
     height: 1px;
     background: #ddd;
     margin: var(--spacing-md) 0;
+}
+
+/* Focus Menu Sections */
+.focus-menu-section {
+    margin-top: var(--spacing-lg);
+}
+
+.focus-menu-section-label {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+
+/* Collapsible Sections */
+.focus-menu-section-label.collapsible {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.focus-menu-section-label.collapsible:hover {
+    color: var(--color-text-primary);
+}
+
+.section-toggle {
+    display: flex;
+    align-items: center;
+    transition: transform var(--transition-fast);
+}
+
+.section-toggle img {
+    width: 14px;
+    height: 14px;
+    opacity: 0.5;
+}
+
+.focus-menu-section-label.collapsible.open .section-toggle {
+    transform: rotate(90deg);
+}
+
+.collapsible-content {
+    display: none;
+    overflow: hidden;
+}
+
+.collapsible-content.open {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Today Section (on Focus landing) */
+.focus-today-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.focus-section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.focus-section-icon img {
+    width: 20px;
+    height: 20px;
+}
+
+.focus-section-title {
+    font-size: var(--font-size-lg);
+}
+
+.focus-today-jobs {
+    display: flex;
+    flex-direction: column;
+}
+
+.focus-free-message {
+    padding: var(--spacing-md);
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.focus-free-text {
+    font-size: var(--font-size-base);
+    color: var(--color-text-light);
 }
 
 /* Focus View Header */
