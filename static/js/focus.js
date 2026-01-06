@@ -144,5 +144,14 @@ function navigateFocusBack() {
         focusView = 'menu';
     }
     focusSlideDirection = 'back';
+
+    // If returning to menu from a More menu screen, go back to the original tab
+    if (focusView === 'menu' && moreMenuReturnTab) {
+        const returnTab = moreMenuReturnTab;
+        moreMenuReturnTab = null;
+        switchTab(returnTab);
+        return;
+    }
+
     renderFocusTab();
 }

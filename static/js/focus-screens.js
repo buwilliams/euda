@@ -9,6 +9,9 @@ function openNewJobScreen() {
     // Reset session tracking
     newJobSessionIds = [];
 
+    // Remember which tab to return to
+    moreMenuReturnTab = activeTab;
+
     // Show focus tab pane but keep More button active (since New Job is in More menu)
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-pane').forEach(pane => {

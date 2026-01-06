@@ -32,6 +32,9 @@ let archivingTaskId = null;
 const TAB_ORDER = ['focus', 'chat', 'history', 'about', 'settings'];
 let previousTab = activeTab;
 
+// Track which tab to return to when exiting a More menu screen
+let moreMenuReturnTab = null;
+
 // History tab navigation state
 let historyView = 'list';
 let historyViewHistory = [];

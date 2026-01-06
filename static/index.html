@@ -76,13 +76,17 @@
 
                     <!-- History Tab -->
                     <div class="tab-pane" id="tab-history">
-                        <div class="history-content" id="history-list">
+                        <div class="history-content" id="history-content">
                             <div class="focus-empty">Loading...</div>
                         </div>
                     </div>
 
                     <!-- About Tab -->
                     <div class="tab-pane" id="tab-about">
+                        <div class="focus-view-header" onclick="navigateMoreMenuBack()">
+                            <span class="focus-back-btn"><img src="/static/icons/chevron-left.svg" alt="Back" class="icon"></span>
+                            <span class="focus-view-title">About</span>
+                        </div>
                         <div class="about-content" id="about-content">
                             <div class="focus-empty">Loading...</div>
                         </div>
@@ -90,6 +94,10 @@
 
                     <!-- Settings Tab -->
                     <div class="tab-pane" id="tab-settings">
+                        <div class="focus-view-header" onclick="navigateMoreMenuBack()">
+                            <span class="focus-back-btn"><img src="/static/icons/chevron-left.svg" alt="Back" class="icon"></span>
+                            <span class="focus-view-title">Settings</span>
+                        </div>
                         <div class="settings-content" id="settings-content">
                             <!-- Account Section -->
                             <div class="settings-section">
@@ -142,7 +150,15 @@
                             <span>More</span>
                         </button>
                         <div class="overflow-menu" id="overflow-menu">
-                            <button class="overflow-item" data-tab="history" onclick="switchTab('history'); closeOverflowMenu();">
+                            <button class="overflow-item" data-tab="about" onclick="openMoreMenuScreen('about'); closeOverflowMenu();">
+                                <img src="/static/icons/information-circle.svg" alt="About">
+                                <span>About</span>
+                            </button>
+                            <button class="overflow-item" data-tab="settings" onclick="openMoreMenuScreen('settings'); closeOverflowMenu();">
+                                <img src="/static/icons/cog-6-tooth.svg" alt="Settings">
+                                <span>Settings</span>
+                            </button>
+                            <button class="overflow-item" data-tab="history" onclick="openMoreMenuScreen('history'); closeOverflowMenu();">
                                 <img src="/static/icons/clock.svg" alt="History">
                                 <span>History</span>
                             </button>
@@ -150,21 +166,13 @@
                                 <img src="/static/icons/arrow-up-tray.svg" alt="Upload">
                                 <span>Upload</span>
                             </button>
-                            <button class="overflow-item" data-tab="about" onclick="switchTab('about'); closeOverflowMenu();">
-                                <img src="/static/icons/information-circle.svg" alt="About">
-                                <span>About</span>
-                            </button>
-                            <button class="overflow-item" data-tab="settings" onclick="switchTab('settings'); closeOverflowMenu();">
-                                <img src="/static/icons/cog-6-tooth.svg" alt="Settings">
-                                <span>Settings</span>
+                            <button class="overflow-item" onclick="openNewJobScreen(); closeOverflowMenu();">
+                                <img src="/static/icons/plus.svg" alt="New Job">
+                                <span>New Job</span>
                             </button>
                             <button class="overflow-item" onclick="resetUI(); closeOverflowMenu();">
                                 <img src="/static/icons/arrow-path.svg" alt="New Chat">
                                 <span>New Chat</span>
-                            </button>
-                            <button class="overflow-item" onclick="openNewJobScreen(); closeOverflowMenu();">
-                                <img src="/static/icons/plus.svg" alt="New Job">
-                                <span>New Job</span>
                             </button>
                         </div>
                     </div>
