@@ -101,13 +101,61 @@ function resetScrollPositions() {
 
 // ============== Settings ==============
 
+let costsData = null;
+let selectedCostPeriod = 'session';
+
 async function loadSettingsData() {
     try {
         const response = await fetch('/api/settings');
         settingsData = await response.json();
         renderSettings();
+        loadCostsData();
     } catch (error) {
         console.error('Failed to load settings:', error);
+    }
+}
+
+async function loadCostsData() {
+    try {
+        const response = await fetch('/api/costs');
+        costsData = await response.json();
+        renderCosts();
+    } catch (error) {
+        console.error('Failed to load costs:', error);
+    }
+}
+
+function selectCostPeriod(period) {
+    selectedCostPeriod = period;
+    document.querySelectorAll('.costs-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.period === period);
+    });
+    renderCosts();
+}
+
+function renderCosts() {
+    if (!costsData) return;
+
+    const amountEl = document.getElementById('costs-amount');
+    const callsEl = document.getElementById('costs-calls');
+    const budgetEl = document.getElementById('costs-budget');
+
+    // Get data for selected period
+    const periodData = costsData[selectedCostPeriod];
+    if (periodData) {
+        const cost = periodData.cost || 0;
+        const calls = periodData.calls || 0;
+
+        amountEl.textContent = `$${cost.toFixed(2)}`;
+        callsEl.textContent = `${calls.toLocaleString()} API call${calls !== 1 ? 's' : ''}`;
+    }
+
+    // Show budget info if set
+    if (costsData.budget) {
+        const remaining = costsData.budget - (costsData.session?.cost || 0);
+        budgetEl.textContent = `Budget: $${costsData.budget.toFixed(2)} ($${remaining.toFixed(2)} remaining)`;
+    } else {
+        budgetEl.textContent = '';
     }
 }
 
