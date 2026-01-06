@@ -128,6 +128,46 @@
     padding: var(--spacing-sm) var(--spacing-md);
 }
 
+/* Collapsible Sections */
+.focus-menu-section-label.collapsible {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.focus-menu-section-label.collapsible:hover {
+    color: var(--color-text-primary);
+}
+
+.section-toggle {
+    display: flex;
+    align-items: center;
+    transition: transform var(--transition-fast);
+}
+
+.section-toggle img {
+    width: 14px;
+    height: 14px;
+    opacity: 0.5;
+}
+
+.focus-menu-section-label.collapsible.open .section-toggle {
+    transform: rotate(90deg);
+}
+
+.collapsible-content {
+    display: none;
+    overflow: hidden;
+}
+
+.collapsible-content.open {
+    display: flex;
+    flex-direction: column;
+}
+
 /* Today Section (on Focus landing) */
 .focus-today-section {
     margin-bottom: var(--spacing-lg);

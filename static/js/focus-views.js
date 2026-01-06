@@ -1,5 +1,18 @@
 // Euno - Focus View Renderers
 
+// ============== Collapsible Sections ==============
+
+function isSectionOpen(sectionId) {
+    // Default to closed
+    return sessionStorage.getItem(`focus-section-${sectionId}`) === 'open';
+}
+
+function toggleSection(sectionId) {
+    const isOpen = isSectionOpen(sectionId);
+    sessionStorage.setItem(`focus-section-${sectionId}`, isOpen ? 'closed' : 'open');
+    renderFocusTab();
+}
+
 // ============== Menu & Timeline Views ==============
 
 function renderFocusMenu() {
@@ -16,6 +29,10 @@ function renderFocusMenu() {
     // Count children of each container
     const agentsCount = agentsContainer ? jobsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
     const projectsCount = projectsContainer ? jobsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
+
+    // Check collapsed states
+    const timelinesOpen = isSectionOpen('timelines');
+    const collectionsOpen = isSectionOpen('collections');
 
     // Build today section using same format as other menu sections
     let todaySection = '';
@@ -43,8 +60,11 @@ function renderFocusMenu() {
     const hasSystemSection = agentsContainer || projectsContainer;
     const systemSection = hasSystemSection ? `
         <div class="focus-menu-section">
-            <div class="focus-menu-section-label">Collections</div>
-            <div class="focus-menu">
+            <div class="focus-menu-section-label collapsible ${collectionsOpen ? 'open' : ''}" onclick="toggleSection('collections')">
+                <span>Collections</span>
+                <span class="section-toggle">${icon('chevron-right')}</span>
+            </div>
+            <div class="focus-menu collapsible-content ${collectionsOpen ? 'open' : ''}">
                 ${agentsContainer ? `
                 <div class="focus-menu-item" onclick="navigateFocus('job-${agentsContainer.id}')">
                     <span class="focus-menu-icon">${icon('bolt')}</span>
@@ -69,8 +89,11 @@ function renderFocusMenu() {
         <div id="daily-quote-container"></div>
         ${todaySection}
         <div class="focus-menu-section">
-            <div class="focus-menu-section-label">Timelines</div>
-            <div class="focus-menu">
+            <div class="focus-menu-section-label collapsible ${timelinesOpen ? 'open' : ''}" onclick="toggleSection('timelines')">
+                <span>Timelines</span>
+                <span class="section-toggle">${icon('chevron-right')}</span>
+            </div>
+            <div class="focus-menu collapsible-content ${timelinesOpen ? 'open' : ''}">
                 <div class="focus-menu-item" onclick="navigateFocus('upcoming')">
                     <span class="focus-menu-icon">${icon('calendar')}</span>
                     <span class="focus-menu-label">Upcoming</span>
