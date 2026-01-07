@@ -231,11 +231,11 @@ class UnifiedClient:
     def _create_provider(self, provider: str) -> LLMProvider:
         """Create the appropriate provider instance."""
         if provider == "anthropic":
-            from .anthropic import AnthropicProvider
-            return AnthropicProvider()
+            from .claude import ClaudeProvider
+            return ClaudeProvider()
         elif provider == "openai":
-            from .openai import OpenAIProvider
-            return OpenAIProvider()
+            from .chatgpt import ChatGPTProvider
+            return ChatGPTProvider()
         elif provider == "grok":
             from .grok import GrokProvider
             return GrokProvider()

@@ -1,5 +1,5 @@
 """
-Anthropic Provider - Claude models
+Claude Provider - Anthropic's Claude models
 
 Uses the native Anthropic SDK. Response format is used as the canonical
 format that other providers convert to.
@@ -12,8 +12,8 @@ import anthropic
 from .base import LLMProvider, UnifiedResponse, Usage
 
 
-class AnthropicProvider(LLMProvider):
-    """Anthropic/Claude provider implementation."""
+class ClaudeProvider(LLMProvider):
+    """Claude provider implementation using Anthropic SDK."""
 
     def __init__(self):
         self.client = anthropic.Anthropic()

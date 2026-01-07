@@ -1,5 +1,5 @@
 """
-OpenAI Provider - GPT models
+ChatGPT Provider - OpenAI's GPT models
 
 Converts between Anthropic's tool/message format and OpenAI's format.
 """
@@ -12,8 +12,8 @@ import openai
 from .base import LLMProvider, UnifiedResponse, Usage, TextBlock, ToolUseBlock
 
 
-class OpenAIProvider(LLMProvider):
-    """OpenAI/GPT provider implementation."""
+class ChatGPTProvider(LLMProvider):
+    """ChatGPT provider implementation using OpenAI SDK."""
 
     def __init__(self):
         self.client = openai.OpenAI()

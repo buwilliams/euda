@@ -142,7 +142,18 @@ class CostTracker:
         pricing = _load_pricing()
         model_lower = model.lower()
 
-        # Try to find matching model in config pricing
+        # Model pattern -> config key mapping
+        # Maps patterns found in model names to their config pricing keys
+        model_to_config = {
+            "gpt": "chatgpt",  # gpt-5.2 -> chatgpt pricing
+        }
+
+        # Check model patterns and map to config keys
+        for pattern, config_key in model_to_config.items():
+            if pattern in model_lower and config_key in pricing:
+                return pricing[config_key]
+
+        # Try direct match (claude, grok, etc.)
         for known_model in pricing:
             if known_model in model_lower:
                 return pricing[known_model]

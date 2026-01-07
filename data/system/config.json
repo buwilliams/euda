@@ -27,7 +27,7 @@
   "cost": {
     "budget_limit": null,
     "pricing": {
-      "gpt": {
+      "chatgpt": {
         "input": 1.75,
         "cached_input": 0.175,
         "output": 14.00
