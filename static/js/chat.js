@@ -349,33 +349,17 @@ function removeInlineThinking() {
     if (el) el.remove();
 }
 
-let notificationTimeout = null;
-
 function showChatNotification() {
     // Only show notification if not on chat tab
     if (activeTab !== 'chat') {
-        // Increment unseen counter and update badge
         unseenChatMessages++;
         updateChatBadge();
-        // Also pulse the send button
-        contextSendBtn.classList.add('has-notification');
-        // Auto-clear pulse after 3 seconds to avoid being annoying
-        if (notificationTimeout) clearTimeout(notificationTimeout);
-        notificationTimeout = setTimeout(() => {
-            contextSendBtn.classList.remove('has-notification');
-        }, 3000);
     }
 }
 
 function clearChatNotification() {
-    // Reset counter and hide badge
     unseenChatMessages = 0;
     updateChatBadge();
-    contextSendBtn.classList.remove('has-notification');
-    if (notificationTimeout) {
-        clearTimeout(notificationTimeout);
-        notificationTimeout = null;
-    }
 }
 
 function updateChatBadge() {
