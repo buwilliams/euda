@@ -23,18 +23,24 @@ Each contributor has a file named `firstname-lastname.md` in [contrib/](../contr
 
 Entries are ordered by date descending (most recent first).
 
+## Philosophy
+
+Points reflect **value delivered**, not effort expended. With AI-assisted coding, the old metrics (lines of code, hours spent) are meaningless. What matters is:
+
+- **Impact on the vision** — Does this move Euno closer to being a personal intelligence that anticipates you?
+- **Value to the user** — Does this make someone's life better, easier, or more delightful?
+
+A single insight that reshapes how we think about a problem can be worth more than a month of feature work. Using the system daily and uncovering friction is as valuable as building new capabilities.
+
 ## Point Values
 
-| Contribution | Points |
-|-------------|--------|
-| Feature shipped | 10-50 (based on size) |
-| Bug fix | 5-15 |
-| Documentation | 5-10 |
-| Design/UI/UX work | 10-30 |
-| Business/sales contribution | 10-50 |
-| Month of active contribution | 10 |
+- **5** — Fix a bug, improve docs, add a small feature
+- **10** — Identify a usability problem through real usage, ship a useful feature, write a guide
+- **20** — Discover a pattern of friction across the system, build a significant feature, design a better interaction pattern
+- **30** — Surface a fundamental flaw in the UX or architecture, ship a major capability, ideation that reshapes how we approach a problem
+- **50** — Invent an approach that fundamentally advances Euno, discover something that changes our direction, ship a breakthrough feature, ideation that produces a step-change for the user or vision
 
-Point values are subject to change. Points are assigned by repository administrators during PR review.
+Points are assigned by repository administrators during PR review. When in doubt, ask: "How much closer does this bring us to the vision?"
 
 ## How Points Work
 
