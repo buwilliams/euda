@@ -133,7 +133,7 @@ def cmd_chat(args):
     """Interactive chat with an agent."""
     from src.agent import Agent
     from src.tools import get_tools_for_agent
-    from src.cost_tracker import BudgetExceeded, print_summary
+    from src.cost_tracker import BudgetExceeded, print_cost_summary
     from src.llms import ConfigError
     from src.llms.base import _load_config
 
@@ -170,7 +170,7 @@ def cmd_chat(args):
 
         except BudgetExceeded as e:
             print(f"\n\nBUDGET EXCEEDED: ${e.spent:.4f} spent of ${e.budget:.2f} limit")
-            print_summary()
+            print_cost_summary()
             print("\nExiting due to budget limit.")
             break
         except KeyboardInterrupt:
