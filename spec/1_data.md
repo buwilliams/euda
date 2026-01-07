@@ -16,7 +16,7 @@ Rules for the major entities in the system and how they relate.
 
 - Derived from the lifelog, not created directly
 - Data flows: Raw Data → Archivist → Lifelog → Profiler → Profile
-- Current profile: `data/user/user-profile.md`
+- Current profile: `data/user/profile.current.md`
 - Historical profiles: `data/user/profile.{yyyy}.md`
 - Extract patterns from behavior, not stated preferences
 - Profile sections:

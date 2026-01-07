@@ -67,9 +67,9 @@ euno/
 │   │   └── assets/         # Files per job
 │   │       └── {job-id}/
 │   ├── user/
-│   │   ├── user-profile.md
+│   │   ├── profile.current.md
 │   │   ├── memory.jsonl    # Memory items for anticipation
-│   │   └── lifelog/{date}.md
+│   │   └── lifelog/{yyyy-mm-dd}.md
 │   └── system/
 │       └── config.json
 ├── spec/                   # Design rules for drift detection
@@ -148,6 +148,7 @@ No Python code needed for new agents.
 - `GET /api/agents` - List agents
 - `GET/PATCH /api/user/profile` - User profile
 - `GET/POST /api/user/lifelog` - Lifelog entries
+- `GET/POST/DELETE /api/user/memory` - Memory items
 
 ## Development Philosophy
 

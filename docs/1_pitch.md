@@ -43,7 +43,7 @@ From *Eudaimonia* (you-dye-MOH-nee-ah)—ancient Greek for "human flourishing." 
 Euno is in early development. It's a self-hosted web app with a conversational interface and task management.
 
 **The Foundation:**
-- **Chat** — Conversational interface powered by Claude
+- **Chat** — Conversational interface powered by LLMs (Claude, OpenAI, Grok)
 - **Jobs** — Hierarchical task/project management with timeline views (Today, Upcoming, Anytime, Someday)
 - **User Profile** — A markdown file that captures who you are, referenced in every conversation
 - **Lifelog** — Daily records of your interactions and reflections

@@ -41,7 +41,7 @@ The Profile captures who you are based on observed behavior, not stated preferen
 
 The profile captures the cognitive core.
 
-**Current Profile** (profile.current.md)
+**Current Profile** (`data/user/profile.current.md`)
 1. Biographical Information (name, addresses, phone numbers, etc.)
 2. Wants and Fears (patterns of behavior that uncover desires and fears)
 3. Stable Attractors (patterns the person returns to)
@@ -50,7 +50,7 @@ The profile captures the cognitive core.
 6. Interests (goals, projects, work, hobbies, entertainment)
 7. Summary of changes from previous years
 
-**Historical Profiles** (profile.yyyy.md)
+**Historical Profiles** (`data/user/profile.{yyyy}.md`)
 
 Year-specific snapshots using the same schema as the current profile. Historical profiles allow agents to track how a person changes over time, answer questions about what caused shifts, and distinguish stable attractors from temporary patterns.
 
@@ -86,18 +86,15 @@ Entries expire 90 days after `date_mentioned`. This keeps Memory focused on curr
 
 ## Agent Personas
 
-Agents have specific roles, personas, and behaviors to create and leverage the user's profile and memory to form the Euno system. The agent personas are used in AI API calls as the system_prompt. They always include `0_core.agent.md` and their specific `[number]_[name].agent.md`.
+Agents have specific roles, personas, and behaviors to create and leverage the user's profile and memory to form the Euno system.
 
-### 0. Core
+Each agent has:
+- Config: `data/agents/{id}/config.json`
+- Persona: `data/agents/{id}/{id}-persona.md`
 
-Defines the **identity model, epistemic rules, and ethical constraints** inherited by all agents.
+All agents share ethical constraints: no coercion, no manipulation, no bypassing resistance. Agents prioritize agency, dignity, and coherence.
 
-- Establishes the shared definition of identity as emergent behavioral patterns
-- Sets ethical boundaries: no coercion, no manipulation, no bypassing resistance
-- Ensures all agents prioritize agency, dignity, and coherence
-- Agents may specialize behavior but may not contradict the Core
-
-### 1. Archivist
+### Archivist
 
 Preserves **irreversible human signal** with high fidelity.
 
@@ -106,16 +103,16 @@ Preserves **irreversible human signal** with high fidelity.
 - Preserves verbatim: journals, conversations, boundary statements, emotional expressions
 - Outputs raw, annotated logs—memory, not meaning
 
-### 2. Profiler
+### Profiler
 
 Constructs the **Profile** from raw Lifelog data.
 
-- Produces profile.current.md with the schema defined above
-- Produces historical profiles (profile.yyyy.md) for each year
+- Produces `data/user/profile.current.md` with the schema defined above
+- Produces historical profiles (`data/user/profile.{yyyy}.md`) for each year
 - Extracts patterns from behavior, not stated preferences
 - Detects identity change through rising enforcement cost, narrative ambivalence, exception creation
 
-### 3. Curator
+### Curator
 
 Explores **integrable opportunities** and allocates **scarce attention**.
 
@@ -125,7 +122,7 @@ Explores **integrable opportunities** and allocates **scarce attention**.
 - Surfaces fewer, higher-fit opportunities at better times
 - Defers novelty during high strain; introduces surprise only when safe
 
-### 4. Friend
+### Friend
 
 Supports **thinking and decision-making** without threatening identity coherence.
 
@@ -135,7 +132,7 @@ Supports **thinking and decision-making** without threatening identity coherence
 - Slows down when emotions intensify
 - Core promise: help the user remain themselves under pressure
 
-### 5. Worker
+### Worker
 
 Executes **tasks without undermining agency**.
 
@@ -144,7 +141,7 @@ Executes **tasks without undermining agency**.
 - Efficiency serves life only when control and reversibility are preserved
 - Never auto-optimizes at the expense of recovery or reflection
 
-### 6. Adaptor
+### Adaptor
 
 Refines **agent identities** to better serve this specific user while maintaining the cognitive core.
 
@@ -163,6 +160,6 @@ Raw Data → Archivist → Lifelog → Profiler → Profile
 
 The Lifelog is a chronological archive of raw human data, preserved before interpretation or compression. It is the source of truth for constructing the Profile.
 
-Structure: `data/shared/state/lifelog/yyyy/yyyy-mm-dd.md`
+Structure: `data/user/lifelog/{yyyy-mm-dd}.md`
 
-The Lifelog contains one file per day, organized by year. The Archivist writes to it; the Profiler reads from it.
+The Lifelog contains one file per day. The Archivist writes to it; the Profiler reads from it.
