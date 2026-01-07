@@ -86,11 +86,11 @@ Respond with ONLY a JSON object in this exact format (no markdown, no explanatio
 
 The quote can be from a famous person, philosopher, writer, or you can compose an original one attributed to "Unknown" or "Ancient Wisdom". Make it meaningful and relevant to the user's interests, goals, or values."""
 
-    response = client.messages.create(
-        model=client.model_name,
+    response = client.create(
         max_tokens=256,
         system="You are a helpful assistant that provides inspiring quotes.",
-        messages=[{"role": "user", "content": prompt}]
+        messages=[{"role": "user", "content": prompt}],
+        agent_id="system"
     )
 
     text = response.content[0].text.strip()

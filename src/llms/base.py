@@ -2,9 +2,15 @@
 LLM Base Classes and Configuration
 
 Provides abstract base class, unified response types, and provider factory.
+All LLM calls go through UnifiedClient which handles:
+- Budget checking (before call)
+- Cost tracking (after call)
+- Rate limiting with exponential backoff
+- Prompt logging
 """
 
 import json
+import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -207,12 +213,23 @@ def invalidate_client():
 
 
 class UnifiedClient:
-    """Wrapper that delegates to the appropriate provider."""
+    """Wrapper that delegates to the appropriate provider.
+
+    Handles all cross-cutting concerns automatically:
+    - Budget checking (before each call)
+    - Cost tracking (after each call)
+    - Rate limiting with exponential backoff
+    - Prompt logging
+    """
 
     def __init__(self, provider: str, model: str):
         self.provider_name = provider
         self.model_name = model
         self._provider = self._create_provider(provider)
+
+        # Rate limiting state
+        self._backoff_until: Optional[float] = None
+        self._consecutive_rate_limits: int = 0
 
     def _create_provider(self, provider: str) -> LLMProvider:
         """Create the appropriate provider instance."""
@@ -229,38 +246,101 @@ class UnifiedClient:
         else:
             raise ValueError(f"Unknown provider: {provider}")
 
-    def messages_create(self, model: str, max_tokens: int, system: str,
-                        tools: Optional[list], messages: list) -> UnifiedResponse:
-        """Create a message with unified interface.
+    def _wait_for_backoff(self):
+        """Block until backoff period ends."""
+        if self._backoff_until and time.time() < self._backoff_until:
+            wait_time = self._backoff_until - time.time()
+            print(f"[LLM] Rate limited, waiting {wait_time:.1f}s...")
+            time.sleep(wait_time)
+
+    def _handle_rate_limit(self):
+        """Calculate and set backoff after a rate limit."""
+        self._consecutive_rate_limits += 1
+        # Exponential backoff: 2, 4, 8, 16... up to 240 seconds (4 min)
+        backoff_seconds = min(2 ** self._consecutive_rate_limits, 240)
+        self._backoff_until = time.time() + backoff_seconds
+        print(f"[LLM] Rate limit hit, backing off {backoff_seconds}s (attempt {self._consecutive_rate_limits})")
+
+    def _reset_backoff(self):
+        """Reset backoff state after successful call."""
+        self._consecutive_rate_limits = 0
+        self._backoff_until = None
+
+    def _is_rate_limit_error(self, error: Exception) -> bool:
+        """Check if an exception is a rate limit error."""
+        error_str = str(error).lower()
+        return any(phrase in error_str for phrase in [
+            "429", "rate_limit", "rate limit", "too many requests",
+            "insufficient_quota", "quota exceeded", "quota"
+        ])
+
+    def create(
+        self,
+        max_tokens: int,
+        system: str,
+        messages: list,
+        tools: Optional[list] = None,
+        agent_id: Optional[str] = None,
+        track_cost: bool = True,
+    ) -> UnifiedResponse:
+        """Create a message with automatic cost tracking and rate limiting.
 
         Args:
-            model: Model name to use
             max_tokens: Maximum tokens in response
             system: System prompt
-            tools: List of tool definitions (optional)
             messages: Conversation messages
+            tools: Optional tool definitions
+            agent_id: ID of calling agent (for cost attribution)
+            track_cost: Whether to track costs (default True)
 
-        Note: Cost tracking is handled at the agent layer, not here.
+        Returns:
+            UnifiedResponse with content, stop_reason, and usage
+
+        Raises:
+            BudgetExceeded: If budget limit reached
         """
-        # Log the prompt being submitted (for debugging)
-        _log_prompt(None, model, system, messages, tools)
+        from ..cost_tracker import check_budget, record_usage
 
-        response = self._provider.create_message(
-            model=model,
-            max_tokens=max_tokens,
-            system=system,
-            messages=messages,
-            tools=tools
-        )
+        # 1. Pre-call: check budget
+        if track_cost:
+            check_budget()
+
+        # 2. Pre-call: wait for any active backoff
+        self._wait_for_backoff()
+
+        # 3. Log prompt
+        _log_prompt(agent_id, self.model_name, system, messages, tools)
+
+        # 4. Make the call with timing
+        start_time = time.time()
+        try:
+            response = self._provider.create_message(
+                model=self.model_name,
+                max_tokens=max_tokens,
+                system=system,
+                messages=messages,
+                tools=tools
+            )
+        except Exception as e:
+            if self._is_rate_limit_error(e):
+                self._handle_rate_limit()
+            raise
+
+        duration_ms = int((time.time() - start_time) * 1000)
+
+        # 5. Post-call: reset backoff on success
+        self._reset_backoff()
+
+        # 6. Post-call: record usage automatically
+        if track_cost:
+            record_usage(
+                model=self.model_name,
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+                cached_input_tokens=response.usage.cached_input_tokens,
+                agent_id=agent_id,
+                stop_reason=response.stop_reason,
+                duration_ms=duration_ms
+            )
 
         return response
-
-    def create(self, model: str, max_tokens: int, system: str,
-               tools: Optional[list] = None, messages: list = None) -> UnifiedResponse:
-        """Alias for messages_create for API compatibility."""
-        return self.messages_create(model, max_tokens, system, tools, messages)
-
-    @property
-    def messages(self):
-        """Provide messages.create() interface for compatibility."""
-        return self
