@@ -51,9 +51,15 @@ def api_chat(request: ChatRequest) -> ChatResponse:
 
     response = agent.chat(request.message)
 
-    # Emit chat:message event
-    from ...events import emit_event
+    # Emit chat:message event for agent triggers
+    from ...events import emit_event, emit_ui_event
     emit_event("chat:message", data={"agent_id": request.agent_id})
+
+    # Emit UI event for SSE clients
+    emit_ui_event("chat_update", {
+        "agent_id": request.agent_id,
+        "session_id": agent.get_session_id()
+    })
 
     return ChatResponse(
         response=response,
