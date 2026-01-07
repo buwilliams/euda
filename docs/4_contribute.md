@@ -28,8 +28,9 @@ A practical guide to contributing to Euno.
 5. **Run Euno:**
    ```bash
    python main.py start    # Web server + agents
-   python main.py chat     # Interactive chat
    ```
+
+6. **Open Euno:** [localhost:8000](http://localhost:8000)
 
 ## Feature Branches
 
