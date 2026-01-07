@@ -120,9 +120,9 @@ function animateHistoryTransition(container, newContent, direction) {
     newView.innerHTML = newContent;
 
     if (direction === 'forward') {
-        newView.classList.add('slide-in-left');
-    } else {
         newView.classList.add('slide-in-right');
+    } else {
+        newView.classList.add('slide-in-left');
     }
 
     container.appendChild(newView);
@@ -130,10 +130,10 @@ function animateHistoryTransition(container, newContent, direction) {
 
     if (direction === 'forward') {
         oldView.classList.remove('current');
-        oldView.classList.add('slide-out-right');
+        oldView.classList.add('slide-out-left');
     } else {
         oldView.classList.remove('current');
-        oldView.classList.add('slide-out-left');
+        oldView.classList.add('slide-out-right');
     }
 
     newView.classList.remove('slide-in-left', 'slide-in-right');
@@ -537,7 +537,6 @@ async function loadConversation(oldSessionId) {
         contextInput.focus();
     } catch (error) {
         console.error('Failed to load conversation:', error);
-        alert('Failed to load conversation');
     }
 }
 
@@ -561,7 +560,6 @@ async function deleteConversation(targetSessionId) {
         await loadHistoryData();
     } catch (error) {
         console.error('Failed to delete conversation:', error);
-        alert('Failed to delete conversation');
     }
 }
 

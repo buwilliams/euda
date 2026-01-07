@@ -94,8 +94,6 @@ function bringNoteToChat(projectName, noteTitle, notePreview) {
 }
 
 async function deleteProjectNote(projectId, filename) {
-    if (!confirm('Delete this note?')) return;
-
     try {
         const response = await fetch(`/api/projects/${projectId}/notes/${filename}`, {
             method: 'DELETE'

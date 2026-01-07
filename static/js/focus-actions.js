@@ -77,7 +77,6 @@ async function restoreJob(event, jobId) {
 
 async function deleteJob(event, jobId) {
     if (event) event.stopPropagation();
-    if (!confirm('Delete this job?')) return;
 
     const wasViewingJob = focusView === `job-${jobId}` || focusView === `completed-${jobId}`;
 
@@ -138,7 +137,6 @@ function handleQuickAddKeypress(event, inputId, parentId = null) {
 
 async function quickDeleteJob(event, jobId) {
     event.stopPropagation();
-    if (!confirm('Delete this job and all children?')) return;
 
     try {
         const response = await fetch(`/api/jobs/${jobId}?delete_children=true`, {

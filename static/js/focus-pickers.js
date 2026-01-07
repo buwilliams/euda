@@ -379,7 +379,6 @@ async function archiveJobDirect(jobId) {
 }
 
 async function deleteJobDirect(jobId) {
-    if (!confirm('Delete this job?')) return;
     try {
         const response = await fetch(`/api/jobs/${jobId}`, { method: 'DELETE' });
         if (response.ok) {

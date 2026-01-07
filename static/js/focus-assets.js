@@ -57,8 +57,6 @@ async function loadJobAssets(jobId) {
 }
 
 async function deleteAsset(jobId, filename) {
-    if (!confirm(`Delete asset "${filename}"?`)) return;
-
     try {
         const response = await fetch(`/api/jobs/${jobId}/assets/${encodeURIComponent(filename)}`, {
             method: 'DELETE'
