@@ -85,20 +85,24 @@ async def transcribe_audio(audio: UploadFile = File(...)):
         # Initialize OpenAI client
         client = openai.OpenAI()
 
-        # Call OpenAI transcription API with verbose format to get token usage
+        # Call OpenAI transcription API
         with open(tmp_path, 'rb') as audio_file:
             response = client.audio.transcriptions.create(
                 model="gpt-4o-transcribe",
                 file=audio_file,
-                response_format="verbose_json"
+                response_format="json"
             )
 
-        # Record cost based on audio duration and output text
-        # verbose_json response includes 'duration' field (audio length in seconds)
+        # Extract text from JSON response
+        text = response.text if hasattr(response, 'text') else response.get('text', '')
+
+        # Record cost based on audio duration or file size estimate
+        # Try to get duration from response, otherwise estimate from file size (~8KB/sec)
         # Audio input is tokenized at ~50 tokens/second
         # Output tokens estimated from text length (~4 chars per token)
-        text = response.text
-        duration_seconds = getattr(response, 'duration', 0) or 0
+        duration_seconds = getattr(response, 'duration', None)
+        if duration_seconds is None:
+            duration_seconds = len(content) / 8000  # Fallback estimate
         estimated_input_tokens = max(1, int(duration_seconds * 50))
         estimated_output_tokens = max(1, len(text) // 4)
         record_usage(
@@ -108,7 +112,7 @@ async def transcribe_audio(audio: UploadFile = File(...)):
             agent_id="transcribe"
         )
 
-        return TranscriptionResponse(text=text)
+        return TranscriptionResponse(text=text.strip() if text else "")
 
     except openai.BadRequestError as e:
         raise HTTPException(
