@@ -469,13 +469,34 @@ function isVoiceInputSupported() {
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
 }
 
-// Hide voice button if not supported
-document.addEventListener('DOMContentLoaded', () => {
-    if (!isVoiceInputSupported()) {
-        const voiceBtn = document.getElementById('voice-btn');
-        if (voiceBtn) {
-            voiceBtn.style.display = 'none';
+async function isTranscriptionAvailable() {
+    try {
+        const response = await fetch('/api/transcribe/status');
+        if (response.ok) {
+            const data = await response.json();
+            return data.available === true;
         }
+    } catch (e) {
+        console.error('Failed to check transcription status:', e);
+    }
+    return false;
+}
+
+// Hide voice button if not supported or OpenAI not configured
+document.addEventListener('DOMContentLoaded', async () => {
+    const voiceBtn = document.getElementById('voice-btn');
+    if (!voiceBtn) return;
+
+    // Check browser support first
+    if (!isVoiceInputSupported()) {
+        voiceBtn.style.display = 'none';
+        return;
+    }
+
+    // Check if OpenAI API is configured
+    const available = await isTranscriptionAvailable();
+    if (!available) {
+        voiceBtn.style.display = 'none';
     }
 });
 

@@ -17,6 +17,19 @@ from ...cost_tracker import record_usage
 
 router = APIRouter()
 
+
+def is_openai_configured() -> bool:
+    """Check if OpenAI API key is configured."""
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    # Check if key exists and isn't a placeholder
+    return bool(api_key and not api_key.startswith("sk-your") and len(api_key) > 20)
+
+
+@router.get("/status")
+def transcription_status():
+    """Check if voice transcription is available."""
+    return {"available": is_openai_configured()}
+
 # Maximum file size: 25MB (OpenAI limit)
 MAX_FILE_SIZE = 25 * 1024 * 1024
 
