@@ -1,5 +1,6 @@
 # Buddy Williams
 
+- [2026-01-07][--] - Refactored batch-api-calls branch for mentoring Logan
 - [2026-01-06][--] - Add contribution tracking system with points CLI command
 - [2026-01-06][--] - Add proprietary license and operating agreement
 - [2026-01-06][--] - Move contribution docs to docs/3_contribute.md, renumber all docs

@@ -29,6 +29,18 @@
     <link rel="stylesheet" href="/static/css/auth.css">
     <link rel="stylesheet" href="/static/css/responsive.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* API Costs - vertical list */
+        .costs-box { display:flex; flex-direction:column; border:1px solid #e0e0e0; overflow:hidden; background:#f8f8f8; }
+        .costs-row { display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1rem; border-bottom:1px solid #eee; }
+        .costs-row:last-child { border-bottom:none; }
+        .costs-label { font-size:0.9rem; color:#666; }
+        .costs-value { text-align:right; }
+        .costs-amount { font-size:1.25rem; font-weight:500; color:#333; }
+        .costs-calls { font-size:0.75rem; color:#888; }
+        .costs-budget { text-align:center; font-size:0.85rem; color:#666; padding:0.75rem 1rem; background:#f9f9f9; border-top:1px solid #eee; }
+        .costs-budget:empty { display:none; }
+    </style>
 </head>
 <body>
     <!-- Splash Screen -->
@@ -126,6 +138,35 @@
                                         <!-- Options populated dynamically from API -->
                                     </select>
                                     <div class="settings-message" id="ai-message"></div>
+                                </div>
+                            </div>
+
+                            <!-- API Costs Section -->
+                            <div class="settings-section">
+                                <h3 class="settings-section-title">API Costs</h3>
+                                <div class="costs-box">
+                                    <div class="costs-row" id="costs-session">
+                                        <span class="costs-label">Session</span>
+                                        <div class="costs-value">
+                                            <div class="costs-amount">—</div>
+                                            <div class="costs-calls">Loading...</div>
+                                        </div>
+                                    </div>
+                                    <div class="costs-row" id="costs-seven-days">
+                                        <span class="costs-label">7 Days</span>
+                                        <div class="costs-value">
+                                            <div class="costs-amount">—</div>
+                                            <div class="costs-calls">Loading...</div>
+                                        </div>
+                                    </div>
+                                    <div class="costs-row" id="costs-month">
+                                        <span class="costs-label">Month</span>
+                                        <div class="costs-value">
+                                            <div class="costs-amount">—</div>
+                                            <div class="costs-calls">Loading...</div>
+                                        </div>
+                                    </div>
+                                    <div class="costs-budget" id="costs-budget"></div>
                                 </div>
                             </div>
                         </div>

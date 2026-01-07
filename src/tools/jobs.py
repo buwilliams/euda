@@ -518,6 +518,230 @@ def delete_job(job_id: str, delete_children: bool = False) -> dict:
     return {"deleted": job_id, "children_deleted": delete_children}
 
 
+# =============================================================================
+# BATCH OPERATIONS - More efficient than multiple single-item calls
+# =============================================================================
+
+@tool(
+    "create_jobs_batch",
+    "Create multiple jobs in a single operation. More efficient than multiple create_job calls.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "jobs": {
+                "type": "array",
+                "description": "List of jobs to create",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "description": "Job name (required)"},
+                        "description": {"type": "string", "description": "Job description"},
+                        "parent_id": {"type": "string", "description": "Parent job ID for sub-jobs"},
+                        "tags": {"type": "array", "items": {"type": "string"}, "description": "Tags for the job"},
+                        "due_date": {"type": "string", "description": "Due date (ISO format)"},
+                        "someday": {"type": "boolean", "description": "Mark as someday/maybe"}
+                    },
+                    "required": ["name"]
+                }
+            },
+            "created_by": {"type": "string", "description": "Who is creating these jobs"}
+        },
+        "required": ["jobs"]
+    }
+)
+def create_jobs_batch(jobs: list, created_by: str = "agent") -> dict:
+    """Create multiple jobs in a single operation.
+
+    Returns:
+        Dict with 'created' (list of job objects), 'count', and 'errors' if any
+    """
+    results = []
+    errors = []
+
+    for i, job_spec in enumerate(jobs):
+        try:
+            result = create_job(
+                name=job_spec["name"],
+                description=job_spec.get("description"),
+                parent_id=job_spec.get("parent_id"),
+                tags=job_spec.get("tags"),
+                due_date=job_spec.get("due_date"),
+                someday=job_spec.get("someday", False),
+                created_by=created_by
+            )
+            results.append(result)
+        except Exception as e:
+            errors.append({"index": i, "name": job_spec.get("name"), "error": str(e)})
+
+    return {
+        "created": results,
+        "count": len(results),
+        "errors": errors if errors else None
+    }
+
+
+@tool(
+    "update_jobs_batch",
+    "Update multiple jobs in a single operation. More efficient than multiple update_job calls.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "updates": {
+                "type": "array",
+                "description": "List of job updates",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "job_id": {"type": "string", "description": "Job ID to update (required)"},
+                        "name": {"type": "string", "description": "New job name"},
+                        "description": {"type": "string", "description": "New description"},
+                        "status": {"type": "string", "enum": ["todo", "completed", "archived"], "description": "New status"},
+                        "tags": {"type": "array", "items": {"type": "string"}, "description": "New tags"},
+                        "due_date": {"type": "string", "description": "New due date"},
+                        "someday": {"type": "boolean", "description": "Someday/maybe flag"}
+                    },
+                    "required": ["job_id"]
+                }
+            }
+        },
+        "required": ["updates"]
+    }
+)
+def update_jobs_batch(updates: list) -> dict:
+    """Update multiple jobs in a single operation.
+
+    Returns:
+        Dict with 'updated' (list of job objects), 'count', and 'errors' if any
+    """
+    results = []
+    errors = []
+
+    for i, update_spec in enumerate(updates):
+        job_id = update_spec.get("job_id")
+        if not job_id:
+            errors.append({"index": i, "error": "job_id is required"})
+            continue
+
+        try:
+            # Extract job_id and pass rest as kwargs
+            kwargs = {k: v for k, v in update_spec.items() if k != "job_id"}
+            result = update_job(job_id, **kwargs)
+            if result and "error" not in result:
+                results.append(result)
+            else:
+                errors.append({"index": i, "job_id": job_id, "error": result.get("error", "Unknown error")})
+        except Exception as e:
+            errors.append({"index": i, "job_id": job_id, "error": str(e)})
+
+    return {
+        "updated": results,
+        "count": len(results),
+        "errors": errors if errors else None
+    }
+
+
+@tool(
+    "complete_jobs_batch",
+    "Complete multiple jobs in a single operation. More efficient than multiple complete_job calls.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "job_ids": {
+                "type": "array",
+                "description": "List of job IDs to complete",
+                "items": {"type": "string"}
+            },
+            "agent": {"type": "string", "description": "Agent completing the jobs"}
+        },
+        "required": ["job_ids"]
+    }
+)
+def complete_jobs_batch(job_ids: list, agent: str = "user") -> dict:
+    """Complete multiple jobs in a single operation.
+
+    Returns:
+        Dict with 'completed' (list of job objects), 'count', and 'errors' if any
+    """
+    results = []
+    errors = []
+
+    for job_id in job_ids:
+        try:
+            result = complete_job(job_id, agent=agent)
+            if result and "error" not in result:
+                results.append(result)
+            else:
+                errors.append({"job_id": job_id, "error": result.get("error", "Unknown error")})
+        except Exception as e:
+            errors.append({"job_id": job_id, "error": str(e)})
+
+    return {
+        "completed": results,
+        "count": len(results),
+        "errors": errors if errors else None
+    }
+
+
+@tool(
+    "add_job_logs_batch",
+    "Add log entries to multiple jobs in a single operation. More efficient than multiple add_job_log calls.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "logs": {
+                "type": "array",
+                "description": "List of log entries to add",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "job_id": {"type": "string", "description": "Job ID (required)"},
+                        "action": {"type": "string", "description": "Log action/message (required)"}
+                    },
+                    "required": ["job_id", "action"]
+                }
+            },
+            "agent": {"type": "string", "description": "Agent adding the logs"}
+        },
+        "required": ["logs"]
+    }
+)
+def add_job_logs_batch(logs: list, agent: str = "user") -> dict:
+    """Add log entries to multiple jobs in a single operation.
+
+    Returns:
+        Dict with 'logged' (list of results), 'count', and 'errors' if any
+    """
+    results = []
+    errors = []
+
+    for log_entry in logs:
+        job_id = log_entry.get("job_id")
+        action = log_entry.get("action")
+
+        if not job_id or not action:
+            errors.append({"job_id": job_id, "error": "job_id and action are required"})
+            continue
+
+        try:
+            result = add_job_log(job_id, action, agent=agent)
+            if result and "error" not in result:
+                results.append({"job_id": job_id, "logged": True})
+            else:
+                errors.append({"job_id": job_id, "error": result.get("error", "Unknown error")})
+        except Exception as e:
+            errors.append({"job_id": job_id, "error": str(e)})
+
+    return {
+        "logged": results,
+        "count": len(results),
+        "errors": errors if errors else None
+    }
+
+
+# =============================================================================
+# AGENT ASSIGNMENT AND SYSTEM CONTAINERS
+# =============================================================================
+
 @tool("assign_agent", "Assign an agent to a job")
 def assign_agent(job_id: str, agent_id: str) -> Optional[dict]:
     """Assign an agent to work on a job. Wakes the agent immediately.

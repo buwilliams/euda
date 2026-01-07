@@ -14,6 +14,7 @@
     "get_job",
     "create_job",
     "add_job_log",
+    "send_notification",
     "done_working"
   ],
   "triggers": ["time:evening"]

@@ -1,5 +1,5 @@
 """
-OpenAI Provider - GPT models
+ChatGPT Provider - OpenAI's GPT models
 
 Converts between Anthropic's tool/message format and OpenAI's format.
 """
@@ -12,8 +12,8 @@ import openai
 from .base import LLMProvider, UnifiedResponse, Usage, TextBlock, ToolUseBlock
 
 
-class OpenAIProvider(LLMProvider):
-    """OpenAI/GPT provider implementation."""
+class ChatGPTProvider(LLMProvider):
+    """ChatGPT provider implementation using OpenAI SDK."""
 
     def __init__(self):
         self.client = openai.OpenAI()
@@ -134,11 +134,17 @@ class OpenAIProvider(LLMProvider):
         elif choice.finish_reason == "stop":
             stop_reason = "end_turn"
 
+        # Extract cached tokens if available (OpenAI's prompt caching)
+        cached_tokens = 0
+        if hasattr(response.usage, 'prompt_tokens_details') and response.usage.prompt_tokens_details:
+            cached_tokens = getattr(response.usage.prompt_tokens_details, 'cached_tokens', 0) or 0
+
         return UnifiedResponse(
             content=content,
             stop_reason=stop_reason,
             usage=Usage(
                 input_tokens=response.usage.prompt_tokens,
-                output_tokens=response.usage.completion_tokens
+                output_tokens=response.usage.completion_tokens,
+                cached_input_tokens=cached_tokens
             )
         )

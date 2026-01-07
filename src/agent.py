@@ -8,12 +8,12 @@ An agent is defined by:
 """
 
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 from .llms import get_client
+from .logger import get_logger
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -169,38 +169,16 @@ class Agent:
         state_dir.mkdir(parents=True, exist_ok=True)
         return state_dir / "memory.json"
 
-    def _get_log_path(self) -> Path:
-        """Get path to today's log file."""
-        today = datetime.now().strftime("%Y-%m-%d")
-        log_dir = AGENTS_DIR / self.id / "logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        return log_dir / f"{today}.json"
+    def _get_logger(self):
+        """Get logger for this agent."""
+        return get_logger(f"agents/{self.id}/logs")
 
     def _log(self, event: str, details: Optional[dict] = None):
         """Append a log entry to today's log file."""
-        path = self._get_log_path()
-
-        # Load existing logs or start fresh
-        logs = []
-        if path.exists():
-            try:
-                with open(path) as f:
-                    logs = json.load(f)
-            except (json.JSONDecodeError, IOError):
-                logs = []
-
-        # Append new entry
-        entry = {
-            "timestamp": datetime.now().isoformat(),
-            "event": event,
-        }
+        entry = {"event": event}
         if details:
             entry["details"] = details
-        logs.append(entry)
-
-        # Save
-        with open(path, "w") as f:
-            json.dump(logs, f, indent=2)
+        self._get_logger().info(entry)
 
     def _load_memory(self) -> dict:
         """Load agent's persistent memory."""
@@ -289,17 +267,18 @@ class Agent:
         messages = [{"role": "user", "content": message}]
 
         # Get fresh client (respects current provider config)
-        # Client stores both provider and model to avoid race conditions
+        # Client handles budget checking, cost tracking, and rate limiting automatically
         client = get_client()
 
         # Call LLM with tools
-        response = client.messages.create(
-            model=client.model_name,
+        response = client.create(
             max_tokens=4096,
             system=system_prompt,
+            messages=messages,
             tools=tools if tools else None,
-            messages=messages
+            agent_id=self.id
         )
+
         self._log("llm_response", {
             "stop_reason": response.stop_reason,
             "usage": {"input": response.usage.input_tokens, "output": response.usage.output_tokens}
@@ -311,13 +290,14 @@ class Agent:
             messages.append({"role": "assistant", "content": response.content})
             messages.append({"role": "user", "content": tool_results})
 
-            response = client.messages.create(
-                model=client.model_name,
+            response = client.create(
                 max_tokens=4096,
                 system=system_prompt,
+                messages=messages,
                 tools=tools if tools else None,
-                messages=messages
+                agent_id=self.id
             )
+
             self._log("llm_response", {
                 "stop_reason": response.stop_reason,
                 "usage": {"input": response.usage.input_tokens, "output": response.usage.output_tokens}
@@ -344,26 +324,29 @@ class Agent:
         """Execute tool calls and return results."""
         from .tools import execute_tool
         from .tools.system import set_agent_context, clear_agent_context
+        from .tool_batcher import execute_tools_batched
 
         # Set agent context so tools can access this agent
         set_agent_context(self)
 
-        results = []
         try:
-            for block in response.content:
-                if block.type == "tool_use":
-                    self._log("tool_call", {"tool": block.name, "input": block.input})
-                    result = execute_tool(block.name, block.input)
-                    self._log("tool_result", {"tool": block.name, "success": not isinstance(result, dict) or "error" not in result})
-                    results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": json.dumps(result) if isinstance(result, (dict, list)) else str(result)
-                    })
+            # Collect all tool calls
+            tool_calls = [block for block in response.content if block.type == "tool_use"]
+
+            # Log individual calls for debugging
+            for block in tool_calls:
+                self._log("tool_call", {"tool": block.name, "input": block.input})
+
+            # Execute with automatic batching
+            results = execute_tools_batched(tool_calls, execute_tool, agent_id=self.id)
+
+            # Log results
+            for block, result in zip(tool_calls, results):
+                self._log("tool_result", {"tool": block.name, "success": "error" not in result.get("content", "")})
+
+            return results
         finally:
             clear_agent_context()
-
-        return results
 
     def work_cycle_sync(self, trigger_context: dict = None):
         """Perform one cycle of autonomous work (synchronous version for threads).

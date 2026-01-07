@@ -12,10 +12,27 @@ from typing import Callable, Dict, List, Any
 _TOOL_REGISTRY: Dict[str, dict] = {}
 
 
-def tool(name: str, description: str):
-    """Decorator to register a tool function."""
+def tool(name: str, description: str, input_schema: dict = None):
+    """Decorator to register a tool function.
+
+    Args:
+        name: Tool name
+        description: Tool description
+        input_schema: Optional explicit schema (overrides auto-detection).
+                     Use this for complex types like arrays of objects.
+    """
     def decorator(func: Callable) -> Callable:
-        # Extract parameter info from function annotations
+        # If explicit schema provided, use it directly
+        if input_schema is not None:
+            _TOOL_REGISTRY[name] = {
+                "name": name,
+                "description": description,
+                "function": func,
+                "schema": input_schema
+            }
+            return func
+
+        # Otherwise auto-detect from annotations
         import inspect
         sig = inspect.signature(func)
 

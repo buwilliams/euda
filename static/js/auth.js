@@ -108,13 +108,58 @@ function resetScrollPositions() {
 
 // ============== Settings ==============
 
+let costsData = null;
+
 async function loadSettingsData() {
     try {
         const response = await fetch('/api/settings');
         settingsData = await response.json();
         renderSettings();
+        loadCostsData();
     } catch (error) {
         console.error('Failed to load settings:', error);
+    }
+}
+
+async function loadCostsData() {
+    try {
+        const response = await fetch('/api/costs');
+        costsData = await response.json();
+        renderCosts();
+    } catch (error) {
+        console.error('Failed to load costs:', error);
+    }
+}
+
+function renderCostRow(elementId, periodData) {
+    const row = document.getElementById(elementId);
+    if (!row || !periodData) return;
+
+    const amountEl = row.querySelector('.costs-amount');
+    const callsEl = row.querySelector('.costs-calls');
+
+    const cost = periodData.cost || 0;
+    const calls = periodData.calls || 0;
+
+    amountEl.textContent = `$${cost.toFixed(2)}`;
+    callsEl.textContent = `${calls.toLocaleString()} call${calls !== 1 ? 's' : ''}`;
+}
+
+function renderCosts() {
+    if (!costsData) return;
+
+    // Render all three periods
+    renderCostRow('costs-session', costsData.session);
+    renderCostRow('costs-seven-days', costsData.seven_days);
+    renderCostRow('costs-month', costsData.month);
+
+    // Show budget info if set
+    const budgetEl = document.getElementById('costs-budget');
+    if (costsData.budget) {
+        const remaining = costsData.budget - (costsData.session?.cost || 0);
+        budgetEl.textContent = `Budget: $${costsData.budget.toFixed(2)} ($${remaining.toFixed(2)} remaining)`;
+    } else {
+        budgetEl.textContent = '';
     }
 }
 

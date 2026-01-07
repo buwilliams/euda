@@ -33,6 +33,8 @@ data/user/
 data/system/auth.json
 data/system/sessions.json
 data/system/quotes.json
+data/system/prompts.jsonl
+data/system/prompts/
 
 # Keep directory structure
 !data/**/.gitkeep

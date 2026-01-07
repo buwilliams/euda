@@ -22,9 +22,9 @@ Old architecture preserved in `old-architecture/` for reference.
    cp .env.example .env
    ```
 
-2. Add your Anthropic API key to `.env`:
+2. Add your OpenAI API key to `.env`:
    ```
-   ANTHROPIC_API_KEY=your-actual-key
+   OPENAI_API_KEY=your-actual-key
    ```
 
 3. Install dependencies:

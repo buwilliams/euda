@@ -12,11 +12,12 @@ Responsibilities:
 import json
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
 
 from .agent import Agent
+from .cost_tracker import BudgetExceeded, print_cost_summary
 from .events import EventBus, set_event_bus, get_event_bus
 
 
@@ -45,6 +46,7 @@ class AgentManager:
         self.agents: Dict[str, Agent] = {}
         self.threads: Dict[str, threading.Thread] = {}
         self.running = False
+        self.error_backoff: Dict[str, dict] = {}  # Track backoff state per agent
         self.event_bus = EventBus()
 
     def load_agent_configs(self) -> List[dict]:
@@ -95,22 +97,109 @@ class AgentManager:
                 return json.load(f)
         return {}
 
+    def _is_quota_or_rate_limit(self, error_msg: str) -> bool:
+        """Detect quota or rate limit errors."""
+        error_lower = str(error_msg).lower()
+        return any(phrase in error_lower for phrase in [
+            "429",
+            "insufficient_quota",
+            "rate_limit",
+            "quota exceeded",
+            "too many requests",
+            "rate limit",
+            "quota",
+        ])
+
+    def _calculate_backoff(self, agent_id: str) -> int:
+        """Calculate exponential backoff duration in seconds.
+
+        Returns backoff duration in seconds.
+        """
+        if agent_id not in self.error_backoff:
+            self.error_backoff[agent_id] = {
+                "count": 0,
+                "last_error": None,
+                "backoff_until": None
+            }
+
+        state = self.error_backoff[agent_id]
+        state["count"] += 1
+        state["last_error"] = datetime.now()
+
+        # Exponential backoff: 1min, 5min, 15min, 30min, 1hr, 2hr, 4hr (max)
+        # Formula: min(2^(count-1), 240) minutes
+        backoff_minutes = min(2 ** (state["count"] - 1), 240)  # Max 4 hours
+        state["backoff_until"] = datetime.now() + timedelta(minutes=backoff_minutes)
+
+        return backoff_minutes * 60  # Return seconds
+
+    def _reset_backoff(self, agent_id: str):
+        """Reset backoff counter after successful work cycle."""
+        if agent_id in self.error_backoff:
+            del self.error_backoff[agent_id]
+
     def _run_agent_loop(self, agent: Agent):
-        """Run an agent's work loop - waits for triggers, no sleep."""
+        """Run an agent's work loop - waits for triggers with backoff support."""
         while self.running:
             try:
+                # Check if we're in backoff period
+                if agent.id in self.error_backoff:
+                    backoff_state = self.error_backoff[agent.id]
+                    if backoff_state["backoff_until"] and datetime.now() < backoff_state["backoff_until"]:
+                        remaining = (backoff_state["backoff_until"] - datetime.now()).seconds
+                        agent._log("backoff_wait", {
+                            "reason": "quota_or_rate_limit",
+                            "remaining_seconds": remaining,
+                            "retry_at": backoff_state["backoff_until"].isoformat(),
+                            "attempt": backoff_state["count"]
+                        })
+                        # Sleep for 1 minute or remaining time, whichever is shorter
+                        time.sleep(min(remaining, 60))
+                        continue
+
                 # Wait for a trigger event (check shutdown every 5s)
                 event = agent.wait_for_trigger(timeout=5)
 
                 if event:
                     agent._log("triggered", {"event": event})
                     agent.work_cycle_sync(trigger_context=event)
+                    # Success - reset backoff
+                    self._reset_backoff(agent.id)
+
+            except BudgetExceeded as e:
+                # Budget exceeded - log warning but continue running
+                agent._log("budget_exceeded", {
+                    "budget": e.budget,
+                    "spent": e.spent
+                })
+                print(f"\n[{agent.id}] BUDGET WARNING: ${e.spent:.4f} spent of ${e.budget:.2f} limit")
+                # Continue running - don't hard exit
 
             except Exception as e:
-                agent._log("error", {"message": str(e)})
+                error_msg = str(e)
+                agent._log("error", {"message": error_msg})
                 print(f"Agent {agent.id} error: {e}")
-                # Brief sleep before retry
-                time.sleep(5)
+
+                # Smart handling based on error type
+                if self._is_quota_or_rate_limit(error_msg):
+                    backoff_secs = self._calculate_backoff(agent.id)
+                    backoff_mins = backoff_secs / 60
+
+                    agent._log("entering_backoff", {
+                        "reason": "quota_or_rate_limit",
+                        "backoff_duration_seconds": backoff_secs,
+                        "backoff_duration_minutes": backoff_mins,
+                        "retry_count": self.error_backoff[agent.id]["count"],
+                        "retry_at": self.error_backoff[agent.id]["backoff_until"].isoformat()
+                    })
+
+                    print(f"[{agent.id}] Quota/rate limit hit. Backing off for {backoff_mins:.1f} minutes (attempt #{self.error_backoff[agent.id]['count']})")
+
+                    # Don't sleep here - let the top of the loop handle backoff checking
+                else:
+                    # Other errors: short retry for transient issues
+                    agent._log("transient_error_retry", {"delay_seconds": 5})
+                    time.sleep(5)
 
     def _run_time_scheduler(self):
         """Background thread that emits time events based on schedules."""
