@@ -330,6 +330,7 @@ class UnifiedClient:
         # 6. Post-call: record usage automatically
         if track_cost:
             record_usage(
+                provider=self.provider_name,
                 model=self.model_name,
                 input_tokens=response.usage.input_tokens,
                 output_tokens=response.usage.output_tokens,

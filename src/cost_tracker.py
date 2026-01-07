@@ -23,29 +23,42 @@ DEFAULT_PRICING = {
     "output": 15.00,
 }
 
-# Cached pricing from config
-_pricing_cache: dict = None
+# Cached config from file
+_config_cache: dict = None
 
 
-def _load_pricing() -> dict:
-    """Load pricing from config.json."""
-    global _pricing_cache
-    if _pricing_cache is not None:
-        return _pricing_cache
+def _load_config() -> dict:
+    """Load and cache config.json."""
+    global _config_cache
+    if _config_cache is not None:
+        return _config_cache
 
     if CONFIG_PATH.exists():
         try:
             with open(CONFIG_PATH) as f:
-                config = json.load(f)
-            _pricing_cache = config.get("cost", {}).get("pricing", {})
-            if _pricing_cache:
-                return _pricing_cache
+                _config_cache = json.load(f)
+                return _config_cache
         except (json.JSONDecodeError, IOError):
             pass
 
-    # Return empty dict if no pricing in config (will use DEFAULT_PRICING)
-    _pricing_cache = {}
-    return _pricing_cache
+    _config_cache = {}
+    return _config_cache
+
+
+def _get_provider_pricing(provider: str) -> dict:
+    """Get pricing for a provider from config."""
+    config = _load_config()
+    llm = config.get("llm", {})
+    providers = llm.get("providers", {})
+
+    # Get pricing from provider config
+    if provider in providers:
+        pricing = providers[provider].get("pricing")
+        if pricing:
+            return pricing
+
+    # Fall back to default_pricing in llm config, or DEFAULT_PRICING
+    return llm.get("default_pricing", DEFAULT_PRICING)
 
 
 class BudgetExceeded(Exception):
@@ -79,15 +92,10 @@ class CostTracker:
     @staticmethod
     def _load_budget_from_config() -> Optional[float]:
         """Load budget limit from system config."""
-        if CONFIG_PATH.exists():
-            try:
-                with open(CONFIG_PATH) as f:
-                    config = json.load(f)
-                budget = config.get("cost", {}).get("budget_limit")
-                if budget is not None and budget > 0:
-                    return float(budget)
-            except (json.JSONDecodeError, IOError):
-                pass
+        config = _load_config()
+        budget = config.get("llm", {}).get("budget_limit")
+        if budget is not None and budget > 0:
+            return float(budget)
         return None
 
     @staticmethod
@@ -137,31 +145,11 @@ class CostTracker:
             self._warned_thresholds.clear()
             print(f"[CostTracker] Budget set: ${dollars:.2f}")
 
-    def get_pricing(self, model: str) -> dict:
-        """Get pricing for a model from config."""
-        pricing = _load_pricing()
-        model_lower = model.lower()
+    def get_pricing(self, provider: str) -> dict:
+        """Get pricing for a provider from config."""
+        return _get_provider_pricing(provider)
 
-        # Model pattern -> config key mapping
-        # Maps patterns found in model names to their config pricing keys
-        model_to_config = {
-            "gpt": "chatgpt",  # gpt-5.2 -> chatgpt pricing
-        }
-
-        # Check model patterns and map to config keys
-        for pattern, config_key in model_to_config.items():
-            if pattern in model_lower and config_key in pricing:
-                return pricing[config_key]
-
-        # Try direct match (claude, grok, etc.)
-        for known_model in pricing:
-            if known_model in model_lower:
-                return pricing[known_model]
-
-        # Fall back to "default" in config, or DEFAULT_PRICING
-        return pricing.get("default", DEFAULT_PRICING)
-
-    def calculate_cost(self, model: str, input_tokens: int, output_tokens: int,
+    def calculate_cost(self, provider: str, input_tokens: int, output_tokens: int,
                        cached_input_tokens: int = 0) -> float:
         """Calculate cost for a single API call.
 
@@ -169,7 +157,7 @@ class CostTracker:
         cached_input_tokens is the subset that was cached.
         We charge non-cached at full price, cached at discounted price.
         """
-        pricing = self.get_pricing(model)
+        pricing = self.get_pricing(provider)
         # Subtract cached from total to get non-cached input tokens
         non_cached_input = max(0, input_tokens - cached_input_tokens)
         input_cost = (non_cached_input / 1_000_000) * pricing["input"]
@@ -183,16 +171,17 @@ class CostTracker:
             if self.budget is not None and self.total_cost >= self.budget:
                 raise BudgetExceeded(self.budget, self.total_cost)
 
-    def record_usage(self, model: str, input_tokens: int, output_tokens: int,
+    def record_usage(self, provider: str, model: str, input_tokens: int, output_tokens: int,
                      cached_input_tokens: int = 0, agent_id: str = None,
                      stop_reason: str = None, duration_ms: int = None):
         """Record token usage and update cumulative cost."""
-        cost = self.calculate_cost(model, input_tokens, output_tokens, cached_input_tokens)
+        cost = self.calculate_cost(provider, input_tokens, output_tokens, cached_input_tokens)
 
         # Prepare log entry before acquiring lock
         log_entry = {
             "timestamp": datetime.now().isoformat(),
             "agent": agent_id,
+            "provider": provider,
             "model": model,
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
@@ -397,12 +386,12 @@ def set_budget(dollars: float):
     get_tracker().set_budget(dollars)
 
 
-def record_usage(model: str, input_tokens: int, output_tokens: int,
+def record_usage(provider: str, model: str, input_tokens: int, output_tokens: int,
                  cached_input_tokens: int = 0, agent_id: str = None,
                  stop_reason: str = None, duration_ms: int = None):
     """Record usage to the global tracker."""
     get_tracker().record_usage(
-        model, input_tokens, output_tokens, cached_input_tokens,
+        provider, model, input_tokens, output_tokens, cached_input_tokens,
         agent_id, stop_reason, duration_ms
     )
 
