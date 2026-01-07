@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Optional
 
 from .llms import get_client
+from .logger import get_logger
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -168,38 +169,16 @@ class Agent:
         state_dir.mkdir(parents=True, exist_ok=True)
         return state_dir / "memory.json"
 
-    def _get_log_path(self) -> Path:
-        """Get path to today's log file."""
-        today = datetime.now().strftime("%Y-%m-%d")
-        log_dir = AGENTS_DIR / self.id / "logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        return log_dir / f"{today}.json"
+    def _get_logger(self):
+        """Get logger for this agent."""
+        return get_logger(f"agents/{self.id}/logs")
 
     def _log(self, event: str, details: Optional[dict] = None):
         """Append a log entry to today's log file."""
-        path = self._get_log_path()
-
-        # Load existing logs or start fresh
-        logs = []
-        if path.exists():
-            try:
-                with open(path) as f:
-                    logs = json.load(f)
-            except (json.JSONDecodeError, IOError):
-                logs = []
-
-        # Append new entry
-        entry = {
-            "timestamp": datetime.now().isoformat(),
-            "event": event,
-        }
+        entry = {"event": event}
         if details:
             entry["details"] = details
-        logs.append(entry)
-
-        # Save
-        with open(path, "w") as f:
-            json.dump(logs, f, indent=2)
+        self._get_logger().info(entry)
 
     def _load_memory(self) -> dict:
         """Load agent's persistent memory."""

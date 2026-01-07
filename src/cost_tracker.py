@@ -11,10 +11,15 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
+from .logger import get_logger
+
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
 COSTS_DIR = DATA_DIR / "user" / "costs"
+
+# Cost logger instance
+_cost_logger = None
 
 # Default pricing (fallback if config doesn't have pricing)
 DEFAULT_PRICING = {
@@ -99,22 +104,21 @@ class CostTracker:
         return None
 
     @staticmethod
-    def _get_cost_file_path(date: datetime = None) -> Path:
-        """Get path to cost log file for a given date."""
-        COSTS_DIR.mkdir(parents=True, exist_ok=True)
-        date = date or datetime.now()
-        return COSTS_DIR / f"{date.strftime('%Y-%m-%d')}.jsonl"
+    def _get_cost_logger():
+        """Get the cost logger instance."""
+        global _cost_logger
+        if _cost_logger is None:
+            _cost_logger = get_logger("user/costs")
+        return _cost_logger
 
     def _append_cost_entry(self, entry: dict):
         """Append a cost entry to today's cost log."""
-        path = self._get_cost_file_path()
-        with open(path, "a") as f:
-            f.write(json.dumps(entry) + "\n")
+        self._get_cost_logger().write_raw(entry)
 
     @staticmethod
     def _load_costs_for_date(date: datetime) -> list:
         """Load all cost entries for a specific date."""
-        path = CostTracker._get_cost_file_path(date)
+        path = COSTS_DIR / f"{date.strftime('%Y-%m-%d')}.jsonl"
         if not path.exists():
             return []
         entries = []

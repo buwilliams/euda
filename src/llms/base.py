@@ -17,16 +17,26 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, List, Dict
 
+from ..logger import get_logger
+
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
-PROMPT_LOG_PATH = DATA_DIR / "system" / "prompts.jsonl"
+
+# Prompt logger instance (lazy loaded)
+_prompt_logger = None
+
+
+def _get_prompt_logger():
+    """Get the prompt logger instance."""
+    global _prompt_logger
+    if _prompt_logger is None:
+        _prompt_logger = get_logger("system/prompts")
+    return _prompt_logger
 
 
 def _log_prompt(agent_id: str, model: str, system: str, messages: list, tools: list = None):
     """Log the full prompt submitted to the API."""
-    PROMPT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-
     entry = {
         "timestamp": datetime.now().isoformat(),
         "agent": agent_id,
@@ -36,9 +46,7 @@ def _log_prompt(agent_id: str, model: str, system: str, messages: list, tools: l
         "messages": messages,
         "tools": [t.get("name") for t in tools] if tools else None,
     }
-
-    with open(PROMPT_LOG_PATH, "a") as f:
-        f.write(json.dumps(entry, default=str) + "\n")
+    _get_prompt_logger().write_raw(entry)
 
 # Valid provider IDs (must have corresponding provider class)
 VALID_PROVIDERS = {"anthropic", "openai", "grok"}

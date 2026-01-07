@@ -42,6 +42,10 @@
       }
     }
   },
+  "logging": {
+    "level": "info",
+    "retention_days": 31
+  },
   "agents": {
     "max_work_iterations": 20
   },
