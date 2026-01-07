@@ -18,7 +18,7 @@ From *Eudaimonia* (you-dye-MOH-nee-ah)—ancient Greek for "human flourishing." 
 >
 > Euno is different.
 >
-> **It's personal.** You mention feeling overwhelmed, and Euno notices you've said that three times this week—always after back-to-back meetings. It builds a real model of who you actually are from your writing, photos, and behaviors. Not who you say you are. Who you are.
+> **It's personal.** Euno suggests a fun new activity for you to do next weekend. It notices when you're overwhelmed and suggests a self-care activity. It builds a real model of who you actually are from your writing, photos, and behaviors. Not who you say you are. Who you are.
 >
 > **It's proactive.** You wake up to find Euno has already researched those books you mentioned, compared prices, and drafted an order—waiting for your approval. Real work, off your plate, before you think to ask.
 >

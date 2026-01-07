@@ -6,14 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Euno is a personal intelligence that learns to anticipate you: doing tasks for you, curating what helps you thrive, and expanding your horizons.
 
-## Current State (v3 Architecture)
+## Key References
 
-Unified agent system where everything is either an Agent or a Job. Key files:
-- `docs/1_pitch.md` - Product specification and vision
-- `docs/5_architecture.md` - Current architecture documentation
+- `docs/1_pitch.md` - Product vision
+- `docs/3_anticipate.md` - How Profile + Memory enable anticipation
+- `spec/*.md` - Design rules for drift detection
 - `main.py` - Entry point
-
-Old architecture preserved in `old-architecture/` for reference.
 
 ## Setup
 
@@ -53,6 +51,7 @@ euno/
 │   │   ├── assets.py       # File attachments per job
 │   │   ├── agents.py       # Agent introspection
 │   │   ├── user.py         # Profile and lifelog
+│   │   ├── memory.py       # Memory tracking for anticipation
 │   │   └── system.py       # Config and notifications
 │   └── web/
 │       ├── app.py          # FastAPI application
@@ -62,16 +61,21 @@ euno/
 │   │   └── {agent-id}/
 │   │       ├── config.json
 │   │       ├── {agent}-persona.md
-│   │       └── state/conversation/{date}.md
+│   │       └── state/conversation/{session-id}.md
 │   ├── jobs/
 │   │   ├── db.sqlite       # SQLite database (jobs + job_logs tables)
 │   │   └── assets/         # Files per job
 │   │       └── {job-id}/
 │   ├── user/
 │   │   ├── user-profile.md
+│   │   ├── memory.jsonl    # Memory items for anticipation
 │   │   └── lifelog/{date}.md
 │   └── system/
 │       └── config.json
+├── spec/                   # Design rules for drift detection
+│   ├── 1_data.md
+│   ├── 2_system.md
+│   └── 3_user-experience.md
 ├── static/                 # Web UI
 └── devops/                 # Deployment scripts
 ```
@@ -93,6 +97,13 @@ Jobs replace projects and tasks. A single hierarchical structure:
 - States: `todo`, `completed`, `archived`
 - Each job can have assets (files) in `data/jobs/assets/{job-id}/`
 - Assets can be any file type; text/markdown files are viewable and editable in the UI
+
+### Memory
+Memory tracks what's on the user's mind for anticipation:
+- Stored in `data/user/memory.jsonl`
+- Types: person, place, thing, goal, concern, idea
+- Entries expire after 90 days
+- Included in every LLM system prompt
 
 ### User as Agent
 The user is conceptually an agent too - just with a different interface (Web UI/CLI vs autonomous loop).
@@ -145,3 +156,10 @@ Build for yourself first, not "other people." This is not a solution looking for
 - Build the best agent for the creator's own daily use
 - Refine through lived experience, not hypothetical users
 - Features get prioritized by real need, rough edges smoothed by real annoyance
+
+## Checking for Drift
+
+Before submitting changes, review against `spec/*.md`:
+- `spec/1_data.md` — Data structures, file paths, schemas
+- `spec/2_system.md` — System behavior, agent rules, architecture
+- `spec/3_user-experience.md` — UI patterns, interaction rules
