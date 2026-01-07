@@ -14,7 +14,7 @@
     "done_working",
     "parse_date",
     "get_current_date",
-    "list_top_of_mind",
+    "list_memory",
     "send_chat_message",
     "check_user_connected"
   ],

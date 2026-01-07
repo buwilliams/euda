@@ -122,5 +122,5 @@ from . import assets
 from . import user
 from . import system
 from . import dates
-from . import top_of_mind
+from . import memory
 from . import notifications

@@ -18,9 +18,9 @@
     "write_lifelog",
     "parse_date",
     "get_current_date",
-    "add_top_of_mind",
-    "list_top_of_mind",
-    "remove_top_of_mind"
+    "add_memory",
+    "list_memory",
+    "remove_memory"
   ],
   "triggers": []
 }

@@ -1,8 +1,17 @@
-# Profile Spec
+# Anticipate
 
-This defines the mechanism that constructs a person's profile. The goal of Euno is to be "a personal intelligence that anticipates you." We achieve this goal by having a clear understanding of who the user is so that all Agent behaviors are shaped by this understanding of the person. This understanding starts with the cognitive core which in turns results in an annual profile and current profile.
+Euno is "a personal intelligence that anticipates you." This document defines how we achieve anticipation through two complementary systems: **Profile** and **Memory**.
 
-## Cognitive Core
+- **Profile** captures who you are — your patterns, values, fears, and stable behaviors built up over time
+- **Memory** captures what's on your mind — people, places, things, goals, concerns, and ideas from the last 90 days
+
+Together, these give agents the context to anticipate what you need before you ask.
+
+## Profile
+
+The Profile captures who you are based on observed behavior, not stated preferences. It's built from the Lifelog by the Profiler agent and updated over time.
+
+### Cognitive Core
 
 1. **Humans act to pursue what they desire and avoid what they fear.**
    These wants arise from biological drives and are shaped by experience (nature and nurture).
@@ -28,7 +37,7 @@ This defines the mechanism that constructs a person's profile. The goal of Euno 
 8. **Flourishing requires balance:**
    Most life is spent exploiting known, safe strategies for stability (≈90%), while a smaller portion is reserved for bounded, reversible exploration (≈10%) to discover new options and maintain future safety. Pressure can support growth, but only when it preserves agency, dignity, and integration.
 
-## Profile
+### Profile Schema
 
 The profile captures the cognitive core.
 
@@ -45,9 +54,39 @@ The profile captures the cognitive core.
 
 Year-specific snapshots using the same schema as the current profile. Historical profiles allow agents to track how a person changes over time, answer questions about what caused shifts, and distinguish stable attractors from temporary patterns.
 
+## Memory
+
+Memory tracks what's currently on the user's mind — the people, places, things, and ideas they've mentioned recently. While the Profile captures stable patterns over years, Memory captures the active context of the last 90 days.
+
+**Storage:** `data/user/memory.jsonl`
+
+**Entry Schema:**
+- `id` — Unique identifier (e.g., `mem-abc12345`)
+- `date_mentioned` — When the user first mentioned this item
+- `date_expected` — Optional date when this becomes relevant (e.g., a meeting, deadline, or event)
+- `type` — Category of the item
+- `short_description` — Brief description of what to remember
+
+**Types:**
+- `person` — Someone to follow up with, check on, or reconnect with
+- `place` — A location relevant to upcoming plans
+- `thing` — Physical items, purchases, or objects of interest
+- `goal` — Fitness goals, habits, skills being developed
+- `concern` — Health issues, relationship tensions, work challenges
+- `idea` — Projects to explore, insights, books, social media threads
+
+**Expiration:**
+Entries expire 90 days after `date_mentioned`. This keeps Memory focused on current context rather than accumulating stale items. The retention period is configurable in system settings.
+
+**How Agents Use Memory:**
+- Memory is included in every LLM system prompt alongside the Profile
+- The Friend agent proactively adds items when users mention something important
+- The Curator agent checks Memory items (especially those with approaching `date_expected`) during morning reviews
+- Agents use Memory to ask relevant follow-up questions and notice when something needs attention
+
 ## Agent Personas
 
-Agents have specific roles, personas, and behaviors to create and leverage the user's profile to form the Euno system. The agent personas are used in AI API calls as the system_prompt. They always include `0_core.agent.md` and their specific `[number]_[name].agent.md`.
+Agents have specific roles, personas, and behaviors to create and leverage the user's profile and memory to form the Euno system. The agent personas are used in AI API calls as the system_prompt. They always include `0_core.agent.md` and their specific `[number]_[name].agent.md`.
 
 ### 0. Core
 

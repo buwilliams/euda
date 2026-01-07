@@ -5,7 +5,7 @@
 - [2026-01-06][--] - Add proprietary license and operating agreement
 - [2026-01-06][--] - Move contribution docs to docs/3_contribute.md, renumber all docs
 - [2026-01-06][--] - Add job context to agent system prompts
-- [2026-01-06][--] - Add top-of-mind tracking feature and friend persona updates
+- [2026-01-06][--] - Add memory tracking feature and friend persona updates
 - [2026-01-06][--] - Fix History to show last activity time, fix mobile overscroll
 - [2026-01-06][--] - Rebuild History tab with Focus-style navigation and swipe gestures
 - [2026-01-06][--] - Add swipe/drag gestures for job cards and dismissable quote

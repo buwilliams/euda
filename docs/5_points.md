@@ -1,19 +1,18 @@
-# Contributions
+# Contribution Points
 
-The [contrib/](../contrib/) folder tracks all contributions to Euno. Each contributor has a markdown file recording their work.
+The points system tracks and rewards contributions to Euno. Each contributor has a markdown file in [contrib/](../contrib/) recording their work.
 
 ## Purpose
 
-Contributions are tracked here so that:
 - Contributors can see their recorded work
 - Point allocations are transparent
 - Early contributions are preserved for retroactive rewards at Gate 4
 
-See the [Operating Agreement](11_operating-agreement.md) for how contribution points translate to bonus pool distributions.
+See the [Operating Agreement](6_operating-agreement.md) for how contribution points translate to bonus pool distributions.
 
 ## File Format
 
-Each contributor has a file named `firstname-lastname.md` in the [contrib/](../contrib/) folder with the format:
+Each contributor has a file named `firstname-lastname.md` in [contrib/](../contrib/):
 
 ```markdown
 # Firstname Lastname
@@ -23,15 +22,6 @@ Each contributor has a file named `firstname-lastname.md` in the [contrib/](../c
 ```
 
 Entries are ordered by date descending (most recent first).
-
-## Workflow
-
-1. **Do the work** — Complete your feature, fix, documentation, or other contribution
-2. **Update your contrib file** — Add an entry describing what you did
-3. **Submit a PR** — Every pull request should include updates to your contrib file
-4. **Get approval** — Buddy Williams reviews and approves all PRs before merging to main
-
-Points are assigned by Buddy during PR review based on the point values below.
 
 ## Point Values
 
@@ -44,7 +34,7 @@ Points are assigned by Buddy during PR review based on the point values below.
 | Business/sales contribution | 10-50 |
 | Month of active contribution | 10 |
 
-Point values are subject to change.
+Point values are subject to change. Points are assigned by repository administrators during PR review.
 
 ## How Points Work
 
@@ -62,8 +52,6 @@ Points are retroactively assigned for contributions made before Gate 4, so early
 
 ## Checking Your Points
 
-Use the CLI to see contribution points:
-
 ```bash
 python main.py points           # Show all contributors
 python main.py points logan     # Filter by name (fuzzy match)
@@ -71,6 +59,6 @@ python main.py points logan     # Filter by name (fuzzy match)
 
 ## Related Documents
 
+- [Contributing Guide](4_contribute.md) — How to contribute
 - [Business Plan](2_business-plan.md) — Vision and growth gates
-- [Operating Agreement](11_operating-agreement.md) — Ownership, rewards, and governance
-- [License](../LICENSE) — Terms for using and contributing to Euno
+- [Operating Agreement](6_operating-agreement.md) — Ownership, rewards, and governance

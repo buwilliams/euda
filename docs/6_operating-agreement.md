@@ -26,7 +26,7 @@ Contributors do not receive equity. They receive profit-sharing through the bonu
 
 **Point values:** See [contrib/](../contrib/) for point values and tracking.
 
-**Process:** Contributors record their work in [contrib/](../contrib/) with each PR. Buddy reviews and assigns points during PR approval. Points are retroactively assigned for contributions made before Gate 4, so early contributors accumulate points from the start.
+**Process:** Contributors record their work in [contrib/](../contrib/) with each PR. Repository administrators review and assign points during PR approval. Points are retroactively assigned for contributions made before Gate 4, so early contributors accumulate points from the start.
 
 **Dilution:** As more contributors earn points, individual shares decrease. This is accepted as fair—new contribution deserves reward, and more contributors should grow the overall pie.
 
