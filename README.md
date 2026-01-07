@@ -19,24 +19,20 @@ Today's AI remembers facts about you, but it doesn't know you. Euno understands 
 
 ## Documentation
 
-| Doc | Description |
-|-----|-------------|
-| [Pitch](docs/1_pitch.md) | Introduction and vision |
-| [Business Plan](docs/2_business-plan.md) | Vision and growth gates |
-| [Anticipate](docs/3_anticipate.md) | Profile + Memory = Anticipation |
-| [Contributing](docs/4_contribute.md) | Setup, PR process, deployment |
-| [Points](docs/5_points.md) | Contribution tracking and rewards |
-| [Operating Agreement](docs/6_operating-agreement.md) | Ownership and governance |
+- [Pitch](docs/1_pitch.md) — Introduction and vision
+- [Business Plan](docs/2_business-plan.md) — Vision and growth gates
+- [Anticipate](docs/3_anticipate.md) — Profile + Memory = Anticipation
+- [Contributing](docs/4_contribute.md) — Setup, PR process, deployment
+- [Points](docs/5_points.md) — Contribution tracking and rewards
+- [Operating Agreement](docs/6_operating-agreement.md) — Ownership and governance
 
 ## Spec (Design Rules)
 
 The [spec/](spec/) directory contains scannable rules for drift detection:
 
-| Spec | Description |
-|------|-------------|
-| [Data](spec/1_data.md) | Entity schemas (lifelog, profile, memory, agent, job, config) |
-| [System](spec/2_system.md) | System behavior and architecture rules |
-| [User Experience](spec/3_user-experience.md) | UI/UX patterns and constraints |
+- [Data](spec/1_data.md) — Entity schemas (lifelog, profile, memory, agent, job, config)
+- [System](spec/2_system.md) — System behavior and architecture rules
+- [User Experience](spec/3_user-experience.md) — UI/UX patterns and constraints
 
 ## License
 
