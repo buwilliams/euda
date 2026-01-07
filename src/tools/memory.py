@@ -1,7 +1,7 @@
 """
-Top of Mind Tools - Track important items for proactive attention.
+Memory Tools - Track important items for proactive attention.
 
-Storage: JSONL file at data/user/top-of-mind.jsonl
+Storage: JSONL file at data/user/memory.jsonl
 Entries are valid for 3 months from date_mentioned.
 """
 
@@ -16,7 +16,7 @@ from . import tool
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 USER_DIR = DATA_DIR / "user"
-TOP_OF_MIND_FILE = USER_DIR / "top-of-mind.jsonl"
+MEMORY_FILE = USER_DIR / "memory.jsonl"
 
 VALID_TYPES = {"person", "place", "thing", "goal", "concern", "idea"}
 VALIDITY_DAYS = 90  # 3 months
@@ -28,11 +28,11 @@ def _ensure_user_dir():
 
 
 def _load_entries() -> List[dict]:
-    """Load all top-of-mind entries."""
+    """Load all memory entries."""
     _ensure_user_dir()
     entries = []
-    if TOP_OF_MIND_FILE.exists():
-        with open(TOP_OF_MIND_FILE, 'r') as f:
+    if MEMORY_FILE.exists():
+        with open(MEMORY_FILE, 'r') as f:
             for line in f:
                 line = line.strip()
                 if line:
@@ -46,7 +46,7 @@ def _load_entries() -> List[dict]:
 def _save_entries(entries: List[dict]):
     """Save all entries to file."""
     _ensure_user_dir()
-    with open(TOP_OF_MIND_FILE, 'w') as f:
+    with open(MEMORY_FILE, 'w') as f:
         for entry in entries:
             f.write(json.dumps(entry) + '\n')
 
@@ -61,13 +61,13 @@ def _is_valid(entry: dict) -> bool:
         return False
 
 
-@tool("add_top_of_mind", "Add an item to the user's top-of-mind list for proactive attention")
-def add_top_of_mind(
+@tool("add_memory", "Add an item to the user's memory for proactive attention")
+def add_memory(
     short_description: str,
     type: str,
     date_expected: str = None
 ) -> dict:
-    """Add a top-of-mind entry.
+    """Add a memory entry.
 
     Args:
         short_description: Brief description of what to remember (person, place, goal, etc.)
@@ -81,7 +81,7 @@ def add_top_of_mind(
         return {"error": f"Invalid type. Must be one of: {', '.join(sorted(VALID_TYPES))}"}
 
     entry = {
-        "id": f"tom-{uuid.uuid4().hex[:8]}",
+        "id": f"mem-{uuid.uuid4().hex[:8]}",
         "date_mentioned": datetime.now().strftime('%Y-%m-%d'),
         "date_expected": date_expected,
         "type": type,
@@ -95,9 +95,9 @@ def add_top_of_mind(
     return entry
 
 
-@tool("list_top_of_mind", "List all valid top-of-mind items for context")
-def list_top_of_mind() -> List[dict]:
-    """Get all valid (non-expired) top-of-mind entries.
+@tool("list_memory", "List all valid memory items for context")
+def list_memory() -> List[dict]:
+    """Get all valid (non-expired) memory entries.
 
     Entries older than 3 months are automatically pruned.
     """
@@ -112,12 +112,12 @@ def list_top_of_mind() -> List[dict]:
     return valid
 
 
-@tool("remove_top_of_mind", "Remove a top-of-mind item by ID")
-def remove_top_of_mind(entry_id: str) -> dict:
-    """Remove a top-of-mind entry.
+@tool("remove_memory", "Remove a memory item by ID")
+def remove_memory(entry_id: str) -> dict:
+    """Remove a memory entry.
 
     Args:
-        entry_id: The ID of the entry to remove (e.g., tom-abc12345)
+        entry_id: The ID of the entry to remove (e.g., mem-abc12345)
     """
     entries = _load_entries()
     original_count = len(entries)
@@ -130,17 +130,17 @@ def remove_top_of_mind(entry_id: str) -> dict:
     return {"removed": entry_id}
 
 
-def get_top_of_mind_for_prompt() -> str:
-    """Get formatted top-of-mind items for inclusion in system prompt.
+def get_memory_for_prompt() -> str:
+    """Get formatted memory items for inclusion in system prompt.
 
     This is called by the Agent class when building system prompts.
     Returns empty string if no items.
     """
-    entries = list_top_of_mind()
+    entries = list_memory()
     if not entries:
         return ""
 
-    lines = ["## Top of Mind", "", "Items the user has mentioned that may be relevant:", ""]
+    lines = ["## Memory", "", "Items the user has mentioned that may be relevant:", ""]
 
     # Sort by type for readability
     entries_by_type = {}

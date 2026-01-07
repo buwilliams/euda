@@ -9,27 +9,30 @@ Today's AI remembers facts about you, but it doesn't know you. Euno understands 
 ## Contributing
 
 1. **Get access** — Request access to the [repo](https://github.com/buwilliams/Euno) and [GitHub Projects](https://github.com/users/buwilliams/projects/1)
-2. **Read the docs** — Start with [Pitch](docs/1_pitch.md), [Business Plan](docs/2_business-plan.md), and [Contribute](docs/3_contribute.md), then read any docs applicable to how you want to contribute
-3. **Set up your remote server** — See [DevOps](docs/8_devops.md) for deployment instructions
-4. **Work on your first feature** — Pick a task from [GitHub Projects](https://github.com/users/buwilliams/projects/1) and get started
-5. **[Track your contribution points](docs/3_contribute.md)** — Add entries to your file in [contrib/](contrib/) with each PR
-6. **Submit your PR** — Once approved by Buddy, your contribution points are finalized
+2. **Read the docs** — Start with [Pitch](docs/1_pitch.md) and [Business Plan](docs/2_business-plan.md)
+3. **Set up locally** — See [Contributing Guide](docs/4_contribute.md) for setup and deployment
+4. **Work on your first feature** — Pick a task from [GitHub Projects](https://github.com/users/buwilliams/projects/1)
+5. **Review against spec** — Check your changes against [spec/](spec/) for drift
+6. **Submit your PR** — Repository administrators approve merges into main
 
-**Time & cost expectations:** See [Affordable Loss](docs/2_business-plan.md#vision) in the Business Plan for expected time and financial commitments. We're all investing our own resources because we believe in the vision. See the [Operating Agreement](docs/11_operating-agreement.md) for what contributors get in return.
+**Time & cost expectations:** See [Affordable Loss](docs/2_business-plan.md#vision) in the Business Plan. See the [Operating Agreement](docs/6_operating-agreement.md) for contributor rewards.
 
 ## Documentation
 
-1. **[Pitch](docs/1_pitch.md)** — Introduction and vision overview
-2. **[Business Plan](docs/2_business-plan.md)** — Vision and growth gates
-3. **[Contribute](docs/3_contribute.md)** — Contribution tracking and points
-4. **[Profile](docs/4_profile.md)** — Profile system and agent personas
-5. **[Architecture](docs/5_architecture.md)** — Technical design and implementation
-6. **[User Experience](docs/6_user-experience.md)** — UI/UX philosophy and vision
-7. **[User Interface](docs/7_user-interface.md)** — Current UI components and layout
-8. **[DevOps](docs/8_devops.md)** — Deployment and operations
-9. **[Rules](docs/9_rules.md)** — Development rules and guidelines
-10. **[Roadmap](docs/10_roadmap.md)** — Product roadmap
-11. **[Operating Agreement](docs/11_operating-agreement.md)** — Ownership, contributor rewards, and governance
+- [Pitch](docs/1_pitch.md) — Introduction and vision
+- [Business Plan](docs/2_business-plan.md) — Vision and growth gates
+- [Anticipate](docs/3_anticipate.md) — Profile + Memory = Anticipation
+- [Contributing](docs/4_contribute.md) — Setup, PR process, deployment
+- [Points](docs/5_points.md) — Contribution tracking and rewards
+- [Operating Agreement](docs/6_operating-agreement.md) — Ownership and governance
+
+## Spec (Design Rules)
+
+The [spec/](spec/) directory contains scannable rules for drift detection:
+
+- [Data](spec/1_data.md) — Entity schemas (lifelog, profile, memory, agent, job, config)
+- [System](spec/2_system.md) — System behavior and architecture rules
+- [User Experience](spec/3_user-experience.md) — UI/UX patterns and constraints
 
 ## License
 

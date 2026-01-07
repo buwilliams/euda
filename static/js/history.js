@@ -120,9 +120,9 @@ function animateHistoryTransition(container, newContent, direction) {
     newView.innerHTML = newContent;
 
     if (direction === 'forward') {
-        newView.classList.add('slide-in-right');
-    } else {
         newView.classList.add('slide-in-left');
+    } else {
+        newView.classList.add('slide-in-right');
     }
 
     container.appendChild(newView);
@@ -130,10 +130,10 @@ function animateHistoryTransition(container, newContent, direction) {
 
     if (direction === 'forward') {
         oldView.classList.remove('current');
-        oldView.classList.add('slide-out-left');
+        oldView.classList.add('slide-out-right');
     } else {
         oldView.classList.remove('current');
-        oldView.classList.add('slide-out-right');
+        oldView.classList.add('slide-out-left');
     }
 
     newView.classList.remove('slide-in-left', 'slide-in-right');

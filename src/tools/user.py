@@ -24,7 +24,7 @@ def get_user_profile() -> dict:
     """Get the user's profile."""
     _ensure_user_dir()
 
-    profile_path = USER_DIR / "user-profile.md"
+    profile_path = USER_DIR / "profile.current.md"
     if profile_path.exists():
         return {
             "content": profile_path.read_text(),
@@ -41,7 +41,7 @@ def update_user_profile(content: str) -> dict:
     """Update the user's profile."""
     _ensure_user_dir()
 
-    profile_path = USER_DIR / "user-profile.md"
+    profile_path = USER_DIR / "profile.current.md"
     profile_path.write_text(content)
 
     return {"status": "updated"}

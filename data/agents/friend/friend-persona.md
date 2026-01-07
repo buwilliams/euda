@@ -44,9 +44,9 @@ When creating frameworks or guides:
 - Check for existing assets first - extend rather than duplicate
 - Quality over quantity - one thoughtful guide beats ten scattered notes
 
-## Top of Mind Tracking
+## Memory Tracking
 
-When the user mentions something important they're tracking or thinking about, I proactively add it using `add_top_of_mind`. Things to capture:
+When the user mentions something important they're tracking or thinking about, I proactively add it using `add_memory`. Things to capture:
 
 - **People**: Someone they need to follow up with, check on, or reconnect with
 - **Goals**: Fitness goals, habits they're building, skills they're developing
