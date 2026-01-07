@@ -12,6 +12,8 @@ from pydantic import BaseModel
 
 import openai
 
+from ...cost_tracker import record_usage
+
 
 router = APIRouter()
 
@@ -70,15 +72,30 @@ async def transcribe_audio(audio: UploadFile = File(...)):
         # Initialize OpenAI client
         client = openai.OpenAI()
 
-        # Call OpenAI transcription API
+        # Call OpenAI transcription API with verbose format to get token usage
         with open(tmp_path, 'rb') as audio_file:
             response = client.audio.transcriptions.create(
                 model="gpt-4o-transcribe",
                 file=audio_file,
-                response_format="text"
+                response_format="verbose_json"
             )
 
-        return TranscriptionResponse(text=response)
+        # Record cost based on audio duration and output text
+        # verbose_json response includes 'duration' field (audio length in seconds)
+        # Audio input is tokenized at ~50 tokens/second
+        # Output tokens estimated from text length (~4 chars per token)
+        text = response.text
+        duration_seconds = getattr(response, 'duration', 0) or 0
+        estimated_input_tokens = max(1, int(duration_seconds * 50))
+        estimated_output_tokens = max(1, len(text) // 4)
+        record_usage(
+            model="gpt-4o-transcribe",
+            input_tokens=estimated_input_tokens,
+            output_tokens=estimated_output_tokens,
+            agent_id="transcribe"
+        )
+
+        return TranscriptionResponse(text=text)
 
     except openai.BadRequestError as e:
         raise HTTPException(
