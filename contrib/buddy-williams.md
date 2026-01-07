@@ -1,5 +1,6 @@
 # Buddy Williams
 
+- [2026-01-07][--] - Updated docs, added specs, updated PR review process, and updated point system
 - [2026-01-07][--] - Refactored batch-api-calls branch for mentoring Logan
 - [2026-01-06][--] - Add contribution tracking system with points CLI command
 - [2026-01-06][--] - Add proprietary license and operating agreement

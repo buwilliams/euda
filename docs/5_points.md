@@ -34,11 +34,11 @@ A single insight that reshapes how we think about a problem can be worth more th
 
 ## Point Values
 
-- **5** — Fix a bug, improve docs, add a small feature
-- **10** — Identify a usability problem through real usage, ship a useful feature, write a guide
-- **20** — Discover a pattern of friction across the system, build a significant feature, design a better interaction pattern
-- **30** — Surface a fundamental flaw in the UX or architecture, ship a major capability, ideation that reshapes how we approach a problem
-- **50** — Invent an approach that fundamentally advances Euno, discover something that changes our direction, ship a breakthrough feature, ideation that produces a step-change for the user or vision
+- **5** — Fix a bug, improve docs, add a small feature, create marketing content
+- **10** — Identify a usability problem through real usage, ship a useful feature, write a guide, bring in a new contributor
+- **20** — Discover a pattern of friction across the system, build a significant feature, design a better interaction pattern, branding work that improves perception, close a small sales deal, bring in a new paying user, fix-frenzy (fix many bugs in one push), usability sweep (identify many problems through focused testing)
+- **30** — Surface a fundamental flaw in the UX or architecture, ship a major capability, ideation that reshapes how we approach a problem, close a significant sales deal, marketing that drives measurable growth
+- **50** — Invent an approach that fundamentally advances Euno, discover something that changes our direction, ship a breakthrough feature, ideation that produces a step-change for the user or vision, bring in investment capital
 
 Points are assigned by repository administrators during PR review. When in doubt, ask: "How much closer does this bring us to the vision?"
 
