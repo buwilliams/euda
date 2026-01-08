@@ -25,6 +25,7 @@ Today's AI remembers facts about you, but it doesn't know you. Euno understands 
 - [Contributing](docs/4_contribute.md) — Setup, PR process, deployment
 - [Points](docs/5_points.md) — Contribution tracking and rewards
 - [Operating Agreement](docs/6_operating-agreement.md) — Ownership and governance
+- [Privacy](docs/7_privacy.md) — Privacy philosophy and current state
 
 ## Spec (Design Rules)
 
