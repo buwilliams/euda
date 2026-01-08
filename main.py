@@ -191,16 +191,35 @@ def cmd_agents(args):
     print("=" * 60)
     print()
 
+    data_dir = Path(__file__).parent / "data"
+
+    # Show system state
+    system_state_path = data_dir / "system" / "state.json"
+    if system_state_path.exists():
+        with open(system_state_path) as f:
+            system_state = json.load(f)
+        last_morning = system_state.get("last_morning", "never")
+        last_evening = system_state.get("last_evening", "never")
+    else:
+        last_morning = "never"
+        last_evening = "never"
+
+    print(f"System: last_morning={last_morning}, last_evening={last_evening}")
+    print()
+
     agents = list_agents()
     if not agents:
         print("No agents configured.")
         return
 
-    data_dir = Path(__file__).parent / "data"
+    # Sort agents by order
+    agents.sort(key=lambda a: a.get("order", 999))
 
     for agent in agents:
         status = "enabled" if agent.get("enabled") else "disabled"
         agent_id = agent['id']
+        order = agent.get("order", "-")
+        triggers = ", ".join(agent.get("triggers", [])) or "none"
 
         # Load agent state to get last_ran
         state_path = data_dir / "agents" / agent_id / "state.json"
@@ -211,7 +230,10 @@ def cmd_agents(args):
                 if "last_ran" in state:
                     last_ran = state["last_ran"]
 
-        print(f"  {agent_id}: {agent['name']} [{status}] (last ran: {last_ran})")
+        print(f"  [{order}] {agent_id}: {agent['name']} [{status}]")
+        print(f"      triggers: {triggers}")
+        print(f"      last_ran: {last_ran}")
+        print()
 
 
 def cmd_jobs(args):

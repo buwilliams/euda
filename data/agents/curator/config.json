@@ -18,5 +18,5 @@
     "send_chat_message",
     "check_user_connected"
   ],
-  "triggers": ["time:morning"]
+  "triggers": ["time:morning", "system:start"]
 }

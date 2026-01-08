@@ -17,5 +17,5 @@
     "send_notification",
     "done_working"
   ],
-  "triggers": ["time:evening"]
+  "triggers": ["time:evening", "system:start"]
 }
