@@ -128,7 +128,7 @@ def write_lifelog(content: str, date: str = None, agent: str = None) -> dict:
                     name=job_name,
                     description="New lifelog entry to process",
                     assignees=[agent_config["id"]],
-                    tags=["trigger:lifelog-new", "auto-complete"],
+                    tags=["trigger:lifelog-new"],
                     due_date=None,
                     created_by="system"
                 )

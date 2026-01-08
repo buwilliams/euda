@@ -27,8 +27,7 @@ Rules for how Agents, Jobs, Triggers, and the Manager work together.
 - Triggers are configured per-agent in `config.json` under `triggers[]`
 - Triggers create jobs, they do not wake agents directly
 - Trigger job naming: `Trigger:{name}:{yyyy-mm-dd}`
-- Trigger jobs have tags `trigger:{name}` and `auto-complete`
-- Trigger jobs auto-complete after the work cycle ends
+- Trigger jobs have tag `trigger:{name}`
 - Trigger types:
   - `system:start` — fires once at system startup
   - `time:{name}` — fires at scheduled times (morning, evening, hourly)
@@ -46,5 +45,5 @@ Rules for how Agents, Jobs, Triggers, and the Manager work together.
 
 - Agent fetches all actionable jobs assigned to it
 - Agent works autonomously until calling `done_working` (max iterations configurable)
-- Trigger jobs with `auto-complete` tag are completed automatically after the cycle
-- Regular jobs must be explicitly completed by the agent
+- Agent decides when any job is complete — including trigger jobs
+- Jobs must be explicitly completed by the agent via `complete_job`

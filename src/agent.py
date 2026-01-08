@@ -354,7 +354,7 @@ class Agent:
         Args:
             trigger_context: Optional event data that triggered this cycle
         """
-        from .tools.jobs import list_jobs, complete_job
+        from .tools.jobs import list_jobs
 
         self._log("work_cycle_start", {"trigger": trigger_context})
         self._work_done = False
@@ -366,22 +366,7 @@ class Agent:
             self._log("work_cycle_end", {"reason": "no_jobs"})
             return  # Nothing to do
 
-        # Identify trigger jobs (those with trigger:* tags and auto-complete tag)
-        trigger_jobs = []
-        regular_jobs = []
-        for job in jobs:
-            tags = job.get("tags", [])
-            is_trigger = any(t.startswith("trigger:") for t in tags)
-            if is_trigger and "auto-complete" in tags:
-                trigger_jobs.append(job)
-            else:
-                regular_jobs.append(job)
-
-        self._log("work_cycle_jobs_found", {
-            "count": len(jobs),
-            "trigger_jobs": len(trigger_jobs),
-            "regular_jobs": len(regular_jobs)
-        })
+        self._log("work_cycle_jobs_found", {"count": len(jobs)})
 
         # Initial prompt asking agent to work on assigned jobs
         prompt = f"""You have jobs assigned to you that need attention:
@@ -408,14 +393,6 @@ Work on these jobs according to your role. When you're finished working, call th
 
             # Continue prompt for subsequent iterations
             prompt = "Continue working on your tasks. When finished, call done_working."
-
-        # Auto-complete trigger jobs after work cycle ends
-        for job in trigger_jobs:
-            try:
-                complete_job(job["id"], agent=self.id)
-                self._log("auto_completed_trigger_job", {"job_id": job["id"], "name": job["name"]})
-            except Exception as e:
-                self._log("auto_complete_failed", {"job_id": job["id"], "error": str(e)})
 
         if iteration >= max_iterations:
             self._log("work_cycle_end", {"reason": "max_iterations", "iterations": iteration})

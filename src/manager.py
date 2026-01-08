@@ -232,7 +232,7 @@ class AgentManager:
                         name=job_name,
                         description="System startup trigger",
                         assignees=[agent_id],
-                        tags=["trigger:start", "auto-complete"],
+                        tags=["trigger:start"],
                         due_date=None,
                         created_by="system"
                     )
@@ -264,7 +264,7 @@ class AgentManager:
                                 name=job_name,
                                 description=f"Missed {trigger} trigger",
                                 assignees=[agent_id],
-                                tags=[f"trigger:{trigger_type}", "auto-complete"],
+                                tags=[f"trigger:{trigger_type}"],
                                 due_date=None,
                                 created_by="system"
                             )
@@ -408,7 +408,7 @@ class AgentManager:
                                         name=job_name,
                                         description=f"Scheduled trigger for {trigger_name}",
                                         assignees=[agent_id],
-                                        tags=[f"trigger:{name}", "auto-complete"],
+                                        tags=[f"trigger:{name}"],
                                         due_date=None,
                                         created_by="system"
                                     )
