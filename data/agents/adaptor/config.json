@@ -13,6 +13,7 @@
     "list_jobs",
     "get_job",
     "create_job",
+    "complete_job",
     "add_job_log",
     "send_notification",
     "done_working"
