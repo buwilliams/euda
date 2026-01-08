@@ -405,10 +405,10 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    # Prevent completing system containers
-    system_tags = {"system:agents", "system:projects"}
+    # Prevent completing system jobs (containers and agent inboxes)
+    system_tags = {"system:agents", "system:projects", "agent-inbox"}
     if any(tag in system_tags for tag in job.get("tags", [])):
-        return {"error": "Cannot complete system containers"}
+        return {"error": "Cannot complete system jobs"}
 
     now = datetime.utcnow().isoformat() + "Z"
 
@@ -466,10 +466,10 @@ def archive_job(job_id: str, agent: str = "user") -> Optional[dict]:
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    # Prevent archiving system containers
-    system_tags = {"system:agents", "system:projects"}
+    # Prevent archiving system jobs (containers and agent inboxes)
+    system_tags = {"system:agents", "system:projects", "agent-inbox"}
     if any(tag in system_tags for tag in job.get("tags", [])):
-        return {"error": "Cannot archive system containers"}
+        return {"error": "Cannot archive system jobs"}
 
     now = datetime.utcnow().isoformat() + "Z"
 
@@ -529,10 +529,10 @@ def delete_job(job_id: str, delete_children: bool = False) -> dict:
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    # Prevent deletion of system containers
-    system_tags = {"system:agents", "system:projects"}
+    # Prevent deletion of system jobs (containers and agent inboxes)
+    system_tags = {"system:agents", "system:projects", "agent-inbox"}
     if any(tag in system_tags for tag in job.get("tags", [])):
-        return {"error": "Cannot delete system containers"}
+        return {"error": "Cannot delete system jobs"}
 
     # Delete children if requested (must do before parent due to FK)
     if delete_children:
