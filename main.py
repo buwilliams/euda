@@ -183,6 +183,7 @@ def cmd_chat(args):
 
 def cmd_agents(args):
     """List all agents."""
+    import json
     from src.tools.agents import list_agents
 
     print("=" * 60)
@@ -195,9 +196,22 @@ def cmd_agents(args):
         print("No agents configured.")
         return
 
+    data_dir = Path(__file__).parent / "data"
+
     for agent in agents:
         status = "enabled" if agent.get("enabled") else "disabled"
-        print(f"  {agent['id']}: {agent['name']} [{status}]")
+        agent_id = agent['id']
+
+        # Load agent state to get last_ran
+        state_path = data_dir / "agents" / agent_id / "state.json"
+        last_ran = "never"
+        if state_path.exists():
+            with open(state_path) as f:
+                state = json.load(f)
+                if "last_ran" in state:
+                    last_ran = state["last_ran"]
+
+        print(f"  {agent_id}: {agent['name']} [{status}] (last ran: {last_ran})")
 
 
 def cmd_jobs(args):

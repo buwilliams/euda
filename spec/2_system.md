@@ -15,3 +15,9 @@ Rules for how the system operates and components interact.
 - Agents initiate proactively, not just respond when asked
 - Self-hosted — users own their data and infrastructure
 - The intelligence is separate from the interface — today a web app, tomorrow voice, wearable, or ambient
+- `system:start` trigger fires once at startup for subscribed agents
+- Missed `time:morning` and `time:evening` triggers are detected at startup by comparing current time against `data/system/state.json` (`last_morning`, `last_evening`)
+- If a time trigger was missed, it fires once at startup (agent receives only one trigger even if both morning and evening were missed)
+- Disabled agents are never triggered, even for missed triggers
+- Agent run state is tracked in `data/agents/{id}/state.json` with `last_ran` timestamp
+- System trigger state is tracked in `data/system/state.json`
