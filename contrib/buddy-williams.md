@@ -1,5 +1,9 @@
 # Buddy Williams
 
+- [2026-01-08][--] - Reorganize spec files: rename to agents, backend, ux_ui; add CLI spec; document specs as AI-first alternative to unit tests
+- [2026-01-08][--] - Add CLI agents subcommands (filter, enable, disable, logs) and update fresh-start command
+- [2026-01-08][--] - Make LLM token limits configurable per provider (max_output_tokens, max_input_tokens)
+- [2026-01-08][--] - Major refactor: job-based agent orchestration with 100ms polling, job cache, system:start triggers, and collapsible UI sections
 - [2026-01-07][--] - Updated docs, added specs, updated PR review process, and updated point system
 - [2026-01-07][--] - Refactored batch-api-calls branch for mentoring Logan
 - [2026-01-06][--] - Add contribution tracking system with points CLI command

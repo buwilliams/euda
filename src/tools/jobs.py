@@ -123,6 +123,14 @@ def _emit_jobs_update():
     emit_ui_event("jobs_update", {"jobs": all_jobs})
 
 
+def _notify_agent_has_jobs(agent_id: str):
+    """Notify the job cache that an agent has pending jobs."""
+    from ..manager import get_manager
+    manager = get_manager()
+    if manager:
+        manager.agents_with_jobs[agent_id] = True
+
+
 def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
     """Convert a database row to a job dictionary."""
     # Handle columns that may not exist in older schemas
@@ -173,8 +181,8 @@ def _load_job(job_id: str) -> Optional[dict]:
     return None
 
 
-@tool("list_jobs", "List all jobs, optionally filtered by status, parent, tag, or assignee")
-def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assignee: str = None) -> List[dict]:
+@tool("list_jobs", "List all jobs, optionally filtered by status, parent, tag, assignee, or actionable due date")
+def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assignee: str = None, actionable: bool = False) -> List[dict]:
     """List jobs with optional filters.
 
     Args:
@@ -182,7 +190,10 @@ def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assign
         parent_id: Filter by parent job ID (empty string for root jobs)
         tag: Filter to jobs containing this tag
         assignee: Filter to jobs assigned to this agent ID
+        actionable: If True, only return jobs with due_date <= today or NULL, and not someday
     """
+    from datetime import date
+
     conn = _get_connection()
 
     query = "SELECT * FROM jobs WHERE 1=1"
@@ -208,6 +219,13 @@ def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assign
         # Filter jobs that have the specified agent in their assignees JSON array
         query += " AND EXISTS (SELECT 1 FROM json_each(assignees) WHERE json_each.value = ?)"
         params.append(assignee)
+
+    if actionable:
+        # Only jobs that are due today, past, or have no due date (and not someday)
+        today = date.today().isoformat()
+        query += " AND (due_date IS NULL OR due_date <= ?)"
+        params.append(today)
+        query += " AND someday = 0"
 
     query += " ORDER BY updated_at DESC"
 
@@ -308,6 +326,7 @@ def create_job(
     _emit_event("job:created", data={"job_id": job_id, "name": name})
     for agent_id in (assignees or []):
         _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": name})
+        _notify_agent_has_jobs(agent_id)
 
     # Notify UI clients
     _emit_jobs_update()
@@ -369,6 +388,7 @@ def update_job(
         new_assignees = set(assignees) - old_assignees
         for agent_id in new_assignees:
             _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": job["name"]})
+            _notify_agent_has_jobs(agent_id)
 
     # Notify UI clients
     _emit_jobs_update()
@@ -771,8 +791,9 @@ def assign_agent(job_id: str, agent_id: str) -> Optional[dict]:
             (job_id, now, "system", f"assigned:{agent_id}")
         )
 
-    # Emit job:assigned event to the agent
+    # Emit job:assigned event to the agent and notify cache
     _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": job["name"]})
+    _notify_agent_has_jobs(agent_id)
 
     # Notify UI clients
     _emit_jobs_update()

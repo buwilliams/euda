@@ -182,22 +182,160 @@ def cmd_chat(args):
 
 
 def cmd_agents(args):
-    """List all agents."""
+    """List agents or perform agent actions."""
+    import json
     from src.tools.agents import list_agents
+
+    # Handle help action
+    if args and args[0] == 'help':
+        print("Usage: python main.py agents [name] [action]")
+        print()
+        print("Arguments:")
+        print("  [name]    Agent ID to filter or act on")
+        print()
+        print("Actions:")
+        print("  (none)    Show agent info")
+        print("  enable    Enable the agent")
+        print("  disable   Disable the agent")
+        print("  logs      Show last 50 log entries")
+        print("  help      Show this help")
+        return
+
+    data_dir = Path(__file__).parent / "data"
+
+    # Parse args: [name] [action]
+    agent_filter = args[0] if args else None
+    action = args[1] if len(args) > 1 else None
+
+    # Handle actions
+    if agent_filter and action:
+        if action == "enable":
+            _agent_set_enabled(agent_filter, True)
+        elif action == "disable":
+            _agent_set_enabled(agent_filter, False)
+        elif action == "logs":
+            _agent_show_logs(agent_filter)
+        else:
+            print(f"Unknown action: {action}")
+            print("Valid actions: enable, disable, logs")
+        return
 
     print("=" * 60)
     print("Euno - Agents")
     print("=" * 60)
     print()
 
+    # Show system state (only when listing all agents)
+    if not agent_filter:
+        system_state_path = data_dir / "system" / "state.json"
+        if system_state_path.exists():
+            with open(system_state_path) as f:
+                system_state = json.load(f)
+            last_morning = system_state.get("last_morning", "never")
+            last_evening = system_state.get("last_evening", "never")
+        else:
+            last_morning = "never"
+            last_evening = "never"
+
+        print(f"System: last_morning={last_morning}, last_evening={last_evening}")
+        print()
+
     agents = list_agents()
     if not agents:
         print("No agents configured.")
         return
 
+    # Filter by name if provided
+    if agent_filter:
+        agents = [a for a in agents if a['id'] == agent_filter]
+        if not agents:
+            print(f"Agent not found: {agent_filter}")
+            return
+
+    # Sort agents by order
+    agents.sort(key=lambda a: a.get("order", 999))
+
     for agent in agents:
         status = "enabled" if agent.get("enabled") else "disabled"
-        print(f"  {agent['id']}: {agent['name']} [{status}]")
+        agent_id = agent['id']
+        order = agent.get("order", "-")
+        triggers = ", ".join(agent.get("triggers", [])) or "none"
+
+        # Load agent state to get last_ran
+        state_path = data_dir / "agents" / agent_id / "state.json"
+        last_ran = "never"
+        if state_path.exists():
+            with open(state_path) as f:
+                state = json.load(f)
+                if "last_ran" in state:
+                    last_ran = state["last_ran"]
+
+        print(f"  [{order}] {agent_id}: {agent['name']} [{status}]")
+        print(f"      triggers: {triggers}")
+        print(f"      last_ran: {last_ran}")
+        print()
+
+
+def _agent_set_enabled(agent_id: str, enabled: bool):
+    """Enable or disable an agent."""
+    import json
+
+    config_path = Path(__file__).parent / "data" / "agents" / agent_id / "config.json"
+    if not config_path.exists():
+        print(f"Agent not found: {agent_id}")
+        return
+
+    with open(config_path) as f:
+        config = json.load(f)
+
+    config["enabled"] = enabled
+
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")
+
+    status = "enabled" if enabled else "disabled"
+    print(f"Agent {agent_id} {status}.")
+
+
+def _agent_show_logs(agent_id: str):
+    """Show last 50 log entries for an agent."""
+    import json
+
+    logs_dir = Path(__file__).parent / "data" / "agents" / agent_id / "logs"
+    if not logs_dir.exists():
+        print(f"No logs found for agent: {agent_id}")
+        return
+
+    # Find most recent log file
+    log_files = sorted(logs_dir.glob("*.json*"), reverse=True)
+    if not log_files:
+        print(f"No log files found for agent: {agent_id}")
+        return
+
+    log_file = log_files[0]
+    print(f"Showing logs from: {log_file.name}")
+    print()
+
+    # Read last 50 entries (JSONL format - one JSON object per line)
+    entries = []
+    with open(log_file) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    entries.append(json.loads(line))
+                except json.JSONDecodeError:
+                    pass
+
+    for entry in entries[-50:]:
+        ts = entry.get("timestamp", "?")[:19]
+        event = entry.get("event", "?")
+        details = entry.get("details", {})
+        details_str = json.dumps(details)
+        if len(details_str) > 80:
+            details_str = details_str[:77] + "..."
+        print(f"[{ts}] {event}: {details_str}")
 
 
 def cmd_jobs(args):
@@ -391,9 +529,11 @@ def cmd_fresh_start(args):
     print()
     print("This will DELETE:")
     print("  - All lifelog entries")
-    print("  - User profile")
+    print("  - User profile and memory")
+    print("  - Cost tracking history")
     print("  - All jobs and job assets")
-    print("  - All agent logs and conversation history")
+    print("  - All agent logs, state, and conversation history")
+    print("  - System trigger state")
     print("  - Password (if set)")
     print()
     print("This will KEEP:")
@@ -409,7 +549,7 @@ def cmd_fresh_start(args):
     data_dir = Path(__file__).parent / "data"
     deleted = []
 
-    # 1. Clear user data (lifelog, profile)
+    # 1. Clear user data (lifelog, profile, memory, costs)
     user_dir = data_dir / "user"
     if user_dir.exists():
         # Remove lifelog files
@@ -418,11 +558,21 @@ def cmd_fresh_start(args):
             for f in lifelog_dir.glob("*.md"):
                 f.unlink()
                 deleted.append(f"lifelog/{f.name}")
-        # Remove profile
-        profile = user_dir / "user-profile.md"
-        if profile.exists():
+        # Remove profile (current and historical)
+        for profile in user_dir.glob("profile*.md"):
             profile.unlink()
-            deleted.append("user-profile.md")
+            deleted.append(f"user/{profile.name}")
+        # Remove memory
+        memory_file = user_dir / "memory.jsonl"
+        if memory_file.exists():
+            memory_file.unlink()
+            deleted.append("user/memory.jsonl")
+        # Remove cost tracking
+        costs_dir = user_dir / "costs"
+        if costs_dir.exists():
+            for f in costs_dir.glob("*.jsonl"):
+                f.unlink()
+                deleted.append(f"user/costs/{f.name}")
 
     # 2. Clear jobs database and assets
     jobs_dir = data_dir / "jobs"
@@ -454,17 +604,30 @@ def cmd_fresh_start(args):
                 if logs_dir.exists():
                     shutil.rmtree(logs_dir)
                     deleted.append(f"agents/{agent_dir.name}/logs/")
-                # Remove state (conversation history, memory)
+                # Remove state directory (conversation history, memory)
                 state_dir = agent_dir / "state"
                 if state_dir.exists():
                     shutil.rmtree(state_dir)
                     deleted.append(f"agents/{agent_dir.name}/state/")
+                # Remove state.json (last_ran timestamp)
+                state_file = agent_dir / "state.json"
+                if state_file.exists():
+                    state_file.unlink()
+                    deleted.append(f"agents/{agent_dir.name}/state.json")
 
-    # 4. Remove password
-    auth_file = data_dir / "system" / "auth.json"
-    if auth_file.exists():
-        auth_file.unlink()
-        deleted.append("system/auth.json")
+    # 4. Remove system state and password
+    system_dir = data_dir / "system"
+    if system_dir.exists():
+        # Remove system state (trigger tracking)
+        state_file = system_dir / "state.json"
+        if state_file.exists():
+            state_file.unlink()
+            deleted.append("system/state.json")
+        # Remove password
+        auth_file = system_dir / "auth.json"
+        if auth_file.exists():
+            auth_file.unlink()
+            deleted.append("system/auth.json")
 
     print()
     print(f"Deleted {len(deleted)} items:")

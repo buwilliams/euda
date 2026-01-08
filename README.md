@@ -28,11 +28,15 @@ Today's AI remembers facts about you, but it doesn't know you. Euno understands 
 
 ## Spec (Design Rules)
 
-The [spec/](spec/) directory contains scannable rules for drift detection:
+The [spec/](spec/) directory is the best place to understand how Euno works. Each file is intentionally scannable—designed for both humans and AI to quickly grasp the system's rules.
 
-- [Data](spec/1_data.md) — Entity schemas (lifelog, profile, memory, agent, job, config)
-- [System](spec/2_system.md) — System behavior and architecture rules
-- [User Experience](spec/3_user-experience.md) — UI/UX patterns and constraints
+**Why specs matter:** Specs are our AI-first alternative to unit tests. They maintain system consistency across the entire platform. Before merging any PR, ask a coding agent to review the specs and check for implementation drift. This ensures changes align with the system's design.
+
+- [Agents](spec/1_agents.md) — Agent behavior, job coordination, triggers, work cycles
+- [Data](spec/2_data.md) — Entity schemas (lifelog, profile, memory, agent, job, config)
+- [Backend](spec/3_backend.md) — Server, API, authentication, storage
+- [UX & UI](spec/4_ux_ui.md) — User experience and interface patterns
+- [CLI](spec/5_cli.md) — Command-line interface commands and behavior
 
 ## License
 

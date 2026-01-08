@@ -3,8 +3,9 @@ Upload API Route
 
 Handles file uploads by:
 1. Finding the Archivist's inbox job (under Agents)
-2. Creating an ingest job as a child of Archivist's inbox
+2. Creating an ingest job per file as a child of Archivist's inbox
 3. Saving the file as an asset attached to that job
+4. Triggering the Archivist via job:assigned
 """
 
 from pathlib import Path
@@ -31,7 +32,7 @@ async def upload_file(file: UploadFile = File(...)):
     """Upload a file for processing.
 
     Creates an ingest job under the Archivist's inbox and saves the file as an asset.
-    The archivist will process the file and add it to the lifelog.
+    The Archivist will process the file and add it to the lifelog.
     """
     # Get the Archivist's inbox
     archivist_inbox = get_archivist_inbox()
@@ -41,7 +42,6 @@ async def upload_file(file: UploadFile = File(...)):
         name=f"Ingest: {file.filename}",
         description=f"Process uploaded file: {file.filename}",
         parent_id=archivist_inbox["id"],
-        tags=["ingest"],
         assignees=["archivist"],
         created_by="user"
     )
@@ -61,5 +61,5 @@ async def upload_file(file: UploadFile = File(...)):
         "filename": file.filename,
         "job_id": job_id,
         "archivist_inbox_id": archivist_inbox["id"],
-        "message": f"File queued for processing. The archivist will review it shortly."
+        "message": "File queued for processing. The Archivist will review it shortly."
     }

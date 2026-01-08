@@ -23,6 +23,7 @@ from .events import EventBus, set_event_bus, get_event_bus
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
+SYSTEM_STATE_PATH = DATA_DIR / "system" / "state.json"
 
 # Global manager instance for tools to access
 _manager_instance: 'AgentManager' = None
@@ -47,6 +48,7 @@ class AgentManager:
         self.threads: Dict[str, threading.Thread] = {}
         self.running = False
         self.error_backoff: Dict[str, dict] = {}  # Track backoff state per agent
+        self.agents_with_jobs: Dict[str, bool] = {}  # Cache: agent_id -> has_jobs
         self.event_bus = EventBus()
 
     def load_agent_configs(self) -> List[dict]:
@@ -97,6 +99,40 @@ class AgentManager:
                 return json.load(f)
         return {}
 
+    def _get_system_state(self) -> dict:
+        """Load system state from data/system/state.json."""
+        if SYSTEM_STATE_PATH.exists():
+            with open(SYSTEM_STATE_PATH) as f:
+                return json.load(f)
+        return {}
+
+    def _save_system_state(self, state: dict):
+        """Save system state to data/system/state.json."""
+        SYSTEM_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(SYSTEM_STATE_PATH, "w") as f:
+            json.dump(state, f, indent=2)
+
+    def _get_agent_state(self, agent_id: str) -> dict:
+        """Load agent state from data/agents/{agent_id}/state.json."""
+        state_path = AGENTS_DIR / agent_id / "state.json"
+        if state_path.exists():
+            with open(state_path) as f:
+                return json.load(f)
+        return {}
+
+    def _save_agent_state(self, agent_id: str, state: dict):
+        """Save agent state to data/agents/{agent_id}/state.json."""
+        state_path = AGENTS_DIR / agent_id / "state.json"
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(state_path, "w") as f:
+            json.dump(state, f, indent=2)
+
+    def _update_agent_last_ran(self, agent_id: str):
+        """Update the last_ran timestamp for an agent."""
+        state = self._get_agent_state(agent_id)
+        state["last_ran"] = datetime.now().isoformat()
+        self._save_agent_state(agent_id, state)
+
     def _is_quota_or_rate_limit(self, error_msg: str) -> bool:
         """Detect quota or rate limit errors."""
         error_lower = str(error_msg).lower()
@@ -138,10 +174,123 @@ class AgentManager:
         if agent_id in self.error_backoff:
             del self.error_backoff[agent_id]
 
+    def _check_missed_triggers(self) -> set:
+        """Check if morning or evening triggers were missed since last run.
+
+        Returns a set of trigger names that were missed (e.g., {'time:morning', 'time:evening'}).
+        """
+        missed = set()
+        state = self._get_system_state()
+        config = self._get_system_config()
+        schedules = config.get("schedules", {})
+
+        now = datetime.now()
+        today = now.strftime("%Y-%m-%d")
+        current_time = now.strftime("%H:%M")
+
+        for trigger_name in ["morning", "evening"]:
+            if trigger_name not in schedules:
+                continue
+
+            schedule_time = schedules[trigger_name]
+            last_ran_key = f"last_{trigger_name}"
+            last_ran = state.get(last_ran_key)
+
+            # Check if trigger time has passed today
+            if current_time >= schedule_time:
+                # The trigger should have fired today
+                if last_ran != today:
+                    # It hasn't fired today - it was missed
+                    missed.add(f"time:{trigger_name}")
+                    print(f"[startup] Detected missed trigger: time:{trigger_name}")
+
+        return missed
+
+    def _emit_startup_triggers(self):
+        """Create trigger jobs for system:start and any missed time triggers at startup."""
+        from .tools.jobs import create_job, list_jobs
+
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        # Create system:start trigger jobs for subscribed agents
+        print("[startup] Creating system:start trigger jobs")
+        for agent_id, agent in self.agents.items():
+            config = agent.config
+            if not config.get("enabled", True):
+                continue
+
+            triggers = config.get("triggers", [])
+            if "system:start" in triggers:
+                job_name = f"Trigger:start:{today}"
+
+                # Check if trigger job already exists for this agent today
+                existing = list_jobs(status="todo", assignee=agent_id)
+                already_exists = any(j["name"] == job_name for j in existing)
+
+                if not already_exists:
+                    print(f"[startup] Creating trigger job: {job_name} for {agent_id}")
+                    create_job(
+                        name=job_name,
+                        description="System startup trigger",
+                        assignees=[agent_id],
+                        tags=["trigger:start"],
+                        due_date=None,
+                        created_by="system"
+                    )
+
+        # Check for missed morning/evening triggers
+        missed = self._check_missed_triggers()
+
+        if missed:
+            # Create trigger jobs for missed triggers
+            for trigger in missed:
+                trigger_type = trigger.split(":")[1]  # "morning" or "evening"
+
+                for agent_id, agent in self.agents.items():
+                    config = agent.config
+                    if not config.get("enabled", True):
+                        continue
+
+                    triggers = config.get("triggers", [])
+                    if trigger in triggers:
+                        job_name = f"Trigger:{trigger_type}:{today}"
+
+                        # Check if trigger job already exists for this agent today
+                        existing = list_jobs(status="todo", assignee=agent_id)
+                        already_exists = any(j["name"] == job_name for j in existing)
+
+                        if not already_exists:
+                            print(f"[startup] Creating missed trigger job: {job_name} for {agent_id}")
+                            create_job(
+                                name=job_name,
+                                description=f"Missed {trigger} trigger",
+                                assignees=[agent_id],
+                                tags=[f"trigger:{trigger_type}"],
+                                due_date=None,
+                                created_by="system"
+                            )
+
+            # Update state to mark these as "handled" by setting them to today
+            state = self._get_system_state()
+            if "time:morning" in missed:
+                state["last_morning"] = today
+            if "time:evening" in missed:
+                state["last_evening"] = today
+            self._save_system_state(state)
+
     def _run_agent_loop(self, agent: Agent):
-        """Run an agent's work loop - waits for triggers with backoff support."""
+        """Run an agent's work loop - polls for actionable jobs."""
+        from .tools.jobs import list_jobs
+
+        poll_interval = self._get_system_config().get("agents", {}).get("poll_interval", 0.1)
+
         while self.running:
             try:
+                # Skip if agent is disabled
+                if not agent.config.get("enabled", True):
+                    time.sleep(poll_interval)
+                    continue
+
                 # Check if we're in backoff period
                 if agent.id in self.error_backoff:
                     backoff_state = self.error_backoff[agent.id]
@@ -157,14 +306,26 @@ class AgentManager:
                         time.sleep(min(remaining, 60))
                         continue
 
-                # Wait for a trigger event (check shutdown every 5s)
-                event = agent.wait_for_trigger(timeout=5)
+                # Check cache first (fast) - skip DB query if no jobs pending
+                if not self.agents_with_jobs.get(agent.id, False):
+                    time.sleep(poll_interval)
+                    continue
 
-                if event:
-                    agent._log("triggered", {"event": event})
-                    agent.work_cycle_sync(trigger_context=event)
-                    # Success - reset backoff
+                # Cache says jobs may exist - query DB to confirm
+                jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
+
+                if jobs:
+                    agent._log("polling_found_jobs", {"count": len(jobs)})
+                    agent.work_cycle_sync()
+                    # Success - reset backoff and update last_ran
                     self._reset_backoff(agent.id)
+                    self._update_agent_last_ran(agent.id)
+                    # Re-check for more jobs and update cache
+                    jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
+                    self.agents_with_jobs[agent.id] = bool(jobs)
+                else:
+                    # Cache was stale - clear it
+                    self.agents_with_jobs[agent.id] = False
 
             except BudgetExceeded as e:
                 # Budget exceeded - log warning but continue running
@@ -202,7 +363,9 @@ class AgentManager:
                     time.sleep(5)
 
     def _run_time_scheduler(self):
-        """Background thread that emits time events based on schedules."""
+        """Background thread that creates trigger jobs based on schedules."""
+        from .tools.jobs import create_job, list_jobs
+
         last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
 
         while self.running:
@@ -210,6 +373,7 @@ class AgentManager:
                 now = datetime.now()
                 current_time = now.strftime("%H:%M")
                 current_key = now.strftime("%Y-%m-%d-%H-%M")
+                today = now.strftime("%Y-%m-%d")
 
                 schedules = self._get_system_config().get("schedules", {})
 
@@ -232,8 +396,37 @@ class AgentManager:
 
                     if should_fire:
                         last_fired[name] = fire_key
-                        print(f"[scheduler] Emitting time:{name}")
-                        self.event_bus.emit(f"time:{name}", data={"time": current_time})
+                        trigger_name = f"time:{name}"
+
+                        # Create trigger jobs for agents subscribed to this trigger
+                        for agent_id, agent in self.agents.items():
+                            config = agent.config
+                            if not config.get("enabled", True):
+                                continue
+                            triggers = config.get("triggers", [])
+                            if trigger_name in triggers:
+                                job_name = f"Trigger:{name}:{today}"
+
+                                # Check if trigger job already exists for this agent today
+                                existing = list_jobs(status="todo", assignee=agent_id)
+                                already_exists = any(j["name"] == job_name for j in existing)
+
+                                if not already_exists:
+                                    print(f"[scheduler] Creating trigger job: {job_name} for {agent_id}")
+                                    create_job(
+                                        name=job_name,
+                                        description=f"Scheduled trigger for {trigger_name}",
+                                        assignees=[agent_id],
+                                        tags=[f"trigger:{name}"],
+                                        due_date=None,
+                                        created_by="system"
+                                    )
+
+                        # Save state for morning/evening triggers
+                        if name in ["morning", "evening"]:
+                            state = self._get_system_state()
+                            state[f"last_{name}"] = today
+                            self._save_system_state(state)
 
             except Exception as e:
                 print(f"Scheduler error: {e}")
@@ -272,6 +465,17 @@ class AgentManager:
 
         if not enabled:
             print("No enabled agents. Waiting...")
+
+        # Emit startup triggers (system:start and any missed time triggers)
+        if enabled:
+            self._emit_startup_triggers()
+
+        # Initialize job cache - check for existing actionable jobs
+        from .tools.jobs import list_jobs
+        for agent_id in self.agents:
+            jobs = list_jobs(status="todo", assignee=agent_id, actionable=True)
+            self.agents_with_jobs[agent_id] = bool(jobs)
+        print("Job cache initialized")
 
         # Wait until shutdown
         try:

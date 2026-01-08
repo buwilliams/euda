@@ -17,5 +17,5 @@
     "list_assets",
     "done_working"
   ],
-  "triggers": ["job:assigned", "time:morning"]
+  "triggers": ["time:morning", "system:start"]
 }

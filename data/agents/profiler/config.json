@@ -15,5 +15,5 @@
     "complete_job",
     "done_working"
   ],
-  "triggers": ["lifelog:new", "time:evening"]
+  "triggers": ["lifelog:new", "time:evening", "system:start"]
 }
