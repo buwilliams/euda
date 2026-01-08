@@ -12,7 +12,7 @@ Rules for the command-line interface.
 
 - `start` — Run web server (port 8000) with agents in background
 - `chat [agent]` — Interactive chat with an agent (default: friend)
-- `agents` — List all agents with status, triggers, and last_ran
+- `agents [name] [action]` — List agents or perform agent actions
 - `jobs` — List all jobs with status
 - `points [name]` — Show contribution points, optionally filtered by name
 - `set-password` — Set access password for web UI
@@ -32,6 +32,15 @@ Rules for the command-line interface.
 - Supports any agent by ID
 - Handles budget exceeded gracefully
 - Type 'quit', 'exit', or 'q' to end session
+
+## agents
+
+- `agents` — List all agents with status, triggers, and last_ran
+- `agents [name]` — Show only the specified agent
+- `agents [name] enable` — Enable the agent (updates config.json)
+- `agents [name] disable` — Disable the agent (updates config.json)
+- `agents [name] logs` — Show last 50 log entries from most recent log file
+- `agents help` — Show available actions
 
 ## fresh-start
 

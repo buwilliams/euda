@@ -182,35 +182,75 @@ def cmd_chat(args):
 
 
 def cmd_agents(args):
-    """List all agents."""
+    """List agents or perform agent actions."""
     import json
     from src.tools.agents import list_agents
+
+    # Handle help action
+    if args and args[0] == 'help':
+        print("Usage: python main.py agents [name] [action]")
+        print()
+        print("Arguments:")
+        print("  [name]    Agent ID to filter or act on")
+        print()
+        print("Actions:")
+        print("  (none)    Show agent info")
+        print("  enable    Enable the agent")
+        print("  disable   Disable the agent")
+        print("  logs      Show last 50 log entries")
+        print("  help      Show this help")
+        return
+
+    data_dir = Path(__file__).parent / "data"
+
+    # Parse args: [name] [action]
+    agent_filter = args[0] if args else None
+    action = args[1] if len(args) > 1 else None
+
+    # Handle actions
+    if agent_filter and action:
+        if action == "enable":
+            _agent_set_enabled(agent_filter, True)
+        elif action == "disable":
+            _agent_set_enabled(agent_filter, False)
+        elif action == "logs":
+            _agent_show_logs(agent_filter)
+        else:
+            print(f"Unknown action: {action}")
+            print("Valid actions: enable, disable, logs")
+        return
 
     print("=" * 60)
     print("Euno - Agents")
     print("=" * 60)
     print()
 
-    data_dir = Path(__file__).parent / "data"
+    # Show system state (only when listing all agents)
+    if not agent_filter:
+        system_state_path = data_dir / "system" / "state.json"
+        if system_state_path.exists():
+            with open(system_state_path) as f:
+                system_state = json.load(f)
+            last_morning = system_state.get("last_morning", "never")
+            last_evening = system_state.get("last_evening", "never")
+        else:
+            last_morning = "never"
+            last_evening = "never"
 
-    # Show system state
-    system_state_path = data_dir / "system" / "state.json"
-    if system_state_path.exists():
-        with open(system_state_path) as f:
-            system_state = json.load(f)
-        last_morning = system_state.get("last_morning", "never")
-        last_evening = system_state.get("last_evening", "never")
-    else:
-        last_morning = "never"
-        last_evening = "never"
-
-    print(f"System: last_morning={last_morning}, last_evening={last_evening}")
-    print()
+        print(f"System: last_morning={last_morning}, last_evening={last_evening}")
+        print()
 
     agents = list_agents()
     if not agents:
         print("No agents configured.")
         return
+
+    # Filter by name if provided
+    if agent_filter:
+        agents = [a for a in agents if a['id'] == agent_filter]
+        if not agents:
+            print(f"Agent not found: {agent_filter}")
+            return
 
     # Sort agents by order
     agents.sort(key=lambda a: a.get("order", 999))
@@ -234,6 +274,68 @@ def cmd_agents(args):
         print(f"      triggers: {triggers}")
         print(f"      last_ran: {last_ran}")
         print()
+
+
+def _agent_set_enabled(agent_id: str, enabled: bool):
+    """Enable or disable an agent."""
+    import json
+
+    config_path = Path(__file__).parent / "data" / "agents" / agent_id / "config.json"
+    if not config_path.exists():
+        print(f"Agent not found: {agent_id}")
+        return
+
+    with open(config_path) as f:
+        config = json.load(f)
+
+    config["enabled"] = enabled
+
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")
+
+    status = "enabled" if enabled else "disabled"
+    print(f"Agent {agent_id} {status}.")
+
+
+def _agent_show_logs(agent_id: str):
+    """Show last 50 log entries for an agent."""
+    import json
+
+    logs_dir = Path(__file__).parent / "data" / "agents" / agent_id / "logs"
+    if not logs_dir.exists():
+        print(f"No logs found for agent: {agent_id}")
+        return
+
+    # Find most recent log file
+    log_files = sorted(logs_dir.glob("*.json*"), reverse=True)
+    if not log_files:
+        print(f"No log files found for agent: {agent_id}")
+        return
+
+    log_file = log_files[0]
+    print(f"Showing logs from: {log_file.name}")
+    print()
+
+    # Read last 50 entries (JSONL format - one JSON object per line)
+    entries = []
+    with open(log_file) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    entries.append(json.loads(line))
+                except json.JSONDecodeError:
+                    pass
+
+    for entry in entries[-50:]:
+        ts = entry.get("timestamp", "?")[:19]
+        event = entry.get("event", "?")
+        details = entry.get("details", {})
+        details_str = json.dumps(details)
+        if len(details_str) > 80:
+            details_str = details_str[:77] + "..."
+        print(f"[{ts}] {event}: {details_str}")
 
 
 def cmd_jobs(args):

@@ -21,5 +21,8 @@
     "parse_date",
     "get_current_date"
   ],
-  "triggers": ["time:morning", "system:start"]
+  "triggers": [
+    "time:morning",
+    "system:start"
+  ]
 }
