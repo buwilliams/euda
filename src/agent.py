@@ -359,8 +359,8 @@ class Agent:
         self._log("work_cycle_start", {"trigger": trigger_context})
         self._work_done = False
 
-        # Get jobs that might need attention
-        jobs = list_jobs(status="todo")
+        # Get jobs assigned to this agent
+        jobs = list_jobs(status="todo", assignee=self.id)
 
         # Build trigger info for the prompt
         trigger_info = ""
@@ -375,13 +375,13 @@ class Agent:
 
         self._log("work_cycle_jobs_found", {"count": len(jobs)})
 
-        # Initial prompt asking agent to check for work
-        prompt = f"""Check if any of these jobs need your attention based on your role:{trigger_info}
+        # Initial prompt asking agent to work on assigned jobs
+        prompt = f"""You have jobs assigned to you that need attention:{trigger_info}
 
-Jobs:
+Your assigned jobs:
 {json.dumps(jobs, indent=2)}
 
-Work on any jobs that match your role. When you're finished working (or if nothing matches your role), call the done_working tool to signal you're done."""
+Work on these jobs according to your role. When you're finished working, call the done_working tool to signal you're done."""
 
         # Autonomous loop - keep working until agent calls done_working
         max_iterations = self._get_system_config().get("agents", {}).get("max_work_iterations", 20)
