@@ -11,6 +11,7 @@
 
 # Agent state is runtime data (ignore)
 data/agents/*/state/
+data/agents/*/state.json
 
 # Agent logs are runtime data (ignore)
 data/agents/*/logs/
@@ -30,6 +31,7 @@ data/user/
 # System config is tracked (contains settings, not secrets)
 !data/system/config.json
 # But ignore other system files that may contain secrets or user state
+data/system/state.json
 data/system/auth.json
 data/system/sessions.json
 data/system/quotes.json
