@@ -34,8 +34,8 @@ The [spec/](spec/) directory is the best place to understand how Euno works. Eac
 
 - [Orchestration](spec/1_orchestration.md) — Agent/job coordination, triggers, work cycles
 - [Data](spec/2_data.md) — Entity schemas (lifelog, profile, memory, agent, job, config)
-- [System](spec/3_system.md) — System behavior and architecture rules
-- [User Experience](spec/4_user-experience.md) — UI/UX patterns and constraints
+- [Backend](spec/3_backend.md) — Server, API, authentication, storage
+- [UX & UI](spec/4_ux_ui.md) — User experience and interface patterns
 - [CLI](spec/5_cli.md) — Command-line interface commands and behavior
 
 ## License

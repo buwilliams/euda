@@ -164,5 +164,6 @@ Build for yourself first, not "other people." This is not a solution looking for
 Before submitting changes, review against `spec/*.md`:
 - `spec/1_orchestration.md` — Agent/job coordination, triggers, work cycles
 - `spec/2_data.md` — Data structures, file paths, schemas
-- `spec/3_system.md` — System behavior, architecture rules
-- `spec/4_user-experience.md` — UI patterns, interaction rules
+- `spec/3_backend.md` — Server, API, authentication, storage
+- `spec/4_ux_ui.md` — User experience and interface patterns
+- `spec/5_cli.md` — Command-line interface commands and behavior
