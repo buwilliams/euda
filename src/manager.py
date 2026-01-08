@@ -48,6 +48,7 @@ class AgentManager:
         self.threads: Dict[str, threading.Thread] = {}
         self.running = False
         self.error_backoff: Dict[str, dict] = {}  # Track backoff state per agent
+        self.agents_with_jobs: Dict[str, bool] = {}  # Cache: agent_id -> has_jobs
         self.event_bus = EventBus()
 
     def load_agent_configs(self) -> List[dict]:
@@ -281,7 +282,7 @@ class AgentManager:
         """Run an agent's work loop - polls for actionable jobs."""
         from .tools.jobs import list_jobs
 
-        poll_interval = self._get_system_config().get("agents", {}).get("poll_interval", 30)
+        poll_interval = self._get_system_config().get("agents", {}).get("poll_interval", 0.1)
 
         while self.running:
             try:
@@ -305,7 +306,12 @@ class AgentManager:
                         time.sleep(min(remaining, 60))
                         continue
 
-                # Check for actionable jobs assigned to this agent
+                # Check cache first (fast) - skip DB query if no jobs pending
+                if not self.agents_with_jobs.get(agent.id, False):
+                    time.sleep(poll_interval)
+                    continue
+
+                # Cache says jobs may exist - query DB to confirm
                 jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
 
                 if jobs:
@@ -314,9 +320,12 @@ class AgentManager:
                     # Success - reset backoff and update last_ran
                     self._reset_backoff(agent.id)
                     self._update_agent_last_ran(agent.id)
+                    # Re-check for more jobs and update cache
+                    jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
+                    self.agents_with_jobs[agent.id] = bool(jobs)
                 else:
-                    # No actionable jobs - sleep for poll interval
-                    time.sleep(poll_interval)
+                    # Cache was stale - clear it
+                    self.agents_with_jobs[agent.id] = False
 
             except BudgetExceeded as e:
                 # Budget exceeded - log warning but continue running
@@ -460,6 +469,13 @@ class AgentManager:
         # Emit startup triggers (system:start and any missed time triggers)
         if enabled:
             self._emit_startup_triggers()
+
+        # Initialize job cache - check for existing actionable jobs
+        from .tools.jobs import list_jobs
+        for agent_id in self.agents:
+            jobs = list_jobs(status="todo", assignee=agent_id, actionable=True)
+            self.agents_with_jobs[agent_id] = bool(jobs)
+        print("Job cache initialized")
 
         # Wait until shutdown
         try:

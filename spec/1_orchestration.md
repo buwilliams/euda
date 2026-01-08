@@ -16,7 +16,9 @@ Rules for how Agents, Jobs, Triggers, and the Manager work together.
 
 ## Agents
 
-- Agents poll for actionable jobs assigned to them (default: every 30 seconds)
+- Agents poll for actionable jobs every 100ms (configurable via `poll_interval`)
+- Job cache prevents database queries when no jobs are pending
+- Agents work one job at a time — no polling during work cycle
 - Disabled agents never process jobs
 - Each agent runs in its own thread — one agent's work cannot block another
 - When actionable jobs exist, the agent runs a work cycle until it calls `done_working`
@@ -37,6 +39,7 @@ Rules for how Agents, Jobs, Triggers, and the Manager work together.
 
 - Loads agent configs from `data/agents/*/config.json`
 - Starts each enabled agent in its own thread
+- Maintains job cache per agent — cache is set when jobs are assigned
 - Runs time scheduler that creates trigger jobs based on `schedules` in system config
 - Creates startup trigger jobs for agents with `system:start`
 - Detects missed `time:morning` and `time:evening` triggers at startup

@@ -123,6 +123,14 @@ def _emit_jobs_update():
     emit_ui_event("jobs_update", {"jobs": all_jobs})
 
 
+def _notify_agent_has_jobs(agent_id: str):
+    """Notify the job cache that an agent has pending jobs."""
+    from ..manager import get_manager
+    manager = get_manager()
+    if manager:
+        manager.agents_with_jobs[agent_id] = True
+
+
 def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
     """Convert a database row to a job dictionary."""
     # Handle columns that may not exist in older schemas
@@ -318,6 +326,7 @@ def create_job(
     _emit_event("job:created", data={"job_id": job_id, "name": name})
     for agent_id in (assignees or []):
         _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": name})
+        _notify_agent_has_jobs(agent_id)
 
     # Notify UI clients
     _emit_jobs_update()
@@ -379,6 +388,7 @@ def update_job(
         new_assignees = set(assignees) - old_assignees
         for agent_id in new_assignees:
             _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": job["name"]})
+            _notify_agent_has_jobs(agent_id)
 
     # Notify UI clients
     _emit_jobs_update()
@@ -781,8 +791,9 @@ def assign_agent(job_id: str, agent_id: str) -> Optional[dict]:
             (job_id, now, "system", f"assigned:{agent_id}")
         )
 
-    # Emit job:assigned event to the agent
+    # Emit job:assigned event to the agent and notify cache
     _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": job["name"]})
+    _notify_agent_has_jobs(agent_id)
 
     # Notify UI clients
     _emit_jobs_update()

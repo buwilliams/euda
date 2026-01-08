@@ -5,7 +5,7 @@ Rules for how the system operates and components interact.
 - The user is conceptually an agent with a different interface (web UI vs autonomous loop)
 - Tools are the only way agents interact with the system
 - Every LLM call includes rich context: agent persona, user profile, memory, job context, conversation history
-- Agents poll for actionable jobs — `poll_interval` in system config controls frequency (default 30s)
+- Agents poll for actionable jobs — `poll_interval` in system config controls frequency (default 100ms)
 - Each agent runs in its own thread — one agent's work cannot block another
 - Agents work autonomously but surface their work for user review
 - Real-time updates to the UI via Server-Sent Events, not polling
