@@ -102,6 +102,44 @@
     text-decoration: underline;
 }
 
+/* Collapsible Job Section Header */
+.job-section-header.collapsible {
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.job-section-header.collapsible:hover {
+    color: var(--color-text-primary);
+}
+
+.job-section-header.collapsible .section-toggle {
+    display: flex;
+    align-items: center;
+    transition: transform var(--transition-fast);
+    margin-left: auto;
+    margin-right: var(--spacing-sm);
+}
+
+.job-section-header.collapsible .section-toggle img {
+    width: 14px;
+    height: 14px;
+    opacity: 0.5;
+}
+
+.job-section-header.collapsible.open .section-toggle {
+    transform: rotate(90deg);
+}
+
+.job-section > .collapsible-content {
+    display: none;
+    overflow: hidden;
+}
+
+.job-section > .collapsible-content.open {
+    display: block;
+}
+
 /* Editable Job Name */
 .job-name-display {
     font-size: var(--font-size-xl);

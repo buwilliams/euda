@@ -13,6 +13,17 @@ function toggleSection(sectionId) {
     renderFocusTab();
 }
 
+function togglePersonaSection(header, event) {
+    // Don't toggle if clicking on the Save action
+    if (event.target.classList.contains('job-section-action')) return;
+
+    header.classList.toggle('open');
+    const content = header.nextElementSibling;
+    if (content && content.classList.contains('collapsible-content')) {
+        content.classList.toggle('open');
+    }
+}
+
 // ============== Menu & Timeline Views ==============
 
 function renderFocusMenu() {
@@ -280,85 +291,94 @@ function renderAgentDetailView(job) {
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
             </div>
 
-            <!-- Status Section -->
-            <div class="job-section" style="background: ${isEnabled ? '#f0f8f0' : '#f8f0f0'}; border-radius: 6px; padding: 0.5rem 1rem;">
-                <span style="color: ${isEnabled ? '#4a8' : '#a64'}; font-weight: 500;">
-                    ${isEnabled ? icon('check') + ' Agent Enabled' : icon('x-mark') + ' Agent Disabled'}
-                </span>
-            </div>
-
-            <!-- Persona Section -->
+            <!-- Persona Section (collapsible, default closed) -->
             <div class="job-section">
-                <div class="job-section-header">
-                    Persona
-                    ${isEditingPersona ? `<span class="job-section-action" onclick="saveAgentPersonaField('${agentId}', '${job.id}')">Save</span>` : ''}
+                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>Persona</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                    ${isEditingPersona ? `<span class="job-section-action" onclick="saveAgentPersonaField('${agentId}', '${job.id}'); event.stopPropagation();">Save</span>` : ''}
                 </div>
-                ${isEditingPersona ? `
-                    <textarea class="job-description-input" id="edit-persona-${job.id}"
-                        onkeydown="handleAgentPersonaKeypress(event, '${agentId}', '${job.id}')"
-                        placeholder="Define the agent's persona..."
-                        style="min-height: 200px;">${escapeHtml(persona)}</textarea>
-                ` : `
-                    <div class="job-description-display ${hasPersona ? '' : 'empty'}" onclick="startEditingField('${job.id}', 'persona')">
-                        ${hasPersona ? marked.parse(persona) : 'Click to define persona...'}
-                    </div>
-                `}
+                <div class="collapsible-content">
+                    ${isEditingPersona ? `
+                        <textarea class="job-description-input" id="edit-persona-${job.id}"
+                            onkeydown="handleAgentPersonaKeypress(event, '${agentId}', '${job.id}')"
+                            placeholder="Define the agent's persona..."
+                            style="min-height: 200px;">${escapeHtml(persona)}</textarea>
+                    ` : `
+                        <div class="job-description-display ${hasPersona ? '' : 'empty'}" onclick="startEditingField('${job.id}', 'persona')">
+                            ${hasPersona ? marked.parse(persona) : 'Click to define persona...'}
+                        </div>
+                    `}
+                </div>
             </div>
 
-            <!-- Configuration Section -->
+            <!-- Configuration Section (collapsible, default closed) -->
             <div class="job-section">
-                <div class="job-section-header">
-                    Configuration
-                    ${isEditingConfig ? `<span class="job-section-action" onclick="saveAgentConfigField('${agentId}', '${job.id}')">Save</span>` : ''}
+                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>Configuration</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                    ${isEditingConfig ? `<span class="job-section-action" onclick="saveAgentConfigField('${agentId}', '${job.id}'); event.stopPropagation();">Save</span>` : ''}
                 </div>
-                ${isEditingConfig ? `
-                    <div class="agent-config-edit">
-                        <label class="agent-config-label">
-                            <span>Triggers (comma-separated)</span>
-                            <input type="text" class="agent-config-input" id="edit-triggers-${job.id}"
-                                value="${escapeHtml(triggers.join(', '))}"
-                                placeholder="e.g., job:assigned, time:morning">
-                        </label>
-                        <label class="agent-config-label">
-                            <span>Tools (comma-separated)</span>
-                            <input type="text" class="agent-config-input" id="edit-tools-${job.id}"
-                                value="${escapeHtml(tools.join(', '))}"
-                                placeholder="e.g., list_jobs, create_job">
-                        </label>
-                        <div class="agent-config-actions">
-                            <button class="task-detail-action" onclick="cancelEditing()">Cancel</button>
+                <div class="collapsible-content">
+                    ${isEditingConfig ? `
+                        <div class="agent-config-edit">
+                            <label class="agent-config-label">
+                                <span>Triggers (comma-separated)</span>
+                                <input type="text" class="agent-config-input" id="edit-triggers-${job.id}"
+                                    value="${escapeHtml(triggers.join(', '))}"
+                                    placeholder="e.g., job:assigned, time:morning">
+                            </label>
+                            <label class="agent-config-label">
+                                <span>Tools (comma-separated)</span>
+                                <input type="text" class="agent-config-input" id="edit-tools-${job.id}"
+                                    value="${escapeHtml(tools.join(', '))}"
+                                    placeholder="e.g., list_jobs, create_job">
+                            </label>
+                            <div class="agent-config-actions">
+                                <button class="task-detail-action" onclick="cancelEditing()">Cancel</button>
+                            </div>
                         </div>
-                    </div>
-                ` : `
-                    <div class="agent-config-display" onclick="startEditingField('${job.id}', 'config')">
-                        <div class="agent-config-row">
-                            <span class="agent-config-key">Triggers:</span>
-                            <span class="agent-config-value">${triggers.length > 0 ? escapeHtml(triggers.join(', ')) : '<em>None</em>'}</span>
+                    ` : `
+                        <div class="agent-config-display" onclick="startEditingField('${job.id}', 'config')">
+                            <div class="agent-config-row">
+                                <span class="agent-config-key">Triggers:</span>
+                                <span class="agent-config-value">${triggers.length > 0 ? escapeHtml(triggers.join(', ')) : '<em>None</em>'}</span>
+                            </div>
+                            <div class="agent-config-row">
+                                <span class="agent-config-key">Tools:</span>
+                                <span class="agent-config-value">${tools.length > 0 ? escapeHtml(tools.join(', ')) : '<em>None</em>'}</span>
+                            </div>
                         </div>
-                        <div class="agent-config-row">
-                            <span class="agent-config-key">Tools:</span>
-                            <span class="agent-config-value">${tools.length > 0 ? escapeHtml(tools.join(', ')) : '<em>None</em>'}</span>
-                        </div>
-                    </div>
-                `}
+                    `}
+                </div>
             </div>
 
-            <!-- Child Jobs Section (Agent's Tasks) -->
+            <!-- Child Jobs Section (Agent's Tasks) - open by default -->
             ${childJobs.length > 0 ? `
             <div class="job-section">
-                <div class="job-section-header">Tasks (${childJobs.length})</div>
-                ${childJobs.map(child => renderJobCard(child, true)).join('')}
+                <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
+                    <span>Tasks (${childJobs.length})</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content open">
+                    ${childJobs.map(child => renderJobCard(child, true)).join('')}
+                </div>
             </div>
             ` : ''}
 
-            <!-- Completed Child Jobs Section -->
+            <!-- Completed Child Jobs Section - collapsed by default -->
             ${completedChildJobs.length > 0 ? `
             <div class="job-section">
-                <div class="job-section-header">Completed (${completedChildJobs.length})</div>
-                ${completedChildJobs.map(child => {
-                    const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                    return renderCompletedJobCard(child, grandchildCount, true);
-                }).join('')}
+                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>Completed (${completedChildJobs.length})</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    ${completedChildJobs.map(child => {
+                        const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
+                        return renderCompletedJobCard(child, grandchildCount, true);
+                    }).join('')}
+                </div>
             </div>
             ` : ''}
 
@@ -500,22 +520,32 @@ function renderJobDetailView(jobId) {
                 `}
             </div>
 
-            <!-- Child Jobs Section -->
+            <!-- Child Jobs Section - open by default -->
             ${childJobs.length > 0 ? `
             <div class="job-section">
-                <div class="job-section-header">Child Jobs (${childJobs.length})</div>
-                ${childJobs.map(child => renderJobCard(child, true)).join('')}
+                <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
+                    <span>Child Jobs (${childJobs.length})</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content open">
+                    ${childJobs.map(child => renderJobCard(child, true)).join('')}
+                </div>
             </div>
             ` : ''}
 
-            <!-- Completed Child Jobs Section -->
+            <!-- Completed Child Jobs Section - collapsed by default -->
             ${completedChildJobs.length > 0 ? `
             <div class="job-section">
-                <div class="job-section-header">Completed (${completedChildJobs.length})</div>
-                ${completedChildJobs.map(child => {
-                    const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                    return renderCompletedJobCard(child, grandchildCount, true);
-                }).join('')}
+                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>Completed (${completedChildJobs.length})</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    ${completedChildJobs.map(child => {
+                        const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
+                        return renderCompletedJobCard(child, grandchildCount, true);
+                    }).join('')}
+                </div>
             </div>
             ` : ''}
 
@@ -645,22 +675,32 @@ function renderCompletedJobDetailView(jobId) {
                 `}
             </div>
 
-            <!-- Active Child Jobs Section (rare but possible) -->
+            <!-- Active Child Jobs Section (rare but possible) - open by default -->
             ${activeChildJobs.length > 0 ? `
             <div class="job-section">
-                <div class="job-section-header">Active Children (${activeChildJobs.length})</div>
-                ${activeChildJobs.map(child => renderJobCard(child, true)).join('')}
+                <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
+                    <span>Active Children (${activeChildJobs.length})</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content open">
+                    ${activeChildJobs.map(child => renderJobCard(child, true)).join('')}
+                </div>
             </div>
             ` : ''}
 
-            <!-- Completed Child Jobs Section -->
+            <!-- Completed Child Jobs Section - collapsed by default -->
             ${completedChildJobs.length > 0 ? `
             <div class="job-section">
-                <div class="job-section-header">Completed Children (${completedChildJobs.length})</div>
-                ${completedChildJobs.map(child => {
-                    const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                    return renderCompletedJobCard(child, grandchildCount, true);
-                }).join('')}
+                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>Completed Children (${completedChildJobs.length})</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    ${completedChildJobs.map(child => {
+                        const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
+                        return renderCompletedJobCard(child, grandchildCount, true);
+                    }).join('')}
+                </div>
             </div>
             ` : ''}
 

@@ -38,7 +38,7 @@ I must:
 
 ## How I Work
 
-1. Check for jobs tagged with "archive" or "ingest"
+1. Check for open jobs assigned to me
 2. Process incoming content, preserving human signal
 3. Write to the lifelog organized by date
 4. Log my actions on the job
