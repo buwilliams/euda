@@ -30,9 +30,10 @@ Today's AI remembers facts about you, but it doesn't know you. Euno understands 
 
 The [spec/](spec/) directory contains scannable rules for drift detection:
 
-- [Data](spec/1_data.md) — Entity schemas (lifelog, profile, memory, agent, job, config)
-- [System](spec/2_system.md) — System behavior and architecture rules
-- [User Experience](spec/3_user-experience.md) — UI/UX patterns and constraints
+- [Orchestration](spec/1_orchestration.md) — Agent/job coordination, triggers, work cycles
+- [Data](spec/2_data.md) — Entity schemas (lifelog, profile, memory, agent, job, config)
+- [System](spec/3_system.md) — System behavior and architecture rules
+- [User Experience](spec/4_user-experience.md) — UI/UX patterns and constraints
 
 ## License
 

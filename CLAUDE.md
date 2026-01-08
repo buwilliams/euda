@@ -73,9 +73,10 @@ euno/
 │   └── system/
 │       └── config.json
 ├── spec/                   # Design rules for drift detection
-│   ├── 1_data.md
-│   ├── 2_system.md
-│   └── 3_user-experience.md
+│   ├── 1_orchestration.md
+│   ├── 2_data.md
+│   ├── 3_system.md
+│   └── 4_user-experience.md
 ├── static/                 # Web UI
 └── devops/                 # Deployment scripts
 ```
@@ -88,7 +89,7 @@ An agent is: **config + persona + tools + triggers**
 - Config (`config.json`): id, name, enabled, tools list, triggers
 - Persona (`{agent}-persona.md`): System prompt defining behavior
 - Tools: Functions the agent can call (controlled by config)
-- Triggers: Events that wake the agent (e.g., `job:assigned`, `time:morning`)
+- Triggers: Create jobs for the agent (e.g., `system:start`, `time:morning`)
 
 ### Jobs
 Jobs replace projects and tasks. A single hierarchical structure:
@@ -118,7 +119,7 @@ The user is conceptually an agent too - just with a different interface (Web UI/
      "name": "My Agent",
      "enabled": true,
      "tools": ["list_jobs", "create_job", ...],
-     "triggers": ["job:assigned", "time:morning"]
+     "triggers": ["time:morning", "system:start"]
    }
    ```
 3. Create `{agent-id}-persona.md` with the agent's identity
@@ -161,6 +162,7 @@ Build for yourself first, not "other people." This is not a solution looking for
 ## Checking for Drift
 
 Before submitting changes, review against `spec/*.md`:
-- `spec/1_data.md` — Data structures, file paths, schemas
-- `spec/2_system.md` — System behavior, agent rules, architecture
-- `spec/3_user-experience.md` — UI patterns, interaction rules
+- `spec/1_orchestration.md` — Agent/job coordination, triggers, work cycles
+- `spec/2_data.md` — Data structures, file paths, schemas
+- `spec/3_system.md` — System behavior, architecture rules
+- `spec/4_user-experience.md` — UI patterns, interaction rules

@@ -72,15 +72,15 @@ Before submitting a PR, review your changes against the spec files to detect imp
 ```
 
 **What to check:**
-- `spec/1_data.md` — Data structures, file paths, schemas
-- `spec/2_system.md` — System behavior, agent rules, architecture
-- `spec/3_user-experience.md` — UI patterns, interaction rules
+- `spec/1_orchestration.md` — Agent/job coordination, triggers, work cycles
+- `spec/2_data.md` — Data structures, file paths, schemas
+- `spec/3_system.md` — System behavior, architecture rules
+- `spec/4_user-experience.md` — UI patterns, interaction rules
 
 **Common drift issues:**
 - Adding files outside the expected `data/` structure
 - Changing tool names without updating agent configs
 - Adding UI patterns that violate UX rules (nested modals, tabs within tabs)
-- Using polling instead of event-driven updates
 
 ## Deployment
 
