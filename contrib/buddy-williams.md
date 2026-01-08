@@ -1,5 +1,8 @@
 # Buddy Williams
 
+- [2026-01-08][--] - Archive expired memories to lifelog before removal, preserving context for profile building
+- [2026-01-08][--] - Add restraints to Adaptor persona to limit proposal frequency
+- [2026-01-08][--] - Add agent management and knowledge tools to Friend agent
 - [2026-01-08][--] - Reorganize spec files: rename to agents, backend, ux_ui; add CLI spec; document specs as AI-first alternative to unit tests
 - [2026-01-08][--] - Add CLI agents subcommands (filter, enable, disable, logs) and update fresh-start command
 - [2026-01-08][--] - Make LLM token limits configurable per provider (max_output_tokens, max_input_tokens)
