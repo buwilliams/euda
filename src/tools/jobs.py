@@ -352,6 +352,11 @@ def update_job(
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
+    # Prevent status changes on system jobs
+    system_tags = {"system:agents", "system:projects", "agent-inbox"}
+    if status is not None and any(tag in system_tags for tag in job.get("tags", [])):
+        return {"error": "Cannot change status of system jobs"}
+
     now = datetime.utcnow().isoformat() + "Z"
 
     updates = ["updated_at = ?"]
