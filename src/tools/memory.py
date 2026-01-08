@@ -61,6 +61,42 @@ def _is_valid(entry: dict) -> bool:
         return False
 
 
+def _archive_expired_memories(expired: List[dict]):
+    """Archive expired memories to the lifelog before removal.
+
+    This preserves memories that roll off after 90 days, allowing them
+    to become part of the user's profile over time via the Profiler.
+    """
+    from .user import write_lifelog
+
+    # Group by type for readable formatting
+    by_type = {}
+    for entry in expired:
+        t = entry.get('type', 'idea')
+        if t not in by_type:
+            by_type[t] = []
+        by_type[t].append(entry)
+
+    # Format the archive content
+    lines = ["The following memory items have rolled off after 90 days:", ""]
+
+    for entry_type in sorted(by_type.keys()):
+        lines.append(f"**{entry_type.title()}s:**")
+        for entry in by_type[entry_type]:
+            desc = entry.get('short_description', '')
+            date_mentioned = entry.get('date_mentioned', 'unknown')
+            date_expected = entry.get('date_expected')
+
+            if date_expected:
+                lines.append(f"- {desc} (first mentioned {date_mentioned}, expected {date_expected})")
+            else:
+                lines.append(f"- {desc} (first mentioned {date_mentioned})")
+        lines.append("")
+
+    content = "\n".join(lines).rstrip()
+    write_lifelog(content=content, agent="Memory")
+
+
 @tool("add_memory", "Add an item to the user's memory for proactive attention")
 def add_memory(
     short_description: str,
@@ -99,14 +135,15 @@ def add_memory(
 def list_memory() -> List[dict]:
     """Get all valid (non-expired) memory entries.
 
-    Entries older than 3 months are automatically pruned.
+    Entries older than 3 months are archived to lifelog and pruned.
     """
     entries = _load_entries()
-    # Filter to only valid entries and clean up expired ones
     valid = [e for e in entries if _is_valid(e)]
+    expired = [e for e in entries if not _is_valid(e)]
 
-    # If we filtered any, save the cleaned list
-    if len(valid) != len(entries):
+    # Archive expired entries to lifelog before removing them
+    if expired:
+        _archive_expired_memories(expired)
         _save_entries(valid)
 
     return valid
