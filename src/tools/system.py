@@ -97,3 +97,47 @@ def done_working(summary: str = "") -> dict:
     }
 
 
+@tool(
+    "send_notifications_batch",
+    "Send multiple notifications in a single operation. More efficient than multiple send_notification calls.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "notifications": {
+                "type": "array",
+                "description": "List of notifications to send",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string", "description": "Notification title (required)"},
+                        "message": {"type": "string", "description": "Notification body (required)"},
+                        "priority": {"type": "string", "enum": ["low", "normal", "high"], "description": "Priority level"}
+                    },
+                    "required": ["title", "message"]
+                }
+            }
+        },
+        "required": ["notifications"]
+    }
+)
+def send_notifications_batch(notifications: list) -> dict:
+    """Send multiple notifications in a single operation.
+
+    Returns:
+        Dict with 'sent' (list of results) and 'count'
+    """
+    results = []
+
+    for notif in notifications:
+        result = send_notification(
+            title=notif["title"],
+            message=notif["message"],
+            priority=notif.get("priority", "normal")
+        )
+        results.append(result)
+
+    return {
+        "sent": results,
+        "count": len(results)
+    }
+

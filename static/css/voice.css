@@ -1,0 +1,89 @@
+/* Voice Input Button */
+#voice-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--input-height);
+    height: var(--input-height);
+    border: 1px solid #ddd;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-white);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+    box-sizing: border-box;
+    position: relative;
+}
+
+#voice-btn:hover:not(:disabled) {
+    background: var(--color-bg-hover);
+    color: var(--color-text-primary);
+    border-color: var(--color-text-placeholder);
+}
+
+#voice-btn:disabled {
+    background: var(--color-bg-muted);
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+}
+
+#voice-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Recording state - pulsing red */
+#voice-btn.recording {
+    background: #e74c3c;
+    border-color: #e74c3c;
+    color: var(--color-bg-white);
+    animation: voice-pulse 1s ease-in-out infinite;
+}
+
+#voice-btn.recording svg {
+    fill: currentColor;
+    stroke: none;
+}
+
+@keyframes voice-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+}
+
+/* Transcribing state - spinner */
+#voice-btn.transcribing {
+    position: relative;
+}
+
+#voice-btn.transcribing::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: voice-spin 0.8s linear infinite;
+}
+
+#voice-btn.transcribing svg {
+    opacity: 0;
+}
+
+@keyframes voice-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

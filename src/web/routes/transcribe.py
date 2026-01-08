@@ -106,6 +106,7 @@ async def transcribe_audio(audio: UploadFile = File(...)):
         estimated_input_tokens = max(1, int(duration_seconds * 50))
         estimated_output_tokens = max(1, len(text) // 4)
         record_usage(
+            provider="openai",
             model="gpt-4o-transcribe",
             input_tokens=estimated_input_tokens,
             output_tokens=estimated_output_tokens,
