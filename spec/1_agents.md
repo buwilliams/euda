@@ -1,6 +1,6 @@
-# Orchestration
+# Agents
 
-Rules for how Agents, Jobs, Triggers, and the Manager work together.
+Rules for how agents work and coordinate through jobs.
 
 ## Core Principle
 

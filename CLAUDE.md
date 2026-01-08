@@ -162,7 +162,7 @@ Build for yourself first, not "other people." This is not a solution looking for
 ## Checking for Drift
 
 Before submitting changes, review against `spec/*.md`:
-- `spec/1_orchestration.md` — Agent/job coordination, triggers, work cycles
+- `spec/1_agents.md` — Agent behavior, job coordination, triggers, work cycles
 - `spec/2_data.md` — Data structures, file paths, schemas
 - `spec/3_backend.md` — Server, API, authentication, storage
 - `spec/4_ux_ui.md` — User experience and interface patterns
