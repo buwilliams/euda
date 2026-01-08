@@ -1,5 +1,6 @@
 # Buddy Williams
 
+- [2026-01-08][--] - Add privacy philosophy document covering data sharing, benefits, risks, and future outlook
 - [2026-01-08][--] - Archive expired memories to lifelog before removal, preserving context for profile building
 - [2026-01-08][--] - Add restraints to Adaptor persona to limit proposal frequency
 - [2026-01-08][--] - Add agent management and knowledge tools to Friend agent
