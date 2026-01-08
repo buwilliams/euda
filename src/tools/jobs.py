@@ -403,6 +403,11 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
+    # Prevent completing system containers
+    system_tags = {"system:agents", "system:projects"}
+    if any(tag in system_tags for tag in job.get("tags", [])):
+        return {"error": "Cannot complete system containers"}
+
     now = datetime.utcnow().isoformat() + "Z"
 
     with _transaction() as conn:
@@ -458,6 +463,11 @@ def archive_job(job_id: str, agent: str = "user") -> Optional[dict]:
     job = _load_job(job_id)
     if not job:
         return {"error": f"Job not found: {job_id}"}
+
+    # Prevent archiving system containers
+    system_tags = {"system:agents", "system:projects"}
+    if any(tag in system_tags for tag in job.get("tags", [])):
+        return {"error": "Cannot archive system containers"}
 
     now = datetime.utcnow().isoformat() + "Z"
 
