@@ -72,10 +72,11 @@ Before submitting a PR, review your changes against the spec files to detect imp
 ```
 
 **What to check:**
-- `spec/1_orchestration.md` — Agent/job coordination, triggers, work cycles
+- `spec/1_agents.md` — Agent behavior, job coordination, triggers, work cycles
 - `spec/2_data.md` — Data structures, file paths, schemas
-- `spec/3_system.md` — System behavior, architecture rules
-- `spec/4_user-experience.md` — UI patterns, interaction rules
+- `spec/3_backend.md` — Server, API, authentication, storage
+- `spec/4_ux_ui.md` — User experience and interface patterns
+- `spec/5_cli.md` — Command-line interface commands and behavior
 
 **Common drift issues:**
 - Adding files outside the expected `data/` structure
