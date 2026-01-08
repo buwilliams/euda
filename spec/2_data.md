@@ -40,7 +40,7 @@ Rules for the major entities in the system and how they relate.
 ## Agent
 
 - Config: `data/agents/{id}/config.json`
-  - id, name, enabled, order, tools[], triggers[]
+  - id, name, enabled, order, tools[], triggers[] (triggers define which trigger jobs the agent receives)
 - Persona: `data/agents/{id}/{id}-persona.md`
 - Conversation: `data/agents/{id}/state/conversation/{session-id}.md`
 - Logs: `data/agents/{id}/logs/{date}.json`
@@ -65,5 +65,5 @@ Rules for the major entities in the system and how they relate.
 
 - System config: `data/system/config.json`
 - Contains: version, llm provider settings, logging config, agent limits, schedules
-- Schedules define named times that emit `time:{name}` events
+- Schedules define named times that create `Trigger:{name}:{date}` jobs
 - Use flat files for configuration, not a database
