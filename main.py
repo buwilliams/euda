@@ -427,9 +427,11 @@ def cmd_fresh_start(args):
     print()
     print("This will DELETE:")
     print("  - All lifelog entries")
-    print("  - User profile")
+    print("  - User profile and memory")
+    print("  - Cost tracking history")
     print("  - All jobs and job assets")
-    print("  - All agent logs and conversation history")
+    print("  - All agent logs, state, and conversation history")
+    print("  - System trigger state")
     print("  - Password (if set)")
     print()
     print("This will KEEP:")
@@ -445,7 +447,7 @@ def cmd_fresh_start(args):
     data_dir = Path(__file__).parent / "data"
     deleted = []
 
-    # 1. Clear user data (lifelog, profile)
+    # 1. Clear user data (lifelog, profile, memory, costs)
     user_dir = data_dir / "user"
     if user_dir.exists():
         # Remove lifelog files
@@ -454,11 +456,21 @@ def cmd_fresh_start(args):
             for f in lifelog_dir.glob("*.md"):
                 f.unlink()
                 deleted.append(f"lifelog/{f.name}")
-        # Remove profile
-        profile = user_dir / "user-profile.md"
-        if profile.exists():
+        # Remove profile (current and historical)
+        for profile in user_dir.glob("profile*.md"):
             profile.unlink()
-            deleted.append("user-profile.md")
+            deleted.append(f"user/{profile.name}")
+        # Remove memory
+        memory_file = user_dir / "memory.jsonl"
+        if memory_file.exists():
+            memory_file.unlink()
+            deleted.append("user/memory.jsonl")
+        # Remove cost tracking
+        costs_dir = user_dir / "costs"
+        if costs_dir.exists():
+            for f in costs_dir.glob("*.jsonl"):
+                f.unlink()
+                deleted.append(f"user/costs/{f.name}")
 
     # 2. Clear jobs database and assets
     jobs_dir = data_dir / "jobs"
@@ -490,17 +502,30 @@ def cmd_fresh_start(args):
                 if logs_dir.exists():
                     shutil.rmtree(logs_dir)
                     deleted.append(f"agents/{agent_dir.name}/logs/")
-                # Remove state (conversation history, memory)
+                # Remove state directory (conversation history, memory)
                 state_dir = agent_dir / "state"
                 if state_dir.exists():
                     shutil.rmtree(state_dir)
                     deleted.append(f"agents/{agent_dir.name}/state/")
+                # Remove state.json (last_ran timestamp)
+                state_file = agent_dir / "state.json"
+                if state_file.exists():
+                    state_file.unlink()
+                    deleted.append(f"agents/{agent_dir.name}/state.json")
 
-    # 4. Remove password
-    auth_file = data_dir / "system" / "auth.json"
-    if auth_file.exists():
-        auth_file.unlink()
-        deleted.append("system/auth.json")
+    # 4. Remove system state and password
+    system_dir = data_dir / "system"
+    if system_dir.exists():
+        # Remove system state (trigger tracking)
+        state_file = system_dir / "state.json"
+        if state_file.exists():
+            state_file.unlink()
+            deleted.append("system/state.json")
+        # Remove password
+        auth_file = system_dir / "auth.json"
+        if auth_file.exists():
+            auth_file.unlink()
+            deleted.append("system/auth.json")
 
     print()
     print(f"Deleted {len(deleted)} items:")
