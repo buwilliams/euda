@@ -270,9 +270,16 @@ class Agent:
         # Client handles budget checking, cost tracking, and rate limiting automatically
         client = get_client()
 
+        # Get max_output_tokens from current provider config (default 16000)
+        config = self._get_system_config()
+        llm_config = config.get("llm", {})
+        provider = llm_config.get("provider", "openai")
+        provider_config = llm_config.get("providers", {}).get(provider, {})
+        max_tokens = provider_config.get("max_output_tokens", 16000)
+
         # Call LLM with tools
         response = client.create(
-            max_tokens=4096,
+            max_tokens=max_tokens,
             system=system_prompt,
             messages=messages,
             tools=tools if tools else None,
@@ -291,7 +298,7 @@ class Agent:
             messages.append({"role": "user", "content": tool_results})
 
             response = client.create(
-                max_tokens=4096,
+                max_tokens=max_tokens,
                 system=system_prompt,
                 messages=messages,
                 tools=tools if tools else None,
@@ -368,13 +375,19 @@ class Agent:
 
         self._log("work_cycle_jobs_found", {"count": len(jobs)})
 
-        # Initial prompt asking agent to work on assigned jobs
-        prompt = f"""You have jobs assigned to you that need attention:
+        # Pass only the first job to avoid overwhelming the agent
+        # After this job is done, the manager will start another work cycle if more jobs exist
+        current_job = jobs[0]
+        remaining = len(jobs) - 1
 
-Your assigned jobs:
-{json.dumps(jobs, indent=2)}
+        # Initial prompt asking agent to work on one job
+        prompt = f"""You have a job assigned to you:
 
-Work on these jobs according to your role. When you're finished working, call the done_working tool to signal you're done."""
+{json.dumps(current_job, indent=2)}
+
+{f"({remaining} more jobs waiting)" if remaining > 0 else ""}
+
+Work on this job according to your role. When finished, call done_working."""
 
         # Autonomous loop - keep working until agent calls done_working
         max_iterations = self._get_system_config().get("agents", {}).get("max_work_iterations", 20)

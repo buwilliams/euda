@@ -47,7 +47,8 @@ Rules for how Agents, Jobs, Triggers, and the Manager work together.
 
 ## Work Cycle
 
-- Agent fetches all actionable jobs assigned to it
+- Agent receives ONE job per work cycle — prevents context overflow
 - Agent works autonomously until calling `done_working` (max iterations configurable)
+- After `done_working`, manager checks for more jobs and starts another cycle if needed
 - Agent decides when any job is complete — including trigger jobs
 - Jobs must be explicitly completed by the agent via `complete_job`
