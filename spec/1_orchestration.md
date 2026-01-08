@@ -18,6 +18,7 @@ Rules for how Agents, Jobs, Triggers, and the Manager work together.
 
 - Agents poll for actionable jobs every 100ms (configurable via `poll_interval`)
 - Job cache prevents database queries when no jobs are pending
+- Cache is shared across all agent threads — when agent A assigns a job to agent B, the cache is notified immediately
 - Agents work one job at a time — no polling during work cycle
 - Disabled agents never process jobs
 - Each agent runs in its own thread — one agent's work cannot block another
