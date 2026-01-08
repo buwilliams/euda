@@ -3,14 +3,25 @@ Agent Tools - Introspection and management of agents.
 """
 
 import json
+import shutil
 from pathlib import Path
 from typing import List, Optional
 
-from . import tool
+from . import tool, _TOOL_REGISTRY
 
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
+
+# Minimal tools every agent needs to function
+BASE_TOOLS = [
+    "list_jobs",
+    "get_job",
+    "create_job",
+    "complete_job",
+    "add_job_log",
+    "done_working"
+]
 
 
 @tool("list_agents", "List all configured agents")
@@ -133,3 +144,198 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
         json.dump(config, f, indent=2)
 
     return {"updated": True, "agent_id": agent_id, "config": config}
+
+
+@tool("create_agent", "Create a new agent with config and persona")
+def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None) -> dict:
+    """Create a new agent with the specified configuration.
+
+    Args:
+        agent_id: Unique identifier (lowercase, no spaces, e.g., 'researcher')
+        name: Display name (e.g., 'Researcher')
+        purpose: Description of what the agent does
+        tools: List of tool names to assign (use list_available_tools to see options).
+               If not provided, uses minimal base tools.
+        triggers: Optional list of triggers (e.g., ['time:morning', 'system:start'])
+
+    Returns:
+        Success status and agent details
+    """
+    # Validate agent_id
+    if not agent_id.replace("-", "").replace("_", "").isalnum():
+        return {"error": "agent_id must be alphanumeric with optional hyphens/underscores"}
+
+    agent_id = agent_id.lower()
+    agent_dir = AGENTS_DIR / agent_id
+
+    if agent_dir.exists():
+        return {"error": f"Agent already exists: {agent_id}"}
+
+    # Create agent directory
+    agent_dir.mkdir(parents=True, exist_ok=True)
+
+    # Use provided tools or fall back to base tools
+    agent_tools = list(tools) if tools else list(BASE_TOOLS)
+
+    # Ensure base tools are always included
+    for base_tool in BASE_TOOLS:
+        if base_tool not in agent_tools:
+            agent_tools.append(base_tool)
+
+    # Get next order number
+    existing_agents = list_agents()
+    max_order = max((a.get("order", 0) for a in existing_agents), default=0)
+
+    # Create config
+    config = {
+        "id": agent_id,
+        "name": name,
+        "enabled": True,
+        "order": max_order + 1,
+        "tools": agent_tools,
+        "triggers": triggers or []
+    }
+
+    config_path = agent_dir / "config.json"
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=2)
+
+    # Create persona
+    persona = f"""# {name}
+
+{purpose}
+
+## Purpose
+
+{purpose}
+
+## Behavioral Rules
+
+I must:
+- Complete assigned jobs thoroughly
+- Use available tools appropriately
+- Call done_working when finished with a work cycle
+
+## How I Work
+
+1. Check my assigned jobs
+2. Work on the highest priority job
+3. Use my tools to accomplish the task
+4. Mark jobs as complete when done
+5. Call done_working to signal I'm finished
+"""
+
+    persona_path = agent_dir / f"{agent_id}-persona.md"
+    persona_path.write_text(persona)
+
+    return {
+        "created": True,
+        "agent_id": agent_id,
+        "config": config,
+        "persona_path": str(persona_path),
+        "note": "Restart Euno for the new agent to become active"
+    }
+
+
+@tool("update_agent_persona", "Update an agent's persona/instructions")
+def update_agent_persona_tool(agent_id: str, persona: str) -> dict:
+    """Update an agent's persona markdown file.
+
+    Args:
+        agent_id: The agent to update
+        persona: The new persona markdown content
+    """
+    return update_agent_persona(agent_id, persona)
+
+
+@tool("enable_agent", "Enable a disabled agent")
+def enable_agent(agent_id: str) -> dict:
+    """Enable an agent so it can process jobs.
+
+    Args:
+        agent_id: The agent to enable
+    """
+    config = get_agent_config(agent_id)
+    if not config:
+        return {"error": f"Agent not found: {agent_id}"}
+
+    config["enabled"] = True
+    return update_agent_config(agent_id, config)
+
+
+@tool("disable_agent", "Disable an agent so it stops processing jobs")
+def disable_agent(agent_id: str) -> dict:
+    """Disable an agent so it stops processing jobs.
+
+    Args:
+        agent_id: The agent to disable
+    """
+    config = get_agent_config(agent_id)
+    if not config:
+        return {"error": f"Agent not found: {agent_id}"}
+
+    config["enabled"] = False
+    return update_agent_config(agent_id, config)
+
+
+@tool("update_agent_triggers", "Update an agent's trigger configuration")
+def update_agent_triggers(agent_id: str, triggers: list) -> dict:
+    """Update which triggers wake an agent.
+
+    Args:
+        agent_id: The agent to update
+        triggers: List of triggers (e.g., ['time:morning', 'system:start', 'lifelog:new'])
+
+    Note: Changes require a restart to take effect.
+    """
+    config = get_agent_config(agent_id)
+    if not config:
+        return {"error": f"Agent not found: {agent_id}"}
+
+    config["triggers"] = triggers
+    result = update_agent_config(agent_id, config)
+    result["note"] = "Restart Euno for trigger changes to take effect"
+    return result
+
+
+@tool("delete_agent", "Permanently delete an agent")
+def delete_agent(agent_id: str) -> dict:
+    """Permanently delete an agent and all its data.
+
+    Args:
+        agent_id: The agent to delete
+
+    Warning: This cannot be undone!
+    """
+    # Prevent deleting core agents
+    protected_agents = ["friend", "worker", "curator", "profiler", "archivist", "adaptor"]
+    if agent_id in protected_agents:
+        return {"error": f"Cannot delete core agent: {agent_id}"}
+
+    agent_dir = AGENTS_DIR / agent_id
+    if not agent_dir.exists():
+        return {"error": f"Agent not found: {agent_id}"}
+
+    # Remove the agent directory
+    shutil.rmtree(agent_dir)
+
+    return {
+        "deleted": True,
+        "agent_id": agent_id,
+        "note": "Restart Euno to fully remove the agent"
+    }
+
+
+@tool("list_available_tools", "List all tools that can be assigned to agents")
+def list_available_tools() -> List[dict]:
+    """List all available tools that can be assigned to agents.
+
+    Returns a list of tool names and descriptions.
+    """
+    tools = []
+    for name, info in _TOOL_REGISTRY.items():
+        tools.append({
+            "name": name,
+            "description": info["description"]
+        })
+    return sorted(tools, key=lambda x: x["name"])

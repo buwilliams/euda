@@ -52,3 +52,20 @@ Rules for how agents work and coordinate through jobs.
 - After `done_working`, manager checks for more jobs and starts another cycle if needed
 - Agent decides when any job is complete — including trigger jobs
 - Jobs must be explicitly completed by the agent via `complete_job`
+
+## Agent Creation & Management
+
+- Users create agents through the Friend agent (via chat)
+- Friend uses `list_available_tools` to determine appropriate tools for new agents
+- Core agents are protected and cannot be deleted: friend, worker, curator, profiler, archivist, adaptor
+- Custom agents can be created, modified, and deleted
+- All agents get base tools: list_jobs, get_job, create_job, complete_job, add_job_log, done_working
+- Changes to triggers require a restart to take effect
+- Agent files: `config.json` (settings) and `{agent}-persona.md` (instructions)
+
+## Friend Agent Role
+
+- Primary interface for user interaction
+- Can create and manage other agents
+- Can answer questions about Euno by reading docs/specs
+- Has access to user profile and memory for personalized responses
