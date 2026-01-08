@@ -903,14 +903,45 @@ def get_or_create_system_job(name: str, system_tag: str) -> dict:
         The system job dict
     """
     all_jobs = list_jobs()
+    now = datetime.utcnow().isoformat() + "Z"
 
-    # Find existing system job by tag
+    # Find existing system job by tag at root level
     for job in all_jobs:
         if system_tag in job.get("tags", []) and job["parent_id"] is None:
             return job
 
+    # PROTECTION: Check if there's a system container that was moved or has corrupted tags
+    # Look for jobs by name that should be system containers
+    for job in all_jobs:
+        if job["name"] == name:
+            job_tags = job.get("tags", []) or []
+            needs_repair = False
+            repairs = []
+
+            # Check if tags are missing/corrupted
+            if system_tag not in job_tags:
+                needs_repair = True
+                repairs.append(f"restoring tag '{system_tag}'")
+
+            # Check if it was moved from root level
+            if job["parent_id"] is not None:
+                needs_repair = True
+                repairs.append("moving back to root level")
+
+            if needs_repair:
+                print(f"WARNING: Repairing system container '{name}' (id={job['id']}): {', '.join(repairs)}")
+                # Repair the container
+                new_tags = list(set(job_tags + [system_tag]))
+                with _transaction() as conn:
+                    conn.execute(
+                        "UPDATE jobs SET parent_id = NULL, tags = ?, updated_at = ? WHERE id = ?",
+                        (json.dumps(new_tags), now, job["id"])
+                    )
+                # Notify UI of the repair
+                _emit_jobs_update()
+                return _load_job(job["id"])
+
     # Create new system job
-    now = datetime.utcnow().isoformat() + "Z"
     job_id = f"job-{uuid.uuid4().hex[:8]}"
 
     with _transaction() as conn:
@@ -1021,13 +1052,29 @@ def sync_agent_inbox_jobs():
 
     # Migrate orphaned root jobs (user-created, not system) under Projects
     system_tags = {"system:agents", "system:projects"}
+    system_container_names = {"Agents", "Projects"}
     for job in all_jobs:
-        # Skip if not a root job, or if it's a system container, or already under Projects
+        # Skip if not a root job
         if job["parent_id"] is not None:
             continue
+
+        # Skip if it's a system container (check by tag)
         if any(tag in system_tags for tag in job.get("tags", [])):
             continue
-        if job.get("agent_id"):  # Agent inbox jobs handled above
+
+        # PROTECTION: Also skip if job name matches system container names
+        # This prevents moving containers with corrupted/missing tags
+        if job["name"] in system_container_names:
+            # Log warning about potential tag corruption
+            job_tags = job.get("tags", [])
+            if not any(tag in system_tags for tag in job_tags):
+                print(f"WARNING: System container '{job['name']}' (id={job['id']}) has corrupted tags: {job_tags}")
+                print(f"  Expected one of: {system_tags}")
+                print(f"  Skipping migration and preserving as root job")
+            continue
+
+        # Skip agent inbox jobs (handled above)
+        if job.get("agent_id"):
             continue
 
         # This is a user root job - move it under Projects
