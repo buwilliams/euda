@@ -47,7 +47,8 @@
     "retention_days": 31
   },
   "agents": {
-    "max_work_iterations": 20
+    "max_work_iterations": 20,
+    "poll_interval": 30
   },
   "schedules": {
     "morning": "08:00",

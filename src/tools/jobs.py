@@ -173,8 +173,8 @@ def _load_job(job_id: str) -> Optional[dict]:
     return None
 
 
-@tool("list_jobs", "List all jobs, optionally filtered by status, parent, tag, or assignee")
-def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assignee: str = None) -> List[dict]:
+@tool("list_jobs", "List all jobs, optionally filtered by status, parent, tag, assignee, or actionable due date")
+def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assignee: str = None, actionable: bool = False) -> List[dict]:
     """List jobs with optional filters.
 
     Args:
@@ -182,7 +182,10 @@ def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assign
         parent_id: Filter by parent job ID (empty string for root jobs)
         tag: Filter to jobs containing this tag
         assignee: Filter to jobs assigned to this agent ID
+        actionable: If True, only return jobs with due_date <= today or NULL, and not someday
     """
+    from datetime import date
+
     conn = _get_connection()
 
     query = "SELECT * FROM jobs WHERE 1=1"
@@ -208,6 +211,13 @@ def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assign
         # Filter jobs that have the specified agent in their assignees JSON array
         query += " AND EXISTS (SELECT 1 FROM json_each(assignees) WHERE json_each.value = ?)"
         params.append(assignee)
+
+    if actionable:
+        # Only jobs that are due today, past, or have no due date (and not someday)
+        today = date.today().isoformat()
+        query += " AND (due_date IS NULL OR due_date <= ?)"
+        params.append(today)
+        query += " AND someday = 0"
 
     query += " ORDER BY updated_at DESC"
 

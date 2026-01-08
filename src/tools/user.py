@@ -109,9 +109,29 @@ def write_lifelog(content: str, date: str = None, agent: str = None) -> dict:
 
     lifelog_path.write_text(new_content)
 
-    # Emit lifelog:new event
-    from ..events import emit_event
-    emit_event("lifelog:new", data={"date": date, "agent": agent})
+    # Create trigger jobs for agents subscribed to lifelog:new
+    from .jobs import create_job, list_jobs
+    from .agents import list_agents
+
+    for agent_config in list_agents():
+        if not agent_config.get("enabled", True):
+            continue
+        if "lifelog:new" in agent_config.get("triggers", []):
+            job_name = f"Trigger:lifelog-new:{date}"
+
+            # Check if trigger job already exists for this agent today
+            existing = list_jobs(status="todo", assignee=agent_config["id"])
+            already_exists = any(j["name"] == job_name for j in existing)
+
+            if not already_exists:
+                create_job(
+                    name=job_name,
+                    description="New lifelog entry to process",
+                    assignees=[agent_config["id"]],
+                    tags=["trigger:lifelog-new", "auto-complete"],
+                    due_date=None,
+                    created_by="system"
+                )
 
     return {"date": date, "status": "added", "agent": agent}
 
