@@ -219,6 +219,8 @@ def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assign
         # Filter jobs that have the specified agent in their assignees JSON array
         query += " AND EXISTS (SELECT 1 FROM json_each(assignees) WHERE json_each.value = ?)"
         params.append(assignee)
+        # Exclude system jobs - only their descendants should be processed by agents
+        query += " AND NOT EXISTS (SELECT 1 FROM json_each(tags) WHERE json_each.value IN ('system:agents', 'system:projects', 'agent-inbox'))"
 
     if actionable:
         # Only jobs that are due today, past, or have no due date (and not someday)
@@ -884,6 +886,12 @@ def claim_job(job_id: str, agent_id: str) -> dict:
     job = _load_job(job_id)
     if not job:
         return {"error": f"Job not found: {job_id}"}
+
+    # Prevent claiming system jobs (containers and agent inboxes)
+    # Only their descendants should be processed
+    system_tags = {"system:agents", "system:projects", "agent-inbox"}
+    if any(tag in system_tags for tag in job.get("tags", [])):
+        return {"error": "Cannot claim system jobs - only their descendants can be processed"}
 
     current_holder = job.get("in_progress_by")
     if current_holder and current_holder != agent_id:
