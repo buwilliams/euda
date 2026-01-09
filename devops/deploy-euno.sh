@@ -65,7 +65,7 @@ ssh -T "$SERVER" "find $REMOTE_DIR/src -type d -name __pycache__ -exec rm -rf {}
 # Sync files (exclude data, venv, __pycache__, .git)
 echo "[3/6] Syncing files..."
 rsync -avz --delete \
-    --exclude 'data/' \
+    --exclude '/data/' \
     --exclude 'venv/' \
     --exclude '.venv/' \
     --exclude '__pycache__/' \
