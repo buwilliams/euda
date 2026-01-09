@@ -120,24 +120,21 @@ Euno uses a **single-user, single-server architecture**. Each user deploys their
 
 ### Server Setup
 
-```bash
-# 1. Create Vultr server, note the IP address
-
-# 2. Configure .env
-echo "EUNO_SERVER=root@<ip>" >> .env
-echo "ANTHROPIC_API_KEY=sk-ant-..." >> .env
-
-# 3. Setup server (once)
-./devops/setup-server.sh
-
-# 4. Deploy code
-./devops/deploy-euno.sh
-
-# 5. Set password
-ssh root@<ip> 'cd /opt/euno && ./venv/bin/python main.py set-password'
-
-# 6. Access at http://<ip>
-```
+1. Create a Vultr server, note the IP address
+2. Setup SSH keys (skip if you already have keys):
+   ```bash
+   ssh-keygen -t ed25519
+   ssh-copy-id root@<ip>
+   ```
+3. Add to `.env`:
+   ```bash
+   EUNO_SERVER=root@<ip>
+   OPENAI_API_KEY=sk-...
+   ```
+4. Run setup: `./devops/setup-server.sh`
+5. Deploy code: `./devops/deploy-euno.sh`
+6. Set password: `ssh root@<ip> 'cd /opt/euno && ./venv/bin/python main.py set-password'`
+7. Access at `http://<ip>`
 
 ### Deployment Scripts
 

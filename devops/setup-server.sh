@@ -43,14 +43,14 @@ echo "Remote directory: $REMOTE_DIR"
 echo ""
 
 # Check SSH connectivity
-echo "[1/5] Testing SSH connection..."
+echo "[1/6] Testing SSH connection..."
 ssh -o ConnectTimeout=10 "$SERVER" "echo 'SSH connection successful'" || {
     echo "Error: Cannot connect to $SERVER"
     exit 1
 }
 
 # Install dependencies
-echo "[2/5] Installing system dependencies..."
+echo "[2/6] Installing system dependencies..."
 ssh "$SERVER" bash << 'REMOTE_SCRIPT'
 set -e
 
@@ -74,7 +74,7 @@ echo "Python version: $(python3 --version)"
 REMOTE_SCRIPT
 
 # Create directory structure
-echo "[3/5] Creating directory structure..."
+echo "[3/6] Creating directory structure..."
 ssh "$SERVER" bash << REMOTE_SCRIPT
 set -e
 sudo mkdir -p $REMOTE_DIR
@@ -83,7 +83,7 @@ mkdir -p $REMOTE_DIR/data
 REMOTE_SCRIPT
 
 # Create systemd service
-echo "[4/5] Setting up systemd service..."
+echo "[4/6] Setting up systemd service..."
 ssh "$SERVER" bash << REMOTE_SCRIPT
 set -e
 
