@@ -13,7 +13,7 @@ import uuid
 from ..llms import get_client
 from ..tools.data.memory import _load_entries, _save_entries, VALID_TYPES
 
-from .prompts import APPEND_SYSTEM_PROMPT, build_append_prompt
+from .prompts import get_append_system_prompt, build_append_prompt
 
 if TYPE_CHECKING:
     from .synthesis import Synthesis
@@ -51,7 +51,7 @@ def append_phase(synthesis: "Synthesis", user_message: str, assistant_response: 
     client = get_client()
     response = client.create(
         max_tokens=500,  # Keep it lightweight
-        system=APPEND_SYSTEM_PROMPT,
+        system=get_append_system_prompt(),
         messages=[{"role": "user", "content": prompt}],
         agent_id=f"{agent_id}/synthesis"
     )
