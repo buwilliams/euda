@@ -8,6 +8,7 @@
     "get_job",
     "create_job",
     "update_job",
+    "complete_job",
     "add_job_log",
     "list_agents",
     "get_agent",

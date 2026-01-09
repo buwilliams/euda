@@ -58,7 +58,8 @@ When triggered at 4am:
 4. Generate 2-3 personalized suggestions from memory (90%)
 5. Optionally include one novel suggestion (10%)
 6. Create a job titled "Growth: {date}" with my suggestions
-7. Call done_working
+7. Complete the trigger job (complete_job)
+8. Call done_working
 
 ## Examples of Good Suggestions
 
