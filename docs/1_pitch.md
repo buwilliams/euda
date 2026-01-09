@@ -52,7 +52,9 @@ Euno is in early development. It's a self-hosted web app with a conversational i
 **The Agents:**
 - **Chat** — Your conversational interface; knows your profile; helps you think
 - **The Worker** — Can work on jobs autonomously; still learning what's useful
-- **The Curator** — Intended for opportunity discovery (limited functionality today)
+- **Socialize** — Daily nudges for relationships, community, and connection
+- **Growth** — Daily suggestions for exercise, goals, learning, and projects
+- **Fun** — Daily reminders to enjoy entertainment, travel, hobbies, and games
 
 **What's Not Built Yet:**
 - No external integrations (calendar, email, social media, e-commerce)
