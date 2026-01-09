@@ -9,9 +9,11 @@
 !data/agents/*/config.json
 !data/agents/*/profile.md
 
-# Agent memory is runtime data (ignore)
-data/agents/*/memory/short-term.jsonl
-data/agents/*/memory/long-term/
+# Agent memory is runtime data (ignore entire directory)
+data/agents/*/memory/
+
+# User data directory (ignore)
+data/user/
 
 # Agent state is runtime data (ignore)
 data/agents/*/state/
