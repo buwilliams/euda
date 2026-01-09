@@ -220,7 +220,7 @@ def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assign
         query += " AND EXISTS (SELECT 1 FROM json_each(assignees) WHERE json_each.value = ?)"
         params.append(assignee)
         # Exclude system jobs - only their descendants should be processed by agents
-        query += " AND NOT EXISTS (SELECT 1 FROM json_each(tags) WHERE json_each.value IN ('system:agents', 'system:projects', 'agent-inbox'))"
+        query += " AND NOT EXISTS (SELECT 1 FROM json_each(tags) WHERE json_each.value IN ('system:agents', 'system:projects', 'system:system', 'agent-inbox'))"
 
     if actionable:
         # Only jobs that are due today, past, or have no due date (and not someday)
@@ -353,7 +353,7 @@ def update_job(
         return {"error": f"Job not found: {job_id}"}
 
     # Prevent status changes on system jobs
-    system_tags = {"system:agents", "system:projects", "agent-inbox"}
+    system_tags = {"system:agents", "system:projects", "system:system", "agent-inbox"}
     if status is not None and any(tag in system_tags for tag in job.get("tags", [])):
         return {"error": "Cannot change status of system jobs"}
 
@@ -411,7 +411,7 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
         return {"error": f"Job not found: {job_id}"}
 
     # Prevent completing system jobs (containers and agent inboxes)
-    system_tags = {"system:agents", "system:projects", "agent-inbox"}
+    system_tags = {"system:agents", "system:projects", "system:system", "agent-inbox"}
     if any(tag in system_tags for tag in job.get("tags", [])):
         return {"error": "Cannot complete system jobs"}
 
@@ -472,7 +472,7 @@ def archive_job(job_id: str, agent: str = "user") -> Optional[dict]:
         return {"error": f"Job not found: {job_id}"}
 
     # Prevent archiving system jobs (containers and agent inboxes)
-    system_tags = {"system:agents", "system:projects", "agent-inbox"}
+    system_tags = {"system:agents", "system:projects", "system:system", "agent-inbox"}
     if any(tag in system_tags for tag in job.get("tags", [])):
         return {"error": "Cannot archive system jobs"}
 
@@ -535,7 +535,7 @@ def delete_job(job_id: str, delete_children: bool = False) -> dict:
         return {"error": f"Job not found: {job_id}"}
 
     # Prevent deletion of system jobs (containers and agent inboxes)
-    system_tags = {"system:agents", "system:projects", "agent-inbox"}
+    system_tags = {"system:agents", "system:projects", "system:system", "agent-inbox"}
     if any(tag in system_tags for tag in job.get("tags", [])):
         return {"error": "Cannot delete system jobs"}
 
@@ -898,7 +898,7 @@ def claim_job(job_id: str, agent_id: str) -> dict:
 
     # Prevent claiming system jobs (containers and agent inboxes)
     # Only their descendants should be processed
-    system_tags = {"system:agents", "system:projects", "agent-inbox"}
+    system_tags = {"system:agents", "system:projects", "system:system", "agent-inbox"}
     if any(tag in system_tags for tag in job.get("tags", [])):
         return {"error": "Cannot claim system jobs - only their descendants can be processed"}
 
@@ -996,6 +996,11 @@ def get_projects_container() -> dict:
     return get_or_create_system_job("Projects", "system:projects")
 
 
+def get_system_container() -> dict:
+    """Get or create the System container job for system-generated jobs."""
+    return get_or_create_system_job("System", "system:system")
+
+
 def sync_agent_inbox_jobs():
     """Sync agent inbox jobs with current agents.
 
@@ -1008,6 +1013,7 @@ def sync_agent_inbox_jobs():
     # Ensure system containers exist
     agents_container = get_agents_container()
     projects_container = get_projects_container()
+    system_container = get_system_container()
 
     agents = list_agents()
     agent_ids = {a["id"] for a in agents}
@@ -1078,8 +1084,8 @@ def sync_agent_inbox_jobs():
             changes_made = True
 
     # Migrate orphaned root jobs (user-created, not system) under Projects
-    system_tags = {"system:agents", "system:projects"}
-    system_container_names = {"Agents", "Projects"}
+    system_tags = {"system:agents", "system:projects", "system:system"}
+    system_container_names = {"Agents", "Projects", "System"}
     for job in all_jobs:
         # Skip if not a root job
         if job["parent_id"] is not None:

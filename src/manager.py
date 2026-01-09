@@ -208,9 +208,10 @@ class AgentManager:
 
     def _emit_startup_triggers(self):
         """Create trigger jobs for system:start and any missed time triggers at startup."""
-        from .tools.data.jobs import create_job, list_jobs
+        from .tools.data.jobs import create_job, list_jobs, get_system_container
 
         today = datetime.now().strftime("%Y-%m-%d")
+        system_container = get_system_container()
 
         # Create system:start trigger jobs for subscribed agents
         print("[startup] Creating system:start trigger jobs")
@@ -232,6 +233,7 @@ class AgentManager:
                     create_job(
                         name=job_name,
                         description="System startup trigger",
+                        parent_id=system_container["id"],
                         assignees=[agent_id],
                         tags=["trigger:start"],
                         due_date=None,
@@ -264,6 +266,7 @@ class AgentManager:
                             create_job(
                                 name=job_name,
                                 description=f"Missed {trigger} trigger",
+                                parent_id=system_container["id"],
                                 assignees=[agent_id],
                                 tags=[f"trigger:{trigger_type}"],
                                 due_date=None,
@@ -388,9 +391,10 @@ class AgentManager:
 
     def _run_time_scheduler(self):
         """Background thread that creates trigger jobs based on schedules."""
-        from .tools.data.jobs import create_job, list_jobs
+        from .tools.data.jobs import create_job, list_jobs, get_system_container
 
         last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
+        system_container = get_system_container()
 
         while self.running:
             try:
@@ -440,6 +444,7 @@ class AgentManager:
                                     create_job(
                                         name=job_name,
                                         description=f"Scheduled trigger for {trigger_name}",
+                                        parent_id=system_container["id"],
                                         assignees=[agent_id],
                                         tags=[f"trigger:{name}"],
                                         due_date=None,

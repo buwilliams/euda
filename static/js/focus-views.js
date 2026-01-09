@@ -36,10 +36,12 @@ function renderFocusMenu() {
     // Find system containers
     const agentsContainer = jobsData.find(j => j.tags && j.tags.includes('system:agents') && !j.parent_id);
     const projectsContainer = jobsData.find(j => j.tags && j.tags.includes('system:projects') && !j.parent_id);
+    const systemContainer = jobsData.find(j => j.tags && j.tags.includes('system:system') && !j.parent_id);
 
     // Count children of each container
     const agentsCount = agentsContainer ? jobsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
     const projectsCount = projectsContainer ? jobsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
+    const systemCount = systemContainer ? jobsData.filter(j => j.parent_id === systemContainer.id).length : 0;
 
     // Check collapsed states
     const timelinesOpen = isSectionOpen('timelines');
@@ -52,7 +54,7 @@ function renderFocusMenu() {
             <div class="focus-menu-section">
                 <div class="focus-menu-section-label">Today</div>
                 <div class="focus-today-jobs">
-                    ${todayJobs.map(job => renderJobCard(job, true)).join('')}
+                    ${todayJobs.map(job => renderJobCard(job, isSwipeable(job))).join('')}
                 </div>
             </div>
         `;
@@ -67,8 +69,8 @@ function renderFocusMenu() {
         `;
     }
 
-    // Build system section (Agents + Projects) if either exists
-    const hasSystemSection = agentsContainer || projectsContainer;
+    // Build system section (Agents + Projects + System) if any exist
+    const hasSystemSection = agentsContainer || projectsContainer || systemContainer;
     const systemSection = hasSystemSection ? `
         <div class="focus-menu-section">
             <div class="focus-menu-section-label collapsible ${collectionsOpen ? 'open' : ''}" onclick="toggleSection('collections')">
@@ -89,6 +91,14 @@ function renderFocusMenu() {
                     <span class="focus-menu-icon">${icon('folder')}</span>
                     <span class="focus-menu-label">Projects</span>
                     <span class="focus-menu-count">${projectsCount}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                ` : ''}
+                ${systemContainer ? `
+                <div class="focus-menu-item" onclick="navigateFocus('job-${systemContainer.id}')">
+                    <span class="focus-menu-icon">${icon('cog-6-tooth')}</span>
+                    <span class="focus-menu-label">System</span>
+                    <span class="focus-menu-count">${systemCount}</span>
                     <span class="focus-menu-arrow">›</span>
                 </div>
                 ` : ''}
@@ -162,7 +172,7 @@ function renderTimelineView(category, title) {
         <div class="focus-view-content">
             ${jobs.length === 0
                 ? '<div class="focus-empty">No jobs</div>'
-                : jobs.map(job => renderJobCard(job, true)).join('')
+                : jobs.map(job => renderJobCard(job, isSwipeable(job))).join('')
             }
         </div>
     `;
@@ -191,10 +201,62 @@ function renderCompletedJobsView() {
 
 // ============== System Container Views ==============
 
-function renderSystemContainerView(job, isAgentsContainer) {
+function renderSystemContainerView(job, isAgentsContainer, isSystemJobsContainer = false) {
     const childJobs = jobsData.filter(j => j.parent_id === job.id);
-    const titleIcon = isAgentsContainer ? icon('bolt') : icon('folder');
-    const containerName = isAgentsContainer ? 'Agents' : 'Projects';
+
+    // Determine container type and styling
+    let titleIcon, containerName, emptyMessage;
+    if (isAgentsContainer) {
+        titleIcon = icon('bolt');
+        containerName = 'Agents';
+        emptyMessage = 'No agent inboxes yet.';
+    } else if (isSystemJobsContainer) {
+        titleIcon = icon('cog-6-tooth');
+        containerName = 'System';
+        emptyMessage = 'No system jobs.';
+    } else {
+        titleIcon = icon('folder');
+        containerName = 'Projects';
+        emptyMessage = 'No projects yet.';
+    }
+
+    // For Projects and System containers, render children as swipeable job cards
+    // For Agents container, render children as non-swipeable agent cards
+    const renderChildJobs = () => {
+        if (childJobs.length === 0) {
+            return `<div class="focus-empty">${emptyMessage}</div>`;
+        }
+
+        if (isAgentsContainer) {
+            // Agent inboxes - not swipeable, custom rendering
+            return `
+                <div class="child-jobs-list">
+                    ${childJobs.map(child => {
+                        const grandchildCount = jobsData.filter(j => j.parent_id === child.id).length;
+                        const childIcon = icon('bolt');
+                        return `
+                            <div class="child-job-card" onclick="navigateFocus('job-${child.id}')">
+                                <span class="child-job-icon">${childIcon}</span>
+                                <span class="child-job-name">${escapeHtml(child.name)}</span>
+                                <span class="child-job-count">${grandchildCount}</span>
+                                <span class="child-job-arrow">${icon('chevron-right')}</span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        } else {
+            // Projects and System - swipeable job cards
+            return `
+                <div class="child-jobs-list">
+                    ${childJobs.map(child => renderJobCard(child, true)).join('')}
+                </div>
+            `;
+        }
+    };
+
+    // Only show quick add for Projects container
+    const showQuickAdd = !isAgentsContainer && !isSystemJobsContainer;
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -204,29 +266,9 @@ function renderSystemContainerView(job, isAgentsContainer) {
         <div class="focus-view-content">
             <!-- Child Jobs -->
             <div class="job-section">
-                ${childJobs.length === 0 ? `
-                    <div class="focus-empty">No ${isAgentsContainer ? 'agent inboxes' : 'projects'} yet.</div>
-                ` : `
-                    <div class="child-jobs-list">
-                        ${childJobs.map(child => {
-                            const grandchildCount = jobsData.filter(j => j.parent_id === child.id).length;
-                            const isAgentInbox = !!child.agent_id;
-                            const childIcon = isAgentInbox ? icon('bolt') : icon('folder');
-                            const trashBtn = isAgentInbox ? '' : `<button class="card-trash-btn" onclick="quickDeleteJob(event, '${child.id}')" title="Delete">${icon('trash')}</button>`;
-                            return `
-                                <div class="child-job-card" onclick="navigateFocus('job-${child.id}')">
-                                    <span class="child-job-icon">${childIcon}</span>
-                                    <span class="child-job-name">${escapeHtml(child.name)}</span>
-                                    <span class="child-job-count">${grandchildCount}</span>
-                                    ${trashBtn}
-                                    <span class="child-job-arrow">${icon('chevron-right')}</span>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                `}
+                ${renderChildJobs()}
             </div>
-            ${!isAgentsContainer ? `
+            ${showQuickAdd ? `
             <!-- Quick Add for Projects -->
             <div class="quick-add-section">
                 <input type="text" id="quick-add-${job.id}" class="quick-add-input" placeholder="Add new project..." onkeypress="handleQuickAddKeypress(event, 'quick-add-${job.id}', '${job.id}')">
@@ -429,11 +471,12 @@ function renderJobDetailView(jobId) {
     // Check if this is a system container
     const isAgentsContainer = job.tags && job.tags.includes('system:agents');
     const isProjectsContainer = job.tags && job.tags.includes('system:projects');
-    const isSystemContainer = isAgentsContainer || isProjectsContainer;
+    const isSystemJobsContainer = job.tags && job.tags.includes('system:system');
+    const isSystemContainer = isAgentsContainer || isProjectsContainer || isSystemJobsContainer;
 
     // For system containers, render a simplified view
     if (isSystemContainer) {
-        return renderSystemContainerView(job, isAgentsContainer);
+        return renderSystemContainerView(job, isAgentsContainer, isSystemJobsContainer);
     }
 
     // For agent inbox jobs, render the agent detail view

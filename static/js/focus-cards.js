@@ -1,5 +1,22 @@
 // Euno - Focus Card Rendering
 
+// ============== Swipeable Detection ==============
+
+function isSwipeable(job) {
+    // System containers are not swipeable
+    if (job.tags && (job.tags.includes('system:agents') || job.tags.includes('system:projects') || job.tags.includes('system:system'))) {
+        return false;
+    }
+    // Agent inbox jobs are not swipeable
+    if (job.tags && job.tags.includes('agent-inbox')) {
+        return false;
+    }
+    if (job.agent_id) {
+        return false;
+    }
+    return true;
+}
+
 // ============== Job Cards ==============
 
 function renderJobCard(job, swipeable = false) {
