@@ -56,8 +56,7 @@ Rules for how agents work and coordinate through jobs.
 
 - Users create agents through the Chat agent (via chat)
 - Chat uses `list_available_tools` to determine appropriate tools for new agents
-- Core agents are protected and cannot be deleted: chat, worker, curator
-- Custom agents can be created, modified, and deleted
+- Core agents are protected: chat, worker, user
 - All agents get base tools: list_jobs, get_job, create_job, complete_job, add_job_log, done_working
 - Changes to triggers require a restart to take effect
 - Agent files: `config.json` (settings) and `profile.md` (identity/instructions)

@@ -28,7 +28,7 @@ Rules for how agents interact with language models.
 - Short-term memory: `list_memory(agent_id)` tool
 - Long-term memory: `read_long_term_memory(date, agent_id)` tool
 - Job assets: `list_assets`, `read_asset` tools
-- Conversation history: auto-included, limited to last 100 lines
+- Conversation history: included in messages array (not system prompt)
 
 ## Prompt Logging
 

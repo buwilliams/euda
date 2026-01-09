@@ -17,7 +17,7 @@ Rules for the server, API, and infrastructure.
   - `/api/jobs` — Job CRUD
   - `/api/agents` — Agent listing
   - `/api/chat` — Chat with agents
-  - `/api/user` — Profile and lifelog
+  - `/api/user` — Profile and long-term memory
   - `/api/auth` — Authentication
   - `/api/upload` — File uploads
   - `/api/events` — SSE endpoint
