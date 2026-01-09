@@ -81,9 +81,18 @@ Rules for how agents work and coordinate through jobs.
 - Consolidate trigger is configurable per-agent (default: `time:evening`)
 - Synthesis replaces the deprecated Profiler, Archivist, and Adaptor agents
 
+## User Requests
+
+- When Chat routes work to an agent on behalf of the user, it tags the job `user-request`
+- Agents see this tag and know to return results to the user
+- Workflow: agent writes findings as job assets, reassigns to user, does NOT complete
+- User reviews results in their timeline and completes when satisfied
+- This creates a request-response loop: user asks → agent works → user receives
+
 ## Chat Agent Role
 
 - Primary interface for user interaction
+- Routes user requests to appropriate agents with `user-request` tag
 - Can create and manage other agents
 - Can answer questions about Euno by reading docs/specs
 - Has access to user profile and memory for personalized responses
