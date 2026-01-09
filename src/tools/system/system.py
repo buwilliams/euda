@@ -7,7 +7,7 @@ import threading
 from pathlib import Path
 from typing import Optional
 
-from . import tool
+from .. import tool
 
 
 # Thread-local storage for agent context
@@ -29,7 +29,7 @@ def clear_agent_context():
     _agent_context.agent = None
 
 
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 SYSTEM_DIR = DATA_DIR / "system"
 
 
@@ -38,7 +38,7 @@ def _ensure_system_dir():
     SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
 
 
-@tool("get_system_config", "Get system configuration")
+@tool("get_system_config", "Get system configuration settings. Use when: checking system settings or LLM config.", tool_type="system")
 def get_system_config() -> dict:
     """Get system configuration."""
     _ensure_system_dir()
@@ -50,7 +50,7 @@ def get_system_config() -> dict:
     return {}
 
 
-@tool("update_system_config", "Update system configuration")
+@tool("update_system_config", "Update system configuration settings. Use when: changing system behavior or settings.", tool_type="system")
 def update_system_config(key: str, value: str) -> dict:
     """Update a system configuration value."""
     _ensure_system_dir()
@@ -70,7 +70,7 @@ def update_system_config(key: str, value: str) -> dict:
     return {"status": "updated", "key": key}
 
 
-@tool("done_working", "Signal that you have finished your current work cycle and are ready to sleep")
+@tool("done_working", "Signal that you have finished your current work cycle. Use when: all assigned work is complete, no more actions needed, or blocked.", tool_type="system")
 def done_working(summary: str = "") -> dict:
     """Signal that the agent has finished working and is ready to sleep.
 
@@ -99,7 +99,7 @@ def done_working(summary: str = "") -> dict:
 
 @tool(
     "send_notifications_batch",
-    "Send multiple notifications in a single operation. More efficient than multiple send_notification calls.",
+    "Send multiple notifications in a single operation. Use when: sending multiple alerts to the user at once.",
     input_schema={
         "type": "object",
         "properties": {
@@ -118,7 +118,8 @@ def done_working(summary: str = "") -> dict:
             }
         },
         "required": ["notifications"]
-    }
+    },
+    tool_type="system"
 )
 def send_notifications_batch(notifications: list) -> dict:
     """Send multiple notifications in a single operation.

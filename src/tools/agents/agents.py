@@ -7,10 +7,10 @@ import shutil
 from pathlib import Path
 from typing import List, Optional
 
-from . import tool, _TOOL_REGISTRY
+from .. import tool, _TOOL_REGISTRY
 
 
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
 
 # Minimal tools every agent needs to function
@@ -24,7 +24,7 @@ BASE_TOOLS = [
 ]
 
 
-@tool("list_agents", "List all configured agents")
+@tool("list_agents", "List all configured agents with their settings. Use when: checking what agents exist, finding who to assign work to.", tool_type="agents")
 def list_agents() -> List[dict]:
     """List all agents with their configurations."""
     agents = []
@@ -43,7 +43,7 @@ def list_agents() -> List[dict]:
     return agents
 
 
-@tool("get_agent", "Get an agent's configuration and persona")
+@tool("get_agent", "Get an agent's configuration and persona. Use when: need detailed info about a specific agent.", tool_type="agents")
 def get_agent(agent_id: str) -> Optional[dict]:
     """Get detailed info about an agent."""
     agent_dir = AGENTS_DIR / agent_id
@@ -67,7 +67,7 @@ def get_agent(agent_id: str) -> Optional[dict]:
     return result
 
 
-@tool("get_agent_memory", "Get an agent's persistent memory")
+@tool("get_agent_memory", "Get an agent's persistent memory. Use when: checking what another agent remembers.", tool_type="agents")
 def get_agent_memory(agent_id: str) -> dict:
     """Get an agent's memory."""
     memory_path = AGENTS_DIR / agent_id / "state" / "memory.json"
@@ -77,7 +77,7 @@ def get_agent_memory(agent_id: str) -> dict:
     return {}
 
 
-@tool("update_agent_memory", "Update an agent's persistent memory")
+@tool("update_agent_memory", "Update an agent's persistent memory. Use when: storing state that should persist across work cycles.", tool_type="agents")
 def update_agent_memory(agent_id: str, key: str, value: str) -> dict:
     """Set a value in an agent's memory."""
     state_dir = AGENTS_DIR / agent_id / "state"
@@ -146,7 +146,7 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
     return {"updated": True, "agent_id": agent_id, "config": config}
 
 
-@tool("create_agent", "Create a new agent with config and persona")
+@tool("create_agent", "Create a new agent with config and persona. Use when: user asks for a new specialized agent or automation capability.", tool_type="agents")
 def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None) -> dict:
     """Create a new agent with the specified configuration.
 
@@ -237,7 +237,7 @@ I must:
     }
 
 
-@tool("update_agent_persona", "Update an agent's persona/instructions")
+@tool("update_agent_persona", "Update an agent's persona/instructions. Use when: modifying how an agent behaves.", tool_type="agents")
 def update_agent_persona_tool(agent_id: str, persona: str) -> dict:
     """Update an agent's persona markdown file.
 
@@ -248,7 +248,7 @@ def update_agent_persona_tool(agent_id: str, persona: str) -> dict:
     return update_agent_persona(agent_id, persona)
 
 
-@tool("enable_agent", "Enable a disabled agent")
+@tool("enable_agent", "Enable a disabled agent. Use when: reactivating an agent that was paused.", tool_type="agents")
 def enable_agent(agent_id: str) -> dict:
     """Enable an agent so it can process jobs.
 
@@ -263,7 +263,7 @@ def enable_agent(agent_id: str) -> dict:
     return update_agent_config(agent_id, config)
 
 
-@tool("disable_agent", "Disable an agent so it stops processing jobs")
+@tool("disable_agent", "Disable an agent so it stops processing jobs. Use when: pausing an agent temporarily.", tool_type="agents")
 def disable_agent(agent_id: str) -> dict:
     """Disable an agent so it stops processing jobs.
 
@@ -278,7 +278,7 @@ def disable_agent(agent_id: str) -> dict:
     return update_agent_config(agent_id, config)
 
 
-@tool("update_agent_triggers", "Update an agent's trigger configuration")
+@tool("update_agent_triggers", "Update an agent's trigger configuration. Use when: changing when an agent wakes up (requires restart).", tool_type="agents")
 def update_agent_triggers(agent_id: str, triggers: list) -> dict:
     """Update which triggers wake an agent.
 
@@ -298,7 +298,7 @@ def update_agent_triggers(agent_id: str, triggers: list) -> dict:
     return result
 
 
-@tool("delete_agent", "Permanently delete an agent")
+@tool("delete_agent", "Permanently delete an agent. Use when: removing an agent that is no longer needed (cannot be undone).", tool_type="agents")
 def delete_agent(agent_id: str) -> dict:
     """Permanently delete an agent and all its data.
 
@@ -326,7 +326,7 @@ def delete_agent(agent_id: str) -> dict:
     }
 
 
-@tool("list_available_tools", "List all tools that can be assigned to agents")
+@tool("list_available_tools", "List all tools that can be assigned to agents. Use when: creating/updating agents and need to know what capabilities to grant.", tool_type="agents")
 def list_available_tools() -> List[dict]:
     """List all available tools that can be assigned to agents.
 

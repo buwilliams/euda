@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
 
-from ...tools.user import (
+from ...tools.data.user import (
     get_user_profile, update_user_profile,
     read_lifelog, write_lifelog, list_lifelog_dates
 )

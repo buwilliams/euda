@@ -9,10 +9,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
-from . import tool
+from .. import tool
 
 
-PROJECT_DIR = Path(__file__).parent.parent.parent
+PROJECT_DIR = Path(__file__).parent.parent.parent.parent
 DATA_DIR = PROJECT_DIR / "data"
 AGENTS_DIR = DATA_DIR / "agents"
 
@@ -23,7 +23,7 @@ SAFE_DIRS = {
 }
 
 
-@tool("list_euno_docs", "List all Euno documentation and spec files")
+@tool("list_euno_docs", "List all Euno documentation and spec files. Use when: user asks about Euno features or need to understand system behavior.", tool_type="integration")
 def list_euno_docs() -> dict:
     """List all available documentation and spec files.
 
@@ -68,7 +68,7 @@ def list_euno_docs() -> dict:
     return result
 
 
-@tool("read_euno_doc", "Read a Euno documentation, spec, or agent persona file")
+@tool("read_euno_doc", "Read a Euno documentation, spec, or agent persona file. Use when: need detailed information about how Euno works.", tool_type="integration")
 def read_euno_doc(path: str) -> dict:
     """Read a documentation file from safe directories.
 
@@ -128,7 +128,7 @@ def read_euno_doc(path: str) -> dict:
         return {"error": f"Failed to read file: {str(e)}"}
 
 
-@tool("read_agent_logs", "Read recent logs for an agent")
+@tool("read_agent_logs", "Read recent logs for an agent. Use when: debugging agent behavior or reviewing activity.", tool_type="integration")
 def read_agent_logs(agent_id: str, date: str = None, limit: int = 50) -> dict:
     """Read recent log entries for an agent.
 

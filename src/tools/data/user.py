@@ -6,10 +6,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, List
 
-from . import tool
+from .. import tool
 
 
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 USER_DIR = DATA_DIR / "user"
 
 
@@ -19,7 +19,7 @@ def _ensure_user_dir():
     (USER_DIR / "lifelog").mkdir(exist_ok=True)
 
 
-@tool("get_user_profile", "Get the user's profile")
+@tool("get_user_profile", "Get the user's profile containing biographical info, preferences, and patterns. Use when: need to personalize responses or understand user context.", tool_type="data")
 def get_user_profile() -> dict:
     """Get the user's profile."""
     _ensure_user_dir()
@@ -36,7 +36,7 @@ def get_user_profile() -> dict:
     }
 
 
-@tool("update_user_profile", "Update the user's profile")
+@tool("update_user_profile", "Update the user's profile with new information. Use when: learning new facts about the user.", tool_type="data")
 def update_user_profile(content: str) -> dict:
     """Update the user's profile."""
     _ensure_user_dir()
@@ -47,7 +47,7 @@ def update_user_profile(content: str) -> dict:
     return {"status": "updated"}
 
 
-@tool("read_lifelog", "Read lifelog entries for a date or date range")
+@tool("read_lifelog", "Read lifelog entries for a date. Use when: need historical context about what user did/said on a specific day.", tool_type="data")
 def read_lifelog(date: str = None) -> dict:
     """Read lifelog entries.
 
@@ -74,7 +74,7 @@ def read_lifelog(date: str = None) -> dict:
     }
 
 
-@tool("write_lifelog", "Add an entry to the lifelog")
+@tool("write_lifelog", "Add an entry to the lifelog. Use when: recording significant events or conversations.", tool_type="data")
 def write_lifelog(content: str, date: str = None, agent: str = None) -> dict:
     """Add an entry to the lifelog.
 
@@ -111,7 +111,7 @@ def write_lifelog(content: str, date: str = None, agent: str = None) -> dict:
 
     # Create trigger jobs for agents subscribed to lifelog:new
     from .jobs import create_job, list_jobs
-    from .agents import list_agents
+    from ..agents.agents import list_agents
 
     for agent_config in list_agents():
         if not agent_config.get("enabled", True):
@@ -136,7 +136,7 @@ def write_lifelog(content: str, date: str = None, agent: str = None) -> dict:
     return {"date": date, "status": "added", "agent": agent}
 
 
-@tool("list_lifelog_dates", "List all dates with lifelog entries")
+@tool("list_lifelog_dates", "List all dates with lifelog entries. Use when: finding available historical records.", tool_type="data")
 def list_lifelog_dates() -> List[str]:
     """List all dates that have lifelog entries."""
     _ensure_user_dir()

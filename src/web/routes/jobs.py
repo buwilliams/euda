@@ -6,12 +6,12 @@ from typing import Optional, List
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from ...tools.jobs import (
+from ...tools.data.jobs import (
     list_jobs, get_job, create_job, update_job,
     complete_job, restore_job, archive_job, add_job_log, get_child_jobs, delete_job,
     assign_agent, unassign_agent, list_assignees
 )
-from ...tools.assets import list_assets, read_asset, write_asset, delete_asset
+from ...tools.data.assets import list_assets, read_asset, write_asset, delete_asset
 
 
 router = APIRouter()

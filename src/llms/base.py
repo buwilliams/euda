@@ -31,7 +31,7 @@ def _get_prompt_logger():
     """Get the prompt logger instance."""
     global _prompt_logger
     if _prompt_logger is None:
-        _prompt_logger = get_logger("system/prompts")
+        _prompt_logger = get_logger("system/logs/prompts")
     return _prompt_logger
 
 

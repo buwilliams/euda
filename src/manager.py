@@ -208,7 +208,7 @@ class AgentManager:
 
     def _emit_startup_triggers(self):
         """Create trigger jobs for system:start and any missed time triggers at startup."""
-        from .tools.jobs import create_job, list_jobs
+        from .tools.data.jobs import create_job, list_jobs
 
         today = datetime.now().strftime("%Y-%m-%d")
 
@@ -280,7 +280,7 @@ class AgentManager:
 
     def _run_agent_loop(self, agent: Agent):
         """Run an agent's work loop - polls for actionable jobs."""
-        from .tools.jobs import list_jobs
+        from .tools.data.jobs import list_jobs
 
         poll_interval = self._get_system_config().get("agents", {}).get("poll_interval", 0.1)
 
@@ -364,7 +364,7 @@ class AgentManager:
 
     def _run_time_scheduler(self):
         """Background thread that creates trigger jobs based on schedules."""
-        from .tools.jobs import create_job, list_jobs
+        from .tools.data.jobs import create_job, list_jobs
 
         last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
 
@@ -456,7 +456,7 @@ class AgentManager:
         print(f"Found {len(configs)} agents, {len(enabled)} enabled")
 
         # Sync agent inbox jobs
-        from .tools.jobs import sync_agent_inbox_jobs
+        from .tools.data.jobs import sync_agent_inbox_jobs
         sync_agent_inbox_jobs()
         print("Agent inbox jobs synced")
 
@@ -471,7 +471,7 @@ class AgentManager:
             self._emit_startup_triggers()
 
         # Initialize job cache - check for existing actionable jobs
-        from .tools.jobs import list_jobs
+        from .tools.data.jobs import list_jobs
         for agent_id in self.agents:
             jobs = list_jobs(status="todo", assignee=agent_id, actionable=True)
             self.agents_with_jobs[agent_id] = bool(jobs)

@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 
-from ...tools.agents import (
+from ...tools.agents.agents import (
     list_agents, get_agent, get_agent_memory, update_agent_memory,
     get_agent_persona, update_agent_persona, get_agent_config, update_agent_config
 )

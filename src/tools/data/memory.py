@@ -11,10 +11,10 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
 
-from . import tool
+from .. import tool
 
 
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 USER_DIR = DATA_DIR / "user"
 MEMORY_FILE = USER_DIR / "memory.jsonl"
 
@@ -97,7 +97,7 @@ def _archive_expired_memories(expired: List[dict]):
     write_lifelog(content=content, agent="Memory")
 
 
-@tool("add_memory", "Add an item to the user's memory for proactive attention")
+@tool("add_memory", "Add an item to memory for proactive attention (expires in 90 days). Use when: user mentions something worth tracking - a person, goal, concern, or upcoming event.", tool_type="data")
 def add_memory(
     short_description: str,
     type: str,
@@ -131,7 +131,7 @@ def add_memory(
     return entry
 
 
-@tool("list_memory", "List all valid memory items for context")
+@tool("list_memory", "List all valid memory items (people, places, goals, concerns). Use when: need context about what's on user's mind or active concerns.", tool_type="data")
 def list_memory() -> List[dict]:
     """Get all valid (non-expired) memory entries.
 
@@ -149,7 +149,7 @@ def list_memory() -> List[dict]:
     return valid
 
 
-@tool("remove_memory", "Remove a memory item by ID")
+@tool("remove_memory", "Remove a memory item by ID. Use when: item is no longer relevant or was added by mistake.", tool_type="data")
 def remove_memory(entry_id: str) -> dict:
     """Remove a memory entry.
 

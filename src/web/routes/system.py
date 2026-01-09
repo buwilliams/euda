@@ -12,8 +12,8 @@ from fastapi.responses import StreamingResponse
 
 from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client
 from ...llms.base import _load_config, CONFIG_PATH, VALID_PROVIDERS
-from ...tools.jobs import list_jobs
-from ...tools.user import get_user_profile
+from ...tools.data.jobs import list_jobs
+from ...tools.data.user import get_user_profile
 
 
 router = APIRouter()

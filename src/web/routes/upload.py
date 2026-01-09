@@ -12,8 +12,8 @@ from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File
 
-from ...tools.jobs import create_job, get_agent_inbox_job
-from ...tools.assets import ASSETS_DIR
+from ...tools.data.jobs import create_job, get_agent_inbox_job
+from ...tools.data.assets import ASSETS_DIR
 
 
 router = APIRouter()

@@ -3,32 +3,47 @@ Tool Registry - Central registry for all agent tools.
 
 Tools are registered with decorators and can be looked up by name.
 Agents are granted access to specific tools via their config.
+
+Tools are organized by type:
+- data: Jobs, assets, user profile, memory
+- agents: Agent management and introspection
+- system: Config, dates, notifications, work control
+- integration: External knowledge and documentation
 """
 
 from typing import Callable, Dict, List, Any
 
 
+# Tool types
+TOOL_TYPES = {"data", "agents", "system", "integration"}
+
 # Global registry of all tools
 _TOOL_REGISTRY: Dict[str, dict] = {}
 
 
-def tool(name: str, description: str, input_schema: dict = None):
+def tool(name: str, description: str, input_schema: dict = None, tool_type: str = None):
     """Decorator to register a tool function.
 
     Args:
         name: Tool name
-        description: Tool description
+        description: Tool description (should include when to use)
         input_schema: Optional explicit schema (overrides auto-detection).
                      Use this for complex types like arrays of objects.
+        tool_type: Category - one of: data, agents, system, integration
     """
     def decorator(func: Callable) -> Callable:
+        # Validate tool_type if provided
+        if tool_type and tool_type not in TOOL_TYPES:
+            raise ValueError(f"Invalid tool_type '{tool_type}'. Must be one of: {TOOL_TYPES}")
+
         # If explicit schema provided, use it directly
         if input_schema is not None:
             _TOOL_REGISTRY[name] = {
                 "name": name,
                 "description": description,
                 "function": func,
-                "schema": input_schema
+                "schema": input_schema,
+                "type": tool_type
             }
             return func
 
@@ -71,7 +86,8 @@ def tool(name: str, description: str, input_schema: dict = None):
                 "type": "object",
                 "properties": properties,
                 "required": required
-            }
+            },
+            "type": tool_type
         }
         return func
     return decorator
@@ -103,6 +119,42 @@ def get_tools_for_agent(tool_names: List[str]) -> List[dict]:
     return tools
 
 
+def get_tools_by_type(tool_type: str) -> List[dict]:
+    """Get all tools of a specific type."""
+    return [
+        {
+            "name": t["name"],
+            "description": t["description"],
+            "input_schema": t["schema"]
+        }
+        for t in _TOOL_REGISTRY.values()
+        if t.get("type") == tool_type
+    ]
+
+
+def get_tools_grouped_by_type(tool_names: List[str]) -> Dict[str, List[dict]]:
+    """Get tools grouped by type for system prompt building.
+
+    Returns dict like:
+    {
+        "data": [{"name": "list_jobs", "description": "..."}],
+        "agents": [...],
+        "system": [...],
+        "integration": [...]
+    }
+    """
+    grouped = {t: [] for t in TOOL_TYPES}
+    for name in tool_names:
+        if name in _TOOL_REGISTRY:
+            t = _TOOL_REGISTRY[name]
+            tool_type = t.get("type", "system")  # default to system if untyped
+            grouped[tool_type].append({
+                "name": t["name"],
+                "description": t["description"]
+            })
+    return grouped
+
+
 def execute_tool(name: str, inputs: dict) -> Any:
     """Execute a tool by name with given inputs."""
     if name not in _TOOL_REGISTRY:
@@ -116,12 +168,7 @@ def execute_tool(name: str, inputs: dict) -> Any:
 
 
 # Import all tool modules to register them
-from . import jobs
-from . import agents
-from . import assets
-from . import user
-from . import system
-from . import dates
-from . import memory
-from . import notifications
-from . import knowledge
+from .data import jobs, assets, user, memory
+from .agents import agents
+from .system import system, dates, notifications
+from .integration import knowledge

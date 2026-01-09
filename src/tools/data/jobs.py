@@ -16,10 +16,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, List
 
-from . import tool
+from .. import tool
 
 
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 JOBS_DIR = DATA_DIR / "jobs"
 DB_PATH = JOBS_DIR / "db.sqlite"
 
@@ -112,20 +112,20 @@ _ensure_schema()
 
 def _emit_event(event: str, scope: str = None, data: dict = None):
     """Emit an event to the event bus."""
-    from ..events import emit_event
+    from ...events import emit_event
     emit_event(event, scope=scope, data=data)
 
 
 def _emit_jobs_update():
     """Notify UI clients that jobs have changed."""
-    from ..events import emit_ui_event
+    from ...events import emit_ui_event
     all_jobs = list_jobs()
     emit_ui_event("jobs_update", {"jobs": all_jobs})
 
 
 def _notify_agent_has_jobs(agent_id: str):
     """Notify the job cache that an agent has pending jobs."""
-    from ..manager import get_manager
+    from ...manager import get_manager
     manager = get_manager()
     if manager:
         manager.agents_with_jobs[agent_id] = True
@@ -181,7 +181,7 @@ def _load_job(job_id: str) -> Optional[dict]:
     return None
 
 
-@tool("list_jobs", "List all jobs, optionally filtered by status, parent, tag, assignee, or actionable due date")
+@tool("list_jobs", "List all jobs, optionally filtered by status, parent, tag, assignee, or actionable due date. Use when: reviewing work queue, finding assigned jobs, checking project status.", tool_type="data")
 def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assignee: str = None, actionable: bool = False) -> List[dict]:
     """List jobs with optional filters.
 
@@ -240,7 +240,7 @@ def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assign
     return jobs
 
 
-@tool("get_job", "Get a job by its ID")
+@tool("get_job", "Get a job by its ID with full details. Use when: need complete job info including logs and attachments.", tool_type="data")
 def get_job(job_id: str) -> Optional[dict]:
     """Get a single job by ID."""
     return _load_job(job_id)
@@ -261,7 +261,7 @@ def _get_default_parent_for_creator(created_by: str) -> Optional[str]:
     - user/friend -> Projects container
     - other agents -> their agent inbox job
     """
-    from .agents import list_agents
+    from ..agents.agents import list_agents
 
     # User or Friend agent -> Projects
     if created_by in ("user", "friend", "system"):
@@ -282,7 +282,7 @@ def _get_default_parent_for_creator(created_by: str) -> Optional[str]:
     return projects["id"] if projects else None
 
 
-@tool("create_job", "Create a new job")
+@tool("create_job", "Create a new job with optional parent, tags, assignees, and due date. Use when: breaking down work, creating tasks for yourself or other agents.", tool_type="data")
 def create_job(
     name: str,
     description: str = None,
@@ -336,7 +336,7 @@ def create_job(
     return job
 
 
-@tool("update_job", "Update a job's fields")
+@tool("update_job", "Update a job's fields (name, description, status, tags, assignees, due date). Use when: modifying job details, changing assignments, rescheduling.", tool_type="data")
 def update_job(
     job_id: str,
     name: str = None,
@@ -403,7 +403,7 @@ def update_job(
     return _load_job(job_id)
 
 
-@tool("complete_job", "Mark a job as completed")
+@tool("complete_job", "Mark a job as completed. Use when: work is finished and verified, task is no longer needed.", tool_type="data")
 def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
     """Mark a job as completed."""
     job = _load_job(job_id)
@@ -438,7 +438,7 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
     return _load_job(job_id)
 
 
-@tool("restore_job", "Restore a completed job back to todo")
+@tool("restore_job", "Restore a completed job back to todo status. Use when: a completed job needs to be reopened.", tool_type="data")
 def restore_job(job_id: str, agent: str = "user") -> Optional[dict]:
     """Restore a completed job back to todo status."""
     job = _load_job(job_id)
@@ -464,7 +464,7 @@ def restore_job(job_id: str, agent: str = "user") -> Optional[dict]:
     return _load_job(job_id)
 
 
-@tool("archive_job", "Archive a job (mark as no longer relevant)")
+@tool("archive_job", "Archive a job (mark as no longer relevant). Use when: job is obsolete or cancelled.", tool_type="data")
 def archive_job(job_id: str, agent: str = "user") -> Optional[dict]:
     """Archive a job."""
     job = _load_job(job_id)
@@ -499,7 +499,7 @@ def archive_job(job_id: str, agent: str = "user") -> Optional[dict]:
     return _load_job(job_id)
 
 
-@tool("add_job_log", "Add a log entry to a job")
+@tool("add_job_log", "Add a log entry to a job. Use when: recording progress, notes, or status updates on a job.", tool_type="data")
 def add_job_log(job_id: str, action: str, agent: str = "user") -> Optional[dict]:
     """Add a log entry to a job."""
     job = _load_job(job_id)
@@ -521,13 +521,13 @@ def add_job_log(job_id: str, action: str, agent: str = "user") -> Optional[dict]
     return _load_job(job_id)
 
 
-@tool("get_child_jobs", "Get all child jobs of a parent job")
+@tool("get_child_jobs", "Get all child jobs of a parent job. Use when: viewing job hierarchy, checking sub-tasks.", tool_type="data")
 def get_child_jobs(parent_id: str) -> List[dict]:
     """Get all child jobs of a given parent."""
     return list_jobs(parent_id=parent_id)
 
 
-@tool("delete_job", "Delete a job permanently")
+@tool("delete_job", "Delete a job permanently. Use when: removing unwanted jobs (use archive_job for normal cleanup).", tool_type="data")
 def delete_job(job_id: str, delete_children: bool = False) -> dict:
     """Delete a job. Optionally delete child jobs too."""
     job = _load_job(job_id)
@@ -561,7 +561,7 @@ def delete_job(job_id: str, delete_children: bool = False) -> dict:
 
 @tool(
     "create_jobs_batch",
-    "Create multiple jobs in a single operation. More efficient than multiple create_job calls.",
+    "Create multiple jobs in a single operation. Use when: creating many related tasks at once for efficiency.",
     input_schema={
         "type": "object",
         "properties": {
@@ -584,7 +584,8 @@ def delete_job(job_id: str, delete_children: bool = False) -> dict:
             "created_by": {"type": "string", "description": "Who is creating these jobs"}
         },
         "required": ["jobs"]
-    }
+    },
+    tool_type="data"
 )
 def create_jobs_batch(jobs: list, created_by: str = "agent") -> dict:
     """Create multiple jobs in a single operation.
@@ -619,7 +620,7 @@ def create_jobs_batch(jobs: list, created_by: str = "agent") -> dict:
 
 @tool(
     "update_jobs_batch",
-    "Update multiple jobs in a single operation. More efficient than multiple update_job calls.",
+    "Update multiple jobs in a single operation. Use when: bulk updating job fields for efficiency.",
     input_schema={
         "type": "object",
         "properties": {
@@ -642,7 +643,8 @@ def create_jobs_batch(jobs: list, created_by: str = "agent") -> dict:
             }
         },
         "required": ["updates"]
-    }
+    },
+    tool_type="data"
 )
 def update_jobs_batch(updates: list) -> dict:
     """Update multiple jobs in a single operation.
@@ -679,7 +681,7 @@ def update_jobs_batch(updates: list) -> dict:
 
 @tool(
     "complete_jobs_batch",
-    "Complete multiple jobs in a single operation. More efficient than multiple complete_job calls.",
+    "Complete multiple jobs in a single operation. Use when: finishing multiple related tasks at once.",
     input_schema={
         "type": "object",
         "properties": {
@@ -691,7 +693,8 @@ def update_jobs_batch(updates: list) -> dict:
             "agent": {"type": "string", "description": "Agent completing the jobs"}
         },
         "required": ["job_ids"]
-    }
+    },
+    tool_type="data"
 )
 def complete_jobs_batch(job_ids: list, agent: str = "user") -> dict:
     """Complete multiple jobs in a single operation.
@@ -721,7 +724,7 @@ def complete_jobs_batch(job_ids: list, agent: str = "user") -> dict:
 
 @tool(
     "add_job_logs_batch",
-    "Add log entries to multiple jobs in a single operation. More efficient than multiple add_job_log calls.",
+    "Add log entries to multiple jobs in a single operation. Use when: recording progress on multiple jobs at once.",
     input_schema={
         "type": "object",
         "properties": {
@@ -740,7 +743,8 @@ def complete_jobs_batch(job_ids: list, agent: str = "user") -> dict:
             "agent": {"type": "string", "description": "Agent adding the logs"}
         },
         "required": ["logs"]
-    }
+    },
+    tool_type="data"
 )
 def add_job_logs_batch(logs: list, agent: str = "user") -> dict:
     """Add log entries to multiple jobs in a single operation.
@@ -779,7 +783,7 @@ def add_job_logs_batch(logs: list, agent: str = "user") -> dict:
 # AGENT ASSIGNMENT AND SYSTEM CONTAINERS
 # =============================================================================
 
-@tool("assign_agent", "Assign an agent to a job")
+@tool("assign_agent", "Assign an agent to a job. Use when: delegating work to another agent.", tool_type="data")
 def assign_agent(job_id: str, agent_id: str) -> Optional[dict]:
     """Assign an agent to work on a job. Wakes the agent immediately.
 
@@ -818,7 +822,7 @@ def assign_agent(job_id: str, agent_id: str) -> Optional[dict]:
     return _load_job(job_id)
 
 
-@tool("unassign_agent", "Remove an agent assignment from a job")
+@tool("unassign_agent", "Remove an agent assignment from a job. Use when: reassigning work or removing delegation.", tool_type="data")
 def unassign_agent(job_id: str, agent_id: str) -> Optional[dict]:
     """Remove an agent from a job.
 
@@ -856,7 +860,7 @@ def unassign_agent(job_id: str, agent_id: str) -> Optional[dict]:
     return _load_job(job_id)
 
 
-@tool("list_assignees", "List agents assigned to a job")
+@tool("list_assignees", "List agents assigned to a job. Use when: checking who is working on a job.", tool_type="data")
 def list_assignees(job_id: str) -> list:
     """Get list of agent IDs assigned to a job.
 
@@ -870,15 +874,15 @@ def list_assignees(job_id: str) -> list:
     return job.get("assignees", [])
 
 
-@tool("list_available_agents", "List all agent IDs that can be assigned to jobs")
+@tool("list_available_agents", "List all agent IDs that can be assigned to jobs. Use when: finding agents to assign work to.", tool_type="data")
 def list_available_agents() -> list:
     """Get list of all available agent IDs."""
-    from .agents import list_agents
+    from ..agents.agents import list_agents
     agents = list_agents()
     return [a["id"] for a in agents]
 
 
-@tool("claim_job", "Claim a job for exclusive work")
+@tool("claim_job", "Claim a job for exclusive work. Use when: starting work to prevent conflicts.", tool_type="data")
 def claim_job(job_id: str, agent_id: str) -> dict:
     """Claim a job to work on it exclusively.
 
@@ -999,7 +1003,7 @@ def sync_agent_inbox_jobs():
     archives orphaned ones, and updates names if agents were renamed.
     Also migrates any orphaned user jobs under Projects.
     """
-    from .agents import list_agents
+    from ..agents.agents import list_agents
 
     # Ensure system containers exist
     agents_container = get_agents_container()
@@ -1115,7 +1119,7 @@ def sync_agent_inbox_jobs():
     return {"synced": True, "agent_count": len(agents)}
 
 
-@tool("release_job", "Release a claimed job")
+@tool("release_job", "Release a claimed job. Use when: done working or need to let another agent take over.", tool_type="data")
 def release_job(job_id: str, agent_id: str) -> dict:
     """Release a job after working on it.
 

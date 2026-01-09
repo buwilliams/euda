@@ -7,10 +7,10 @@ import mimetypes
 from pathlib import Path
 from typing import List, Optional
 
-from . import tool
+from .. import tool
 
 
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 ASSETS_DIR = DATA_DIR / "jobs" / "assets"
 
 
@@ -19,7 +19,7 @@ def _get_job_assets_dir(job_id: str) -> Path:
     return ASSETS_DIR / job_id
 
 
-@tool("list_assets", "List all assets for a job")
+@tool("list_assets", "List all assets attached to a job. Use when: checking what files are attached to a job.", tool_type="data")
 def list_assets(job_id: str) -> List[dict]:
     """List assets attached to a job."""
     assets_dir = _get_job_assets_dir(job_id)
@@ -40,7 +40,7 @@ def list_assets(job_id: str) -> List[dict]:
     return assets
 
 
-@tool("read_asset", "Read an asset's content (text files only)")
+@tool("read_asset", "Read an asset's content (text files only). Use when: viewing job attachments or context files.", tool_type="data")
 def read_asset(job_id: str, filename: str) -> Optional[dict]:
     """Read an asset's content."""
     path = _get_job_assets_dir(job_id) / filename
@@ -71,7 +71,7 @@ def read_asset(job_id: str, filename: str) -> Optional[dict]:
         }
 
 
-@tool("write_asset", "Write content to an asset file")
+@tool("write_asset", "Write content to an asset file. Use when: storing files, notes, or data related to a job.", tool_type="data")
 def write_asset(job_id: str, filename: str, content: str) -> dict:
     """Write content to an asset file."""
     assets_dir = _get_job_assets_dir(job_id)
@@ -87,7 +87,7 @@ def write_asset(job_id: str, filename: str, content: str) -> dict:
     }
 
 
-@tool("delete_asset", "Delete an asset")
+@tool("delete_asset", "Delete an asset from a job. Use when: removing outdated or unwanted attachments.", tool_type="data")
 def delete_asset(job_id: str, filename: str) -> dict:
     """Delete an asset."""
     path = _get_job_assets_dir(job_id) / filename

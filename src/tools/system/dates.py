@@ -8,7 +8,7 @@ Provides tools for agents to convert natural language date references
 import re
 from datetime import datetime, timedelta
 
-from . import tool
+from .. import tool
 
 
 WEEKDAYS = {
@@ -117,7 +117,7 @@ def _parse_date_reference(reference: str) -> str:
     return None
 
 
-@tool("parse_date", "Convert a natural language date reference to YYYY-MM-DD format. Supports: 'today', 'tomorrow', 'yesterday', 'next week', 'this week', 'next Monday', 'in 3 days', 'in 2 weeks', weekday names, or pass through existing YYYY-MM-DD dates.")
+@tool("parse_date", "Convert a natural language date reference to YYYY-MM-DD format. Use when: setting due dates from user input like 'tomorrow' or 'next Friday'.", tool_type="system")
 def parse_date(reference: str) -> dict:
     """
     Parse a natural language date reference into YYYY-MM-DD format.
@@ -143,7 +143,7 @@ def parse_date(reference: str) -> dict:
         }
 
 
-@tool("get_current_date", "Get the current date in YYYY-MM-DD format. Use this to know what 'today' is.")
+@tool("get_current_date", "Get the current date in YYYY-MM-DD format with weekday. Use when: need to know today's date for scheduling or relative date calculations.", tool_type="system")
 def get_current_date() -> dict:
     """
     Get the current date.
