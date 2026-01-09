@@ -230,9 +230,15 @@
     border-top: none;
 }
 
-.input-bar textarea {
+.input-wrapper {
     flex: 1;
+    position: relative;
+}
+
+.input-wrapper textarea {
+    width: 100%;
     padding: 0.6rem var(--spacing-lg);
+    padding-right: 48px; /* Space for mic button */
     border: 1px solid #ddd;
     border-radius: var(--radius-lg);
     font-family: inherit;
@@ -246,12 +252,12 @@
     background: var(--color-bg-white);
 }
 
-.input-bar textarea:focus {
+.input-wrapper textarea:focus {
     outline: none;
     border-color: var(--color-text-placeholder);
 }
 
-.input-bar textarea:disabled {
+.input-wrapper textarea:disabled {
     background: #fafafa;
     color: var(--color-text-placeholder);
 }
@@ -291,6 +297,21 @@
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
+}
+
+#context-send-btn.has-notification {
+    animation: send-btn-pulse 1s ease-in-out infinite;
+}
+
+@keyframes send-btn-pulse {
+    0%, 100% {
+        background: var(--color-accent-dark);
+        transform: scale(1);
+    }
+    50% {
+        background: var(--color-primary);
+        transform: scale(1.1);
+    }
 }
 
 /* Slide Containers for Navigation */

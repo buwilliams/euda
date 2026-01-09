@@ -140,3 +140,4 @@ def send_notifications_batch(notifications: list) -> dict:
         "sent": results,
         "count": len(results)
     }
+

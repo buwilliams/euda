@@ -37,6 +37,8 @@ data/system/sessions.json
 data/system/quotes.json
 data/system/prompts.jsonl
 data/system/prompts/
+data/system/api_calls.json
+data/system/api_calls.jsonl
 
 # Keep directory structure
 !data/**/.gitkeep
