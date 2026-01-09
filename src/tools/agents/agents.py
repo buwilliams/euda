@@ -295,7 +295,7 @@ def delete_agent(agent_id: str) -> dict:
     Warning: This cannot be undone!
     """
     # Prevent deleting core agents
-    protected_agents = ["friend", "worker", "curator", "profiler", "archivist", "adaptor", "user"]
+    protected_agents = ["chat", "worker", "curator", "user"]
     if agent_id in protected_agents:
         return {"error": f"Cannot delete core agent: {agent_id}"}
 

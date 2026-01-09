@@ -74,7 +74,7 @@ def read_euno_doc(path: str) -> dict:
 
     Args:
         path: Relative path like 'docs/1_pitch.md', 'spec/1_agents.md',
-              or 'data/agents/friend/friend-persona.md'
+              or 'data/agents/chat/profile.md'
 
     Returns:
         File content or error message

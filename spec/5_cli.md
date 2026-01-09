@@ -11,7 +11,7 @@ Rules for the command-line interface.
 ## Commands
 
 - `start` — Run web server (port 8000) with agents in background
-- `chat [agent]` — Interactive chat with an agent (default: friend)
+- `chat [agent]` — Interactive chat with an agent (default: chat)
 - `agents [name] [action]` — List agents or perform agent actions
 - `jobs` — List all jobs with status
 - `points [name]` — Show contribution points, optionally filtered by name

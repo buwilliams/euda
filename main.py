@@ -32,8 +32,8 @@ Commands:
 
 Examples:
   python main.py start             # Run web server + agents
-  python main.py chat              # Chat with default agent (friend)
-  python main.py chat friend       # Chat with specific agent
+  python main.py chat              # Chat with default agent (chat)
+  python main.py chat chat         # Chat with specific agent
   python main.py agents            # List agents
   python main.py jobs              # List jobs
   python main.py points            # Show contribution points
@@ -145,7 +145,7 @@ def cmd_chat(args):
         print("\nPlease ensure data/system/config.json exists and is valid.")
         sys.exit(1)
 
-    agent_id = args[0] if args else "friend"
+    agent_id = args[0] if args else "chat"
 
     print("=" * 60)
     print(f"Euno - Chat with {agent_id}")

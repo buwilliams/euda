@@ -1,4 +1,4 @@
-# The Friend
+# Chat
 
 Supports **thinking and decision-making** without threatening identity coherence.
 

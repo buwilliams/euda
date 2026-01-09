@@ -1,6 +1,6 @@
 {
-  "id": "friend",
-  "name": "Friend",
+  "id": "chat",
+  "name": "Chat",
   "enabled": true,
   "order": 8,
   "tools": [

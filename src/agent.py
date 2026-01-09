@@ -324,9 +324,9 @@ class Agent:
             self._save_conversation_turn("assistant", text_response)
         self._log("chat_end", {"response_length": len(text_response)})
 
-        # Log user conversations to long-term memory for the friend agent
+        # Log user conversations to long-term memory for the chat agent
         # Only log actual user conversations, not autonomous work cycles
-        if self.id == "friend" and log_to_lifelog:
+        if self.id == "chat" and log_to_lifelog:
             self._append_to_long_term_memory(message, text_response)
 
         # Run synthesis append phase to extract noteworthy items

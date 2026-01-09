@@ -258,13 +258,13 @@ def get_agent_inbox_job(agent_id: str) -> Optional[dict]:
 def _get_default_parent_for_creator(created_by: str) -> Optional[str]:
     """Get the default parent job ID based on who is creating the job.
 
-    - user/friend -> Projects container
+    - user/chat -> Projects container
     - other agents -> their agent inbox job
     """
     from ..agents.agents import list_agents
 
-    # User or Friend agent -> Projects
-    if created_by in ("user", "friend", "system"):
+    # User or Chat agent -> Projects
+    if created_by in ("user", "chat", "system"):
         projects = get_projects_container()
         return projects["id"] if projects else None
 
@@ -296,7 +296,7 @@ def create_job(
     """Create a new job.
 
     If no parent_id is provided:
-    - Jobs created by user/friend go under Projects
+    - Jobs created by user/chat go under Projects
     - Jobs created by other agents go under their agent inbox
     """
     now = datetime.utcnow().isoformat() + "Z"

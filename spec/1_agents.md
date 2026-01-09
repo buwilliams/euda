@@ -54,9 +54,9 @@ Rules for how agents work and coordinate through jobs.
 
 ## Agent Creation & Management
 
-- Users create agents through the Friend agent (via chat)
-- Friend uses `list_available_tools` to determine appropriate tools for new agents
-- Core agents are protected and cannot be deleted: friend, worker, curator
+- Users create agents through the Chat agent (via chat)
+- Chat uses `list_available_tools` to determine appropriate tools for new agents
+- Core agents are protected and cannot be deleted: chat, worker, curator
 - Custom agents can be created, modified, and deleted
 - All agents get base tools: list_jobs, get_job, create_job, complete_job, add_job_log, done_working
 - Changes to triggers require a restart to take effect
@@ -71,7 +71,7 @@ Rules for how agents work and coordinate through jobs.
 - Consolidate trigger is configurable per-agent (default: `time:evening`)
 - Synthesis replaces the deprecated Profiler, Archivist, and Adaptor agents
 
-## Friend Agent Role
+## Chat Agent Role
 
 - Primary interface for user interaction
 - Can create and manage other agents

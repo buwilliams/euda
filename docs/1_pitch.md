@@ -50,7 +50,7 @@ Euno is in early development. It's a self-hosted web app with a conversational i
 - **File Upload** — Attach documents, images, and files to any job
 
 **The Agents:**
-- **The Friend** — Your conversational interface; knows your profile; helps you think
+- **Chat** — Your conversational interface; knows your profile; helps you think
 - **The Worker** — Can work on jobs autonomously; still learning what's useful
 - **The Curator** — Intended for opportunity discovery (limited functionality today)
 
