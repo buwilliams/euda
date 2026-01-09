@@ -56,6 +56,6 @@ Rules for the server, API, and infrastructure.
 
 - The user is conceptually an agent with a different interface (web UI vs autonomous loop)
 - Tools are the only way agents interact with the system
-- Every LLM call includes rich context: agent persona, user profile, memory, job context
+- Every LLM call includes rich context: agent profile, memory, job context
 - Self-hosted — users own their data and infrastructure
 - The intelligence is separate from the interface — today web, tomorrow voice/wearable

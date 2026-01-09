@@ -52,10 +52,7 @@ Euno is in early development. It's a self-hosted web app with a conversational i
 **The Agents:**
 - **The Friend** — Your conversational interface; knows your profile; helps you think
 - **The Worker** — Can work on jobs autonomously; still learning what's useful
-- **The Profiler** — Updates your profile based on conversations
 - **The Curator** — Intended for opportunity discovery (limited functionality today)
-- **The Archivist** — Processes uploaded files into your lifelog
-- **The Adaptor** — Refines the system based on usage (experimental)
 
 **What's Not Built Yet:**
 - No external integrations (calendar, email, social media, e-commerce)

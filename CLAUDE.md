@@ -89,12 +89,12 @@ euno/
 ## Core Concepts
 
 ### Agents
-An agent is: **config + persona + tools + triggers**
+An agent is: **config + profile + tools + synthesis**
 
-- Config (`config.json`): id, name, enabled, tools list, triggers
-- Persona (`{agent}-persona.md`): System prompt defining behavior
+- Config (`config.json`): id, name, enabled, tools list, triggers, synthesis settings
+- Profile (`profile.md`): Identity, behavioral rules, and learned patterns
 - Tools: Functions the agent can call (controlled by config)
-- Triggers: Create jobs for the agent (e.g., `system:start`, `time:morning`)
+- Synthesis: Internal process that manages memory and updates profiles
 
 ### Jobs
 Jobs replace projects and tasks. A single hierarchical structure:

@@ -46,5 +46,5 @@ Rules for the command-line interface.
 
 - Requires explicit confirmation (type 'yes')
 - Deletes: lifelog, profile, memory, costs, jobs, assets, agent logs/state, system state, password
-- Keeps: agent configs, agent personas, system config
+- Keeps: agent configs, agent profiles, system config
 - Shows summary of deleted items

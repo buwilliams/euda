@@ -17,7 +17,7 @@ Every agent (including the user) shares the same structure:
   - For user: biographical info, wants/fears, stable attractors
 - **Memory:**
   - Short-term: `data/agents/{id}/memory/short-term.jsonl` (90-day rolling)
-  - Long-term: `data/agents/{id}/memory/long-term/{yyyy-mm-dd}.md` (indefinite archive)
+  - Long-term: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md` (year-based archive)
 - **State:** `data/agents/{id}/state/conversation/{session-id}.md`
 - **Logs:** `data/agents/{id}/logs/{date}.jsonl`
 
@@ -42,9 +42,9 @@ The user is agent `user` with the same structure as AI agents:
 
 ### Long-term Memory
 
-- One markdown file per day: `data/agents/{id}/memory/long-term/{yyyy-mm-dd}.md`
+- One markdown file per day: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md`
 - Chronological archive preserved before interpretation
-- The Archivist writes to it; the Profiler reads from it
+- Synthesis consolidate phase writes to it; agents read from it for context
 - Capture lived experience with high fidelity — memory, not meaning
 - Content is freeform markdown with timestamps for entries
 
