@@ -1,0 +1,346 @@
+"""
+Consolidate Phase - Heavy analysis for memory graduation and profile updates.
+
+This phase runs on daily trigger to:
+1. Analyze patterns in short-term and long-term memory
+2. Graduate important short-term items to long-term memory
+3. Update the agent's profile based on observed patterns
+4. Create historical profile snapshots at year boundaries
+"""
+
+import json
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import TYPE_CHECKING, List, Optional
+
+from ..llms import get_client
+from ..tools.data.memory import (
+    _load_entries,
+    _save_entries,
+    _ensure_memory_dirs,
+)
+
+from .prompts import build_consolidate_prompt, get_consolidate_system_prompt
+
+if TYPE_CHECKING:
+    from .synthesis import Synthesis
+
+
+# How many days of long-term memory to include for context
+RECENT_MEMORY_DAYS = 7
+
+
+def consolidate_phase(synthesis: "Synthesis"):
+    """Run the consolidate phase for an agent.
+
+    Performs heavy analysis to graduate memories and update profile.
+
+    Args:
+        synthesis: The Synthesis instance
+    """
+    agent_id = synthesis.agent.id
+    is_user = agent_id == "user"
+
+    synthesis.logger.info({
+        "event": "consolidate_start",
+        "agent_id": agent_id
+    })
+
+    # Load short-term memory
+    short_term_memory = _load_entries(agent_id)
+
+    # Load recent long-term memory
+    recent_long_term = _load_recent_long_term(synthesis, days=RECENT_MEMORY_DAYS)
+
+    # Load current profile
+    current_profile = synthesis.agent.profile
+
+    # Skip if no data to analyze
+    if not short_term_memory and not recent_long_term:
+        synthesis.logger.info({
+            "event": "consolidate_skip",
+            "agent_id": agent_id,
+            "reason": "no_data"
+        })
+        return
+
+    # Build prompt
+    prompt = build_consolidate_prompt(
+        agent_id=agent_id,
+        agent_profile=current_profile,
+        short_term_memory=short_term_memory,
+        recent_long_term=recent_long_term,
+        is_user=is_user
+    )
+
+    # Call LLM
+    client = get_client()
+    response = client.create(
+        max_tokens=2000,
+        system=get_consolidate_system_prompt(is_user),
+        messages=[{"role": "user", "content": prompt}],
+        agent_id=f"{agent_id}/synthesis"
+    )
+
+    # Extract text response
+    text_response = ""
+    for block in response.content:
+        if hasattr(block, "text"):
+            text_response += block.text
+
+    synthesis.logger.info({
+        "event": "consolidate_llm_response",
+        "agent_id": agent_id,
+        "usage": {
+            "input": response.usage.input_tokens,
+            "output": response.usage.output_tokens
+        }
+    })
+
+    # Parse synthesis result
+    result = _parse_consolidate_result(text_response)
+
+    if result is None:
+        synthesis.logger.error({
+            "event": "consolidate_parse_error",
+            "agent_id": agent_id,
+            "response": text_response[:500]
+        })
+        return
+
+    # Apply long-term memory entry
+    if result.get("long_term_entry"):
+        _write_long_term_entry(synthesis, result["long_term_entry"])
+
+    # Apply profile updates
+    if result.get("profile_updates"):
+        _update_profile(synthesis, result["profile_updates"])
+
+    # Graduate specified items
+    graduated_ids = result.get("graduate_ids", [])
+    if graduated_ids:
+        _graduate_items(synthesis, short_term_memory, graduated_ids)
+
+    # Check for year boundary and create historical snapshot
+    _maybe_snapshot_profile(synthesis)
+
+    synthesis.logger.info({
+        "event": "consolidate_complete",
+        "agent_id": agent_id,
+        "long_term_entry": bool(result.get("long_term_entry")),
+        "profile_updated": bool(result.get("profile_updates")),
+        "items_graduated": len(graduated_ids)
+    })
+
+
+def _load_recent_long_term(synthesis: "Synthesis", days: int) -> str:
+    """Load recent long-term memory entries.
+
+    Args:
+        synthesis: The Synthesis instance
+        days: Number of days to look back
+
+    Returns:
+        Combined content from recent long-term memory files
+    """
+    agent_id = synthesis.agent.id
+    today = datetime.now()
+    content_parts = []
+
+    for i in range(days):
+        date = today - timedelta(days=i)
+        year = date.strftime("%Y")
+        date_str = date.strftime("%Y-%m-%d")
+
+        # Try year-based path first, then legacy flat path
+        year_path = synthesis._get_long_term_dir(year) / f"{date_str}.md"
+        legacy_path = synthesis._get_long_term_dir().parent / f"{date_str}.md"
+
+        memory_path = None
+        if year_path.exists():
+            memory_path = year_path
+        elif legacy_path.exists():
+            memory_path = legacy_path
+
+        if memory_path:
+            content_parts.append(memory_path.read_text())
+
+    return "\n\n---\n\n".join(content_parts)
+
+
+def _parse_consolidate_result(response: str) -> Optional[dict]:
+    """Parse LLM response into consolidation result.
+
+    Args:
+        response: Raw LLM response text
+
+    Returns:
+        Dict with long_term_entry, profile_updates, graduate_ids
+        or None if parsing fails
+    """
+    text = response.strip()
+
+    # Handle markdown code blocks
+    if text.startswith("```"):
+        lines = text.split("\n")
+        lines = [l for l in lines if not l.startswith("```")]
+        text = "\n".join(lines)
+
+    try:
+        result = json.loads(text)
+    except json.JSONDecodeError:
+        # Try to find JSON object in response
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start != -1 and end > start:
+            try:
+                result = json.loads(text[start:end])
+            except json.JSONDecodeError:
+                return None
+        else:
+            return None
+
+    if not isinstance(result, dict):
+        return None
+
+    # Normalize result
+    return {
+        "long_term_entry": result.get("long_term_entry"),
+        "profile_updates": result.get("profile_updates"),
+        "graduate_ids": result.get("graduate_ids", [])
+    }
+
+
+def _write_long_term_entry(synthesis: "Synthesis", content: str):
+    """Write an entry to long-term memory.
+
+    Uses year-based directory structure.
+
+    Args:
+        synthesis: The Synthesis instance
+        content: Content to write
+    """
+    agent_id = synthesis.agent.id
+    today = datetime.now()
+    year = today.strftime("%Y")
+    date_str = today.strftime("%Y-%m-%d")
+
+    # Ensure year directory exists
+    long_term_dir = synthesis._get_long_term_dir(year)
+    long_term_dir.mkdir(parents=True, exist_ok=True)
+
+    memory_path = long_term_dir / f"{date_str}.md"
+    timestamp = today.strftime("%I:%M %p").lstrip("0")
+
+    # Entry header
+    entry_header = f"## {timestamp} · Synthesis"
+
+    # Append to existing or create new
+    if memory_path.exists():
+        existing = memory_path.read_text()
+        new_content = f"{existing}\n\n{entry_header}\n\n{content}"
+    else:
+        new_content = f"# Long-term Memory - {date_str}\n\n{entry_header}\n\n{content}"
+
+    memory_path.write_text(new_content)
+
+
+def _update_profile(synthesis: "Synthesis", updates: str):
+    """Update the agent's profile with new information.
+
+    This appends a synthesis section to the profile. The next consolidation
+    will read this and incorporate it properly.
+
+    Args:
+        synthesis: The Synthesis instance
+        updates: Description of updates to apply
+    """
+    profile_path = synthesis._get_profile_path()
+
+    if profile_path.exists():
+        current_profile = profile_path.read_text()
+    else:
+        current_profile = f"# Profile: {synthesis.agent.id}\n"
+
+    # Add synthesis update section
+    today = datetime.now().strftime("%Y-%m-%d")
+    update_section = f"\n\n---\n\n## Synthesis Update ({today})\n\n{updates}"
+
+    new_profile = current_profile + update_section
+    profile_path.write_text(new_profile)
+
+
+def _graduate_items(synthesis: "Synthesis", short_term_memory: List[dict], graduate_ids: List[str]):
+    """Graduate specified items from short-term to long-term memory.
+
+    Args:
+        synthesis: The Synthesis instance
+        short_term_memory: All short-term memory items
+        graduate_ids: IDs of items to graduate
+    """
+    agent_id = synthesis.agent.id
+    today = datetime.now()
+    year = today.strftime("%Y")
+    date_str = today.strftime("%Y-%m-%d")
+
+    # Find items to graduate
+    to_graduate = [m for m in short_term_memory if m.get("id") in graduate_ids]
+
+    if not to_graduate:
+        return
+
+    # Format graduation content
+    lines = ["The following items have been marked for long-term preservation:", ""]
+
+    for item in to_graduate:
+        item_type = item.get("type", "idea")
+        desc = item.get("short_description", "")
+        date_mentioned = item.get("date_mentioned", "unknown")
+        lines.append(f"- **{item_type.title()}**: {desc} (first mentioned {date_mentioned})")
+
+    content = "\n".join(lines)
+
+    # Write to long-term memory
+    long_term_dir = synthesis._get_long_term_dir(year)
+    long_term_dir.mkdir(parents=True, exist_ok=True)
+
+    memory_path = long_term_dir / f"{date_str}.md"
+    timestamp = today.strftime("%I:%M %p").lstrip("0")
+    entry_header = f"## {timestamp} · Graduated Memories"
+
+    if memory_path.exists():
+        existing = memory_path.read_text()
+        new_content = f"{existing}\n\n{entry_header}\n\n{content}"
+    else:
+        new_content = f"# Long-term Memory - {date_str}\n\n{entry_header}\n\n{content}"
+
+    memory_path.write_text(new_content)
+
+
+def _maybe_snapshot_profile(synthesis: "Synthesis"):
+    """Create historical profile snapshot if at year boundary.
+
+    Checks if we're in a new year and the previous year's snapshot doesn't exist.
+
+    Args:
+        synthesis: The Synthesis instance
+    """
+    today = datetime.now()
+    current_year = today.strftime("%Y")
+    previous_year = str(int(current_year) - 1)
+
+    # Check if we're in first week of year and previous year snapshot doesn't exist
+    if today.month == 1 and today.day <= 7:
+        historical_path = synthesis._get_historical_profile_path(previous_year)
+        current_path = synthesis._get_profile_path()
+
+        if not historical_path.exists() and current_path.exists():
+            # Create snapshot of current profile as previous year's historical
+            current_profile = current_path.read_text()
+            historical_path.write_text(current_profile)
+
+            synthesis.logger.info({
+                "event": "profile_snapshot_created",
+                "agent_id": synthesis.agent.id,
+                "year": previous_year
+            })

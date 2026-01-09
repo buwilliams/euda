@@ -1,5 +1,23 @@
 # Contributing
 
+## What is Euno?
+
+Euno is not a personal assistant—it's proactive, not reactive. Think of it like a genie that grants *eudaimonia* instead of wishes. It studies your life to help you flourish on your own terms: clearing the path, noticing patterns you can't see, and shielding you from distractions.
+
+## How to Think About Contributions
+
+Don't think about what other people want. Think about what *you* want.
+
+Euno's mission is: *A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities.*
+
+Ask yourself:
+- **What would be useful to me?** What friction in your life could Euno reduce? What tasks drain your energy that a proactive intelligence could handle?
+- **What would help me live a virtuous life?** What habits do you want to build? What temptations pull you away from who you want to be? How could Euno help you stay aligned with your values?
+- **What would help me develop my potential?** What skills are you trying to build? What goals have you been putting off? How could Euno keep you accountable and moving forward?
+- **What would help me have meaningful activities and connections?** What relationships matter most? What activities bring you alive? How could Euno help you prioritize these over the noise?
+
+The best contributions come from lived experience. Build for yourself first. If it helps you flourish, it will help others too.
+
 ## Getting Started
 
 1. Clone: `git clone https://github.com/buwilliams/euno.git && cd euno`

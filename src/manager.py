@@ -208,9 +208,10 @@ class AgentManager:
 
     def _emit_startup_triggers(self):
         """Create trigger jobs for system:start and any missed time triggers at startup."""
-        from .tools.jobs import create_job, list_jobs
+        from .tools.data.jobs import create_job, list_jobs, get_system_container
 
         today = datetime.now().strftime("%Y-%m-%d")
+        system_container = get_system_container()
 
         # Create system:start trigger jobs for subscribed agents
         print("[startup] Creating system:start trigger jobs")
@@ -232,6 +233,7 @@ class AgentManager:
                     create_job(
                         name=job_name,
                         description="System startup trigger",
+                        parent_id=system_container["id"],
                         assignees=[agent_id],
                         tags=["trigger:start"],
                         due_date=None,
@@ -264,6 +266,7 @@ class AgentManager:
                             create_job(
                                 name=job_name,
                                 description=f"Missed {trigger} trigger",
+                                parent_id=system_container["id"],
                                 assignees=[agent_id],
                                 tags=[f"trigger:{trigger_type}"],
                                 due_date=None,
@@ -280,7 +283,7 @@ class AgentManager:
 
     def _run_agent_loop(self, agent: Agent):
         """Run an agent's work loop - polls for actionable jobs."""
-        from .tools.jobs import list_jobs
+        from .tools.data.jobs import list_jobs
 
         poll_interval = self._get_system_config().get("agents", {}).get("poll_interval", 0.1)
 
@@ -362,11 +365,36 @@ class AgentManager:
                     agent._log("transient_error_retry", {"delay_seconds": 5})
                     time.sleep(5)
 
+    def _run_synthesis_consolidation(self, trigger_name: str):
+        """Run synthesis consolidation for agents with matching trigger.
+
+        Args:
+            trigger_name: The trigger that fired (e.g., "time:evening")
+        """
+        for agent_id, agent in self.agents.items():
+            if not agent.config.get("enabled", True):
+                continue
+
+            # Check if agent has synthesis and if this trigger matches consolidate_trigger
+            if not agent.synthesis:
+                continue
+
+            synthesis_config = agent.config.get("synthesis", {})
+            consolidate_trigger = synthesis_config.get("consolidate_trigger", "time:evening")
+
+            if trigger_name == consolidate_trigger:
+                print(f"[synthesis] Running consolidation for {agent_id}")
+                try:
+                    agent.synthesis.consolidate()
+                except Exception as e:
+                    print(f"[synthesis] Consolidation error for {agent_id}: {e}")
+
     def _run_time_scheduler(self):
         """Background thread that creates trigger jobs based on schedules."""
-        from .tools.jobs import create_job, list_jobs
+        from .tools.data.jobs import create_job, list_jobs, get_system_container
 
         last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
+        system_container = get_system_container()
 
         while self.running:
             try:
@@ -416,6 +444,7 @@ class AgentManager:
                                     create_job(
                                         name=job_name,
                                         description=f"Scheduled trigger for {trigger_name}",
+                                        parent_id=system_container["id"],
                                         assignees=[agent_id],
                                         tags=[f"trigger:{name}"],
                                         due_date=None,
@@ -427,6 +456,9 @@ class AgentManager:
                             state = self._get_system_state()
                             state[f"last_{name}"] = today
                             self._save_system_state(state)
+
+                        # Run synthesis consolidation for agents with matching trigger
+                        self._run_synthesis_consolidation(trigger_name)
 
             except Exception as e:
                 print(f"Scheduler error: {e}")
@@ -456,7 +488,7 @@ class AgentManager:
         print(f"Found {len(configs)} agents, {len(enabled)} enabled")
 
         # Sync agent inbox jobs
-        from .tools.jobs import sync_agent_inbox_jobs
+        from .tools.data.jobs import sync_agent_inbox_jobs
         sync_agent_inbox_jobs()
         print("Agent inbox jobs synced")
 
@@ -471,7 +503,7 @@ class AgentManager:
             self._emit_startup_triggers()
 
         # Initialize job cache - check for existing actionable jobs
-        from .tools.jobs import list_jobs
+        from .tools.data.jobs import list_jobs
         for agent_id in self.agents:
             jobs = list_jobs(status="todo", assignee=agent_id, actionable=True)
             self.agents_with_jobs[agent_id] = bool(jobs)

@@ -1,0 +1,12 @@
+{
+  "id": "user",
+  "name": "User",
+  "enabled": true,
+  "tools": [],
+  "triggers": [],
+  "synthesis": {
+    "enabled": true,
+    "append_enabled": true,
+    "consolidate_trigger": "time:evening"
+  }
+}

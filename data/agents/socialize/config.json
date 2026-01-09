@@ -1,0 +1,29 @@
+{
+  "id": "socialize",
+  "name": "Socialize",
+  "enabled": true,
+  "order": 5,
+  "tools": [
+    "list_jobs",
+    "get_job",
+    "create_job",
+    "update_job",
+    "complete_job",
+    "add_job_log",
+    "list_agents",
+    "get_agent",
+    "list_available_agents",
+    "get_profile",
+    "read_long_term_memory",
+    "list_memory",
+    "done_working",
+    "parse_date",
+    "get_current_date"
+  ],
+  "triggers": ["time:hour_04"],
+  "synthesis": {
+    "enabled": true,
+    "append_enabled": true,
+    "consolidate_trigger": "time:evening"
+  }
+}

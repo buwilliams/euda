@@ -2,51 +2,69 @@
 
 Rules for the major entities in the system and how they relate.
 
-- All configs, logs, and state is stored in data/{agents|jobs|system|user}/*
+- All configs, logs, and state is stored in `data/{agents|jobs|system}/*`
 
-## Lifelog
+## Agent
 
-- Chronological archive of raw human data preserved before interpretation
-- One markdown file per day: `data/user/lifelog/{yyyy-mm-dd}.md`
-- The Archivist writes to it; the Profiler reads from it
-- Capture lived experience with high fidelity — memory, not meaning
-- Content is freeform markdown with timestamps for entries
+Every agent (including the user) shares the same structure:
 
-## Profile
+- **Config:** `data/agents/{id}/config.json`
+  - id, name, enabled, order, tools[], triggers[]
+  - Triggers define which trigger jobs the agent receives
+- **Profile:** `data/agents/{id}/profile.md`
+  - Evolves over time based on long-term memory
+  - For AI agents: purpose, behavioral rules, voice
+  - For user: biographical info, wants/fears, stable attractors
+- **Memory:**
+  - Short-term: `data/agents/{id}/memory/short-term.jsonl` (90-day rolling)
+  - Long-term: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md` (year-based archive)
+- **State:** `data/agents/{id}/state/conversation/{session-id}.md`
+- **Logs:** `data/agents/{id}/logs/{date}.jsonl`
 
-- Derived from the lifelog, not created directly
-- Data flows: Raw Data → Archivist → Lifelog → Profiler → Profile
-- Current profile: `data/user/profile.current.md`
-- Historical profiles: `data/user/profile.{yyyy}.md`
-- Extract patterns from behavior, not stated preferences
-- Profile sections:
-  - Biographical information (name, contact, etc.)
-  - Wants and fears (patterns that reveal desires and fears)
-  - Stable attractors (patterns the person returns to)
-  - Notable events and actions
-  - Influences (people, places, books, experiences)
-  - Interests (goals, projects, hobbies)
-  - Summary of changes from previous years
+No Python code needed to create new agents — just config and profile files.
 
-## Memory
+### User Agent
 
-- JSONL file: `data/user/memory.jsonl`
+The user is agent `user` with the same structure as AI agents:
+- Config defines tools available through the UI
+- Profile contains identity, patterns, values
+- Short-term memory tracks what's on their mind (90 days)
+- Long-term memory archives important events indefinitely
+
+### Short-term Memory
+
+- JSONL file: `data/agents/{id}/memory/short-term.jsonl`
 - Tracks important items for proactive agent attention
 - Fields: id, date_mentioned, date_expected, type, short_description
 - Types: person, place, thing, goal, concern, idea
 - Entries expire after 90 days from date_mentioned
-- Included in every LLM system prompt for context
+- Expired entries archive to long-term memory
 
-## Agent
+### Long-term Memory
 
-- Config: `data/agents/{id}/config.json`
-  - id, name, enabled, order, tools[], triggers[] (triggers define which trigger jobs the agent receives)
-- Persona: `data/agents/{id}/{id}-persona.md`
-- Conversation: `data/agents/{id}/state/conversation/{session-id}.md`
-- Logs: `data/agents/{id}/logs/{date}.jsonl`
-- No Python code needed to create new agents — just config and persona files
+- One markdown file per day: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md`
+- Chronological archive preserved before interpretation
+- Synthesis consolidate phase writes to it; agents read from it for context
+- Capture lived experience with high fidelity — memory, not meaning
+- Content is freeform markdown with timestamps for entries
+
+### Profile Schema
+
+Current profile evolves based on observed behavior in long-term memory:
+- Biographical information (name, contact, etc.)
+- Wants and fears (patterns that reveal desires and fears)
+- Stable attractors (patterns the person returns to)
+- Notable events and actions
+- Influences (people, places, books, experiences)
+- Interests (goals, projects, hobbies)
+- Summary of changes from previous years
+
+Historical profiles: `data/agents/{id}/profile.{yyyy}.md`
+
+### Agent Behavior
+
 - Capabilities defined by which tools it has access to
-- All agents inherit from a core persona that defines shared ethical constraints
+- All agents share ethical constraints defined in the core profile
 - No coercion, no manipulation, no bypassing user resistance
 - Treat user resistance as information, not opposition
 - Require explicit user affirmation before irreversible actions

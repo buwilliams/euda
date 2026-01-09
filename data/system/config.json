@@ -5,9 +5,9 @@
     "provider": "openai",
     "budget_limit": null,
     "default_pricing": {
-      "input": 3.00,
-      "cached_input": 0.30,
-      "output": 15.00
+      "input": 3.0,
+      "cached_input": 0.3,
+      "output": 15.0
     },
     "providers": {
       "anthropic": {
@@ -17,9 +17,9 @@
         "max_input_tokens": 200000,
         "max_output_tokens": 16000,
         "pricing": {
-          "input": 3.00,
-          "cached_input": 0.30,
-          "output": 15.00
+          "input": 3.0,
+          "cached_input": 0.3,
+          "output": 15.0
         }
       },
       "openai": {
@@ -31,7 +31,7 @@
         "pricing": {
           "input": 1.75,
           "cached_input": 0.175,
-          "output": 14.00
+          "output": 14.0
         }
       },
       "grok": {
@@ -41,9 +41,9 @@
         "max_input_tokens": 131072,
         "max_output_tokens": 16000,
         "pricing": {
-          "input": 0.20,
+          "input": 0.2,
           "cached_input": 0.05,
-          "output": 0.50
+          "output": 0.5
         }
       }
     }
@@ -61,6 +61,7 @@
     "evening": "18:00",
     "hourly": "every_hour",
     "hour_00": "00:00",
+    "hour_04": "04:00",
     "hour_06": "06:00",
     "hour_12": "12:00",
     "hour_18": "18:00"

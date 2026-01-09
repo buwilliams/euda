@@ -45,7 +45,12 @@ euno/
 ├── main.py                 # Entry point, CLI
 ├── src/
 │   ├── manager.py          # Agent Manager - starts/stops all agents
-│   ├── agent.py            # Generic Agent - config + persona + tools + loop
+│   ├── agent.py            # Generic Agent - config + profile + tools + synthesis
+│   ├── synthesis/          # Memory and profile synthesis
+│   │   ├── synthesis.py    # Main Synthesis class
+│   │   ├── append.py       # Lightweight extraction after chat
+│   │   ├── consolidate.py  # Heavy analysis on daily trigger
+│   │   └── prompts.py      # LLM prompts for synthesis
 │   ├── tools/              # All tools (registered with @tool decorator)
 │   │   ├── jobs.py         # Job CRUD
 │   │   ├── assets.py       # File attachments per job
@@ -60,23 +65,23 @@ euno/
 │   ├── agents/             # Agent configs and state
 │   │   └── {agent-id}/
 │   │       ├── config.json
-│   │       ├── {agent}-persona.md
+│   │       ├── profile.md
+│   │       ├── memory/
+│   │       │   ├── short-term.jsonl
+│   │       │   └── long-term/{yyyy}/{yyyy-mm-dd}.md
 │   │       └── state/conversation/{session-id}.md
 │   ├── jobs/
 │   │   ├── db.sqlite       # SQLite database (jobs + job_logs tables)
 │   │   └── assets/         # Files per job
 │   │       └── {job-id}/
-│   ├── user/
-│   │   ├── profile.current.md
-│   │   ├── memory.jsonl    # Memory items for anticipation
-│   │   └── lifelog/{yyyy-mm-dd}.md
 │   └── system/
-│       └── config.json
+│       ├── config.json
+│       └── logs/synthesis/ # Synthesis logs
 ├── spec/                   # Design rules for drift detection
-│   ├── 1_orchestration.md
+│   ├── 1_agents.md
 │   ├── 2_data.md
-│   ├── 3_system.md
-│   └── 4_user-experience.md
+│   ├── 3_backend.md
+│   └── 4_ux_ui.md
 ├── static/                 # Web UI
 └── devops/                 # Deployment scripts
 ```
@@ -84,12 +89,12 @@ euno/
 ## Core Concepts
 
 ### Agents
-An agent is: **config + persona + tools + triggers**
+An agent is: **config + profile + tools + synthesis**
 
-- Config (`config.json`): id, name, enabled, tools list, triggers
-- Persona (`{agent}-persona.md`): System prompt defining behavior
+- Config (`config.json`): id, name, enabled, tools list, triggers, synthesis settings
+- Profile (`profile.md`): Identity, behavioral rules, and learned patterns
 - Tools: Functions the agent can call (controlled by config)
-- Triggers: Create jobs for the agent (e.g., `system:start`, `time:morning`)
+- Synthesis: Internal process that manages memory and updates profiles
 
 ### Jobs
 Jobs replace projects and tasks. A single hierarchical structure:
@@ -100,11 +105,18 @@ Jobs replace projects and tasks. A single hierarchical structure:
 - Assets can be any file type; text/markdown files are viewable and editable in the UI
 
 ### Memory
-Memory tracks what's on the user's mind for anticipation:
-- Stored in `data/user/memory.jsonl`
+Memory tracks what's on an agent's mind for anticipation (every agent has memory):
+- Short-term: `data/agents/{id}/memory/short-term.jsonl` (90-day rolling)
+- Long-term: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md` (year-based archive)
 - Types: person, place, thing, goal, concern, idea
-- Entries expire after 90 days
-- Included in every LLM system prompt
+- Entries expire after 90 days and archive to long-term memory
+
+### Synthesis
+Synthesis is an internal process each agent runs to manage memory and profiles:
+- **Append phase**: Lightweight extraction after each conversation (adds to short-term memory)
+- **Consolidate phase**: Heavy analysis on daily trigger (graduates memories, updates profile)
+- Configured per-agent in `config.json` under `synthesis` key
+- Logs stored in `data/system/logs/synthesis/`
 
 ### User as Agent
 The user is conceptually an agent too - just with a different interface (Web UI/CLI vs autonomous loop).
@@ -119,10 +131,15 @@ The user is conceptually an agent too - just with a different interface (Web UI/
      "name": "My Agent",
      "enabled": true,
      "tools": ["list_jobs", "create_job", ...],
-     "triggers": ["time:morning", "system:start"]
+     "triggers": ["time:morning", "system:start"],
+     "synthesis": {
+       "enabled": true,
+       "append_enabled": true,
+       "consolidate_trigger": "time:evening"
+     }
    }
    ```
-3. Create `{agent-id}-persona.md` with the agent's identity
+3. Create `profile.md` with the agent's identity and behavioral rules
 4. Restart the application
 
 No Python code needed for new agents.

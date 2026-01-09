@@ -3,7 +3,7 @@ Agent - Generic agent that runs based on configuration.
 
 An agent is defined by:
 1. Config (config.json) - operational parameters
-2. Persona ({agent}-persona.md) - identity and behavior
+2. Profile (profile.md) - identity and behavior that evolves over time
 3. Tools - list of tool names the agent can use
 """
 
@@ -14,6 +14,7 @@ from typing import Optional
 
 from .llms import get_client
 from .logger import get_logger
+from .synthesis import Synthesis
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -26,10 +27,15 @@ class Agent:
     def __init__(self, agent_id: str, config: Optional[dict] = None, session_id: Optional[str] = None):
         self.id = agent_id
         self.config = config or self._load_config()
-        self.persona = self._load_persona()
+        self.profile = self._load_profile()
         self._work_done = False
         self._session_id = session_id
         self._current_job_id = None
+
+        # Initialize synthesis if enabled
+        synthesis_config = self.config.get("synthesis", {})
+        synthesis_enabled = synthesis_config.get("enabled", True)
+        self.synthesis = Synthesis(self) if synthesis_enabled else None
 
     def wait_for_trigger(self, timeout: float = None) -> Optional[dict]:
         """Wait for a trigger event from the event bus.
@@ -61,8 +67,12 @@ class Agent:
             "triggers": ["job:assigned"]
         }
 
-    def _load_persona(self) -> str:
-        """Load agent persona from disk."""
+    def _load_profile(self) -> str:
+        """Load agent profile from disk."""
+        profile_path = AGENTS_DIR / self.id / "profile.md"
+        if profile_path.exists():
+            return profile_path.read_text()
+        # Fallback to old persona location for backward compatibility
         persona_path = AGENTS_DIR / self.id / f"{self.id}-persona.md"
         if persona_path.exists():
             return persona_path.read_text()
@@ -103,8 +113,8 @@ class Agent:
         if not self._current_job_id:
             return ""
 
-        from .tools.jobs import get_job
-        from .tools.assets import list_assets, read_asset
+        from .tools.data.jobs import get_job
+        from .tools.data.assets import list_assets, read_asset
 
         job = get_job(self._current_job_id)
         if not job:
@@ -151,23 +161,17 @@ class Agent:
         with open(path, "a") as f:
             f.write(f"\n## {role.title()} ({timestamp})\n\n{content}\n")
 
-    def _append_to_lifelog(self, user_message: str, assistant_response: str):
-        """Append a conversation exchange to today's lifelog."""
-        from .tools.user import write_lifelog
+    def _append_to_long_term_memory(self, user_message: str, assistant_response: str):
+        """Append a conversation exchange to today's long-term memory."""
+        from .tools.data.memory import write_long_term_memory
 
         agent_name = self.config.get('name', self.id)
 
-        # Format the conversation for the lifelog
+        # Format the conversation for long-term memory
         content = f"**User:** {user_message}\n\n"
         content += f"**{agent_name}:** {assistant_response}"
 
-        write_lifelog(content, agent=agent_name)
-
-    def _get_memory_path(self) -> Path:
-        """Get path to agent memory file."""
-        state_dir = AGENTS_DIR / self.id / "state"
-        state_dir.mkdir(parents=True, exist_ok=True)
-        return state_dir / "memory.json"
+        write_long_term_memory(content, agent_id="user", source=agent_name)
 
     def _get_logger(self):
         """Get logger for this agent."""
@@ -180,20 +184,6 @@ class Agent:
             entry["details"] = details
         self._get_logger().info(entry)
 
-    def _load_memory(self) -> dict:
-        """Load agent's persistent memory."""
-        path = self._get_memory_path()
-        if path.exists():
-            with open(path) as f:
-                return json.load(f)
-        return {}
-
-    def _save_memory(self, memory: dict):
-        """Save agent's persistent memory."""
-        path = self._get_memory_path()
-        with open(path, "w") as f:
-            json.dump(memory, f, indent=2)
-
     def _get_system_config(self) -> dict:
         """Load system configuration."""
         config_path = DATA_DIR / "system" / "config.json"
@@ -203,51 +193,65 @@ class Agent:
         return {}
 
     def _build_system_prompt(self) -> str:
-        """Build the system prompt from persona and context."""
-        from .tools.user import get_user_profile
-        from .tools.memory import get_memory_for_prompt
+        """Build the system prompt from profile and tools (grouped by type).
 
-        parts = [self.persona]
+        Note: Memory is NOT auto-injected.
+        Agents should use list_memory and read_long_term_memory tools when needed.
+        """
+        from .tools import get_tools_grouped_by_type
+        from .prompts import render_template
 
-        # Add user profile for context about who we're serving
-        profile = get_user_profile()
-        if profile.get("exists") and profile.get("content"):
-            parts.append("\n## User Profile\n")
-            parts.append(profile["content"])
+        # Build tools section grouped by type
+        tools_by_type = get_tools_grouped_by_type(self.config.get("tools", []))
+        type_labels = {
+            "data": "Data Tools",
+            "agents": "Agent Tools",
+            "system": "System Tools",
+            "integration": "Integration Tools"
+        }
 
-        # Add memory items for context about what user is focused on
-        memory_context = get_memory_for_prompt()
-        if memory_context:
-            parts.append("\n" + memory_context)
+        tools_sections = []
+        for tool_type in ["data", "agents", "system", "integration"]:
+            tools = tools_by_type.get(tool_type, [])
+            if tools:
+                tools_sections.append(f"### {type_labels[tool_type]}\n")
+                for t in tools:
+                    tools_sections.append(f"- **{t['name']}**: {t['description']}")
+        tools_text = "\n".join(tools_sections) if tools_sections else "No tools available."
 
-        # Add current job context if working on a specific job
-        job_context = self._get_job_context_for_prompt()
-        if job_context:
-            parts.append("\n" + job_context)
-
-        # Add memory context if present
-        memory = self._load_memory()
-        if memory:
-            parts.append("\n## Your Memory\n")
-            for key, value in memory.items():
-                parts.append(f"- {key}: {value}")
-
-        # Add recent conversation context
-        history = self._load_conversation_history()
-        if history:
-            # Include last portion of history to stay within context limits
-            lines = history.split("\n")
-            if len(lines) > 100:
-                lines = lines[-100:]
-            parts.append("\n## Recent Conversation\n")
-            parts.append("\n".join(lines))
-
-        return "\n".join(parts)
+        return render_template(
+            "agent/system",
+            profile=self.profile,
+            tools_by_type=tools_text
+        )
 
     def _get_tools(self) -> list:
         """Get tool definitions for this agent."""
         from .tools import get_tools_for_agent
         return get_tools_for_agent(self.config.get("tools", []))
+
+    def _format_job_prompt(self, job: dict, remaining: int = 0) -> str:
+        """Format a job as a standardized prompt for the agent."""
+        from .tools.data.assets import list_assets
+        from .prompts import render_template
+
+        assets = list_assets(job['id'])
+        if assets:
+            names = [a['filename'] for a in assets]
+            attachments = f"{len(assets)} attachment(s): {', '.join(names)}"
+        else:
+            attachments = "No attachments"
+
+        remaining_notice = f"({remaining} more jobs waiting)" if remaining > 0 else ""
+
+        return render_template(
+            "agent/job",
+            job_name=job.get('name', 'Untitled'),
+            job_description=job.get('description') or 'None provided',
+            job_due_date=job.get('due_date') or 'No deadline',
+            job_attachments=attachments,
+            remaining_jobs_notice=remaining_notice
+        )
 
     def chat(self, message: str, log_to_lifelog: bool = True, save_to_history: bool = True) -> str:
         """Process a chat message and return response.
@@ -320,17 +324,21 @@ class Agent:
             self._save_conversation_turn("assistant", text_response)
         self._log("chat_end", {"response_length": len(text_response)})
 
-        # Log user conversations to lifelog for the friend agent (for Profiler to analyze)
+        # Log user conversations to long-term memory for the chat agent
         # Only log actual user conversations, not autonomous work cycles
-        if self.id == "friend" and log_to_lifelog:
-            self._append_to_lifelog(message, text_response)
+        if self.id == "chat" and log_to_lifelog:
+            self._append_to_long_term_memory(message, text_response)
+
+        # Run synthesis append phase to extract noteworthy items
+        if self.synthesis and log_to_lifelog:
+            self.synthesis.append(message, text_response)
 
         return text_response
 
     def _execute_tools(self, response) -> list:
         """Execute tool calls and return results."""
         from .tools import execute_tool
-        from .tools.system import set_agent_context, clear_agent_context
+        from .tools.system.system import set_agent_context, clear_agent_context
         from .tool_batcher import execute_tools_batched
 
         # Set agent context so tools can access this agent
@@ -361,7 +369,7 @@ class Agent:
         Args:
             trigger_context: Optional event data that triggered this cycle
         """
-        from .tools.jobs import list_jobs
+        from .tools.data.jobs import list_jobs
 
         self._log("work_cycle_start", {"trigger": trigger_context})
         self._work_done = False
@@ -380,14 +388,9 @@ class Agent:
         current_job = jobs[0]
         remaining = len(jobs) - 1
 
-        # Initial prompt asking agent to work on one job
-        prompt = f"""You have a job assigned to you:
-
-{json.dumps(current_job, indent=2)}
-
-{f"({remaining} more jobs waiting)" if remaining > 0 else ""}
-
-Work on this job according to your role. When finished, call done_working."""
+        # Use standardized job prompt format
+        from .prompts import load_template
+        prompt = self._format_job_prompt(current_job, remaining)
 
         # Autonomous loop - keep working until agent calls done_working
         max_iterations = self._get_system_config().get("agents", {}).get("max_work_iterations", 20)
@@ -405,7 +408,7 @@ Work on this job according to your role. When finished, call done_working."""
                 break
 
             # Continue prompt for subsequent iterations
-            prompt = "Continue working on your tasks. When finished, call done_working."
+            prompt = load_template("agent/continue")
 
         if iteration >= max_iterations:
             self._log("work_cycle_end", {"reason": "max_iterations", "iterations": iteration})

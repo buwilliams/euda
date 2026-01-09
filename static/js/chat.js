@@ -270,7 +270,7 @@ async function processMessageQueue() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message,
-                    agent_id: 'friend',
+                    agent_id: 'chat',
                     session_id: sessionId
                 })
             });

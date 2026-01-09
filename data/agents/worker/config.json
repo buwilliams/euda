@@ -12,11 +12,14 @@
     "archive_job",
     "add_job_log",
     "get_child_jobs",
+    "list_agents",
+    "get_agent",
+    "list_available_agents",
     "list_assets",
     "read_asset",
     "write_asset",
     "delete_asset",
-    "get_user_profile",
+    "get_profile",
     "done_working",
     "parse_date",
     "get_current_date"
@@ -24,5 +27,10 @@
   "triggers": [
     "time:morning",
     "system:start"
-  ]
+  ],
+  "synthesis": {
+    "enabled": true,
+    "append_enabled": true,
+    "consolidate_trigger": "time:evening"
+  }
 }

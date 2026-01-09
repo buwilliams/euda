@@ -3,15 +3,15 @@
 Euno is "a personal intelligence that anticipates you." This document defines how we achieve anticipation through two complementary systems: **Profile** and **Memory**.
 
 - **Profile** captures who you are — your patterns, values, fears, and stable behaviors built up over time
-- **Memory** captures what's on your mind — people, places, things, goals, concerns, and ideas from the last 90 days
+- **Memory** captures what's on your mind — short-term tracks recent context (90 days), long-term preserves important events indefinitely
 
 Together, these give agents the context to anticipate what you need before you ask.
 
 ## Profile
 
-The Profile captures who you are based on observed behavior, not stated preferences. It's built from the Lifelog by the Profiler agent and updated over time.
+The Profile captures who an agent is based on observed behavior. It's built from Long-term Memory by the Synthesis process and updated over time.
 
-### Cognitive Core
+### Cognitive Core (User Profile)
 
 1. **Humans act to pursue what they desire and avoid what they fear.**
    These wants arise from biological drives and are shaped by experience (nature and nurture).
@@ -35,13 +35,13 @@ The Profile captures who you are based on observed behavior, not stated preferen
    Insight alone is insufficient; identity evolves when exploration produces strategies that consistently outperform old ones.
 
 8. **Flourishing requires balance:**
-   Most life is spent exploiting known, safe strategies for stability (≈90%), while a smaller portion is reserved for bounded, reversible exploration (≈10%) to discover new options and maintain future safety. Pressure can support growth, but only when it preserves agency, dignity, and integration.
+   Most life is spent exploiting known, safe strategies for stability (~90%), while a smaller portion is reserved for bounded, reversible exploration (~10%) to discover new options and maintain future safety. Pressure can support growth, but only when it preserves agency, dignity, and integration.
 
 ### Profile Schema
 
-The profile captures the cognitive core.
+Profiles capture behavioral patterns and evolve based on long-term memory.
 
-**Current Profile** (`data/user/profile.current.md`)
+**User Profile:**
 1. Biographical Information (name, addresses, phone numbers, etc.)
 2. Wants and Fears (patterns of behavior that uncover desires and fears)
 3. Stable Attractors (patterns the person returns to)
@@ -50,22 +50,19 @@ The profile captures the cognitive core.
 6. Interests (goals, projects, work, hobbies, entertainment)
 7. Summary of changes from previous years
 
-**Historical Profiles** (`data/user/profile.{yyyy}.md`)
-
-Year-specific snapshots using the same schema as the current profile. Historical profiles allow agents to track how a person changes over time, answer questions about what caused shifts, and distinguish stable attractors from temporary patterns.
+**AI Agent Profile:**
+1. Purpose — What the agent does
+2. Behavioral Rules — Must/must not constraints
+3. Voice — Communication style
+4. How I Work — Specific workflows
 
 ## Memory
 
-Memory tracks what's currently on the user's mind — the people, places, things, and ideas they've mentioned recently. While the Profile captures stable patterns over years, Memory captures the active context of the last 90 days.
+Memory has two forms: short-term for active context and long-term for permanent records.
 
-**Storage:** `data/user/memory.jsonl`
+### Short-term Memory
 
-**Entry Schema:**
-- `id` — Unique identifier (e.g., `mem-abc12345`)
-- `date_mentioned` — When the user first mentioned this item
-- `date_expected` — Optional date when this becomes relevant (e.g., a meeting, deadline, or event)
-- `type` — Category of the item
-- `short_description` — Brief description of what to remember
+Tracks what's currently on an agent's mind — the people, places, things, and ideas mentioned recently.
 
 **Types:**
 - `person` — Someone to follow up with, check on, or reconnect with
@@ -75,91 +72,29 @@ Memory tracks what's currently on the user's mind — the people, places, things
 - `concern` — Health issues, relationship tensions, work challenges
 - `idea` — Projects to explore, insights, books, social media threads
 
-**Expiration:**
-Entries expire 90 days after `date_mentioned`. This keeps Memory focused on current context rather than accumulating stale items. The retention period is configurable in system settings.
+**How it works:**
+- Entries expire 90 days after mention
+- Expired entries archive to long-term memory
+- Synthesis automatically adds items from conversations
+- Agents use it for follow-up questions and noticing what needs attention
 
-**How Agents Use Memory:**
-- Memory is included in every LLM system prompt alongside the Profile
-- The Friend agent proactively adds items when users mention something important
-- The Curator agent checks Memory items (especially those with approaching `date_expected`) during morning reviews
-- Agents use Memory to ask relevant follow-up questions and notice when something needs attention
+### Long-term Memory
 
-## Agent Personas
+Chronological archive of important events, preserved indefinitely.
 
-Agents have specific roles, personas, and behaviors to create and leverage the user's profile and memory to form the Euno system.
-
-Each agent has:
-- Config: `data/agents/{id}/config.json`
-- Persona: `data/agents/{id}/{id}-persona.md`
-
-All agents share ethical constraints: no coercion, no manipulation, no bypassing resistance. Agents prioritize agency, dignity, and coherence.
-
-### Archivist
-
-Preserves **irreversible human signal** with high fidelity.
-
-- Captures lived data before interpretation or compression
-- Protects evidence that reveals identity under load
-- Preserves verbatim: journals, conversations, boundary statements, emotional expressions
-- Outputs raw, annotated logs—memory, not meaning
-
-### Profiler
-
-Constructs the **Profile** from raw Lifelog data.
-
-- Produces `data/user/profile.current.md` with the schema defined above
-- Produces historical profiles (`data/user/profile.{yyyy}.md`) for each year
-- Extracts patterns from behavior, not stated preferences
-- Detects identity change through rising enforcement cost, narrative ambivalence, exception creation
-
-### Curator
-
-Explores **integrable opportunities** and allocates **scarce attention**.
-
-- Filters opportunities through the Profile first
-- Decides what deserves attention given capacity, strain, and context
-- Tracks energy dimensions: physical, mental, emotional, social
-- Surfaces fewer, higher-fit opportunities at better times
-- Defers novelty during high strain; introduces surprise only when safe
-
-### Friend
-
-Supports **thinking and decision-making** without threatening identity coherence.
-
-- The voice the user interacts with
-- Treats resistance as information, not opposition
-- References the Profile when helping with decisions
-- Slows down when emotions intensify
-- Core promise: help the user remain themselves under pressure
-
-### Worker
-
-Executes **tasks without undermining agency**.
-
-- Checks the Profile before irreversible actions (time, reputation, obligation, relationship)
-- Requires explicit affirmation for commitments
-- Efficiency serves life only when control and reversibility are preserved
-- Never auto-optimizes at the expense of recovery or reflection
-
-### Adaptor
-
-Refines **agent identities** to better serve this specific user while maintaining the cognitive core.
-
-- Proposes evolution based on user interactions, behaviors, and what will promote the user to thrive
-- Tracks misalignment between agent behavior and user identity
-- Reduces friction and increases trust—never the opposite
-- Allows the agents to take on personalities and behaviors that are desired by the user
+**Purpose:**
+- Preserve lived experience with high fidelity
+- Source of truth for constructing Profiles
+- Enable agents to reference past events
 
 ## Data Flow
 
 ```
-Raw Data → Archivist → Lifelog → Profiler → Profile
+Conversations → Synthesis Append → Short-term Memory
+                                        ↓
+                     Synthesis Consolidate (daily)
+                                        ↓
+                              Long-term Memory → Profile
 ```
 
-## Lifelog
-
-The Lifelog is a chronological archive of raw human data, preserved before interpretation or compression. It is the source of truth for constructing the Profile.
-
-Structure: `data/user/lifelog/{yyyy-mm-dd}.md`
-
-The Lifelog contains one file per day. The Archivist writes to it; the Profiler reads from it.
+Short-term memory entries expire and archive to long-term memory after 90 days.

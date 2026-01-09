@@ -28,12 +28,12 @@ Commands:
   points           Show contribution points summary
   set-password     Set the access password
   remove-password  Remove the password (disable auth)
-  fresh-start      Reset all user data (lifelog, jobs, logs, password)
+  fresh-start      Reset all user data (lifelog, jobs, memory, logs, password)
 
 Examples:
   python main.py start             # Run web server + agents
-  python main.py chat              # Chat with default agent (friend)
-  python main.py chat friend       # Chat with specific agent
+  python main.py chat              # Chat with default agent (chat)
+  python main.py chat chat         # Chat with specific agent
   python main.py agents            # List agents
   python main.py jobs              # List jobs
   python main.py points            # Show contribution points
@@ -145,7 +145,7 @@ def cmd_chat(args):
         print("\nPlease ensure data/system/config.json exists and is valid.")
         sys.exit(1)
 
-    agent_id = args[0] if args else "friend"
+    agent_id = args[0] if args else "chat"
 
     print("=" * 60)
     print(f"Euno - Chat with {agent_id}")
@@ -529,15 +529,16 @@ def cmd_fresh_start(args):
     print()
     print("This will DELETE:")
     print("  - All lifelog entries")
-    print("  - User profile and memory")
+    print("  - User profile")
     print("  - Cost tracking history")
     print("  - All jobs and job assets")
-    print("  - All agent logs, state, and conversation history")
+    print("  - All agent logs, state, memory, and conversation history")
+    print("  - Synthesis logs")
     print("  - System trigger state")
     print("  - Password (if set)")
     print()
     print("This will KEEP:")
-    print("  - Agent configurations and personas")
+    print("  - Agent configurations and profiles")
     print("  - System configuration")
     print()
 
@@ -562,11 +563,6 @@ def cmd_fresh_start(args):
         for profile in user_dir.glob("profile*.md"):
             profile.unlink()
             deleted.append(f"user/{profile.name}")
-        # Remove memory
-        memory_file = user_dir / "memory.jsonl"
-        if memory_file.exists():
-            memory_file.unlink()
-            deleted.append("user/memory.jsonl")
         # Remove cost tracking
         costs_dir = user_dir / "costs"
         if costs_dir.exists():
@@ -594,7 +590,7 @@ def cmd_fresh_start(args):
             shutil.rmtree(assets_dir)
             deleted.append("jobs/assets/")
 
-    # 3. Clear agent logs and state (keep config and persona)
+    # 3. Clear agent logs, state, and memory (keep config and profile)
     agents_dir = data_dir / "agents"
     if agents_dir.exists():
         for agent_dir in agents_dir.iterdir():
@@ -614,8 +610,13 @@ def cmd_fresh_start(args):
                 if state_file.exists():
                     state_file.unlink()
                     deleted.append(f"agents/{agent_dir.name}/state.json")
+                # Remove memory directory (short-term and long-term)
+                memory_dir = agent_dir / "memory"
+                if memory_dir.exists():
+                    shutil.rmtree(memory_dir)
+                    deleted.append(f"agents/{agent_dir.name}/memory/")
 
-    # 4. Remove system state and password
+    # 4. Remove system state, logs, and password
     system_dir = data_dir / "system"
     if system_dir.exists():
         # Remove system state (trigger tracking)
@@ -628,6 +629,11 @@ def cmd_fresh_start(args):
         if auth_file.exists():
             auth_file.unlink()
             deleted.append("system/auth.json")
+        # Remove synthesis logs
+        synthesis_logs = system_dir / "logs" / "synthesis"
+        if synthesis_logs.exists():
+            shutil.rmtree(synthesis_logs)
+            deleted.append("system/logs/synthesis/")
 
     print()
     print(f"Deleted {len(deleted)} items:")

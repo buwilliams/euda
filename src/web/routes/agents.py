@@ -4,24 +4,25 @@ Agents API Routes
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 
-from ...tools.agents import (
-    list_agents, get_agent, get_agent_memory, update_agent_memory,
-    get_agent_persona, update_agent_persona, get_agent_config, update_agent_config
+from ...tools.agents.agents import (
+    list_agents, get_agent,
+    get_agent_profile, update_agent_profile,
+    get_agent_config, update_agent_config
+)
+from ...tools.data.profile import get_profile, update_profile
+from ...tools.data.memory import (
+    list_memory, add_memory, remove_memory,
+    read_long_term_memory, write_long_term_memory, list_long_term_memory_dates
 )
 
 
 router = APIRouter()
 
 
-class UpdateMemoryRequest(BaseModel):
-    key: str
-    value: str
-
-
-class UpdatePersonaRequest(BaseModel):
-    persona: str
+class UpdateProfileRequest(BaseModel):
+    content: str
 
 
 class UpdateConfigRequest(BaseModel):
@@ -29,6 +30,17 @@ class UpdateConfigRequest(BaseModel):
     enabled: Optional[bool] = None
     tools: Optional[List[str]] = None
     triggers: Optional[List[str]] = None
+
+
+class AddMemoryRequest(BaseModel):
+    short_description: str
+    type: str
+    date_expected: Optional[str] = None
+
+
+class WriteLongTermMemoryRequest(BaseModel):
+    content: str
+    date: Optional[str] = None
 
 
 @router.get("")
@@ -46,36 +58,45 @@ def api_get_agent(agent_id: str):
     return agent
 
 
-@router.get("/{agent_id}/memory")
-def api_get_memory(agent_id: str):
-    """Get agent's memory."""
-    return get_agent_memory(agent_id)
+# Profile endpoints
+@router.get("/{agent_id}/profile")
+def api_get_profile(agent_id: str):
+    """Get agent's profile markdown."""
+    profile = get_agent_profile(agent_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="Agent or profile not found")
+    return {"agent_id": agent_id, "profile": profile}
 
 
-@router.post("/{agent_id}/memory")
-def api_update_memory(agent_id: str, request: UpdateMemoryRequest):
-    """Update agent's memory."""
-    return update_agent_memory(agent_id, request.key, request.value)
-
-
-@router.get("/{agent_id}/persona")
-def api_get_persona(agent_id: str):
-    """Get agent's persona markdown."""
-    persona = get_agent_persona(agent_id)
-    if persona is None:
-        raise HTTPException(status_code=404, detail="Agent or persona not found")
-    return {"agent_id": agent_id, "persona": persona}
-
-
-@router.patch("/{agent_id}/persona")
-def api_update_persona(agent_id: str, request: UpdatePersonaRequest):
-    """Update agent's persona markdown."""
-    result = update_agent_persona(agent_id, request.persona)
+@router.patch("/{agent_id}/profile")
+def api_update_profile(agent_id: str, request: UpdateProfileRequest):
+    """Update agent's profile markdown."""
+    result = update_agent_profile(agent_id, request.content)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
 
 
+# Backward-compatible persona endpoints (alias to profile)
+@router.get("/{agent_id}/persona")
+def api_get_persona(agent_id: str):
+    """Get agent's persona markdown (alias for profile)."""
+    profile = get_agent_profile(agent_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="Agent or persona not found")
+    return {"agent_id": agent_id, "persona": profile}
+
+
+@router.patch("/{agent_id}/persona")
+def api_update_persona(agent_id: str, request: UpdateProfileRequest):
+    """Update agent's persona markdown (alias for profile)."""
+    result = update_agent_profile(agent_id, request.content)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+# Config endpoints
 @router.get("/{agent_id}/config")
 def api_get_config(agent_id: str):
     """Get agent's configuration."""
@@ -106,3 +127,41 @@ def api_update_config(agent_id: str, request: UpdateConfigRequest):
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
+
+
+# Short-term memory endpoints
+@router.get("/{agent_id}/memory/short-term")
+def api_get_short_term_memory(agent_id: str):
+    """List agent's short-term memory items."""
+    return list_memory(agent_id)
+
+
+@router.post("/{agent_id}/memory/short-term")
+def api_add_short_term_memory(agent_id: str, request: AddMemoryRequest):
+    """Add a short-term memory item."""
+    return add_memory(request.short_description, request.type, request.date_expected, agent_id)
+
+
+@router.delete("/{agent_id}/memory/short-term/{entry_id}")
+def api_remove_short_term_memory(agent_id: str, entry_id: str):
+    """Remove a short-term memory item."""
+    return remove_memory(entry_id, agent_id)
+
+
+# Long-term memory endpoints
+@router.get("/{agent_id}/memory/long-term")
+def api_get_long_term_memory(agent_id: str, date: Optional[str] = None):
+    """Get agent's long-term memory entries."""
+    return read_long_term_memory(date, agent_id)
+
+
+@router.post("/{agent_id}/memory/long-term")
+def api_write_long_term_memory(agent_id: str, request: WriteLongTermMemoryRequest):
+    """Add a long-term memory entry."""
+    return write_long_term_memory(request.content, request.date, agent_id)
+
+
+@router.get("/{agent_id}/memory/long-term/dates")
+def api_list_long_term_memory_dates(agent_id: str):
+    """List all dates with long-term memory entries."""
+    return list_long_term_memory_dates(agent_id)

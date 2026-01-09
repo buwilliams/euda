@@ -6,6 +6,8 @@
 
 **A personal intelligence that anticipates you.**
 
+**Mission:** A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities.
+
 This is the singular filter for all work on Euno. Any goal, task, or contribution that does not serve this purpose is out of bounds by default. Out-of-bound work may be considered if there is strong justification, but must be explicitly approved by Buddy Williams.
 
 **Affordable Loss** ([effectuation principle](https://effectuation.org/))

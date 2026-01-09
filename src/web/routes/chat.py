@@ -14,8 +14,8 @@ from ...agent import Agent, AGENTS_DIR
 
 router = APIRouter()
 
-# Conversation directory for the friend agent (used by web UI)
-CONV_DIR = AGENTS_DIR / "friend" / "state" / "conversation"
+# Conversation directory for the chat agent (used by web UI)
+CONV_DIR = AGENTS_DIR / "chat" / "state" / "conversation"
 
 
 class ChatRequest(BaseModel):
