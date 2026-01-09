@@ -62,6 +62,17 @@ Rules for how agents work and coordinate through jobs.
 - Changes to triggers require a restart to take effect
 - Agent files: `config.json` (settings) and `profile.md` (identity/instructions)
 
+## Agent Profiles
+
+- Profiles define the agent's purpose, voice, and approach — not rigid rules
+- Write for spirit and intention, not exhaustive instructions
+- The agent uses judgment to decide which tools and operations serve the user's intent
+- Avoid rule-heavy profiles that try to cover every scenario
+- Trust the LLM to interpret the profile's spirit and apply it to novel situations
+- Don't list available tools — they're included in the system prompt from config.json
+- Good profile: "I help users track what matters to them"
+- Bad profile: "When user says X, do Y. When user says Z, do W..."
+
 ## Synthesis
 
 - Each agent has an internal Synthesis process for memory and profile management
