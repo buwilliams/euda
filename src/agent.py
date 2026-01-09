@@ -220,7 +220,7 @@ class Agent:
         tools_text = "\n".join(tools_sections) if tools_sections else "No tools available."
 
         return render_template(
-            "system_prompt",
+            "agent/system",
             profile=self.profile,
             tools_by_type=tools_text
         )
@@ -245,7 +245,7 @@ class Agent:
         remaining_notice = f"({remaining} more jobs waiting)" if remaining > 0 else ""
 
         return render_template(
-            "job_prompt",
+            "agent/job",
             job_name=job.get('name', 'Untitled'),
             job_description=job.get('description') or 'None provided',
             job_due_date=job.get('due_date') or 'No deadline',
@@ -408,7 +408,7 @@ class Agent:
                 break
 
             # Continue prompt for subsequent iterations
-            prompt = load_template("continue_prompt")
+            prompt = load_template("agent/continue")
 
         if iteration >= max_iterations:
             self._log("work_cycle_end", {"reason": "max_iterations", "iterations": iteration})

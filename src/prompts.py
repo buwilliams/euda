@@ -17,7 +17,7 @@ def load_template(name: str) -> str:
     """Load a prompt template by name.
 
     Args:
-        name: Template name without extension (e.g., 'system_prompt')
+        name: Template name/path without extension (e.g., 'agent/system' or 'synthesis/append_system')
 
     Returns:
         Template content as string
