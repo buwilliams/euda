@@ -244,11 +244,16 @@ class Agent:
 
         remaining_notice = f"({remaining} more jobs waiting)" if remaining > 0 else ""
 
+        tags = job.get('tags', [])
+        tags_str = ', '.join(tags) if tags else 'None'
+
         return render_template(
             "agent/job",
+            job_id=job.get('id'),
             job_name=job.get('name', 'Untitled'),
             job_description=job.get('description') or 'None provided',
             job_due_date=job.get('due_date') or 'No deadline',
+            job_tags=tags_str,
             job_attachments=attachments,
             remaining_jobs_notice=remaining_notice
         )

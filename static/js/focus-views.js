@@ -29,9 +29,12 @@ function togglePersonaSection(header, event) {
 function renderFocusMenu() {
     const counts = getFocusCounts();
     const todayJobs = getRootJobsForCategory('today');
-    // Root completed jobs: no parent OR parent is not in completed list (parent still active/archived)
-    const completedJobIds = new Set(completedJobsData.map(j => j.id));
-    const topLevelCompletedJobs = completedJobsData.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
+
+    // For completed count, only show Projects descendants (exclude Agents and System)
+    const allJobs = [...jobsData, ...completedJobsData];
+    const projectsCompletedJobs = completedJobsData.filter(j => isProjectsDescendant(j, allJobs));
+    const completedJobIds = new Set(projectsCompletedJobs.map(j => j.id));
+    const topLevelCompletedJobs = projectsCompletedJobs.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
 
     // Find system containers
     const agentsContainer = jobsData.find(j => j.tags && j.tags.includes('system:agents') && !j.parent_id);
@@ -179,9 +182,16 @@ function renderTimelineView(category, title) {
 }
 
 function renderCompletedJobsView() {
+    // Combine active and completed jobs for ancestor traversal
+    const allJobs = [...jobsData, ...completedJobsData];
+
+    // Filter to only Projects descendants (exclude Agents and System jobs)
+    const projectsCompletedJobs = completedJobsData.filter(j => isProjectsDescendant(j, allJobs));
+
     // Root completed jobs: no parent OR parent is not in completed list
-    const completedJobIds = new Set(completedJobsData.map(j => j.id));
-    const rootCompletedJobs = completedJobsData.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
+    const completedJobIds = new Set(projectsCompletedJobs.map(j => j.id));
+    const rootCompletedJobs = projectsCompletedJobs.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
+
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
@@ -191,7 +201,7 @@ function renderCompletedJobsView() {
             ${rootCompletedJobs.length === 0
                 ? '<div class="focus-empty">No completed jobs</div>'
                 : rootCompletedJobs.map(job => {
-                    const childCount = completedJobsData.filter(j => j.parent_id === job.id).length;
+                    const childCount = projectsCompletedJobs.filter(j => j.parent_id === job.id).length;
                     return renderCompletedJobCard(job, childCount, true);
                 }).join('')
             }

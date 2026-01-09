@@ -128,10 +128,40 @@ async function saveAgentConfig(agentId, updates) {
 function isContainerJob(job) {
     // Agent inbox jobs have agent_id set
     if (job.agent_id) return true;
-    // System containers have system:agents or system:projects tags
+    // System containers have system:agents, system:projects, or system:system tags
     const tags = job.tags || [];
-    if (tags.includes('system:agents') || tags.includes('system:projects')) return true;
+    if (tags.includes('system:agents') || tags.includes('system:projects') || tags.includes('system:system')) return true;
     return false;
+}
+
+function isAgentOrSystemJob(job) {
+    // Check if job itself is an agent inbox or has system:agents/system:system tags
+    if (job.agent_id) return true;
+    const tags = job.tags || [];
+    if (tags.includes('system:agents') || tags.includes('system:system')) return true;
+    if (tags.includes('agent-inbox')) return true;
+    return false;
+}
+
+function hasAgentOrSystemAncestor(job, allJobs) {
+    // Walk up the parent chain to check if any ancestor is under Agents or System
+    // allJobs should include both active and completed jobs for full traversal
+    let parentId = job.parent_id;
+    while (parentId) {
+        const parent = allJobs.find(j => j.id === parentId);
+        if (!parent) break;
+        if (isAgentOrSystemJob(parent)) return true;
+        parentId = parent.parent_id;
+    }
+    return false;
+}
+
+function isProjectsDescendant(job, allJobs) {
+    // A job is a Projects descendant if it's NOT under Agents or System containers
+    // This includes jobs with no container parent (user-created root jobs)
+    if (isAgentOrSystemJob(job)) return false;
+    if (hasAgentOrSystemAncestor(job, allJobs)) return false;
+    return true;
 }
 
 function getJobCategory(job) {
@@ -213,6 +243,23 @@ function getDescendantCountForContext(jobId) {
     ).length;
 }
 
+function hasCompletedAncestor(job) {
+    // Check if any ancestor of this job is completed
+    let parentId = job.parent_id;
+    while (parentId) {
+        // Check if parent is in completed jobs
+        const completedParent = completedJobsData.find(j => j.id === parentId);
+        if (completedParent) return true;
+
+        // Check if parent is in active jobs and continue walking up
+        const activeParent = getJobById(parentId);
+        if (!activeParent) break; // Parent not found anywhere
+        if (isContainerJob(activeParent)) break; // Stop at containers
+        parentId = activeParent.parent_id;
+    }
+    return false;
+}
+
 function getRootAncestor(job) {
     // Walk up the parent chain to find the root job
     // Stop at containers (system jobs, agent inboxes) - job under container is the effective root
@@ -276,6 +323,9 @@ function getRootJobsForCategory(category) {
     for (const job of jobsData) {
         // Skip containers
         if (isContainerJob(job)) continue;
+
+        // Skip jobs with completed ancestors (orphaned children of completed projects)
+        if (hasCompletedAncestor(job)) continue;
 
         // Check if this job matches the category and is incomplete
         if (job.status !== 'completed' && getJobCategory(job) === category) {
@@ -347,6 +397,8 @@ function getFocusCounts() {
         if (isContainerJob(job)) return;
         // Skip completed
         if (job.status === 'completed') return;
+        // Skip jobs with completed ancestors (orphaned children)
+        if (hasCompletedAncestor(job)) return;
 
         const category = getJobCategory(job);
         // For temporal categories, count all jobs

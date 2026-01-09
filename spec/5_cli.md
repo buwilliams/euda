@@ -45,6 +45,6 @@ Rules for the command-line interface.
 ## fresh-start
 
 - Requires explicit confirmation (type 'yes')
-- Deletes: lifelog, profile, memory, costs, jobs, assets, agent logs/state, system state, password
+- Deletes: long-term memory, profile, short-term memory, costs, jobs, assets, agent logs/state, system state, password
 - Keeps: agent configs, agent profiles, system config
 - Shows summary of deleted items

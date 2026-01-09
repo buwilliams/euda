@@ -56,11 +56,21 @@ Rules for how agents work and coordinate through jobs.
 
 - Users create agents through the Chat agent (via chat)
 - Chat uses `list_available_tools` to determine appropriate tools for new agents
-- Core agents are protected and cannot be deleted: chat, worker, curator
-- Custom agents can be created, modified, and deleted
+- Core agents are protected: chat, worker, user
 - All agents get base tools: list_jobs, get_job, create_job, complete_job, add_job_log, done_working
 - Changes to triggers require a restart to take effect
 - Agent files: `config.json` (settings) and `profile.md` (identity/instructions)
+
+## Agent Profiles
+
+- Profiles define the agent's purpose, voice, and approach — not rigid rules
+- Write for spirit and intention, not exhaustive instructions
+- The agent uses judgment to decide which tools and operations serve the user's intent
+- Avoid rule-heavy profiles that try to cover every scenario
+- Trust the LLM to interpret the profile's spirit and apply it to novel situations
+- Don't list available tools — they're included in the system prompt from config.json
+- Good profile: "I help users track what matters to them"
+- Bad profile: "When user says X, do Y. When user says Z, do W..."
 
 ## Synthesis
 
@@ -71,9 +81,18 @@ Rules for how agents work and coordinate through jobs.
 - Consolidate trigger is configurable per-agent (default: `time:evening`)
 - Synthesis replaces the deprecated Profiler, Archivist, and Adaptor agents
 
+## User Requests
+
+- When Chat routes work to an agent on behalf of the user, it tags the job `user-request`
+- Agents see this tag and know to return results to the user
+- Workflow: agent writes findings as job assets, reassigns to user, does NOT complete
+- User reviews results in their timeline and completes when satisfied
+- This creates a request-response loop: user asks → agent works → user receives
+
 ## Chat Agent Role
 
 - Primary interface for user interaction
+- Routes user requests to appropriate agents with `user-request` tag
 - Can create and manage other agents
 - Can answer questions about Euno by reading docs/specs
 - Has access to user profile and memory for personalized responses

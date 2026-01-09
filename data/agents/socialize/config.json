@@ -10,6 +10,7 @@
     "update_job",
     "complete_job",
     "add_job_log",
+    "write_asset",
     "list_agents",
     "get_agent",
     "list_available_agents",
