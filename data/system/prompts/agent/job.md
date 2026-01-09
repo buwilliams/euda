@@ -3,13 +3,12 @@ You have been assigned a job:
 - **Name**: {job_name}
 - **Description**: {job_description}
 - **Due**: {job_due_date}
+- **Tags**: {job_tags}
 - **Context**: {job_attachments}
 
 {remaining_jobs_notice}
 
-Work on this job according to your role. Use available tools to:
-1. Get user profile/memory if you need user context
-2. Read/write job assets as needed
-3. Create sub-jobs if work needs breakdown
-4. Complete THIS job using complete_job(job_id="{job_id}") when done
-5. Call done_working() when finished
+Work on this job according to your profile. When finished:
+- Use complete_job(job_id="{job_id}") if you should complete it
+- Or follow your profile's guidance for user-request jobs
+- Always call done_working() at the end
