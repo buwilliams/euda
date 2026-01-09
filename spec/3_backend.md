@@ -36,7 +36,12 @@ Rules for the server, API, and infrastructure.
 
 - Single SSE endpoint at `/api/events`
 - Real-time updates for jobs, notifications, agent activity
-- Event types: job_created, job_updated, job_completed, notification, agent_working
+- Event types:
+  - `init` — sent on connection with initial job list
+  - `ping` — keepalive every 30 seconds
+  - `jobs_update` — sent when any job changes, includes full job list
+  - `chat_update` — sent when chat messages are added
+  - `agent_message` — sent via notifications tool for agent-to-user messages
 - Clients reconnect automatically on disconnect
 - Graceful shutdown closes connections before server stops
 

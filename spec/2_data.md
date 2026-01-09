@@ -43,7 +43,7 @@ Rules for the major entities in the system and how they relate.
   - id, name, enabled, order, tools[], triggers[] (triggers define which trigger jobs the agent receives)
 - Persona: `data/agents/{id}/{id}-persona.md`
 - Conversation: `data/agents/{id}/state/conversation/{session-id}.md`
-- Logs: `data/agents/{id}/logs/{date}.json`
+- Logs: `data/agents/{id}/logs/{date}.jsonl`
 - No Python code needed to create new agents — just config and persona files
 - Capabilities defined by which tools it has access to
 - All agents inherit from a core persona that defines shared ethical constraints

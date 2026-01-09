@@ -34,7 +34,6 @@ Rules for how agents work and coordinate through jobs.
 - Trigger types:
   - `system:start` — fires once at system startup
   - `time:{name}` — fires at scheduled times (morning, evening, hourly)
-  - `lifelog:new` — fires when a lifelog entry is written
 
 ## Manager
 
