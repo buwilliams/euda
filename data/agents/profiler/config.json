@@ -13,7 +13,12 @@
     "create_job",
     "add_job_log",
     "complete_job",
+    "get_mastodon_posts",
     "done_working"
   ],
-  "triggers": ["lifelog:new", "time:evening", "system:start"]
+  "triggers": [
+    "lifelog:new",
+    "time:evening",
+    "system:start"
+  ]
 }

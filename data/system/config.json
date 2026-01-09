@@ -2,7 +2,7 @@
   "version": "3.0.0",
   "initialized": true,
   "llm": {
-    "provider": "openai",
+    "provider": "anthropic",
     "budget_limit": null,
     "default_pricing": {
       "input": 3.00,

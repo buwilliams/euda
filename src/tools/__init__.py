@@ -125,3 +125,4 @@ from . import dates
 from . import memory
 from . import notifications
 from . import knowledge
+from . import mastodon
