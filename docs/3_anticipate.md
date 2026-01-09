@@ -13,14 +13,52 @@ Every agent in Euno (including the user) has the same structure:
 
 - **Profile** — Identity and behavioral patterns that evolve over time
 - **Short-term Memory** — 90-day rolling window of active context
-- **Long-term Memory** — Indefinite archive of important events
+- **Long-term Memory** — Indefinite archive of important events (organized by year)
+- **Synthesis** — Internal process that manages memory and profile updates
 - **Tools** — Capabilities defined by config
 
-This unified structure means the Profiler can maintain profiles for all agents, not just the user.
+This unified structure means every agent can maintain and evolve its own profile and memory.
+
+## Synthesis
+
+Synthesis is an internal process that each agent runs to manage memory and profile updates. It replaces the deprecated Profiler, Archivist, and Adaptor agents with a built-in capability.
+
+### Two Phases
+
+**Append Phase** (lightweight, after each conversation)
+- Runs automatically after each `chat()` call
+- Uses LLM to extract noteworthy items from the conversation
+- Adds new items to short-term memory
+- Fast and non-blocking
+
+**Consolidate Phase** (heavy, on daily trigger)
+- Runs on configurable trigger (default: `time:evening`)
+- Analyzes patterns in short-term and long-term memory
+- Graduates important items from short-term to long-term
+- Updates the agent's profile based on observed patterns
+- Creates historical profile snapshots at year boundaries
+
+### Configuration
+
+Each agent can configure synthesis in their `config.json`:
+
+```json
+{
+  "synthesis": {
+    "enabled": true,
+    "append_enabled": true,
+    "consolidate_trigger": "time:evening"
+  }
+}
+```
+
+### Logs
+
+Synthesis operations are logged to `data/system/logs/synthesis/{date}.jsonl`.
 
 ## Profile
 
-The Profile captures who an agent is based on observed behavior. It's built from Long-term Memory by the Profiler agent and updated over time.
+The Profile captures who an agent is based on observed behavior. It's built from Long-term Memory by the Synthesis process and updated over time.
 
 ### Cognitive Core (User Profile)
 
@@ -99,13 +137,14 @@ Entries expire 90 days after `date_mentioned`. Expired entries are archived to l
 
 **How Agents Use Short-term Memory:**
 - Accessed via `list_memory` tool (not auto-injected)
-- The Friend agent proactively adds items when users mention something important
+- The Synthesis append phase automatically adds items when noteworthy
+- Agents can manually add items using `add_memory` tool
 - The Curator agent checks items (especially those with approaching `date_expected`) during morning reviews
 - Agents use it to ask relevant follow-up questions and notice when something needs attention
 
 ### Long-term Memory
 
-Chronological archive of important events, preserved indefinitely. One markdown file per day: `data/agents/{id}/memory/long-term/{yyyy-mm-dd}.md`.
+Chronological archive of important events, preserved indefinitely. Organized by year: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md`.
 
 **Purpose:**
 - Preserve lived experience with high fidelity
@@ -113,8 +152,9 @@ Chronological archive of important events, preserved indefinitely. One markdown 
 - Enable agents to reference past events
 
 **How Agents Use Long-term Memory:**
-- The Archivist writes to it
-- The Profiler reads from it to construct Profiles
+- Written by Synthesis consolidate phase
+- Written by agents using `write_long_term_memory` tool
+- Read by Synthesis for profile construction
 - Any agent can read it for historical context
 
 ## Agent Profiles
@@ -124,26 +164,9 @@ Agents have specific roles and behaviors to create and leverage the user's profi
 Each agent has:
 - Config: `data/agents/{id}/config.json`
 - Profile: `data/agents/{id}/profile.md`
+- Synthesis: Internal process for memory/profile management
 
 All agents share ethical constraints: no coercion, no manipulation, no bypassing resistance. Agents prioritize agency, dignity, and coherence.
-
-### Archivist
-
-Preserves **irreversible human signal** with high fidelity.
-
-- Captures lived data before interpretation or compression
-- Protects evidence that reveals identity under load
-- Preserves verbatim: journals, conversations, boundary statements, emotional expressions
-- Outputs raw, annotated logs—memory, not meaning
-
-### Profiler
-
-Constructs **Profiles** from Long-term Memory for all agents.
-
-- Produces `data/agents/{id}/profile.md` for each agent
-- Produces historical profiles (`data/agents/{id}/profile.{yyyy}.md`) for each year
-- Extracts patterns from behavior, not stated preferences
-- Detects identity change through rising enforcement cost, narrative ambivalence, exception creation
 
 ### Curator
 
@@ -174,19 +197,14 @@ Executes **tasks without undermining agency**.
 - Efficiency serves life only when control and reversibility are preserved
 - Never auto-optimizes at the expense of recovery or reflection
 
-### Adaptor
-
-Refines **agent profiles** to better serve this specific user while maintaining the cognitive core.
-
-- Proposes evolution based on user interactions, behaviors, and what will promote the user to thrive
-- Tracks misalignment between agent behavior and user identity
-- Reduces friction and increases trust—never the opposite
-- Allows the agents to take on personalities and behaviors that are desired by the user
-
 ## Data Flow
 
 ```
-Raw Data → Archivist → Long-term Memory → Profiler → Profile
+Conversations → Synthesis Append → Short-term Memory
+                                        ↓
+                     Synthesis Consolidate (daily)
+                                        ↓
+                              Long-term Memory → Profile
 ```
 
 Short-term memory entries expire and archive to long-term memory after 90 days.

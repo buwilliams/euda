@@ -31,9 +31,17 @@ def _get_short_term_path(agent_id: str = "user") -> Path:
     return AGENTS_DIR / agent_id / "memory" / "short-term.jsonl"
 
 
-def _get_long_term_dir(agent_id: str = "user") -> Path:
-    """Get path to agent's long-term memory directory."""
-    return AGENTS_DIR / agent_id / "memory" / "long-term"
+def _get_long_term_dir(agent_id: str = "user", year: str = None) -> Path:
+    """Get path to agent's long-term memory directory (year-based).
+
+    Args:
+        agent_id: Agent ID
+        year: Specific year (YYYY) or None for current year
+    """
+    base = AGENTS_DIR / agent_id / "memory" / "long-term"
+    if year:
+        return base / year
+    return base / datetime.now().strftime("%Y")
 
 
 def _ensure_memory_dirs(agent_id: str = "user"):
@@ -214,8 +222,18 @@ def read_long_term_memory(date: str = None, agent_id: str = "user") -> dict:
     if date is None:
         date = datetime.now().strftime("%Y-%m-%d")
 
-    long_term_dir = _get_long_term_dir(agent_id)
+    year = date[:4]  # Extract year from date
+
+    # Try year-based path first
+    long_term_dir = _get_long_term_dir(agent_id, year)
     memory_path = long_term_dir / f"{date}.md"
+
+    # Fall back to legacy flat path for backward compatibility
+    if not memory_path.exists():
+        legacy_dir = AGENTS_DIR / agent_id / "memory" / "long-term"
+        legacy_path = legacy_dir / f"{date}.md"
+        if legacy_path.exists():
+            memory_path = legacy_path
 
     if memory_path.exists():
         return {
@@ -250,7 +268,12 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
     if source is None:
         source = agent_id.title()
 
-    long_term_dir = _get_long_term_dir(agent_id)
+    year = date[:4]  # Extract year from date
+
+    # Use year-based directory structure
+    long_term_dir = _get_long_term_dir(agent_id, year)
+    long_term_dir.mkdir(parents=True, exist_ok=True)
+
     memory_path = long_term_dir / f"{date}.md"
     timestamp = datetime.now().strftime("%I:%M %p").lstrip("0")  # 2:30 PM format
 
@@ -304,14 +327,22 @@ def list_long_term_memory_dates(agent_id: str = "user") -> List[str]:
     """
     _ensure_memory_dirs(agent_id)
 
-    long_term_dir = _get_long_term_dir(agent_id)
-    if not long_term_dir.exists():
+    base_dir = AGENTS_DIR / agent_id / "memory" / "long-term"
+    if not base_dir.exists():
         return []
 
     dates = []
-    for path in long_term_dir.glob("*.md"):
-        # Extract date from filename (YYYY-MM-DD.md)
-        dates.append(path.stem)
+
+    # Check year directories (new structure)
+    for year_dir in base_dir.iterdir():
+        if year_dir.is_dir() and year_dir.name.isdigit() and len(year_dir.name) == 4:
+            for path in year_dir.glob("*.md"):
+                dates.append(path.stem)
+
+    # Also check flat structure (legacy) for backward compatibility
+    for path in base_dir.glob("*.md"):
+        if path.stem not in dates:
+            dates.append(path.stem)
 
     dates.sort(reverse=True)
     return dates

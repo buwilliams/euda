@@ -19,5 +19,10 @@
     "send_chat_message",
     "check_user_connected"
   ],
-  "triggers": ["time:morning", "system:start"]
+  "triggers": ["time:morning", "system:start"],
+  "synthesis": {
+    "enabled": true,
+    "append_enabled": true,
+    "consolidate_trigger": "time:evening"
+  }
 }

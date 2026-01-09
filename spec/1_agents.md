@@ -56,11 +56,20 @@ Rules for how agents work and coordinate through jobs.
 
 - Users create agents through the Friend agent (via chat)
 - Friend uses `list_available_tools` to determine appropriate tools for new agents
-- Core agents are protected and cannot be deleted: friend, worker, curator, profiler, archivist, adaptor
+- Core agents are protected and cannot be deleted: friend, worker, curator
 - Custom agents can be created, modified, and deleted
 - All agents get base tools: list_jobs, get_job, create_job, complete_job, add_job_log, done_working
 - Changes to triggers require a restart to take effect
-- Agent files: `config.json` (settings) and `{agent}-persona.md` (instructions)
+- Agent files: `config.json` (settings) and `profile.md` (identity/instructions)
+
+## Synthesis
+
+- Each agent has an internal Synthesis process for memory and profile management
+- Synthesis runs two phases:
+  - **Append**: Lightweight extraction after each conversation (adds to short-term memory)
+  - **Consolidate**: Heavy analysis on daily trigger (graduates memories, updates profile)
+- Consolidate trigger is configurable per-agent (default: `time:evening`)
+- Synthesis replaces the deprecated Profiler, Archivist, and Adaptor agents
 
 ## Friend Agent Role
 

@@ -24,5 +24,10 @@
   "triggers": [
     "time:morning",
     "system:start"
-  ]
+  ],
+  "synthesis": {
+    "enabled": true,
+    "append_enabled": true,
+    "consolidate_trigger": "time:evening"
+  }
 }

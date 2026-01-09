@@ -2,12 +2,12 @@
 Profile Tools - Access agent profiles.
 
 Every agent (including user) has a profile at data/agents/{agent_id}/profile.md
-Profiles evolve over time based on long-term memory, updated by the Profiler.
+Profiles evolve over time based on long-term memory, updated by Synthesis.
 """
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from .. import tool
 
@@ -84,3 +84,60 @@ def get_user_profile() -> dict:
 def update_user_profile(content: str) -> dict:
     """Update the user's profile. Alias for update_profile('user', content)."""
     return update_profile("user", content)
+
+
+# =============================================================================
+# Historical profile helpers (not tools - used by Synthesis)
+# =============================================================================
+
+def get_historical_profile(agent_id: str, year: str) -> Optional[str]:
+    """Get an agent's historical profile for a specific year.
+
+    Args:
+        agent_id: Agent ID
+        year: Year (YYYY format)
+
+    Returns:
+        Profile content or None if not found
+    """
+    profile_path = _get_historical_profile_path(agent_id, year)
+    if profile_path.exists():
+        return profile_path.read_text()
+    return None
+
+
+def save_historical_profile(agent_id: str, year: str, content: str):
+    """Save an agent's historical profile for a specific year.
+
+    Args:
+        agent_id: Agent ID
+        year: Year (YYYY format)
+        content: Profile content to save
+    """
+    _ensure_agent_dir(agent_id)
+    profile_path = _get_historical_profile_path(agent_id, year)
+    profile_path.write_text(content)
+
+
+def list_historical_profiles(agent_id: str) -> List[str]:
+    """List all available historical profile years for an agent.
+
+    Args:
+        agent_id: Agent ID
+
+    Returns:
+        List of years (YYYY) with historical profiles, sorted descending
+    """
+    agent_dir = AGENTS_DIR / agent_id
+    if not agent_dir.exists():
+        return []
+
+    years = []
+    for path in agent_dir.glob("profile.*.md"):
+        # Extract year from filename (profile.YYYY.md)
+        year = path.stem.split(".")[-1]
+        if year.isdigit() and len(year) == 4:
+            years.append(year)
+
+    years.sort(reverse=True)
+    return years

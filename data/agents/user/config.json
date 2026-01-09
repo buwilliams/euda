@@ -3,5 +3,10 @@
   "name": "User",
   "enabled": true,
   "tools": [],
-  "triggers": []
+  "triggers": [],
+  "synthesis": {
+    "enabled": true,
+    "append_enabled": true,
+    "consolidate_trigger": "time:evening"
+  }
 }

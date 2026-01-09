@@ -362,6 +362,30 @@ class AgentManager:
                     agent._log("transient_error_retry", {"delay_seconds": 5})
                     time.sleep(5)
 
+    def _run_synthesis_consolidation(self, trigger_name: str):
+        """Run synthesis consolidation for agents with matching trigger.
+
+        Args:
+            trigger_name: The trigger that fired (e.g., "time:evening")
+        """
+        for agent_id, agent in self.agents.items():
+            if not agent.config.get("enabled", True):
+                continue
+
+            # Check if agent has synthesis and if this trigger matches consolidate_trigger
+            if not agent.synthesis:
+                continue
+
+            synthesis_config = agent.config.get("synthesis", {})
+            consolidate_trigger = synthesis_config.get("consolidate_trigger", "time:evening")
+
+            if trigger_name == consolidate_trigger:
+                print(f"[synthesis] Running consolidation for {agent_id}")
+                try:
+                    agent.synthesis.consolidate()
+                except Exception as e:
+                    print(f"[synthesis] Consolidation error for {agent_id}: {e}")
+
     def _run_time_scheduler(self):
         """Background thread that creates trigger jobs based on schedules."""
         from .tools.data.jobs import create_job, list_jobs
@@ -427,6 +451,9 @@ class AgentManager:
                             state = self._get_system_state()
                             state[f"last_{name}"] = today
                             self._save_system_state(state)
+
+                        # Run synthesis consolidation for agents with matching trigger
+                        self._run_synthesis_consolidation(trigger_name)
 
             except Exception as e:
                 print(f"Scheduler error: {e}")

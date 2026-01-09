@@ -35,5 +35,10 @@
     "read_euno_doc",
     "read_agent_logs"
   ],
-  "triggers": []
+  "triggers": [],
+  "synthesis": {
+    "enabled": true,
+    "append_enabled": true,
+    "consolidate_trigger": "time:evening"
+  }
 }

@@ -14,6 +14,7 @@ from typing import Optional
 
 from .llms import get_client
 from .logger import get_logger
+from .synthesis import Synthesis
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -30,6 +31,11 @@ class Agent:
         self._work_done = False
         self._session_id = session_id
         self._current_job_id = None
+
+        # Initialize synthesis if enabled
+        synthesis_config = self.config.get("synthesis", {})
+        synthesis_enabled = synthesis_config.get("enabled", True)
+        self.synthesis = Synthesis(self) if synthesis_enabled else None
 
     def wait_for_trigger(self, timeout: float = None) -> Optional[dict]:
         """Wait for a trigger event from the event bus.
@@ -318,10 +324,14 @@ class Agent:
             self._save_conversation_turn("assistant", text_response)
         self._log("chat_end", {"response_length": len(text_response)})
 
-        # Log user conversations to long-term memory for the friend agent (for Profiler to analyze)
+        # Log user conversations to long-term memory for the friend agent
         # Only log actual user conversations, not autonomous work cycles
         if self.id == "friend" and log_to_lifelog:
             self._append_to_long_term_memory(message, text_response)
+
+        # Run synthesis append phase to extract noteworthy items
+        if self.synthesis and log_to_lifelog:
+            self.synthesis.append(message, text_response)
 
         return text_response
 
