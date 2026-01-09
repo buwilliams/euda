@@ -3,7 +3,7 @@ Agent - Generic agent that runs based on configuration.
 
 An agent is defined by:
 1. Config (config.json) - operational parameters
-2. Persona ({agent}-persona.md) - identity and behavior
+2. Profile (profile.md) - identity and behavior that evolves over time
 3. Tools - list of tool names the agent can use
 """
 
@@ -26,7 +26,7 @@ class Agent:
     def __init__(self, agent_id: str, config: Optional[dict] = None, session_id: Optional[str] = None):
         self.id = agent_id
         self.config = config or self._load_config()
-        self.persona = self._load_persona()
+        self.profile = self._load_profile()
         self._work_done = False
         self._session_id = session_id
         self._current_job_id = None
@@ -61,8 +61,12 @@ class Agent:
             "triggers": ["job:assigned"]
         }
 
-    def _load_persona(self) -> str:
-        """Load agent persona from disk."""
+    def _load_profile(self) -> str:
+        """Load agent profile from disk."""
+        profile_path = AGENTS_DIR / self.id / "profile.md"
+        if profile_path.exists():
+            return profile_path.read_text()
+        # Fallback to old persona location for backward compatibility
         persona_path = AGENTS_DIR / self.id / f"{self.id}-persona.md"
         if persona_path.exists():
             return persona_path.read_text()
@@ -151,23 +155,17 @@ class Agent:
         with open(path, "a") as f:
             f.write(f"\n## {role.title()} ({timestamp})\n\n{content}\n")
 
-    def _append_to_lifelog(self, user_message: str, assistant_response: str):
-        """Append a conversation exchange to today's lifelog."""
-        from .tools.data.user import write_lifelog
+    def _append_to_long_term_memory(self, user_message: str, assistant_response: str):
+        """Append a conversation exchange to today's long-term memory."""
+        from .tools.data.memory import write_long_term_memory
 
         agent_name = self.config.get('name', self.id)
 
-        # Format the conversation for the lifelog
+        # Format the conversation for long-term memory
         content = f"**User:** {user_message}\n\n"
         content += f"**{agent_name}:** {assistant_response}"
 
-        write_lifelog(content, agent=agent_name)
-
-    def _get_memory_path(self) -> Path:
-        """Get path to agent memory file."""
-        state_dir = AGENTS_DIR / self.id / "state"
-        state_dir.mkdir(parents=True, exist_ok=True)
-        return state_dir / "memory.json"
+        write_long_term_memory(content, agent_id="user", source=agent_name)
 
     def _get_logger(self):
         """Get logger for this agent."""
@@ -180,20 +178,6 @@ class Agent:
             entry["details"] = details
         self._get_logger().info(entry)
 
-    def _load_memory(self) -> dict:
-        """Load agent's persistent memory."""
-        path = self._get_memory_path()
-        if path.exists():
-            with open(path) as f:
-                return json.load(f)
-        return {}
-
-    def _save_memory(self, memory: dict):
-        """Save agent's persistent memory."""
-        path = self._get_memory_path()
-        with open(path, "w") as f:
-            json.dump(memory, f, indent=2)
-
     def _get_system_config(self) -> dict:
         """Load system configuration."""
         config_path = DATA_DIR / "system" / "config.json"
@@ -203,10 +187,10 @@ class Agent:
         return {}
 
     def _build_system_prompt(self) -> str:
-        """Build the system prompt from persona and tools (grouped by type).
+        """Build the system prompt from profile and tools (grouped by type).
 
-        Note: User profile and memory are NOT auto-injected.
-        Agents should use get_user_profile and list_memory tools when needed.
+        Note: Memory is NOT auto-injected.
+        Agents should use list_memory and read_long_term_memory tools when needed.
         """
         from .tools import get_tools_grouped_by_type
         from .prompts import render_template
@@ -229,15 +213,10 @@ class Agent:
                     tools_sections.append(f"- **{t['name']}**: {t['description']}")
         tools_text = "\n".join(tools_sections) if tools_sections else "No tools available."
 
-        # Build agent memory section
-        memory = self._load_memory()
-        memory_text = "\n".join(f"- {k}: {v}" for k, v in memory.items()) if memory else ""
-
         return render_template(
             "system_prompt",
-            persona=self.persona,
-            tools_by_type=tools_text,
-            agent_memory=memory_text
+            profile=self.profile,
+            tools_by_type=tools_text
         )
 
     def _get_tools(self) -> list:
@@ -339,10 +318,10 @@ class Agent:
             self._save_conversation_turn("assistant", text_response)
         self._log("chat_end", {"response_length": len(text_response)})
 
-        # Log user conversations to lifelog for the friend agent (for Profiler to analyze)
+        # Log user conversations to long-term memory for the friend agent (for Profiler to analyze)
         # Only log actual user conversations, not autonomous work cycles
         if self.id == "friend" and log_to_lifelog:
-            self._append_to_lifelog(message, text_response)
+            self._append_to_long_term_memory(message, text_response)
 
         return text_response
 

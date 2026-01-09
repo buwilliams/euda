@@ -43,7 +43,7 @@ def list_agents() -> List[dict]:
     return agents
 
 
-@tool("get_agent", "Get an agent's configuration and persona. Use when: need detailed info about a specific agent.", tool_type="agents")
+@tool("get_agent", "Get an agent's configuration and profile. Use when: need detailed info about a specific agent.", tool_type="agents")
 def get_agent(agent_id: str) -> Optional[dict]:
     """Get detailed info about an agent."""
     agent_dir = AGENTS_DIR / agent_id
@@ -59,60 +59,39 @@ def get_agent(agent_id: str) -> Optional[dict]:
         with open(config_path) as f:
             result["config"] = json.load(f)
 
-    # Load persona
-    persona_path = agent_dir / f"{agent_id}-persona.md"
-    if persona_path.exists():
-        result["persona"] = persona_path.read_text()
+    # Load profile (with fallback to old persona location)
+    profile_path = agent_dir / "profile.md"
+    if profile_path.exists():
+        result["profile"] = profile_path.read_text()
+    else:
+        # Fallback to old persona location
+        persona_path = agent_dir / f"{agent_id}-persona.md"
+        if persona_path.exists():
+            result["profile"] = persona_path.read_text()
 
     return result
 
 
-@tool("get_agent_memory", "Get an agent's persistent memory. Use when: checking what another agent remembers.", tool_type="agents")
-def get_agent_memory(agent_id: str) -> dict:
-    """Get an agent's memory."""
-    memory_path = AGENTS_DIR / agent_id / "state" / "memory.json"
-    if memory_path.exists():
-        with open(memory_path) as f:
-            return json.load(f)
-    return {}
-
-
-@tool("update_agent_memory", "Update an agent's persistent memory. Use when: storing state that should persist across work cycles.", tool_type="agents")
-def update_agent_memory(agent_id: str, key: str, value: str) -> dict:
-    """Set a value in an agent's memory."""
-    state_dir = AGENTS_DIR / agent_id / "state"
-    state_dir.mkdir(parents=True, exist_ok=True)
-    memory_path = state_dir / "memory.json"
-
-    memory = {}
-    if memory_path.exists():
-        with open(memory_path) as f:
-            memory = json.load(f)
-
-    memory[key] = value
-
-    with open(memory_path, "w") as f:
-        json.dump(memory, f, indent=2)
-
-    return memory
-
-
-def get_agent_persona(agent_id: str) -> Optional[str]:
-    """Get an agent's persona markdown."""
+def get_agent_profile(agent_id: str) -> Optional[str]:
+    """Get an agent's profile markdown."""
+    profile_path = AGENTS_DIR / agent_id / "profile.md"
+    if profile_path.exists():
+        return profile_path.read_text()
+    # Fallback to old persona location
     persona_path = AGENTS_DIR / agent_id / f"{agent_id}-persona.md"
     if persona_path.exists():
         return persona_path.read_text()
     return None
 
 
-def update_agent_persona(agent_id: str, persona: str) -> dict:
-    """Update an agent's persona markdown file."""
+def update_agent_profile_internal(agent_id: str, profile: str) -> dict:
+    """Update an agent's profile markdown file."""
     agent_dir = AGENTS_DIR / agent_id
     if not agent_dir.exists():
         return {"error": f"Agent not found: {agent_id}"}
 
-    persona_path = agent_dir / f"{agent_id}-persona.md"
-    persona_path.write_text(persona)
+    profile_path = agent_dir / "profile.md"
+    profile_path.write_text(profile)
 
     return {"updated": True, "agent_id": agent_id}
 
@@ -146,7 +125,7 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
     return {"updated": True, "agent_id": agent_id, "config": config}
 
 
-@tool("create_agent", "Create a new agent with config and persona. Use when: user asks for a new specialized agent or automation capability.", tool_type="agents")
+@tool("create_agent", "Create a new agent with config and profile. Use when: user asks for a new specialized agent or automation capability.", tool_type="agents")
 def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None) -> dict:
     """Create a new agent with the specified configuration.
 
@@ -171,8 +150,9 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
     if agent_dir.exists():
         return {"error": f"Agent already exists: {agent_id}"}
 
-    # Create agent directory
+    # Create agent directory and memory directories
     agent_dir.mkdir(parents=True, exist_ok=True)
+    (agent_dir / "memory" / "long-term").mkdir(parents=True, exist_ok=True)
 
     # Use provided tools or fall back to base tools
     agent_tools = list(tools) if tools else list(BASE_TOOLS)
@@ -200,8 +180,8 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
     with open(config_path, "w") as f:
         json.dump(config, f, indent=2)
 
-    # Create persona
-    persona = f"""# {name}
+    # Create profile (replaces old persona)
+    profile = f"""# {name}
 
 {purpose}
 
@@ -225,27 +205,34 @@ I must:
 5. Call done_working to signal I'm finished
 """
 
-    persona_path = agent_dir / f"{agent_id}-persona.md"
-    persona_path.write_text(persona)
+    profile_path = agent_dir / "profile.md"
+    profile_path.write_text(profile)
 
     return {
         "created": True,
         "agent_id": agent_id,
         "config": config,
-        "persona_path": str(persona_path),
+        "profile_path": str(profile_path),
         "note": "Restart Euno for the new agent to become active"
     }
 
 
-@tool("update_agent_persona", "Update an agent's persona/instructions. Use when: modifying how an agent behaves.", tool_type="agents")
-def update_agent_persona_tool(agent_id: str, persona: str) -> dict:
-    """Update an agent's persona markdown file.
+@tool("update_agent_profile", "Update an agent's profile/instructions. Use when: modifying how an agent behaves.", tool_type="agents")
+def update_agent_profile(agent_id: str, profile: str) -> dict:
+    """Update an agent's profile markdown file.
 
     Args:
         agent_id: The agent to update
-        persona: The new persona markdown content
+        profile: The new profile markdown content
     """
-    return update_agent_persona(agent_id, persona)
+    return update_agent_profile_internal(agent_id, profile)
+
+
+# Backward-compatible alias for old tool name
+@tool("update_agent_persona", "Update an agent's profile. (Alias for update_agent_profile)", tool_type="agents")
+def update_agent_persona(agent_id: str, persona: str) -> dict:
+    """Update an agent's profile. Alias for update_agent_profile."""
+    return update_agent_profile_internal(agent_id, persona)
 
 
 @tool("enable_agent", "Enable a disabled agent. Use when: reactivating an agent that was paused.", tool_type="agents")
@@ -308,7 +295,7 @@ def delete_agent(agent_id: str) -> dict:
     Warning: This cannot be undone!
     """
     # Prevent deleting core agents
-    protected_agents = ["friend", "worker", "curator", "profiler", "archivist", "adaptor"]
+    protected_agents = ["friend", "worker", "curator", "profiler", "archivist", "adaptor", "user"]
     if agent_id in protected_agents:
         return {"error": f"Cannot delete core agent: {agent_id}"}
 

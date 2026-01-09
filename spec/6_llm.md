@@ -6,9 +6,8 @@ Rules for how agents interact with LLMs, including prompts, tools, and work cycl
 
 System prompts follow a consistent structure defined in `data/system/prompts/system_prompt.md`:
 
-1. **Agent Persona** - The agent's identity, purpose, and behavioral rules
+1. **Agent Profile** - The agent's identity, purpose, and behavioral rules
 2. **Available Tools** - Tools grouped by type with usage guidance
-3. **Agent Memory** - Persistent state for the specific agent (learned behaviors, guardrails)
 
 ### What's NOT Included
 
@@ -17,7 +16,7 @@ User profile, user memory, and conversation history are NOT included automatical
 - Makes context access explicit and auditable
 - Lets agents decide when to fetch user data based on the task
 
-Agents should use `get_user_profile` and `list_memory` tools when needed.
+Agents should use `get_profile` and `list_memory` tools when needed.
 
 ## Tool Organization
 
@@ -27,8 +26,8 @@ Tools are organized into four categories in `src/tools/{type}/`:
 User and job data operations:
 - **jobs.py** - Job CRUD, assignment, batch operations, system containers
 - **assets.py** - File attachments per job
-- **user.py** - Profile and lifelog access
-- **memory.py** - Memory items (expires 90 days)
+- **profile.py** - Profile access for any agent
+- **memory.py** - Short-term and long-term memory for any agent
 
 ### Agent Tools (`src/tools/agents/`)
 Agent management and introspection:
@@ -143,11 +142,26 @@ Work on this job according to your role. Use available tools to:
 
 | Context | How to Access |
 |---------|---------------|
-| User Profile | `get_user_profile` tool |
-| Memory Items | `list_memory` tool |
+| User Profile | `get_profile("user")` tool |
+| Agent Profile | `get_profile(agent_id)` tool |
+| Short-term Memory | `list_memory(agent_id)` tool |
+| Long-term Memory | `read_long_term_memory(date, agent_id)` tool |
 | Job Assets | `list_assets`, `read_asset` tools |
-| Agent Memory | Auto-included in system prompt |
 | Conversation | Auto-included in system prompt |
+
+## Memory Tools
+
+Short-term memory (90-day rolling):
+- `add_memory(short_description, type, date_expected, agent_id)` - Add item
+- `list_memory(agent_id)` - List all items
+- `remove_memory(entry_id, agent_id)` - Remove item
+
+Long-term memory (indefinite archive):
+- `write_long_term_memory(content, date, agent_id)` - Write to archive
+- `read_long_term_memory(date, agent_id)` - Read from archive
+- `list_long_term_memory_dates(agent_id)` - List available dates
+
+All functions default to `agent_id="user"` for backward compatibility.
 
 ## Prompt Logging
 
@@ -163,7 +177,7 @@ Each entry includes:
 
 ## Token Efficiency
 
-The new architecture improves token efficiency:
+The architecture improves token efficiency:
 
 - Profile/memory not auto-included saves ~1000+ tokens per call
 - Tools grouped by type helps LLM understand capabilities

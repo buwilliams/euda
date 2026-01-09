@@ -168,7 +168,7 @@ def execute_tool(name: str, inputs: dict) -> Any:
 
 
 # Import all tool modules to register them
-from .data import jobs, assets, user, memory
+from .data import jobs, assets, profile, memory
 from .agents import agents
 from .system import system, dates, notifications
 from .integration import knowledge

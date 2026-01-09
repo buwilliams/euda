@@ -5,9 +5,13 @@
 # Data Directory Rules
 # ===================
 
-# Agent configs and personas ARE code (track them)
+# Agent configs and profiles ARE code (track them)
 !data/agents/*/config.json
-!data/agents/*/*.md
+!data/agents/*/profile.md
+
+# Agent memory is runtime data (ignore)
+data/agents/*/memory/short-term.jsonl
+data/agents/*/memory/long-term/
 
 # Agent state is runtime data (ignore)
 data/agents/*/state/
@@ -24,9 +28,6 @@ data/jobs/db.sqlite-shm
 
 # Assets are user data (ignore)
 data/jobs/assets/
-
-# User data (ignore)
-data/user/
 
 # System config is tracked (contains settings, not secrets)
 !data/system/config.json

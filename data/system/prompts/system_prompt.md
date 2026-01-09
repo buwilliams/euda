@@ -1,11 +1,7 @@
-## Agent Persona
+## Agent Profile
 
-{persona}
+{profile}
 
 ## Available Tools
 
 {tools_by_type}
-
-## Your Memory
-
-{agent_memory}

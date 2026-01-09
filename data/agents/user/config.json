@@ -1,0 +1,7 @@
+{
+  "id": "user",
+  "name": "User",
+  "enabled": true,
+  "tools": [],
+  "triggers": []
+}

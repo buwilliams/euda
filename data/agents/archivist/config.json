@@ -4,9 +4,9 @@
   "enabled": true,
   "order": 3,
   "tools": [
-    "write_lifelog",
-    "read_lifelog",
-    "list_lifelog_dates",
+    "write_long_term_memory",
+    "read_long_term_memory",
+    "list_long_term_memory_dates",
     "list_jobs",
     "get_job",
     "create_job",
