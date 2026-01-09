@@ -246,6 +246,7 @@ class Agent:
 
         return render_template(
             "agent/job",
+            job_id=job.get('id'),
             job_name=job.get('name', 'Untitled'),
             job_description=job.get('description') or 'None provided',
             job_due_date=job.get('due_date') or 'No deadline',
