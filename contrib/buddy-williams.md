@@ -1,5 +1,9 @@
 # Buddy Williams
 
+- [2026-01-09][--] - Add user-request workflow for agent job handoff with tag-based routing
+- [2026-01-09][--] - Fix job completion bug by including job_id in agent prompts
+- [2026-01-09][--] - Fix timeline filtering for system containers and completed ancestor jobs
+- [2026-01-09][--] - Update agent spec for intent-based profiles and consistent terminology
 - [2026-01-08][--] - Add privacy philosophy document covering data sharing, benefits, risks, and future outlook
 - [2026-01-08][--] - Archive expired memories to lifelog before removal, preserving context for profile building
 - [2026-01-08][--] - Add restraints to Adaptor persona to limit proposal frequency
