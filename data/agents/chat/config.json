@@ -35,7 +35,8 @@
     "list_available_tools",
     "list_euno_docs",
     "read_euno_doc",
-    "read_agent_logs"
+    "read_agent_logs",
+    "get_mastodon_posts"
   ],
   "triggers": [],
   "synthesis": {
