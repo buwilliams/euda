@@ -400,57 +400,67 @@ async function transcribeAudio(audioBlob) {
 }
 
 function autoSendTranscribedText(text) {
-    // Set the text in the input field
-    const input = document.getElementById('context-input');
-    input.value = text;
+    // Send directly to chat without showing in input field
+    // Add user message to UI
+    if (typeof addInlineMessage === 'function') {
+        addInlineMessage(text, 'you');
+    }
 
-    // Trigger auto-resize
-    input.dispatchEvent(new Event('input'));
+    // Queue and process the message
+    if (typeof messageQueue !== 'undefined' && typeof processMessageQueue === 'function') {
+        messageQueue.push(text);
+        processMessageQueue();
+    }
 
-    // Auto-send the message
-    sendContextMessage();
+    // Switch to chat tab to show the conversation
+    if (typeof switchTab === 'function') {
+        switchTab('chat');
+    }
 }
 
 // ============== UI Updates ==============
 
 function updateVoiceUI() {
     const btn = document.getElementById('voice-btn');
-    const icon = document.getElementById('voice-icon');
 
-    if (!btn || !icon) return;
+    if (!btn) return;
 
     if (isRecording) {
         btn.classList.add('recording');
+        btn.classList.remove('transcribing');
         btn.title = 'Stop recording (or wait for auto-stop)';
-        // Update icon to show recording state (filled circle/stop icon)
-        icon.innerHTML = '<circle cx="12" cy="12" r="6" fill="currentColor"/>';
     } else {
         btn.classList.remove('recording');
         btn.title = 'Voice input';
-        // Restore microphone icon
-        icon.innerHTML = `
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" y1="19" x2="12" y2="23"/>
-            <line x1="8" y1="23" x2="16" y2="23"/>
-        `;
+    }
+}
+
+// Update voice button visibility based on provider capabilities
+function updateVoiceButtonVisibility() {
+    const voiceBtn = document.getElementById('voice-btn');
+    if (!voiceBtn) return;
+
+    // Check browser support first
+    if (!isVoiceInputSupported()) {
+        voiceBtn.classList.add('hidden');
+        return;
+    }
+
+    // Check if current provider supports STT (from settingsData)
+    if (typeof settingsData !== 'undefined' && settingsData?.speech?.stt_available) {
+        voiceBtn.classList.remove('hidden');
+    } else {
+        voiceBtn.classList.add('hidden');
     }
 }
 
 function setVoiceTranscribing(transcribing) {
     const btn = document.getElementById('voice-btn');
-
     if (!btn) return;
 
-    if (transcribing) {
-        btn.classList.add('transcribing');
-        btn.disabled = true;
-        btn.title = 'Transcribing...';
-    } else {
-        btn.classList.remove('transcribing');
-        btn.disabled = false;
-        btn.title = 'Voice input';
-    }
+    // Just disable the button while transcribing, no visual state change
+    btn.disabled = transcribing;
+    btn.title = transcribing ? 'Transcribing...' : 'Voice input';
 }
 
 function showVoiceError(message) {
@@ -482,21 +492,19 @@ async function isTranscriptionAvailable() {
     return false;
 }
 
-// Hide voice button if not supported or OpenAI not configured
-document.addEventListener('DOMContentLoaded', async () => {
+// Initialize voice button visibility on page load
+// Note: Full visibility check happens after settings are loaded (in auth.js)
+document.addEventListener('DOMContentLoaded', () => {
     const voiceBtn = document.getElementById('voice-btn');
     if (!voiceBtn) return;
 
-    // Check browser support first
+    // Check browser support first - hide immediately if not supported
     if (!isVoiceInputSupported()) {
-        voiceBtn.style.display = 'none';
+        voiceBtn.classList.add('hidden');
         return;
     }
 
-    // Check if OpenAI API is configured
-    const available = await isTranscriptionAvailable();
-    if (!available) {
-        voiceBtn.style.display = 'none';
-    }
+    // Initially hide until settings are loaded and we know provider supports STT
+    voiceBtn.classList.add('hidden');
 });
 

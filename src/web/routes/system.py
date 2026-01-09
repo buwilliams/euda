@@ -158,12 +158,19 @@ def get_costs_by_agent(days: int = 30):
 
 @router.get("/settings")
 def get_settings():
-    """Get current LLM settings with all providers."""
+    """Get current LLM settings with all providers and speech capabilities."""
+    from ...speech import supports_stt, supports_tts
+
+    current_provider = get_provider()
     return {
         "llm": {
-            "provider": get_provider(),
+            "provider": current_provider,
             "model": get_model(),
             "providers": get_providers_config()
+        },
+        "speech": {
+            "stt_available": supports_stt(current_provider),
+            "tts_available": supports_tts(current_provider),
         }
     }
 
@@ -189,8 +196,12 @@ def update_llm_settings(data: dict):
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
 
-    # Invalidate cached client so next request uses new provider
+    # Invalidate cached clients so next request uses new provider
     invalidate_client()
+
+    # Also invalidate speech client since it depends on provider
+    from ...speech import invalidate_speech_client
+    invalidate_speech_client()
 
     return {"success": True, "llm": config["llm"]}
 

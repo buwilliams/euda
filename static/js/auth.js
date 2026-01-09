@@ -90,6 +90,9 @@ function initApp() {
 
     // Load tasks data for badge
     loadTasksData();
+
+    // Load settings data (needed for voice button visibility)
+    loadSettingsData();
 }
 
 function resetScrollPositions() {
@@ -116,6 +119,11 @@ async function loadSettingsData() {
         settingsData = await response.json();
         renderSettings();
         loadCostsData();
+
+        // Update voice button visibility based on provider capabilities
+        if (typeof updateVoiceButtonVisibility === 'function') {
+            updateVoiceButtonVisibility();
+        }
     } catch (error) {
         console.error('Failed to load settings:', error);
     }
@@ -197,9 +205,9 @@ async function handleProviderChange() {
         if (response.ok) {
             messageEl.textContent = 'Provider changed';
             messageEl.className = 'settings-message success';
-            if (settingsData?.llm) {
-                settingsData.llm.provider = newProvider;
-            }
+
+            // Reload settings to get updated speech capabilities
+            await loadSettingsData();
         } else {
             const data = await response.json();
             messageEl.textContent = data.detail || 'Failed to save';

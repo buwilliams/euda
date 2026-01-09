@@ -1,89 +1,106 @@
-/* Voice Input Button */
+/* Voice Input Button - Positioned Inside Textarea */
 #voice-btn {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--input-height);
-    height: var(--input-height);
-    border: 1px solid #ddd;
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-white);
-    color: var(--color-text-muted);
-    cursor: pointer;
     transition: all var(--transition-fast);
-    flex-shrink: 0;
-    box-sizing: border-box;
-    position: relative;
-}
-
-#voice-btn:hover:not(:disabled) {
-    background: var(--color-bg-hover);
-    color: var(--color-text-primary);
-    border-color: var(--color-text-placeholder);
+    padding: 0;
+    z-index: 2;
 }
 
 #voice-btn:disabled {
-    background: var(--color-bg-muted);
-    color: var(--color-text-disabled);
     cursor: not-allowed;
+    opacity: 0.5;
 }
 
+#voice-btn.hidden {
+    display: none;
+}
+
+/* Voice indicator (circular background behind icon) */
+.voice-indicator {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #9ca3af; /* gray circle - inactive */
+    transition: all var(--transition-fast);
+    z-index: -1;
+}
+
+/* Microphone icon */
 #voice-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     stroke: currentColor;
     fill: none;
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
+    z-index: 1;
 }
 
-/* Recording state - pulsing red */
-#voice-btn.recording {
-    background: #e74c3c;
-    border-color: #e74c3c;
-    color: var(--color-bg-white);
-    animation: voice-pulse 1s ease-in-out infinite;
+/* ============== Inactive State ============== */
+/* White mic icon with gray circle */
+#voice-btn:not(.recording):not(.transcribing) {
+    color: white;
 }
 
-#voice-btn.recording svg {
-    fill: currentColor;
-    stroke: none;
+#voice-btn:not(.recording):not(.transcribing) .voice-indicator {
+    background: #9ca3af;
 }
 
-@keyframes voice-pulse {
-    0%, 100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    50% {
-        transform: scale(1.05);
-        opacity: 0.9;
-    }
+/* Hover state - darker gray */
+#voice-btn:hover:not(:disabled):not(.recording):not(.transcribing) .voice-indicator {
+    background: #6b7280;
 }
 
-/* Transcribing state - spinner */
-#voice-btn.transcribing {
-    position: relative;
+/* ============== Recording State ============== */
+/* Hide mic icon and indicator, show waveform */
+#voice-btn.recording svg,
+#voice-btn.recording .voice-indicator {
+    display: none;
 }
 
-#voice-btn.transcribing::after {
-    content: '';
-    position: absolute;
-    width: 20px;
+/* Waveform animation container */
+.voice-waveform {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
     height: 20px;
-    border: 2px solid var(--color-border);
-    border-top-color: var(--color-accent);
-    border-radius: 50%;
-    animation: voice-spin 0.8s linear infinite;
 }
 
-#voice-btn.transcribing svg {
-    opacity: 0;
+.voice-waveform span {
+    display: block;
+    width: 3px;
+    height: 8px;
+    background: #22c55e; /* green */
+    border-radius: 1px;
+    animation: voice-wave 0.5s ease-in-out infinite;
 }
 
-@keyframes voice-spin {
-    to {
-        transform: rotate(360deg);
-    }
+.voice-waveform span:nth-child(1) { animation-delay: 0s; }
+.voice-waveform span:nth-child(2) { animation-delay: 0.1s; }
+.voice-waveform span:nth-child(3) { animation-delay: 0.2s; }
+.voice-waveform span:nth-child(4) { animation-delay: 0.1s; }
+.voice-waveform span:nth-child(5) { animation-delay: 0s; }
+
+@keyframes voice-wave {
+    0%, 100% { height: 8px; }
+    50% { height: 18px; }
 }
+
+#voice-btn.recording .voice-waveform {
+    display: flex;
+}
+
