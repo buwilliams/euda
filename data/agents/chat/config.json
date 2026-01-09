@@ -10,6 +10,8 @@
     "update_job",
     "add_job_log",
     "get_child_jobs",
+    "assign_agent",
+    "list_available_agents",
     "list_assets",
     "read_asset",
     "write_asset",
