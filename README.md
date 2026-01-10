@@ -6,6 +6,10 @@ _Euno (you-know), from Eudaimonia (you-dye-MOH-nee-ah)—ancient Greek for "huma
 
 Today's AI remembers facts about you, but it doesn't know you. Euno understands who you are—your values, your patterns, your rhythms. **Euno is a personal intelligence that learns to anticipate you.** It understands who you are, proactively does tasks for you, and curates what deserves your attention.
 
+## Community
+
+Join our [Discord](https://discord.gg/5B9VdQ6vYP) — where we meet, plan, and discuss Euno updates and what's happening.
+
 ## Getting Started
 
 The best way to get started is to understand the mental model behind Euno.

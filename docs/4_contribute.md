@@ -1,5 +1,9 @@
 # Contributing
 
+## Join the Community
+
+**[Discord](https://discord.gg/5B9VdQ6vYP)** — where we meet, plan, and discuss Euno updates and what's happening. Come say hi!
+
 ## What is Euno?
 
 Euno is not a personal assistant—it's proactive, not reactive. Think of it like a genie that grants *eudaimonia* instead of wishes. It studies your life to help you flourish on your own terms: clearing the path, noticing patterns you can't see, and shielding you from distractions.
