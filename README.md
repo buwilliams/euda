@@ -8,13 +8,15 @@ Today's AI remembers facts about you, but it doesn't know you. Euno understands 
 
 ## Getting Started
 
-**Suggested reading path:**
+The best way to get started is to understand the mental model behind Euno.
+
+**Suggested reading:**
 1. [Pitch](docs/1_pitch.md) — What Euno is and why it exists
-2. [Business Plan](docs/2_business-plan.md) — Vision, gates, and affordable loss
+2. [Business Plan](docs/2_business-plan.md) — Vision, affordable loss, crazy quilt, and gates
 3. [Agents](docs/3_agents.md) — How agents work and think
 4. [Contributing](docs/4_contribute.md) — Setup, assignments, and PR process
 
-See the [Contributing Guide](docs/4_contribute.md) for setup instructions and your first assignments.
+The [Contributing Guide](docs/4_contribute.md) provides three hands-on assignments to help you learn by doing.
 
 ## Documentation
 
