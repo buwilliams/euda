@@ -1,6 +1,6 @@
 # Agents
 
-Euno is built on two core concepts: **Agents** and **Jobs**. Agents do the work; jobs are the work.
+Euno is built on two core concepts: **Agents** and **Jobs**. Agents do the work; jobs are the work. The rest of this document explains how we view these two concepts.
 
 An agent is anything with the capacity to act. Both people and AIs can be agents. In Euno, an agent is defined by a continuous loop that: processes work, a personality that shapes how it acts, memory that provides context, and behavioral triggers (events that prompt action).
 
