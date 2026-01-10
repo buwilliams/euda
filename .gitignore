@@ -5,9 +5,34 @@
 # Data Directory Rules
 # ===================
 
-# Agent configs and profiles ARE code (track them)
-!data/agents/*/config.json
-!data/agents/*/profile.md
+# ===================
+# Base Agents (data/agents/)
+# ===================
+# Only user, chat, and worker are committed - other agents are user-created
+!data/agents/user/config.json
+!data/agents/user/profile.md
+!data/agents/chat/config.json
+!data/agents/chat/profile.md
+!data/agents/chat/prompts/
+!data/agents/worker/config.json
+!data/agents/worker/profile.md
+!data/agents/worker/prompts/
+
+# ===================
+# Agent Library (agent-lib/)
+# ===================
+# Shareable agent templates - track config, profile, prompts only
+!agent-lib/
+!agent-lib/*/
+!agent-lib/*/config.json
+!agent-lib/*/profile.md
+!agent-lib/*/prompts/
+
+# Runtime data in agent-lib is ignored
+agent-lib/*/memory/
+agent-lib/*/state/
+agent-lib/*/state.json
+agent-lib/*/logs/
 
 # Agent memory is runtime data (ignore entire directory)
 data/agents/*/memory/

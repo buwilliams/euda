@@ -171,7 +171,7 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
 
 
 @tool("create_agent", "Create a new agent with config and profile. Use when: user asks for a new specialized agent or automation capability.", tool_type="agents")
-def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None) -> dict:
+def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None, exploration: dict = None, reflection: dict = None) -> dict:
     """Create a new agent with the specified configuration.
 
     Args:
@@ -181,6 +181,10 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         tools: List of tool names to assign (use list_available_tools to see options).
                If not provided, uses minimal base tools.
         triggers: Optional list of triggers (e.g., ['time:morning', 'system:start'])
+        exploration: Optional dict to enable exploration (autonomous discovery).
+                     Example: {"enabled": True, "trigger": "time:hour_04"}
+        reflection: Optional dict to enable reflection (memory consolidation and profile updates).
+                    Example: {"enabled": True, "trigger": "time:evening"}
 
     Returns:
         Success status and agent details
@@ -220,6 +224,14 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         "tools": agent_tools,
         "triggers": triggers or []
     }
+
+    # Add exploration if provided
+    if exploration:
+        config["exploration"] = exploration
+
+    # Add reflection if provided
+    if reflection:
+        config["reflection"] = reflection
 
     config_path = agent_dir / "config.json"
     with open(config_path, "w") as f:

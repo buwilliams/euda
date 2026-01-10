@@ -103,7 +103,7 @@ Agents respond to three types of behavioral triggers, each with its own prompt t
   - `exploration.enabled`: Whether exploration is active (default false)
   - `exploration.trigger`: Which time trigger to use (e.g., `time:hour_04`)
   - Creates visible `Trigger:exploration:{date}` jobs
-  - Growth, Fun, and Socialize agents use this for autonomous discovery
+  - User-created agents can use this for autonomous discovery (see agent-lib/ for examples)
   - Apply 90/10 principle: 90% grounded in user's interests, 10% novel exposure
 
 - **Reflection** (`agent/reflection.md`): Scheduled self-analysis

@@ -50,11 +50,10 @@ Euno is in early development. It's a self-hosted web app with a conversational i
 - **File Upload** — Attach documents, images, and files to any job
 
 **The Agents:**
-- **Chat** — Your conversational interface; knows your profile; helps you think
-- **The Worker** — Can work on jobs autonomously; still learning what's useful
-- **Socialize** — Daily nudges for relationships, community, and connection
-- **Growth** — Daily suggestions for exercise, goals, learning, and projects
-- **Fun** — Daily reminders to enjoy entertainment, travel, hobbies, and games
+- **Chat** — Your conversational interface; knows your profile; manages other agents
+- **Worker** — Can work on jobs autonomously; still learning what's useful
+- **Create your own** — Ask Chat to create specialized agents for your needs
+- **Agent Library** — Pre-built agents available in `agent-lib/` (fun, growth, socialize)
 
 **What's Not Built Yet:**
 - No external integrations (calendar, email, social media, e-commerce)
