@@ -170,7 +170,35 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
     return {"updated": True, "agent_id": agent_id, "config": config}
 
 
-@tool("create_agent", "Create a new agent with config and profile. Use when: user asks for a new specialized agent or automation capability.", tool_type="agents")
+@tool("create_agent", "Create a new agent with config and profile. Use when: user asks for a new specialized agent or automation capability.", tool_type="agents", input_schema={
+    "type": "object",
+    "properties": {
+        "agent_id": {"type": "string", "description": "Unique identifier (lowercase, no spaces, e.g., 'researcher')"},
+        "name": {"type": "string", "description": "Display name (e.g., 'Researcher')"},
+        "purpose": {"type": "string", "description": "Description of what the agent does"},
+        "tools": {"type": "array", "items": {"type": "string"}, "description": "List of tool names to assign"},
+        "triggers": {"type": "array", "items": {"type": "string"}, "description": "Simple wake-up triggers (e.g., ['time:morning']). Prefer exploration/reflection for behavioral triggers."},
+        "exploration": {
+            "type": "object",
+            "description": "Enable autonomous discovery behavior with exploration.md prompt",
+            "properties": {
+                "enabled": {"type": "boolean", "description": "Whether exploration is active"},
+                "trigger": {"type": "string", "description": "When to run (e.g., 'time:hour_04')"}
+            },
+            "required": ["enabled", "trigger"]
+        },
+        "reflection": {
+            "type": "object",
+            "description": "Enable memory consolidation behavior with reflection.md prompt",
+            "properties": {
+                "enabled": {"type": "boolean", "description": "Whether reflection is active"},
+                "trigger": {"type": "string", "description": "When to run (e.g., 'time:evening')"}
+            },
+            "required": ["enabled", "trigger"]
+        }
+    },
+    "required": ["agent_id", "name", "purpose"]
+})
 def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None, exploration: dict = None, reflection: dict = None) -> dict:
     """Create a new agent with the specified configuration.
 
