@@ -32,18 +32,6 @@ Join our [Discord](https://discord.gg/5B9VdQ6vYP) — where we meet, plan, and d
 - [Operating Agreement](docs/6_operating-agreement.md) — Ownership and governance
 - [Privacy](docs/7_privacy.md) — Privacy philosophy and current state
 
-## Spec (Design Rules)
-
-The [spec/](spec/) directory is the best place to understand how Euno works. Each file is intentionally scannable—designed for both humans and AI to quickly grasp the system's rules.
-
-**Why specs matter:** Specs are our AI-first alternative to unit tests. They maintain system consistency across the entire platform. Before merging any PR, ask a coding agent to review the specs and check for implementation drift. This ensures changes align with the system's design.
-
-- [Agents](spec/1_agents.md) — Agent behavior, job coordination, triggers, work cycles
-- [Data](spec/2_data.md) — Entity schemas (memory, profile, agent, job, config)
-- [Backend](spec/3_backend.md) — Server, API, authentication, storage
-- [UX & UI](spec/4_ux_ui.md) — User experience and interface patterns
-- [CLI](spec/5_cli.md) — Command-line interface commands and behavior
-
 ## License
 
 This project is proprietary software. See [LICENSE](LICENSE) for terms. By contributing, you agree to assign your contributions to the project.
