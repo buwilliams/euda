@@ -123,6 +123,44 @@ async function saveAgentConfig(agentId, updates) {
     return false;
 }
 
+async function loadAgentCompletedJobs(agentId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/completed-jobs`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            const jobs = await response.json();
+            // Update cache
+            if (agentDataCache[agentId]) {
+                agentDataCache[agentId].completedByAgent = jobs;
+            }
+            return jobs;
+        }
+    } catch (error) {
+        console.error('Failed to load agent completed jobs:', error);
+    }
+    return [];
+}
+
+async function loadAgentMonitoring(agentId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/monitoring`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            const data = await response.json();
+            // Update cache
+            if (agentDataCache[agentId]) {
+                agentDataCache[agentId].monitoring = data;
+            }
+            return data;
+        }
+    } catch (error) {
+        console.error('Failed to load agent monitoring:', error);
+    }
+    return null;
+}
+
 // ============== Job Categories ==============
 
 function isContainerJob(job) {

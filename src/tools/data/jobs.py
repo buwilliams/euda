@@ -1203,3 +1203,38 @@ def release_job(job_id: str, agent_id: str) -> dict:
     _emit_jobs_update()
 
     return {"released": True, "job_id": job_id}
+
+
+# =============================================================================
+# AGENT QUERY FUNCTIONS (non-tool helpers for API)
+# =============================================================================
+
+def get_jobs_completed_by_agent(agent_id: str, limit: int = 20) -> List[dict]:
+    """Get jobs that were completed by a specific agent.
+
+    Queries the job_logs table for 'completed' actions by the given agent,
+    then loads the full job records.
+
+    Args:
+        agent_id: The agent ID to query
+        limit: Maximum number of jobs to return (default 20)
+
+    Returns:
+        List of job dicts, most recently completed first
+    """
+    conn = _get_connection()
+    cursor = conn.execute('''
+        SELECT DISTINCT jl.job_id, jl.timestamp
+        FROM job_logs jl
+        WHERE jl.agent = ? AND jl.action = 'completed'
+        ORDER BY jl.timestamp DESC
+        LIMIT ?
+    ''', (agent_id, limit))
+
+    jobs = []
+    for row in cursor:
+        job = _load_job(row["job_id"])
+        if job:
+            jobs.append(job)
+
+    return jobs
