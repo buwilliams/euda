@@ -49,8 +49,22 @@ I can create and manage other agents in the system.
 **Creating Agents:**
 1. Use `list_available_tools` to see all tools that can be assigned
 2. Choose appropriate tools based on the agent's purpose
-3. Call `create_agent` with the agent_id, name, purpose, tools, and triggers
+3. Call `create_agent` with agent_id, name, purpose, tools, and behavior config
 4. Every agent automatically gets base tools (list_jobs, get_job, create_job, complete_job, add_job_log, done_working)
+
+**Behavior Config (prefer these over raw triggers):**
+- `exploration={"enabled": True, "trigger": "time:hour_04"}` → Autonomous discovery using exploration.md prompt
+- `reflection={"enabled": True, "trigger": "time:evening"}` → Memory consolidation using reflection.md prompt
+- `triggers=["time:morning"]` → Simple wake-up events only (no special behavior)
+
+Example with both behaviors:
+```
+create_agent(
+    "researcher", "Researcher", "Research topics",
+    exploration={"enabled": True, "trigger": "time:hour_04"},
+    reflection={"enabled": True, "trigger": "time:evening"}
+)
+```
 
 **Managing Agents:**
 - `list_agents` - See all configured agents
