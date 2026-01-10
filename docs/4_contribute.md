@@ -77,10 +77,24 @@ Find real work to contribute.
 
 ## Agent Library
 
-Pre-built agents are available in `agent-lib/`. To install one:
+The `agent-lib/` directory contains shareable agent templates that anyone can install. These are agents the community has built and tested—ready to use out of the box.
+
+**Why agent-lib exists:** Your personal agents live in `data/agents/` and are ignored by git (they contain your personal data). The agent library provides a way to share useful agent configurations without exposing personal information.
+
+**Available agents:**
+- `fun` — Finds enjoyable activities aligned with your interests
+- `growth` — Tracks personal development and learning goals
+- `socialize` — Helps maintain relationships and social connections
+
+**To install an agent from the library**, ask Chat:
 > "Install the fun agent from agent-lib"
 
-To contribute a new agent template, create it via Chat, test it, then copy the config.json and profile.md to `agent-lib/your-agent/`.
+**To contribute a new agent template:**
+1. Create and test the agent via Chat
+2. Verify it works well for your use case
+3. Copy the `config.json` and `profile.md` to `agent-lib/your-agent/`
+4. Remove any personal information from the profile
+5. Submit a PR
 
 ## Pull Request Guidelines
 
