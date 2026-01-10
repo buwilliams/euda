@@ -33,47 +33,11 @@ The best contributions come from lived experience. Build for yourself first. If 
 
 ## Your First Contributions
 
-Complete these three assignments to learn how Euno works:
+**Assignment 1: Use the System** — Open Chat, introduce yourself, create a reminder, explore Jobs and Timeline views, ask "What do you know about me?"
 
-### Assignment 1: Use the System
+**Assignment 2: Create an Agent** — Ask Chat: "Create a social-media agent that finds interesting content daily based on my profile." Restart Euno to see it.
 
-Experience Euno as a user before contributing code.
-
-**Tasks:**
-1. Open Chat and introduce yourself
-2. Ask Chat to create a reminder for tomorrow
-3. Explore the Jobs view - see your reminder appear
-4. Check the Timeline views (Today, Upcoming, Anytime, Someday)
-5. Ask Chat "What do you know about me?" - see what Euno has learned
-
-**What you'll learn:** How users interact with Euno, the job system, and how Chat manages tasks.
-
-### Assignment 2: Create a New Agent
-
-Learn how agents work by creating one through Chat.
-
-**Example prompt to Chat:**
-> "Create a social-media agent that goes out to the internet daily and finds interesting content I'd enjoy based on my profile. It should run exploration every morning."
-
-**What Chat will do:**
-1. Create the agent's config.json with tools and triggers
-2. Generate a profile.md with purpose and behavioral rules
-3. Set up exploration if requested
-4. The agent appears after you restart Euno
-
-**What you'll learn:** Agent architecture, configuration, profiles, and the agent lifecycle.
-
-### Assignment 3: Contribute to the Backlog
-
-Find real work to contribute.
-
-1. Visit [GitHub Projects - Euno](https://github.com/users/buwilliams/projects/2)
-2. Pick an issue from the backlog
-3. Create a feature branch: `git checkout -b feature/your-feature`
-4. Complete your work
-5. Review against `spec/*.md` for drift
-6. Add entry to `contrib/your-name.md`: `- [YYYY-MM-DD][--] Description`
-7. Push and create PR
+**Assignment 3: Contribute** — Pick an issue from [GitHub Projects](https://github.com/users/buwilliams/projects/2), create a feature branch, review against `spec/*.md`, add entry to `contrib/your-name.md`, submit PR.
 
 ## Agent Library
 
