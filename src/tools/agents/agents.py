@@ -293,12 +293,21 @@ I must:
     profile_path = agent_dir / "profile.md"
     profile_path.write_text(profile)
 
+    # Dynamically register and start the agent if manager is running
+    from ...manager import get_manager
+    manager = get_manager()
+    if manager and manager.running:
+        result = manager.register_new_agent(agent_id)
+        started = result.get("started", False)
+    else:
+        started = False
+
     return {
         "created": True,
         "agent_id": agent_id,
         "config": config,
         "profile_path": str(profile_path),
-        "note": "Restart Euno for the new agent to become active"
+        "started": started
     }
 
 

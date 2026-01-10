@@ -31,7 +31,7 @@ The best contributions come from lived experience. Build for yourself first. If 
 
 **Assignment 1: Use the System** — Open Chat, introduce yourself, create a reminder, explore Jobs and Timeline views, ask "What do you know about me?"
 
-**Assignment 2: Create an Agent** — Ask Chat: "Create a social-media agent that finds interesting content daily based on my profile." Restart Euno to see it.
+**Assignment 2: Create an Agent** — Ask Chat: "Create a social-media agent that finds interesting content daily based on my profile." The agent starts immediately.
 
 **Assignment 3: Contribute** — Pick an issue from [GitHub Projects](https://github.com/users/buwilliams/projects/2), create a feature branch, review against `spec/*.md`, add entry to `contrib/your-name.md`, submit PR.
 

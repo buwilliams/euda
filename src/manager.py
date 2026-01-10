@@ -91,6 +91,48 @@ class AgentManager:
         self.threads[agent_id] = thread
         thread.start()
 
+    def register_new_agent(self, agent_id: str) -> dict:
+        """Dynamically register and start a newly created agent.
+
+        Called after create_agent to immediately activate the agent
+        without requiring a restart.
+
+        Args:
+            agent_id: The ID of the newly created agent
+
+        Returns:
+            Status dict with success/error info
+        """
+        # Check if already registered
+        if agent_id in self.agents:
+            return {"error": f"Agent {agent_id} is already running"}
+
+        # Load the agent's config
+        config_path = AGENTS_DIR / agent_id / "config.json"
+        if not config_path.exists():
+            return {"error": f"Agent config not found: {agent_id}"}
+
+        with open(config_path) as f:
+            config = json.load(f)
+            config["_dir"] = str(AGENTS_DIR / agent_id)
+
+        # Sync agent inbox jobs to create the inbox for this agent
+        from .tools.data.jobs import sync_agent_inbox_jobs
+        sync_agent_inbox_jobs()
+
+        # Start the agent if enabled
+        if config.get("enabled", True):
+            self.start_agent(config)
+
+            # Initialize job cache for this agent
+            from .tools.data.jobs import list_jobs
+            jobs = list_jobs(status="todo", assignee=agent_id, actionable=True)
+            self.agents_with_jobs[agent_id] = bool(jobs)
+
+            return {"registered": True, "agent_id": agent_id, "started": True}
+
+        return {"registered": True, "agent_id": agent_id, "started": False, "note": "Agent is disabled"}
+
     def _get_system_config(self) -> dict:
         """Load system configuration."""
         config_path = DATA_DIR / "system" / "config.json"
