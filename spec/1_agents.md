@@ -72,11 +72,20 @@ Rules for how agents work and coordinate through jobs.
 - Good profile: "I help users track what matters to them"
 - Bad profile: "When user says X, do Y. When user says Z, do W..."
 
+## Design Philosophy
+
+Profiles reflect patterns of behavior, not rigid rules:
+- For users: evolves from memory through reflection (wants, fears, attractors)
+- For AI agents: starts pre-filled, refines through reflection updates
+- Both follow the 90/10 principle: 90% exploit known patterns, 10% explore new possibilities
+
+See docs/3_agents.md for the cognitive foundations behind this design.
+
 ## Memory Append
 
 - Each agent has an internal append process after conversations
 - Lightweight extraction that adds noteworthy items to short-term memory
-- Configured per-agent in `config.json` under `synthesis.append_enabled`
+- Runs automatically when `reflection.enabled` is true
 - This is automatic and invisible — no job created
 
 ## Behavioral Triggers
@@ -87,10 +96,13 @@ Agents respond to three types of behavioral triggers, each with its own prompt t
   - Triggered when an agent receives a job to complete
   - Focus on executing the assigned work
   - Agent decides when work is complete
-  - Jobs with `user-request` tag: write findings as asset, hand back to user
+  - Jobs with `user:request` tag: write findings as asset, hand back to user
 
 - **Exploration** (`agent/exploration.md`): Scheduled discovery
-  - Triggered by time-based triggers (e.g., `Trigger:hour_04`)
+  - Configured per-agent in `config.json` under `exploration` key
+  - `exploration.enabled`: Whether exploration is active (default false)
+  - `exploration.trigger`: Which time trigger to use (e.g., `time:hour_04`)
+  - Creates visible `Trigger:exploration:{date}` jobs
   - Growth, Fun, and Socialize agents use this for autonomous discovery
   - Apply 90/10 principle: 90% grounded in user's interests, 10% novel exposure
 
@@ -106,8 +118,9 @@ Agents respond to three types of behavioral triggers, each with its own prompt t
 - Agent-specific overrides in `data/agents/{agent}/prompts/`
 - System checks agent-specific first, falls back to base
 - Template selection based on job type:
-  - `Trigger:reflection:*` jobs → reflection.md
-  - Other `Trigger:*` jobs → exploration.md
+  - `Trigger:reflection:*` jobs or `trigger:reflection` tag → reflection.md
+  - `Trigger:exploration:*` jobs or `trigger:exploration` tag → exploration.md
+  - Other `Trigger:*` jobs → exploration.md (legacy support)
   - All other jobs → job_assignment.md
 
 ## Job Coordination
@@ -121,7 +134,7 @@ Jobs can flow between agents and users via `handoff_job`:
 
 **User → Agent → User (Request-Response)**
 1. User asks Chat for something
-2. Chat creates job with `user-request` tag, assigns to appropriate agent
+2. Chat creates job with `user:request` tag, assigns to appropriate agent
 3. Agent works, writes findings as asset
 4. Agent calls `handoff_job(job_id, "user", "Ready for review")`
 5. User reviews, provides feedback or completes
@@ -154,7 +167,7 @@ Jobs can flow between agents and users via `handoff_job`:
 ## Chat Agent Role
 
 - Primary interface for user interaction
-- Routes user requests to appropriate agents with `user-request` tag
+- Routes user requests to appropriate agents with `user:request` tag
 - Can create and manage other agents
 - Can answer questions about Euno by reading docs/specs
 - Has access to user profile and memory for personalized responses

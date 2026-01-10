@@ -23,25 +23,25 @@ from ..tools.data.memory import (
 from .prompts import build_consolidate_prompt, get_consolidate_system_prompt
 
 if TYPE_CHECKING:
-    from .synthesis import Synthesis
+    from .reflection import Reflection
 
 
 # How many days of long-term memory to include for context
 RECENT_MEMORY_DAYS = 7
 
 
-def consolidate_phase(synthesis: "Synthesis"):
+def consolidate_phase(reflection: "Reflection"):
     """Run the consolidate phase for an agent.
 
     Performs heavy analysis to graduate memories and update profile.
 
     Args:
-        synthesis: The Synthesis instance
+        reflection: The Reflection instance
     """
-    agent_id = synthesis.agent.id
+    agent_id = reflection.agent.id
     is_user = agent_id == "user"
 
-    synthesis.logger.info({
+    reflection.logger.info({
         "event": "consolidate_start",
         "agent_id": agent_id
     })
@@ -50,14 +50,14 @@ def consolidate_phase(synthesis: "Synthesis"):
     short_term_memory = _load_entries(agent_id)
 
     # Load recent long-term memory
-    recent_long_term = _load_recent_long_term(synthesis, days=RECENT_MEMORY_DAYS)
+    recent_long_term = _load_recent_long_term(reflection, days=RECENT_MEMORY_DAYS)
 
     # Load current profile
-    current_profile = synthesis.agent.profile
+    current_profile = reflection.agent.profile
 
     # Skip if no data to analyze
     if not short_term_memory and not recent_long_term:
-        synthesis.logger.info({
+        reflection.logger.info({
             "event": "consolidate_skip",
             "agent_id": agent_id,
             "reason": "no_data"
@@ -79,7 +79,7 @@ def consolidate_phase(synthesis: "Synthesis"):
         max_tokens=2000,
         system=get_consolidate_system_prompt(is_user),
         messages=[{"role": "user", "content": prompt}],
-        agent_id=f"{agent_id}/synthesis"
+        agent_id=f"{agent_id}/reflection"
     )
 
     # Extract text response
@@ -88,7 +88,7 @@ def consolidate_phase(synthesis: "Synthesis"):
         if hasattr(block, "text"):
             text_response += block.text
 
-    synthesis.logger.info({
+    reflection.logger.info({
         "event": "consolidate_llm_response",
         "agent_id": agent_id,
         "usage": {
@@ -97,11 +97,11 @@ def consolidate_phase(synthesis: "Synthesis"):
         }
     })
 
-    # Parse synthesis result
+    # Parse reflection result
     result = _parse_consolidate_result(text_response)
 
     if result is None:
-        synthesis.logger.error({
+        reflection.logger.error({
             "event": "consolidate_parse_error",
             "agent_id": agent_id,
             "response": text_response[:500]
@@ -110,21 +110,21 @@ def consolidate_phase(synthesis: "Synthesis"):
 
     # Apply long-term memory entry
     if result.get("long_term_entry"):
-        _write_long_term_entry(synthesis, result["long_term_entry"])
+        _write_long_term_entry(reflection, result["long_term_entry"])
 
     # Apply profile updates
     if result.get("profile_updates"):
-        _update_profile(synthesis, result["profile_updates"])
+        _update_profile(reflection, result["profile_updates"])
 
     # Graduate specified items
     graduated_ids = result.get("graduate_ids", [])
     if graduated_ids:
-        _graduate_items(synthesis, short_term_memory, graduated_ids)
+        _graduate_items(reflection, short_term_memory, graduated_ids)
 
     # Check for year boundary and create historical snapshot
-    _maybe_snapshot_profile(synthesis)
+    _maybe_snapshot_profile(reflection)
 
-    synthesis.logger.info({
+    reflection.logger.info({
         "event": "consolidate_complete",
         "agent_id": agent_id,
         "long_term_entry": bool(result.get("long_term_entry")),
@@ -133,17 +133,17 @@ def consolidate_phase(synthesis: "Synthesis"):
     })
 
 
-def _load_recent_long_term(synthesis: "Synthesis", days: int) -> str:
+def _load_recent_long_term(reflection: "Reflection", days: int) -> str:
     """Load recent long-term memory entries.
 
     Args:
-        synthesis: The Synthesis instance
+        reflection: The Reflection instance
         days: Number of days to look back
 
     Returns:
         Combined content from recent long-term memory files
     """
-    agent_id = synthesis.agent.id
+    agent_id = reflection.agent.id
     today = datetime.now()
     content_parts = []
 
@@ -153,8 +153,8 @@ def _load_recent_long_term(synthesis: "Synthesis", days: int) -> str:
         date_str = date.strftime("%Y-%m-%d")
 
         # Try year-based path first, then legacy flat path
-        year_path = synthesis._get_long_term_dir(year) / f"{date_str}.md"
-        legacy_path = synthesis._get_long_term_dir().parent / f"{date_str}.md"
+        year_path = reflection._get_long_term_dir(year) / f"{date_str}.md"
+        legacy_path = reflection._get_long_term_dir().parent / f"{date_str}.md"
 
         memory_path = None
         if year_path.exists():
@@ -211,29 +211,29 @@ def _parse_consolidate_result(response: str) -> Optional[dict]:
     }
 
 
-def _write_long_term_entry(synthesis: "Synthesis", content: str):
+def _write_long_term_entry(reflection: "Reflection", content: str):
     """Write an entry to long-term memory.
 
     Uses year-based directory structure.
 
     Args:
-        synthesis: The Synthesis instance
+        reflection: The Reflection instance
         content: Content to write
     """
-    agent_id = synthesis.agent.id
+    agent_id = reflection.agent.id
     today = datetime.now()
     year = today.strftime("%Y")
     date_str = today.strftime("%Y-%m-%d")
 
     # Ensure year directory exists
-    long_term_dir = synthesis._get_long_term_dir(year)
+    long_term_dir = reflection._get_long_term_dir(year)
     long_term_dir.mkdir(parents=True, exist_ok=True)
 
     memory_path = long_term_dir / f"{date_str}.md"
     timestamp = today.strftime("%I:%M %p").lstrip("0")
 
     # Entry header
-    entry_header = f"## {timestamp} · Synthesis"
+    entry_header = f"## {timestamp} · Reflection"
 
     # Append to existing or create new
     if memory_path.exists():
@@ -245,40 +245,40 @@ def _write_long_term_entry(synthesis: "Synthesis", content: str):
     memory_path.write_text(new_content)
 
 
-def _update_profile(synthesis: "Synthesis", updates: str):
+def _update_profile(reflection: "Reflection", updates: str):
     """Update the agent's profile with new information.
 
-    This appends a synthesis section to the profile. The next consolidation
+    This appends a reflection section to the profile. The next consolidation
     will read this and incorporate it properly.
 
     Args:
-        synthesis: The Synthesis instance
+        reflection: The Reflection instance
         updates: Description of updates to apply
     """
-    profile_path = synthesis._get_profile_path()
+    profile_path = reflection._get_profile_path()
 
     if profile_path.exists():
         current_profile = profile_path.read_text()
     else:
-        current_profile = f"# Profile: {synthesis.agent.id}\n"
+        current_profile = f"# Profile: {reflection.agent.id}\n"
 
-    # Add synthesis update section
+    # Add reflection update section
     today = datetime.now().strftime("%Y-%m-%d")
-    update_section = f"\n\n---\n\n## Synthesis Update ({today})\n\n{updates}"
+    update_section = f"\n\n---\n\n## Reflection Update ({today})\n\n{updates}"
 
     new_profile = current_profile + update_section
     profile_path.write_text(new_profile)
 
 
-def _graduate_items(synthesis: "Synthesis", short_term_memory: List[dict], graduate_ids: List[str]):
+def _graduate_items(reflection: "Reflection", short_term_memory: List[dict], graduate_ids: List[str]):
     """Graduate specified items from short-term to long-term memory.
 
     Args:
-        synthesis: The Synthesis instance
+        reflection: The Reflection instance
         short_term_memory: All short-term memory items
         graduate_ids: IDs of items to graduate
     """
-    agent_id = synthesis.agent.id
+    agent_id = reflection.agent.id
     today = datetime.now()
     year = today.strftime("%Y")
     date_str = today.strftime("%Y-%m-%d")
@@ -301,7 +301,7 @@ def _graduate_items(synthesis: "Synthesis", short_term_memory: List[dict], gradu
     content = "\n".join(lines)
 
     # Write to long-term memory
-    long_term_dir = synthesis._get_long_term_dir(year)
+    long_term_dir = reflection._get_long_term_dir(year)
     long_term_dir.mkdir(parents=True, exist_ok=True)
 
     memory_path = long_term_dir / f"{date_str}.md"
@@ -317,13 +317,13 @@ def _graduate_items(synthesis: "Synthesis", short_term_memory: List[dict], gradu
     memory_path.write_text(new_content)
 
 
-def _maybe_snapshot_profile(synthesis: "Synthesis"):
+def _maybe_snapshot_profile(reflection: "Reflection"):
     """Create historical profile snapshot if at year boundary.
 
     Checks if we're in a new year and the previous year's snapshot doesn't exist.
 
     Args:
-        synthesis: The Synthesis instance
+        reflection: The Reflection instance
     """
     today = datetime.now()
     current_year = today.strftime("%Y")
@@ -331,16 +331,16 @@ def _maybe_snapshot_profile(synthesis: "Synthesis"):
 
     # Check if we're in first week of year and previous year snapshot doesn't exist
     if today.month == 1 and today.day <= 7:
-        historical_path = synthesis._get_historical_profile_path(previous_year)
-        current_path = synthesis._get_profile_path()
+        historical_path = reflection._get_historical_profile_path(previous_year)
+        current_path = reflection._get_profile_path()
 
         if not historical_path.exists() and current_path.exists():
             # Create snapshot of current profile as previous year's historical
             current_profile = current_path.read_text()
             historical_path.write_text(current_profile)
 
-            synthesis.logger.info({
+            reflection.logger.info({
                 "event": "profile_snapshot_created",
-                "agent_id": synthesis.agent.id,
+                "agent_id": reflection.agent.id,
                 "year": previous_year
             })

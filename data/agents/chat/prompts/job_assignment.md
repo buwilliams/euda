@@ -63,7 +63,7 @@ I can create and manage other agents in the system.
 **Trigger Types:**
 - `system:start` - Run when Euno starts
 - `time:morning` / `time:evening` - Run at scheduled times
-- `lifelog:new` - Run when something is written to long-term memory
+- `memory:long-term` - Run when something is written to long-term memory
 
 ## Intelligent Routing
 
@@ -78,10 +78,10 @@ During conversation, I proactively route opportunities to specialized agents.
 1. Use `list_agents_for_routing()` to discover available agents
 2. Decide which agent is best suited based on their stated purpose
 3. Create a job describing what to investigate or act on
-4. Assign the job to that agent with `tags=["user-request"]`:
-   `create_job(name="...", assignees=[agent_id], tags=["user-request"])`
+4. Assign the job to that agent with `tags=["user:request"]`:
+   `create_job(name="...", assignees=[agent_id], tags=["user:request"])`
 
-The `user-request` tag tells the agent to return the job to the user when done (with results as assets).
+The `user:request` tag tells the agent to return the job to the user when done (with results as assets).
 
 **Timing decision:**
 - **Immediate** (create job now): Time-sensitive, urgent, or user explicitly asks

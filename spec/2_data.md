@@ -10,6 +10,8 @@ Every agent (including the user) shares the same structure:
 
 - **Config:** `data/agents/{id}/config.json`
   - id, name, enabled, order, tools[], triggers[]
+  - exploration{}: enabled, trigger (e.g., "time:hour_04")
+  - reflection{}: enabled, trigger
   - Triggers define which trigger jobs the agent receives
 - **Profile:** `data/agents/{id}/profile.md`
   - Evolves over time based on long-term memory
@@ -44,9 +46,23 @@ The user is agent `user` with the same structure as AI agents:
 
 - One markdown file per day: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md`
 - Chronological archive preserved before interpretation
-- Synthesis consolidate phase writes to it; agents read from it for context
+- Reflection consolidate phase writes to it; agents read from it for context
 - Capture lived experience with high fidelity — memory, not meaning
 - Content is freeform markdown with timestamps for entries
+
+### Memory Flow
+
+Memory moves through two phases:
+
+- **Append phase** (automatic after conversations)
+  - Lightweight extraction that adds noteworthy items to short-term memory
+  - Runs automatically after each chat() call
+  - No job created — invisible to user
+
+- **Consolidate phase** (triggered, creates visible jobs)
+  - Heavy analysis triggered by `time:evening` or custom trigger
+  - Creates `Trigger:reflection:{date}` jobs that appear in agent's queue
+  - Reviews short-term memory, graduates items to long-term, updates profile
 
 ### Profile Schema
 

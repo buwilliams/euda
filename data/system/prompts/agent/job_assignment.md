@@ -20,7 +20,7 @@
 
 ## Special Case: User Request
 
-When a job has the `user-request` tag, someone specifically asked for your help:
+When a job has the `user:request` tag, someone specifically asked for your help:
 1. Read the job description to understand what's being asked
 2. Do focused research on that specific topic
 3. Write your findings as an asset: write_asset("{job_id}", "findings.md", content)

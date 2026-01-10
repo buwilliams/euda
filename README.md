@@ -34,7 +34,7 @@ The [spec/](spec/) directory is the best place to understand how Euno works. Eac
 **Why specs matter:** Specs are our AI-first alternative to unit tests. They maintain system consistency across the entire platform. Before merging any PR, ask a coding agent to review the specs and check for implementation drift. This ensures changes align with the system's design.
 
 - [Agents](spec/1_agents.md) — Agent behavior, job coordination, triggers, work cycles
-- [Data](spec/2_data.md) — Entity schemas (lifelog, profile, memory, agent, job, config)
+- [Data](spec/2_data.md) — Entity schemas (memory, profile, agent, job, config)
 - [Backend](spec/3_backend.md) — Server, API, authentication, storage
 - [UX & UI](spec/4_ux_ui.md) — User experience and interface patterns
 - [CLI](spec/5_cli.md) — Command-line interface commands and behavior

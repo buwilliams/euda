@@ -24,10 +24,13 @@
     "parse_date",
     "get_current_date"
   ],
-  "triggers": ["time:hour_04"],
-  "synthesis": {
+  "triggers": [],
+  "exploration": {
     "enabled": true,
-    "append_enabled": true,
-    "consolidate_trigger": "time:evening"
+    "trigger": "time:hour_04"
+  },
+  "reflection": {
+    "enabled": true,
+    "trigger": "time:evening"
   }
 }

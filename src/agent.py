@@ -14,7 +14,7 @@ from typing import Optional
 
 from .llms import get_client
 from .logger import get_logger
-from .synthesis import Synthesis
+from .reflection import Reflection
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -32,10 +32,10 @@ class Agent:
         self._session_id = session_id
         self._current_job_id = None
 
-        # Initialize synthesis if enabled
-        synthesis_config = self.config.get("synthesis", {})
-        synthesis_enabled = synthesis_config.get("enabled", True)
-        self.synthesis = Synthesis(self) if synthesis_enabled else None
+        # Initialize reflection if enabled
+        reflection_config = self.config.get("reflection", {})
+        reflection_enabled = reflection_config.get("enabled", True)
+        self.reflection = Reflection(self) if reflection_enabled else None
 
     def wait_for_trigger(self, timeout: float = None) -> Optional[dict]:
         """Wait for a trigger event from the event bus.
@@ -242,10 +242,13 @@ class Agent:
         # Reflection triggers
         if "trigger:reflection" in job_tags or job_name.startswith("Trigger:reflection"):
             return "agent/reflection"
-        # Exploration triggers (other Trigger: jobs)
+        # Exploration triggers
+        elif "trigger:exploration" in job_tags or job_name.startswith("Trigger:exploration"):
+            return "agent/exploration"
+        # Other trigger jobs (legacy support)
         elif job_name.startswith("Trigger:"):
             return "agent/exploration"
-        # Regular job assignment (includes user-request)
+        # Regular job assignment (includes user:request)
         else:
             return "agent/job_assignment"
 
@@ -281,12 +284,12 @@ class Agent:
             remaining_jobs_notice=remaining_notice
         )
 
-    def chat(self, message: str, log_to_lifelog: bool = True, save_to_history: bool = True) -> str:
+    def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True) -> str:
         """Process a chat message and return response.
 
         Args:
             message: The user message
-            log_to_lifelog: Whether to log this conversation to lifelog (default True)
+            log_to_memory: Whether to log this conversation to long-term memory (default True)
             save_to_history: Whether to save to conversation history (default True)
         """
         self._log("chat_start", {"message_length": len(message)})
@@ -354,12 +357,12 @@ class Agent:
 
         # Log user conversations to long-term memory for the chat agent
         # Only log actual user conversations, not autonomous work cycles
-        if self.id == "chat" and log_to_lifelog:
+        if self.id == "chat" and log_to_memory:
             self._append_to_long_term_memory(message, text_response)
 
-        # Run synthesis append phase to extract noteworthy items
-        if self.synthesis and log_to_lifelog:
-            self.synthesis.append(message, text_response)
+        # Run reflection append phase to extract noteworthy items
+        if self.reflection and log_to_memory:
+            self.reflection.append(message, text_response)
 
         return text_response
 
@@ -428,8 +431,8 @@ class Agent:
             iteration += 1
             self._log("work_iteration", {"iteration": iteration})
 
-            # Log to lifelog for memory creation, but don't save to conversation history
-            response = self.chat(prompt, log_to_lifelog=True, save_to_history=False)
+            # Log to memory for memory creation, but don't save to conversation history
+            response = self.chat(prompt, log_to_memory=True, save_to_history=False)
             print(f"[{self.id}] {response[:100]}...")
 
             if self._work_done:

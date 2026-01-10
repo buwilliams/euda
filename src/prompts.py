@@ -20,7 +20,7 @@ def load_template(name: str, agent_id: Optional[str] = None) -> str:
     """Load a prompt template by name, checking agent-specific overrides first.
 
     Args:
-        name: Template name/path without extension (e.g., 'agent/system' or 'synthesis/append_system')
+        name: Template name/path without extension (e.g., 'agent/system' or 'reflection/append_system')
         agent_id: Optional agent ID to check for agent-specific overrides
 
     Returns:

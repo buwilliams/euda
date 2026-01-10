@@ -352,7 +352,7 @@ def update_agent_triggers(agent_id: str, triggers: list) -> dict:
 
     Args:
         agent_id: The agent to update
-        triggers: List of triggers (e.g., ['time:morning', 'system:start', 'lifelog:new'])
+        triggers: List of triggers (e.g., ['time:morning', 'system:start', 'memory:long-term'])
 
     Note: Changes require a restart to take effect.
     """

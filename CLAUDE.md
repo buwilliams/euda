@@ -45,17 +45,17 @@ euno/
 ├── main.py                 # Entry point, CLI
 ├── src/
 │   ├── manager.py          # Agent Manager - starts/stops all agents
-│   ├── agent.py            # Generic Agent - config + profile + tools + synthesis
-│   ├── synthesis/          # Memory and profile synthesis
-│   │   ├── synthesis.py    # Main Synthesis class
+│   ├── agent.py            # Generic Agent - config + profile + tools + reflection
+│   ├── reflection/         # Memory and profile reflection
+│   │   ├── reflection.py   # Main Reflection class
 │   │   ├── append.py       # Lightweight extraction after chat
 │   │   ├── consolidate.py  # Heavy analysis on daily trigger
-│   │   └── prompts.py      # LLM prompts for synthesis
+│   │   └── prompts.py      # LLM prompts for reflection
 │   ├── tools/              # All tools (registered with @tool decorator)
 │   │   ├── jobs.py         # Job CRUD
 │   │   ├── assets.py       # File attachments per job
 │   │   ├── agents.py       # Agent introspection
-│   │   ├── user.py         # Profile and lifelog
+│   │   ├── user.py         # Profile and memory
 │   │   ├── memory.py       # Memory tracking for anticipation
 │   │   └── system.py       # Config and notifications
 │   └── web/
@@ -76,7 +76,7 @@ euno/
 │   │       └── {job-id}/
 │   └── system/
 │       ├── config.json
-│       └── logs/synthesis/ # Synthesis logs
+│       └── logs/reflection/ # Reflection logs
 ├── spec/                   # Design rules for drift detection
 │   ├── 1_agents.md
 │   ├── 2_data.md
@@ -89,12 +89,12 @@ euno/
 ## Core Concepts
 
 ### Agents
-An agent is: **config + profile + tools + synthesis**
+An agent is: **config + profile + tools + reflection**
 
-- Config (`config.json`): id, name, enabled, tools list, triggers, synthesis settings
+- Config (`config.json`): id, name, enabled, tools list, triggers, reflection settings
 - Profile (`profile.md`): Identity, behavioral rules, and learned patterns
 - Tools: Functions the agent can call (controlled by config)
-- Synthesis: Internal process that manages memory and updates profiles
+- Reflection: Internal process that manages memory and updates profiles
 
 ### Jobs
 Jobs replace projects and tasks. A single hierarchical structure:
@@ -111,12 +111,19 @@ Memory tracks what's on an agent's mind for anticipation (every agent has memory
 - Types: person, place, thing, goal, concern, idea
 - Entries expire after 90 days and archive to long-term memory
 
-### Synthesis
-Synthesis is an internal process each agent runs to manage memory and profiles:
+### Exploration
+Exploration is scheduled discovery where agents research opportunities for the user:
+- Creates suggestions aligned with the agent's purpose and user's interests
+- Applies 90/10 principle: 90% grounded in user's goals, 10% novel exposure
+- Configured per-agent in `config.json` under `exploration` key
+- Creates `Trigger:exploration:{date}` jobs when triggered
+
+### Reflection
+Reflection is an internal process each agent runs to manage memory and profiles:
 - **Append phase**: Lightweight extraction after each conversation (adds to short-term memory)
 - **Consolidate phase**: Heavy analysis on daily trigger (graduates memories, updates profile)
-- Configured per-agent in `config.json` under `synthesis` key
-- Logs stored in `data/system/logs/synthesis/`
+- Configured per-agent in `config.json` under `reflection` key
+- Logs stored in `data/system/logs/reflection/`
 
 ### User as Agent
 The user is conceptually an agent too - just with a different interface (Web UI/CLI vs autonomous loop).
@@ -132,10 +139,13 @@ The user is conceptually an agent too - just with a different interface (Web UI/
      "enabled": true,
      "tools": ["list_jobs", "create_job", ...],
      "triggers": ["time:morning", "system:start"],
-     "synthesis": {
+     "exploration": {
        "enabled": true,
-       "append_enabled": true,
-       "consolidate_trigger": "time:evening"
+       "trigger": "time:hour_04"
+     },
+     "reflection": {
+       "enabled": true,
+       "trigger": "time:evening"
      }
    }
    ```
@@ -165,7 +175,7 @@ No Python code needed for new agents.
 - `GET/POST /api/chat` - Chat with agent
 - `GET /api/agents` - List agents
 - `GET/PATCH /api/user/profile` - User profile
-- `GET/POST /api/user/lifelog` - Lifelog entries
+- `GET/POST /api/user/memory/long-term` - Long-term memory entries
 - `GET/POST/DELETE /api/user/memory` - Memory items
 
 ## Development Philosophy

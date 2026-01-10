@@ -28,7 +28,7 @@ Commands:
   points           Show contribution points summary
   set-password     Set the access password
   remove-password  Remove the password (disable auth)
-  fresh-start      Reset all user data (lifelog, jobs, memory, logs, password)
+  fresh-start      Reset all user data (memory, jobs, logs, password)
 
 Examples:
   python main.py start             # Run web server + agents
@@ -528,12 +528,12 @@ def cmd_fresh_start(args):
     print("=" * 60)
     print()
     print("This will DELETE:")
-    print("  - All lifelog entries")
+    print("  - All long-term memory entries")
     print("  - User profile")
     print("  - Cost tracking history")
     print("  - All jobs and job assets")
     print("  - All agent logs, state, memory, and conversation history")
-    print("  - Synthesis logs")
+    print("  - Reflection logs")
     print("  - System trigger state")
     print("  - Password (if set)")
     print()
@@ -550,15 +550,9 @@ def cmd_fresh_start(args):
     data_dir = Path(__file__).parent / "data"
     deleted = []
 
-    # 1. Clear user data (lifelog, profile, memory, costs)
+    # 1. Clear user data (profile, costs)
     user_dir = data_dir / "user"
     if user_dir.exists():
-        # Remove lifelog files
-        lifelog_dir = user_dir / "lifelog"
-        if lifelog_dir.exists():
-            for f in lifelog_dir.glob("*.md"):
-                f.unlink()
-                deleted.append(f"lifelog/{f.name}")
         # Remove profile (current and historical)
         for profile in user_dir.glob("profile*.md"):
             profile.unlink()
@@ -629,11 +623,11 @@ def cmd_fresh_start(args):
         if auth_file.exists():
             auth_file.unlink()
             deleted.append("system/auth.json")
-        # Remove synthesis logs
-        synthesis_logs = system_dir / "logs" / "synthesis"
-        if synthesis_logs.exists():
-            shutil.rmtree(synthesis_logs)
-            deleted.append("system/logs/synthesis/")
+        # Remove reflection logs
+        reflection_logs = system_dir / "logs" / "reflection"
+        if reflection_logs.exists():
+            shutil.rmtree(reflection_logs)
+            deleted.append("system/logs/reflection/")
 
     print()
     print(f"Deleted {len(deleted)} items:")

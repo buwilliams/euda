@@ -4,9 +4,11 @@
   "enabled": true,
   "tools": [],
   "triggers": [],
-  "synthesis": {
+  "exploration": {
+    "enabled": false
+  },
+  "reflection": {
     "enabled": true,
-    "append_enabled": true,
-    "consolidate_trigger": "time:evening"
+    "trigger": "time:evening"
   }
 }

@@ -16,22 +16,22 @@ from ..tools.data.memory import _load_entries, _save_entries, VALID_TYPES
 from .prompts import get_append_system_prompt, build_append_prompt
 
 if TYPE_CHECKING:
-    from .synthesis import Synthesis
+    from .reflection import Reflection
 
 
-def append_phase(synthesis: "Synthesis", user_message: str, assistant_response: str):
+def append_phase(reflection: "Reflection", user_message: str, assistant_response: str):
     """Run the append phase for a conversation.
 
     Calls LLM to extract noteworthy items and adds them to short-term memory.
 
     Args:
-        synthesis: The Synthesis instance
+        reflection: The Reflection instance
         user_message: The user's message
         assistant_response: The assistant's response
     """
-    agent_id = synthesis.agent.id
+    agent_id = reflection.agent.id
 
-    synthesis.logger.info({
+    reflection.logger.info({
         "event": "append_start",
         "agent_id": agent_id
     })
@@ -41,7 +41,7 @@ def append_phase(synthesis: "Synthesis", user_message: str, assistant_response: 
 
     # Build prompt
     prompt = build_append_prompt(
-        agent_profile=synthesis.agent.profile,
+        agent_profile=reflection.agent.profile,
         existing_memory=existing_memory,
         user_message=user_message,
         assistant_response=assistant_response
@@ -53,7 +53,7 @@ def append_phase(synthesis: "Synthesis", user_message: str, assistant_response: 
         max_tokens=500,  # Keep it lightweight
         system=get_append_system_prompt(),
         messages=[{"role": "user", "content": prompt}],
-        agent_id=f"{agent_id}/synthesis"
+        agent_id=f"{agent_id}/reflection"
     )
 
     # Extract text response
@@ -65,7 +65,7 @@ def append_phase(synthesis: "Synthesis", user_message: str, assistant_response: 
     # Parse JSON response
     new_items = _parse_items(text_response)
 
-    synthesis.logger.info({
+    reflection.logger.info({
         "event": "append_llm_response",
         "agent_id": agent_id,
         "items_extracted": len(new_items),
@@ -79,7 +79,7 @@ def append_phase(synthesis: "Synthesis", user_message: str, assistant_response: 
     if new_items:
         _add_items_to_memory(new_items, existing_memory, agent_id)
 
-    synthesis.logger.info({
+    reflection.logger.info({
         "event": "append_complete",
         "agent_id": agent_id,
         "items_added": len(new_items)

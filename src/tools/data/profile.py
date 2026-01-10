@@ -2,7 +2,7 @@
 Profile Tools - Access agent profiles.
 
 Every agent (including user) has a profile at data/agents/{agent_id}/profile.md
-Profiles evolve over time based on long-term memory, updated by Synthesis.
+Profiles evolve over time based on long-term memory, updated by Reflection.
 """
 
 from datetime import datetime
@@ -87,7 +87,7 @@ def update_user_profile(content: str) -> dict:
 
 
 # =============================================================================
-# Historical profile helpers (not tools - used by Synthesis)
+# Historical profile helpers (not tools - used by Reflection)
 # =============================================================================
 
 def get_historical_profile(agent_id: str, year: str) -> Optional[str]:

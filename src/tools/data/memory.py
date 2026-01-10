@@ -290,7 +290,6 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
     memory_path.write_text(new_content)
 
     # Create trigger jobs for agents subscribed to long-term memory updates
-    # Only trigger if this is the user's long-term memory (for backward compat with lifelog:new)
     if agent_id == "user":
         from .jobs import create_job, list_jobs, get_system_container
         from ..agents.agents import list_agents
@@ -300,8 +299,8 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
         for agent_config in list_agents():
             if not agent_config.get("enabled", True):
                 continue
-            if "lifelog:new" in agent_config.get("triggers", []):
-                job_name = f"Trigger:lifelog-new:{date}"
+            if "memory:long-term" in agent_config.get("triggers", []):
+                job_name = f"Trigger:memory-long-term:{date}"
 
                 # Check if trigger job already exists for this agent today
                 existing = list_jobs(status="todo", assignee=agent_config["id"])
@@ -313,7 +312,7 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
                         description="New long-term memory entry to process",
                         parent_id=system_container["id"],
                         assignees=[agent_config["id"]],
-                        tags=["trigger:lifelog-new"],
+                        tags=["trigger:memory-long-term"],
                         due_date=None,
                         created_by="system"
                     )

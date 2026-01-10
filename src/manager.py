@@ -366,7 +366,7 @@ class AgentManager:
                     time.sleep(5)
 
     def _create_reflection_jobs(self, trigger_name: str):
-        """Create reflection jobs for agents with matching synthesis trigger.
+        """Create reflection jobs for agents with matching reflection trigger.
 
         Reflection is now a first-class behavioral trigger. Instead of running
         consolidation directly, we create a reflection job that the agent
@@ -385,14 +385,14 @@ class AgentManager:
             if not agent.config.get("enabled", True):
                 continue
 
-            # Check if agent has synthesis enabled and if this trigger matches
-            synthesis_config = agent.config.get("synthesis", {})
-            if not synthesis_config.get("enabled", True):
+            # Check if agent has reflection enabled and if this trigger matches
+            reflection_config = agent.config.get("reflection", {})
+            if not reflection_config.get("enabled", True):
                 continue
 
-            consolidate_trigger = synthesis_config.get("consolidate_trigger", "time:evening")
+            reflection_trigger = reflection_config.get("trigger", "time:evening")
 
-            if trigger_name == consolidate_trigger:
+            if trigger_name == reflection_trigger:
                 job_name = f"Trigger:reflection:{today}"
 
                 # Check if reflection job already exists for this agent today
@@ -407,6 +407,56 @@ class AgentManager:
                         parent_id=system_container["id"],
                         assignees=[agent_id],
                         tags=["trigger:reflection"],
+                        due_date=None,
+                        created_by="system"
+                    )
+
+    def _create_exploration_jobs(self, trigger_name: str):
+        """Create exploration jobs for agents with matching exploration trigger.
+
+        Exploration is a first-class behavioral trigger for scheduled discovery.
+        Agents use the exploration.md prompt to research opportunities aligned
+        with their purpose and the user's interests.
+
+        Args:
+            trigger_name: The trigger that fired (e.g., "time:hour_04")
+        """
+        from .tools.data.jobs import create_job, list_jobs, get_system_container
+        from datetime import datetime
+
+        system_container = get_system_container()
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        for agent_id, agent in self.agents.items():
+            if not agent.config.get("enabled", True):
+                continue
+
+            # Check if agent has exploration enabled and if this trigger matches
+            exploration_config = agent.config.get("exploration", {})
+            if not exploration_config.get("enabled", False):
+                continue
+
+            exploration_trigger = exploration_config.get("trigger")
+            if not exploration_trigger:
+                continue
+
+            if trigger_name == exploration_trigger:
+                # Extract schedule name from trigger (e.g., "time:hour_04" -> "hour_04")
+                schedule_name = trigger_name.replace("time:", "") if trigger_name.startswith("time:") else trigger_name
+                job_name = f"Trigger:exploration:{today}"
+
+                # Check if exploration job already exists for this agent today
+                existing = list_jobs(status="todo", assignee=agent_id)
+                already_exists = any(j["name"] == job_name for j in existing)
+
+                if not already_exists:
+                    print(f"[scheduler] Creating exploration job for {agent_id}")
+                    create_job(
+                        name=job_name,
+                        description="Scheduled exploration: research opportunities, create suggestions for user",
+                        parent_id=system_container["id"],
+                        assignees=[agent_id],
+                        tags=["trigger:exploration"],
                         due_date=None,
                         created_by="system"
                     )
@@ -479,8 +529,11 @@ class AgentManager:
                             state[f"last_{name}"] = today
                             self._save_system_state(state)
 
-                        # Create reflection jobs for agents with matching synthesis trigger
+                        # Create reflection jobs for agents with matching reflection trigger
                         self._create_reflection_jobs(trigger_name)
+
+                        # Create exploration jobs for agents with matching exploration trigger
+                        self._create_exploration_jobs(trigger_name)
 
             except Exception as e:
                 print(f"Scheduler error: {e}")

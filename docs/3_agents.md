@@ -79,8 +79,8 @@ Conversations → Short-term Memory (automatic extraction)
 Agents respond to three types of triggers, each with its own prompt:
 
 - **Job Assignment** — Work assigned by users or other agents. Execute and complete.
-- **Exploration** — Scheduled discovery. Research opportunities, create suggestions for user.
-- **Reflection** — Scheduled self-analysis. Review memories, evolve profile, graduate learnings.
+- **Exploration** — Scheduled discovery. Configured via `exploration.trigger` in config.json. Creates `Trigger:exploration:{date}` jobs.
+- **Reflection** — Scheduled self-analysis. Configured via `reflection.trigger` in config.json. Creates `Trigger:reflection:{date}` jobs.
 
 Prompts live in `data/system/prompts/agent/`. Agents can override with their own in `data/agents/{id}/prompts/`.
 
@@ -95,7 +95,7 @@ Jobs are how all agents coordinate. Any agent—AI or user—can spawn a job. Th
 - **Status** — `todo`, `completed`, `archived`. Only `todo` jobs are actionable.
 
 **Tags:**
-- `user-request` — User asked for this; hand findings back, don't auto-complete
+- `user:request` — User asked for this; hand findings back, don't auto-complete
 - `trigger:reflection` — Scheduled self-analysis job
 - `trigger:*` — Other scheduled trigger jobs
 
@@ -115,3 +115,7 @@ Jobs are how all agents coordinate. Any agent—AI or user—can spawn a job. Th
 - Only complete when work is truly done
 - Use handoff for transfers between agents
 - Job logs show full coordination history
+
+---
+
+**Technical Details:** See spec/1_agents.md for implementation rules, spec/2_data.md for data schemas.

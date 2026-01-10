@@ -1,3 +1,3 @@
 # User Profile
 
-(Empty - will be populated by Synthesis based on long-term memory)
+(Empty - will be populated through Reflection based on long-term memory)

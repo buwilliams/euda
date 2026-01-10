@@ -33,9 +33,11 @@
     "time:morning",
     "system:start"
   ],
-  "synthesis": {
+  "exploration": {
+    "enabled": false
+  },
+  "reflection": {
     "enabled": true,
-    "append_enabled": true,
-    "consolidate_trigger": "time:evening"
+    "trigger": "time:evening"
   }
 }
