@@ -27,13 +27,25 @@ The best contributions come from lived experience. Build for yourself first. If 
 5. Run: `python main.py start`
 6. Open: [localhost:8000](http://localhost:8000)
 
-## Pull Requests
+## Your First Contributions
+
+**Assignment 1: Use the System** — Open Chat, introduce yourself, create a reminder, explore Jobs and Timeline views, ask "What do you know about me?"
+
+**Assignment 2: Create an Agent** — Ask Chat: "Create a social-media agent that finds interesting content daily based on my profile." The agent starts immediately.
+
+**Assignment 3: Contribute** — Pick an issue from [GitHub Projects](https://github.com/users/buwilliams/projects/2), create a feature branch, review against `spec/*.md`, add entry to `contrib/your-name.md`, submit PR.
+
+## Agent Library
+
+The `agent-lib/` directory contains shareable agent templates that anyone can install. These are agents the community has built and tested—ready to use out of the box.
+
+## Pull Request Guidelines
 
 1. Create a feature branch from main
 2. Complete your work
 3. Review against `spec/*.md` for drift
-4. Add entry to top of `contrib/your-name.md`: `- [YYYY-MM-DD][--] - Description`
-5. Push and create PR:
+4. Add contribution entry
+5. Push and create PR (or ask your coding agent to do it):
    ```bash
    git push -u origin feature/my-feature
    gh pr create --title "Add my feature" --body "Description"
@@ -61,3 +73,7 @@ Recommended: [Vultr](https://my.vultr.com/) $5/month (1 vCPU, 1GB RAM, 25GB SSD,
 5. Deploy code: `./devops/deploy-euno.sh`
 6. Push data: `./devops/push-data-remote.sh`
 7. Access at `http://<ip>`
+
+## Join the Community
+
+**[Discord](https://discord.gg/5B9VdQ6vYP)** — where we meet, plan, and discuss Euno updates and what's happening. Come say hi!

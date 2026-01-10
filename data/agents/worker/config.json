@@ -22,15 +22,22 @@
     "get_profile",
     "done_working",
     "parse_date",
-    "get_current_date"
+    "get_current_date",
+    "list_memory",
+    "read_long_term_memory",
+    "write_long_term_memory",
+    "graduate_memory",
+    "update_own_profile"
   ],
   "triggers": [
     "time:morning",
     "system:start"
   ],
-  "synthesis": {
+  "exploration": {
+    "enabled": false
+  },
+  "reflection": {
     "enabled": true,
-    "append_enabled": true,
-    "consolidate_trigger": "time:evening"
+    "trigger": "time:evening"
   }
 }

@@ -1,7 +1,7 @@
 """
-Synthesis - Core class for memory and profile synthesis.
+Reflection - Core class for memory and profile reflection.
 
-Each Agent has a Synthesis instance that handles:
+Each Agent has a Reflection instance that handles:
 1. Append phase: Extract noteworthy items from conversations to short-term memory
 2. Consolidate phase: Graduate memories and update profiles based on patterns
 """
@@ -20,8 +20,8 @@ DATA_DIR = Path(__file__).parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
 
 
-class Synthesis:
-    """Memory and profile synthesis capability for agents.
+class Reflection:
+    """Memory and profile reflection capability for agents.
 
     Provides two phases:
     - append(): Lightweight extraction after each conversation
@@ -29,22 +29,17 @@ class Synthesis:
     """
 
     def __init__(self, agent: "Agent"):
-        """Initialize Synthesis for an agent.
+        """Initialize Reflection for an agent.
 
         Args:
-            agent: The Agent instance this Synthesis belongs to
+            agent: The Agent instance this Reflection belongs to
         """
         self.agent = agent
-        self.logger = get_logger("system/logs/synthesis")
+        self.logger = get_logger("system/logs/reflection")
 
     def _get_config(self) -> dict:
-        """Get synthesis configuration from agent config."""
-        return self.agent.config.get("synthesis", {})
-
-    def _is_append_enabled(self) -> bool:
-        """Check if append phase is enabled."""
-        config = self._get_config()
-        return config.get("append_enabled", True)
+        """Get reflection configuration from agent config."""
+        return self.agent.config.get("reflection", {})
 
     def _get_short_term_path(self) -> Path:
         """Get path to agent's short-term memory file."""
@@ -77,9 +72,6 @@ class Synthesis:
             user_message: The user's message
             assistant_response: The assistant's response
         """
-        if not self._is_append_enabled():
-            return
-
         from .append import append_phase
 
         try:

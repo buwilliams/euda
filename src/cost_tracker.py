@@ -16,7 +16,7 @@ from .logger import get_logger
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
-COSTS_DIR = DATA_DIR / "user" / "costs"
+COSTS_DIR = DATA_DIR / "agents" / "user" / "costs"
 
 # Cost logger instance
 _cost_logger = None
@@ -108,7 +108,7 @@ class CostTracker:
         """Get the cost logger instance."""
         global _cost_logger
         if _cost_logger is None:
-            _cost_logger = get_logger("user/costs")
+            _cost_logger = get_logger("agents/user/costs")
         return _cost_logger
 
     def _append_cost_entry(self, entry: dict):

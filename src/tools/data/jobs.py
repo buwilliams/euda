@@ -105,6 +105,13 @@ def _ensure_schema():
         conn.execute("ALTER TABLE jobs ADD COLUMN agent_id TEXT")
         conn.commit()
 
+    # Migration: add pending_from column if it doesn't exist (for job handoff tracking)
+    try:
+        conn.execute("SELECT pending_from FROM jobs LIMIT 1")
+    except sqlite3.OperationalError:
+        conn.execute("ALTER TABLE jobs ADD COLUMN pending_from TEXT")
+        conn.commit()
+
 
 # Initialize schema on module import
 _ensure_schema()
@@ -137,6 +144,7 @@ def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
     assignees_raw = row["assignees"] if "assignees" in row.keys() else None
     in_progress_by = row["in_progress_by"] if "in_progress_by" in row.keys() else None
     agent_id = row["agent_id"] if "agent_id" in row.keys() else None
+    pending_from = row["pending_from"] if "pending_from" in row.keys() else None
 
     job = {
         "id": row["id"],
@@ -153,6 +161,7 @@ def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
         "assignees": json.loads(assignees_raw) if assignees_raw else [],
         "in_progress_by": in_progress_by,
         "agent_id": agent_id,
+        "pending_from": pending_from,
         "log": logs if logs is not None else []
     }
     if row["completed_at"]:
@@ -396,6 +405,56 @@ def update_job(
         for agent_id in new_assignees:
             _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": job["name"]})
             _notify_agent_has_jobs(agent_id)
+
+    # Notify UI clients
+    _emit_jobs_update()
+
+    return _load_job(job_id)
+
+
+@tool("handoff_job", "Pass a job to another agent or user for review/action. Tracks who it came from so they can receive it back.", tool_type="data")
+def handoff_job(job_id: str, to: str, note: str = None, agent: str = "user") -> Optional[dict]:
+    """Hand off a job to another agent or user.
+
+    This is the primary mechanism for job coordination between agents.
+    It sets the assignee to the target and records who sent it so the
+    job can be returned to them.
+
+    Args:
+        job_id: The job to hand off
+        to: Agent ID or "user" to hand off to
+        note: Optional note explaining what's needed or what was done
+        agent: Who is performing the handoff (for logging)
+
+    Returns:
+        Updated job dict or error
+    """
+    job = _load_job(job_id)
+    if not job:
+        return {"error": f"Job not found: {job_id}"}
+
+    now = datetime.utcnow().isoformat() + "Z"
+
+    # Update assignees and pending_from
+    with _transaction() as conn:
+        conn.execute('''
+            UPDATE jobs SET assignees = ?, pending_from = ?, updated_at = ?
+            WHERE id = ?
+        ''', (json.dumps([to]), agent, now, job_id))
+
+        # Add log entry
+        action = f"Handed off to {to}"
+        if note:
+            action += f": {note}"
+        conn.execute('''
+            INSERT INTO job_logs (job_id, timestamp, agent, action)
+            VALUES (?, ?, ?, ?)
+        ''', (job_id, now, agent, action))
+
+    # Emit job:assigned event for the target
+    _emit_event("job:assigned", scope=to, data={"job_id": job_id, "name": job["name"]})
+    if to != "user":
+        _notify_agent_has_jobs(to)
 
     # Notify UI clients
     _emit_jobs_update()
@@ -1144,3 +1203,38 @@ def release_job(job_id: str, agent_id: str) -> dict:
     _emit_jobs_update()
 
     return {"released": True, "job_id": job_id}
+
+
+# =============================================================================
+# AGENT QUERY FUNCTIONS (non-tool helpers for API)
+# =============================================================================
+
+def get_jobs_completed_by_agent(agent_id: str, limit: int = 20) -> List[dict]:
+    """Get jobs that were completed by a specific agent.
+
+    Queries the job_logs table for 'completed' actions by the given agent,
+    then loads the full job records.
+
+    Args:
+        agent_id: The agent ID to query
+        limit: Maximum number of jobs to return (default 20)
+
+    Returns:
+        List of job dicts, most recently completed first
+    """
+    conn = _get_connection()
+    cursor = conn.execute('''
+        SELECT DISTINCT jl.job_id, jl.timestamp
+        FROM job_logs jl
+        WHERE jl.agent = ? AND jl.action = 'completed'
+        ORDER BY jl.timestamp DESC
+        LIMIT ?
+    ''', (agent_id, limit))
+
+    jobs = []
+    for row in cursor:
+        job = _load_job(row["job_id"])
+        if job:
+            jobs.append(job)
+
+    return jobs

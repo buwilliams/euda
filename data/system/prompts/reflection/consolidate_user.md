@@ -12,4 +12,4 @@
 
 ---
 
-Analyze the patterns and provide your synthesis. Return JSON only.
+Analyze the patterns and provide your analysis. Return JSON only.

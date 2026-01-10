@@ -2,7 +2,7 @@
 Event System - Central event bus for agent triggers and UI updates.
 
 Events follow the format: {type}:{event}
-Examples: job:assigned, lifelog:new, time:morning
+Examples: job:assigned, memory:long-term, time:morning
 
 Scoped events only wake the specific agent they're scoped to.
 Unscoped events wake all agents subscribed to that event type.

@@ -2,7 +2,7 @@
 Upload API Route
 
 Handles file uploads by:
-1. Saving the file to data/user/uploads/{date}/
+1. Saving the file to data/agents/user/uploads/{date}/
 2. Adding full content to user's long-term memory (for text files)
 3. Adding a brief entry to user's short-term memory
 """

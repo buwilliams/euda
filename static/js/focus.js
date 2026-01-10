@@ -134,6 +134,19 @@ function navigateFocus(view) {
     focusViewHistory.push(focusView);
     focusView = view;
     focusSlideDirection = 'forward';
+
+    // Set job context for chat input (context-aware routing)
+    if (view.startsWith('job-')) {
+        const jobId = view.substring(4);
+        if (typeof setJobContext === 'function') {
+            setJobContext(jobId);
+        }
+    } else {
+        if (typeof clearJobContext === 'function') {
+            clearJobContext();
+        }
+    }
+
     renderFocusTab();
 }
 
@@ -144,6 +157,18 @@ function navigateFocusBack() {
         focusView = 'menu';
     }
     focusSlideDirection = 'back';
+
+    // Update job context for chat input
+    if (focusView.startsWith('job-')) {
+        const jobId = focusView.substring(4);
+        if (typeof setJobContext === 'function') {
+            setJobContext(jobId);
+        }
+    } else {
+        if (typeof clearJobContext === 'function') {
+            clearJobContext();
+        }
+    }
 
     // If returning to menu from a More menu screen, go back to the original tab
     if (focusView === 'menu' && moreMenuReturnTab) {

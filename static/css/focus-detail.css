@@ -204,3 +204,106 @@
     font-size: var(--font-size-base);
     padding: var(--spacing-md);
 }
+
+/* Section Loading State */
+.section-loading {
+    padding: var(--spacing-lg);
+    text-align: center;
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-sm);
+}
+
+/* Monitoring Section */
+.monitoring-stats {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.monitoring-stat {
+    flex: 1;
+    min-width: 90px;
+    padding: var(--spacing-md);
+    background: var(--color-bg-subtle);
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+.monitoring-stat .stat-label {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-xs);
+}
+
+.monitoring-stat .stat-value {
+    display: block;
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.monitoring-stat .stat-detail {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    margin-top: var(--spacing-xs);
+}
+
+.monitoring-section-title {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-top: 1px solid var(--color-border-light);
+    margin-top: var(--spacing-sm);
+}
+
+.monitoring-prompts {
+    padding-bottom: var(--spacing-md);
+}
+
+.monitoring-prompt {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-sm);
+    border-bottom: 1px solid var(--color-border-light);
+    align-items: center;
+}
+
+.monitoring-prompt:last-child {
+    border-bottom: none;
+}
+
+.prompt-time {
+    color: var(--color-text-tertiary);
+    min-width: 55px;
+    font-variant-numeric: tabular-nums;
+}
+
+.prompt-tokens {
+    color: var(--color-text-secondary);
+    min-width: 70px;
+    font-variant-numeric: tabular-nums;
+}
+
+.prompt-model {
+    color: var(--color-text-tertiary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.prompt-duration {
+    color: var(--color-text-tertiary);
+    min-width: 55px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}

@@ -11,6 +11,8 @@ from ...tools.agents.agents import (
     get_agent_profile, update_agent_profile,
     get_agent_config, update_agent_config
 )
+from ...tools.agents.monitoring import get_agent_monitoring
+from ...tools.data.jobs import get_jobs_completed_by_agent
 from ...tools.data.profile import get_profile, update_profile
 from ...tools.data.memory import (
     list_memory, add_memory, remove_memory,
@@ -165,3 +167,17 @@ def api_write_long_term_memory(agent_id: str, request: WriteLongTermMemoryReques
 def api_list_long_term_memory_dates(agent_id: str):
     """List all dates with long-term memory entries."""
     return list_long_term_memory_dates(agent_id)
+
+
+# Completed jobs by agent endpoint
+@router.get("/{agent_id}/completed-jobs")
+def api_get_completed_jobs(agent_id: str, limit: int = 20):
+    """Get jobs completed by this agent."""
+    return get_jobs_completed_by_agent(agent_id, limit)
+
+
+# Monitoring endpoint
+@router.get("/{agent_id}/monitoring")
+def api_get_monitoring(agent_id: str):
+    """Get LLM monitoring stats for this agent."""
+    return get_agent_monitoring(agent_id)

@@ -43,6 +43,51 @@ def list_agents() -> List[dict]:
     return agents
 
 
+@tool("list_agents_for_routing", "List agents with minimal details for job routing decisions. Shows id, name, purpose, and enabled status.", tool_type="agents")
+def list_agents_for_routing() -> List[dict]:
+    """List agents with just enough info for routing decisions.
+
+    Returns a minimal summary for each agent:
+    - id: The agent's identifier
+    - name: Display name
+    - purpose: First line/paragraph of profile (what they do)
+    - enabled: Whether the agent is active
+    """
+    agents = []
+
+    if not AGENTS_DIR.exists():
+        return agents
+
+    for agent_dir in AGENTS_DIR.iterdir():
+        if agent_dir.is_dir():
+            config_path = agent_dir / "config.json"
+            profile_path = agent_dir / "profile.md"
+
+            if config_path.exists():
+                with open(config_path) as f:
+                    config = json.load(f)
+
+                # Extract purpose from profile (first non-heading paragraph)
+                purpose = ""
+                if profile_path.exists():
+                    content = profile_path.read_text()
+                    # Skip title and empty lines, get first real paragraph
+                    for line in content.split("\n"):
+                        stripped = line.strip()
+                        if stripped and not stripped.startswith("#"):
+                            purpose = stripped
+                            break
+
+                agents.append({
+                    "id": config.get("id"),
+                    "name": config.get("name"),
+                    "purpose": purpose,
+                    "enabled": config.get("enabled", True)
+                })
+
+    return agents
+
+
 @tool("get_agent", "Get an agent's configuration and profile. Use when: need detailed info about a specific agent.", tool_type="agents")
 def get_agent(agent_id: str) -> Optional[dict]:
     """Get detailed info about an agent."""
@@ -125,8 +170,36 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
     return {"updated": True, "agent_id": agent_id, "config": config}
 
 
-@tool("create_agent", "Create a new agent with config and profile. Use when: user asks for a new specialized agent or automation capability.", tool_type="agents")
-def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None) -> dict:
+@tool("create_agent", "Create a new agent with config and profile. Use when: user asks for a new specialized agent or automation capability.", tool_type="agents", input_schema={
+    "type": "object",
+    "properties": {
+        "agent_id": {"type": "string", "description": "Unique identifier (lowercase, no spaces, e.g., 'researcher')"},
+        "name": {"type": "string", "description": "Display name (e.g., 'Researcher')"},
+        "purpose": {"type": "string", "description": "Description of what the agent does"},
+        "tools": {"type": "array", "items": {"type": "string"}, "description": "List of tool names to assign"},
+        "triggers": {"type": "array", "items": {"type": "string"}, "description": "Simple wake-up triggers (e.g., ['time:morning']). Prefer exploration/reflection for behavioral triggers."},
+        "exploration": {
+            "type": "object",
+            "description": "Enable autonomous discovery behavior with exploration.md prompt",
+            "properties": {
+                "enabled": {"type": "boolean", "description": "Whether exploration is active"},
+                "trigger": {"type": "string", "description": "When to run (e.g., 'time:hour_04')"}
+            },
+            "required": ["enabled", "trigger"]
+        },
+        "reflection": {
+            "type": "object",
+            "description": "Enable memory consolidation behavior with reflection.md prompt",
+            "properties": {
+                "enabled": {"type": "boolean", "description": "Whether reflection is active"},
+                "trigger": {"type": "string", "description": "When to run (e.g., 'time:evening')"}
+            },
+            "required": ["enabled", "trigger"]
+        }
+    },
+    "required": ["agent_id", "name", "purpose"]
+})
+def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None, exploration: dict = None, reflection: dict = None) -> dict:
     """Create a new agent with the specified configuration.
 
     Args:
@@ -136,6 +209,10 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         tools: List of tool names to assign (use list_available_tools to see options).
                If not provided, uses minimal base tools.
         triggers: Optional list of triggers (e.g., ['time:morning', 'system:start'])
+        exploration: Optional dict to enable exploration (autonomous discovery).
+                     Example: {"enabled": True, "trigger": "time:hour_04"}
+        reflection: Optional dict to enable reflection (memory consolidation and profile updates).
+                    Example: {"enabled": True, "trigger": "time:evening"}
 
     Returns:
         Success status and agent details
@@ -176,6 +253,14 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         "triggers": triggers or []
     }
 
+    # Add exploration if provided
+    if exploration:
+        config["exploration"] = exploration
+
+    # Add reflection if provided
+    if reflection:
+        config["reflection"] = reflection
+
     config_path = agent_dir / "config.json"
     with open(config_path, "w") as f:
         json.dump(config, f, indent=2)
@@ -208,12 +293,21 @@ I must:
     profile_path = agent_dir / "profile.md"
     profile_path.write_text(profile)
 
+    # Dynamically register and start the agent if manager is running
+    from ...manager import get_manager
+    manager = get_manager()
+    if manager and manager.running:
+        result = manager.register_new_agent(agent_id)
+        started = result.get("started", False)
+    else:
+        started = False
+
     return {
         "created": True,
         "agent_id": agent_id,
         "config": config,
         "profile_path": str(profile_path),
-        "note": "Restart Euno for the new agent to become active"
+        "started": started
     }
 
 
@@ -226,6 +320,42 @@ def update_agent_profile(agent_id: str, profile: str) -> dict:
         profile: The new profile markdown content
     """
     return update_agent_profile_internal(agent_id, profile)
+
+
+@tool("update_own_profile", "Update your own profile with learnings from reflection. Use during reflection to codify behavioral patterns.", tool_type="agents")
+def update_own_profile(updates: str, agent_id: str = None) -> dict:
+    """Append a reflection update section to your own profile.
+
+    Args:
+        updates: Description of updates to apply (behavioral rules, voice adjustments, etc.)
+        agent_id: Your agent ID (automatically set by the system)
+
+    Note: This tool can only update your own profile, not other agents'.
+    """
+    from datetime import datetime
+
+    if not agent_id:
+        return {"error": "agent_id is required"}
+
+    agent_dir = AGENTS_DIR / agent_id
+    if not agent_dir.exists():
+        return {"error": f"Agent not found: {agent_id}"}
+
+    profile_path = agent_dir / "profile.md"
+
+    if profile_path.exists():
+        current_profile = profile_path.read_text()
+    else:
+        current_profile = f"# Profile: {agent_id}\n"
+
+    # Add reflection update section
+    today = datetime.now().strftime("%Y-%m-%d")
+    update_section = f"\n\n---\n\n## Reflection Update ({today})\n\n{updates}"
+
+    new_profile = current_profile + update_section
+    profile_path.write_text(new_profile)
+
+    return {"updated": True, "agent_id": agent_id, "date": today}
 
 
 # Backward-compatible alias for old tool name
@@ -271,7 +401,7 @@ def update_agent_triggers(agent_id: str, triggers: list) -> dict:
 
     Args:
         agent_id: The agent to update
-        triggers: List of triggers (e.g., ['time:morning', 'system:start', 'lifelog:new'])
+        triggers: List of triggers (e.g., ['time:morning', 'system:start', 'memory:long-term'])
 
     Note: Changes require a restart to take effect.
     """

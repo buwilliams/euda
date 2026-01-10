@@ -24,6 +24,95 @@ function togglePersonaSection(header, event) {
     }
 }
 
+async function toggleAgentSection(header, event, sectionType, agentId) {
+    // Don't toggle if clicking on actions
+    if (event.target.classList.contains('job-section-action')) return;
+
+    header.classList.toggle('open');
+    const content = header.nextElementSibling;
+    if (content && content.classList.contains('collapsible-content')) {
+        content.classList.toggle('open');
+
+        // Lazy load data on first expand
+        if (content.classList.contains('open')) {
+            const isLoaded = content.dataset.loaded === 'true';
+            if (!isLoaded) {
+                content.innerHTML = '<div class="section-loading">Loading...</div>';
+
+                if (sectionType === 'completed-by-agent') {
+                    const jobs = await loadAgentCompletedJobs(agentId);
+                    content.innerHTML = renderAgentCompletedJobsContent(jobs);
+                } else if (sectionType === 'monitoring') {
+                    const data = await loadAgentMonitoring(agentId);
+                    content.innerHTML = renderMonitoringContent(data);
+                }
+                content.dataset.loaded = 'true';
+            }
+        }
+    }
+}
+
+function renderAgentCompletedJobsContent(jobs) {
+    if (!jobs || jobs.length === 0) {
+        return '<div class="focus-empty">No jobs completed by this agent yet.</div>';
+    }
+    return jobs.map(job => renderCompletedJobCard(job, 0, false)).join('');
+}
+
+function renderMonitoringContent(data) {
+    if (!data) {
+        return '<div class="focus-empty">No monitoring data available.</div>';
+    }
+
+    const { stats, recent_prompts } = data;
+
+    return `
+        <div class="monitoring-stats">
+            <div class="monitoring-stat">
+                <span class="stat-label">This Week</span>
+                <span class="stat-value">${stats.week.calls} calls</span>
+                <span class="stat-detail">${formatTokenCount(stats.week.tokens)} tokens, $${stats.week.cost.toFixed(4)}</span>
+            </div>
+            <div class="monitoring-stat">
+                <span class="stat-label">Today</span>
+                <span class="stat-value">${stats.today.calls} calls</span>
+                <span class="stat-detail">${formatTokenCount(stats.today.tokens)} tokens, $${stats.today.cost.toFixed(4)}</span>
+            </div>
+            <div class="monitoring-stat">
+                <span class="stat-label">Last Hour</span>
+                <span class="stat-value">${stats.hour.calls} calls</span>
+                <span class="stat-detail">${formatTokenCount(stats.hour.tokens)} tokens, $${stats.hour.cost.toFixed(4)}</span>
+            </div>
+        </div>
+
+        <div class="monitoring-prompts">
+            <div class="monitoring-section-title">Recent Prompts</div>
+            ${recent_prompts.length === 0 ? '<div class="focus-empty">No recent prompts</div>' :
+              recent_prompts.map(p => `
+                <div class="monitoring-prompt">
+                    <span class="prompt-time">${formatPromptTime(p.timestamp)}</span>
+                    <span class="prompt-tokens">${p.input_tokens}/${p.output_tokens}</span>
+                    <span class="prompt-model">${p.model || 'unknown'}</span>
+                    ${p.duration_ms ? `<span class="prompt-duration">${p.duration_ms}ms</span>` : ''}
+                </div>
+              `).join('')
+            }
+        </div>
+    `;
+}
+
+function formatTokenCount(count) {
+    if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M';
+    if (count >= 1000) return (count / 1000).toFixed(1) + 'K';
+    return count.toString();
+}
+
+function formatPromptTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
+
 // ============== Menu & Timeline Views ==============
 
 function renderFocusMenu() {
@@ -433,6 +522,28 @@ function renderAgentDetailView(job) {
                 </div>
             </div>
             ` : ''}
+
+            <!-- Completed by Agent Section - collapsed by default, lazy loaded -->
+            <div class="job-section">
+                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'completed-by-agent', '${agentId}')">
+                    <span>Completed by Agent</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="section-loading">Click to load...</div>
+                </div>
+            </div>
+
+            <!-- Monitoring Section - collapsed by default, lazy loaded -->
+            <div class="job-section">
+                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'monitoring', '${agentId}')">
+                    <span>Monitoring</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="section-loading">Click to load...</div>
+                </div>
+            </div>
 
             <!-- Assets Section -->
             ${assets.length > 0 ? `

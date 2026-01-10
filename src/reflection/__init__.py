@@ -1,13 +1,13 @@
 """
-Synthesis Module - Memory and profile management for agents.
+Reflection Module - Memory and profile management for agents.
 
-Synthesis handles two phases for each agent:
+Reflection handles two phases for each agent:
 1. Append (lightweight): After each chat, extract noteworthy items to short-term memory
 2. Consolidate (heavy): On daily trigger, graduate memories and update profiles
 
 This replaces the deprecated Profiler, Archivist, and Adaptor agents.
 """
 
-from .synthesis import Synthesis
+from .reflection import Reflection
 
-__all__ = ["Synthesis"]
+__all__ = ["Reflection"]

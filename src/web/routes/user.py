@@ -23,7 +23,7 @@ class UpdateProfileRequest(BaseModel):
     content: str
 
 
-class WriteLifelogRequest(BaseModel):
+class WriteMemoryRequest(BaseModel):
     content: str
     date: Optional[str] = None
     agent: Optional[str] = None
@@ -67,20 +67,20 @@ def api_remove_memory(entry_id: str):
     return remove_memory(entry_id, "user")
 
 
-# Long-term memory endpoints (lifelog)
-@router.get("/lifelog")
-def api_get_lifelog(date: Optional[str] = None):
+# Long-term memory endpoints
+@router.get("/memory/long-term")
+def api_get_long_term_memory(date: Optional[str] = None):
     """Get long-term memory entries."""
     return read_long_term_memory(date, "user")
 
 
-@router.post("/lifelog")
-def api_write_lifelog(request: WriteLifelogRequest):
+@router.post("/memory/long-term")
+def api_write_long_term_memory(request: WriteMemoryRequest):
     """Add a long-term memory entry."""
     return write_long_term_memory(request.content, request.date, "user")
 
 
-@router.get("/lifelog/dates")
-def api_list_dates():
+@router.get("/memory/long-term/dates")
+def api_list_long_term_dates():
     """List all dates with long-term memory entries."""
     return list_long_term_memory_dates("user")

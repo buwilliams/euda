@@ -34,7 +34,7 @@ function discussTask(description) {
 }
 
 function showFullContent(title, content, type = 'task') {
-    // Show full content in chat area as a system message (not logged to lifelog)
+    // Show full content in chat area as a system message (not logged to memory)
     switchTab('chat');
 
     const messageDiv = document.createElement('div');

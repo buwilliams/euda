@@ -91,6 +91,48 @@ class AgentManager:
         self.threads[agent_id] = thread
         thread.start()
 
+    def register_new_agent(self, agent_id: str) -> dict:
+        """Dynamically register and start a newly created agent.
+
+        Called after create_agent to immediately activate the agent
+        without requiring a restart.
+
+        Args:
+            agent_id: The ID of the newly created agent
+
+        Returns:
+            Status dict with success/error info
+        """
+        # Check if already registered
+        if agent_id in self.agents:
+            return {"error": f"Agent {agent_id} is already running"}
+
+        # Load the agent's config
+        config_path = AGENTS_DIR / agent_id / "config.json"
+        if not config_path.exists():
+            return {"error": f"Agent config not found: {agent_id}"}
+
+        with open(config_path) as f:
+            config = json.load(f)
+            config["_dir"] = str(AGENTS_DIR / agent_id)
+
+        # Sync agent inbox jobs to create the inbox for this agent
+        from .tools.data.jobs import sync_agent_inbox_jobs
+        sync_agent_inbox_jobs()
+
+        # Start the agent if enabled
+        if config.get("enabled", True):
+            self.start_agent(config)
+
+            # Initialize job cache for this agent
+            from .tools.data.jobs import list_jobs
+            jobs = list_jobs(status="todo", assignee=agent_id, actionable=True)
+            self.agents_with_jobs[agent_id] = bool(jobs)
+
+            return {"registered": True, "agent_id": agent_id, "started": True}
+
+        return {"registered": True, "agent_id": agent_id, "started": False, "note": "Agent is disabled"}
+
     def _get_system_config(self) -> dict:
         """Load system configuration."""
         config_path = DATA_DIR / "system" / "config.json"
@@ -365,29 +407,101 @@ class AgentManager:
                     agent._log("transient_error_retry", {"delay_seconds": 5})
                     time.sleep(5)
 
-    def _run_synthesis_consolidation(self, trigger_name: str):
-        """Run synthesis consolidation for agents with matching trigger.
+    def _create_reflection_jobs(self, trigger_name: str):
+        """Create reflection jobs for agents with matching reflection trigger.
+
+        Reflection is now a first-class behavioral trigger. Instead of running
+        consolidation directly, we create a reflection job that the agent
+        processes using the reflection.md prompt and memory tools.
 
         Args:
             trigger_name: The trigger that fired (e.g., "time:evening")
         """
+        from .tools.data.jobs import create_job, list_jobs, get_system_container
+        from datetime import datetime
+
+        system_container = get_system_container()
+        today = datetime.now().strftime("%Y-%m-%d")
+
         for agent_id, agent in self.agents.items():
             if not agent.config.get("enabled", True):
                 continue
 
-            # Check if agent has synthesis and if this trigger matches consolidate_trigger
-            if not agent.synthesis:
+            # Check if agent has reflection enabled and if this trigger matches
+            reflection_config = agent.config.get("reflection", {})
+            if not reflection_config.get("enabled", True):
                 continue
 
-            synthesis_config = agent.config.get("synthesis", {})
-            consolidate_trigger = synthesis_config.get("consolidate_trigger", "time:evening")
+            reflection_trigger = reflection_config.get("trigger", "time:evening")
 
-            if trigger_name == consolidate_trigger:
-                print(f"[synthesis] Running consolidation for {agent_id}")
-                try:
-                    agent.synthesis.consolidate()
-                except Exception as e:
-                    print(f"[synthesis] Consolidation error for {agent_id}: {e}")
+            if trigger_name == reflection_trigger:
+                job_name = f"Trigger:reflection:{today}"
+
+                # Check if reflection job already exists for this agent today
+                existing = list_jobs(status="todo", assignee=agent_id)
+                already_exists = any(j["name"] == job_name for j in existing)
+
+                if not already_exists:
+                    print(f"[scheduler] Creating reflection job for {agent_id}")
+                    create_job(
+                        name=job_name,
+                        description="Scheduled reflection: review memories, evolve profile, graduate learnings",
+                        parent_id=system_container["id"],
+                        assignees=[agent_id],
+                        tags=["trigger:reflection"],
+                        due_date=None,
+                        created_by="system"
+                    )
+
+    def _create_exploration_jobs(self, trigger_name: str):
+        """Create exploration jobs for agents with matching exploration trigger.
+
+        Exploration is a first-class behavioral trigger for scheduled discovery.
+        Agents use the exploration.md prompt to research opportunities aligned
+        with their purpose and the user's interests.
+
+        Args:
+            trigger_name: The trigger that fired (e.g., "time:hour_04")
+        """
+        from .tools.data.jobs import create_job, list_jobs, get_system_container
+        from datetime import datetime
+
+        system_container = get_system_container()
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        for agent_id, agent in self.agents.items():
+            if not agent.config.get("enabled", True):
+                continue
+
+            # Check if agent has exploration enabled and if this trigger matches
+            exploration_config = agent.config.get("exploration", {})
+            if not exploration_config.get("enabled", False):
+                continue
+
+            exploration_trigger = exploration_config.get("trigger")
+            if not exploration_trigger:
+                continue
+
+            if trigger_name == exploration_trigger:
+                # Extract schedule name from trigger (e.g., "time:hour_04" -> "hour_04")
+                schedule_name = trigger_name.replace("time:", "") if trigger_name.startswith("time:") else trigger_name
+                job_name = f"Trigger:exploration:{today}"
+
+                # Check if exploration job already exists for this agent today
+                existing = list_jobs(status="todo", assignee=agent_id)
+                already_exists = any(j["name"] == job_name for j in existing)
+
+                if not already_exists:
+                    print(f"[scheduler] Creating exploration job for {agent_id}")
+                    create_job(
+                        name=job_name,
+                        description="Scheduled exploration: research opportunities, create suggestions for user",
+                        parent_id=system_container["id"],
+                        assignees=[agent_id],
+                        tags=["trigger:exploration"],
+                        due_date=None,
+                        created_by="system"
+                    )
 
     def _run_time_scheduler(self):
         """Background thread that creates trigger jobs based on schedules."""
@@ -457,8 +571,11 @@ class AgentManager:
                             state[f"last_{name}"] = today
                             self._save_system_state(state)
 
-                        # Run synthesis consolidation for agents with matching trigger
-                        self._run_synthesis_consolidation(trigger_name)
+                        # Create reflection jobs for agents with matching reflection trigger
+                        self._create_reflection_jobs(trigger_name)
+
+                        # Create exploration jobs for agents with matching exploration trigger
+                        self._create_exploration_jobs(trigger_name)
 
             except Exception as e:
                 print(f"Scheduler error: {e}")

@@ -1,8 +1,8 @@
 {
-  "id": "growth",
-  "name": "Growth",
+  "id": "fun",
+  "name": "Fun",
   "enabled": true,
-  "order": 6,
+  "order": 7,
   "tools": [
     "list_jobs",
     "get_job",
@@ -16,15 +16,21 @@
     "list_available_agents",
     "get_profile",
     "read_long_term_memory",
+    "write_long_term_memory",
     "list_memory",
+    "graduate_memory",
+    "update_own_profile",
     "done_working",
     "parse_date",
     "get_current_date"
   ],
-  "triggers": ["time:hour_04"],
-  "synthesis": {
+  "triggers": [],
+  "exploration": {
     "enabled": true,
-    "append_enabled": true,
-    "consolidate_trigger": "time:evening"
+    "trigger": "time:hour_04"
+  },
+  "reflection": {
+    "enabled": true,
+    "trigger": "time:evening"
   }
 }
