@@ -1,9 +1,5 @@
 # Contributing
 
-## Join the Community
-
-**[Discord](https://discord.gg/5B9VdQ6vYP)** — where we meet, plan, and discuss Euno updates and what's happening. Come say hi!
-
 ## What is Euno?
 
 Euno is not a personal assistant—it's proactive, not reactive. Think of it like a genie that grants *eudaimonia* instead of wishes. It studies your life to help you flourish on your own terms: clearing the path, noticing patterns you can't see, and shielding you from distractions.
@@ -43,30 +39,13 @@ The best contributions come from lived experience. Build for yourself first. If 
 
 The `agent-lib/` directory contains shareable agent templates that anyone can install. These are agents the community has built and tested—ready to use out of the box.
 
-**Why agent-lib exists:** Your personal agents live in `data/agents/` and are ignored by git (they contain your personal data). The agent library provides a way to share useful agent configurations without exposing personal information.
-
-**Available agents:**
-- `fun` — Finds enjoyable activities aligned with your interests
-- `growth` — Tracks personal development and learning goals
-- `socialize` — Helps maintain relationships and social connections
-
-**To install an agent from the library**, ask Chat:
-> "Install the fun agent from agent-lib"
-
-**To contribute a new agent template:**
-1. Create and test the agent via Chat
-2. Verify it works well for your use case
-3. Copy the `config.json` and `profile.md` to `agent-lib/your-agent/`
-4. Remove any personal information from the profile
-5. Submit a PR
-
 ## Pull Request Guidelines
 
 1. Create a feature branch from main
 2. Complete your work
 3. Review against `spec/*.md` for drift
 4. Add contribution entry
-5. Push and create PR:
+5. Push and create PR (or ask your coding agent to do it):
    ```bash
    git push -u origin feature/my-feature
    gh pr create --title "Add my feature" --body "Description"
@@ -94,3 +73,7 @@ Recommended: [Vultr](https://my.vultr.com/) $5/month (1 vCPU, 1GB RAM, 25GB SSD,
 5. Deploy code: `./devops/deploy-euno.sh`
 6. Push data: `./devops/push-data-remote.sh`
 7. Access at `http://<ip>`
+
+## Join the Community
+
+**[Discord](https://discord.gg/5B9VdQ6vYP)** — where we meet, plan, and discuss Euno updates and what's happening. Come say hi!
