@@ -189,6 +189,84 @@ let isProcessingQueue = false;
 // Cached quote for chat empty state
 let cachedChatQuote = null;
 
+// ============== Job Context (for context-aware chat routing) ==============
+
+let currentJobContext = null;
+let currentJobName = null;
+
+function setJobContext(jobId) {
+    currentJobContext = jobId;
+    // Get job name for display
+    const job = typeof jobsData !== 'undefined' ? jobsData.find(j => j.id === jobId) : null;
+    currentJobName = job ? job.name : 'this job';
+    updateInputContext();
+}
+
+function clearJobContext() {
+    currentJobContext = null;
+    currentJobName = null;
+    updateInputContext();
+}
+
+function updateInputContext() {
+    if (!contextInput) return;
+    const label = document.getElementById('job-context-label');
+
+    if (currentJobContext && label) {
+        contextInput.placeholder = "Send feedback about this job...";
+        label.textContent = '@job';
+        label.classList.add('active');
+        label.onclick = clearJobContext;
+        label.title = `Replying to: ${currentJobName || 'Job'} (click to clear)`;
+    } else if (label) {
+        contextInput.placeholder = "What's on your mind?";
+        label.classList.remove('active');
+        label.textContent = '';
+        label.onclick = null;
+        label.title = '';
+    }
+}
+
+async function sendJobFeedback(jobId, message) {
+    // Show user message with job context indicator
+    const jobName = currentJobName || 'job';
+    addInlineMessage(message, 'you', `Re: ${jobName}`);
+    contextInput.value = '';
+    contextInput.style.height = 'auto';
+    addInlineThinking();
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/feedback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+        });
+        const result = await response.json();
+
+        removeInlineThinking();
+
+        if (!response.ok) {
+            addInlineMessage(`Failed to send feedback: ${result.detail || 'Unknown error'}`, 'friend');
+            return;
+        }
+
+        addInlineMessage(`Feedback sent to **${result.to_agent}**. They'll work on it and get back to you.`, 'friend');
+        showChatNotification();
+
+        // Refresh job data if loadAllJobs exists
+        if (typeof loadAllJobs === 'function') {
+            await loadAllJobs();
+        }
+        if (typeof renderFocusTab === 'function') {
+            renderFocusTab();
+        }
+    } catch (error) {
+        console.error('Failed to send feedback:', error);
+        removeInlineThinking();
+        addInlineMessage('Failed to send feedback. Please try again.', 'friend');
+    }
+}
+
 // Show empty state with quote when chat is empty
 function showChatEmptyState() {
     // Only show if there are no messages (empty state doesn't count as a message)
@@ -243,6 +321,12 @@ function removeChatEmptyState() {
 function sendContextMessage() {
     const message = contextInput.value.trim();
     if (!message) return;
+
+    // If viewing a job, route to job feedback endpoint
+    if (currentJobContext) {
+        sendJobFeedback(currentJobContext, message);
+        return;
+    }
 
     // Add user message to UI immediately
     addInlineMessage(message, 'you');
@@ -320,14 +404,18 @@ async function processMessageQueue() {
     removeInlineThinking();
 }
 
-function addInlineMessage(content, role) {
+function addInlineMessage(content, role, context = null) {
     // Remove empty state when first message is added
     removeChatEmptyState();
 
     const div = document.createElement('div');
     div.className = `inline-message inline-message-${role}`;
     const html = role === 'friend' ? marked.parse(content) : escapeHtml(content);
-    div.innerHTML = `<div class="message-content">${html}</div>`;
+
+    // Add context label if provided (e.g., "Re: Job Name")
+    const contextHtml = context ? `<div class="message-context">${escapeHtml(context)}</div>` : '';
+
+    div.innerHTML = `${contextHtml}<div class="message-content">${html}</div>`;
     inlineMessages.appendChild(div);
     // Scroll to bottom of chat tab
     const chatPane = document.getElementById('tab-chat');

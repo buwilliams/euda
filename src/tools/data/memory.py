@@ -321,6 +321,59 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
     return {"date": date, "agent_id": agent_id, "status": "added", "source": source}
 
 
+@tool("graduate_memory", "Graduate a short-term memory item to long-term memory. Use when: an item is important enough to preserve permanently.", tool_type="data")
+def graduate_memory(memory_id: str, reason: str = None, agent_id: str = "user") -> dict:
+    """Move a short-term memory item to long-term memory.
+
+    Args:
+        memory_id: The ID of the memory item to graduate (e.g., mem-abc12345)
+        reason: Optional reason for graduating this item
+        agent_id: Agent ID (defaults to "user")
+    """
+    entries = _load_entries(agent_id)
+
+    # Find the entry
+    entry = None
+    remaining = []
+    for e in entries:
+        if e.get('id') == memory_id:
+            entry = e
+        else:
+            remaining.append(e)
+
+    if not entry:
+        return {"error": f"Memory item not found: {memory_id}"}
+
+    # Format for long-term memory
+    item_type = entry.get('type', 'idea')
+    desc = entry.get('short_description', '')
+    date_mentioned = entry.get('date_mentioned', 'unknown')
+
+    content_lines = [
+        f"**Graduated Memory ({item_type})**: {desc}",
+        f"- First mentioned: {date_mentioned}"
+    ]
+    if entry.get('date_expected'):
+        content_lines.append(f"- Expected: {entry['date_expected']}")
+    if reason:
+        content_lines.append(f"- Reason for graduating: {reason}")
+
+    content = "\n".join(content_lines)
+
+    # Write to long-term memory
+    write_long_term_memory(content=content, agent_id=agent_id, source="Reflection")
+
+    # Remove from short-term
+    _save_entries(remaining, agent_id)
+
+    return {
+        "graduated": memory_id,
+        "type": item_type,
+        "description": desc,
+        "reason": reason
+    }
+
+
 @tool("list_long_term_memory_dates", "List all dates with long-term memory entries. Use when: finding available historical records.", tool_type="data")
 def list_long_term_memory_dates(agent_id: str = "user") -> List[str]:
     """List all dates that have long-term memory entries for an agent.

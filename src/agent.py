@@ -230,6 +230,25 @@ class Agent:
         from .tools import get_tools_for_agent
         return get_tools_for_agent(self.config.get("tools", []))
 
+    def _get_job_prompt_type(self, job: dict) -> str:
+        """Determine which prompt template to use based on job type.
+
+        Returns:
+            Template name: 'agent/reflection', 'agent/exploration', or 'agent/job_assignment'
+        """
+        job_name = job.get("name", "")
+        job_tags = job.get("tags", [])
+
+        # Reflection triggers
+        if "trigger:reflection" in job_tags or job_name.startswith("Trigger:reflection"):
+            return "agent/reflection"
+        # Exploration triggers (other Trigger: jobs)
+        elif job_name.startswith("Trigger:"):
+            return "agent/exploration"
+        # Regular job assignment (includes user-request)
+        else:
+            return "agent/job_assignment"
+
     def _format_job_prompt(self, job: dict, remaining: int = 0) -> str:
         """Format a job as a standardized prompt for the agent."""
         from .tools.data.assets import list_assets
@@ -247,8 +266,12 @@ class Agent:
         tags = job.get('tags', [])
         tags_str = ', '.join(tags) if tags else 'None'
 
+        # Select prompt template based on job type
+        template_name = self._get_job_prompt_type(job)
+
         return render_template(
-            "agent/job",
+            template_name,
+            agent_id=self.id,  # For agent-specific template lookup
             job_id=job.get('id'),
             job_name=job.get('name', 'Untitled'),
             job_description=job.get('description') or 'None provided',
@@ -405,8 +428,8 @@ class Agent:
             iteration += 1
             self._log("work_iteration", {"iteration": iteration})
 
-            # Don't log autonomous work cycles to lifelog or history - only user conversations
-            response = self.chat(prompt, log_to_lifelog=False, save_to_history=False)
+            # Log to lifelog for memory creation, but don't save to conversation history
+            response = self.chat(prompt, log_to_lifelog=True, save_to_history=False)
             print(f"[{self.id}] {response[:100]}...")
 
             if self._work_done:

@@ -365,29 +365,51 @@ class AgentManager:
                     agent._log("transient_error_retry", {"delay_seconds": 5})
                     time.sleep(5)
 
-    def _run_synthesis_consolidation(self, trigger_name: str):
-        """Run synthesis consolidation for agents with matching trigger.
+    def _create_reflection_jobs(self, trigger_name: str):
+        """Create reflection jobs for agents with matching synthesis trigger.
+
+        Reflection is now a first-class behavioral trigger. Instead of running
+        consolidation directly, we create a reflection job that the agent
+        processes using the reflection.md prompt and memory tools.
 
         Args:
             trigger_name: The trigger that fired (e.g., "time:evening")
         """
+        from .tools.data.jobs import create_job, list_jobs, get_system_container
+        from datetime import datetime
+
+        system_container = get_system_container()
+        today = datetime.now().strftime("%Y-%m-%d")
+
         for agent_id, agent in self.agents.items():
             if not agent.config.get("enabled", True):
                 continue
 
-            # Check if agent has synthesis and if this trigger matches consolidate_trigger
-            if not agent.synthesis:
+            # Check if agent has synthesis enabled and if this trigger matches
+            synthesis_config = agent.config.get("synthesis", {})
+            if not synthesis_config.get("enabled", True):
                 continue
 
-            synthesis_config = agent.config.get("synthesis", {})
             consolidate_trigger = synthesis_config.get("consolidate_trigger", "time:evening")
 
             if trigger_name == consolidate_trigger:
-                print(f"[synthesis] Running consolidation for {agent_id}")
-                try:
-                    agent.synthesis.consolidate()
-                except Exception as e:
-                    print(f"[synthesis] Consolidation error for {agent_id}: {e}")
+                job_name = f"Trigger:reflection:{today}"
+
+                # Check if reflection job already exists for this agent today
+                existing = list_jobs(status="todo", assignee=agent_id)
+                already_exists = any(j["name"] == job_name for j in existing)
+
+                if not already_exists:
+                    print(f"[scheduler] Creating reflection job for {agent_id}")
+                    create_job(
+                        name=job_name,
+                        description="Scheduled reflection: review memories, evolve profile, graduate learnings",
+                        parent_id=system_container["id"],
+                        assignees=[agent_id],
+                        tags=["trigger:reflection"],
+                        due_date=None,
+                        created_by="system"
+                    )
 
     def _run_time_scheduler(self):
         """Background thread that creates trigger jobs based on schedules."""
@@ -457,8 +479,8 @@ class AgentManager:
                             state[f"last_{name}"] = today
                             self._save_system_state(state)
 
-                        # Run synthesis consolidation for agents with matching trigger
-                        self._run_synthesis_consolidation(trigger_name)
+                        # Create reflection jobs for agents with matching synthesis trigger
+                        self._create_reflection_jobs(trigger_name)
 
             except Exception as e:
                 print(f"Scheduler error: {e}")

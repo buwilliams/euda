@@ -72,22 +72,84 @@ Rules for how agents work and coordinate through jobs.
 - Good profile: "I help users track what matters to them"
 - Bad profile: "When user says X, do Y. When user says Z, do W..."
 
-## Synthesis
+## Memory Append
 
-- Each agent has an internal Synthesis process for memory and profile management
-- Synthesis runs two phases:
-  - **Append**: Lightweight extraction after each conversation (adds to short-term memory)
-  - **Consolidate**: Heavy analysis on daily trigger (graduates memories, updates profile)
-- Consolidate trigger is configurable per-agent (default: `time:evening`)
-- Synthesis replaces the deprecated Profiler, Archivist, and Adaptor agents
+- Each agent has an internal append process after conversations
+- Lightweight extraction that adds noteworthy items to short-term memory
+- Configured per-agent in `config.json` under `synthesis.append_enabled`
+- This is automatic and invisible — no job created
 
-## User Requests
+## Behavioral Triggers
 
-- When Chat routes work to an agent on behalf of the user, it tags the job `user-request`
-- Agents see this tag and know to return results to the user
-- Workflow: agent writes findings as job assets, reassigns to user, does NOT complete
-- User reviews results in their timeline and completes when satisfied
-- This creates a request-response loop: user asks → agent works → user receives
+Agents respond to three types of behavioral triggers, each with its own prompt template:
+
+- **Job Assignment** (`agent/job_assignment.md`): Regular job execution
+  - Triggered when an agent receives a job to complete
+  - Focus on executing the assigned work
+  - Agent decides when work is complete
+  - Jobs with `user-request` tag: write findings as asset, hand back to user
+
+- **Exploration** (`agent/exploration.md`): Scheduled discovery
+  - Triggered by time-based triggers (e.g., `Trigger:hour_04`)
+  - Growth, Fun, and Socialize agents use this for autonomous discovery
+  - Apply 90/10 principle: 90% grounded in user's interests, 10% novel exposure
+
+- **Reflection** (`agent/reflection.md`): Scheduled self-analysis
+  - Triggered by consolidate trigger (e.g., `time:evening`)
+  - Creates visible `Trigger:reflection:{date}` jobs
+  - Agent reviews memories, identifies patterns, evolves profile
+  - Uses tools: list_memory, read_long_term_memory, graduate_memory, update_own_profile
+
+## Prompt Templates
+
+- Base templates in `data/system/prompts/agent/`
+- Agent-specific overrides in `data/agents/{agent}/prompts/`
+- System checks agent-specific first, falls back to base
+- Template selection based on job type:
+  - `Trigger:reflection:*` jobs → reflection.md
+  - Other `Trigger:*` jobs → exploration.md
+  - All other jobs → job_assignment.md
+
+## Job Coordination
+
+Jobs can flow between agents and users via `handoff_job`:
+
+- **handoff_job(job_id, to, note)**: Pass a job to another agent or user
+  - Sets `pending_from` to track who handed it off
+  - Enables return routing — recipient knows who to send it back to
+  - Logs the handoff with optional note
+
+**User → Agent → User (Request-Response)**
+1. User asks Chat for something
+2. Chat creates job with `user-request` tag, assigns to appropriate agent
+3. Agent works, writes findings as asset
+4. Agent calls `handoff_job(job_id, "user", "Ready for review")`
+5. User reviews, provides feedback or completes
+
+**User → Agent → User (Feedback Loop)**
+1. Same as above, but user has feedback
+2. User sends feedback via job context (UI routes to appropriate agent)
+3. Agent revises, hands back to user
+4. Loop continues until user completes
+
+**Agent → Agent → Agent (Collaboration)**
+1. Agent A is working on something
+2. A needs Agent B's expertise: `handoff_job(job_id, "B", "need your input")`
+3. B works, hands back: `handoff_job(job_id, "A", "here's my analysis")`
+4. A continues, may involve more agents
+5. Eventually returns to user or completes
+
+**Rules:**
+- Only call `complete_job` when work is truly done
+- Use `handoff_job` for transfers, not `update_job`
+- `pending_from` tracks return routing
+- Job logs show full coordination history
+
+## Agent Routing
+
+- `list_agents_for_routing`: Get minimal agent info for routing decisions
+  - Returns id, name, purpose (first line of profile), enabled status
+  - Use when deciding which agent should handle a job
 
 ## Chat Agent Role
 

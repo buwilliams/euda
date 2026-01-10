@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from ...tools.data.jobs import (
     list_jobs, get_job, create_job, update_job,
     complete_job, restore_job, archive_job, add_job_log, get_child_jobs, delete_job,
-    assign_agent, unassign_agent, list_assignees
+    assign_agent, unassign_agent, list_assignees, handoff_job
 )
 from ...tools.data.assets import list_assets, read_asset, write_asset, delete_asset
 
@@ -44,6 +44,10 @@ class AssignAgentRequest(BaseModel):
 class AddLogRequest(BaseModel):
     action: str
     agent: str = "user"
+
+
+class JobFeedbackRequest(BaseModel):
+    message: str
 
 
 class WriteAssetRequest(BaseModel):
@@ -140,6 +144,50 @@ def api_add_log(job_id: str, request: AddLogRequest):
     if isinstance(result, dict) and "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
+
+
+@router.post("/{job_id}/feedback")
+def api_job_feedback(job_id: str, request: JobFeedbackRequest):
+    """Send feedback about a job to the appropriate agent.
+
+    Routes to:
+    1. pending_from agent (if job was handed off to user)
+    2. First assignee (if job is assigned to an agent)
+    3. Chat agent (fallback for routing)
+    """
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    # Determine target agent
+    target_agent = None
+
+    # First check pending_from (who handed it to us)
+    if job.get("pending_from") and job["pending_from"] != "user":
+        target_agent = job["pending_from"]
+
+    # Otherwise check current assignees for an agent
+    if not target_agent and job.get("assignees"):
+        agents = [a for a in job["assignees"] if a != "user"]
+        if agents:
+            target_agent = agents[0]
+
+    # Fallback to chat for routing
+    if not target_agent:
+        target_agent = "chat"
+
+    # Append feedback to job description
+    current_desc = job.get("description") or ""
+    new_desc = f"{current_desc}\n\n---\n**User Feedback:** {request.message}"
+    update_job(job_id, description=new_desc)
+
+    # Hand off to agent
+    result = handoff_job(job_id, target_agent, f"User feedback: {request.message}", agent="user")
+
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+
+    return {"status": "sent", "to_agent": target_agent, "job_id": job_id}
 
 
 @router.get("/{job_id}/children")

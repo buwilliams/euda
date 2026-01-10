@@ -16,7 +16,10 @@
     "list_available_agents",
     "get_profile",
     "read_long_term_memory",
+    "write_long_term_memory",
     "list_memory",
+    "graduate_memory",
+    "update_own_profile",
     "done_working",
     "parse_date",
     "get_current_date"

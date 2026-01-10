@@ -21,7 +21,7 @@ Today's AI remembers facts about you, but it doesn't know you. Euno understands 
 
 - [Pitch](docs/1_pitch.md) — Introduction and vision
 - [Business Plan](docs/2_business-plan.md) — Vision and growth gates
-- [Anticipate](docs/3_anticipate.md) — Profile + Memory = Anticipation
+- [Agents](docs/3_agents.md) — What agents are and how they work
 - [Contributing](docs/4_contribute.md) — Setup, PR process, deployment
 - [Points](docs/5_points.md) — Contribution tracking and rewards
 - [Operating Agreement](docs/6_operating-agreement.md) — Ownership and governance

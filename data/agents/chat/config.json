@@ -36,7 +36,9 @@
     "list_euno_docs",
     "read_euno_doc",
     "read_agent_logs",
-    "get_mastodon_posts"
+    "get_mastodon_posts",
+    "graduate_memory",
+    "update_own_profile"
   ],
   "triggers": [],
   "synthesis": {
