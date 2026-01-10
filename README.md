@@ -6,16 +6,15 @@ _Euno (you-know), from Eudaimonia (you-dye-MOH-nee-ah)—ancient Greek for "huma
 
 Today's AI remembers facts about you, but it doesn't know you. Euno understands who you are—your values, your patterns, your rhythms. **Euno is a personal intelligence that learns to anticipate you.** It understands who you are, proactively does tasks for you, and curates what deserves your attention.
 
-## Contributing
+## Getting Started
 
-1. **Get access** — Request access to the [repo](https://github.com/buwilliams/Euno) and [GitHub Projects](https://github.com/users/buwilliams/projects/1)
-2. **Read the docs** — Start with [Pitch](docs/1_pitch.md) and [Business Plan](docs/2_business-plan.md)
-3. **Set up locally** — See [Contributing Guide](docs/4_contribute.md) for setup and deployment
-4. **Work on your first feature** — Pick a task from [GitHub Projects](https://github.com/users/buwilliams/projects/1)
-5. **Review against spec** — Check your changes against [spec/](spec/) for drift
-6. **Submit your PR** — Repository administrators approve merges into main
+**Suggested reading path:**
+1. [Pitch](docs/1_pitch.md) — What Euno is and why it exists
+2. [Business Plan](docs/2_business-plan.md) — Vision, gates, and affordable loss
+3. [Agents](docs/3_agents.md) — How agents work and think
+4. [Contributing](docs/4_contribute.md) — Setup, assignments, and PR process
 
-**Time & cost expectations:** See [Affordable Loss](docs/2_business-plan.md#vision) in the Business Plan. See the [Operating Agreement](docs/6_operating-agreement.md) for contributor rewards.
+See the [Contributing Guide](docs/4_contribute.md) for setup instructions and your first assignments.
 
 ## Documentation
 
