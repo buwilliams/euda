@@ -550,19 +550,15 @@ def cmd_fresh_start(args):
     data_dir = Path(__file__).parent / "data"
     deleted = []
 
-    # 1. Clear user data (profile, costs)
-    user_dir = data_dir / "user"
+    # 1. Clear user data (costs)
+    user_dir = data_dir / "agents" / "user"
     if user_dir.exists():
-        # Remove profile (current and historical)
-        for profile in user_dir.glob("profile*.md"):
-            profile.unlink()
-            deleted.append(f"user/{profile.name}")
         # Remove cost tracking
         costs_dir = user_dir / "costs"
         if costs_dir.exists():
             for f in costs_dir.glob("*.jsonl"):
                 f.unlink()
-                deleted.append(f"user/costs/{f.name}")
+                deleted.append(f"agents/user/costs/{f.name}")
 
     # 2. Clear jobs database and assets
     jobs_dir = data_dir / "jobs"

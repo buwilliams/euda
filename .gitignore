@@ -12,8 +12,9 @@
 # Agent memory is runtime data (ignore entire directory)
 data/agents/*/memory/
 
-# User data directory (ignore)
-data/user/
+# Agent costs and uploads are runtime data (ignore)
+data/agents/*/costs/
+data/agents/*/uploads/
 
 # Agent state is runtime data (ignore)
 data/agents/*/state/
