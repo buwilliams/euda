@@ -44,7 +44,7 @@ Experience Euno as a user before contributing code.
 2. Ask Chat to create a reminder for tomorrow
 3. Explore the Jobs view - see your reminder appear
 4. Check the Timeline views (Today, Upcoming, Anytime, Someday)
-5. Look at your User Profile - see what Euno knows about you
+5. Ask Chat "What do you know about me?" - see what Euno has learned
 
 **What you'll learn:** How users interact with Euno, the job system, and how Chat manages tasks.
 
