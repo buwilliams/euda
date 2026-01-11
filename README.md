@@ -35,3 +35,4 @@ Join our [Discord](https://discord.gg/5B9VdQ6vYP) — where we meet, plan, and d
 ## License
 
 This project is proprietary software. See [LICENSE](LICENSE) for terms. By contributing, you agree to assign your contributions to the project.
+
