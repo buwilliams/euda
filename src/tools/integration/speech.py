@@ -6,11 +6,11 @@ Provides tools for agents to read text aloud to the user.
 
 import base64
 
-from . import tool
-from ..speech import get_speech_client, supports_tts
+from .. import tool
+from ...speech import get_speech_client, supports_tts
 
 
-@tool("speak_aloud", "Read text aloud using text-to-speech. Returns audio that will be played to the user.")
+@tool("speak_aloud", "Read text aloud using text-to-speech. Returns audio that will be played to the user.", tool_type="integration")
 def speak_aloud(text: str, voice: str = "nova") -> dict:
     """Generate speech audio from text.
 
