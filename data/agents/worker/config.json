@@ -30,8 +30,7 @@
     "update_own_profile"
   ],
   "triggers": [
-    "time:morning",
-    "system:start"
+    "time:morning"
   ],
   "exploration": {
     "enabled": false
