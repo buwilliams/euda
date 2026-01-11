@@ -65,9 +65,13 @@ data/system/auth.json
 data/system/sessions.json
 data/system/quotes.json
 data/system/prompts.jsonl
+data/system/prompts/*.jsonl
 data/system/logs/
 data/system/api_calls.json
 data/system/api_calls.jsonl
+
+# User data directory (personal data)
+data/user/
 
 # Keep directory structure
 !data/**/.gitkeep
