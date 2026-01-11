@@ -127,3 +127,13 @@ env/
 # ===================
 .DS_Store
 Thumbs.db
+
+# ===================
+# DevOps / Diagnostics
+# ===================
+devops/DIAGNOSTICS-README.md
+devops/collect-diagnostics.sh
+devops/collect-user-diagnostics.sh
+devops/get-diagnostics-from-server.ps1
+devops/get-diagnostics-from-server.sh
+euno-diagnostics-*.tar.gz
