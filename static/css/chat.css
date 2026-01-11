@@ -301,6 +301,11 @@
     white-space: nowrap;
 }
 
+/* Move @job closer to edge when mic button is hidden */
+.input-wrapper:has(#voice-btn.hidden) .job-context-label {
+    right: 12px;
+}
+
 .job-context-label:hover {
     background: #bbdefb;
 }

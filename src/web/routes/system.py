@@ -161,23 +161,26 @@ def get_settings():
     """Get current LLM settings with all providers and speech capabilities."""
     from ...speech import supports_stt, supports_tts
 
+    config = _load_config()
     current_provider = get_provider()
     return {
         "llm": {
             "provider": current_provider,
             "model": get_model(),
-            "providers": get_providers_config()
+            "providers": get_providers_config(),
+            "budget_limit": config.get("llm", {}).get("budget_limit")
         },
         "speech": {
             "stt_available": supports_stt(current_provider),
             "tts_available": supports_tts(current_provider),
-        }
+        },
+        "schedules": config.get("schedules", {})
     }
 
 
 @router.put("/settings/llm")
 def update_llm_settings(data: dict):
-    """Update LLM settings (provider, models)."""
+    """Update LLM settings (provider, models, budget_limit)."""
     config = _load_config()
 
     # Update provider if specified
@@ -192,6 +195,10 @@ def update_llm_settings(data: dict):
             if provider_id in VALID_PROVIDERS and "model" in settings:
                 config["llm"]["providers"][provider_id]["model"] = settings["model"]
 
+    # Update budget limit if specified
+    if "budget_limit" in data:
+        config["llm"]["budget_limit"] = data["budget_limit"]
+
     # Save config
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
@@ -204,6 +211,27 @@ def update_llm_settings(data: dict):
     invalidate_speech_client()
 
     return {"success": True, "llm": config["llm"]}
+
+
+@router.put("/settings/schedules")
+def update_schedules(data: dict):
+    """Update schedule times."""
+    config = _load_config()
+
+    # Ensure schedules exists
+    if "schedules" not in config:
+        config["schedules"] = {}
+
+    # Update each schedule provided
+    for name, time in data.items():
+        if name in config["schedules"]:
+            config["schedules"][name] = time
+
+    # Save config
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=2)
+
+    return {"success": True, "schedules": config["schedules"]}
 
 
 # ============== SSE Events ==============
