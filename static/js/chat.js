@@ -195,9 +195,27 @@ let currentJobContext = null;
 let currentJobName = null;
 
 function setJobContext(jobId) {
-    currentJobContext = jobId;
-    // Get job name for display
+    // Get job to check if it's a system container
     const job = typeof jobsData !== 'undefined' ? jobsData.find(j => j.id === jobId) : null;
+
+    // Don't show context for system containers (Agents, Projects, System) or agent inbox jobs
+    // But DO show for jobs that are descendants of agents (jobs the agent worked on)
+    if (job) {
+        const tags = job.tags || [];
+        // Only exclude the container jobs themselves, not their descendants
+        const isSystemContainer = tags.includes('system:agents') ||
+                                  tags.includes('system:projects') ||
+                                  tags.includes('system:system');
+        // Agent inbox jobs are the root jobs for each agent (have agent_id or agent-inbox tag)
+        const isAgentInbox = tags.includes('agent-inbox') || job.agent_id;
+
+        if (isSystemContainer || isAgentInbox) {
+            clearJobContext();
+            return;
+        }
+    }
+
+    currentJobContext = jobId;
     currentJobName = job ? job.name : 'this job';
     updateInputContext();
 }
@@ -206,6 +224,13 @@ function clearJobContext() {
     currentJobContext = null;
     currentJobName = null;
     updateInputContext();
+
+    // Also directly hide the label in case updateInputContext returns early
+    const label = document.getElementById('job-context-label');
+    if (label) {
+        label.classList.remove('active');
+        label.textContent = '';
+    }
 }
 
 function updateInputContext() {

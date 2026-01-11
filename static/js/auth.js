@@ -188,6 +188,102 @@ function renderSettings() {
         // Set current value
         providerSelect.value = settingsData.llm.provider || 'anthropic';
     }
+
+    // Set budget limit
+    const budgetInput = document.getElementById('budget-limit');
+    if (budgetInput && settingsData.llm?.budget_limit !== undefined) {
+        budgetInput.value = settingsData.llm.budget_limit || '';
+    }
+
+    // Render schedules
+    renderSchedules();
+}
+
+function renderSchedules() {
+    const container = document.getElementById('schedules-table');
+    if (!container) return;
+
+    if (!settingsData?.schedules || Object.keys(settingsData.schedules).length === 0) {
+        container.innerHTML = '<div class="schedule-row"><span class="schedule-name" style="color: var(--color-text-muted);">No schedules configured</span></div>';
+        return;
+    }
+
+    const schedules = settingsData.schedules;
+    container.innerHTML = '';
+
+    for (const [name, time] of Object.entries(schedules)) {
+        // Skip special schedule types like 'every_hour'
+        if (time === 'every_hour') continue;
+
+        const row = document.createElement('div');
+        row.className = 'schedule-row';
+        row.innerHTML = `
+            <span class="schedule-name">${name}</span>
+            <input type="time" class="schedule-time" value="${time}" data-schedule="${name}" onchange="handleScheduleChange('${name}', this.value)">
+        `;
+        container.appendChild(row);
+    }
+
+    // Show message if all schedules were filtered out
+    if (container.children.length === 0) {
+        container.innerHTML = '<div class="schedule-row"><span class="schedule-name" style="color: var(--color-text-muted);">No editable schedules</span></div>';
+    }
+}
+
+async function handleBudgetChange() {
+    const budgetInput = document.getElementById('budget-limit');
+    const messageEl = document.getElementById('ai-message');
+    const value = budgetInput.value ? parseFloat(budgetInput.value) : null;
+
+    try {
+        const response = await fetch('/api/settings/llm', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ budget_limit: value })
+        });
+
+        if (response.ok) {
+            messageEl.textContent = 'Budget limit saved';
+            messageEl.className = 'settings-message success';
+            // Reload to update costs display
+            await loadCostsData();
+        } else {
+            const data = await response.json();
+            messageEl.textContent = data.detail || 'Failed to save';
+            messageEl.className = 'settings-message error';
+        }
+    } catch (error) {
+        messageEl.textContent = 'Connection error';
+        messageEl.className = 'settings-message error';
+    }
+
+    setTimeout(() => { messageEl.textContent = ''; }, 2000);
+}
+
+async function handleScheduleChange(name, value) {
+    const messageEl = document.getElementById('ai-message');
+
+    try {
+        const response = await fetch('/api/settings/schedules', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [name]: value })
+        });
+
+        if (response.ok) {
+            messageEl.textContent = `Schedule "${name}" updated`;
+            messageEl.className = 'settings-message success';
+        } else {
+            const data = await response.json();
+            messageEl.textContent = data.detail || 'Failed to save';
+            messageEl.className = 'settings-message error';
+        }
+    } catch (error) {
+        messageEl.textContent = 'Connection error';
+        messageEl.className = 'settings-message error';
+    }
+
+    setTimeout(() => { messageEl.textContent = ''; }, 2000);
 }
 
 async function handleProviderChange() {
