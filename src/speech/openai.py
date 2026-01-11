@@ -109,8 +109,7 @@ class OpenAISpeechProvider(SpeechProvider):
         self,
         text: str,
         voice: str = "nova",
-        instructions: Optional[str] = None,
-        speed: float = 0.95
+        instructions: Optional[str] = None
     ) -> SynthesisResult:
         """Synthesize text to speech using OpenAI's TTS API.
 
@@ -118,7 +117,6 @@ class OpenAISpeechProvider(SpeechProvider):
             text: Text to synthesize
             voice: Voice to use (default: 'nova')
             instructions: Optional instructions for speech style
-            speed: Speech speed multiplier (0.25 to 4.0, default 0.95)
 
         Returns:
             SynthesisResult with audio bytes
@@ -135,8 +133,7 @@ class OpenAISpeechProvider(SpeechProvider):
             "model": "gpt-4o-mini-tts",
             "voice": voice,
             "input": text,
-            "response_format": "mp3",
-            "speed": speed
+            "response_format": "mp3"
         }
 
         # Add instructions if provided

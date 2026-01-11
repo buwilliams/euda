@@ -69,8 +69,7 @@ class SpeechProvider(ABC):
         self,
         text: str,
         voice: str = "nova",
-        instructions: Optional[str] = None,
-        speed: float = 0.95
+        instructions: Optional[str] = None
     ) -> SynthesisResult:
         """Synthesize text to speech audio.
 
@@ -78,7 +77,6 @@ class SpeechProvider(ABC):
             text: Text to synthesize
             voice: Voice to use (default: 'nova')
             instructions: Optional instructions for speech style
-            speed: Speech speed multiplier (0.25 to 4.0, default 0.95)
 
         Returns:
             SynthesisResult with audio bytes
@@ -275,7 +273,6 @@ class UnifiedSpeechClient:
         text: str,
         voice: str = "nova",
         instructions: Optional[str] = None,
-        speed: float = 0.95,
         track_cost: bool = True
     ) -> SynthesisResult:
         """Synthesize text to speech with automatic cost tracking.
@@ -284,7 +281,6 @@ class UnifiedSpeechClient:
             text: Text to synthesize
             voice: Voice to use (default: 'nova')
             instructions: Optional instructions for speech style
-            speed: Speech speed multiplier (0.25 to 4.0, default 0.95)
             track_cost: Whether to track costs (default True)
 
         Returns:
@@ -304,7 +300,7 @@ class UnifiedSpeechClient:
         # Make the synthesis call
         start_time = time.time()
         try:
-            result = self._provider.synthesize(text, voice, instructions, speed)
+            result = self._provider.synthesize(text, voice, instructions)
         except Exception as e:
             if self._is_rate_limit_error(e):
                 self._handle_rate_limit()

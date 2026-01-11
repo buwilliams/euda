@@ -37,7 +37,6 @@ class SynthesisRequest(BaseModel):
     text: str
     voice: str = "nova"
     instructions: Optional[str] = None
-    speed: float = 0.95
 
 
 @router.post("")
@@ -68,8 +67,7 @@ def synthesize_text(request: SynthesisRequest):
         result = client.synthesize(
             text=request.text,
             voice=request.voice,
-            instructions=request.instructions,
-            speed=request.speed
+            instructions=request.instructions
         )
 
         # Return audio as binary stream
