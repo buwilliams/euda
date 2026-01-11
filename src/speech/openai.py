@@ -1,7 +1,7 @@
 """
 OpenAI Speech Provider
 
-Implements speech-to-text using OpenAI's Audio API.
+Implements speech-to-text and text-to-speech using OpenAI's Audio API.
 """
 
 import os
@@ -10,7 +10,7 @@ from typing import Optional
 
 import openai
 
-from .base import SpeechProvider, TranscriptionResult
+from .base import SpeechProvider, TranscriptionResult, SynthesisResult
 
 
 def is_openai_configured() -> bool:
@@ -104,3 +104,50 @@ class OpenAISpeechProvider(SpeechProvider):
         finally:
             # Clean up temp file
             os.unlink(tmp_path)
+
+    def synthesize(
+        self,
+        text: str,
+        voice: str = "nova",
+        instructions: Optional[str] = None
+    ) -> SynthesisResult:
+        """Synthesize text to speech using OpenAI's TTS API.
+
+        Args:
+            text: Text to synthesize
+            voice: Voice to use (default: 'nova')
+            instructions: Optional instructions for speech style
+
+        Returns:
+            SynthesisResult with audio bytes
+
+        Raises:
+            ValueError: If text is empty
+            openai.BadRequestError: If synthesis fails
+        """
+        if not text or not text.strip():
+            raise ValueError("Empty text")
+
+        # Build kwargs for the API call
+        kwargs = {
+            "model": "gpt-4o-mini-tts",
+            "voice": voice,
+            "input": text,
+            "response_format": "mp3"
+        }
+
+        # Add instructions if provided
+        if instructions:
+            kwargs["instructions"] = instructions
+
+        # Call OpenAI TTS API
+        response = self._client.audio.speech.create(**kwargs)
+
+        # Get audio bytes from response
+        audio_bytes = response.content
+
+        return SynthesisResult(
+            audio_bytes=audio_bytes,
+            format="mp3",
+            duration_seconds=None  # OpenAI doesn't return duration for TTS
+        )

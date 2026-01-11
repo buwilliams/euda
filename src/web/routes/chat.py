@@ -2,6 +2,7 @@
 Chat API Routes
 """
 
+import base64
 import re
 from datetime import datetime
 from pathlib import Path
@@ -10,6 +11,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from ...agent import Agent, AGENTS_DIR
+from ...speech import get_speech_client, supports_tts
 
 
 router = APIRouter()
@@ -22,12 +24,14 @@ class ChatRequest(BaseModel):
     message: str
     agent_id: str = "assistant"
     session_id: Optional[str] = None
+    voice_input: bool = False
 
 
 class ChatResponse(BaseModel):
     response: str
     agent_id: str
     session_id: str
+    audio_base64: Optional[str] = None
 
 
 # Cache agent instances
@@ -49,7 +53,7 @@ def api_chat(request: ChatRequest) -> ChatResponse:
     # Set session - if None, agent will create a new one on first save
     agent.set_session(request.session_id)
 
-    response = agent.chat(request.message)
+    response = agent.chat(request.message, voice_input=request.voice_input)
 
     # Emit chat:message event for agent triggers
     from ...events import emit_event, emit_ui_event
@@ -61,10 +65,26 @@ def api_chat(request: ChatRequest) -> ChatResponse:
         "session_id": agent.get_session_id()
     })
 
+    # Generate TTS audio if voice input and TTS available
+    audio_base64 = None
+    if request.voice_input and supports_tts():
+        try:
+            client = get_speech_client()
+            result = client.synthesize(
+                text=response,
+                voice="nova",
+                instructions="Speak naturally."
+            )
+            audio_base64 = base64.b64encode(result.audio_bytes).decode()
+        except Exception as e:
+            # TTS failure is non-fatal - just log and continue
+            print(f"[Chat] TTS generation failed: {e}")
+
     return ChatResponse(
         response=response,
         agent_id=request.agent_id,
-        session_id=agent.get_session_id()
+        session_id=agent.get_session_id(),
+        audio_base64=audio_base64
     )
 
 

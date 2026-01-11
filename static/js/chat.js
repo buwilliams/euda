@@ -373,6 +373,9 @@ async function processMessageQueue() {
     while (messageQueue.length > 0) {
         const message = messageQueue.shift();
 
+        // Check if this message came from voice input (for TTS response)
+        const voiceInput = typeof window.wasLastInputVoice === 'function' ? window.wasLastInputVoice() : false;
+
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
@@ -380,7 +383,8 @@ async function processMessageQueue() {
                 body: JSON.stringify({
                     message,
                     agent_id: 'chat',
-                    session_id: sessionId
+                    session_id: sessionId,
+                    voice_input: voiceInput
                 })
             });
 
@@ -402,6 +406,11 @@ async function processMessageQueue() {
             removeInlineThinking();
             addInlineMessage(data.response, 'friend');
             showChatNotification();
+
+            // Play TTS audio if included in response
+            if (data.audio_base64 && typeof playTTSAudio === 'function') {
+                playTTSAudio(data.audio_base64);
+            }
 
             // If the agent cleared the conversation, clear the UI
             if (data.clear_chat) {

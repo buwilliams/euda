@@ -172,3 +172,4 @@ from .data import jobs, assets, profile, memory
 from .agents import agents
 from .system import system, dates, notifications
 from .integration import knowledge, mastodon
+from . import speech

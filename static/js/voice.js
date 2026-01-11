@@ -46,6 +46,10 @@ let speechSegments = [];        // Track speech/silence patterns
 let currentTimeout = VAD_CONFIG.baseTimeoutMs;
 let maxVolumeDetected = 0;      // Track peak volume to filter accidental presses
 
+// ============== TTS Integration ==============
+// Track that last input came from voice (for auto TTS response)
+let lastInputWasVoice = false;
+
 // ============== Voice Recording Functions ==============
 
 function toggleVoiceRecording() {
@@ -400,6 +404,9 @@ async function transcribeAudio(audioBlob) {
 }
 
 function autoSendTranscribedText(text) {
+    // Mark that this message came from voice input (for TTS response)
+    lastInputWasVoice = true;
+
     // Send directly to chat without showing in input field
     // Add user message to UI
     if (typeof addInlineMessage === 'function') {
@@ -411,12 +418,14 @@ function autoSendTranscribedText(text) {
         messageQueue.push(text);
         processMessageQueue();
     }
-
-    // Switch to chat tab to show the conversation
-    if (typeof switchTab === 'function') {
-        switchTab('chat');
-    }
 }
+
+// Check if last input was voice (called by chat.js, resets flag after reading)
+window.wasLastInputVoice = function() {
+    const was = lastInputWasVoice;
+    lastInputWasVoice = false;
+    return was;
+};
 
 // ============== UI Updates ==============
 
@@ -474,9 +483,6 @@ function showVoiceError(message) {
     // Add error message to chat as system message
     if (typeof addInlineMessage === 'function') {
         addInlineMessage(message, 'friend');
-    }
-    if (typeof switchTab === 'function') {
-        switchTab('chat');
     }
 }
 
