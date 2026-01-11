@@ -20,7 +20,7 @@ The [Contributing Guide](docs/4_contribute.md) provides three hands-on assignmen
 
 ## Community
 
-Join our [Discord](https://discord.gg/5B9VdQ6vYP) — where we meet, plan, and discuss Euno updates and what's happening.
+Join our [Discord](https://discord.gg/5B9VdQ6vYP) — where we meet, plan, and discuss Euno updates and what's happening. Merged PRs are automatically posted to #updates so everyone stays in sync.
 
 ## Documentation
 
