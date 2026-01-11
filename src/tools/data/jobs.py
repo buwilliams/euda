@@ -470,9 +470,12 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
         return {"error": f"Job not found: {job_id}"}
 
     # Prevent completing system jobs (containers and agent inboxes)
-    system_tags = {"system:agents", "system:projects", "system:system", "agent-inbox"}
-    if any(tag in system_tags for tag in job.get("tags", [])):
-        return {"error": "Cannot complete system jobs"}
+    # Exception: Allow completing trigger jobs even if they have system tags
+    is_trigger = job.get("name", "").startswith("Trigger:")
+    if not is_trigger:
+        system_tags = {"system:agents", "system:projects", "system:system", "agent-inbox"}
+        if any(tag in system_tags for tag in job.get("tags", [])):
+            return {"error": "Cannot complete system jobs"}
 
     now = datetime.utcnow().isoformat() + "Z"
 
