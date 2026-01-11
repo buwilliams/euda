@@ -1,3 +1,3 @@
 """Integration tools - External knowledge and documentation."""
 
-from . import knowledge
+from . import knowledge, mastodon, speech
