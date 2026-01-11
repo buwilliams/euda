@@ -23,11 +23,25 @@ AGENTS_DIR = DATA_DIR / "agents"
 class Agent:
     """A generic agent that operates based on its configuration."""
 
-    def __init__(self, agent_id: str, config: Optional[dict] = None):
+    def __init__(self, agent_id: str, config: Optional[dict] = None, session_id: Optional[str] = None):
         self.id = agent_id
         self.config = config or self._load_config()
         self.persona = self._load_persona()
         self.client = get_client()
+        self._session_id = session_id
+        self._current_job_id = None
+
+    def set_session(self, session_id: str):
+        """Set the current session ID."""
+        self._session_id = session_id
+
+    def get_session_id(self) -> Optional[str]:
+        """Get the current session ID."""
+        return self._session_id
+
+    def set_job_context(self, job_id: str):
+        """Set the current job context for the agent."""
+        self._current_job_id = job_id
 
     def _load_config(self) -> dict:
         """Load agent configuration from disk."""
