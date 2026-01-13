@@ -1,8 +1,20 @@
 # Agents
 
+## Our Bold Conjecture
+
+Euno exists to test a hypothesis: that a personalized intelligence can help someone flourish—anticipating their needs, doing good work on their behalf, and supporting their path toward eudaimonia.
+
+The bet is that this becomes possible through a **shared agent ontology**. Humans and AI agents aren't fundamentally different kinds of things. Both have profiles that expose identity discovered over time, memory that provides context, tools that define capabilities, and triggers that drive behavior. If we model them the same way, an AI agent can truly learn a person—not as a collection of preferences, but as a pattern of stable attractors that define who they are.
+
+This architecture is the experiment. If the shared ontology holds, Euno can grow with you: learning what you want and fear, recognizing your stable patterns, adapting its behavior through the same reflection process you use. If it doesn't hold, we'll learn why humans and AI agents need different models.
+
+Either way, we find out.
+
+---
+
 Euno is built on two core concepts: **Agents** and **Jobs**. Agents do the work; jobs are the work.
 
-An agent is anything with the capacity to act—both people and AIs qualify. You, the user, are an agent too; you just have a different interface (the UI) than AI agents (autonomous loops). Every agent in Euno has the same fundamental components: a profile that shapes identity, memory that provides context, tools that define capabilities, and triggers that drive behavior.
+An agent is anything with the capacity to act—both people and AIs qualify. You, the user, are an agent too; you just have a different interface (the UI) than AI agents (autonomous loops). Every agent in Euno has the same fundamental components: a profile that exposes identity discovered over time, memory that provides context, tools that define capabilities, and triggers that drive behavior.
 
 Jobs are how agents coordinate. Any agent can create a job, work on it directly, or hand it off to another agent. This creates a dynamic system where work flows based on who has the capacity and capability to act.
 
