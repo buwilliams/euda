@@ -62,7 +62,8 @@
         "enabled": true,
         "baseline_window_minutes": 60,
         "spike_multiplier": 5.0,
-        "min_baseline_calls": 5
+        "min_baseline_calls": 5,
+        "min_spike_rate": 5
       }
     }
   },

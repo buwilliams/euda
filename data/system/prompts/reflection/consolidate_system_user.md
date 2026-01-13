@@ -19,7 +19,19 @@ When updating a user profile, focus on:
 5. **Influences** - People, places, media, experiences that shape them
 6. **Interests** - Goals, projects, work, hobbies
 
+## Priority: Learning and Behavior Items
+
+Pay special attention to memory items of type `learning` and `behavior`:
+
+- **learning**: Things the user has learned or insights they've gained. These may reveal growth areas or evolving understanding.
+
+- **behavior**: Preferences about how the user likes to work or be supported. These should be noted in the profile so agents can adapt.
+
+Always graduate learning and behavior items to long-term memory so patterns are preserved.
+
+## Output Format
+
 Return a JSON object with:
 - long_term_entry: Summary of significant observations for permanent record (string or null)
 - profile_updates: Specific changes to make to the profile (string describing updates, or null)
-- graduate_ids: Array of short-term memory IDs that should be preserved in long-term
+- graduate_ids: Array of short-term memory IDs that should be preserved in long-term. Always include learning and behavior items.

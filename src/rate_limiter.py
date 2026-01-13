@@ -113,7 +113,8 @@ class RateLimiter:
             "enabled": True,
             "baseline_window_minutes": 60,
             "spike_multiplier": 5.0,
-            "min_baseline_calls": 5
+            "min_baseline_calls": 5,
+            "min_spike_rate": 5  # Minimum calls/min before runaway detection triggers
         })
 
     def is_enabled(self) -> bool:
@@ -219,7 +220,9 @@ class RateLimiter:
         Algorithm:
         1. Calculate baseline: calls/minute over last baseline_window_minutes
         2. Calculate current rate: calls in last 60 seconds
-        3. If current_rate > baseline * spike_multiplier, flag as runaway
+        3. Only flag as runaway if BOTH:
+           - current_rate > baseline * spike_multiplier
+           - current_rate >= min_spike_rate (absolute threshold)
 
         Returns:
             True if runaway detected, False otherwise
@@ -231,6 +234,7 @@ class RateLimiter:
         baseline_minutes = config.get("baseline_window_minutes", 60)
         spike_mult = config.get("spike_multiplier", 5.0)
         min_calls = config.get("min_baseline_calls", 5)
+        min_spike_rate = config.get("min_spike_rate", 5)  # Absolute minimum before triggering
 
         history = self._agent_call_history.get(agent_id)
         if not history:
@@ -252,8 +256,10 @@ class RateLimiter:
         baseline_rate = baseline_calls / baseline_minutes  # calls per minute
         current_rate = recent_calls  # calls in last minute
 
-        # Detect spike
-        if current_rate > baseline_rate * spike_mult:
+        # Only trigger runaway if current rate exceeds BOTH:
+        # 1. The spike threshold (baseline * multiplier)
+        # 2. The absolute minimum rate (to avoid false positives from low baselines)
+        if current_rate >= min_spike_rate and current_rate > baseline_rate * spike_mult:
             return True
 
         return False
