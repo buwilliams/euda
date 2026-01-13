@@ -66,6 +66,7 @@ ssh -T "$SERVER" "find $REMOTE_DIR/src -type d -name __pycache__ -exec rm -rf {}
 echo "[3/6] Syncing files..."
 rsync -avz --delete \
     --exclude '/data/' \
+    --exclude '/android-app/' \
     --exclude 'venv/' \
     --exclude '.venv/' \
     --exclude '__pycache__/' \

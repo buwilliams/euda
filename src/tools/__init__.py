@@ -171,4 +171,4 @@ def execute_tool(name: str, inputs: dict) -> Any:
 from .data import jobs, assets, profile, memory
 from .agents import agents
 from .system import system, dates, notifications
-from .integration import knowledge, mastodon
+from .integration import knowledge, mastodon, speech

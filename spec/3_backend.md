@@ -21,7 +21,8 @@ Rules for the server, API, and infrastructure.
   - `/api/auth` — Authentication
   - `/api/upload` — File uploads
   - `/api/events` — SSE endpoint
-  - `/api/transcribe` — Audio transcription
+  - `/api/transcribe` — Audio transcription (speech-to-text)
+  - `/api/synthesize` — Text-to-speech synthesis
 
 ## Authentication
 

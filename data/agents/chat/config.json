@@ -37,6 +37,7 @@
     "read_euno_doc",
     "read_agent_logs",
     "get_mastodon_posts",
+    "speak_aloud",
     "graduate_memory",
     "update_own_profile"
   ],

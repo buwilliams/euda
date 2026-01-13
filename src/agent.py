@@ -192,11 +192,14 @@ class Agent:
                 return json.load(f)
         return {}
 
-    def _build_system_prompt(self) -> str:
+    def _build_system_prompt(self, voice_input: bool = False) -> str:
         """Build the system prompt from profile and tools (grouped by type).
 
         Note: Memory is NOT auto-injected.
         Agents should use list_memory and read_long_term_memory tools when needed.
+
+        Args:
+            voice_input: Whether input came from voice (enables conversational response style)
         """
         from .tools import get_tools_grouped_by_type
         from .prompts import render_template
@@ -219,11 +222,23 @@ class Agent:
                     tools_sections.append(f"- **{t['name']}**: {t['description']}")
         tools_text = "\n".join(tools_sections) if tools_sections else "No tools available."
 
-        return render_template(
+        prompt = render_template(
             "agent/system",
             profile=self.profile,
             tools_by_type=tools_text
         )
+
+        # Voice mode instructions
+        if voice_input:
+            prompt += "\n\n## Voice Response Mode\n"
+            prompt += (
+                "The user is speaking to you via voice. Your response will be read aloud. "
+                "Respond in natural, conversational first-person speech with complete sentences. "
+                "Avoid bullet points, lists, job IDs, or formatted text. "
+                "Speak as if you're talking directly to the user."
+            )
+
+        return prompt
 
     def _get_tools(self) -> list:
         """Get tool definitions for this agent."""
@@ -284,20 +299,21 @@ class Agent:
             remaining_jobs_notice=remaining_notice
         )
 
-    def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True) -> str:
+    def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True, voice_input: bool = False) -> str:
         """Process a chat message and return response.
 
         Args:
             message: The user message
             log_to_memory: Whether to log this conversation to long-term memory (default True)
             save_to_history: Whether to save to conversation history (default True)
+            voice_input: Whether input came from voice (enables conversational response style)
         """
         self._log("chat_start", {"message_length": len(message)})
         if save_to_history:
             self._save_conversation_turn("user", message)
 
         tools = self._get_tools()
-        system_prompt = self._build_system_prompt()
+        system_prompt = self._build_system_prompt(voice_input=voice_input)
 
         messages = [{"role": "user", "content": message}]
 

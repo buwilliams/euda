@@ -32,6 +32,14 @@ class TranscriptionResult:
     language: Optional[str] = None
 
 
+@dataclass
+class SynthesisResult:
+    """Result from text-to-speech synthesis."""
+    audio_bytes: bytes
+    format: str  # 'mp3', 'wav', etc.
+    duration_seconds: Optional[float] = None
+
+
 # ============== Abstract Provider ==============
 
 class SpeechProvider(ABC):
@@ -53,6 +61,25 @@ class SpeechProvider(ABC):
 
         Returns:
             TranscriptionResult with transcribed text
+        """
+        pass
+
+    @abstractmethod
+    def synthesize(
+        self,
+        text: str,
+        voice: str = "nova",
+        instructions: Optional[str] = None
+    ) -> SynthesisResult:
+        """Synthesize text to speech audio.
+
+        Args:
+            text: Text to synthesize
+            voice: Voice to use (default: 'nova')
+            instructions: Optional instructions for speech style
+
+        Returns:
+            SynthesisResult with audio bytes
         """
         pass
 
@@ -236,6 +263,65 @@ class UnifiedSpeechClient:
                 input_tokens=estimated_input_tokens,
                 output_tokens=estimated_output_tokens,
                 agent_id="transcribe",
+                duration_ms=duration_ms
+            )
+
+        return result
+
+    def synthesize(
+        self,
+        text: str,
+        voice: str = "nova",
+        instructions: Optional[str] = None,
+        track_cost: bool = True
+    ) -> SynthesisResult:
+        """Synthesize text to speech with automatic cost tracking.
+
+        Args:
+            text: Text to synthesize
+            voice: Voice to use (default: 'nova')
+            instructions: Optional instructions for speech style
+            track_cost: Whether to track costs (default True)
+
+        Returns:
+            SynthesisResult with audio bytes
+
+        Raises:
+            ValueError: If provider doesn't support text-to-speech
+        """
+        if self._provider is None:
+            raise ValueError(f"Provider '{self.provider_name}' does not support text-to-speech")
+
+        from ..cost_tracker import record_usage
+
+        # Wait for any active backoff
+        self._wait_for_backoff()
+
+        # Make the synthesis call
+        start_time = time.time()
+        try:
+            result = self._provider.synthesize(text, voice, instructions)
+        except Exception as e:
+            if self._is_rate_limit_error(e):
+                self._handle_rate_limit()
+            raise
+
+        duration_ms = int((time.time() - start_time) * 1000)
+
+        # Reset backoff on success
+        self._reset_backoff()
+
+        # Record usage/cost
+        if track_cost:
+            # Estimate tokens: ~15 characters per token for TTS
+            estimated_input_tokens = max(1, len(text) // 15)
+
+            record_usage(
+                provider=self.provider_name,
+                model="gpt-4o-mini-tts",
+                input_tokens=estimated_input_tokens,
+                output_tokens=0,
+                agent_id="tts",
                 duration_ms=duration_ms
             )
 
