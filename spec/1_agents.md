@@ -74,9 +74,11 @@ Rules for how agents work and coordinate through jobs.
 
 ## Design Philosophy
 
+All agents (users and AI) share the same profile schema and evolve through the same reflection process. The only difference is starting state: AI agents start pre-filled, users start empty.
+
 Profiles reflect patterns of behavior, not rigid rules:
-- For users: evolves from memory through reflection (wants, fears, attractors)
-- For AI agents: starts pre-filled, refines through reflection updates
+- Identity is the pattern of stable attractors over time
+- Both users and AI agents can develop any profile section through reflection
 - Both follow the 90/10 principle: 90% exploit known patterns, 10% explore new possibilities
 
 See docs/3_agents.md for the cognitive foundations behind this design.

@@ -82,7 +82,7 @@ def build_consolidate_prompt(
         agent_profile: The agent's current profile
         short_term_memory: All short-term memory items
         recent_long_term: Recent long-term memory content
-        is_user: Whether this is the user agent (uses different schema)
+        is_user: Whether this is the user agent (selects appropriate system prompt)
 
     Returns:
         Formatted prompt string

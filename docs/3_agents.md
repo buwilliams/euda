@@ -10,25 +10,26 @@ Jobs are how agents coordinate. Any agent can create a job, work on it directly,
 
 ### Profile
 
-A profile defines who an agent is. AI agents start with a pre-filled profile; users start empty. Both evolve through reflection.
+A profile defines who an agent is. AI agents start with a pre-filled profile; users start empty. Both use the same structure and evolve through the same reflection process.
 
-**AI Agent Profiles** are simple and direct:
-- **Purpose** — What the agent does
-- **Behavioral Rules** — Must/must not constraints
+**Profile Schema** (all agents):
+- **Purpose** — What drives them / why they exist
+- **Behavioral Rules** — Learned must/must not constraints
 - **Voice** — Communication style
+- **Wants and Fears** — What they pursue and avoid
+- **Stable Attractors** — Patterns they return to under stress
+- **Notable Events** — Significant consistent or surprising actions
+- **Influences** — People, places, experiences that shape them
+- **Interests** — Current goals, projects, focus areas
+- **Biographical Information** — Factual details
 
-**User Profiles** are richer because humans are more complex. Euno builds your profile by observing patterns over time, guided by a model of how identity actually works:
+AI agents typically start with Purpose, Behavioral Rules, and Voice pre-filled. Users start empty. Over time, both can develop any section through reflection.
 
-*Humans act to pursue what they desire and avoid what they fear.* Through experience, people discover strategies that reliably meet their needs. These successful strategies get repeated and reinforced until they become stable patterns—attractors the person returns to, especially under stress. Identity isn't what someone says about themselves; it's the pattern of these attractors over time.
+**Why one schema?** The same model of identity applies to both humans and AI agents. Agents act to pursue what they want and avoid what they fear. Through experience, they discover strategies that work—these get repeated and become stable patterns (attractors). Identity is the pattern of these attractors over time.
 
-This has practical implications for how Euno learns about you. The system watches for:
-- **Wants and Fears** — Patterns of behavior that reveal underlying desires
-- **Stable Attractors** — Strategies you consistently return to
-- **Notable Events** — Actions that are either consistent with patterns or surprisingly different
-- **Influences** — People, places, media, and experiences that shape you
-- **Interests** — Goals, projects, and activities you pursue
+This means an AI agent can develop wants (goals it pursues), fears (outcomes it avoids), and stable attractors (behaviors it returns to). A user can have behavioral rules (learned constraints) and voice (communication style). The ontology is the same; only the starting state differs.
 
-Flourishing requires balance: most life is spent exploiting known strategies for stability (~90%), while reserving space for bounded exploration (~10%) to discover new options. Euno respects this ratio—primarily supporting what you're already doing while occasionally surfacing novel possibilities.
+Flourishing requires balance: most activity exploits known strategies for stability (~90%), while reserving space for bounded exploration (~10%) to discover new options. Euno respects this ratio for all agents.
 
 ### Memory
 

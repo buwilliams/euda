@@ -66,14 +66,18 @@ Memory moves through two phases:
 
 ### Profile Schema
 
-Current profile evolves based on observed behavior in long-term memory:
-- Biographical information (name, contact, etc.)
-- Wants and fears (patterns that reveal desires and fears)
-- Stable attractors (patterns the person returns to)
-- Notable events and actions
-- Influences (people, places, books, experiences)
-- Interests (goals, projects, hobbies)
-- Summary of changes from previous years
+All agents (including user) share the same profile schema:
+- Purpose (what drives them / why they exist)
+- Behavioral Rules (learned must/must not constraints)
+- Voice (communication style)
+- Wants and Fears (what they pursue and avoid)
+- Stable Attractors (patterns they return to under stress)
+- Notable Events (significant consistent or surprising actions)
+- Influences (people, places, experiences that shape them)
+- Interests (current goals, projects, focus areas)
+- Biographical Information (factual details)
+
+AI agents start with Purpose, Behavioral Rules, Voice pre-filled. Users start empty. Both evolve through reflection and can develop any section over time.
 
 Historical profiles: `data/agents/{id}/profile.{yyyy}.md`
 
