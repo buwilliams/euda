@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Euno</string>
+
+    <!-- Setup Screen -->
+    <string name="setup_title">Euno</string>
+    <string name="setup_subtitle">Personal Intelligence</string>
+    <string name="setup_ip_hint">Server IP (e.g., 192.168.1.100)</string>
+    <string name="setup_port_hint">Port (default: 80)</string>
+    <string name="setup_connect">Connect</string>
+    <string name="setup_connecting">Connecting...</string>
+    <string name="setup_error_empty_ip">Please enter a server IP address</string>
+    <string name="setup_error_invalid_ip">Invalid IP address format</string>
+    <string name="setup_error_connection_failed">Could not connect to server</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_server_section">Server</string>
+    <string name="settings_server_ip">Server IP</string>
+    <string name="settings_server_port">Port</string>
+    <string name="settings_notifications_section">Notifications</string>
+    <string name="settings_notifications_enabled">Background notifications</string>
+    <string name="settings_notifications_description">Receive notifications when the app is in the background</string>
+    <string name="settings_data_section">Data</string>
+    <string name="settings_clear_data">Clear all data</string>
+    <string name="settings_clear_data_description">Remove all settings and cached data</string>
+    <string name="settings_save">Save</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_clear_data_title">Clear all data?</string>
+    <string name="dialog_clear_data_message">This will remove all saved settings and require you to reconnect to your server.</string>
+    <string name="dialog_clear">Clear</string>
+    <string name="dialog_cancel">Cancel</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_messages">Messages</string>
+    <string name="notification_channel_messages_description">Messages from Euno agents</string>
+    <string name="notification_channel_service">Connection</string>
+    <string name="notification_channel_service_description">Background connection status</string>
+    <string name="notification_service_title">Euno</string>
+    <string name="notification_service_text">Connected to your server</string>
+    <string name="notification_service_connecting">Connecting...</string>
+    <string name="notification_service_disconnected">Disconnected</string>
+
+    <!-- Errors -->
+    <string name="error_loading">Failed to load page</string>
+    <string name="error_no_connection">No internet connection</string>
+    <string name="error_retry">Retry</string>
+
+    <!-- Permissions -->
+    <string name="permission_mic_title">Microphone access</string>
+    <string name="permission_mic_message">Euno needs microphone access for voice input</string>
+    <string name="permission_notifications_title">Notifications</string>
+    <string name="permission_notifications_message">Allow Euno to send you notifications?</string>
+</resources>

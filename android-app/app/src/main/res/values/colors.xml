@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Euno Color Palette -->
+
+    <!-- Backgrounds -->
+    <color name="bg_dark">#2d2d2d</color>
+    <color name="bg_app">#f8f8f8</color>
+    <color name="bg_white">#ffffff</color>
+    <color name="bg_subtle">#f9f9f9</color>
+    <color name="bg_muted">#f5f5f5</color>
+    <color name="bg_hover">#f0f0f0</color>
+
+    <!-- Text -->
+    <color name="text_primary">#333333</color>
+    <color name="text_secondary">#555555</color>
+    <color name="text_muted">#666666</color>
+    <color name="text_light">#888888</color>
+    <color name="text_placeholder">#999999</color>
+    <color name="text_disabled">#bbbbbb</color>
+
+    <!-- Borders -->
+    <color name="border">#e0e0e0</color>
+    <color name="border_light">#eeeeee</color>
+    <color name="border_subtle">#e8e8e8</color>
+    <color name="border_focus">#007bff</color>
+
+    <!-- Accent -->
+    <color name="accent">#007bff</color>
+    <color name="accent_hover">#0056b3</color>
+    <color name="accent_dark">#333333</color>
+    <color name="accent_dark_hover">#444444</color>
+
+    <!-- Status -->
+    <color name="success">#10b981</color>
+    <color name="warning">#f59e0b</color>
+    <color name="danger">#cc0000</color>
+    <color name="danger_light">#e74c3c</color>
+
+    <!-- Standard -->
+    <color name="white">#ffffff</color>
+    <color name="black">#000000</color>
+</resources>
