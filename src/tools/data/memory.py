@@ -18,7 +18,7 @@ from .. import tool
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
 
-VALID_TYPES = {"person", "place", "thing", "goal", "concern", "idea"}
+VALID_TYPES = {"person", "place", "thing", "goal", "concern", "idea", "learning", "behavior"}
 VALIDITY_DAYS = 90  # 3 months
 
 

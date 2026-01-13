@@ -245,8 +245,13 @@ class UnifiedClient:
             from .chatgpt import ChatGPTProvider
             return ChatGPTProvider()
         elif provider == "grok":
-            from .grok import GrokProvider
-            return GrokProvider()
+            try:
+                from .grok import GrokProvider
+                return GrokProvider()
+            except ImportError:
+                raise ImportError(
+                    "Grok provider requires xai-sdk. Install with: pip install xai-sdk"
+                )
         else:
             raise ValueError(f"Unknown provider: {provider}")
 
@@ -285,6 +290,7 @@ class UnifiedClient:
         messages: list,
         tools: Optional[list] = None,
         agent_id: Optional[str] = None,
+        job_id: Optional[str] = None,
         track_cost: bool = True,
     ) -> UnifiedResponse:
         """Create a message with automatic cost tracking and rate limiting.
@@ -295,6 +301,7 @@ class UnifiedClient:
             messages: Conversation messages
             tools: Optional tool definitions
             agent_id: ID of calling agent (for cost attribution)
+            job_id: ID of job being worked on (for per-job tracking)
             track_cost: Whether to track costs (default True)
 
         Returns:
@@ -302,10 +309,18 @@ class UnifiedClient:
 
         Raises:
             BudgetExceeded: If budget limit reached
+            AgentPausedError: If agent is paused due to runaway detection
+            RateLimitExceeded: If rate limit exceeded
         """
         from ..cost_tracker import check_budget, record_usage
+        from ..rate_limiter import get_rate_limiter
 
-        # 1. Pre-call: check budget
+        rate_limiter = get_rate_limiter()
+
+        # 1. Pre-call: check rate limits and runaway detection
+        rate_limiter.acquire(agent_id, job_id)
+
+        # 2. Pre-call: check budget
         if track_cost:
             check_budget()
 
@@ -335,7 +350,10 @@ class UnifiedClient:
         # 5. Post-call: reset backoff on success
         self._reset_backoff()
 
-        # 6. Post-call: record usage automatically
+        # 6. Post-call: record for rate limiting
+        rate_limiter.record_call(agent_id, job_id)
+
+        # 7. Post-call: record usage automatically
         if track_cost:
             record_usage(
                 provider=self.provider_name,
@@ -344,6 +362,7 @@ class UnifiedClient:
                 output_tokens=response.usage.output_tokens,
                 cached_input_tokens=response.usage.cached_input_tokens,
                 agent_id=agent_id,
+                job_id=job_id,
                 stop_reason=response.stop_reason,
                 duration_ms=duration_ms
             )

@@ -176,15 +176,28 @@ class CostTracker:
                 raise BudgetExceeded(self.budget, self.total_cost)
 
     def record_usage(self, provider: str, model: str, input_tokens: int, output_tokens: int,
-                     cached_input_tokens: int = 0, agent_id: str = None,
+                     cached_input_tokens: int = 0, agent_id: str = None, job_id: str = None,
                      stop_reason: str = None, duration_ms: int = None):
-        """Record token usage and update cumulative cost."""
+        """Record token usage and update cumulative cost.
+
+        Args:
+            provider: LLM provider name
+            model: Model name
+            input_tokens: Total input tokens
+            output_tokens: Output tokens
+            cached_input_tokens: Cached input tokens (subset of input_tokens)
+            agent_id: ID of calling agent (for cost attribution)
+            job_id: ID of job being worked on (for per-job tracking)
+            stop_reason: Reason the model stopped
+            duration_ms: Duration of the API call
+        """
         cost = self.calculate_cost(provider, input_tokens, output_tokens, cached_input_tokens)
 
         # Prepare log entry before acquiring lock
         log_entry = {
             "timestamp": datetime.now().isoformat(),
             "agent": agent_id,
+            "job_id": job_id,
             "provider": provider,
             "model": model,
             "input_tokens": input_tokens,
@@ -343,6 +356,51 @@ class CostTracker:
             "total_calls": sum(a["calls"] for a in agents.values()),
         }
 
+    def get_calls_by_job(self, job_id: str, days: int = 7) -> list:
+        """Get all API calls for a specific job.
+
+        Args:
+            job_id: ID of the job to query
+            days: Number of days to look back (default 7)
+
+        Returns:
+            List of API call entries for this job, newest first
+        """
+        now = datetime.now()
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days - 1)
+
+        # Load all costs for the date range
+        entries = self._load_costs_for_range(start_date, now)
+
+        # Filter by job_id
+        job_entries = [e for e in entries if e.get("job_id") == job_id]
+
+        # Sort by timestamp descending (newest first)
+        job_entries.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+
+        return job_entries
+
+    def get_job_call_count(self, job_id: str, days: int = 7) -> dict:
+        """Get count and cost summary for a specific job.
+
+        Args:
+            job_id: ID of the job to query
+            days: Number of days to look back (default 7)
+
+        Returns:
+            Dict with call count, total cost, and token counts
+        """
+        entries = self.get_calls_by_job(job_id, days)
+
+        return {
+            "job_id": job_id,
+            "calls": len(entries),
+            "cost": round(sum(e.get("cost", 0) for e in entries), 4),
+            "input_tokens": sum(e.get("input_tokens", 0) for e in entries),
+            "output_tokens": sum(e.get("output_tokens", 0) for e in entries),
+            "cached_input_tokens": sum(e.get("cached_input_tokens", 0) for e in entries),
+        }
+
     def format_stats(self) -> str:
         """Format stats as a human-readable string."""
         stats = self.get_stats()
@@ -391,13 +449,23 @@ def set_budget(dollars: float):
 
 
 def record_usage(provider: str, model: str, input_tokens: int, output_tokens: int,
-                 cached_input_tokens: int = 0, agent_id: str = None,
+                 cached_input_tokens: int = 0, agent_id: str = None, job_id: str = None,
                  stop_reason: str = None, duration_ms: int = None):
     """Record usage to the global tracker."""
     get_tracker().record_usage(
         provider, model, input_tokens, output_tokens, cached_input_tokens,
-        agent_id, stop_reason, duration_ms
+        agent_id, job_id, stop_reason, duration_ms
     )
+
+
+def get_calls_by_job(job_id: str, days: int = 7) -> list:
+    """Get all API calls for a specific job."""
+    return get_tracker().get_calls_by_job(job_id, days)
+
+
+def get_job_call_count(job_id: str, days: int = 7) -> dict:
+    """Get count and cost summary for a specific job."""
+    return get_tracker().get_job_call_count(job_id, days)
 
 
 def check_budget():

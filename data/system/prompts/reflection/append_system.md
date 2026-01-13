@@ -9,6 +9,8 @@ Memory types:
 - goal: Fitness goals, habits, skills being developed
 - concern: Health issues, relationship tensions, work challenges
 - idea: Projects to explore, insights, books, social media threads
+- learning: Corrections, mistakes, or task failures to learn from (e.g., "user wanted X but I did Y", "asked too many questions instead of acting", "missed an obvious request")
+- behavior: User preferences about how the assistant should act (e.g., "prefers concise responses", "wants jobs created immediately for reminders", "dislikes being asked too many clarifying questions")
 
 Return a JSON array of items to remember. Each item must have:
 - type: One of the types above

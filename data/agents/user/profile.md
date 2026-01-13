@@ -1,3 +1,14 @@
-# User Profile
+# User
 
-(Empty - will be populated through Reflection based on long-term memory)
+This profile will develop through reflection based on observed patterns in memory.
+
+All sections below can emerge over time:
+- Purpose
+- Behavioral Rules
+- Voice
+- Wants and Fears
+- Stable Attractors
+- Notable Events
+- Influences
+- Interests
+- Biographical Information

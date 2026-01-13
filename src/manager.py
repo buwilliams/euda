@@ -19,6 +19,7 @@ from typing import Dict, List, Optional
 from .agent import Agent
 from .cost_tracker import BudgetExceeded, print_cost_summary
 from .events import EventBus, set_event_bus, get_event_bus
+from .rate_limiter import AgentPausedError, get_rate_limiter
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -380,6 +381,20 @@ class AgentManager:
                 })
                 print(f"\n[{agent.id}] BUDGET WARNING: ${e.spent:.4f} spent of ${e.budget:.2f} limit")
                 # Continue running - don't hard exit
+
+            except AgentPausedError as e:
+                # Agent paused due to runaway detection
+                agent._log("agent_paused_runaway", {
+                    "reason": e.reason
+                })
+                print(f"\n[{agent.id}] PAUSED: {e.reason} - waiting for manual resume")
+                # Wait until resumed or shutdown
+                rate_limiter = get_rate_limiter()
+                while rate_limiter.is_agent_paused(agent.id) and self.running:
+                    time.sleep(30)  # Check every 30 seconds
+                if self.running:
+                    agent._log("agent_resumed", {"resumed_by": "rate_limiter"})
+                    print(f"[{agent.id}] Resumed")
 
             except Exception as e:
                 error_msg = str(e)

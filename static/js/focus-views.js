@@ -45,6 +45,12 @@ async function toggleAgentSection(header, event, sectionType, agentId) {
                 } else if (sectionType === 'monitoring') {
                     const data = await loadAgentMonitoring(agentId);
                     content.innerHTML = renderMonitoringContent(data);
+                } else if (sectionType === 'job-api-calls') {
+                    const data = await loadJobApiCalls(agentId);  // agentId is actually jobId here
+                    content.innerHTML = renderJobApiCallsContent(data);
+                } else if (sectionType === 'rate-limit-events') {
+                    const data = await loadRateLimitEvents(agentId);
+                    content.innerHTML = renderRateLimitEventsContent(data, agentId);
                 }
                 content.dataset.loaded = 'true';
             }
@@ -97,6 +103,101 @@ function renderMonitoringContent(data) {
                 </div>
               `).join('')
             }
+        </div>
+    `;
+}
+
+async function loadJobApiCalls(jobId) {
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/api-calls`);
+        if (!response.ok) return null;
+        return await response.json();
+    } catch (error) {
+        console.error('Failed to load job API calls:', error);
+        return null;
+    }
+}
+
+function renderJobApiCallsContent(data) {
+    if (!data || data.calls === 0) {
+        return '<div class="focus-empty">No API calls recorded for this job.</div>';
+    }
+
+    const { calls, cost, input_tokens, output_tokens } = data;
+    const callList = data.calls && Array.isArray(data.calls) ? data.calls : [];
+
+    return `
+        <div class="monitoring-stats">
+            <div class="monitoring-stat">
+                <span class="stat-label">Total Calls</span>
+                <span class="stat-value">${calls}</span>
+            </div>
+            <div class="monitoring-stat">
+                <span class="stat-label">Total Cost</span>
+                <span class="stat-value">$${cost.toFixed(4)}</span>
+            </div>
+            <div class="monitoring-stat">
+                <span class="stat-label">Tokens</span>
+                <span class="stat-value">${formatTokenCount(input_tokens + output_tokens)}</span>
+                <span class="stat-detail">in: ${formatTokenCount(input_tokens)}, out: ${formatTokenCount(output_tokens)}</span>
+            </div>
+        </div>
+
+        ${callList.length > 0 ? `
+        <div class="monitoring-prompts">
+            <div class="monitoring-section-title">Recent API Calls</div>
+            ${callList.slice(0, 20).map(call => `
+                <div class="monitoring-prompt">
+                    <span class="prompt-time">${formatPromptTime(call.timestamp)}</span>
+                    <span class="prompt-tokens">${call.input_tokens}/${call.output_tokens}</span>
+                    <span class="prompt-model">${call.model || 'unknown'}</span>
+                    <span class="prompt-cost">$${call.cost.toFixed(4)}</span>
+                </div>
+            `).join('')}
+        </div>
+        ` : ''}
+    `;
+}
+
+async function loadRateLimitEvents(agentId) {
+    try {
+        const response = await fetch('/api/rate-limiting/events?days=7');
+        if (!response.ok) return null;
+        const events = await response.json();
+        // Filter events for this agent
+        return events.filter(e => e.agent_id === agentId || !e.agent_id);
+    } catch (error) {
+        console.error('Failed to load rate limit events:', error);
+        return null;
+    }
+}
+
+function renderRateLimitEventsContent(events, agentId) {
+    if (!events || events.length === 0) {
+        return '<div class="focus-empty">No rate limit events for this agent.</div>';
+    }
+
+    // Filter to agent-specific events (exclude global events for now)
+    const agentEvents = events.filter(e => e.agent_id === agentId);
+
+    if (agentEvents.length === 0) {
+        return '<div class="focus-empty">No rate limit events for this agent.</div>';
+    }
+
+    return `
+        <div class="rate-limit-events">
+            ${agentEvents.slice(0, 50).map(e => {
+                const eventClass = e.event === 'agent_paused' ? 'event-paused' :
+                                   e.event === 'agent_resumed' ? 'event-resumed' :
+                                   e.event === 'rate_limit_hit' ? 'event-limited' : '';
+                return `
+                    <div class="rate-limit-event ${eventClass}">
+                        <span class="event-time">${formatPromptTime(e.timestamp)}</span>
+                        <span class="event-type">${escapeHtml(e.event)}</span>
+                        <span class="event-detail">${e.reason || e.details?.reason || ''}</span>
+                    </div>
+                `;
+            }).join('')}
         </div>
     `;
 }
@@ -545,6 +646,17 @@ function renderAgentDetailView(job) {
                 </div>
             </div>
 
+            <!-- Rate Limit Events Section - collapsed by default, lazy loaded -->
+            <div class="job-section">
+                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'rate-limit-events', '${agentId}')">
+                    <span>Rate Limit Events</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="section-loading">Click to load...</div>
+                </div>
+            </div>
+
             <!-- Assets Section -->
             ${assets.length > 0 ? `
             <div class="job-section">
@@ -747,6 +859,17 @@ function renderJobDetailView(jobId) {
                 </div>
             </div>
             ` : ''}
+
+            <!-- API Calls Section -->
+            <div class="job-section">
+                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'job-api-calls', '${job.id}')">
+                    <span>API Calls</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content" data-loaded="false">
+                    <div class="section-loading">Loading...</div>
+                </div>
+            </div>
         </div>
     `;
 }
