@@ -50,6 +50,14 @@ function connectSSE() {
         showChatNotification();
     });
 
+    // Handle TTS audio from agent tool calls
+    eventSource.addEventListener('tts_audio', (e) => {
+        const data = JSON.parse(e.data);
+        if (data.audio_base64 && typeof playTTSAudio === 'function') {
+            playTTSAudio(data.audio_base64);
+        }
+    });
+
     eventSource.onerror = () => {
         eventSource.close();
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);

@@ -73,7 +73,7 @@ def api_chat(request: ChatRequest) -> ChatResponse:
             result = client.synthesize(
                 text=response,
                 voice="nova",
-                instructions="Speak naturally with a warm, friendly tone."
+                instructions="Speak in a warm, friendly, and upbeat tone. Be conversational and personable, like talking to a close friend. Use natural inflections and vary your pacing to sound engaging and approachable."
             )
             audio_base64 = base64.b64encode(result.audio_bytes).decode()
         except Exception as e:

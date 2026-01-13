@@ -8,18 +8,19 @@ import base64
 
 from .. import tool
 from ...speech import get_speech_client, supports_tts
+from ...events import emit_ui_event
 
 
-@tool("speak_aloud", "Read text aloud using text-to-speech. Returns audio that will be played to the user.", tool_type="integration")
+@tool("speak_aloud", "Read text aloud using text-to-speech. The audio will be played through the user's speakers.", tool_type="integration")
 def speak_aloud(text: str, voice: str = "nova") -> dict:
-    """Generate speech audio from text.
+    """Generate speech audio from text and play it to the user.
 
     Args:
         text: The text to read aloud
         voice: Voice to use (default: 'nova')
 
     Returns:
-        Dict with status and audio_base64, or error
+        Dict with status, or error
     """
     if not supports_tts():
         return {"error": "Text-to-speech not available for current provider"}
@@ -32,10 +33,11 @@ def speak_aloud(text: str, voice: str = "nova") -> dict:
         result = client.synthesize(text=text, voice=voice)
         audio_base64 = base64.b64encode(result.audio_bytes).decode()
 
+        # Emit SSE event to play audio on frontend
+        emit_ui_event("tts_audio", {"audio_base64": audio_base64})
+
         return {
-            "status": "generated",
-            "audio_base64": audio_base64,
-            "format": result.format,
+            "status": "playing",
             "text_length": len(text)
         }
 
