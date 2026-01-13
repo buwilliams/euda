@@ -245,8 +245,13 @@ class UnifiedClient:
             from .chatgpt import ChatGPTProvider
             return ChatGPTProvider()
         elif provider == "grok":
-            from .grok import GrokProvider
-            return GrokProvider()
+            try:
+                from .grok import GrokProvider
+                return GrokProvider()
+            except ImportError:
+                raise ImportError(
+                    "Grok provider requires xai-sdk. Install with: pip install xai-sdk"
+                )
         else:
             raise ValueError(f"Unknown provider: {provider}")
 
