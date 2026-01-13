@@ -38,7 +38,7 @@ The user is agent `user` with the same structure as AI agents:
 - JSONL file: `data/agents/{id}/memory/short-term.jsonl`
 - Tracks important items for proactive agent attention
 - Fields: id, date_mentioned, date_expected, type, short_description
-- Types: person, place, thing, goal, concern, idea
+- Types: person, place, thing, goal, concern, idea, learning, behavior
 - Entries expire after 90 days from date_mentioned
 - Expired entries archive to long-term memory
 

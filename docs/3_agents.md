@@ -1,123 +1,92 @@
 # Agents
 
-Euno is built on two core concepts: **Agents** and **Jobs**. Agents do the work; jobs are the work. The rest of this document explains how we view these two concepts.
+Euno is built on two core concepts: **Agents** and **Jobs**. Agents do the work; jobs are the work.
 
-An agent is anything with the capacity to act. Both people and AIs can be agents. In Euno, an agent is defined by a continuous loop that: processes work, a personality that shapes how it acts, memory that provides context, and behavioral triggers (events that prompt action).
+An agent is anything with the capacity to act—both people and AIs qualify. You, the user, are an agent too; you just have a different interface (the UI) than AI agents (autonomous loops). Every agent in Euno has the same fundamental components: a profile that shapes identity, memory that provides context, tools that define capabilities, and triggers that drive behavior.
 
-## Concepts
+Jobs are how agents coordinate. Any agent can create a job, work on it directly, or hand it off to another agent. This creates a dynamic system where work flows based on who has the capacity and capability to act.
 
-- **Agent** — An autonomous worker with identity, memory, and purpose
-- **Profile** — Who the agent is: purpose, behavioral rules, voice
-- **Memory** — What the agent knows: short-term (90 days) and long-term (permanent)
-- **Behavior** — How the agent acts: triggered by job assignment, exploration, or reflection
-- **Job** — A unit of work that flows between agents and users
-- **User as Agent** — You're an agent too, just with a different interface
+## Agents
 
-## Profile
+### Profile
 
-A profile captures who an agent is. All profiles evolve through reflection—the difference is that AI agents start pre-filled while users start empty.
+A profile defines who an agent is. AI agents start with a pre-filled profile; users start empty. Both evolve through reflection.
 
-### Cognitive Core (User Profile)
+**AI Agent Profiles** are simple and direct:
+- **Purpose** — What the agent does
+- **Behavioral Rules** — Must/must not constraints
+- **Voice** — Communication style
 
-1. **Humans act to pursue what they desire and avoid what they fear.**
-   These wants arise from biological drives and are shaped by experience (nature and nurture).
+**User Profiles** are richer because humans are more complex. Euno builds your profile by observing patterns over time, guided by a model of how identity actually works:
 
-2. **Early life is dominated by exploration.**
-   People try many strategies to learn what works, what fails, and what is costly.
+*Humans act to pursue what they desire and avoid what they fear.* Through experience, people discover strategies that reliably meet their needs. These successful strategies get repeated and reinforced until they become stable patterns—attractors the person returns to, especially under stress. Identity isn't what someone says about themselves; it's the pattern of these attractors over time.
 
-3. **Strategies that reliably work are exploited.**
-   Successful ways of meeting needs are repeated, reinforced, and become cheaper over time.
+This has practical implications for how Euno learns about you. The system watches for:
+- **Wants and Fears** — Patterns of behavior that reveal underlying desires
+- **Stable Attractors** — Strategies you consistently return to
+- **Notable Events** — Actions that are either consistent with patterns or surprisingly different
+- **Influences** — People, places, media, and experiences that shape you
+- **Interests** — Goals, projects, and activities you pursue
 
-4. **Repeated exploitation forms stable internal attractors.**
-   These are patterns the person tends to return to—especially under stress—because they are familiar, efficient, or safe.
+Flourishing requires balance: most life is spent exploiting known strategies for stability (~90%), while reserving space for bounded exploration (~10%) to discover new options. Euno respects this ratio—primarily supporting what you're already doing while occasionally surfacing novel possibilities.
 
-5. **Identity is the pattern of these attractors over time.**
-   Identity is not raw desire, values, or stories; it is how a person has learned to reliably get what they want.
+### Memory
 
-6. **The self-model is a story layered on top of behavior.**
-   It helps explain, justify, and stabilize strategies, but it is incomplete and sometimes inaccurate.
+Memory gives agents context to anticipate needs. Without memory, every interaction starts from zero.
 
-7. **Lasting change requires new strategies to work under real conditions.**
-   Insight alone is insufficient; identity evolves when exploration produces strategies that consistently outperform old ones.
+**Short-term memory** (90 days) captures what's currently on an agent's mind: people, places, things, goals, concerns, ideas, learnings, and behaviors. The last two enable self-improvement—agents can record what they've learned and behavioral patterns to refine over time. Memories are extracted automatically after conversations.
 
-8. **Flourishing requires balance:**
-   Most life is spent exploiting known, safe strategies for stability (~90%), while a smaller portion is reserved for bounded, reversible exploration (~10%) to discover new options and maintain future safety. Pressure can support growth, but only when it preserves agency, dignity, and integration.
+**Long-term memory** (permanent) is a chronological record of important events. When short-term memories expire, significant ones graduate to long-term storage. This archive becomes the source of truth for profile evolution.
 
-### Profile Schema
+The flow is: Conversations → Short-term Memory → Reflection → Long-term Memory → Profile updates.
 
-**User Profile:**
-1. Biographical Information (name, addresses, phone numbers, etc.)
-2. Wants and Fears (patterns of behavior that uncover desires and fears)
-3. Stable Attractors (patterns the person returns to)
-4. Notable Events and Actions (either because they are consistent or surprising)
-5. Influences (people, places, books, activities, entertainment, trips, experiences, etc.)
-6. Interests (goals, projects, work, hobbies, entertainment)
-7. Summary of changes from previous years
+### Tools
 
-**AI Agent Profile:**
-1. Purpose — What the agent does
-2. Behavioral Rules — Must/must not constraints
-3. Voice — Communication style
+Tools define what an agent can do. Each agent's config lists the tools it has access to—this is how you control capabilities and permissions.
 
-## Memory
+An agent that can't see a tool can't use it. This creates natural boundaries: a research agent might have web search tools but no file system access; a personal assistant might manage jobs but not send notifications.
 
-Memory gives agents context to anticipate needs.
+Tools are registered with a `@tool` decorator in `src/tools/`. To give an agent a new capability, add the tool name to its config. To restrict an agent, remove tools from its list.
 
-**Short-term** (90 days): What's on the agent's mind right now. Types: person, place, thing, goal, concern, idea. After 90 days, entries move to long-term memory.
+### Behavior
 
-**Long-term** (permanent): Chronological record of important events. Source of truth for profile evolution.
+Agents act in response to triggers. There are three types:
 
-**Flow:**
-```
-Conversations → Short-term Memory (automatic extraction)
-                        ↓
-              Reflection (scheduled trigger)
-                        ↓
-              Long-term Memory → Profile
-```
+**Job Assignment** — Work assigned by users or other agents. The agent executes and completes the job.
 
-## Behavior
+**Exploration** — Scheduled discovery where agents research opportunities aligned with your interests. Configured via `exploration.trigger` in the agent's config. Creates jobs tagged `trigger:exploration`.
 
-Agents respond to three types of triggers, each with its own prompt:
+**Reflection** — Scheduled self-analysis where agents process memories and update profiles. Configured via `reflection.trigger`. Creates jobs tagged `trigger:reflection`.
 
-- **Job Assignment** — Work assigned by users or other agents. Execute and complete.
-- **Exploration** — Scheduled discovery. Configured via `exploration.trigger` in config.json. Creates `Trigger:exploration:{date}` jobs.
-- **Reflection** — Scheduled self-analysis. Configured via `reflection.trigger` in config.json. Creates `Trigger:reflection:{date}` jobs.
-
-Prompts live in `data/system/prompts/agent/`. Agents can override with their own in `data/agents/{id}/prompts/`.
+Each trigger type has its own prompt template. System defaults live in `data/system/prompts/agent/`; individual agents can override with custom prompts in `data/agents/{id}/prompts/`.
 
 ## Jobs
 
-Jobs are how all agents coordinate. Any agent—AI or user—can spawn a job. The spawning agent may complete it directly or route it to other agents. This creates a dynamic system where work flows based on who has the capacity to act.
+Jobs are how all agents coordinate work. Any agent can spawn a job, work on it, or route it to others.
 
 **Structure:**
-- **Hierarchy** — Jobs nest via `parent_id`. Top-level containers organize related work.
-- **System Container** — Auto-created container for system-generated jobs (triggers, etc.)
-- **Assignment** — Jobs have `assignees[]`. An agent only sees jobs assigned to it.
-- **Status** — `todo`, `completed`, `archived`. Only `todo` jobs are actionable.
+- Jobs nest hierarchically via `parent_id`—top-level jobs organize related work
+- Jobs have `assignees[]`—an agent only sees jobs assigned to it
+- Status is `todo`, `completed`, or `archived`—only `todo` jobs are actionable
 
-**Tags:**
+**Tags** provide context:
 - `user:request` — User asked for this; hand findings back, don't auto-complete
+- `trigger:exploration` — Scheduled discovery job
 - `trigger:reflection` — Scheduled self-analysis job
-- `trigger:*` — Other scheduled trigger jobs
 
-**Flow:**
-- Agent spawns job → works on it → completes it
-- Agent spawns job → hands off to another agent → receives it back → completes
+**Flow patterns:**
+- Agent creates job → works on it → completes it
+- Agent creates job → hands off to another agent → receives result → completes
 - Exploration creates suggestion → assigns to user for review
-- Reflection creates insights → may spawn follow-up jobs
+- Reflection generates insight → may spawn follow-up jobs
 
 **Key tools:**
-- `create_job(name, description, assignees)` — Spawn new work
-- `handoff_job(job_id, to, note)` — Pass to another agent or user
+- `create_job(name, description, assignees)` — Create new work
+- `handoff_job(job_id, to, note)` — Transfer to another agent
 - `complete_job(job_id)` — Mark as done
-- `pending_from` tracks return routing
 
-**Rules:**
-- Only complete when work is truly done
-- Use handoff for transfers between agents
-- Job logs show full coordination history
+The `pending_from` field tracks return routing so jobs find their way back after handoffs. Job logs preserve the full coordination history.
 
 ---
 
-**Technical Details:** See spec/1_agents.md for implementation rules, spec/2_data.md for data schemas.
+**Technical Details:** See `spec/1_agents.md` for implementation rules, `spec/2_data.md` for data schemas.

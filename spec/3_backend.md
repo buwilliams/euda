@@ -23,6 +23,7 @@ Rules for the server, API, and infrastructure.
   - `/api/events` — SSE endpoint
   - `/api/transcribe` — Audio transcription (speech-to-text)
   - `/api/synthesize` — Text-to-speech synthesis
+  - `/api/rate-limiting` — Rate limiter status and control
 
 ## Authentication
 
