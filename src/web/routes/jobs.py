@@ -196,6 +196,28 @@ def api_get_children(job_id: str):
     return get_child_jobs(job_id)
 
 
+@router.get("/{job_id}/api-calls")
+def api_get_job_api_calls(job_id: str, days: int = 7):
+    """Get API calls made for this job.
+
+    Args:
+        job_id: ID of the job
+        days: Number of days to look back (default 7)
+
+    Returns:
+        Dict with call count, total cost, and list of API calls
+    """
+    from ...cost_tracker import get_calls_by_job, get_job_call_count
+
+    summary = get_job_call_count(job_id, days)
+    calls = get_calls_by_job(job_id, days)
+
+    return {
+        **summary,
+        "calls": calls
+    }
+
+
 # Assignment endpoints
 
 @router.get("/{job_id}/assignees")

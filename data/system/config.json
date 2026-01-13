@@ -46,6 +46,24 @@
           "output": 0.5
         }
       }
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "rolling_window": {
+        "max_calls": 30,
+        "window_seconds": 60
+      },
+      "throttle": {
+        "enabled": false,
+        "calls_per_minute": 10,
+        "queue_max_size": 100
+      },
+      "runaway_detection": {
+        "enabled": true,
+        "baseline_window_minutes": 60,
+        "spike_multiplier": 5.0,
+        "min_baseline_calls": 5
+      }
     }
   },
   "logging": {

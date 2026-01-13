@@ -334,7 +334,8 @@ class Agent:
             system=system_prompt,
             messages=messages,
             tools=tools if tools else None,
-            agent_id=self.id
+            agent_id=self.id,
+            job_id=self._current_job_id
         )
 
         self._log("llm_response", {
@@ -353,7 +354,8 @@ class Agent:
                 system=system_prompt,
                 messages=messages,
                 tools=tools if tools else None,
-                agent_id=self.id
+                agent_id=self.id,
+                job_id=self._current_job_id
             )
 
             self._log("llm_response", {
@@ -435,6 +437,9 @@ class Agent:
         current_job = jobs[0]
         remaining = len(jobs) - 1
 
+        # Set job context for cost/rate tracking
+        self._current_job_id = current_job.get("id")
+
         # Use standardized job prompt format
         from .prompts import load_template
         prompt = self._format_job_prompt(current_job, remaining)
@@ -443,24 +448,28 @@ class Agent:
         max_iterations = self._get_system_config().get("agents", {}).get("max_work_iterations", 20)
         iteration = 0
 
-        while not self._work_done and iteration < max_iterations:
-            iteration += 1
-            self._log("work_iteration", {"iteration": iteration})
+        try:
+            while not self._work_done and iteration < max_iterations:
+                iteration += 1
+                self._log("work_iteration", {"iteration": iteration})
 
-            # Log to memory for memory creation, but don't save to conversation history
-            response = self.chat(prompt, log_to_memory=True, save_to_history=False)
-            print(f"[{self.id}] {response[:100]}...")
+                # Log to memory for memory creation, but don't save to conversation history
+                response = self.chat(prompt, log_to_memory=True, save_to_history=False)
+                print(f"[{self.id}] {response[:100]}...")
 
-            if self._work_done:
-                break
+                if self._work_done:
+                    break
 
-            # Continue prompt for subsequent iterations
-            prompt = load_template("agent/continue")
+                # Continue prompt for subsequent iterations
+                prompt = load_template("agent/continue")
 
-        if iteration >= max_iterations:
-            self._log("work_cycle_end", {"reason": "max_iterations", "iterations": iteration})
-        else:
-            self._log("work_cycle_end", {"reason": "done_working", "iterations": iteration})
+            if iteration >= max_iterations:
+                self._log("work_cycle_end", {"reason": "max_iterations", "iterations": iteration})
+            else:
+                self._log("work_cycle_end", {"reason": "done_working", "iterations": iteration})
+        finally:
+            # Clear job context
+            self._current_job_id = None
 
     async def work_cycle(self):
         """Perform one cycle of autonomous work (async wrapper)."""
