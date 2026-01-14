@@ -63,12 +63,16 @@ def render_template(name: str, agent_id: Optional[str] = None, **kwargs) -> str:
     Args:
         name: Template name without extension
         agent_id: Optional agent ID to check for agent-specific overrides
+                  (also passed to template as {agent_id} if present)
         **kwargs: Variables to substitute in the template
 
     Returns:
         Rendered template string
     """
     template = load_template(name, agent_id=agent_id)
+    # Also pass agent_id to template kwargs so {agent_id} can be used in templates
+    if agent_id is not None:
+        kwargs.setdefault("agent_id", agent_id)
     return template.format(**kwargs)
 
 

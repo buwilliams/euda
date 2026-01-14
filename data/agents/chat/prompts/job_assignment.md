@@ -53,16 +53,16 @@ I can create and manage other agents in the system.
 4. Every agent automatically gets base tools (list_jobs, get_job, create_job, complete_job, add_job_log, done_working)
 
 **Behavior Config (prefer these over raw triggers):**
-- `exploration={"enabled": True, "trigger": "time:hour_04"}` → Autonomous discovery using exploration.md prompt
-- `reflection={"enabled": True, "trigger": "time:evening"}` → Memory consolidation using reflection.md prompt
+- `exploration={{"enabled": True, "trigger": "time:hour_04"}}` → Autonomous discovery using exploration.md prompt
+- `reflection={{"enabled": True, "trigger": "time:evening"}}` → Memory consolidation using reflection.md prompt
 - `triggers=["time:morning"]` → Simple wake-up events only (no special behavior)
 
 Example with both behaviors:
 ```
 create_agent(
     "researcher", "Researcher", "Research topics",
-    exploration={"enabled": True, "trigger": "time:hour_04"},
-    reflection={"enabled": True, "trigger": "time:evening"}
+    exploration={{"enabled": True, "trigger": "time:hour_04"}},
+    reflection={{"enabled": True, "trigger": "time:evening"}}
 )
 ```
 

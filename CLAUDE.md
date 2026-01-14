@@ -38,6 +38,33 @@ Euno is a personal intelligence that learns to anticipate you: doing tasks for y
 
 **Important for Claude Code:** When starting Euno during development, run it as a background task so the conversation can continue while the server runs.
 
+## Development and Testing
+
+Use the dev CLI for testing agent internals:
+
+```bash
+python main.py dev <command> [args] [--json]
+
+# Inspect agent state
+python main.py dev memory chat          # View agent's memory
+python main.py dev profile chat         # View agent's profile
+python main.py dev prompt chat system   # View system prompt
+
+# Test execution
+python main.py dev job chat "Test task" --dry-run   # See prompt without executing
+python main.py dev tool list_jobs '{"status": "todo"}'  # Execute tool directly
+
+# Trigger behaviors manually
+python main.py dev reflect chat --consolidate   # Run only consolidate phase
+python main.py dev explore chat                 # Trigger exploration
+
+# Live monitoring
+python main.py dev watch                        # Stream all system events
+python main.py dev trace <job_id>               # Show execution trace
+```
+
+Use `--json` for machine-readable output. See `spec/7_dev_cli.md` for full documentation.
+
 ## Project Structure
 
 ```
@@ -194,4 +221,4 @@ Before submitting changes, review against `spec/*.md`:
 - `spec/3_backend.md` — Server, API, authentication, storage
 - `spec/4_ux_ui.md` — User experience and interface patterns
 - `spec/5_cli.md` — Command-line interface commands and behavior
-- `spec/6_dev_cli.md` — Developer CLI for debugging and improving agents
+- `spec/7_dev_cli.md` — Developer CLI for debugging and improving agents
