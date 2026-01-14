@@ -10,7 +10,7 @@ An agent is defined by:
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from .llms import get_client
 from .logger import get_logger
@@ -24,13 +24,20 @@ AGENTS_DIR = DATA_DIR / "agents"
 class Agent:
     """A generic agent that operates based on its configuration."""
 
-    def __init__(self, agent_id: str, config: Optional[dict] = None, session_id: Optional[str] = None):
+    def __init__(
+        self,
+        agent_id: str,
+        config: Optional[dict] = None,
+        session_id: Optional[str] = None,
+        event_sink: Optional[Callable[[str, dict], None]] = None
+    ):
         self.id = agent_id
         self.config = config or self._load_config()
         self.profile = self._load_profile()
         self._work_done = False
         self._session_id = session_id
         self._current_job_id = None
+        self._event_sink = event_sink
 
         # Initialize reflection if enabled
         reflection_config = self.config.get("reflection", {})
@@ -178,11 +185,18 @@ class Agent:
         return get_logger(f"agents/{self.id}/logs")
 
     def _log(self, event: str, details: Optional[dict] = None):
-        """Append a log entry to today's log file."""
+        """Append a log entry to today's log file and optionally stream to sink."""
         entry = {"event": event}
         if details:
             entry["details"] = details
         self._get_logger().info(entry)
+
+        # Stream to event sink if configured (for dev CLI)
+        if self._event_sink:
+            self._event_sink(event, {
+                "agent_id": self.id,
+                **(details or {})
+            })
 
     def _get_system_config(self) -> dict:
         """Load system configuration."""

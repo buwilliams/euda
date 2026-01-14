@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from .reflection import Reflection
 
 
-def append_phase(reflection: "Reflection", user_message: str, assistant_response: str):
+def append_phase(reflection: "Reflection", user_message: str, assistant_response: str) -> int:
     """Run the append phase for a conversation.
 
     Calls LLM to extract noteworthy items and adds them to short-term memory.
@@ -28,6 +28,9 @@ def append_phase(reflection: "Reflection", user_message: str, assistant_response
         reflection: The Reflection instance
         user_message: The user's message
         assistant_response: The assistant's response
+
+    Returns:
+        Number of items added to memory
     """
     agent_id = reflection.agent.id
 
@@ -76,14 +79,17 @@ def append_phase(reflection: "Reflection", user_message: str, assistant_response
     })
 
     # Add valid items to short-term memory
+    items_added = 0
     if new_items:
-        _add_items_to_memory(new_items, existing_memory, agent_id)
+        items_added = _add_items_to_memory(new_items, existing_memory, agent_id)
 
     reflection.logger.info({
         "event": "append_complete",
         "agent_id": agent_id,
-        "items_added": len(new_items)
+        "items_added": items_added
     })
+
+    return items_added
 
 
 def _parse_items(response: str) -> List[dict]:
@@ -154,13 +160,16 @@ def _parse_items(response: str) -> List[dict]:
     return valid_items
 
 
-def _add_items_to_memory(new_items: List[dict], existing_memory: List[dict], agent_id: str):
+def _add_items_to_memory(new_items: List[dict], existing_memory: List[dict], agent_id: str) -> int:
     """Add new items to short-term memory, avoiding duplicates.
 
     Args:
         new_items: Items to add (validated)
         existing_memory: Current memory entries
         agent_id: Agent ID for saving
+
+    Returns:
+        Number of items actually added (after deduplication)
     """
     # Build set of existing descriptions for deduplication
     existing_descriptions = {
@@ -188,3 +197,5 @@ def _add_items_to_memory(new_items: List[dict], existing_memory: List[dict], age
 
     if added:
         _save_entries(existing_memory, agent_id)
+
+    return len(added)

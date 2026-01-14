@@ -30,13 +30,16 @@ if TYPE_CHECKING:
 RECENT_MEMORY_DAYS = 7
 
 
-def consolidate_phase(reflection: "Reflection"):
+def consolidate_phase(reflection: "Reflection") -> Optional[dict]:
     """Run the consolidate phase for an agent.
 
     Performs heavy analysis to graduate memories and update profile.
 
     Args:
         reflection: The Reflection instance
+
+    Returns:
+        Dict with items_graduated, profile_updated, long_term_entry counts/flags
     """
     agent_id = reflection.agent.id
     is_user = agent_id == "user"
@@ -62,7 +65,7 @@ def consolidate_phase(reflection: "Reflection"):
             "agent_id": agent_id,
             "reason": "no_data"
         })
-        return
+        return {"items_graduated": 0, "profile_updated": False, "long_term_entry": False}
 
     # Build prompt
     prompt = build_consolidate_prompt(
@@ -106,7 +109,7 @@ def consolidate_phase(reflection: "Reflection"):
             "agent_id": agent_id,
             "response": text_response[:500]
         })
-        return
+        return {"items_graduated": 0, "profile_updated": False, "long_term_entry": False}
 
     # Apply long-term memory entry
     if result.get("long_term_entry"):
@@ -131,6 +134,12 @@ def consolidate_phase(reflection: "Reflection"):
         "profile_updated": bool(result.get("profile_updates")),
         "items_graduated": len(graduated_ids)
     })
+
+    return {
+        "items_graduated": len(graduated_ids),
+        "profile_updated": bool(result.get("profile_updates")),
+        "long_term_entry": bool(result.get("long_term_entry"))
+    }
 
 
 def _load_recent_long_term(reflection: "Reflection", days: int) -> str:
