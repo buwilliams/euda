@@ -91,6 +91,8 @@ class SetupActivity : AppCompatActivity() {
                     if (response.isSuccessful) {
                         // Save settings and proceed
                         prefs.setServerAddress(ip, port)
+                        // Enable notifications by default
+                        prefs.setNotificationServiceEnabled(true)
                         startMainActivity()
                     } else {
                         setLoading(false)

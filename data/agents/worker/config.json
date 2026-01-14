@@ -27,7 +27,9 @@
     "read_long_term_memory",
     "write_long_term_memory",
     "graduate_memory",
-    "update_own_profile"
+    "update_own_profile",
+    "send_chat_message",
+    "check_user_connected"
   ],
   "triggers": [
     "time:morning"

@@ -46,7 +46,7 @@ class PreferencesManager(context: Context) {
     }
 
     fun isNotificationServiceEnabled(): Boolean {
-        return prefs.getBoolean(KEY_NOTIFICATIONS_ENABLED, false)
+        return prefs.getBoolean(KEY_NOTIFICATIONS_ENABLED, true)
     }
 
     fun setNotificationServiceEnabled(enabled: Boolean) {

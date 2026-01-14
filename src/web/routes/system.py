@@ -547,3 +547,50 @@ async def events():
             "X-Accel-Buffering": "no",
         }
     )
+
+
+# ============== Test Endpoints ==============
+
+@router.post("/test/notification")
+def test_notification(data: dict = None):
+    """Test endpoint to manually trigger a notification.
+
+    Usage:
+        POST /api/test/notification
+        Body: {"message": "Test message", "agent": "Test Agent"}
+    """
+    from ...events import emit_ui_event, has_connected_clients
+
+    # Default test message
+    message = "Test notification - this is a test message from the server"
+    agent_name = "Test Agent"
+
+    # Override with provided data
+    if data:
+        message = data.get("message", message)
+        agent_name = data.get("agent", agent_name)
+
+    # Check if anyone is connected
+    connected = has_connected_clients()
+
+    if not connected:
+        return {
+            "success": False,
+            "delivered": False,
+            "reason": "No connected clients",
+            "message": "Make sure you have the web UI open to receive notifications"
+        }
+
+    # Emit the notification
+    emit_ui_event("agent_message", {
+        "message": message,
+        "agent": agent_name,
+        "timestamp": datetime.now().isoformat()
+    })
+
+    return {
+        "success": True,
+        "delivered": True,
+        "message": message,
+        "agent": agent_name
+    }

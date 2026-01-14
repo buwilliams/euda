@@ -48,6 +48,19 @@ function connectSSE() {
         addInlineMessage(data.message, 'friend');
         // Show notification if not on chat tab
         showChatNotification();
+
+        // Show browser notification if appropriate
+        if (typeof shouldShowBrowserNotification === 'function' &&
+            shouldShowBrowserNotification()) {
+            // Request permission if first time
+            if (typeof maybeRequestNotificationPermission === 'function') {
+                maybeRequestNotificationPermission();
+            }
+            // Show browser notification
+            if (typeof showBrowserNotification === 'function') {
+                showBrowserNotification(data.message, data.agent || 'Euno');
+            }
+        }
     });
 
     // Handle TTS audio from agent tool calls

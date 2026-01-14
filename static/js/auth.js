@@ -88,6 +88,11 @@ function initApp() {
     // Connect SSE
     connectSSE();
 
+    // Initialize browser notifications
+    if (typeof initNotifications === 'function') {
+        initNotifications();
+    }
+
     // Load tasks data for badge
     loadTasksData();
 

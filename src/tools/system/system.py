@@ -109,7 +109,7 @@ def done_working(summary: str = "") -> dict:
                 "items": {
                     "type": "object",
                     "properties": {
-                        "title": {"type": "string", "description": "Notification title (required)"},
+                        "title": {"type": "string", "description": "Notification title/agent name (required)"},
                         "message": {"type": "string", "description": "Notification body (required)"},
                         "priority": {"type": "string", "enum": ["low", "normal", "high"], "description": "Priority level"}
                     },
@@ -127,13 +127,14 @@ def send_notifications_batch(notifications: list) -> dict:
     Returns:
         Dict with 'sent' (list of results) and 'count'
     """
+    from .notifications import send_chat_message
+
     results = []
 
     for notif in notifications:
-        result = send_notification(
-            title=notif["title"],
+        result = send_chat_message(
             message=notif["message"],
-            priority=notif.get("priority", "normal")
+            agent_name=notif.get("title", "Euno")
         )
         results.append(result)
 
