@@ -26,6 +26,7 @@ Commands:
   agents           List all agents
   jobs             List all jobs
   points           Show contribution points summary
+  dev              Developer tools for debugging agents
   set-password     Set the access password
   remove-password  Remove the password (disable auth)
   fresh-start      Reset all user data (memory, jobs, logs, password)
@@ -37,6 +38,7 @@ Examples:
   python main.py agents            # List agents
   python main.py jobs              # List jobs
   python main.py points            # Show contribution points
+  python main.py dev help          # Show dev commands
   python main.py set-password      # Set access password
   python main.py remove-password   # Disable authentication
   python main.py fresh-start       # Clean slate (keeps agent configs)
@@ -45,7 +47,7 @@ Examples:
 
     parser.add_argument("command", nargs="?", default="help",
                         help="Command to run")
-    parser.add_argument("args", nargs="*", help="Command arguments")
+    parser.add_argument("args", nargs=argparse.REMAINDER, help="Command arguments")
 
     args = parser.parse_args()
 
@@ -55,6 +57,7 @@ Examples:
         "agents": cmd_agents,
         "jobs": cmd_jobs,
         "points": cmd_points,
+        "dev": cmd_dev,
         "set-password": cmd_set_password,
         "remove-password": cmd_remove_password,
         "fresh-start": cmd_fresh_start,
@@ -634,6 +637,12 @@ def cmd_fresh_start(args):
 
     print()
     print("Fresh start complete. Ready for new data.")
+
+
+def cmd_dev(args):
+    """Developer tools for debugging and improving agents."""
+    from src.cli import cmd_dev as dev_main
+    dev_main(args)
 
 
 if __name__ == "__main__":

@@ -194,3 +194,4 @@ Before submitting changes, review against `spec/*.md`:
 - `spec/3_backend.md` — Server, API, authentication, storage
 - `spec/4_ux_ui.md` — User experience and interface patterns
 - `spec/5_cli.md` — Command-line interface commands and behavior
+- `spec/6_dev_cli.md` — Developer CLI for debugging and improving agents

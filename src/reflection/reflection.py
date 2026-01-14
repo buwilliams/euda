@@ -36,6 +36,16 @@ class Reflection:
         """
         self.agent = agent
         self.logger = get_logger("system/logs/reflection")
+        # Inherit event sink from agent for dev CLI streaming
+        self._event_sink = getattr(agent, "_event_sink", None)
+
+    def _emit_to_sink(self, event: str, details: Optional[dict] = None):
+        """Emit event to sink if configured (for dev CLI streaming)."""
+        if self._event_sink:
+            self._event_sink(event, {
+                "agent_id": self.agent.id,
+                **(details or {})
+            })
 
     def _get_config(self) -> dict:
         """Get reflection configuration from agent config."""
@@ -74,8 +84,11 @@ class Reflection:
         """
         from .append import append_phase
 
+        self._emit_to_sink("append_start", {})
+
         try:
-            append_phase(self, user_message, assistant_response)
+            items_added = append_phase(self, user_message, assistant_response)
+            self._emit_to_sink("append_complete", {"items_added": items_added or 0})
         except Exception as e:
             # Log error but don't block - append should not disrupt chat flow
             self.logger.error({
@@ -83,6 +96,7 @@ class Reflection:
                 "agent_id": self.agent.id,
                 "error": str(e)
             })
+            self._emit_to_sink("append_error", {"error": str(e)})
 
     def consolidate(self):
         """Consolidate phase: Graduate memories and update profile.
@@ -95,12 +109,20 @@ class Reflection:
         """
         from .consolidate import consolidate_phase
 
+        self._emit_to_sink("consolidate_start", {})
+
         try:
-            consolidate_phase(self)
+            result = consolidate_phase(self)
+            self._emit_to_sink("consolidate_complete", {
+                "items_graduated": result.get("items_graduated", 0) if result else 0,
+                "profile_updated": result.get("profile_updated", False) if result else False,
+                "long_term_entry": result.get("long_term_entry", False) if result else False,
+            })
         except Exception as e:
             self.logger.error({
                 "event": "consolidate_error",
                 "agent_id": self.agent.id,
                 "error": str(e)
             })
+            self._emit_to_sink("consolidate_error", {"error": str(e)})
             raise  # Re-raise for manager to handle retries

@@ -151,6 +151,10 @@ def emit_event(event: str, scope: str = None, data: dict = None):
     if bus:
         bus.emit(event, scope=scope, data=data)
 
+    # Also broadcast to dev CLI watchers if any are connected
+    if has_dev_subscribers():
+        emit_dev_event(scope or "system", event, data)
+
 
 # ============== UI Event Broadcasting ==============
 # For pushing updates to SSE clients
@@ -210,3 +214,57 @@ def has_connected_clients() -> bool:
     """
     with _ui_lock:
         return len(_ui_subscribers) > 0
+
+
+# ============== Dev CLI Event Broadcasting ==============
+# For dev CLI watch command to see all system events
+
+_dev_subscribers: List[queue.Queue] = []
+_dev_lock = threading.Lock()
+
+
+def subscribe_dev() -> queue.Queue:
+    """Subscribe to all events for dev CLI watch mode.
+
+    Returns:
+        Queue that receives all events
+    """
+    q = queue.Queue(maxsize=1000)
+    with _dev_lock:
+        _dev_subscribers.append(q)
+    return q
+
+
+def unsubscribe_dev(q: queue.Queue):
+    """Unsubscribe from dev events."""
+    with _dev_lock:
+        if q in _dev_subscribers:
+            _dev_subscribers.remove(q)
+
+
+def emit_dev_event(source: str, event: str, data: dict = None):
+    """Emit an event to all dev CLI subscribers.
+
+    Args:
+        source: Source of event (agent_id or "system")
+        event: Event type
+        data: Event data
+    """
+    entry = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "source": source,
+        "event": event,
+        "data": data or {}
+    }
+    with _dev_lock:
+        for q in list(_dev_subscribers):
+            try:
+                q.put_nowait(entry)
+            except queue.Full:
+                pass  # Skip if queue is full
+
+
+def has_dev_subscribers() -> bool:
+    """Check if any dev CLI watchers are connected."""
+    with _dev_lock:
+        return len(_dev_subscribers) > 0
