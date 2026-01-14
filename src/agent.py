@@ -160,6 +160,35 @@ class Agent:
             return path.read_text()
         return ""
 
+    def _parse_conversation_history(self) -> list:
+        """Parse conversation history markdown into message objects.
+
+        Returns:
+            List of message dicts with 'role' and 'content' keys
+        """
+        import re
+
+        history_text = self._load_conversation_history()
+        if not history_text:
+            return []
+
+        messages = []
+        # Parse markdown format: ## User (HH:MM:SS) or ## Assistant (HH:MM:SS)
+        parts = re.split(r'^## (User|Assistant) \([^)]+\)\n\n', history_text, flags=re.MULTILINE)
+
+        # parts[0] is empty or content before first header
+        # parts[1] is role (User/Assistant), parts[2] is content
+        # parts[3] is role, parts[4] is content, etc.
+        i = 1
+        while i < len(parts) - 1:
+            role = parts[i].lower()
+            msg_content = parts[i + 1].strip()
+            if msg_content:
+                messages.append({"role": role, "content": msg_content})
+            i += 2
+
+        return messages
+
     def _save_conversation_turn(self, role: str, content: str):
         """Append a conversation turn to session file."""
         path = self._get_conversation_path()
@@ -323,13 +352,17 @@ class Agent:
             voice_input: Whether input came from voice (enables conversational response style)
         """
         self._log("chat_start", {"message_length": len(message)})
-        if save_to_history:
-            self._save_conversation_turn("user", message)
 
         tools = self._get_tools()
         system_prompt = self._build_system_prompt(voice_input=voice_input)
 
-        messages = [{"role": "user", "content": message}]
+        # Load conversation history and append current message
+        messages = self._parse_conversation_history()
+        messages.append({"role": "user", "content": message})
+
+        # Save user message to history after parsing (to avoid duplicates)
+        if save_to_history:
+            self._save_conversation_turn("user", message)
 
         # Get fresh client (respects current provider config)
         # Client handles budget checking, cost tracking, and rate limiting automatically
