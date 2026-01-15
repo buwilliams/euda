@@ -358,6 +358,40 @@ def update_own_profile(updates: str, agent_id: str = None) -> dict:
     return {"updated": True, "agent_id": agent_id, "date": today}
 
 
+@tool("append_to_agent_profile", "Add a section to an agent's profile without overwriting existing content. Safer than update_agent_profile which replaces entirely.", tool_type="agents")
+def append_to_agent_profile(agent_id: str, section_title: str, content: str) -> dict:
+    """Safely append a new section to an agent's profile.
+
+    Unlike update_agent_profile which replaces the entire profile, this appends
+    a new section without losing reflection updates or other existing content.
+
+    Args:
+        agent_id: The agent to update
+        section_title: Title for the new section (e.g., "New Learning", "Behavioral Update")
+        content: Content to add under this section
+    """
+    from datetime import datetime
+
+    agent_dir = AGENTS_DIR / agent_id
+    if not agent_dir.exists():
+        return {"error": f"Agent not found: {agent_id}"}
+
+    profile_path = agent_dir / "profile.md"
+
+    if profile_path.exists():
+        current_profile = profile_path.read_text()
+    else:
+        current_profile = f"# {agent_id}\n"
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    new_section = f"\n\n---\n\n## {section_title} ({today})\n\n{content}"
+
+    new_profile = current_profile + new_section
+    profile_path.write_text(new_profile)
+
+    return {"updated": True, "agent_id": agent_id, "section": section_title, "date": today}
+
+
 # Backward-compatible alias for old tool name
 @tool("update_agent_persona", "Update an agent's profile. (Alias for update_agent_profile)", tool_type="agents")
 def update_agent_persona(agent_id: str, persona: str) -> dict:

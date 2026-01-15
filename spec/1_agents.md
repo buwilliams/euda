@@ -113,6 +113,7 @@ Agents respond to three types of behavioral triggers, each with its own prompt t
   - Creates visible `Trigger:reflection:{date}` jobs
   - Agent reviews memories, identifies patterns, evolves profile
   - Uses tools: list_memory, read_long_term_memory, graduate_memory, update_own_profile
+  - Consolidate includes recent completed jobs (last 20) for context on work patterns
 
 ## Prompt Templates
 

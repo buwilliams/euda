@@ -583,6 +583,24 @@ def add_job_log(job_id: str, action: str, agent: str = "user") -> Optional[dict]
     return _load_job(job_id)
 
 
+def get_job_logs(job_id: str) -> List[dict]:
+    """Get all log entries for a job.
+
+    Returns:
+        List of log entries with timestamp, agent, and action fields.
+        Sorted by timestamp ascending (oldest first).
+    """
+    conn = _get_connection()
+    cursor = conn.execute('''
+        SELECT timestamp, agent, action
+        FROM job_logs
+        WHERE job_id = ?
+        ORDER BY timestamp ASC
+    ''', (job_id,))
+
+    return [dict(row) for row in cursor.fetchall()]
+
+
 @tool("get_child_jobs", "Get all child jobs of a parent job. Use when: viewing job hierarchy, checking sub-tasks.", tool_type="data")
 def get_child_jobs(parent_id: str) -> List[dict]:
     """Get all child jobs of a given parent."""

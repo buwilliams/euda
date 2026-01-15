@@ -201,9 +201,17 @@ No Python code needed for new agents.
 - `GET/POST/DELETE /api/jobs/{id}/assets/{filename}` - Asset CRUD
 - `GET/POST /api/chat` - Chat with agent
 - `GET /api/agents` - List agents
+- `GET/PATCH /api/agents/{id}/profile` - Agent profile
+- `GET/PATCH /api/agents/{id}/config` - Agent config
+- `GET/POST/DELETE /api/agents/{id}/memory/short-term` - Agent memory
+- `GET /api/agents/{id}/monitoring` - Agent monitoring stats
+- `POST /api/agents/{id}/reflection/trigger` - Trigger reflection
+- `POST /api/agents/{id}/exploration/trigger` - Trigger exploration
 - `GET/PATCH /api/user/profile` - User profile
 - `GET/POST /api/user/memory/long-term` - Long-term memory entries
 - `GET/POST/DELETE /api/user/memory` - Memory items
+- `POST /api/fresh-start` - Reset user data with backup
+- `GET /api/backups` - List/restore backups
 
 ## Development Philosophy
 

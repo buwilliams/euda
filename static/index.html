@@ -260,6 +260,45 @@
                                 </div>
                             </div>
 
+                            <!-- Fresh Start Section -->
+                            <div class="settings-section">
+                                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                                    <span>Fresh Start</span>
+                                    <span class="section-toggle"><img src="/static/icons/chevron-right.svg" alt="toggle"></span>
+                                </div>
+                                <div class="collapsible-content">
+                                    <div class="settings-form">
+                                        <div class="settings-field">
+                                            <div class="fresh-start-info">
+                                                <p>Reset to a clean slate. Your current data is automatically backed up and can be restored at any time.</p>
+                                                <p><strong>Preserved:</strong> Agent configs & profiles, system settings</p>
+                                                <p><strong>Reset:</strong> Jobs, memory, logs, conversation history, password</p>
+                                            </div>
+                                        </div>
+                                        <div class="settings-field">
+                                            <button class="settings-btn settings-btn-danger" onclick="handleFreshStart()">Fresh Start</button>
+                                            <div class="settings-message" id="fresh-start-message"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Backups Section -->
+                            <div class="settings-section">
+                                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event); loadBackupsData();">
+                                    <span>Backups</span>
+                                    <span class="section-toggle"><img src="/static/icons/chevron-right.svg" alt="toggle"></span>
+                                </div>
+                                <div class="collapsible-content">
+                                    <div class="settings-form">
+                                        <div class="backups-list" id="backups-list">
+                                            <div class="focus-empty">Click to load backups...</div>
+                                        </div>
+                                        <div class="settings-message" id="backups-message"></div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Account Section -->
                             <div class="settings-section">
                                 <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">

@@ -2,9 +2,11 @@
 Agents API Routes
 """
 
+import uuid
+from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from ...tools.agents.agents import (
     list_agents, get_agent,
@@ -12,12 +14,13 @@ from ...tools.agents.agents import (
     get_agent_config, update_agent_config
 )
 from ...tools.agents.monitoring import get_agent_monitoring
-from ...tools.data.jobs import get_jobs_completed_by_agent
+from ...tools.data.jobs import get_jobs_completed_by_agent, create_job, get_system_container
 from ...tools.data.profile import get_profile, update_profile
 from ...tools.data.memory import (
     list_memory, add_memory, remove_memory,
     read_long_term_memory, write_long_term_memory, list_long_term_memory_dates
 )
+from ...logger import get_logger
 
 
 router = APIRouter()
@@ -32,6 +35,12 @@ class UpdateConfigRequest(BaseModel):
     enabled: Optional[bool] = None
     tools: Optional[List[str]] = None
     triggers: Optional[List[str]] = None
+    reflection: Optional[Dict[str, Any]] = None  # {enabled, trigger}
+    exploration: Optional[Dict[str, Any]] = None  # {enabled, trigger}
+
+
+class TriggerReflectionRequest(BaseModel):
+    phase: Optional[str] = "both"  # "append", "consolidate", or "both"
 
 
 class AddMemoryRequest(BaseModel):
@@ -124,6 +133,16 @@ def api_update_config(agent_id: str, request: UpdateConfigRequest):
         current_config["tools"] = request.tools
     if request.triggers is not None:
         current_config["triggers"] = request.triggers
+    if request.reflection is not None:
+        # Merge reflection settings
+        if "reflection" not in current_config:
+            current_config["reflection"] = {}
+        current_config["reflection"].update(request.reflection)
+    if request.exploration is not None:
+        # Merge exploration settings
+        if "exploration" not in current_config:
+            current_config["exploration"] = {}
+        current_config["exploration"].update(request.exploration)
 
     result = update_agent_config(agent_id, current_config)
     if "error" in result:
@@ -142,6 +161,16 @@ def api_get_short_term_memory(agent_id: str):
 def api_add_short_term_memory(agent_id: str, request: AddMemoryRequest):
     """Add a short-term memory item."""
     return add_memory(request.short_description, request.type, request.date_expected, agent_id)
+
+
+@router.get("/{agent_id}/memory/short-term/{entry_id}")
+def api_get_short_term_memory_item(agent_id: str, entry_id: str):
+    """Get a single short-term memory item."""
+    items = list_memory(agent_id)
+    for item in items:
+        if item.get("id") == entry_id:
+            return item
+    return {"error": "Memory item not found"}
 
 
 @router.delete("/{agent_id}/memory/short-term/{entry_id}")
@@ -181,3 +210,117 @@ def api_get_completed_jobs(agent_id: str, limit: int = 20):
 def api_get_monitoring(agent_id: str):
     """Get LLM monitoring stats for this agent."""
     return get_agent_monitoring(agent_id)
+
+
+# Reflection trigger endpoint
+@router.post("/{agent_id}/reflection/trigger")
+def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = None):
+    """Trigger reflection for an agent by creating a trigger job.
+
+    Creates a job with tags=["trigger:reflection:{phase}"] that the agent
+    will pick up and process during its work cycle.
+
+    Returns an execution_id for SSE progress tracking.
+    """
+    # Verify agent exists
+    config = get_agent_config(agent_id)
+    if config is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    phase = request.phase if request else "both"
+    if phase not in ("append", "consolidate", "both"):
+        raise HTTPException(status_code=400, detail="phase must be 'append', 'consolidate', or 'both'")
+
+    # Generate execution_id for SSE tracking
+    execution_id = f"exec-{uuid.uuid4().hex[:8]}"
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    system_container = get_system_container()
+
+    job = create_job(
+        name=f"Trigger:reflection:{today}",
+        description=f"Manual reflection trigger (phase: {phase}, execution_id: {execution_id})",
+        parent_id=system_container["id"],
+        assignees=[agent_id],
+        tags=[f"trigger:reflection:{phase}", "ui:manual", f"execution:{execution_id}"],
+        created_by="web-ui"
+    )
+
+    return {
+        "status": "triggered",
+        "execution_id": execution_id,
+        "agent_id": agent_id,
+        "phase": phase,
+        "job_id": job["id"],
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+# Exploration trigger endpoint
+@router.post("/{agent_id}/exploration/trigger")
+def api_trigger_exploration(agent_id: str):
+    """Trigger exploration for an agent by creating a trigger job.
+
+    Creates a job with tags=["trigger:exploration"] that the agent
+    will pick up and process during its work cycle.
+
+    Returns an execution_id for SSE progress tracking.
+    """
+    # Verify agent exists
+    config = get_agent_config(agent_id)
+    if config is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Generate execution_id for SSE tracking
+    execution_id = f"exec-{uuid.uuid4().hex[:8]}"
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    system_container = get_system_container()
+
+    job = create_job(
+        name=f"Trigger:exploration:{today}",
+        description=f"Manual exploration trigger (execution_id: {execution_id})",
+        parent_id=system_container["id"],
+        assignees=[agent_id],
+        tags=["trigger:exploration", "ui:manual", f"execution:{execution_id}"],
+        created_by="web-ui"
+    )
+
+    return {
+        "status": "triggered",
+        "execution_id": execution_id,
+        "agent_id": agent_id,
+        "job_id": job["id"],
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+# Reflection logs endpoint
+@router.get("/{agent_id}/logs/reflection")
+def api_get_reflection_logs(agent_id: str, days: int = 7):
+    """Get reflection logs for this agent.
+
+    Returns log entries from the last N days, filtered by agent_id.
+    """
+    # Verify agent exists
+    config = get_agent_config(agent_id)
+    if config is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    logger = get_logger("system/logs/reflection")
+    all_logs = logger.read_logs(days=days)
+
+    # Filter by agent_id
+    agent_logs = [
+        log for log in all_logs
+        if log.get("agent_id") == agent_id
+    ]
+
+    # Sort by timestamp descending (most recent first)
+    agent_logs.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+
+    return {
+        "agent_id": agent_id,
+        "days": days,
+        "logs": agent_logs
+    }

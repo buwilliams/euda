@@ -313,6 +313,7 @@ class Agent:
     def _format_job_prompt(self, job: dict, remaining: int = 0) -> str:
         """Format a job as a standardized prompt for the agent."""
         from .tools.data.assets import list_assets
+        from .tools.data.memory import get_memory_for_prompt
         from .prompts import render_template
 
         assets = list_assets(job['id'])
@@ -330,6 +331,14 @@ class Agent:
         # Select prompt template based on job type
         template_name = self._get_job_prompt_type(job)
 
+        # For exploration jobs, include user memory directly in the prompt
+        # This ensures agents have context without relying on them to call list_memory
+        user_memory = ""
+        if template_name == "agent/exploration":
+            user_memory = get_memory_for_prompt("user")
+            if not user_memory:
+                user_memory = "(No items currently in user's memory)"
+
         return render_template(
             template_name,
             agent_id=self.id,  # For agent-specific template lookup
@@ -339,7 +348,8 @@ class Agent:
             job_due_date=job.get('due_date') or 'No deadline',
             job_tags=tags_str,
             job_attachments=attachments,
-            remaining_jobs_notice=remaining_notice
+            remaining_jobs_notice=remaining_notice,
+            user_memory=user_memory
         )
 
     def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True, voice_input: bool = False) -> str:

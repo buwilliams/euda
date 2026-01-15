@@ -68,6 +68,14 @@ def cmd_memory(args: List[str], json_mode: bool = False):
         _graduate_memory(agent_id, mem_id, json_mode)
         return
 
+    # Handle --backfill-user (one-time migration of chat memory to user)
+    if "--backfill-user" in args:
+        if agent_id != "chat":
+            print_error("--backfill-user can only be run on the chat agent", json_mode)
+            sys.exit(1)
+        _backfill_user_memory(json_mode)
+        return
+
     # Show memory
     if show_short:
         _show_short_term(agent_id, json_mode)
@@ -205,3 +213,57 @@ def _graduate_memory(agent_id: str, mem_id: str, json_mode: bool):
         print(json.dumps(result))
     else:
         print_success(f"Graduated memory: {mem_id}", json_mode)
+
+
+def _backfill_user_memory(json_mode: bool):
+    """One-time migration of user-relevant items from chat memory to user memory.
+
+    This backfills existing chat memory to user's short-term memory so that
+    user's profile can evolve through reflection. Only copies user-focused types.
+    """
+    import uuid
+    from ...tools.data.memory import _load_entries, _save_entries
+
+    USER_RELEVANT_TYPES = {"person", "place", "goal", "concern", "idea"}
+
+    # Load both memories
+    chat_memory = _load_entries("chat")
+    user_memory = _load_entries("user")
+
+    # Build set of existing user descriptions
+    user_existing = {e.get("short_description", "").lower() for e in user_memory}
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    added = []
+
+    for item in chat_memory:
+        item_type = item.get("type", "")
+        if item_type not in USER_RELEVANT_TYPES:
+            continue
+
+        desc = item.get("short_description", "")
+        if not desc or desc.lower() in user_existing:
+            continue
+
+        # Create new entry for user
+        user_entry = {
+            "id": f"mem-{uuid.uuid4().hex[:8]}",
+            "date_mentioned": item.get("date_mentioned", today),
+            "date_expected": item.get("date_expected"),
+            "type": item_type,
+            "short_description": desc,
+            "source": "chat-backfill"
+        }
+        user_memory.append(user_entry)
+        user_existing.add(desc.lower())
+        added.append(user_entry)
+
+    if added:
+        _save_entries(user_memory, "user")
+
+    if json_mode:
+        print(json.dumps({"backfilled": len(added), "items": added}))
+    else:
+        print_success(f"Backfilled {len(added)} items from chat to user memory", json_mode)
+        for item in added:
+            print_memory_item(item, json_mode)

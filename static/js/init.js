@@ -58,6 +58,39 @@ function connectSSE() {
         }
     });
 
+    // Handle reflection progress events (for live monitoring)
+    eventSource.addEventListener('reflection:progress', (e) => {
+        const data = JSON.parse(e.data);
+        if (typeof handleReflectionProgress === 'function') {
+            handleReflectionProgress(data);
+        }
+    });
+
+    eventSource.addEventListener('reflection:llm_complete', (e) => {
+        const data = JSON.parse(e.data);
+        if (typeof handleReflectionProgress === 'function') {
+            handleReflectionProgress({
+                ...data,
+                step: 'llm_complete',
+                message: `LLM complete (${data.input_tokens} in / ${data.output_tokens} out)`
+            });
+        }
+    });
+
+    eventSource.addEventListener('reflection:complete', (e) => {
+        const data = JSON.parse(e.data);
+        if (typeof handleReflectionComplete === 'function') {
+            handleReflectionComplete(data);
+        }
+    });
+
+    eventSource.addEventListener('reflection:error', (e) => {
+        const data = JSON.parse(e.data);
+        if (typeof handleReflectionError === 'function') {
+            handleReflectionError(data);
+        }
+    });
+
     eventSource.onerror = () => {
         eventSource.close();
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);

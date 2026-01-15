@@ -25,3 +25,5 @@ Rules for user experience and user interface. The interface should feel like wal
 - Slide animations for spatial continuity — forward goes right, back goes left
 - Swipe gestures for quick actions on mobile and desktop
 - Chat expands in place — no jarring screen transitions between context and conversation
+- Agent Manage view uses sub-views: Profile, Config, Memory, Monitoring — each stacks forward with back button
+- Action buttons show running state during async operations (spinning icon, disabled siblings)

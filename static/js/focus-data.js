@@ -1,5 +1,97 @@
 // Euno - Focus Data Loading & Utilities
 
+// ============== Live Execution State ==============
+
+let activeExecution = null;
+
+function handleReflectionProgress(data) {
+    // Match by execution_id if we have one, otherwise match by agent_id
+    if (activeExecution &&
+        (activeExecution.executionId === data.execution_id ||
+         (!activeExecution.executionId && activeExecution.agentId === data.agent_id))) {
+        activeExecution.executionId = data.execution_id; // Update if we didn't have it
+        activeExecution.step = data.step;
+        activeExecution.message = data.message;
+        if (data.input_tokens) {
+            activeExecution.tokens = {
+                input: data.input_tokens,
+                output: data.output_tokens
+            };
+        }
+        updateExecutionUI();
+    }
+}
+
+function handleReflectionComplete(data) {
+    if (activeExecution &&
+        (activeExecution.executionId === data.execution_id ||
+         activeExecution.agentId === data.agent_id)) {
+        activeExecution = null;
+        updateExecutionUI();
+        // Refresh monitoring data after completion
+        if (data.agent_id) {
+            // Clear cache to force reload
+            delete monitoringCache[data.agent_id];
+            loadAgentMonitoring(data.agent_id);
+        }
+    }
+}
+
+function handleReflectionError(data) {
+    if (activeExecution &&
+        (activeExecution.executionId === data.execution_id ||
+         activeExecution.agentId === data.agent_id)) {
+        activeExecution.error = data.error;
+        activeExecution.step = 'error';
+        activeExecution.message = `Error: ${data.error}`;
+        updateExecutionUI();
+        // Clear after showing error
+        setTimeout(() => {
+            if (activeExecution?.executionId === data.execution_id) {
+                activeExecution = null;
+                updateExecutionUI();
+            }
+        }, 5000);
+    }
+}
+
+function updateExecutionUI() {
+    // Re-render if we're on a monitoring or manage view for this agent
+    if (focusView && (focusView.startsWith('monitoring-') || focusView.startsWith('manage-agent-'))) {
+        renderFocusTab();
+    }
+}
+
+function getActiveExecutionHtml(agentId) {
+    if (!activeExecution || activeExecution.agentId !== agentId) {
+        return '';
+    }
+
+    const phaseLabel = activeExecution.phase === 'append' ? 'Append' :
+                       activeExecution.phase === 'consolidate' ? 'Consolidate' :
+                       activeExecution.phase === 'exploration' ? 'Explore' : activeExecution.phase;
+
+    const isError = activeExecution.step === 'error';
+    const statusClass = isError ? 'reflection-progress error' : 'reflection-progress';
+
+    return `
+        <div class="${statusClass}">
+            <div class="reflection-progress-header">
+                ${isError ? icon('exclamation-triangle') : icon('arrow-path', 'spinning')}
+                <span>${isError ? 'Error' : 'Running'} ${phaseLabel}...</span>
+            </div>
+            <div class="reflection-progress-body">
+                <div class="progress-message">${escapeHtml(activeExecution.message || 'Processing...')}</div>
+                ${activeExecution.tokens ? `
+                    <div class="progress-tokens">
+                        ${activeExecution.tokens.input} in / ${activeExecution.tokens.output} out
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
 // ============== Data Loading ==============
 
 async function loadJobsData() {
@@ -449,4 +541,352 @@ function getFocusCounts() {
     counts.anytime = getRootJobsForCategory('anytime').length;
 
     return counts;
+}
+
+// ============== Memory Data Loading ==============
+
+// Cache for memory pagination state
+const memoryPageState = {};
+const longTermMemoryCache = {};
+
+async function loadShortTermMemory(agentId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/memory/short-term`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            const items = await response.json();
+            // Initialize pagination state
+            if (!memoryPageState[agentId]) {
+                memoryPageState[agentId] = { page: 0, pageSize: 10 };
+            }
+            return items;
+        }
+    } catch (error) {
+        console.error('Failed to load short-term memory:', error);
+    }
+    return [];
+}
+
+async function loadMemoryItem(agentId, entryId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/memory/short-term/${entryId}`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (error) {
+        console.error('Failed to load memory item:', error);
+    }
+    return null;
+}
+
+async function loadLongTermMemoryDates(agentId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/memory/long-term/dates`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            const dates = await response.json();
+            // Cache the dates list
+            if (!longTermMemoryCache[agentId]) {
+                longTermMemoryCache[agentId] = {};
+            }
+            longTermMemoryCache[agentId].dates = dates;
+            return dates;
+        }
+    } catch (error) {
+        console.error('Failed to load long-term memory dates:', error);
+    }
+    return [];
+}
+
+async function loadLongTermMemoryContent(agentId, date) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/memory/long-term?date=${date}`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            const data = await response.json();
+            // Cache the content
+            if (!longTermMemoryCache[agentId]) {
+                longTermMemoryCache[agentId] = {};
+            }
+            longTermMemoryCache[agentId][date] = data;
+            return data;
+        }
+    } catch (error) {
+        console.error('Failed to load long-term memory content:', error);
+    }
+    return null;
+}
+
+async function loadLongTermMemoryWithPreviews(agentId) {
+    try {
+        // First get the list of dates
+        const datesResponse = await fetch(`/api/agents/${agentId}/memory/long-term/dates`, {
+            credentials: 'same-origin'
+        });
+        if (!datesResponse.ok) return [];
+
+        const dates = await datesResponse.json();
+        if (!dates || dates.length === 0) return [];
+
+        // Load content for each date to get previews
+        const entries = await Promise.all(dates.map(async (date) => {
+            try {
+                const contentResponse = await fetch(`/api/agents/${agentId}/memory/long-term?date=${date}`, {
+                    credentials: 'same-origin'
+                });
+                if (contentResponse.ok) {
+                    const data = await contentResponse.json();
+                    const content = data.content || '';
+                    // Get first 100 chars as preview, strip markdown
+                    const preview = content
+                        .replace(/^#+\s+/gm, '')  // Remove headers
+                        .replace(/\*\*/g, '')     // Remove bold
+                        .replace(/\n+/g, ' ')     // Replace newlines with spaces
+                        .trim()
+                        .substring(0, 100);
+                    return {
+                        date: date,
+                        preview: preview + (content.length > 100 ? '...' : ''),
+                        content: content
+                    };
+                }
+            } catch (error) {
+                console.error(`Failed to load content for ${date}:`, error);
+            }
+            return { date: date, preview: '', content: '' };
+        }));
+
+        return entries;
+    } catch (error) {
+        console.error('Failed to load long-term memory with previews:', error);
+    }
+    return [];
+}
+
+async function loadReflectionLogs(agentId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/logs/reflection?days=7`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (error) {
+        console.error('Failed to load reflection logs:', error);
+    }
+    return { agent_id: agentId, logs: [] };
+}
+
+async function loadJobTrace(jobId) {
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/trace`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (error) {
+        console.error('Failed to load job trace:', error);
+    }
+    return null;
+}
+
+// ============== Memory Actions ==============
+
+async function addMemoryItem(agentId) {
+    const description = prompt('Memory description:');
+    if (!description) return;
+
+    const type = prompt('Type (person, place, thing, goal, concern, idea, learning, behavior):') || 'thing';
+
+    try {
+        const response = await fetch(`/api/agents/${agentId}/memory/short-term`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                short_description: description,
+                type: type
+            })
+        });
+
+        if (response.ok) {
+            await refreshMemorySection(agentId, 'short-term-memory');
+        }
+    } catch (error) {
+        console.error('Failed to add memory item:', error);
+    }
+}
+
+async function deleteMemoryItem(agentId, entryId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/memory/short-term/${entryId}`, {
+            method: 'DELETE',
+            credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+            await refreshMemorySection(agentId, 'short-term-memory');
+        }
+    } catch (error) {
+        console.error('Failed to delete memory item:', error);
+    }
+}
+
+async function refreshMemorySection(agentId, sectionType) {
+    // Find and refresh the memory section content
+    const sections = document.querySelectorAll('.job-section');
+    for (const section of sections) {
+        const header = section.querySelector('.job-section-header');
+        if (header && header.textContent.includes('Short-term Memory') && sectionType === 'short-term-memory') {
+            const content = header.nextElementSibling;
+            if (content && content.classList.contains('collapsible-content')) {
+                content.dataset.loaded = 'false';
+                const items = await loadShortTermMemory(agentId);
+                content.innerHTML = renderShortTermMemoryContent(items, agentId);
+                content.dataset.loaded = 'true';
+            }
+            break;
+        }
+    }
+}
+
+function pageMemory(agentId, direction) {
+    if (!memoryPageState[agentId]) {
+        memoryPageState[agentId] = { page: 0, pageSize: 10 };
+    }
+
+    const state = memoryPageState[agentId];
+    if (direction === 'next') {
+        state.page++;
+    } else if (direction === 'prev' && state.page > 0) {
+        state.page--;
+    }
+
+    // Re-render the section
+    refreshMemorySection(agentId, 'short-term-memory');
+}
+
+async function loadLongTermMemoryDate(agentId, date) {
+    const content = await loadLongTermMemoryContent(agentId, date);
+    const dates = longTermMemoryCache[agentId]?.dates || [];
+
+    // Find and update the long-term memory section
+    const sections = document.querySelectorAll('.job-section');
+    for (const section of sections) {
+        const header = section.querySelector('.job-section-header');
+        if (header && header.textContent.includes('Long-term Memory')) {
+            const contentDiv = header.nextElementSibling;
+            if (contentDiv && contentDiv.classList.contains('collapsible-content')) {
+                contentDiv.innerHTML = renderLongTermMemoryContent(dates, date, content, agentId);
+            }
+            break;
+        }
+    }
+}
+
+// ============== Trigger Actions ==============
+
+async function triggerReflection(agentId, phase) {
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = 'Triggering...';
+    button.disabled = true;
+
+    try {
+        const response = await fetch(`/api/agents/${agentId}/reflection/trigger`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ phase: phase })
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+
+            // Set up active execution for SSE tracking
+            activeExecution = {
+                executionId: result.execution_id,
+                agentId: agentId,
+                phase: phase,
+                step: 'triggered',
+                message: 'Starting...'
+            };
+            updateExecutionUI();
+
+            button.textContent = originalText;
+            button.disabled = false;
+        } else {
+            button.textContent = 'Failed';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            }, 2000);
+        }
+    } catch (error) {
+        console.error('Failed to trigger reflection:', error);
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+}
+
+async function triggerExploration(agentId) {
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = 'Triggering...';
+    button.disabled = true;
+
+    try {
+        const response = await fetch(`/api/agents/${agentId}/exploration/trigger`, {
+            method: 'POST',
+            credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+
+            // Set up active execution for SSE tracking
+            activeExecution = {
+                executionId: result.execution_id,
+                agentId: agentId,
+                phase: 'exploration',
+                step: 'triggered',
+                message: 'Starting exploration...'
+            };
+            updateExecutionUI();
+
+            button.textContent = originalText;
+            button.disabled = false;
+        } else {
+            button.textContent = 'Failed';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            }, 2000);
+        }
+    } catch (error) {
+        console.error('Failed to trigger exploration:', error);
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+}
+
+async function refreshReflectionSection(agentId) {
+    const sections = document.querySelectorAll('.job-section');
+    for (const section of sections) {
+        const header = section.querySelector('.job-section-header');
+        if (header && header.textContent.includes('Reflection')) {
+            const content = header.nextElementSibling;
+            if (content && content.classList.contains('collapsible-content') && content.classList.contains('open')) {
+                const data = await loadReflectionLogs(agentId);
+                content.innerHTML = renderReflectionContent(data, agentId);
+            }
+            break;
+        }
+    }
 }

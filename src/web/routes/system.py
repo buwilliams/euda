@@ -4,15 +4,18 @@ System API Routes - Health, about, settings, events
 
 import asyncio
 import json
+import shutil
 from datetime import datetime
 from pathlib import Path
+from typing import List
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client
 from ...llms.base import _load_config, CONFIG_PATH, VALID_PROVIDERS
-from ...tools.data.jobs import list_jobs
+from ...tools.data.jobs import list_jobs, _get_connection
 from ...tools.data.profile import get_profile
 
 
@@ -21,6 +24,10 @@ router = APIRouter()
 DOCS_DIR = Path(__file__).parent.parent.parent.parent / "docs"
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 QUOTES_FILE = DATA_DIR / "system" / "quotes.json"
+
+
+class FreshStartRequest(BaseModel):
+    confirm: str  # Must be "yes" to proceed
 
 
 # ============== Health ==============
@@ -232,6 +239,252 @@ def update_schedules(data: dict):
         json.dump(config, f, indent=2)
 
     return {"success": True, "schedules": config["schedules"]}
+
+
+# ============== Fresh Start & Backups ==============
+
+BACKUP_PREFIX = "data_backup-"
+
+
+def _list_backups() -> List[dict]:
+    """List all available backups sorted by date (newest first)."""
+    project_dir = DATA_DIR.parent
+    backups = []
+
+    for item in project_dir.iterdir():
+        if item.is_dir() and item.name.startswith(BACKUP_PREFIX):
+            # Parse timestamp from name: data_backup-YYYYMMDD-HHMMSS
+            timestamp_str = item.name[len(BACKUP_PREFIX):]
+            try:
+                # Get actual modification time as fallback
+                mtime = item.stat().st_mtime
+                backups.append({
+                    "name": item.name,
+                    "timestamp": timestamp_str,
+                    "path": str(item),
+                    "mtime": mtime
+                })
+            except OSError:
+                continue
+
+    # Sort by modification time (newest first)
+    backups.sort(key=lambda x: x["mtime"], reverse=True)
+    return backups
+
+
+def _perform_fresh_start() -> dict:
+    """
+    Reset all user data for a clean slate.
+
+    Instead of deleting, moves the data directory to a timestamped backup,
+    then creates a fresh data directory preserving only agent configs and profiles.
+
+    Returns dict with backup_name and preserved items.
+    """
+    project_dir = DATA_DIR.parent
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup_name = f"{BACKUP_PREFIX}{timestamp}"
+    backup_path = project_dir / backup_name
+
+    # Collect agent configs and profiles to preserve
+    preserved = []
+    agents_to_preserve = {}
+
+    agents_dir = DATA_DIR / "agents"
+    if agents_dir.exists():
+        for agent_dir in agents_dir.iterdir():
+            if agent_dir.is_dir():
+                agent_id = agent_dir.name
+                agents_to_preserve[agent_id] = {}
+
+                # Preserve config.json
+                config_file = agent_dir / "config.json"
+                if config_file.exists():
+                    agents_to_preserve[agent_id]["config"] = config_file.read_text()
+                    preserved.append(f"agents/{agent_id}/config.json")
+
+                # Preserve profile.md.example (template)
+                profile_example = agent_dir / "profile.md.example"
+                if profile_example.exists():
+                    agents_to_preserve[agent_id]["profile_example"] = profile_example.read_text()
+                    preserved.append(f"agents/{agent_id}/profile.md.example")
+
+    # Preserve system config
+    system_config = None
+    system_config_file = DATA_DIR / "system" / "config.json"
+    if system_config_file.exists():
+        system_config = system_config_file.read_text()
+        preserved.append("system/config.json")
+
+    # Close any open database connections
+    try:
+        from ...tools.data.jobs import _connection_pool
+        for conn in _connection_pool.values():
+            conn.close()
+        _connection_pool.clear()
+    except Exception:
+        pass
+
+    # Move data to backup
+    if DATA_DIR.exists():
+        shutil.move(str(DATA_DIR), str(backup_path))
+
+    # Create fresh data directory structure
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Restore agents directory with only configs and profile templates
+    if agents_to_preserve:
+        agents_dir = DATA_DIR / "agents"
+        agents_dir.mkdir(parents=True, exist_ok=True)
+
+        for agent_id, files in agents_to_preserve.items():
+            agent_dir = agents_dir / agent_id
+            agent_dir.mkdir(parents=True, exist_ok=True)
+
+            if "config" in files:
+                (agent_dir / "config.json").write_text(files["config"])
+            if "profile_example" in files:
+                (agent_dir / "profile.md.example").write_text(files["profile_example"])
+                # Also create profile.md from example for fresh start
+                (agent_dir / "profile.md").write_text(files["profile_example"])
+
+    # Restore system config
+    if system_config:
+        system_dir = DATA_DIR / "system"
+        system_dir.mkdir(parents=True, exist_ok=True)
+        (system_dir / "config.json").write_text(system_config)
+
+    # Create jobs directory
+    (DATA_DIR / "jobs").mkdir(parents=True, exist_ok=True)
+
+    return {
+        "backup_name": backup_name,
+        "preserved": preserved
+    }
+
+
+def _restore_backup(backup_name: str) -> dict:
+    """
+    Restore from a backup by swapping directories.
+
+    The current data becomes a new backup, and the selected backup becomes data.
+    """
+    project_dir = DATA_DIR.parent
+    backup_path = project_dir / backup_name
+
+    if not backup_path.exists():
+        return {"error": f"Backup not found: {backup_name}"}
+
+    if not backup_path.is_dir():
+        return {"error": f"Invalid backup: {backup_name}"}
+
+    # Close any open database connections
+    try:
+        from ...tools.data.jobs import _connection_pool
+        for conn in _connection_pool.values():
+            conn.close()
+        _connection_pool.clear()
+    except Exception:
+        pass
+
+    # Create a backup of current data before restoring
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    current_backup_name = f"{BACKUP_PREFIX}{timestamp}"
+    current_backup_path = project_dir / current_backup_name
+
+    # Move current data to backup
+    if DATA_DIR.exists():
+        shutil.move(str(DATA_DIR), str(current_backup_path))
+
+    # Restore selected backup as data
+    shutil.move(str(backup_path), str(DATA_DIR))
+
+    return {
+        "restored_from": backup_name,
+        "current_backed_up_as": current_backup_name
+    }
+
+
+def _delete_backup(backup_name: str) -> dict:
+    """Delete a backup permanently."""
+    project_dir = DATA_DIR.parent
+    backup_path = project_dir / backup_name
+
+    if not backup_path.exists():
+        return {"error": f"Backup not found: {backup_name}"}
+
+    if not backup_name.startswith(BACKUP_PREFIX):
+        return {"error": "Invalid backup name"}
+
+    shutil.rmtree(backup_path)
+    return {"deleted": backup_name}
+
+
+@router.post("/fresh-start")
+def fresh_start():
+    """
+    Reset all user data for a clean slate.
+
+    Moves current data to a timestamped backup and creates a fresh data directory.
+    Agent configs and profiles are preserved. Use /api/backups to restore if needed.
+    """
+    result = _perform_fresh_start()
+
+    return {
+        "success": True,
+        "backup_name": result["backup_name"],
+        "preserved": result["preserved"],
+        "message": f"Fresh start complete. Previous data backed up as {result['backup_name']}."
+    }
+
+
+@router.get("/backups")
+def list_backups():
+    """List all available backups."""
+    backups = _list_backups()
+    return {
+        "backups": backups,
+        "count": len(backups)
+    }
+
+
+class RestoreBackupRequest(BaseModel):
+    backup_name: str
+
+
+@router.post("/backups/restore")
+def restore_backup(request: RestoreBackupRequest):
+    """
+    Restore from a backup.
+
+    Current data is backed up first, then the selected backup becomes the active data.
+    """
+    result = _restore_backup(request.backup_name)
+
+    if "error" in result:
+        return {"success": False, "error": result["error"]}
+
+    return {
+        "success": True,
+        "restored_from": result["restored_from"],
+        "current_backed_up_as": result["current_backed_up_as"],
+        "message": f"Restored from {result['restored_from']}. Previous data backed up as {result['current_backed_up_as']}."
+    }
+
+
+@router.delete("/backups/{backup_name}")
+def delete_backup(backup_name: str):
+    """Delete a backup permanently."""
+    result = _delete_backup(backup_name)
+
+    if "error" in result:
+        return {"success": False, "error": result["error"]}
+
+    return {
+        "success": True,
+        "deleted": result["deleted"],
+        "message": f"Backup {result['deleted']} deleted permanently."
+    }
 
 
 # ============== SSE Events ==============

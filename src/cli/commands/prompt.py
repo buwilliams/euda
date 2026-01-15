@@ -136,6 +136,12 @@ def _show_reflect_prompt(agent_id: str, json_mode: bool):
 def _show_explore_prompt(agent_id: str, json_mode: bool):
     """Show the exploration prompt template."""
     from ...prompts import render_template
+    from ...tools.data.memory import get_memory_for_prompt
+
+    # Get actual user memory to show what would be included
+    user_memory = get_memory_for_prompt("user")
+    if not user_memory:
+        user_memory = "(No items currently in user's memory)"
 
     # Create a fake exploration job to show the prompt
     prompt = render_template(
@@ -147,7 +153,8 @@ def _show_explore_prompt(agent_id: str, json_mode: bool):
         job_due_date="No deadline",
         job_tags="trigger:exploration",
         job_attachments="No attachments",
-        remaining_jobs_notice=""
+        remaining_jobs_notice="",
+        user_memory=user_memory
     )
 
     if json_mode:

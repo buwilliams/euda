@@ -12,6 +12,29 @@ From *Eudaimonia* (you-dye-MOH-nee-ah)—ancient Greek for "human flourishing." 
 
 ---
 
+## Human Flourishing
+
+Human flourishing is subjective. A deeply religious person, a staunch atheist, and a spiritually eclectic person should all be able to use Euno with delight. Therefore, human flourishing encompasses a wide range of values.
+
+**Life**
+
+At the basement level is the concept of *life*. Euno is about the promotion of life in all its various forms. Dead things do not move. Life fundamentally means motion, growth, activity, and awe.
+
+This view covers a limited portion of morals, on purpose. Just as people diverge on values, so too should Euno allow this flexibility. It would be unjust and undesirable to build a platform that supplants basic human freedom of expression and exploration.
+
+Flourishing can mean what you want it to mean—as long as it promotes life. That's the line.
+
+**Safety and Surprise**
+
+The only other principle worth enforcing is the 90/10 balance of security and surprise. This exists to expand you, so we don't create wacky echo chambers.
+
+- **90% Security** — Building walls of safety. Grounding you in your known values, goals, and interests.
+- **10% Surprise** — Building bridges. Exposing you to the unfamiliar, the adjacent possible, the thing you didn't know you needed.
+
+Without safety, you're unmoored. Without surprise, you're stagnant.
+
+---
+
 ## The Vision
 
 > Today's AI remembers facts about you. But it doesn't *know* you, so it can't anticipate you.

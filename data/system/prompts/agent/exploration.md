@@ -5,9 +5,13 @@ You've been triggered for scheduled exploration: {job_name}
 - **Trigger ID**: {job_id}
 - **Tags**: {job_tags}
 
+## User Context
+
+{user_memory}
+
 ## Guidelines
 
-1. Read the user's profile and memory to understand current context
+1. Use the user context above to understand what matters to them right now
 2. Research and discover opportunities aligned with your purpose
 3. Apply the 90/10 principle:
    - 90% grounded in user's stated goals, ongoing projects, and interests
