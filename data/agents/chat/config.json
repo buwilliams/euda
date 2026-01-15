@@ -20,7 +20,6 @@
     "write_long_term_memory",
     "list_long_term_memory_dates",
     "parse_date",
-    "parse_datetime",
     "get_current_date",
     "add_memory",
     "list_memory",
@@ -39,9 +38,10 @@
     "read_agent_logs",
     "get_mastodon_posts",
     "speak_aloud",
-    "schedule_reminder",
     "graduate_memory",
-    "update_own_profile"
+    "update_own_profile",
+    "schedule_reminder",
+    "parse_datetime"
   ],
   "triggers": [],
   "exploration": {

@@ -12,33 +12,17 @@
     "archive_job",
     "add_job_log",
     "get_child_jobs",
-    "list_agents",
-    "get_agent",
-    "list_available_agents",
     "list_assets",
     "read_asset",
     "write_asset",
     "delete_asset",
-    "get_profile",
+    "get_user_profile",
     "done_working",
     "parse_date",
-    "get_current_date",
-    "list_memory",
-    "read_long_term_memory",
-    "write_long_term_memory",
-    "graduate_memory",
-    "update_own_profile",
-    "send_chat_message",
-    "check_user_connected"
+    "get_current_date"
   ],
   "triggers": [
-    "time:morning"
-  ],
-  "exploration": {
-    "enabled": false
-  },
-  "reflection": {
-    "enabled": true,
-    "trigger": "time:evening"
-  }
+    "time:morning",
+    "system:start"
+  ]
 }

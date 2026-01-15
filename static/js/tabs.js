@@ -128,8 +128,8 @@ function switchTab(tabName) {
     previousTab = tabName;
     activeTab = tabName;
 
-    // Clear job context when leaving focus tab or when resetting focus view
-    if (tabName !== 'focus' && typeof clearJobContext === 'function') {
+    // Clear job context when leaving focus/chat tabs (preserve context when switching between them)
+    if (tabName !== 'focus' && tabName !== 'chat' && typeof clearJobContext === 'function') {
         clearJobContext();
     }
 
