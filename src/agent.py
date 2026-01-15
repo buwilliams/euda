@@ -240,7 +240,7 @@ class Agent:
                 return json.load(f)
         return {}
 
-    def _build_system_prompt(self, voice_input: bool = False) -> str:
+    def _build_system_prompt(self, voice_input: bool = False, job_context: str = None) -> str:
         """Build the system prompt from profile and tools (grouped by type).
 
         Note: Memory is NOT auto-injected.
@@ -248,6 +248,7 @@ class Agent:
 
         Args:
             voice_input: Whether input came from voice (enables conversational response style)
+            job_context: Optional job ID the user is currently viewing (adds job details to context)
         """
         from .tools import get_tools_grouped_by_type
         from .prompts import render_template
@@ -285,6 +286,29 @@ class Agent:
                 "Avoid bullet points, lists, job IDs, or formatted text. "
                 "Speak as if you're talking directly to the user."
             )
+
+        # Job context - when user is viewing a specific job in Focus tab
+        if job_context:
+            try:
+                from .tools.data.jobs import get_job
+                job = get_job(job_context)
+                if job:
+                    prompt += "\n\n## Current Job Context\n"
+                    prompt += "The user is currently viewing this job in the Focus tab:\n"
+                    prompt += f"- **Name**: {job.get('name', 'Unknown')}\n"
+                    if job.get('description'):
+                        prompt += f"- **Description**: {job.get('description')}\n"
+                    if job.get('status'):
+                        prompt += f"- **Status**: {job.get('status')}\n"
+                    if job.get('tags'):
+                        prompt += f"- **Tags**: {', '.join(job.get('tags', []))}\n"
+                    if job.get('due_date'):
+                        prompt += f"- **Due**: {job.get('due_date')}\n"
+                    prompt += f"- **Job ID**: {job_context}\n"
+                    prompt += "\nThe user's message likely relates to this job. Use this context to provide relevant assistance."
+            except Exception as e:
+                # Silently ignore errors loading job context
+                pass
 
         return prompt
 
@@ -357,8 +381,12 @@ class Agent:
             user_memory=user_memory
         )
 
+<<<<<<< HEAD
     def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True,
              voice_input: bool = False, defer_reflection: bool = False) -> str:
+=======
+    def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True, voice_input: bool = False, job_context: str = None) -> str:
+>>>>>>> a369bd6 (Add job context to chat when viewing tasks in Focus tab)
         """Process a chat message and return response.
 
         Args:
@@ -366,12 +394,16 @@ class Agent:
             log_to_memory: Whether to log this conversation to long-term memory (default True)
             save_to_history: Whether to save to conversation history (default True)
             voice_input: Whether input came from voice (enables conversational response style)
+<<<<<<< HEAD
             defer_reflection: If True, skip reflection append (caller will batch it)
+=======
+            job_context: Optional job ID the user is viewing (adds job details to context)
+>>>>>>> a369bd6 (Add job context to chat when viewing tasks in Focus tab)
         """
         self._log("chat_start", {"message_length": len(message)})
 
         tools = self._get_tools()
-        system_prompt = self._build_system_prompt(voice_input=voice_input)
+        system_prompt = self._build_system_prompt(voice_input=voice_input, job_context=job_context)
 
         # Load conversation history and append current message
         messages = self._parse_conversation_history()

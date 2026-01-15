@@ -261,7 +261,7 @@ function updateInputContext() {
     const label = document.getElementById('job-context-label');
 
     if (currentJobContext && label) {
-        contextInput.placeholder = "Send feedback about this job...";
+        contextInput.placeholder = "Ask about this job...";
         label.textContent = '@job';
         label.classList.add('active');
         label.onclick = clearJobContext;
@@ -370,14 +370,12 @@ function sendContextMessage() {
     const message = contextInput.value.trim();
     if (!message) return;
 
-    // If viewing a job, route to job feedback endpoint
-    if (currentJobContext) {
-        sendJobFeedback(currentJobContext, message);
-        return;
+    // Add user message to UI immediately (with job context indicator if viewing a job)
+    if (currentJobContext && currentJobName) {
+        addInlineMessage(message, 'you', `Re: ${currentJobName}`);
+    } else {
+        addInlineMessage(message, 'you');
     }
-
-    // Add user message to UI immediately
-    addInlineMessage(message, 'you');
     contextInput.value = '';
     contextInput.style.height = 'auto';
 
@@ -400,15 +398,21 @@ async function processMessageQueue() {
         const voiceInput = typeof window.wasLastInputVoice === 'function' ? window.wasLastInputVoice() : false;
 
         try {
+            // Include job context if user is viewing a job in Focus
+            const payload = {
+                message,
+                agent_id: 'chat',
+                session_id: sessionId,
+                voice_input: voiceInput
+            };
+            if (currentJobContext) {
+                payload.job_context = currentJobContext;
+            }
+
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message,
-                    agent_id: 'chat',
-                    session_id: sessionId,
-                    voice_input: voiceInput
-                })
+                body: JSON.stringify(payload)
             });
 
             const data = await response.json();
