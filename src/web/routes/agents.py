@@ -162,6 +162,16 @@ def api_add_short_term_memory(agent_id: str, request: AddMemoryRequest):
     return add_memory(request.short_description, request.type, request.date_expected, agent_id)
 
 
+@router.get("/{agent_id}/memory/short-term/{entry_id}")
+def api_get_short_term_memory_item(agent_id: str, entry_id: str):
+    """Get a single short-term memory item."""
+    items = list_memory(agent_id)
+    for item in items:
+        if item.get("id") == entry_id:
+            return item
+    return {"error": "Memory item not found"}
+
+
 @router.delete("/{agent_id}/memory/short-term/{entry_id}")
 def api_remove_short_term_memory(agent_id: str, entry_id: str):
     """Remove a short-term memory item."""

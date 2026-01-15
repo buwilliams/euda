@@ -113,6 +113,17 @@ async function saveAgentPersonaField(agentId, jobId) {
     }
 }
 
+async function saveAgentProfileField(agentId, jobId) {
+    const textarea = document.getElementById(`edit-profile-${jobId}`);
+    if (!textarea) return;
+
+    const success = await saveAgentPersona(agentId, textarea.value);
+    if (success) {
+        editingJobField = null;
+        renderFocusTab();
+    }
+}
+
 async function saveAgentConfigField(agentId, jobId) {
     const triggersInput = document.getElementById(`edit-triggers-${jobId}`);
     const toolsInput = document.getElementById(`edit-tools-${jobId}`);

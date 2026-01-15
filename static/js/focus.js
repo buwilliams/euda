@@ -78,6 +78,48 @@ function renderFocusTab() {
     } else if (focusView.startsWith('trace-')) {
         const jobId = focusView.substring(6);
         content = renderJobTraceView(jobId);
+    } else if (focusView.startsWith('manage-agent-')) {
+        const agentId = focusView.substring(13);
+        content = renderAgentManageView(agentId);
+    } else if (focusView.startsWith('memory-list-')) {
+        const agentId = focusView.substring(12);
+        content = renderMemoryListView(agentId);
+    } else if (focusView.startsWith('memory-item-')) {
+        // memory-item-{agentId}-{entryId}
+        const rest = focusView.substring(12);
+        const dashIndex = rest.indexOf('-');
+        const agentId = rest.substring(0, dashIndex);
+        const entryId = rest.substring(dashIndex + 1);
+        content = renderMemoryItemView(agentId, entryId);
+    } else if (focusView.startsWith('monitoring-')) {
+        const agentId = focusView.substring(11);
+        content = renderMonitoringView(agentId);
+    } else if (focusView.startsWith('prompt-')) {
+        // prompt-{agentId}-{index}
+        const rest = focusView.substring(7);
+        const dashIndex = rest.indexOf('-');
+        const agentId = rest.substring(0, dashIndex);
+        const promptIndex = rest.substring(dashIndex + 1);
+        content = renderPromptDetailView(agentId, promptIndex);
+    } else if (focusView.startsWith('long-term-memory-detail-')) {
+        // long-term-memory-detail-{agentId}-{date}
+        const rest = focusView.substring(24);
+        const dashIndex = rest.indexOf('-');
+        const agentId = rest.substring(0, dashIndex);
+        const date = rest.substring(dashIndex + 1);
+        content = renderLongTermMemoryDetailView(agentId, date);
+    } else if (focusView.startsWith('long-term-memory-')) {
+        const agentId = focusView.substring(17);
+        content = renderLongTermMemoryListView(agentId);
+    } else if (focusView.startsWith('profile-')) {
+        const agentId = focusView.substring(8);
+        content = renderProfileView(agentId);
+    } else if (focusView.startsWith('config-')) {
+        const agentId = focusView.substring(7);
+        content = renderConfigurationView(agentId);
+    } else if (focusView.startsWith('rate-limits-')) {
+        const agentId = focusView.substring(12);
+        content = renderRateLimitEventsView(agentId);
     }
 
     if (focusSlideDirection && container.querySelector('.view-slide-container')) {

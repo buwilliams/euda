@@ -476,6 +476,20 @@ async function loadShortTermMemory(agentId) {
     return [];
 }
 
+async function loadMemoryItem(agentId, entryId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/memory/short-term/${entryId}`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (error) {
+        console.error('Failed to load memory item:', error);
+    }
+    return null;
+}
+
 async function loadLongTermMemoryDates(agentId) {
     try {
         const response = await fetch(`/api/agents/${agentId}/memory/long-term/dates`, {
@@ -514,6 +528,52 @@ async function loadLongTermMemoryContent(agentId, date) {
         console.error('Failed to load long-term memory content:', error);
     }
     return null;
+}
+
+async function loadLongTermMemoryWithPreviews(agentId) {
+    try {
+        // First get the list of dates
+        const datesResponse = await fetch(`/api/agents/${agentId}/memory/long-term/dates`, {
+            credentials: 'same-origin'
+        });
+        if (!datesResponse.ok) return [];
+
+        const dates = await datesResponse.json();
+        if (!dates || dates.length === 0) return [];
+
+        // Load content for each date to get previews
+        const entries = await Promise.all(dates.map(async (date) => {
+            try {
+                const contentResponse = await fetch(`/api/agents/${agentId}/memory/long-term?date=${date}`, {
+                    credentials: 'same-origin'
+                });
+                if (contentResponse.ok) {
+                    const data = await contentResponse.json();
+                    const content = data.content || '';
+                    // Get first 100 chars as preview, strip markdown
+                    const preview = content
+                        .replace(/^#+\s+/gm, '')  // Remove headers
+                        .replace(/\*\*/g, '')     // Remove bold
+                        .replace(/\n+/g, ' ')     // Replace newlines with spaces
+                        .trim()
+                        .substring(0, 100);
+                    return {
+                        date: date,
+                        preview: preview + (content.length > 100 ? '...' : ''),
+                        content: content
+                    };
+                }
+            } catch (error) {
+                console.error(`Failed to load content for ${date}:`, error);
+            }
+            return { date: date, preview: '', content: '' };
+        }));
+
+        return entries;
+    } catch (error) {
+        console.error('Failed to load long-term memory with previews:', error);
+    }
+    return [];
 }
 
 async function loadReflectionLogs(agentId) {

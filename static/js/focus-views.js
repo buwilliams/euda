@@ -735,6 +735,12 @@ function renderAgentDetailView(job) {
     const displayName = job.name || 'Untitled';
     const childJobs = jobsData.filter(j => j.parent_id === job.id);
     const completedChildJobs = completedJobsData.filter(j => j.parent_id === job.id);
+    // Merge and sort: open jobs first, then completed
+    const allChildJobs = [...childJobs, ...completedChildJobs].sort((a, b) => {
+        const aCompleted = a.status === 'completed' ? 1 : 0;
+        const bCompleted = b.status === 'completed' ? 1 : 0;
+        return aCompleted - bCompleted;
+    });
     const assets = jobAssetsCache[job.id] || [];
 
     // Load agent data if not cached
@@ -757,17 +763,7 @@ function renderAgentDetailView(job) {
         loadJobAssets(job.id).then(() => renderFocusTab());
     }
 
-    const persona = agentData.persona || '';
     const config = agentData.config || {};
-    const hasPersona = persona.length > 0;
-
-    // Check if we're editing
-    const isEditingPersona = editingJobField?.jobId === job.id && editingJobField?.field === 'persona';
-    const isEditingConfig = editingJobField?.jobId === job.id && editingJobField?.field === 'config';
-
-    // Format triggers and tools for display
-    const triggers = config.triggers || [];
-    const tools = config.tools || [];
     const isEnabled = config.enabled !== false;
 
     return `
@@ -782,207 +778,32 @@ function renderAgentDetailView(job) {
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
             </div>
 
-            <!-- Persona Section (collapsible, default closed) -->
+            <!-- Jobs Section (merged pending + completed child jobs, open first) -->
             <div class="job-section">
-                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
-                    <span>Persona</span>
+                <div class="job-section-header collapsible ${allChildJobs.length > 0 ? 'open' : ''}" onclick="togglePersonaSection(this, event)">
+                    <span>Jobs${allChildJobs.length > 0 ? ` (${allChildJobs.length})` : ''}</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
-                    ${isEditingPersona ? `<span class="job-section-action" onclick="saveAgentPersonaField('${agentId}', '${job.id}'); event.stopPropagation();">Save</span>` : ''}
                 </div>
-                <div class="collapsible-content">
-                    ${isEditingPersona ? `
-                        <textarea class="job-description-input" id="edit-persona-${job.id}"
-                            onkeydown="handleAgentPersonaKeypress(event, '${agentId}', '${job.id}')"
-                            placeholder="Define the agent's persona..."
-                            style="min-height: 200px;">${escapeHtml(persona)}</textarea>
-                    ` : `
-                        <div class="job-description-display ${hasPersona ? '' : 'empty'}" onclick="startEditingField('${job.id}', 'persona')">
-                            ${hasPersona ? marked.parse(persona) : 'Click to define persona...'}
-                        </div>
-                    `}
+                <div class="collapsible-content ${allChildJobs.length > 0 ? 'open' : ''}">
+                    ${allChildJobs.length === 0 ? '<div class="focus-empty">No jobs assigned to this agent.</div>' :
+                      allChildJobs.map(child => {
+                          const isCompleted = child.status === 'completed';
+                          if (isCompleted) {
+                              const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
+                              return renderCompletedJobCard(child, grandchildCount, true);
+                          } else {
+                              return renderJobCard(child, true);
+                          }
+                      }).join('')
+                    }
                 </div>
             </div>
 
-            <!-- Configuration Section (collapsible, default closed) -->
+            <!-- Manage Navigation -->
             <div class="job-section">
-                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
-                    <span>Configuration</span>
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('manage-agent-${agentId}')">
+                    <span>Manage</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
-                    ${isEditingConfig ? `<span class="job-section-action" onclick="saveAgentConfigField('${agentId}', '${job.id}'); event.stopPropagation();">Save</span>` : ''}
-                </div>
-                <div class="collapsible-content">
-                    ${isEditingConfig ? `
-                        <div class="agent-config-edit">
-                            <label class="agent-config-label">
-                                <span>Triggers (comma-separated)</span>
-                                <input type="text" class="agent-config-input" id="edit-triggers-${job.id}"
-                                    value="${escapeHtml(triggers.join(', '))}"
-                                    placeholder="e.g., job:assigned, time:morning">
-                            </label>
-                            <label class="agent-config-label">
-                                <span>Tools (comma-separated)</span>
-                                <input type="text" class="agent-config-input" id="edit-tools-${job.id}"
-                                    value="${escapeHtml(tools.join(', '))}"
-                                    placeholder="e.g., list_jobs, create_job">
-                            </label>
-                            <div class="agent-config-group">
-                                <div class="agent-config-group-title">Reflection</div>
-                                <label class="agent-config-checkbox">
-                                    <input type="checkbox" id="edit-reflection-enabled-${job.id}"
-                                        ${config.reflection?.enabled !== false ? 'checked' : ''}>
-                                    <span>Enabled</span>
-                                </label>
-                                <label class="agent-config-label">
-                                    <span>Trigger</span>
-                                    <input type="text" class="agent-config-input" id="edit-reflection-trigger-${job.id}"
-                                        value="${escapeHtml(config.reflection?.trigger || 'time:evening')}"
-                                        placeholder="e.g., time:evening">
-                                </label>
-                            </div>
-                            <div class="agent-config-group">
-                                <div class="agent-config-group-title">Exploration</div>
-                                <label class="agent-config-checkbox">
-                                    <input type="checkbox" id="edit-exploration-enabled-${job.id}"
-                                        ${config.exploration?.enabled ? 'checked' : ''}>
-                                    <span>Enabled</span>
-                                </label>
-                                <label class="agent-config-label">
-                                    <span>Trigger</span>
-                                    <input type="text" class="agent-config-input" id="edit-exploration-trigger-${job.id}"
-                                        value="${escapeHtml(config.exploration?.trigger || 'time:hour_04')}"
-                                        placeholder="e.g., time:hour_04">
-                                </label>
-                            </div>
-                            <div class="agent-config-actions">
-                                <button class="task-detail-action" onclick="cancelEditing()">Cancel</button>
-                            </div>
-                        </div>
-                    ` : `
-                        <div class="agent-config-display" onclick="startEditingField('${job.id}', 'config')">
-                            <div class="agent-config-row">
-                                <span class="agent-config-key">Triggers:</span>
-                                <span class="agent-config-value">${triggers.length > 0 ? escapeHtml(triggers.join(', ')) : '<em>None</em>'}</span>
-                            </div>
-                            <div class="agent-config-row">
-                                <span class="agent-config-key">Tools:</span>
-                                <span class="agent-config-value">${tools.length > 0 ? escapeHtml(tools.join(', ')) : '<em>None</em>'}</span>
-                            </div>
-                            <div class="agent-config-row">
-                                <span class="agent-config-key">Reflection:</span>
-                                <span class="agent-config-value">${config.reflection?.enabled !== false ? 'Enabled' : 'Disabled'} (${escapeHtml(config.reflection?.trigger || 'time:evening')})</span>
-                            </div>
-                            <div class="agent-config-row">
-                                <span class="agent-config-key">Exploration:</span>
-                                <span class="agent-config-value">${config.exploration?.enabled ? 'Enabled' : 'Disabled'} (${escapeHtml(config.exploration?.trigger || 'time:hour_04')})</span>
-                            </div>
-                        </div>
-                    `}
-                </div>
-            </div>
-
-            <!-- Short-term Memory Section - collapsed by default, lazy loaded -->
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'short-term-memory', '${agentId}')">
-                    <span>Short-term Memory</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-                <div class="collapsible-content" data-loaded="false">
-                    <div class="section-loading">Click to load...</div>
-                </div>
-            </div>
-
-            <!-- Long-term Memory Section - collapsed by default, lazy loaded -->
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'long-term-memory', '${agentId}')">
-                    <span>Long-term Memory</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-                <div class="collapsible-content" data-loaded="false">
-                    <div class="section-loading">Click to load...</div>
-                </div>
-            </div>
-
-            <!-- Reflection Section - collapsed by default, lazy loaded -->
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'reflection', '${agentId}')">
-                    <span>Reflection</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-                <div class="collapsible-content" data-loaded="false">
-                    <div class="section-loading">Click to load...</div>
-                </div>
-            </div>
-
-            <!-- Exploration Section - collapsed by default, lazy loaded -->
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'exploration', '${agentId}')">
-                    <span>Exploration</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-                <div class="collapsible-content" data-loaded="false">
-                    <div class="section-loading">Click to load...</div>
-                </div>
-            </div>
-
-            <!-- Child Jobs Section (Agent's Tasks) - open by default -->
-            ${childJobs.length > 0 ? `
-            <div class="job-section">
-                <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
-                    <span>Tasks (${childJobs.length})</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-                <div class="collapsible-content open">
-                    ${childJobs.map(child => renderJobCard(child, true)).join('')}
-                </div>
-            </div>
-            ` : ''}
-
-            <!-- Completed Child Jobs Section - collapsed by default -->
-            ${completedChildJobs.length > 0 ? `
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
-                    <span>Completed (${completedChildJobs.length})</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-                <div class="collapsible-content">
-                    ${completedChildJobs.map(child => {
-                        const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                        return renderCompletedJobCard(child, grandchildCount, true);
-                    }).join('')}
-                </div>
-            </div>
-            ` : ''}
-
-            <!-- Completed by Agent Section - collapsed by default, lazy loaded -->
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'completed-by-agent', '${agentId}')">
-                    <span>Completed by Agent</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-                <div class="collapsible-content">
-                    <div class="section-loading">Click to load...</div>
-                </div>
-            </div>
-
-            <!-- Monitoring Section - collapsed by default, lazy loaded -->
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'monitoring', '${agentId}')">
-                    <span>Monitoring</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-                <div class="collapsible-content">
-                    <div class="section-loading">Click to load...</div>
-                </div>
-            </div>
-
-            <!-- Rate Limit Events Section - collapsed by default, lazy loaded -->
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'rate-limit-events', '${agentId}')">
-                    <span>Rate Limit Events</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-                <div class="collapsible-content">
-                    <div class="section-loading">Click to load...</div>
                 </div>
             </div>
 
@@ -1012,6 +833,828 @@ function renderAgentDetailView(job) {
                 </div>
             </div>
             ` : ''}
+        </div>
+    `;
+}
+
+// ============== Agent Manage View ==============
+
+function renderAgentManageView(agentId) {
+    const agent = agentsCache?.find(a => a.id === agentId);
+    // Also try agentDataCache
+    const agentData = agentDataCache[agentId];
+
+    // Load agent data if not cached
+    if (!agentData) {
+        loadAgentData(agentId).then(() => renderFocusTab());
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-view-title">Manage</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading agent data...</div>
+            </div>
+        `;
+    }
+
+    const displayName = agent?.name || agentData?.config?.name || agentId;
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">${escapeHtml(displayName)} / Manage</span>
+        </div>
+        <div class="focus-view-content">
+            <!-- Action Menu -->
+            <div class="task-detail-actions">
+                <button class="task-detail-action" onclick="triggerReflection('${agentId}', 'append')">
+                    ${icon('arrow-path')} Append
+                </button>
+                <button class="task-detail-action" onclick="triggerReflection('${agentId}', 'consolidate')">
+                    ${icon('archive-box')} Consolidate
+                </button>
+                <button class="task-detail-action" onclick="triggerExploration('${agentId}')">
+                    ${icon('sparkles')} Explore
+                </button>
+            </div>
+
+            <!-- Profile Section - navigates to profile view -->
+            <div class="job-section">
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('profile-${agentId}')">
+                    <span>Profile</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+            </div>
+
+            <!-- Configuration Section - navigates to config view -->
+            <div class="job-section">
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('config-${agentId}')">
+                    <span>Configuration</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+            </div>
+
+            <!-- Short-term Memory Section - navigates to memory list view -->
+            <div class="job-section">
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('memory-list-${agentId}')">
+                    <span>Short-term Memory</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+            </div>
+
+            <!-- Long-term Memory Section - navigates to memory dates view -->
+            <div class="job-section">
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('long-term-memory-${agentId}')">
+                    <span>Long-term Memory</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+            </div>
+
+            <!-- Monitoring Section - navigates to prompts list view -->
+            <div class="job-section">
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('monitoring-${agentId}')">
+                    <span>Monitoring</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+            </div>
+
+            <!-- Rate Limit Events Section - navigates to events view -->
+            <div class="job-section">
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('rate-limits-${agentId}')">
+                    <span>Rate Limit Events</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ============== Memory List View ==============
+
+let memoryListCache = {};
+
+function renderMemoryListView(agentId) {
+    const agentData = agentDataCache[agentId];
+    const displayName = agentData?.config?.name || agentId;
+
+    // Check cache
+    const cached = memoryListCache[agentId];
+    if (!cached) {
+        loadShortTermMemory(agentId).then(items => {
+            memoryListCache[agentId] = items || [];
+            renderFocusTab();
+        });
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-view-title">Short-term Memory</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading memory...</div>
+            </div>
+        `;
+    }
+
+    const items = cached;
+    const typeColors = {
+        person: 'type-person',
+        place: 'type-place',
+        thing: 'type-thing',
+        goal: 'type-goal',
+        concern: 'type-concern',
+        idea: 'type-idea',
+        learning: 'type-learning',
+        behavior: 'type-behavior'
+    };
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">Short-term Memory</span>
+        </div>
+        <div class="focus-view-content">
+            <!-- Action Menu -->
+            <div class="task-detail-actions">
+                <button class="task-detail-action" onclick="addMemoryItem('${agentId}')">+ Add Memory</button>
+            </div>
+
+            <!-- Memory Items -->
+            ${items.length === 0 ? '<div class="focus-empty">No short-term memory items.</div>' :
+              items.map(item => `
+                <div class="memory-list-item" onclick="navigateFocus('memory-item-${agentId}-${item.id}')">
+                    <span class="memory-type-badge ${typeColors[item.type] || 'type-thing'}">${escapeHtml(item.type)}</span>
+                    <span class="memory-item-content">${escapeHtml(item.short_description)}</span>
+                    <span class="memory-item-arrow">${icon('chevron-right')}</span>
+                </div>
+              `).join('')
+            }
+        </div>
+    `;
+}
+
+// ============== Memory Item Detail View ==============
+
+let memoryItemCache = {};
+
+function renderMemoryItemView(agentId, entryId) {
+    const cacheKey = `${agentId}-${entryId}`;
+
+    // Try to get from list cache first
+    const listItems = memoryListCache[agentId];
+    let item = listItems?.find(i => i.id === entryId);
+
+    if (!item) {
+        item = memoryItemCache[cacheKey];
+    }
+
+    if (!item) {
+        // Load from API
+        loadMemoryItem(agentId, entryId).then(data => {
+            memoryItemCache[cacheKey] = data;
+            renderFocusTab();
+        });
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-view-title">Memory Item</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading...</div>
+            </div>
+        `;
+    }
+
+    const typeColors = {
+        person: 'type-person',
+        place: 'type-place',
+        thing: 'type-thing',
+        goal: 'type-goal',
+        concern: 'type-concern',
+        idea: 'type-idea',
+        learning: 'type-learning',
+        behavior: 'type-behavior'
+    };
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">Memory Item</span>
+        </div>
+        <div class="focus-view-content">
+            <!-- Action Menu -->
+            <div class="task-detail-actions">
+                <button class="task-detail-action danger" onclick="deleteMemoryItemAndGoBack('${agentId}', '${entryId}')">
+                    ${icon('trash')} Delete
+                </button>
+            </div>
+
+            <!-- Type Badge -->
+            <div class="job-section">
+                <div class="job-section-header">Type</div>
+                <div class="memory-type-badge ${typeColors[item.type] || 'type-thing'}" style="display: inline-block; margin: 0.5rem 0;">
+                    ${escapeHtml(item.type)}
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="job-section">
+                <div class="job-section-header">Content</div>
+                <div class="memory-item-full-content">${escapeHtml(item.short_description)}</div>
+            </div>
+
+            <!-- Details -->
+            ${item.details ? `
+            <div class="job-section">
+                <div class="job-section-header">Details</div>
+                <div class="memory-item-details">${escapeHtml(item.details)}</div>
+            </div>
+            ` : ''}
+
+            <!-- Created -->
+            <div class="job-section">
+                <div class="job-section-header">Created</div>
+                <div class="memory-item-date">${item.created_at ? formatFriendlyPastDate(item.created_at) : 'Unknown'}</div>
+            </div>
+
+            <!-- Expires -->
+            ${item.expires_at ? `
+            <div class="job-section">
+                <div class="job-section-header">Expires</div>
+                <div class="memory-item-date">${formatFriendlyPastDate(item.expires_at)}</div>
+            </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+async function deleteMemoryItemAndGoBack(agentId, entryId) {
+    await deleteMemoryItem(agentId, entryId);
+    // Clear caches
+    delete memoryListCache[agentId];
+    delete memoryItemCache[`${agentId}-${entryId}`];
+    navigateFocusBack();
+}
+
+// ============== Long-term Memory List View ==============
+
+let longTermMemoryListCache = {};
+
+function renderLongTermMemoryListView(agentId) {
+    // Check cache for dates and previews
+    const cached = longTermMemoryListCache[agentId];
+    if (!cached) {
+        loadLongTermMemoryWithPreviews(agentId).then(data => {
+            longTermMemoryListCache[agentId] = data || [];
+            renderFocusTab();
+        });
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-view-title">Long-term Memory</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading memory...</div>
+            </div>
+        `;
+    }
+
+    const entries = cached;
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">Long-term Memory</span>
+        </div>
+        <div class="focus-view-content">
+            ${entries.length === 0 ? '<div class="focus-empty">No long-term memory entries.</div>' :
+              entries.map(entry => `
+                <div class="memory-list-item" onclick="navigateFocus('long-term-memory-detail-${agentId}-${entry.date}')">
+                    <span class="memory-date-badge">${formatMemoryDate(entry.date)}</span>
+                    <span class="memory-item-content">${escapeHtml(entry.preview || 'No content')}</span>
+                    <span class="memory-item-arrow">${icon('chevron-right')}</span>
+                </div>
+              `).join('')
+            }
+        </div>
+    `;
+}
+
+function formatMemoryDate(dateStr) {
+    // Format YYYY-MM-DD to more readable format
+    const date = new Date(dateStr + 'T00:00:00');
+    const options = { month: 'short', day: 'numeric', year: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+}
+
+// ============== Long-term Memory Detail View ==============
+
+let longTermMemoryDetailCache = {};
+
+function renderLongTermMemoryDetailView(agentId, date) {
+    const cacheKey = `${agentId}-${date}`;
+
+    // Check cache
+    let entry = longTermMemoryDetailCache[cacheKey];
+
+    if (!entry) {
+        // Try to get from list cache
+        const listCache = longTermMemoryListCache[agentId];
+        const listEntry = listCache?.find(e => e.date === date);
+        if (listEntry?.content) {
+            entry = listEntry;
+        }
+    }
+
+    if (!entry || !entry.content) {
+        loadLongTermMemoryContent(agentId, date).then(data => {
+            longTermMemoryDetailCache[cacheKey] = data;
+            renderFocusTab();
+        });
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-view-title">${formatMemoryDate(date)}</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading...</div>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">${formatMemoryDate(date)}</span>
+        </div>
+        <div class="focus-view-content">
+            <div class="long-term-memory-content">
+                ${marked.parse(entry.content || '')}
+            </div>
+        </div>
+    `;
+}
+
+// ============== Monitoring View ==============
+
+let monitoringCache = {};
+
+function renderMonitoringView(agentId) {
+    const agentData = agentDataCache[agentId];
+    const displayName = agentData?.config?.name || agentId;
+
+    // Check cache
+    const cached = monitoringCache[agentId];
+    if (!cached) {
+        loadAgentMonitoring(agentId).then(data => {
+            monitoringCache[agentId] = data || { stats: {}, recent_prompts: [] };
+            renderFocusTab();
+        });
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-view-title">Monitoring</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading monitoring data...</div>
+            </div>
+        `;
+    }
+
+    const { stats, recent_prompts } = cached;
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">Monitoring</span>
+        </div>
+        <div class="focus-view-content">
+            <!-- Stats -->
+            <div class="monitoring-stats">
+                <div class="monitoring-stat">
+                    <span class="stat-label">This Week</span>
+                    <span class="stat-value">${stats.week?.calls || 0} calls</span>
+                    <span class="stat-detail">${formatTokenCount(stats.week?.tokens || 0)} tokens, $${(stats.week?.cost || 0).toFixed(4)}</span>
+                </div>
+                <div class="monitoring-stat">
+                    <span class="stat-label">Today</span>
+                    <span class="stat-value">${stats.today?.calls || 0} calls</span>
+                    <span class="stat-detail">${formatTokenCount(stats.today?.tokens || 0)} tokens, $${(stats.today?.cost || 0).toFixed(4)}</span>
+                </div>
+                <div class="monitoring-stat">
+                    <span class="stat-label">Last Hour</span>
+                    <span class="stat-value">${stats.hour?.calls || 0} calls</span>
+                    <span class="stat-detail">${formatTokenCount(stats.hour?.tokens || 0)} tokens, $${(stats.hour?.cost || 0).toFixed(4)}</span>
+                </div>
+            </div>
+
+            <!-- Recent Prompts Header -->
+            <div class="job-section">
+                <div class="job-section-header">Recent Prompts</div>
+            </div>
+
+            <!-- Prompts List -->
+            ${recent_prompts.length === 0 ? '<div class="focus-empty">No recent prompts</div>' :
+              recent_prompts.map((p, index) => `
+                <div class="prompt-list-item" onclick="navigateFocus('prompt-${agentId}-${index}')">
+                    <span class="prompt-time">${formatPromptTime(p.timestamp)}</span>
+                    <span class="prompt-tokens">${p.input_tokens}/${p.output_tokens}</span>
+                    <span class="prompt-model">${escapeHtml(p.model || 'unknown')}</span>
+                    <span class="prompt-item-arrow">${icon('chevron-right')}</span>
+                </div>
+              `).join('')
+            }
+        </div>
+    `;
+}
+
+// ============== Prompt Detail View ==============
+
+function renderPromptDetailView(agentId, promptIndex) {
+    const cached = monitoringCache[agentId];
+    if (!cached || !cached.recent_prompts) {
+        // Need to load monitoring data first
+        loadAgentMonitoring(agentId).then(data => {
+            monitoringCache[agentId] = data || { stats: {}, recent_prompts: [] };
+            renderFocusTab();
+        });
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-view-title">Prompt</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading...</div>
+            </div>
+        `;
+    }
+
+    const prompt = cached.recent_prompts[parseInt(promptIndex)];
+    if (!prompt) {
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-view-title">Prompt</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Prompt not found</div>
+            </div>
+        `;
+    }
+
+    // Helper to render messages nicely
+    const renderMessages = (messages) => {
+        if (!Array.isArray(messages)) {
+            return `<pre class="prompt-content">${escapeHtml(JSON.stringify(messages, null, 2))}</pre>`;
+        }
+        return messages.map(msg => {
+            const role = msg.role || 'unknown';
+            const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content, null, 2);
+            return `
+                <div class="prompt-message">
+                    <div class="prompt-message-role">${escapeHtml(role)}</div>
+                    <div class="prompt-message-content">${marked.parse(content)}</div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    // Helper to render response
+    const renderResponse = (response) => {
+        if (typeof response === 'string') {
+            return marked.parse(response);
+        }
+        // Handle structured response (tool calls, etc.)
+        if (response && typeof response === 'object') {
+            if (response.content) {
+                return marked.parse(response.content);
+            }
+            return `<pre class="prompt-content">${escapeHtml(JSON.stringify(response, null, 2))}</pre>`;
+        }
+        return '';
+    };
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">Prompt</span>
+        </div>
+        <div class="focus-view-content">
+            <!-- Summary -->
+            <div class="job-section">
+                <div class="job-section-header">Summary</div>
+                <div class="prompt-summary">
+                    <div class="prompt-summary-row">
+                        <span class="prompt-summary-label">Time:</span>
+                        <span class="prompt-summary-value">${prompt.timestamp ? new Date(prompt.timestamp).toLocaleString() : 'Unknown'}</span>
+                    </div>
+                    <div class="prompt-summary-row">
+                        <span class="prompt-summary-label">Model:</span>
+                        <span class="prompt-summary-value">${escapeHtml(prompt.model || 'unknown')}</span>
+                    </div>
+                    <div class="prompt-summary-row">
+                        <span class="prompt-summary-label">Input Tokens:</span>
+                        <span class="prompt-summary-value">${prompt.input_tokens || 0}</span>
+                    </div>
+                    <div class="prompt-summary-row">
+                        <span class="prompt-summary-label">Output Tokens:</span>
+                        <span class="prompt-summary-value">${prompt.output_tokens || 0}</span>
+                    </div>
+                    <div class="prompt-summary-row">
+                        <span class="prompt-summary-label">Cost:</span>
+                        <span class="prompt-summary-value">$${(prompt.cost || 0).toFixed(4)}</span>
+                    </div>
+                    ${prompt.duration_ms ? `
+                    <div class="prompt-summary-row">
+                        <span class="prompt-summary-label">Duration:</span>
+                        <span class="prompt-summary-value">${prompt.duration_ms}ms</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+
+            <!-- System Prompt (if available) -->
+            ${prompt.system ? `
+            <div class="job-section">
+                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>System Prompt</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="prompt-rendered-content">${marked.parse(prompt.system)}</div>
+                </div>
+            </div>
+            ` : ''}
+
+            <!-- Messages (if available) -->
+            ${prompt.messages ? `
+            <div class="job-section">
+                <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
+                    <span>Messages</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content" style="display: block;">
+                    <div class="prompt-messages-list">${renderMessages(prompt.messages)}</div>
+                </div>
+            </div>
+            ` : ''}
+
+            <!-- Response (if available) -->
+            ${prompt.response ? `
+            <div class="job-section">
+                <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
+                    <span>Response</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content" style="display: block;">
+                    <div class="prompt-rendered-content">${renderResponse(prompt.response)}</div>
+                </div>
+            </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+// ============== Profile View ==============
+
+function renderProfileView(agentId) {
+    const agentData = agentDataCache[agentId];
+
+    if (!agentData) {
+        loadAgentData(agentId).then(() => renderFocusTab());
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-view-title">Profile</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading...</div>
+            </div>
+        `;
+    }
+
+    const profile = agentData.persona || '';
+    const hasProfile = profile.length > 0;
+
+    // Find the job for this agent (for editing state)
+    const agentJob = jobsData.find(j => j.agent_id === agentId);
+    const jobId = agentJob?.id || agentId;
+
+    const isEditingProfile = editingJobField?.jobId === jobId && editingJobField?.field === 'profile';
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">Profile</span>
+        </div>
+        <div class="focus-view-content">
+            ${isEditingProfile ? `
+                <!-- Edit Mode -->
+                <div class="task-detail-actions">
+                    <button class="task-detail-action" onclick="saveAgentProfileField('${agentId}', '${jobId}')">
+                        ${icon('check')} Save
+                    </button>
+                    <button class="task-detail-action" onclick="cancelEditing()">
+                        ${icon('x-mark')} Cancel
+                    </button>
+                </div>
+
+                <div class="profile-edit">
+                    <textarea class="job-description-input" id="edit-profile-${jobId}"
+                        placeholder="Define the agent's identity and behavioral rules..."
+                        style="min-height: 300px;">${escapeHtml(profile)}</textarea>
+                </div>
+            ` : `
+                <!-- View Mode -->
+                <div class="task-detail-actions">
+                    <button class="task-detail-action" onclick="startEditingField('${jobId}', 'profile')">
+                        ${icon('pencil')} Edit
+                    </button>
+                </div>
+
+                <div class="profile-content ${hasProfile ? '' : 'empty'}">
+                    ${hasProfile ? marked.parse(profile) : '<em class="text-muted">No profile defined. Click Edit to define the agent\'s identity and behavioral rules.</em>'}
+                </div>
+            `}
+        </div>
+    `;
+}
+
+// ============== Configuration View ==============
+
+function renderConfigurationView(agentId) {
+    const agentData = agentDataCache[agentId];
+
+    if (!agentData) {
+        loadAgentData(agentId).then(() => renderFocusTab());
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-view-title">Configuration</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading...</div>
+            </div>
+        `;
+    }
+
+    const config = agentData.config || {};
+    const triggers = config.triggers || [];
+    const tools = config.tools || [];
+
+    // Find the job for this agent (for editing state)
+    const agentJob = jobsData.find(j => j.agent_id === agentId);
+    const jobId = agentJob?.id || agentId;
+
+    const isEditingConfig = editingJobField?.jobId === jobId && editingJobField?.field === 'config';
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">Configuration</span>
+        </div>
+        <div class="focus-view-content">
+            ${isEditingConfig ? `
+                <!-- Edit Mode -->
+                <div class="task-detail-actions">
+                    <button class="task-detail-action" onclick="saveAgentConfigField('${agentId}', '${jobId}')">
+                        ${icon('check')} Save
+                    </button>
+                    <button class="task-detail-action" onclick="cancelEditing()">
+                        ${icon('x-mark')} Cancel
+                    </button>
+                </div>
+
+                <div class="agent-config-edit">
+                    <label class="agent-config-label">
+                        <span>Triggers (comma-separated)</span>
+                        <input type="text" class="agent-config-input" id="edit-triggers-${jobId}"
+                            value="${escapeHtml(triggers.join(', '))}"
+                            placeholder="e.g., job:assigned, time:morning">
+                    </label>
+                    <label class="agent-config-label">
+                        <span>Tools (comma-separated)</span>
+                        <input type="text" class="agent-config-input" id="edit-tools-${jobId}"
+                            value="${escapeHtml(tools.join(', '))}"
+                            placeholder="e.g., list_jobs, create_job">
+                    </label>
+                    <div class="agent-config-group">
+                        <div class="agent-config-group-title">Reflection</div>
+                        <label class="agent-config-checkbox">
+                            <input type="checkbox" id="edit-reflection-enabled-${jobId}"
+                                ${config.reflection?.enabled !== false ? 'checked' : ''}>
+                            <span>Enabled</span>
+                        </label>
+                        <label class="agent-config-label">
+                            <span>Trigger</span>
+                            <input type="text" class="agent-config-input" id="edit-reflection-trigger-${jobId}"
+                                value="${escapeHtml(config.reflection?.trigger || 'time:evening')}"
+                                placeholder="e.g., time:evening">
+                        </label>
+                    </div>
+                    <div class="agent-config-group">
+                        <div class="agent-config-group-title">Exploration</div>
+                        <label class="agent-config-checkbox">
+                            <input type="checkbox" id="edit-exploration-enabled-${jobId}"
+                                ${config.exploration?.enabled ? 'checked' : ''}>
+                            <span>Enabled</span>
+                        </label>
+                        <label class="agent-config-label">
+                            <span>Trigger</span>
+                            <input type="text" class="agent-config-input" id="edit-exploration-trigger-${jobId}"
+                                value="${escapeHtml(config.exploration?.trigger || 'time:hour_04')}"
+                                placeholder="e.g., time:hour_04">
+                        </label>
+                    </div>
+                </div>
+            ` : `
+                <!-- View Mode -->
+                <div class="task-detail-actions">
+                    <button class="task-detail-action" onclick="startEditingField('${jobId}', 'config')">
+                        ${icon('pencil')} Edit
+                    </button>
+                </div>
+
+                <div class="job-section">
+                    <div class="job-section-header">Triggers</div>
+                    <div class="config-value">${triggers.length > 0 ? escapeHtml(triggers.join(', ')) : '<em class="text-muted">None configured</em>'}</div>
+                </div>
+
+                <div class="job-section">
+                    <div class="job-section-header">Tools</div>
+                    <div class="config-value">${tools.length > 0 ? escapeHtml(tools.join(', ')) : '<em class="text-muted">None configured</em>'}</div>
+                </div>
+
+                <div class="job-section">
+                    <div class="job-section-header">Reflection</div>
+                    <div class="config-value">
+                        <span class="config-status ${config.reflection?.enabled !== false ? 'enabled' : 'disabled'}">
+                            ${config.reflection?.enabled !== false ? 'Enabled' : 'Disabled'}
+                        </span>
+                        <span class="config-trigger">${escapeHtml(config.reflection?.trigger || 'time:evening')}</span>
+                    </div>
+                </div>
+
+                <div class="job-section">
+                    <div class="job-section-header">Exploration</div>
+                    <div class="config-value">
+                        <span class="config-status ${config.exploration?.enabled ? 'enabled' : 'disabled'}">
+                            ${config.exploration?.enabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                        <span class="config-trigger">${escapeHtml(config.exploration?.trigger || 'time:hour_04')}</span>
+                    </div>
+                </div>
+            `}
+        </div>
+    `;
+}
+
+// ============== Rate Limit Events View ==============
+
+let rateLimitViewCache = {};
+
+function renderRateLimitEventsView(agentId) {
+    const cached = rateLimitViewCache[agentId];
+
+    if (!cached) {
+        loadRateLimitEvents(agentId).then(data => {
+            rateLimitViewCache[agentId] = data || [];
+            renderFocusTab();
+        });
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-view-title">Rate Limit Events</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading...</div>
+            </div>
+        `;
+    }
+
+    // Filter to agent-specific events
+    const agentEvents = cached.filter(e => e.agent_id === agentId);
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">Rate Limit Events</span>
+        </div>
+        <div class="focus-view-content">
+            ${agentEvents.length === 0 ? '<div class="focus-empty">No rate limit events for this agent.</div>' :
+              agentEvents.slice(0, 50).map(e => {
+                  const eventClass = e.event === 'agent_paused' ? 'event-paused' :
+                                     e.event === 'agent_resumed' ? 'event-resumed' :
+                                     e.event === 'rate_limit_hit' ? 'event-limited' : '';
+                  return `
+                    <div class="rate-limit-event ${eventClass}">
+                        <span class="event-time">${formatPromptTime(e.timestamp)}</span>
+                        <span class="event-type">${escapeHtml(e.event || 'unknown')}</span>
+                        <span class="event-detail">${escapeHtml(e.reason || e.details?.reason || '')}</span>
+                    </div>
+                  `;
+              }).join('')
+            }
         </div>
     `;
 }
