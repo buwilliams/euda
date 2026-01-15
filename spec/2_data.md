@@ -17,6 +17,7 @@ Every agent (including the user) shares the same structure:
   - Evolves over time based on long-term memory
   - For AI agents: purpose, behavioral rules, voice
   - For user: biographical info, wants/fears, stable attractors
+  - Template: `profile.md.example` — preserved during Fresh Start for reinitialization
 - **Memory:**
   - Short-term: `data/agents/{id}/memory/short-term.jsonl` (90-day rolling)
   - Long-term: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md` (year-based archive)
@@ -58,6 +59,7 @@ Memory moves through two phases:
   - Lightweight extraction that adds noteworthy items to short-term memory
   - Runs automatically after each chat() call
   - No job created — invisible to user
+  - Chat agent's user-relevant items cross-pollinate to user's memory (person, place, goal, concern, idea)
 
 - **Consolidate phase** (triggered, creates visible jobs)
   - Heavy analysis triggered by `time:evening` or custom trigger

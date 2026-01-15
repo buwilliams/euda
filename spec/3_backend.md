@@ -15,7 +15,7 @@ Rules for the server, API, and infrastructure.
 - Routes organized in `src/web/routes/`
 - Each route module has its own `router` with prefix:
   - `/api/jobs` — Job CRUD
-  - `/api/agents` — Agent listing
+  - `/api/agents` — Agent listing and management
   - `/api/chat` — Chat with agents
   - `/api/user` — Profile and long-term memory
   - `/api/auth` — Authentication
@@ -24,6 +24,32 @@ Rules for the server, API, and infrastructure.
   - `/api/transcribe` — Audio transcription (speech-to-text)
   - `/api/synthesize` — Text-to-speech synthesis
   - `/api/rate-limiting` — Rate limiter status and control
+  - `/api/fresh-start` — Reset user data with backup
+  - `/api/backups` — Backup management
+
+## Agent Management Endpoints
+
+- `GET /api/agents/{id}/profile` — Get agent profile (markdown)
+- `PATCH /api/agents/{id}/profile` — Update agent profile
+- `GET /api/agents/{id}/config` — Get agent configuration
+- `PATCH /api/agents/{id}/config` — Update agent configuration
+- `GET /api/agents/{id}/memory/short-term` — List short-term memory items
+- `POST /api/agents/{id}/memory/short-term` — Add memory item
+- `DELETE /api/agents/{id}/memory/short-term/{entry_id}` — Delete memory item
+- `GET /api/agents/{id}/memory/long-term/dates` — List long-term memory dates
+- `GET /api/agents/{id}/memory/long-term?date={date}` — Get long-term memory for date
+- `GET /api/agents/{id}/monitoring` — Get monitoring stats and recent prompts
+- `GET /api/agents/{id}/logs/reflection?days={n}` — Get reflection logs
+- `POST /api/agents/{id}/reflection/trigger` — Manually trigger reflection, returns execution_id
+- `POST /api/agents/{id}/exploration/trigger` — Manually trigger exploration, returns execution_id
+
+## Fresh Start & Backups
+
+- `POST /api/fresh-start` — Reset all user data, create timestamped backup, preserve agent configs and profile templates
+- `GET /api/backups` — List all available backups with timestamps
+- `POST /api/backups/restore` — Restore from a backup (current data backed up first)
+- `DELETE /api/backups/{backup_name}` — Permanently delete a backup
+- Backups use timestamped directory names: `data_backup-YYYYMMDD-HHMMSS`
 
 ## Authentication
 
@@ -44,6 +70,12 @@ Rules for the server, API, and infrastructure.
   - `jobs_update` — sent when any job changes, includes full job list
   - `chat_update` — sent when chat messages are added
   - `agent_message` — sent via notifications tool for agent-to-user messages
+  - `tts_audio` — sent when TTS audio is generated, includes base64 audio
+  - `reflection:progress` — sent during reflection execution with step, message, execution_id
+  - `reflection:llm_complete` — sent when reflection LLM call completes, includes token counts
+  - `reflection:complete` — sent when reflection phase finishes (append or consolidate)
+  - `reflection:error` — sent if reflection encounters an error
+- Reflection events include `execution_id` for correlating UI triggers with backend progress
 - Clients reconnect automatically on disconnect
 - Graceful shutdown closes connections before server stops
 
