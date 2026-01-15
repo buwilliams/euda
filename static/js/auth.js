@@ -375,6 +375,149 @@ async function handleChangePassword(event) {
     setTimeout(() => { messageEl.textContent = ''; }, 3000);
 }
 
+// ============== Fresh Start & Backups ==============
+
+async function handleFreshStart() {
+    const messageEl = document.getElementById('fresh-start-message');
+
+    // Show processing state
+    messageEl.textContent = 'Creating backup and resetting...';
+    messageEl.className = 'settings-message';
+
+    try {
+        const response = await fetch('/api/fresh-start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            messageEl.textContent = 'Done! Backed up as ' + data.backup_name + '. Reloading...';
+            messageEl.className = 'settings-message success';
+
+            // Reload the page after a short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            messageEl.textContent = data.error || 'Failed to reset data';
+            messageEl.className = 'settings-message error';
+        }
+    } catch (error) {
+        console.error('Fresh start failed:', error);
+        messageEl.textContent = 'Connection error. Please try again.';
+        messageEl.className = 'settings-message error';
+    }
+}
+
+let backupsData = null;
+
+async function loadBackupsData() {
+    const listEl = document.getElementById('backups-list');
+
+    try {
+        const response = await fetch('/api/backups');
+        backupsData = await response.json();
+        renderBackupsList();
+    } catch (error) {
+        console.error('Failed to load backups:', error);
+        listEl.textContent = 'Failed to load backups';
+    }
+}
+
+function renderBackupsList() {
+    const listEl = document.getElementById('backups-list');
+
+    if (!backupsData || backupsData.count === 0) {
+        listEl.innerHTML = '<div class="focus-empty">No backups available</div>';
+        return;
+    }
+
+    const backups = backupsData.backups;
+    // Build HTML safely - backup names are filesystem-generated timestamps
+    let html = '';
+    for (const backup of backups) {
+        const ts = backup.timestamp;
+        const formatted = ts.length >= 15
+            ? ts.slice(0,4) + '-' + ts.slice(4,6) + '-' + ts.slice(6,8) + ' ' + ts.slice(9,11) + ':' + ts.slice(11,13) + ':' + ts.slice(13,15)
+            : ts;
+
+        html += '<div class="backup-item">' +
+            '<div class="backup-info">' +
+            '<span class="backup-name">' + escapeHtml(backup.name) + '</span>' +
+            '<span class="backup-date">' + formatted + '</span>' +
+            '</div>' +
+            '<div class="backup-actions">' +
+            '<button class="backup-btn backup-restore" onclick="handleRestoreBackup(\'' + escapeHtml(backup.name) + '\')">Restore</button>' +
+            '<button class="backup-btn backup-delete" onclick="handleDeleteBackup(\'' + escapeHtml(backup.name) + '\')">Delete</button>' +
+            '</div>' +
+            '</div>';
+    }
+    listEl.innerHTML = html;
+}
+
+async function handleRestoreBackup(backupName) {
+    const messageEl = document.getElementById('backups-message');
+    messageEl.textContent = 'Restoring backup...';
+    messageEl.className = 'settings-message';
+
+    try {
+        const response = await fetch('/api/backups/restore', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ backup_name: backupName })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            messageEl.textContent = 'Restored! Current data saved as ' + data.current_backed_up_as + '. Reloading...';
+            messageEl.className = 'settings-message success';
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            messageEl.textContent = data.error || 'Failed to restore backup';
+            messageEl.className = 'settings-message error';
+        }
+    } catch (error) {
+        console.error('Restore failed:', error);
+        messageEl.textContent = 'Connection error. Please try again.';
+        messageEl.className = 'settings-message error';
+    }
+}
+
+async function handleDeleteBackup(backupName) {
+    const messageEl = document.getElementById('backups-message');
+    messageEl.textContent = 'Deleting backup...';
+    messageEl.className = 'settings-message';
+
+    try {
+        const response = await fetch('/api/backups/' + encodeURIComponent(backupName), {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            messageEl.textContent = 'Backup deleted.';
+            messageEl.className = 'settings-message success';
+            // Refresh the list
+            await loadBackupsData();
+            setTimeout(() => { messageEl.textContent = ''; }, 2000);
+        } else {
+            messageEl.textContent = data.error || 'Failed to delete backup';
+            messageEl.className = 'settings-message error';
+        }
+    } catch (error) {
+        console.error('Delete failed:', error);
+        messageEl.textContent = 'Connection error. Please try again.';
+        messageEl.className = 'settings-message error';
+    }
+}
+
 // ============== Rate Limiting ==============
 
 let rateLimitData = null;

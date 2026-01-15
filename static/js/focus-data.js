@@ -450,3 +450,277 @@ function getFocusCounts() {
 
     return counts;
 }
+
+// ============== Memory Data Loading ==============
+
+// Cache for memory pagination state
+const memoryPageState = {};
+const longTermMemoryCache = {};
+
+async function loadShortTermMemory(agentId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/memory/short-term`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            const items = await response.json();
+            // Initialize pagination state
+            if (!memoryPageState[agentId]) {
+                memoryPageState[agentId] = { page: 0, pageSize: 10 };
+            }
+            return items;
+        }
+    } catch (error) {
+        console.error('Failed to load short-term memory:', error);
+    }
+    return [];
+}
+
+async function loadLongTermMemoryDates(agentId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/memory/long-term/dates`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            const dates = await response.json();
+            // Cache the dates list
+            if (!longTermMemoryCache[agentId]) {
+                longTermMemoryCache[agentId] = {};
+            }
+            longTermMemoryCache[agentId].dates = dates;
+            return dates;
+        }
+    } catch (error) {
+        console.error('Failed to load long-term memory dates:', error);
+    }
+    return [];
+}
+
+async function loadLongTermMemoryContent(agentId, date) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/memory/long-term?date=${date}`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            const data = await response.json();
+            // Cache the content
+            if (!longTermMemoryCache[agentId]) {
+                longTermMemoryCache[agentId] = {};
+            }
+            longTermMemoryCache[agentId][date] = data;
+            return data;
+        }
+    } catch (error) {
+        console.error('Failed to load long-term memory content:', error);
+    }
+    return null;
+}
+
+async function loadReflectionLogs(agentId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/logs/reflection?days=7`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (error) {
+        console.error('Failed to load reflection logs:', error);
+    }
+    return { agent_id: agentId, logs: [] };
+}
+
+async function loadJobTrace(jobId) {
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/trace`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (error) {
+        console.error('Failed to load job trace:', error);
+    }
+    return null;
+}
+
+// ============== Memory Actions ==============
+
+async function addMemoryItem(agentId) {
+    const description = prompt('Memory description:');
+    if (!description) return;
+
+    const type = prompt('Type (person, place, thing, goal, concern, idea, learning, behavior):') || 'thing';
+
+    try {
+        const response = await fetch(`/api/agents/${agentId}/memory/short-term`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                short_description: description,
+                type: type
+            })
+        });
+
+        if (response.ok) {
+            await refreshMemorySection(agentId, 'short-term-memory');
+        }
+    } catch (error) {
+        console.error('Failed to add memory item:', error);
+    }
+}
+
+async function deleteMemoryItem(agentId, entryId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/memory/short-term/${entryId}`, {
+            method: 'DELETE',
+            credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+            await refreshMemorySection(agentId, 'short-term-memory');
+        }
+    } catch (error) {
+        console.error('Failed to delete memory item:', error);
+    }
+}
+
+async function refreshMemorySection(agentId, sectionType) {
+    // Find and refresh the memory section content
+    const sections = document.querySelectorAll('.job-section');
+    for (const section of sections) {
+        const header = section.querySelector('.job-section-header');
+        if (header && header.textContent.includes('Short-term Memory') && sectionType === 'short-term-memory') {
+            const content = header.nextElementSibling;
+            if (content && content.classList.contains('collapsible-content')) {
+                content.dataset.loaded = 'false';
+                const items = await loadShortTermMemory(agentId);
+                content.innerHTML = renderShortTermMemoryContent(items, agentId);
+                content.dataset.loaded = 'true';
+            }
+            break;
+        }
+    }
+}
+
+function pageMemory(agentId, direction) {
+    if (!memoryPageState[agentId]) {
+        memoryPageState[agentId] = { page: 0, pageSize: 10 };
+    }
+
+    const state = memoryPageState[agentId];
+    if (direction === 'next') {
+        state.page++;
+    } else if (direction === 'prev' && state.page > 0) {
+        state.page--;
+    }
+
+    // Re-render the section
+    refreshMemorySection(agentId, 'short-term-memory');
+}
+
+async function loadLongTermMemoryDate(agentId, date) {
+    const content = await loadLongTermMemoryContent(agentId, date);
+    const dates = longTermMemoryCache[agentId]?.dates || [];
+
+    // Find and update the long-term memory section
+    const sections = document.querySelectorAll('.job-section');
+    for (const section of sections) {
+        const header = section.querySelector('.job-section-header');
+        if (header && header.textContent.includes('Long-term Memory')) {
+            const contentDiv = header.nextElementSibling;
+            if (contentDiv && contentDiv.classList.contains('collapsible-content')) {
+                contentDiv.innerHTML = renderLongTermMemoryContent(dates, date, content, agentId);
+            }
+            break;
+        }
+    }
+}
+
+// ============== Trigger Actions ==============
+
+async function triggerReflection(agentId, phase) {
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = 'Triggering...';
+    button.disabled = true;
+
+    try {
+        const response = await fetch(`/api/agents/${agentId}/reflection/trigger`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ phase: phase })
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            button.textContent = 'Triggered!';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            }, 2000);
+            // Refresh logs after a delay
+            setTimeout(() => refreshReflectionSection(agentId), 3000);
+        } else {
+            button.textContent = 'Failed';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            }, 2000);
+        }
+    } catch (error) {
+        console.error('Failed to trigger reflection:', error);
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+}
+
+async function triggerExploration(agentId) {
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = 'Triggering...';
+    button.disabled = true;
+
+    try {
+        const response = await fetch(`/api/agents/${agentId}/exploration/trigger`, {
+            method: 'POST',
+            credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            button.textContent = 'Triggered!';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            }, 2000);
+        } else {
+            button.textContent = 'Failed';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            }, 2000);
+        }
+    } catch (error) {
+        console.error('Failed to trigger exploration:', error);
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+}
+
+async function refreshReflectionSection(agentId) {
+    const sections = document.querySelectorAll('.job-section');
+    for (const section of sections) {
+        const header = section.querySelector('.job-section-header');
+        if (header && header.textContent.includes('Reflection')) {
+            const content = header.nextElementSibling;
+            if (content && content.classList.contains('collapsible-content') && content.classList.contains('open')) {
+                const data = await loadReflectionLogs(agentId);
+                content.innerHTML = renderReflectionContent(data, agentId);
+            }
+            break;
+        }
+    }
+}

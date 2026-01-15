@@ -123,7 +123,30 @@ async function saveAgentConfigField(agentId, jobId) {
     const triggers = triggersInput.value.split(',').map(s => s.trim()).filter(s => s);
     const tools = toolsInput.value.split(',').map(s => s.trim()).filter(s => s);
 
-    const success = await saveAgentConfig(agentId, { triggers, tools });
+    // Build update object
+    const updates = { triggers, tools };
+
+    // Get reflection settings
+    const reflectionEnabledInput = document.getElementById(`edit-reflection-enabled-${jobId}`);
+    const reflectionTriggerInput = document.getElementById(`edit-reflection-trigger-${jobId}`);
+    if (reflectionEnabledInput && reflectionTriggerInput) {
+        updates.reflection = {
+            enabled: reflectionEnabledInput.checked,
+            trigger: reflectionTriggerInput.value.trim() || 'time:evening'
+        };
+    }
+
+    // Get exploration settings
+    const explorationEnabledInput = document.getElementById(`edit-exploration-enabled-${jobId}`);
+    const explorationTriggerInput = document.getElementById(`edit-exploration-trigger-${jobId}`);
+    if (explorationEnabledInput && explorationTriggerInput) {
+        updates.exploration = {
+            enabled: explorationEnabledInput.checked,
+            trigger: explorationTriggerInput.value.trim() || 'time:hour_04'
+        };
+    }
+
+    const success = await saveAgentConfig(agentId, updates);
     if (success) {
         editingJobField = null;
         renderFocusTab();

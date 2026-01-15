@@ -277,3 +277,75 @@ def api_delete_asset(job_id: str, filename: str):
     if isinstance(result, dict) and "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
+
+
+# Job execution trace endpoint
+@router.get("/{job_id}/trace")
+def api_get_job_trace(job_id: str, days: int = 7):
+    """Get execution trace for a job.
+
+    Combines:
+    - Job logs from database (actions taken)
+    - API calls from cost tracker (LLM interactions)
+
+    Returns a chronological timeline of events.
+    """
+    from ...cost_tracker import get_calls_by_job
+
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    # Get job logs from database
+    from ...tools.data.jobs import get_job_logs
+    job_logs = get_job_logs(job_id)
+
+    # Get API calls
+    api_calls = get_calls_by_job(job_id, days)
+
+    # Normalize entries into a common trace format
+    entries = []
+
+    # Add job logs
+    for log in job_logs:
+        entries.append({
+            "timestamp": log.get("timestamp"),
+            "event": "action",
+            "agent": log.get("agent"),
+            "details": {
+                "action": log.get("action")
+            }
+        })
+
+    # Add API calls (LLM interactions)
+    for call in api_calls:
+        entries.append({
+            "timestamp": call.get("timestamp"),
+            "event": "llm_call",
+            "agent": call.get("agent"),
+            "details": {
+                "model": call.get("model"),
+                "input_tokens": call.get("input_tokens"),
+                "output_tokens": call.get("output_tokens"),
+                "cost": call.get("cost")
+            }
+        })
+
+    # Sort by timestamp (oldest first for timeline)
+    entries.sort(key=lambda x: x.get("timestamp", ""))
+
+    # Calculate summary stats
+    total_cost = sum(e.get("details", {}).get("cost", 0) for e in entries if e.get("event") == "llm_call")
+    llm_calls = sum(1 for e in entries if e.get("event") == "llm_call")
+    actions = sum(1 for e in entries if e.get("event") == "action")
+
+    return {
+        "job_id": job_id,
+        "job_name": job.get("name"),
+        "summary": {
+            "llm_calls": llm_calls,
+            "actions": actions,
+            "total_cost": round(total_cost, 4)
+        },
+        "entries": entries
+    }

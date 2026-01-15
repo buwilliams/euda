@@ -51,6 +51,22 @@ async function toggleAgentSection(header, event, sectionType, agentId) {
                 } else if (sectionType === 'rate-limit-events') {
                     const data = await loadRateLimitEvents(agentId);
                     content.innerHTML = renderRateLimitEventsContent(data, agentId);
+                } else if (sectionType === 'short-term-memory') {
+                    const items = await loadShortTermMemory(agentId);
+                    content.innerHTML = renderShortTermMemoryContent(items, agentId);
+                } else if (sectionType === 'long-term-memory') {
+                    const dates = await loadLongTermMemoryDates(agentId);
+                    if (dates.length > 0) {
+                        const contentData = await loadLongTermMemoryContent(agentId, dates[0]);
+                        content.innerHTML = renderLongTermMemoryContent(dates, dates[0], contentData, agentId);
+                    } else {
+                        content.innerHTML = '<div class="focus-empty">No long-term memory entries.</div>';
+                    }
+                } else if (sectionType === 'reflection') {
+                    const data = await loadReflectionLogs(agentId);
+                    content.innerHTML = renderReflectionContent(data, agentId);
+                } else if (sectionType === 'exploration') {
+                    content.innerHTML = renderExplorationContent(agentId);
                 }
                 content.dataset.loaded = 'true';
             }
@@ -62,7 +78,25 @@ function renderAgentCompletedJobsContent(jobs) {
     if (!jobs || jobs.length === 0) {
         return '<div class="focus-empty">No jobs completed by this agent yet.</div>';
     }
-    return jobs.map(job => renderCompletedJobCard(job, 0, false)).join('');
+    return jobs.map(job => renderCompletedJobCardWithTrace(job)).join('');
+}
+
+function renderCompletedJobCardWithTrace(job) {
+    const name = job.name || 'Untitled';
+    const completedDate = job.completed_at ? formatFriendlyPastDate(job.completed_at.split('T')[0]) : '';
+
+    return `
+        <div class="job-card completed-job-card">
+            <div class="job-card-content" onclick="navigateToTrace('${job.id}')">
+                <span class="job-icon">${icon('check-circle')}</span>
+                <span class="job-name">${escapeHtml(name)}</span>
+                ${completedDate ? `<span class="job-completed-date">${completedDate}</span>` : ''}
+            </div>
+            <button class="trace-btn" onclick="event.stopPropagation(); navigateToTrace('${job.id}')" title="View Trace">
+                ${icon('chart-bar')}
+            </button>
+        </div>
+    `;
 }
 
 function renderMonitoringContent(data) {
@@ -206,6 +240,221 @@ function formatTokenCount(count) {
     if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M';
     if (count >= 1000) return (count / 1000).toFixed(1) + 'K';
     return count.toString();
+}
+
+// ============== Memory Render Functions ==============
+
+function renderShortTermMemoryContent(items, agentId) {
+    if (!items || items.length === 0) {
+        return `
+            <div class="focus-empty">No short-term memory items.</div>
+            <div class="memory-actions">
+                <button class="btn-secondary memory-add" onclick="addMemoryItem('${agentId}')">+ Add Memory</button>
+            </div>
+        `;
+    }
+
+    const state = memoryPageState[agentId] || { page: 0, pageSize: 10 };
+    const start = state.page * state.pageSize;
+    const end = start + state.pageSize;
+    const pageItems = items.slice(start, end);
+    const totalPages = Math.ceil(items.length / state.pageSize);
+
+    const typeColors = {
+        person: 'type-person',
+        place: 'type-place',
+        thing: 'type-thing',
+        goal: 'type-goal',
+        concern: 'type-concern',
+        idea: 'type-idea',
+        learning: 'type-learning',
+        behavior: 'type-behavior'
+    };
+
+    return `
+        <div class="memory-list">
+            ${pageItems.map(item => `
+                <div class="memory-item">
+                    <span class="memory-type-badge ${typeColors[item.type] || 'type-thing'}">${escapeHtml(item.type)}</span>
+                    <span class="memory-description">${escapeHtml(item.short_description)}</span>
+                    <button class="memory-delete" onclick="deleteMemoryItem('${agentId}', '${item.id}')" title="Delete">&times;</button>
+                </div>
+            `).join('')}
+        </div>
+        ${totalPages > 1 ? `
+        <div class="memory-pagination">
+            <button class="memory-page-btn" onclick="pageMemory('${agentId}', 'prev')" ${state.page === 0 ? 'disabled' : ''}>Prev</button>
+            <span class="memory-page-info">${state.page + 1} / ${totalPages}</span>
+            <button class="memory-page-btn" onclick="pageMemory('${agentId}', 'next')" ${end >= items.length ? 'disabled' : ''}>Next</button>
+        </div>
+        ` : ''}
+        <div class="memory-actions">
+            <button class="btn-secondary memory-add" onclick="addMemoryItem('${agentId}')">+ Add Memory</button>
+        </div>
+    `;
+}
+
+function renderLongTermMemoryContent(dates, currentDate, content, agentId) {
+    if (!dates || dates.length === 0) {
+        return '<div class="focus-empty">No long-term memory entries.</div>';
+    }
+
+    const currentIndex = dates.indexOf(currentDate);
+    const hasPrev = currentIndex < dates.length - 1;
+    const hasNext = currentIndex > 0;
+
+    const memoryContent = content?.content || content?.entries?.join('\n\n') || 'No content for this date.';
+
+    return `
+        <div class="long-term-memory">
+            <div class="memory-date-nav">
+                <button class="memory-page-btn" onclick="loadLongTermMemoryDate('${agentId}', '${dates[currentIndex + 1] || currentDate}')" ${!hasPrev ? 'disabled' : ''}>Older</button>
+                <span class="memory-date-current">${currentDate}</span>
+                <button class="memory-page-btn" onclick="loadLongTermMemoryDate('${agentId}', '${dates[currentIndex - 1] || currentDate}')" ${!hasNext ? 'disabled' : ''}>Newer</button>
+            </div>
+            <div class="long-term-content">${escapeHtml(memoryContent)}</div>
+        </div>
+    `;
+}
+
+// ============== Reflection Render Functions ==============
+
+function renderReflectionContent(data, agentId) {
+    const logs = data?.logs || [];
+
+    return `
+        <div class="reflection-section">
+            <div class="reflection-actions">
+                <button class="btn-secondary" onclick="triggerReflection('${agentId}', 'append')">Run Append</button>
+                <button class="btn-secondary" onclick="triggerReflection('${agentId}', 'consolidate')">Run Consolidate</button>
+                <button class="btn-primary" onclick="triggerReflection('${agentId}', 'both')">Run Both</button>
+            </div>
+            <div class="reflection-logs">
+                <div class="monitoring-section-title">Recent Activity (7 days)</div>
+                ${logs.length === 0 ? '<div class="focus-empty">No reflection activity recorded.</div>' :
+                  logs.slice(0, 20).map(log => {
+                      const eventType = log.phase || log.event || 'unknown';
+                      const eventClass = eventType === 'append' ? 'log-event-append' :
+                                        eventType === 'consolidate' ? 'log-event-consolidate' :
+                                        eventType === 'error' ? 'log-event-error' : '';
+                      return `
+                          <div class="reflection-log-entry">
+                              <span class="log-time">${formatPromptTime(log.timestamp)}</span>
+                              <span class="log-event ${eventClass}">${escapeHtml(eventType)}</span>
+                              <span class="log-detail">${escapeHtml(log.message || log.details || '')}</span>
+                          </div>
+                      `;
+                  }).join('')
+                }
+            </div>
+        </div>
+    `;
+}
+
+// ============== Exploration Render Functions ==============
+
+function renderExplorationContent(agentId) {
+    return `
+        <div class="exploration-section">
+            <div class="exploration-info">
+                <p>Exploration runs scheduled discovery where the agent researches opportunities and ideas for you.</p>
+            </div>
+            <div class="exploration-actions">
+                <button class="btn-primary" onclick="triggerExploration('${agentId}')">Run Exploration</button>
+            </div>
+            <div class="exploration-status">
+                <span class="status-label">Status:</span>
+                <span class="status-value">Ready to explore</span>
+            </div>
+        </div>
+    `;
+}
+
+// ============== Job Trace View ==============
+
+// Cache for trace data
+let traceDataCache = {};
+
+function renderJobTraceView(jobId) {
+    const traceData = traceDataCache[jobId];
+
+    // Load data if not cached
+    if (!traceData) {
+        loadJobTrace(jobId).then(data => {
+            traceDataCache[jobId] = data || { job_id: jobId, job_name: 'Unknown', entries: [], summary: {} };
+            renderFocusTab();
+        });
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-view-title">Job Trace</span>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading trace data...</div>
+            </div>
+        `;
+    }
+
+    const { job_name, summary, entries } = traceData;
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-view-title">${icon('chart-bar')} Trace: ${escapeHtml(job_name || 'Job')}</span>
+        </div>
+        <div class="focus-view-content">
+            <!-- Summary Stats -->
+            <div class="trace-summary">
+                <div class="trace-stat">
+                    <span class="stat-label">Actions</span>
+                    <span class="stat-value">${summary.actions || 0}</span>
+                </div>
+                <div class="trace-stat">
+                    <span class="stat-label">LLM Calls</span>
+                    <span class="stat-value">${summary.llm_calls || 0}</span>
+                </div>
+                <div class="trace-stat">
+                    <span class="stat-label">Total Cost</span>
+                    <span class="stat-value">$${(summary.total_cost || 0).toFixed(4)}</span>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="trace-timeline">
+                ${entries.length === 0 ? '<div class="focus-empty">No trace entries recorded.</div>' :
+                  entries.map(entry => {
+                      const eventType = entry.event || 'unknown';
+                      const eventClass = eventType === 'action' ? 'trace-event-action' :
+                                        eventType === 'llm_call' ? 'trace-event-llm' :
+                                        eventType === 'error' ? 'trace-event-error' : '';
+
+                      let details = '';
+                      if (entry.details) {
+                          if (eventType === 'action') {
+                              details = escapeHtml(entry.details.action || '');
+                          } else if (eventType === 'llm_call') {
+                              const d = entry.details;
+                              details = `${escapeHtml(d.model || 'unknown')} | ${d.input_tokens || 0}/${d.output_tokens || 0} tokens | $${(d.cost || 0).toFixed(4)}`;
+                          }
+                      }
+
+                      return `
+                          <div class="trace-entry ${eventClass}">
+                              <span class="trace-time">${formatPromptTime(entry.timestamp)}</span>
+                              <span class="trace-event-type">${escapeHtml(eventType)}</span>
+                              <span class="trace-agent">${escapeHtml(entry.agent || '')}</span>
+                              <span class="trace-details">${details}</span>
+                          </div>
+                      `;
+                  }).join('')
+                }
+            </div>
+        </div>
+    `;
+}
+
+function navigateToTrace(jobId) {
+    navigateFocusTo(`trace-${jobId}`);
 }
 
 function formatPromptTime(timestamp) {
@@ -576,6 +825,34 @@ function renderAgentDetailView(job) {
                                     value="${escapeHtml(tools.join(', '))}"
                                     placeholder="e.g., list_jobs, create_job">
                             </label>
+                            <div class="agent-config-group">
+                                <div class="agent-config-group-title">Reflection</div>
+                                <label class="agent-config-checkbox">
+                                    <input type="checkbox" id="edit-reflection-enabled-${job.id}"
+                                        ${config.reflection?.enabled !== false ? 'checked' : ''}>
+                                    <span>Enabled</span>
+                                </label>
+                                <label class="agent-config-label">
+                                    <span>Trigger</span>
+                                    <input type="text" class="agent-config-input" id="edit-reflection-trigger-${job.id}"
+                                        value="${escapeHtml(config.reflection?.trigger || 'time:evening')}"
+                                        placeholder="e.g., time:evening">
+                                </label>
+                            </div>
+                            <div class="agent-config-group">
+                                <div class="agent-config-group-title">Exploration</div>
+                                <label class="agent-config-checkbox">
+                                    <input type="checkbox" id="edit-exploration-enabled-${job.id}"
+                                        ${config.exploration?.enabled ? 'checked' : ''}>
+                                    <span>Enabled</span>
+                                </label>
+                                <label class="agent-config-label">
+                                    <span>Trigger</span>
+                                    <input type="text" class="agent-config-input" id="edit-exploration-trigger-${job.id}"
+                                        value="${escapeHtml(config.exploration?.trigger || 'time:hour_04')}"
+                                        placeholder="e.g., time:hour_04">
+                                </label>
+                            </div>
                             <div class="agent-config-actions">
                                 <button class="task-detail-action" onclick="cancelEditing()">Cancel</button>
                             </div>
@@ -590,8 +867,60 @@ function renderAgentDetailView(job) {
                                 <span class="agent-config-key">Tools:</span>
                                 <span class="agent-config-value">${tools.length > 0 ? escapeHtml(tools.join(', ')) : '<em>None</em>'}</span>
                             </div>
+                            <div class="agent-config-row">
+                                <span class="agent-config-key">Reflection:</span>
+                                <span class="agent-config-value">${config.reflection?.enabled !== false ? 'Enabled' : 'Disabled'} (${escapeHtml(config.reflection?.trigger || 'time:evening')})</span>
+                            </div>
+                            <div class="agent-config-row">
+                                <span class="agent-config-key">Exploration:</span>
+                                <span class="agent-config-value">${config.exploration?.enabled ? 'Enabled' : 'Disabled'} (${escapeHtml(config.exploration?.trigger || 'time:hour_04')})</span>
+                            </div>
                         </div>
                     `}
+                </div>
+            </div>
+
+            <!-- Short-term Memory Section - collapsed by default, lazy loaded -->
+            <div class="job-section">
+                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'short-term-memory', '${agentId}')">
+                    <span>Short-term Memory</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content" data-loaded="false">
+                    <div class="section-loading">Click to load...</div>
+                </div>
+            </div>
+
+            <!-- Long-term Memory Section - collapsed by default, lazy loaded -->
+            <div class="job-section">
+                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'long-term-memory', '${agentId}')">
+                    <span>Long-term Memory</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content" data-loaded="false">
+                    <div class="section-loading">Click to load...</div>
+                </div>
+            </div>
+
+            <!-- Reflection Section - collapsed by default, lazy loaded -->
+            <div class="job-section">
+                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'reflection', '${agentId}')">
+                    <span>Reflection</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content" data-loaded="false">
+                    <div class="section-loading">Click to load...</div>
+                </div>
+            </div>
+
+            <!-- Exploration Section - collapsed by default, lazy loaded -->
+            <div class="job-section">
+                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'exploration', '${agentId}')">
+                    <span>Exploration</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content" data-loaded="false">
+                    <div class="section-loading">Click to load...</div>
                 </div>
             </div>
 

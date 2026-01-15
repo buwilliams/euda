@@ -75,6 +75,9 @@ function renderFocusTab() {
     } else if (focusView.startsWith('completed-')) {
         const jobId = focusView.substring(10);
         content = renderCompletedJobDetailView(jobId);
+    } else if (focusView.startsWith('trace-')) {
+        const jobId = focusView.substring(6);
+        content = renderJobTraceView(jobId);
     }
 
     if (focusSlideDirection && container.querySelector('.view-slide-container')) {
