@@ -20,6 +20,7 @@ from .agent import Agent
 from .cost_tracker import BudgetExceeded, print_cost_summary
 from .events import EventBus, set_event_bus, get_event_bus
 from .rate_limiter import AgentPausedError, get_rate_limiter
+from .tools.data.jobs import archive_job, add_job_log
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -388,6 +389,17 @@ class AgentManager:
                     "reason": e.reason
                 })
                 print(f"\n[{agent.id}] PAUSED: {e.reason} - waiting for manual resume")
+
+                # Archive the current job to prevent re-triggering loop
+                # This is critical: without this, trigger jobs stay 'todo' and get
+                # re-triggered repeatedly, causing runaway token usage
+                current_job_id = agent._current_job_id
+                if current_job_id:
+                    add_job_log(current_job_id, f"Archived: agent paused ({e.reason})")
+                    archive_job(current_job_id, agent=agent.id)
+                    agent._current_job_id = None
+                    print(f"[{agent.id}] Archived interrupted job: {current_job_id}")
+
                 # Wait until resumed or shutdown
                 rate_limiter = get_rate_limiter()
                 while rate_limiter.is_agent_paused(agent.id) and self.running:
