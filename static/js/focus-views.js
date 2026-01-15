@@ -860,6 +860,20 @@ function renderAgentManageView(agentId) {
 
     const displayName = agent?.name || agentData?.config?.name || agentId;
 
+    // Check if any execution is running for this agent
+    const isRunning = activeExecution && activeExecution.agentId === agentId;
+    const runningPhase = isRunning ? activeExecution.phase : null;
+
+    // Helper to render action button with running state
+    const actionButton = (phase, iconName, label, onclick) => {
+        const isThisRunning = runningPhase === phase;
+        const classes = `task-detail-action${isThisRunning ? ' running' : ''}`;
+        const disabled = isRunning ? 'disabled' : '';
+        const displayIcon = isThisRunning ? icon('arrow-path', 'spinning') : icon(iconName);
+        const displayLabel = isThisRunning ? `${label}...` : label;
+        return `<button class="${classes}" onclick="${onclick}" ${disabled}>${displayIcon} ${displayLabel}</button>`;
+    };
+
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
@@ -868,15 +882,9 @@ function renderAgentManageView(agentId) {
         <div class="focus-view-content">
             <!-- Action Menu -->
             <div class="task-detail-actions">
-                <button class="task-detail-action" onclick="triggerReflection('${agentId}', 'append')">
-                    ${icon('arrow-path')} Append
-                </button>
-                <button class="task-detail-action" onclick="triggerReflection('${agentId}', 'consolidate')">
-                    ${icon('archive-box')} Consolidate
-                </button>
-                <button class="task-detail-action" onclick="triggerExploration('${agentId}')">
-                    ${icon('sparkles')} Explore
-                </button>
+                ${actionButton('append', 'arrow-path', 'Append', `triggerReflection('${agentId}', 'append')`)}
+                ${actionButton('consolidate', 'archive-box', 'Consolidate', `triggerReflection('${agentId}', 'consolidate')`)}
+                ${actionButton('exploration', 'sparkles', 'Explore', `triggerExploration('${agentId}')`)}
             </div>
 
             <!-- Profile Section - navigates to profile view -->
@@ -1223,12 +1231,18 @@ function renderMonitoringView(agentId) {
 
     const { stats, recent_prompts } = cached;
 
+    // Get active execution progress HTML if any
+    const progressHtml = getActiveExecutionHtml(agentId);
+
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
             <span class="focus-view-title">Monitoring</span>
         </div>
         <div class="focus-view-content">
+            <!-- Live Progress (if running) -->
+            ${progressHtml}
+
             <!-- Stats -->
             <div class="monitoring-stats">
                 <div class="monitoring-stat">

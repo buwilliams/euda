@@ -10,6 +10,10 @@
 
 {recent_long_term}
 
+## Recent Completed Jobs
+
+{completed_jobs}
+
 ---
 
-Analyze the patterns and provide your analysis. Return JSON only.
+Analyze the patterns across memory and completed work. Consider what these completions reveal about priorities, working style, and areas of focus. Return JSON only.

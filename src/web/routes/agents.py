@@ -2,6 +2,7 @@
 Agents API Routes
 """
 
+import uuid
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -216,8 +217,10 @@ def api_get_monitoring(agent_id: str):
 def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = None):
     """Trigger reflection for an agent by creating a trigger job.
 
-    Creates a job with tags=["trigger:reflection:{date}"] that the agent
+    Creates a job with tags=["trigger:reflection:{phase}"] that the agent
     will pick up and process during its work cycle.
+
+    Returns an execution_id for SSE progress tracking.
     """
     # Verify agent exists
     config = get_agent_config(agent_id)
@@ -228,20 +231,24 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
     if phase not in ("append", "consolidate", "both"):
         raise HTTPException(status_code=400, detail="phase must be 'append', 'consolidate', or 'both'")
 
+    # Generate execution_id for SSE tracking
+    execution_id = f"exec-{uuid.uuid4().hex[:8]}"
+
     today = datetime.now().strftime("%Y-%m-%d")
     system_container = get_system_container()
 
     job = create_job(
         name=f"Trigger:reflection:{today}",
-        description=f"Manual reflection trigger (phase: {phase})",
+        description=f"Manual reflection trigger (phase: {phase}, execution_id: {execution_id})",
         parent_id=system_container["id"],
         assignees=[agent_id],
-        tags=[f"trigger:reflection:{phase}", "ui:manual"],
+        tags=[f"trigger:reflection:{phase}", "ui:manual", f"execution:{execution_id}"],
         created_by="web-ui"
     )
 
     return {
         "status": "triggered",
+        "execution_id": execution_id,
         "agent_id": agent_id,
         "phase": phase,
         "job_id": job["id"],
@@ -256,26 +263,32 @@ def api_trigger_exploration(agent_id: str):
 
     Creates a job with tags=["trigger:exploration"] that the agent
     will pick up and process during its work cycle.
+
+    Returns an execution_id for SSE progress tracking.
     """
     # Verify agent exists
     config = get_agent_config(agent_id)
     if config is None:
         raise HTTPException(status_code=404, detail="Agent not found")
 
+    # Generate execution_id for SSE tracking
+    execution_id = f"exec-{uuid.uuid4().hex[:8]}"
+
     today = datetime.now().strftime("%Y-%m-%d")
     system_container = get_system_container()
 
     job = create_job(
         name=f"Trigger:exploration:{today}",
-        description="Manual exploration trigger from UI",
+        description=f"Manual exploration trigger (execution_id: {execution_id})",
         parent_id=system_container["id"],
         assignees=[agent_id],
-        tags=["trigger:exploration", "ui:manual"],
+        tags=["trigger:exploration", "ui:manual", f"execution:{execution_id}"],
         created_by="web-ui"
     )
 
     return {
         "status": "triggered",
+        "execution_id": execution_id,
         "agent_id": agent_id,
         "job_id": job["id"],
         "timestamp": datetime.now().isoformat()

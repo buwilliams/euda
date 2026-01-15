@@ -72,7 +72,7 @@ class Reflection:
         """Get path to agent's historical profile for a specific year."""
         return AGENTS_DIR / self.agent.id / f"profile.{year}.md"
 
-    def append(self, user_message: str, assistant_response: str):
+    def append(self, user_message: str, assistant_response: str, execution_id: str = None):
         """Append phase: Extract noteworthy items from a conversation.
 
         This is a lightweight operation called after each chat. Uses a quick
@@ -81,24 +81,26 @@ class Reflection:
         Args:
             user_message: The user's message
             assistant_response: The assistant's response
+            execution_id: Optional execution ID for SSE progress tracking
         """
         from .append import append_phase
 
-        self._emit_to_sink("append_start", {})
+        self._emit_to_sink("append_start", {"execution_id": execution_id})
 
         try:
-            items_added = append_phase(self, user_message, assistant_response)
-            self._emit_to_sink("append_complete", {"items_added": items_added or 0})
+            items_added = append_phase(self, user_message, assistant_response, execution_id)
+            self._emit_to_sink("append_complete", {"items_added": items_added or 0, "execution_id": execution_id})
         except Exception as e:
             # Log error but don't block - append should not disrupt chat flow
             self.logger.error({
                 "event": "append_error",
                 "agent_id": self.agent.id,
+                "execution_id": execution_id,
                 "error": str(e)
             })
-            self._emit_to_sink("append_error", {"error": str(e)})
+            self._emit_to_sink("append_error", {"error": str(e), "execution_id": execution_id})
 
-    def consolidate(self):
+    def consolidate(self, execution_id: str = None):
         """Consolidate phase: Graduate memories and update profile.
 
         This is a heavy operation run on daily trigger. Analyzes patterns
@@ -106,23 +108,28 @@ class Reflection:
         1. Graduate important short-term items to long-term memory
         2. Update the agent's profile based on observed patterns
         3. Create historical profile snapshot at year boundaries
+
+        Args:
+            execution_id: Optional execution ID for SSE progress tracking
         """
         from .consolidate import consolidate_phase
 
-        self._emit_to_sink("consolidate_start", {})
+        self._emit_to_sink("consolidate_start", {"execution_id": execution_id})
 
         try:
-            result = consolidate_phase(self)
+            result = consolidate_phase(self, execution_id)
             self._emit_to_sink("consolidate_complete", {
                 "items_graduated": result.get("items_graduated", 0) if result else 0,
                 "profile_updated": result.get("profile_updated", False) if result else False,
                 "long_term_entry": result.get("long_term_entry", False) if result else False,
+                "execution_id": execution_id,
             })
         except Exception as e:
             self.logger.error({
                 "event": "consolidate_error",
                 "agent_id": self.agent.id,
+                "execution_id": execution_id,
                 "error": str(e)
             })
-            self._emit_to_sink("consolidate_error", {"error": str(e)})
+            self._emit_to_sink("consolidate_error", {"error": str(e), "execution_id": execution_id})
             raise  # Re-raise for manager to handle retries

@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, List
 import uuid
 
 from ..llms import get_client
+from ..events import emit_ui_event
 from ..tools.data.memory import _load_entries, _save_entries, VALID_TYPES
 
 from .prompts import get_append_system_prompt, build_append_prompt
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
     from .reflection import Reflection
 
 
-def append_phase(reflection: "Reflection", user_message: str, assistant_response: str) -> int:
+def append_phase(reflection: "Reflection", user_message: str, assistant_response: str, execution_id: str = None) -> int:
     """Run the append phase for a conversation.
 
     Calls LLM to extract noteworthy items and adds them to short-term memory.
@@ -28,19 +29,35 @@ def append_phase(reflection: "Reflection", user_message: str, assistant_response
         reflection: The Reflection instance
         user_message: The user's message
         assistant_response: The assistant's response
+        execution_id: Optional execution ID for SSE progress tracking
 
     Returns:
         Number of items added to memory
     """
     agent_id = reflection.agent.id
 
+    def emit_progress(step: str, message: str):
+        """Emit SSE progress event."""
+        emit_ui_event("reflection:progress", {
+            "execution_id": execution_id,
+            "agent_id": agent_id,
+            "phase": "append",
+            "step": step,
+            "message": message
+        })
+
     reflection.logger.info({
         "event": "append_start",
-        "agent_id": agent_id
+        "agent_id": agent_id,
+        "execution_id": execution_id
     })
+
+    emit_progress("loading_data", "Loading memory...")
 
     # Load current short-term memory for context
     existing_memory = _load_entries(agent_id)
+
+    emit_progress("building_prompt", "Analyzing conversation...")
 
     # Build prompt
     prompt = build_append_prompt(
@@ -49,6 +66,8 @@ def append_phase(reflection: "Reflection", user_message: str, assistant_response
         user_message=user_message,
         assistant_response=assistant_response
     )
+
+    emit_progress("calling_llm", "Extracting memories...")
 
     # Call LLM
     client = get_client()
@@ -65,18 +84,30 @@ def append_phase(reflection: "Reflection", user_message: str, assistant_response
         if hasattr(block, "text"):
             text_response += block.text
 
+    # Emit LLM complete event
+    emit_ui_event("reflection:llm_complete", {
+        "execution_id": execution_id,
+        "agent_id": agent_id,
+        "phase": "append",
+        "input_tokens": response.usage.input_tokens,
+        "output_tokens": response.usage.output_tokens
+    })
+
     # Parse JSON response
     new_items = _parse_items(text_response)
 
     reflection.logger.info({
         "event": "append_llm_response",
         "agent_id": agent_id,
+        "execution_id": execution_id,
         "items_extracted": len(new_items),
         "usage": {
             "input": response.usage.input_tokens,
             "output": response.usage.output_tokens
         }
     })
+
+    emit_progress("saving_results", "Saving memories...")
 
     # Add valid items to short-term memory
     items_added = 0
@@ -86,6 +117,15 @@ def append_phase(reflection: "Reflection", user_message: str, assistant_response
     reflection.logger.info({
         "event": "append_complete",
         "agent_id": agent_id,
+        "execution_id": execution_id,
+        "items_added": items_added
+    })
+
+    # Emit completion event
+    emit_ui_event("reflection:complete", {
+        "execution_id": execution_id,
+        "agent_id": agent_id,
+        "phase": "append",
         "items_added": items_added
     })
 

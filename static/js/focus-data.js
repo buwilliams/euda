@@ -1,5 +1,97 @@
 // Euno - Focus Data Loading & Utilities
 
+// ============== Live Execution State ==============
+
+let activeExecution = null;
+
+function handleReflectionProgress(data) {
+    // Match by execution_id if we have one, otherwise match by agent_id
+    if (activeExecution &&
+        (activeExecution.executionId === data.execution_id ||
+         (!activeExecution.executionId && activeExecution.agentId === data.agent_id))) {
+        activeExecution.executionId = data.execution_id; // Update if we didn't have it
+        activeExecution.step = data.step;
+        activeExecution.message = data.message;
+        if (data.input_tokens) {
+            activeExecution.tokens = {
+                input: data.input_tokens,
+                output: data.output_tokens
+            };
+        }
+        updateExecutionUI();
+    }
+}
+
+function handleReflectionComplete(data) {
+    if (activeExecution &&
+        (activeExecution.executionId === data.execution_id ||
+         activeExecution.agentId === data.agent_id)) {
+        activeExecution = null;
+        updateExecutionUI();
+        // Refresh monitoring data after completion
+        if (data.agent_id) {
+            // Clear cache to force reload
+            delete monitoringCache[data.agent_id];
+            loadAgentMonitoring(data.agent_id);
+        }
+    }
+}
+
+function handleReflectionError(data) {
+    if (activeExecution &&
+        (activeExecution.executionId === data.execution_id ||
+         activeExecution.agentId === data.agent_id)) {
+        activeExecution.error = data.error;
+        activeExecution.step = 'error';
+        activeExecution.message = `Error: ${data.error}`;
+        updateExecutionUI();
+        // Clear after showing error
+        setTimeout(() => {
+            if (activeExecution?.executionId === data.execution_id) {
+                activeExecution = null;
+                updateExecutionUI();
+            }
+        }, 5000);
+    }
+}
+
+function updateExecutionUI() {
+    // Re-render if we're on a monitoring or manage view for this agent
+    if (focusView && (focusView.startsWith('monitoring-') || focusView.startsWith('manage-agent-'))) {
+        renderFocusTab();
+    }
+}
+
+function getActiveExecutionHtml(agentId) {
+    if (!activeExecution || activeExecution.agentId !== agentId) {
+        return '';
+    }
+
+    const phaseLabel = activeExecution.phase === 'append' ? 'Append' :
+                       activeExecution.phase === 'consolidate' ? 'Consolidate' :
+                       activeExecution.phase === 'exploration' ? 'Explore' : activeExecution.phase;
+
+    const isError = activeExecution.step === 'error';
+    const statusClass = isError ? 'reflection-progress error' : 'reflection-progress';
+
+    return `
+        <div class="${statusClass}">
+            <div class="reflection-progress-header">
+                ${isError ? icon('exclamation-triangle') : icon('arrow-path', 'spinning')}
+                <span>${isError ? 'Error' : 'Running'} ${phaseLabel}...</span>
+            </div>
+            <div class="reflection-progress-body">
+                <div class="progress-message">${escapeHtml(activeExecution.message || 'Processing...')}</div>
+                ${activeExecution.tokens ? `
+                    <div class="progress-tokens">
+                        ${activeExecution.tokens.input} in / ${activeExecution.tokens.output} out
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
 // ============== Data Loading ==============
 
 async function loadJobsData() {
@@ -716,13 +808,19 @@ async function triggerReflection(agentId, phase) {
 
         if (response.ok) {
             const result = await response.json();
-            button.textContent = 'Triggered!';
-            setTimeout(() => {
-                button.textContent = originalText;
-                button.disabled = false;
-            }, 2000);
-            // Refresh logs after a delay
-            setTimeout(() => refreshReflectionSection(agentId), 3000);
+
+            // Set up active execution for SSE tracking
+            activeExecution = {
+                executionId: result.execution_id,
+                agentId: agentId,
+                phase: phase,
+                step: 'triggered',
+                message: 'Starting...'
+            };
+            updateExecutionUI();
+
+            button.textContent = originalText;
+            button.disabled = false;
         } else {
             button.textContent = 'Failed';
             setTimeout(() => {
@@ -751,11 +849,19 @@ async function triggerExploration(agentId) {
 
         if (response.ok) {
             const result = await response.json();
-            button.textContent = 'Triggered!';
-            setTimeout(() => {
-                button.textContent = originalText;
-                button.disabled = false;
-            }, 2000);
+
+            // Set up active execution for SSE tracking
+            activeExecution = {
+                executionId: result.execution_id,
+                agentId: agentId,
+                phase: 'exploration',
+                step: 'triggered',
+                message: 'Starting exploration...'
+            };
+            updateExecutionUI();
+
+            button.textContent = originalText;
+            button.disabled = false;
         } else {
             button.textContent = 'Failed';
             setTimeout(() => {

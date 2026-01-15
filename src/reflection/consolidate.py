@@ -14,11 +14,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
 
 from ..llms import get_client
+from ..events import emit_ui_event
 from ..tools.data.memory import (
     _load_entries,
     _save_entries,
     _ensure_memory_dirs,
 )
+from ..tools.data.jobs import get_jobs_completed_by_agent
 
 from .prompts import build_consolidate_prompt, get_consolidate_system_prompt
 
@@ -30,13 +32,14 @@ if TYPE_CHECKING:
 RECENT_MEMORY_DAYS = 7
 
 
-def consolidate_phase(reflection: "Reflection") -> Optional[dict]:
+def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Optional[dict]:
     """Run the consolidate phase for an agent.
 
     Performs heavy analysis to graduate memories and update profile.
 
     Args:
         reflection: The Reflection instance
+        execution_id: Optional execution ID for SSE progress tracking
 
     Returns:
         Dict with items_graduated, profile_updated, long_term_entry counts/flags
@@ -44,10 +47,24 @@ def consolidate_phase(reflection: "Reflection") -> Optional[dict]:
     agent_id = reflection.agent.id
     is_user = agent_id == "user"
 
+    def emit_progress(step: str, message: str):
+        """Emit SSE progress event."""
+        emit_ui_event("reflection:progress", {
+            "execution_id": execution_id,
+            "agent_id": agent_id,
+            "phase": "consolidate",
+            "step": step,
+            "message": message
+        })
+
     reflection.logger.info({
         "event": "consolidate_start",
-        "agent_id": agent_id
+        "agent_id": agent_id,
+        "execution_id": execution_id
     })
+
+    # Emit start event
+    emit_progress("loading_data", "Loading memory and profile...")
 
     # Load short-term memory
     short_term_memory = _load_entries(agent_id)
@@ -58,14 +75,25 @@ def consolidate_phase(reflection: "Reflection") -> Optional[dict]:
     # Load current profile
     current_profile = reflection.agent.profile
 
+    # Load completed jobs for context
+    completed_jobs = get_jobs_completed_by_agent(agent_id, limit=20)
+
     # Skip if no data to analyze
-    if not short_term_memory and not recent_long_term:
+    if not short_term_memory and not recent_long_term and not completed_jobs:
         reflection.logger.info({
             "event": "consolidate_skip",
             "agent_id": agent_id,
             "reason": "no_data"
         })
+        emit_ui_event("reflection:complete", {
+            "execution_id": execution_id,
+            "agent_id": agent_id,
+            "phase": "consolidate",
+            "skipped": True
+        })
         return {"items_graduated": 0, "profile_updated": False, "long_term_entry": False}
+
+    emit_progress("building_prompt", "Analyzing patterns...")
 
     # Build prompt
     prompt = build_consolidate_prompt(
@@ -73,8 +101,11 @@ def consolidate_phase(reflection: "Reflection") -> Optional[dict]:
         agent_profile=current_profile,
         short_term_memory=short_term_memory,
         recent_long_term=recent_long_term,
+        completed_jobs=completed_jobs,
         is_user=is_user
     )
+
+    emit_progress("calling_llm", "Consulting AI...")
 
     # Call LLM
     client = get_client()
@@ -91,14 +122,26 @@ def consolidate_phase(reflection: "Reflection") -> Optional[dict]:
         if hasattr(block, "text"):
             text_response += block.text
 
+    # Emit LLM complete event with token counts
+    emit_ui_event("reflection:llm_complete", {
+        "execution_id": execution_id,
+        "agent_id": agent_id,
+        "phase": "consolidate",
+        "input_tokens": response.usage.input_tokens,
+        "output_tokens": response.usage.output_tokens
+    })
+
     reflection.logger.info({
         "event": "consolidate_llm_response",
         "agent_id": agent_id,
+        "execution_id": execution_id,
         "usage": {
             "input": response.usage.input_tokens,
             "output": response.usage.output_tokens
         }
     })
+
+    emit_progress("parsing_response", "Processing results...")
 
     # Parse reflection result
     result = _parse_consolidate_result(text_response)
@@ -109,7 +152,15 @@ def consolidate_phase(reflection: "Reflection") -> Optional[dict]:
             "agent_id": agent_id,
             "response": text_response[:500]
         })
+        emit_ui_event("reflection:error", {
+            "execution_id": execution_id,
+            "agent_id": agent_id,
+            "phase": "consolidate",
+            "error": "Failed to parse LLM response"
+        })
         return {"items_graduated": 0, "profile_updated": False, "long_term_entry": False}
+
+    emit_progress("applying_results", "Updating profile and memory...")
 
     # Apply long-term memory entry
     if result.get("long_term_entry"):
@@ -130,9 +181,20 @@ def consolidate_phase(reflection: "Reflection") -> Optional[dict]:
     reflection.logger.info({
         "event": "consolidate_complete",
         "agent_id": agent_id,
+        "execution_id": execution_id,
         "long_term_entry": bool(result.get("long_term_entry")),
         "profile_updated": bool(result.get("profile_updates")),
         "items_graduated": len(graduated_ids)
+    })
+
+    # Emit completion event
+    emit_ui_event("reflection:complete", {
+        "execution_id": execution_id,
+        "agent_id": agent_id,
+        "phase": "consolidate",
+        "items_graduated": len(graduated_ids),
+        "profile_updated": bool(result.get("profile_updates")),
+        "long_term_entry": bool(result.get("long_term_entry"))
     })
 
     return {

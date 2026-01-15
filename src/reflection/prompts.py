@@ -73,7 +73,8 @@ def build_consolidate_prompt(
     agent_profile: str,
     short_term_memory: list,
     recent_long_term: str,
-    is_user: bool
+    completed_jobs: list = None,
+    is_user: bool = False
 ) -> str:
     """Build the user prompt for the consolidate phase.
 
@@ -82,6 +83,7 @@ def build_consolidate_prompt(
         agent_profile: The agent's current profile
         short_term_memory: All short-term memory items
         recent_long_term: Recent long-term memory content
+        completed_jobs: List of recently completed jobs
         is_user: Whether this is the user agent (selects appropriate system prompt)
 
     Returns:
@@ -104,6 +106,21 @@ def build_consolidate_prompt(
     # Format long-term memory
     long_term_text = recent_long_term if recent_long_term else "(no recent entries)"
 
+    # Format completed jobs
+    if completed_jobs:
+        jobs_lines = []
+        for job in completed_jobs:
+            completed_at = job.get('completed_at', '')
+            if completed_at:
+                # Extract just the date part
+                completed_date = completed_at[:10] if len(completed_at) >= 10 else completed_at
+            else:
+                completed_date = 'recently'
+            jobs_lines.append(f"- {job.get('title', 'Untitled')} (completed {completed_date})")
+        completed_jobs_text = "\n".join(jobs_lines)
+    else:
+        completed_jobs_text = "(no recent completed jobs)"
+
     profile_type = "User" if is_user else "AI Agent"
 
     return render_template(
@@ -112,5 +129,6 @@ def build_consolidate_prompt(
         agent_id=agent_id,
         agent_profile=agent_profile,
         short_term_memory=short_term_text,
-        recent_long_term=long_term_text
+        recent_long_term=long_term_text,
+        completed_jobs=completed_jobs_text
     )
