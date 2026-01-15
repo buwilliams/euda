@@ -14,6 +14,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.euno.app.MainActivity
 import com.euno.app.R
+import com.euno.app.utils.AppState
 import com.euno.app.utils.PreferencesManager
 import com.euno.app.utils.SSEClient
 import org.json.JSONObject
@@ -203,6 +204,12 @@ class NotificationService : Service() {
     }
 
     private fun showMessageNotification(title: String, body: String) {
+        // Only show notification if app is NOT in foreground
+        if (AppState.isInForeground()) {
+            Log.d(TAG, "App in foreground, suppressing notification")
+            return
+        }
+
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -222,5 +229,6 @@ class NotificationService : Service() {
 
         val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager.notify(System.currentTimeMillis().toInt(), notification)
+        Log.d(TAG, "Notification shown: $title")
     }
 }

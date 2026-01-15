@@ -19,6 +19,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.euno.app.audio.VoiceInterface
 import com.euno.app.service.NotificationService
+import com.euno.app.utils.AppState
 import com.euno.app.utils.PreferencesManager
 
 class MainActivity : AppCompatActivity() {
@@ -400,11 +401,15 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         webView.onResume()
+        // Mark app as in foreground (suppress notifications)
+        AppState.setForeground(true)
     }
 
     override fun onPause() {
         super.onPause()
         webView.onPause()
+        // Mark app as in background (allow notifications)
+        AppState.setForeground(false)
     }
 
     override fun onDestroy() {
