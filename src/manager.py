@@ -346,7 +346,7 @@ class AgentManager:
                 message = job.get("description") or job.get("name")
                 formatted_message = f"[Missed Reminder] {message}"
 
-                result = send_chat_message(formatted_message, agent_name="Reminder")
+                result = send_chat_message(formatted_message, agent_name="Reminder", job_id=job["id"])
                 delivered = result.get('delivered', False)
                 print(f"[startup] Delivered missed reminder: {job['name']} (delivered: {delivered})")
 
@@ -576,7 +576,7 @@ class AgentManager:
                     if scheduled_at and scheduled_at <= now_iso:
                         # Send notification with job description as message
                         message = job.get("description") or job.get("name")
-                        result = send_chat_message(message, agent_name="Reminder")
+                        result = send_chat_message(message, agent_name="Reminder", job_id=job["id"])
                         delivered = result.get('delivered', False)
                         print(f"[scheduler] Sent reminder: {job['name']} (delivered: {delivered})")
                         # Only mark as completed if successfully delivered

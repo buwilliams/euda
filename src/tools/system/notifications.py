@@ -13,7 +13,7 @@ from ...events import emit_ui_event, has_connected_clients
 
 
 @tool("send_chat_message", "Send a message to the user's chat (if connected). Use when: need to proactively inform user about something important.", tool_type="system")
-def send_chat_message(message: str, agent_name: str = "Curator") -> dict:
+def send_chat_message(message: str, agent_name: str = "Curator", job_id: str = None) -> dict:
     """Send a message to the user's chat.
 
     The message will appear in the chat tab as if from an agent.
@@ -22,6 +22,7 @@ def send_chat_message(message: str, agent_name: str = "Curator") -> dict:
     Args:
         message: The message content to display
         agent_name: Who the message is from (for display purposes)
+        job_id: Optional job ID to link notification to (for deep linking)
 
     Returns:
         Dict with delivered status and reason if not delivered
@@ -29,11 +30,15 @@ def send_chat_message(message: str, agent_name: str = "Curator") -> dict:
     if not has_connected_clients():
         return {"delivered": False, "reason": "No connected clients"}
 
-    emit_ui_event("agent_message", {
+    event_data = {
         "message": message,
         "agent": agent_name,
         "timestamp": datetime.now().isoformat()
-    })
+    }
+    if job_id:
+        event_data["job_id"] = job_id
+
+    emit_ui_event("agent_message", event_data)
 
     return {"delivered": True}
 

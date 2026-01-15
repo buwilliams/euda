@@ -189,8 +189,9 @@ class NotificationService : Service() {
                     val json = JSONObject(data)
                     val agent = json.optString("agent", "Euno")
                     val message = json.optString("message", "")
+                    val jobId = json.optString("job_id", "")
                     if (message.isNotEmpty()) {
-                        showMessageNotification(agent, message)
+                        showMessageNotification(agent, message, jobId.ifEmpty { null })
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to parse agent_message: ${e.message}")
@@ -203,7 +204,7 @@ class NotificationService : Service() {
         }
     }
 
-    private fun showMessageNotification(title: String, body: String) {
+    private fun showMessageNotification(title: String, body: String, jobId: String? = null) {
         // Only show notification if app is NOT in foreground
         if (AppState.isInForeground()) {
             Log.d(TAG, "App in foreground, suppressing notification")
@@ -212,6 +213,8 @@ class NotificationService : Service() {
 
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            // Pass job ID for deep linking to Focus view
+            jobId?.let { putExtra("job_id", it) }
         }
         val pendingIntent = PendingIntent.getActivity(
             this, System.currentTimeMillis().toInt(), intent,

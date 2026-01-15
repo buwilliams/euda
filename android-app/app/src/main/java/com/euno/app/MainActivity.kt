@@ -73,7 +73,57 @@ class MainActivity : AppCompatActivity() {
             startNotificationService()
         }
 
-        loadWebPage()
+        // Check for deep link job_id from notification
+        val jobId = intent.getStringExtra("job_id")
+        if (jobId != null) {
+            loadWebPageWithJob(jobId)
+        } else {
+            loadWebPage()
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        // Handle notification tap when activity is already running
+        intent?.getStringExtra("job_id")?.let { jobId ->
+            navigateToJob(jobId)
+        }
+    }
+
+    private fun loadWebPageWithJob(jobId: String) {
+        val serverUrl = prefs.getServerUrl()
+        if (serverUrl != null) {
+            loadingOverlay.visibility = View.VISIBLE
+            errorView.visibility = View.GONE
+            // Load the page first, then navigate to job after it loads
+            pendingJobId = jobId
+            webView.loadUrl(serverUrl)
+        } else {
+            startSetupActivity()
+        }
+    }
+
+    private var pendingJobId: String? = null
+
+    fun onPageLoaded() {
+        // Called from WebViewClient when page finishes loading
+        pendingJobId?.let { jobId ->
+            navigateToJob(jobId)
+            pendingJobId = null
+        }
+    }
+
+    private fun navigateToJob(jobId: String) {
+        // Switch to Focus tab and navigate to the job
+        webView.evaluateJavascript(
+            """
+            if (typeof switchTab === 'function' && typeof navigateFocus === 'function') {
+                switchTab('focus');
+                setTimeout(function() { navigateFocus('job-$jobId'); }, 100);
+            }
+            """.trimIndent(),
+            null
+        )
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -111,6 +161,8 @@ class MainActivity : AppCompatActivity() {
                     loadingOverlay.visibility = View.GONE
                     // Inject native voice override script
                     injectNativeVoiceScript()
+                    // Handle pending job navigation from notification
+                    onPageLoaded()
                 }
             },
             onError = { _, description ->
