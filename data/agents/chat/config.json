@@ -20,6 +20,7 @@
     "write_long_term_memory",
     "list_long_term_memory_dates",
     "parse_date",
+    "parse_datetime",
     "get_current_date",
     "add_memory",
     "list_memory",

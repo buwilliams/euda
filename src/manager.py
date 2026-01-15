@@ -324,6 +324,37 @@ class AgentManager:
                 state["last_evening"] = today
             self._save_system_state(state)
 
+        # Check for missed scheduled reminders (scheduled_at in the past but still todo)
+        self._process_missed_reminders()
+
+    def _process_missed_reminders(self):
+        """Deliver any reminders that were missed while the system was down."""
+        from .tools.data.jobs import list_jobs, complete_job
+        from .tools.system.notifications import send_chat_message
+
+        now_iso = datetime.now().isoformat()
+
+        # Find all scheduled reminders that are past due
+        scheduled_jobs = list_jobs(status="todo", tag="scheduled")
+        missed_count = 0
+
+        for job in scheduled_jobs:
+            scheduled_at = job.get("scheduled_at")
+            if scheduled_at and scheduled_at <= now_iso:
+                missed_count += 1
+                # Send notification with "Missed" indicator
+                message = job.get("description") or job.get("name")
+                formatted_message = f"[Missed Reminder] {message}"
+
+                result = send_chat_message(formatted_message, agent_name="Reminder")
+                print(f"[startup] Delivered missed reminder: {job['name']} (delivered: {result.get('delivered', False)})")
+
+                # Mark job as completed
+                complete_job(job["id"], agent="system")
+
+        if missed_count > 0:
+            print(f"[startup] Processed {missed_count} missed reminder(s)")
+
     def _run_agent_loop(self, agent: Agent):
         """Run an agent's work loop - polls for actionable jobs."""
         from .tools.data.jobs import list_jobs
