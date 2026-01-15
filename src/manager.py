@@ -347,10 +347,14 @@ class AgentManager:
                 formatted_message = f"[Missed Reminder] {message}"
 
                 result = send_chat_message(formatted_message, agent_name="Reminder")
-                print(f"[startup] Delivered missed reminder: {job['name']} (delivered: {result.get('delivered', False)})")
+                delivered = result.get('delivered', False)
+                print(f"[startup] Delivered missed reminder: {job['name']} (delivered: {delivered})")
 
-                # Mark job as completed
-                complete_job(job["id"], agent="system")
+                # Only mark as completed if successfully delivered
+                if delivered:
+                    complete_job(job["id"], agent="system")
+                else:
+                    print(f"[startup] Reminder not delivered (no clients), will retry: {job['name']}")
 
         if missed_count > 0:
             print(f"[startup] Processed {missed_count} missed reminder(s)")
@@ -573,9 +577,13 @@ class AgentManager:
                         # Send notification with job description as message
                         message = job.get("description") or job.get("name")
                         result = send_chat_message(message, agent_name="Reminder")
-                        print(f"[scheduler] Sent reminder: {job['name']} (delivered: {result.get('delivered', False)})")
-                        # Mark job as completed
-                        complete_job(job["id"], agent="system")
+                        delivered = result.get('delivered', False)
+                        print(f"[scheduler] Sent reminder: {job['name']} (delivered: {delivered})")
+                        # Only mark as completed if successfully delivered
+                        if delivered:
+                            complete_job(job["id"], agent="system")
+                        else:
+                            print(f"[scheduler] Reminder not delivered (no clients), will retry: {job['name']}")
 
                 schedules = self._get_system_config().get("schedules", {})
 
