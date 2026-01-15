@@ -303,11 +303,11 @@ def _perform_fresh_start() -> dict:
                     agents_to_preserve[agent_id]["config"] = config_file.read_text()
                     preserved.append(f"agents/{agent_id}/config.json")
 
-                # Preserve profile.md
-                profile_file = agent_dir / "profile.md"
-                if profile_file.exists():
-                    agents_to_preserve[agent_id]["profile"] = profile_file.read_text()
-                    preserved.append(f"agents/{agent_id}/profile.md")
+                # Preserve profile.md.example (template)
+                profile_example = agent_dir / "profile.md.example"
+                if profile_example.exists():
+                    agents_to_preserve[agent_id]["profile_example"] = profile_example.read_text()
+                    preserved.append(f"agents/{agent_id}/profile.md.example")
 
     # Preserve system config
     system_config = None
@@ -332,7 +332,7 @@ def _perform_fresh_start() -> dict:
     # Create fresh data directory structure
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Restore agents directory with only configs and profiles
+    # Restore agents directory with only configs and profile templates
     if agents_to_preserve:
         agents_dir = DATA_DIR / "agents"
         agents_dir.mkdir(parents=True, exist_ok=True)
@@ -343,8 +343,10 @@ def _perform_fresh_start() -> dict:
 
             if "config" in files:
                 (agent_dir / "config.json").write_text(files["config"])
-            if "profile" in files:
-                (agent_dir / "profile.md").write_text(files["profile"])
+            if "profile_example" in files:
+                (agent_dir / "profile.md.example").write_text(files["profile_example"])
+                # Also create profile.md from example for fresh start
+                (agent_dir / "profile.md").write_text(files["profile_example"])
 
     # Restore system config
     if system_config:
