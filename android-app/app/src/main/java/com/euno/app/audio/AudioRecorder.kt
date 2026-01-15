@@ -72,6 +72,12 @@ class AudioRecorder(private val context: Context) {
     private var lastSpeechTime: Long = 0
     private val speechSegments = mutableListOf<SpeechSegment>()
 
+    // Audio filter for speech frequencies (80 Hz - 7000 Hz)
+    private val audioFilter = AudioFilter(SAMPLE_RATE)
+
+    // Audio enhancements (AGC, pre-emphasis, noise gate, click removal)
+    private val audioEnhancements = AudioEnhancements()
+
     fun hasPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
             context,
@@ -147,6 +153,10 @@ class AudioRecorder(private val context: Context) {
             lastSpeechTime = 0
             speechSegments.clear()
 
+            // Reset audio filter and enhancements
+            audioFilter.reset()
+            audioEnhancements.resetAll()
+
             isRecording = true
             audioRecord?.startRecording()
             Log.d(TAG, "AudioRecord.startRecording() called")
@@ -159,12 +169,32 @@ class AudioRecorder(private val context: Context) {
                 while (isRecording) {
                     val read = audioRecord?.read(buffer, 0, buffer.size) ?: 0
                     if (read > 0) {
+                        // Audio processing pipeline (order matters!)
+                        // 1. Bandpass filter - Remove out-of-band frequencies (80-7000 Hz)
+                        audioFilter.filterBuffer(buffer, read)
+
+                        // 2. Click/pop removal - Remove impulse noise before AGC
+                        audioEnhancements.removeClicks(buffer, read)
+
+                        // 3. Noise gate - Suppress background noise
+                        val isGateClosed = audioEnhancements.applyNoiseGate(buffer, read)
+
+                        // 4. Pre-emphasis - Boost high frequencies for clarity
+                        if (!isGateClosed) {
+                            audioEnhancements.applyPreEmphasis(buffer, read)
+                        }
+
+                        // 5. AGC - Normalize volume levels
+                        if (!isGateClosed) {
+                            audioEnhancements.applyAGC(buffer, read)
+                        }
+
                         synchronized(audioData) {
                             audioData.write(buffer, 0, read)
                         }
                         totalBytes += read
 
-                        // Process VAD on this buffer
+                        // Process VAD on enhanced buffer
                         processVAD(buffer, read)
                     }
                 }

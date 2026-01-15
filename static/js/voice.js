@@ -16,6 +16,10 @@ let audioContext = null;
 let analyser = null;
 let vadInterval = null;
 
+// ============== Audio Enhancements ==============
+let enhancementsNode = null;
+let processedStream = null;
+
 // Industry-standard VAD Configuration
 const VAD_CONFIG = {
     // Volume thresholds (0-255 scale)
@@ -71,10 +75,37 @@ async function startRecording() {
             }
         });
 
+        // Create AudioContext for processing
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Load audio enhancements worklet processor
+        try {
+            await audioContext.audioWorklet.addModule('/static/js/audio-enhancements.js');
+
+            // Set up audio processing chain:
+            // Microphone → Enhancements → MediaStreamDestination → MediaRecorder
+            const source = audioContext.createMediaStreamSource(audioStream);
+            enhancementsNode = new AudioWorkletNode(audioContext, 'audio-enhancements-processor');
+            const destination = audioContext.createMediaStreamDestination();
+
+            // Connect the chain
+            source.connect(enhancementsNode);
+            enhancementsNode.connect(destination);
+
+            // Use processed stream for recording
+            processedStream = destination.stream;
+            console.log('Audio enhancements enabled (bandpass, AGC, pre-emphasis, noise gate, click removal)');
+        } catch (workletError) {
+            console.warn('AudioWorklet not supported, using raw audio:', workletError);
+            // Fallback: use original stream without enhancements
+            processedStream = audioStream;
+        }
+
         // Determine best supported format (webm preferred, mp4 fallback)
         const mimeType = getSupportedMimeType();
 
-        mediaRecorder = new MediaRecorder(audioStream, {
+        // Record the processed stream
+        mediaRecorder = new MediaRecorder(processedStream, {
             mimeType: mimeType,
             audioBitsPerSecond: 64000  // Keep file size reasonable
         });
@@ -100,10 +131,22 @@ async function startRecording() {
             // Stop VAD monitoring
             stopVAD();
 
+            // Clean up audio enhancements
+            if (enhancementsNode) {
+                enhancementsNode.disconnect();
+                enhancementsNode = null;
+            }
+
             // Stop all tracks to release microphone
             if (audioStream) {
                 audioStream.getTracks().forEach(track => track.stop());
                 audioStream = null;
+            }
+
+            // Stop processed stream if different from original
+            if (processedStream && processedStream !== audioStream) {
+                processedStream.getTracks().forEach(track => track.stop());
+                processedStream = null;
             }
 
             // Check if we detected real speech (filters accidental mic presses)
@@ -177,8 +220,10 @@ function clearRecordingTimeout() {
 
 function startVAD(stream) {
     try {
-        // Create audio context and analyser
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // Create audio context and analyser (reuse if already created for enhancements)
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
         analyser.smoothingTimeConstant = 0.3;  // More responsive

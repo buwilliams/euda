@@ -1,5 +1,6 @@
 # Logan Owens
 
+- [2026-01-15][5] - Audio enhancements (Android + Web): bandpass filter, AGC, pre-emphasis, noise gate, click removal
 - [2026-01-14][5] - Fixed agents not loading the ongoing conversation as context.
 - [2026-01-11][5] - Exploration api run-away hotfix
 - [2026-01-11][10] - Text to Speech
