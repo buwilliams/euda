@@ -520,7 +520,8 @@ class AgentManager:
 
     def _run_time_scheduler(self):
         """Background thread that creates trigger jobs based on schedules."""
-        from .tools.data.jobs import create_job, list_jobs, get_system_container
+        from .tools.data.jobs import create_job, list_jobs, get_system_container, complete_job
+        from .tools.system.notifications import send_chat_message
 
         last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
         system_container = get_system_container()
@@ -531,6 +532,19 @@ class AgentManager:
                 current_time = now.strftime("%H:%M")
                 current_key = now.strftime("%Y-%m-%d-%H-%M")
                 today = now.strftime("%Y-%m-%d")
+                now_iso = now.isoformat()
+
+                # Process scheduled reminders (jobs with scheduled_at <= now)
+                scheduled_jobs = list_jobs(status="todo", tag="scheduled")
+                for job in scheduled_jobs:
+                    scheduled_at = job.get("scheduled_at")
+                    if scheduled_at and scheduled_at <= now_iso:
+                        # Send notification with job description as message
+                        message = job.get("description") or job.get("name")
+                        result = send_chat_message(message, agent_name="Reminder")
+                        print(f"[scheduler] Sent reminder: {job['name']} (delivered: {result.get('delivered', False)})")
+                        # Mark job as completed
+                        complete_job(job["id"], agent="system")
 
                 schedules = self._get_system_config().get("schedules", {})
 

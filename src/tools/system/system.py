@@ -143,3 +143,39 @@ def send_notifications_batch(notifications: list) -> dict:
         "count": len(results)
     }
 
+
+@tool("schedule_reminder", "Schedule a reminder to be sent at a specific future time. Use when: user asks to be reminded about something at a certain time.", tool_type="system")
+def schedule_reminder(message: str, scheduled_at: str) -> dict:
+    """Schedule a reminder to be sent at a specific time.
+
+    The reminder will be delivered as a notification when the scheduled time arrives.
+    This is a zero-cost operation - the Python scheduler handles delivery without LLM calls.
+
+    Args:
+        message: The reminder message to send to the user
+        scheduled_at: ISO datetime string for when to send (e.g., "2026-01-15T15:00:00")
+
+    Returns:
+        Dict with scheduled status, job_id, and scheduled_at time
+    """
+    from ..data.jobs import create_job, get_system_container
+
+    system_container = get_system_container()
+
+    # Create a scheduled job that will be auto-delivered
+    job = create_job(
+        name=f"Reminder: {message[:50]}{'...' if len(message) > 50 else ''}",
+        description=message,
+        parent_id=system_container["id"],
+        tags=["scheduled", "reminder"],
+        scheduled_at=scheduled_at,
+        created_by="agent"
+    )
+
+    return {
+        "scheduled": True,
+        "job_id": job["id"],
+        "scheduled_at": scheduled_at,
+        "message": f"Reminder scheduled for {scheduled_at}"
+    }
+

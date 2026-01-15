@@ -112,6 +112,13 @@ def _ensure_schema():
         conn.execute("ALTER TABLE jobs ADD COLUMN pending_from TEXT")
         conn.commit()
 
+    # Migration: add scheduled_at column if it doesn't exist (for scheduled reminders)
+    try:
+        conn.execute("SELECT scheduled_at FROM jobs LIMIT 1")
+    except sqlite3.OperationalError:
+        conn.execute("ALTER TABLE jobs ADD COLUMN scheduled_at TEXT")
+        conn.commit()
+
 
 # Initialize schema on module import
 _ensure_schema()
@@ -145,6 +152,7 @@ def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
     in_progress_by = row["in_progress_by"] if "in_progress_by" in row.keys() else None
     agent_id = row["agent_id"] if "agent_id" in row.keys() else None
     pending_from = row["pending_from"] if "pending_from" in row.keys() else None
+    scheduled_at = row["scheduled_at"] if "scheduled_at" in row.keys() else None
 
     job = {
         "id": row["id"],
@@ -162,6 +170,7 @@ def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
         "in_progress_by": in_progress_by,
         "agent_id": agent_id,
         "pending_from": pending_from,
+        "scheduled_at": scheduled_at,
         "log": logs if logs is not None else []
     }
     if row["completed_at"]:
@@ -291,7 +300,7 @@ def _get_default_parent_for_creator(created_by: str) -> Optional[str]:
     return projects["id"] if projects else None
 
 
-@tool("create_job", "Create a new job with optional parent, tags, assignees, and due date. Use when: breaking down work, creating tasks for yourself or other agents.", tool_type="data")
+@tool("create_job", "Create a new job with optional parent, tags, assignees, due date, and scheduled time. Use when: breaking down work, creating tasks for yourself or other agents, or scheduling reminders.", tool_type="data")
 def create_job(
     name: str,
     description: str = None,
@@ -300,13 +309,18 @@ def create_job(
     assignees: list = None,
     due_date: str = None,
     someday: bool = False,
-    created_by: str = "user"
+    created_by: str = "user",
+    scheduled_at: str = None
 ) -> dict:
     """Create a new job.
 
     If no parent_id is provided:
     - Jobs created by user/chat go under Projects
     - Jobs created by other agents go under their agent inbox
+
+    Args:
+        scheduled_at: ISO datetime for scheduled delivery (e.g., "2026-01-15T15:00:00").
+                     Jobs with this field and "scheduled" tag will be auto-delivered as notifications.
     """
     now = datetime.utcnow().isoformat() + "Z"
     job_id = f"job-{uuid.uuid4().hex[:8]}"
@@ -319,12 +333,12 @@ def create_job(
     with _transaction() as conn:
         conn.execute('''
             INSERT INTO jobs (id, name, parent_id, status, created_at, updated_at,
-                            created_by, description, due_date, someday, tags, assignees)
-            VALUES (?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, ?, ?)
+                            created_by, description, due_date, someday, tags, assignees, scheduled_at)
+            VALUES (?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             job_id, name, effective_parent_id, now, now, created_by,
             description, due_date, int(someday), json.dumps(tags or []),
-            json.dumps(assignees or [])
+            json.dumps(assignees or []), scheduled_at
         ))
 
         conn.execute('''
@@ -345,7 +359,7 @@ def create_job(
     return job
 
 
-@tool("update_job", "Update a job's fields (name, description, status, tags, assignees, due date). Use when: modifying job details, changing assignments, rescheduling.", tool_type="data")
+@tool("update_job", "Update a job's fields (name, description, status, tags, assignees, due date, scheduled time). Use when: modifying job details, changing assignments, rescheduling.", tool_type="data")
 def update_job(
     job_id: str,
     name: str = None,
@@ -354,7 +368,8 @@ def update_job(
     tags: list = None,
     assignees: list = None,
     due_date: str = None,
-    someday: bool = None
+    someday: bool = None,
+    scheduled_at: str = None
 ) -> Optional[dict]:
     """Update a job's fields."""
     job = _load_job(job_id)
@@ -392,6 +407,9 @@ def update_job(
     if someday is not None:
         updates.append("someday = ?")
         params.append(int(someday))
+    if scheduled_at is not None:
+        updates.append("scheduled_at = ?")
+        params.append(scheduled_at if scheduled_at else None)  # Empty string means clear
 
     params.append(job_id)
 

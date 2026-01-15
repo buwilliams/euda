@@ -38,6 +38,7 @@
     "read_agent_logs",
     "get_mastodon_posts",
     "speak_aloud",
+    "schedule_reminder",
     "graduate_memory",
     "update_own_profile"
   ],
