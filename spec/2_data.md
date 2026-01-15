@@ -105,3 +105,65 @@ Historical profiles: `data/agents/{id}/profile.{yyyy}.md`
 - Contains: version, llm provider settings, logging config, agent limits, schedules
 - Schedules define named times that create `Trigger:{name}:{date}` jobs
 - Use flat files for configuration, not a database
+
+## Acceptance Tests
+
+These tests verify the memory flow works correctly. Run with dev CLI.
+
+### Memory Extraction Test
+
+Verifies chat conversations extract to short-term memory.
+
+```bash
+python main.py dev memory chat --json > /tmp/before.json
+python main.py chat  # Say: "I'm planning to visit Tokyo for a conference"
+python main.py dev memory chat --json > /tmp/after.json
+```
+
+**Pass**: New items appear in chat's short-term memory for place/idea types.
+
+### User Memory Cross-Pollination Test
+
+Verifies user-relevant items from chat flow to user's memory.
+
+```bash
+python main.py dev memory user --short  # Check before
+python main.py chat  # Mention: "Casey suggested we visit Paris next summer"
+python main.py dev memory user --short  # Check after
+```
+
+**Pass**: User's short-term memory contains person (Casey) and place (Paris) items.
+
+### Consolidation Persistence Test
+
+Verifies profile updates from consolidation persist.
+
+```bash
+python main.py dev profile chat > /tmp/profile-before.md
+python main.py dev reflect chat --consolidate
+python main.py dev profile chat > /tmp/profile-after.md
+sleep 120  # Wait 2 minutes
+python main.py dev profile chat > /tmp/profile-final.md
+```
+
+**Pass**: Profile contains "Reflection Update" section that persists (not overwritten).
+
+### Cross-Agent Memory Search Test
+
+Verifies agents can search other agents' memories.
+
+```bash
+python main.py dev tool search_all_memory '{"query": "some_term"}'
+```
+
+**Pass**: Returns results with `agent_id` field from multiple agents.
+
+### Exploration Memory Injection Test
+
+Verifies exploration prompt includes user memory.
+
+```bash
+python main.py dev prompt chat explore
+```
+
+**Pass**: Prompt contains "## User Context" section with actual user memory items.

@@ -403,6 +403,86 @@ def list_long_term_memory_dates(agent_id: str = "user") -> List[str]:
     return dates
 
 
+@tool("search_all_memory", "Search memory across all agents or specific agents. Use when: looking for information that might exist in another agent's memory.", tool_type="data")
+def search_all_memory(
+    query: str,
+    agent_ids: List[str] = None,
+    memory_type: str = "short"
+) -> List[dict]:
+    """Search memory items across multiple agents.
+
+    This enables cross-agent memory access, allowing agents to find information
+    that may have been recorded by other agents.
+
+    Args:
+        query: Case-insensitive substring search term
+        agent_ids: List of agent IDs to search (default: all agents)
+        memory_type: "short" for short-term only, "long" for long-term only, "all" for both
+    """
+    results = []
+    query_lower = query.lower()
+
+    # Get list of agents to search
+    if agent_ids is None:
+        agent_ids = [d.name for d in AGENTS_DIR.iterdir() if d.is_dir()]
+
+    for agent_id in agent_ids:
+        # Search short-term memory
+        if memory_type in ("short", "all"):
+            entries = _load_entries(agent_id)
+            for entry in entries:
+                desc = entry.get("short_description", "").lower()
+                if query_lower in desc:
+                    results.append({
+                        **entry,
+                        "agent_id": agent_id,
+                        "memory_type": "short-term"
+                    })
+
+        # Search long-term memory
+        if memory_type in ("long", "all"):
+            long_term_dir = AGENTS_DIR / agent_id / "memory" / "long-term"
+            if long_term_dir.exists():
+                for year_dir in long_term_dir.iterdir():
+                    if year_dir.is_dir():
+                        for md_file in year_dir.glob("*.md"):
+                            content = md_file.read_text()
+                            if query_lower in content.lower():
+                                # Extract a snippet around the match
+                                snippet = _extract_snippet(content, query_lower, context=150)
+                                results.append({
+                                    "agent_id": agent_id,
+                                    "memory_type": "long-term",
+                                    "date": md_file.stem,
+                                    "file": str(md_file.relative_to(AGENTS_DIR.parent)),
+                                    "snippet": snippet
+                                })
+
+    return results
+
+
+def _extract_snippet(content: str, query: str, context: int = 100) -> str:
+    """Extract a snippet of text around a query match.
+
+    Args:
+        content: Full text content
+        query: Search term (lowercase)
+        context: Number of characters to show before/after match
+    """
+    content_lower = content.lower()
+    pos = content_lower.find(query)
+    if pos == -1:
+        return ""
+    start = max(0, pos - context)
+    end = min(len(content), pos + len(query) + context)
+    snippet = content[start:end]
+    if start > 0:
+        snippet = "..." + snippet
+    if end < len(content):
+        snippet = snippet + "..."
+    return snippet
+
+
 # =============================================================================
 # Helper for system prompts (not a tool)
 # =============================================================================
