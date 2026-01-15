@@ -12,6 +12,7 @@ from typing import Optional
 
 from ...agent import Agent, AGENTS_DIR
 from ...speech import get_speech_client, supports_tts
+from ...rate_limiter import AgentPausedError
 
 
 router = APIRouter()
@@ -46,14 +47,27 @@ def get_agent_instance(agent_id: str) -> Agent:
 
 
 @router.post("")
-def api_chat(request: ChatRequest) -> ChatResponse:
+def api_chat(request: ChatRequest):
     """Send a message and get a response."""
     agent = get_agent_instance(request.agent_id)
 
     # Set session - if None, agent will create a new one on first save
     agent.set_session(request.session_id)
 
-    response = agent.chat(request.message, voice_input=request.voice_input)
+    try:
+        response = agent.chat(request.message, voice_input=request.voice_input)
+    except AgentPausedError as e:
+        # Return a specific error that the frontend can handle
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "agent_paused",
+                "message": f"I'm taking a short break due to high activity. Please try again in a moment.",
+                "reason": e.reason,
+                "agent_id": request.agent_id,
+                "retry": True
+            }
+        )
 
     # Emit chat:message event for agent triggers
     from ...events import emit_event, emit_ui_event

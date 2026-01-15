@@ -321,3 +321,31 @@
     margin-bottom: var(--spacing-xs);
     font-style: italic;
 }
+
+/* ============== Agent Paused / Retry ============== */
+
+.paused-message .message-content {
+    background: var(--color-bg-muted);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+}
+
+.retry-button {
+    background: var(--color-text-primary);
+    color: var(--color-bg-white);
+    border: none;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity var(--transition-fast);
+}
+
+.retry-button:hover {
+    opacity: 0.85;
+}
+
+.retry-button:active {
+    opacity: 0.7;
+}

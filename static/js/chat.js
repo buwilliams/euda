@@ -186,6 +186,9 @@ const inlineMessages = document.getElementById('inline-messages');
 let messageQueue = [];
 let isProcessingQueue = false;
 
+// Last failed message for retry
+let lastFailedMessage = null;
+
 // Cached quote for chat empty state
 let cachedChatQuote = null;
 
@@ -392,10 +395,21 @@ async function processMessageQueue() {
 
             if (!response.ok) {
                 removeInlineThinking();
-                addInlineMessage(`Something went wrong: ${data.detail || 'Unknown error'}`, 'friend');
+
+                // Check for agent paused error
+                if (data.detail && data.detail.error === 'agent_paused') {
+                    lastFailedMessage = message;
+                    addPausedMessage(data.detail.message);
+                } else {
+                    addInlineMessage(`Something went wrong: ${data.detail?.message || data.detail || 'Unknown error'}`, 'friend');
+                }
+
                 if (messageQueue.length > 0) addInlineThinking();
                 continue;
             }
+
+            // Clear retry state on success
+            lastFailedMessage = null;
 
             // Store session ID from server
             if (data.session_id) {
@@ -454,6 +468,38 @@ function addInlineMessage(content, role, context = null) {
     // Scroll to bottom of chat tab
     const chatPane = document.getElementById('tab-chat');
     if (chatPane) chatPane.scrollTop = chatPane.scrollHeight;
+}
+
+function addPausedMessage(message) {
+    // Remove empty state when first message is added
+    removeChatEmptyState();
+
+    const div = document.createElement('div');
+    div.className = 'inline-message inline-message-friend paused-message';
+    div.innerHTML = `
+        <div class="message-content">
+            <p style="margin: 0 0 12px 0;">${escapeHtml(message)}</p>
+            <button class="retry-button" onclick="retryLastMessage()">
+                Try Again
+            </button>
+        </div>
+    `;
+    inlineMessages.appendChild(div);
+    const chatPane = document.getElementById('tab-chat');
+    if (chatPane) chatPane.scrollTop = chatPane.scrollHeight;
+}
+
+function retryLastMessage() {
+    if (!lastFailedMessage) return;
+
+    // Remove the paused message
+    const pausedMsg = document.querySelector('.paused-message');
+    if (pausedMsg) pausedMsg.remove();
+
+    // Re-queue the message
+    messageQueue.push(lastFailedMessage);
+    lastFailedMessage = null;
+    processMessageQueue();
 }
 
 function addInlineThinking() {
