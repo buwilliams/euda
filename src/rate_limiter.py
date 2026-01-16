@@ -114,7 +114,8 @@ class RateLimiter:
             "baseline_window_minutes": 60,
             "spike_multiplier": 5.0,
             "min_baseline_calls": 5,
-            "min_spike_rate": 5  # Minimum calls/min before runaway detection triggers
+            "min_spike_rate": 5,  # Minimum calls/min before runaway detection triggers
+            "pause_cooldown_minutes": 5  # Auto-resume after this many minutes
         })
 
     def is_enabled(self) -> bool:
@@ -323,9 +324,82 @@ class RateLimiter:
               f"(current: {recent_calls}/min, baseline: {baseline_rate:.1f}/min)")
 
     def is_agent_paused(self, agent_id: str) -> bool:
-        """Check if an agent is paused."""
+        """Check if an agent is paused. Auto-resumes if cooldown expired."""
         with self._lock:
-            return agent_id in self._paused_agents
+            if agent_id not in self._paused_agents:
+                return False
+
+            # Check if cooldown has expired
+            remaining = self._get_remaining_cooldown_seconds(agent_id)
+            if remaining <= 0:
+                # Auto-resume
+                self._auto_resume_agent(agent_id)
+                return False
+
+            return True
+
+    def _get_remaining_cooldown_seconds(self, agent_id: str) -> int:
+        """Get remaining cooldown time in seconds. Must be called with lock held."""
+        pause_timestamp = self._pause_timestamps.get(agent_id)
+        if not pause_timestamp:
+            return 0
+
+        config = self._get_runaway_config()
+        cooldown_minutes = config.get("pause_cooldown_minutes", 5)
+
+        try:
+            pause_time = datetime.fromisoformat(pause_timestamp)
+            elapsed = (datetime.now() - pause_time).total_seconds()
+            remaining = (cooldown_minutes * 60) - elapsed
+            return max(0, int(remaining))
+        except ValueError:
+            return 0
+
+    def _auto_resume_agent(self, agent_id: str):
+        """Auto-resume an agent after cooldown. Must be called with lock held."""
+        pause_timestamp = self._pause_timestamps.get(agent_id)
+
+        self._paused_agents.discard(agent_id)
+        self._pause_reasons.pop(agent_id, None)
+        self._pause_timestamps.pop(agent_id, None)
+
+        duration_minutes = None
+        if pause_timestamp:
+            try:
+                pause_time = datetime.fromisoformat(pause_timestamp)
+                duration = datetime.now() - pause_time
+                duration_minutes = round(duration.total_seconds() / 60, 1)
+            except ValueError:
+                pass
+
+        self._log_event("agent_resumed", {
+            "agent_id": agent_id,
+            "resumed_by": "cooldown",
+            "paused_duration_minutes": duration_minutes
+        })
+
+        print(f"[RATE LIMITER] Agent '{agent_id}' auto-resumed after cooldown")
+
+    def get_pause_info(self, agent_id: str) -> dict:
+        """Get pause information for an agent.
+
+        Returns:
+            Dict with is_paused, reason, remaining_seconds
+        """
+        with self._lock:
+            if agent_id not in self._paused_agents:
+                return {"is_paused": False}
+
+            remaining = self._get_remaining_cooldown_seconds(agent_id)
+            if remaining <= 0:
+                self._auto_resume_agent(agent_id)
+                return {"is_paused": False}
+
+            return {
+                "is_paused": True,
+                "reason": self._pause_reasons.get(agent_id, "unknown"),
+                "remaining_seconds": remaining
+            }
 
     def resume_agent(self, agent_id: str):
         """Resume a paused agent.

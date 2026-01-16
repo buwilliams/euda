@@ -188,6 +188,7 @@ let isProcessingQueue = false;
 
 // Last failed message for retry
 let lastFailedMessage = null;
+let pauseCountdownTimer = null;
 
 // Cached quote for chat empty state
 let cachedChatQuote = null;
@@ -399,7 +400,8 @@ async function processMessageQueue() {
                 // Check for agent paused error
                 if (data.detail && data.detail.error === 'agent_paused') {
                     lastFailedMessage = message;
-                    addPausedMessage(data.detail.message);
+                    const remainingSeconds = data.detail.remaining_seconds || 60;
+                    addPausedMessage(data.detail.message, remainingSeconds);
                 } else {
                     addInlineMessage(`Something went wrong: ${data.detail?.message || data.detail || 'Unknown error'}`, 'friend');
                 }
@@ -470,27 +472,58 @@ function addInlineMessage(content, role, context = null) {
     if (chatPane) chatPane.scrollTop = chatPane.scrollHeight;
 }
 
-function addPausedMessage(message) {
+function addPausedMessage(message, remainingSeconds) {
     // Remove empty state when first message is added
     removeChatEmptyState();
 
+    // Clear any existing countdown
+    if (pauseCountdownTimer) {
+        clearInterval(pauseCountdownTimer);
+        pauseCountdownTimer = null;
+    }
+
     const div = document.createElement('div');
     div.className = 'inline-message inline-message-friend paused-message';
+    div.id = 'pause-message';
     div.innerHTML = `
         <div class="message-content">
             <p style="margin: 0 0 12px 0;">${escapeHtml(message)}</p>
-            <button class="retry-button" onclick="retryLastMessage()">
-                Try Again
-            </button>
+            <div class="pause-countdown">
+                <span id="countdown-text">Retrying in <span id="countdown-seconds">${remainingSeconds}</span>s...</span>
+                <button class="retry-button" onclick="retryLastMessage()">
+                    Try Now
+                </button>
+            </div>
         </div>
     `;
     inlineMessages.appendChild(div);
     const chatPane = document.getElementById('tab-chat');
     if (chatPane) chatPane.scrollTop = chatPane.scrollHeight;
+
+    // Start countdown
+    let secondsLeft = remainingSeconds;
+    pauseCountdownTimer = setInterval(() => {
+        secondsLeft--;
+        const countdownEl = document.getElementById('countdown-seconds');
+        if (countdownEl) {
+            countdownEl.textContent = secondsLeft;
+        }
+        if (secondsLeft <= 0) {
+            clearInterval(pauseCountdownTimer);
+            pauseCountdownTimer = null;
+            retryLastMessage();
+        }
+    }, 1000);
 }
 
 function retryLastMessage() {
     if (!lastFailedMessage) return;
+
+    // Clear countdown timer
+    if (pauseCountdownTimer) {
+        clearInterval(pauseCountdownTimer);
+        pauseCountdownTimer = null;
+    }
 
     // Remove the paused message
     const pausedMsg = document.querySelector('.paused-message');
