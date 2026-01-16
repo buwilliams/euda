@@ -186,7 +186,7 @@ Agent = Identity + Cognition + Memory + Behavior
 | Category | Question | What It Contains |
 |----------|----------|------------------|
 | **Identity** | Who am I? | Purpose, values, voice, attractors, context |
-| **Cognition** | How do I think? | Reasoning (prompts) + Metacognition (self-regulation) |
+| **Cognition** | How do I think? | Reasoning (prompts) + Metacognition (self-regulation, reflection) |
 | **Memory** | What do I know? | Short-term (90 days) + Long-term (permanent) |
 | **Behavior** | What can I do? | Tools + Triggers + Modes |
 
@@ -208,13 +208,15 @@ Cognition has two aspects:
 - Template selection based on job type (job_assignment, exploration, reflection)
 
 **Metacognition** — Second-order thinking (about thinking)
-- Self-awareness and self-regulation capabilities
+- Self-awareness, self-regulation, and self-improvement
 - Inherent to all agents, not optional
 - Configuration in `data/system/config.json` under `metacognition`
 
 ## Metacognition (Cognition Subsystem)
 
-Metacognition is the self-regulation component of Cognition. It answers "how do I regulate my own processes?"
+Metacognition is the self-regulation and self-improvement component of Cognition:
+- **Self-regulation** — Velocity, resources, progress, planning (keeping the agent healthy)
+- **Self-improvement** — Reflection (helping the agent grow)
 
 ### Velocity Awareness
 
@@ -250,6 +252,24 @@ Metacognition is the self-regulation component of Cognition. It answers "how do 
 - Batches reflection at end of work cycle instead of per-iteration
 - Reduces LLM calls during autonomous work
 - Configuration in `metacognition.efficiency.defer_reflection_in_work_cycles`
+
+### Reflection (Self-Improvement)
+
+Reflection is the metacognitive process of self-analysis and growth:
+
+- **Append phase** (automatic after conversations)
+  - Lightweight extraction of noteworthy items to short-term memory
+  - Runs automatically after each chat() call
+  - No job created — invisible to user
+
+- **Consolidate phase** (triggered, creates visible jobs)
+  - Heavy analysis triggered by `reflection.trigger` config
+  - Creates `Trigger:reflection:{date}` jobs
+  - Reviews short-term memory, graduates items to long-term
+  - Updates identity/profile based on patterns
+
+Note: `reflection.trigger` in config.json defines WHEN reflection runs (Behavior).
+The reflection process itself is Metacognition (Cognition).
 
 ### Configuration
 
@@ -294,4 +314,13 @@ Behavior defines what agents can do and when they activate.
 - **Exploitation** (~90%): Regular job execution, working within known patterns
 - **Exploration** (~10%): Scheduled discovery, finding new opportunities
 - Exploration configured per-agent: `exploration.enabled`, `exploration.trigger`
-- Reflection enables identity evolution: `reflection.enabled`, `reflection.trigger`
+
+### Triggers vs Processes
+
+Behavior defines *when* things activate via triggers. The processes themselves may belong to other categories:
+
+| Trigger Config | Activates | Process Lives In |
+|---------------|-----------|------------------|
+| `triggers[]` | Job assignment | Behavior (tool execution) |
+| `exploration.trigger` | Discovery mode | Behavior (exploration mode) |
+| `reflection.trigger` | Self-analysis | Cognition (metacognition) |

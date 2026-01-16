@@ -69,8 +69,8 @@ The processing apparatus—both first-order and second-order thinking.
 - Prompt templates for different contexts (job assignment, exploration, reflection)
 - Decision patterns emerge from reasoning combined with identity
 
-**Metacognition** — Self-awareness and self-regulation
-- How the agent monitors and regulates its own processes
+**Metacognition** — Self-awareness, self-regulation, and self-improvement
+- How the agent monitors, regulates, and improves its own processes
 - Inherent to all agents, not optional
 
 | Capability | What It Does |
@@ -80,7 +80,11 @@ The processing apparatus—both first-order and second-order thinking.
 | **Action Awareness** | Monitor tool calls per iteration |
 | **Progress Awareness** | Detect stuck/thrashing patterns |
 | **Strategic Planning** | Plan approach before complex tasks |
-| **Efficiency Optimization** | Batch operations, defer reflection |
+| **Reflection** | Process memories, update identity (self-improvement) |
+
+Metacognition has two aspects:
+- **Self-regulation** — Velocity, resources, progress, planning (keeping the agent healthy)
+- **Self-improvement** — Reflection (helping the agent grow)
 
 **Why group them together?** Both reasoning and metacognition are thinking. Reasoning is first-order (thinking about the world), metacognition is second-order (thinking about thinking). They form the agent's "mind."
 
@@ -89,7 +93,7 @@ The processing apparatus—both first-order and second-order thinking.
 - Tool call limits prevent infinite loops within a single chat
 - Stuck detection breaks out of repeated identical tool calls
 - Planning phase for exploration/reflection improves outcomes
-- Batched reflection reduces LLM calls during work cycles
+- Reflection processes memories and evolves identity over time
 
 System-wide defaults in `data/system/config.json` under the `metacognition` key apply to all agents. Individual agents can override specific settings in their `config.json` if needed.
 
@@ -101,7 +105,7 @@ Context that informs decisions. Without memory, every interaction starts from ze
 
 **Long-term memory** (permanent) is a chronological record of important events. When short-term memories expire, significant ones graduate to long-term storage. This archive becomes the source of truth for identity evolution.
 
-The flow is: Conversations → Short-term Memory → Reflection → Long-term Memory → Identity updates.
+The flow is: Conversations → Short-term Memory → Reflection (Metacognition) → Long-term Memory → Identity updates.
 
 ### Behavior (What the agent does)
 
@@ -109,11 +113,14 @@ The action system—capabilities, activation, and balance.
 
 **Tools** define what an agent can do. Each agent's config lists the tools it has access to—this is how you control capabilities and permissions. An agent that can't see a tool can't use it.
 
-**Triggers** define when an agent acts. There are three types:
+**Triggers** define when an agent acts. There are two main types:
 
 - **Job Assignment** — Work assigned by users or other agents. The agent executes and completes the job.
-- **Exploration** — Scheduled discovery where agents research opportunities aligned with your interests. Configured via `exploration.trigger` in the agent's config.
-- **Reflection** — Scheduled self-analysis where agents process memories and update identity. Configured via `reflection.trigger`.
+- **Scheduled Triggers** — Time-based activation for autonomous processes:
+  - `exploration.trigger` — When to run discovery (the process is a Behavior mode)
+  - `reflection.trigger` — When to run self-analysis (the process is Metacognition)
+
+Note: Triggers define *when* processes activate. The processes themselves belong to other categories—reflection is a Metacognition capability, exploration is a Behavior mode.
 
 **Modes** govern the balance between stability and growth:
 

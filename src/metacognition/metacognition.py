@@ -1,18 +1,24 @@
 """
-Metacognition - The agent's self-awareness and self-regulation system.
+Metacognition - The agent's self-regulation and self-improvement system.
 
-Metacognition answers "how do I regulate myself?" and is inherent to all agents.
-It provides a unified interface for:
+Metacognition is inherent to all agents and has two aspects:
+- Self-regulation: Keeping the agent healthy
+- Self-improvement: Helping the agent grow (reflection)
+
+Self-regulation capabilities:
 - Velocity awareness (rate limiting)
 - Resource awareness (budget/cost tracking)
 - Action awareness (tool call tracking)
 - Progress awareness (stuck detection)
 - Strategic planning
 
+Self-improvement capabilities:
+- Reflection (memory processing, identity evolution)
+
 This is the Cognition subsystem of the agent ontology:
 Agent = Identity + Cognition + Memory + Behavior
 
-Where Cognition = Reasoning (prompts) + Metacognition (self-regulation)
+Where Cognition = Reasoning (prompts) + Metacognition (self-regulation, reflection)
 """
 
 from typing import Optional, TYPE_CHECKING

@@ -126,17 +126,17 @@ euno/
 An agent is: **Identity + Cognition + Memory + Behavior**
 
 - **Identity** (`profile.md`): Purpose, values, voice, stable attractors, context
-- **Cognition**: Reasoning (system prompts) + Metacognition (self-regulation)
+- **Cognition**: Reasoning (system prompts) + Metacognition (self-regulation, reflection)
 - **Memory**: Short-term (90 days) + Long-term (permanent archive)
 - **Behavior** (`config.json`): Tools + Triggers + Modes (90/10 exploration ratio)
 
 ### Metacognition
-Metacognition is the agent's awareness and regulation of its own processes:
+Metacognition is the agent's self-regulation and self-improvement system:
 - **Velocity**: Track call rate, pause if too fast (runaway detection)
 - **Resources**: Track costs, enforce budgets
 - **Progress**: Detect stuck patterns and break loops
 - **Planning**: Strategic thinking before complex tasks
-- **Efficiency**: Batch operations to reduce LLM calls
+- **Reflection**: Process memories, update identity (self-improvement)
 
 System-wide defaults in `data/system/config.json` under `metacognition` key.
 
@@ -163,10 +163,10 @@ Exploration is scheduled discovery where agents research opportunities for the u
 - Creates `Trigger:exploration:{date}` jobs when triggered
 
 ### Reflection
-Reflection is an internal process each agent runs to manage memory and profiles:
+Reflection is a metacognition capability (self-improvement) that manages memory and identity:
 - **Append phase**: Lightweight extraction after each conversation (adds to short-term memory)
-- **Consolidate phase**: Heavy analysis on daily trigger (graduates memories, updates profile)
-- Configured per-agent in `config.json` under `reflection` key
+- **Consolidate phase**: Heavy analysis on daily trigger (graduates memories, updates identity)
+- Activation configured per-agent: `reflection.trigger` in `config.json`
 - Logs stored in `data/system/logs/reflection/`
 
 ### User as Agent
