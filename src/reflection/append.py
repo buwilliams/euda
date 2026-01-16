@@ -36,6 +36,9 @@ def append_phase(reflection: "Reflection", user_message: str, assistant_response
     """
     agent_id = reflection.agent.id
 
+    # Get cross-pollination config
+    cross_pollinate_to = reflection.agent.config.get("reflection", {}).get("cross_pollinate_to")
+
     def emit_progress(step: str, message: str):
         """Emit SSE progress event."""
         emit_ui_event("reflection:progress", {
@@ -112,7 +115,7 @@ def append_phase(reflection: "Reflection", user_message: str, assistant_response
     # Add valid items to short-term memory
     items_added = 0
     if new_items:
-        items_added = _add_items_to_memory(new_items, existing_memory, agent_id)
+        items_added = _add_items_to_memory(new_items, existing_memory, agent_id, cross_pollinate_to=cross_pollinate_to)
 
     reflection.logger.info({
         "event": "append_complete",
@@ -200,13 +203,14 @@ def _parse_items(response: str) -> List[dict]:
     return valid_items
 
 
-def _add_items_to_memory(new_items: List[dict], existing_memory: List[dict], agent_id: str) -> int:
+def _add_items_to_memory(new_items: List[dict], existing_memory: List[dict], agent_id: str, cross_pollinate_to: str = None) -> int:
     """Add new items to short-term memory, avoiding duplicates.
 
     Args:
         new_items: Items to add (validated)
         existing_memory: Current memory entries
         agent_id: Agent ID for saving
+        cross_pollinate_to: Optional target agent to copy user-relevant items to
 
     Returns:
         Number of items actually added (after deduplication)
@@ -238,59 +242,60 @@ def _add_items_to_memory(new_items: List[dict], existing_memory: List[dict], age
     if added:
         _save_entries(existing_memory, agent_id)
 
-        # Cross-pollinate user-relevant items to user's memory
-        # Chat conversations are about the user, so user's profile should learn from them
-        if agent_id == "chat":
-            _cross_pollinate_to_user(added, today)
+        # Cross-pollinate user-relevant items to target agent's memory
+        if cross_pollinate_to:
+            _cross_pollinate_memory(added, today, target_agent=cross_pollinate_to, source_agent=agent_id)
 
     return len(added)
 
 
-def _cross_pollinate_to_user(items: List[dict], today: str) -> int:
-    """Copy user-relevant memory items from chat to user's short-term memory.
+def _cross_pollinate_memory(items: List[dict], today: str, target_agent: str, source_agent: str) -> int:
+    """Copy user-relevant memory items to another agent's short-term memory.
 
-    This enables the user's profile to evolve based on conversations with chat.
+    This enables profiles to evolve based on conversations.
     Only user-focused types are copied (not learning/behavior which are agent-specific).
 
     Args:
-        items: Items that were added to chat's memory
+        items: Items that were added to source agent's memory
         today: Today's date string
+        target_agent: Agent ID to copy items to
+        source_agent: Agent ID items came from (for tracking)
 
     Returns:
-        Number of items added to user's memory
+        Number of items added to target agent's memory
     """
     # Types that describe the user (not how the agent should behave)
     USER_RELEVANT_TYPES = {"person", "place", "goal", "concern", "idea"}
 
-    user_items = [i for i in items if i.get("type") in USER_RELEVANT_TYPES]
-    if not user_items:
+    relevant_items = [i for i in items if i.get("type") in USER_RELEVANT_TYPES]
+    if not relevant_items:
         return 0
 
-    # Load user's current memory
-    user_memory = _load_entries("user")
-    user_existing = {e.get("short_description", "").lower() for e in user_memory}
+    # Load target agent's current memory
+    target_memory = _load_entries(target_agent)
+    existing = {e.get("short_description", "").lower() for e in target_memory}
 
     added = 0
-    for item in user_items:
+    for item in relevant_items:
         # Skip duplicates
-        if item["short_description"].lower() in user_existing:
+        if item["short_description"].lower() in existing:
             continue
 
-        # Create a new entry for user's memory (new ID, track source)
-        user_entry = {
+        # Create a new entry for target's memory (new ID, track source)
+        entry = {
             "id": f"mem-{uuid.uuid4().hex[:8]}",
             "date_mentioned": today,
             "date_expected": item.get("date_expected"),
             "type": item["type"],
             "short_description": item["short_description"],
-            "source": "chat"  # Track where this came from
+            "source": source_agent  # Track where this came from
         }
-        user_memory.append(user_entry)
-        user_existing.add(item["short_description"].lower())
+        target_memory.append(entry)
+        existing.add(item["short_description"].lower())
         added += 1
 
     if added:
-        _save_entries(user_memory, "user")
+        _save_entries(target_memory, target_agent)
 
     return added
 

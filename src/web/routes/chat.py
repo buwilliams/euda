@@ -55,7 +55,6 @@ def api_chat(request: ChatRequest) -> ChatResponse:
     # Set session - if None, agent will create a new one on first save
     agent.set_session(request.session_id)
 
-<<<<<<< HEAD
     try:
         response = agent.chat(request.message, voice_input=request.voice_input)
     except AgentPausedError as e:
@@ -81,9 +80,6 @@ def api_chat(request: ChatRequest) -> ChatResponse:
                 "retry": True
             }
         )
-=======
-    response = agent.chat(request.message, voice_input=request.voice_input, job_context=request.job_context)
->>>>>>> a369bd6 (Add job context to chat when viewing tasks in Focus tab)
 
     # Emit chat:message event for agent triggers
     from ...events import emit_event, emit_ui_event

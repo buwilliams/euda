@@ -327,37 +327,48 @@ class AgentManager:
         # Check for missed scheduled reminders (scheduled_at in the past but still todo)
         self._process_missed_reminders()
 
-    def _process_missed_reminders(self):
-        """Deliver any reminders that were missed while the system was down."""
+    def _deliver_due_reminders(self, log_prefix: str = "scheduler") -> int:
+        """Process scheduled reminders that are due now.
+
+        Args:
+            log_prefix: Prefix for log messages (e.g., "scheduler" or "startup")
+
+        Returns:
+            Number of reminders processed
+        """
         from .tools.data.jobs import list_jobs, complete_job
         from .tools.system.notifications import send_chat_message
 
         now_iso = datetime.now().isoformat()
-
-        # Find all scheduled reminders that are past due
         scheduled_jobs = list_jobs(status="todo", tag="scheduled")
-        missed_count = 0
+        processed = 0
 
         for job in scheduled_jobs:
             scheduled_at = job.get("scheduled_at")
             if scheduled_at and scheduled_at <= now_iso:
-                missed_count += 1
-                # Send notification with "Missed" indicator
+                processed += 1
                 message = job.get("description") or job.get("name")
-                formatted_message = f"[Missed Reminder] {message}"
 
-                result = send_chat_message(formatted_message, agent_name="Reminder", job_id=job["id"])
+                # Add prefix for missed reminders
+                if log_prefix == "startup":
+                    message = f"[Missed Reminder] {message}"
+
+                result = send_chat_message(message, agent_name="Reminder", job_id=job["id"])
                 delivered = result.get('delivered', False)
-                print(f"[startup] Delivered missed reminder: {job['name']} (delivered: {delivered})")
+                print(f"[{log_prefix}] Sent reminder: {job['name']} (delivered: {delivered})")
 
-                # Only mark as completed if successfully delivered
                 if delivered:
                     complete_job(job["id"], agent="system")
                 else:
-                    print(f"[startup] Reminder not delivered (no clients), will retry: {job['name']}")
+                    print(f"[{log_prefix}] Reminder not delivered, will retry: {job['name']}")
 
-        if missed_count > 0:
-            print(f"[startup] Processed {missed_count} missed reminder(s)")
+        return processed
+
+    def _process_missed_reminders(self):
+        """Deliver any reminders that were missed while the system was down."""
+        count = self._deliver_due_reminders(log_prefix="startup")
+        if count > 0:
+            print(f"[startup] Processed {count} missed reminder(s)")
 
     def _run_agent_loop(self, agent: Agent):
         """Run an agent's work loop - polls for actionable jobs."""
@@ -555,8 +566,7 @@ class AgentManager:
 
     def _run_time_scheduler(self):
         """Background thread that creates trigger jobs based on schedules."""
-        from .tools.data.jobs import create_job, list_jobs, get_system_container, complete_job
-        from .tools.system.notifications import send_chat_message
+        from .tools.data.jobs import create_job, list_jobs, get_system_container
 
         last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
         system_container = get_system_container()
@@ -567,23 +577,9 @@ class AgentManager:
                 current_time = now.strftime("%H:%M")
                 current_key = now.strftime("%Y-%m-%d-%H-%M")
                 today = now.strftime("%Y-%m-%d")
-                now_iso = now.isoformat()
 
-                # Process scheduled reminders (jobs with scheduled_at <= now)
-                scheduled_jobs = list_jobs(status="todo", tag="scheduled")
-                for job in scheduled_jobs:
-                    scheduled_at = job.get("scheduled_at")
-                    if scheduled_at and scheduled_at <= now_iso:
-                        # Send notification with job description as message
-                        message = job.get("description") or job.get("name")
-                        result = send_chat_message(message, agent_name="Reminder", job_id=job["id"])
-                        delivered = result.get('delivered', False)
-                        print(f"[scheduler] Sent reminder: {job['name']} (delivered: {delivered})")
-                        # Only mark as completed if successfully delivered
-                        if delivered:
-                            complete_job(job["id"], agent="system")
-                        else:
-                            print(f"[scheduler] Reminder not delivered (no clients), will retry: {job['name']}")
+                # Process scheduled reminders
+                self._deliver_due_reminders(log_prefix="scheduler")
 
                 schedules = self._get_system_config().get("schedules", {})
 

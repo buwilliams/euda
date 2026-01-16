@@ -3,7 +3,7 @@ Velocity Awareness - Controls LLM API call frequency and detects runaway agents.
 
 Provides:
 - Rolling window rate limiting (global across all agents)
-- Queue-based throttling for controlled pacing
+- Delay-based throttling for controlled pacing
 - Runaway agent detection via call velocity monitoring
 - Event logging for rate limit events
 
@@ -12,7 +12,6 @@ metacognition consolidation.
 """
 
 import json
-import queue
 import threading
 import time
 from collections import deque
@@ -47,7 +46,7 @@ class VelocityTracker:
 
     Thread-safe implementation that provides:
     - Rolling window rate limiting
-    - Queue-based throttling (when enabled)
+    - Delay-based throttling (when enabled)
     - Runaway agent detection via call velocity spikes
 
     This is the metacognition component for velocity awareness.
@@ -67,13 +66,9 @@ class VelocityTracker:
         self._pause_reasons: Dict[str, str] = {}
         self._pause_timestamps: Dict[str, str] = {}
 
-        # Throttle queue
-        self._throttle_queue: queue.Queue = queue.Queue()
-        self._throttle_thread: Optional[threading.Thread] = None
-        self._throttle_running = False
-
-        # Config - uses metacognition config
-        self._config = get_global_config()
+        # Config caching
+        self._config_cache: Optional[dict] = None
+        self._config_mtime: float = 0
 
         # Logger
         self._logger = get_logger("system/logs/rate-limiting")

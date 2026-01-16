@@ -332,7 +332,7 @@ def parse_datetime(reference: str) -> dict:
                    "in 2 hours", "3:30pm", "monday morning", etc.
 
     Returns:
-        dict with 'datetime' (ISO string) and 'formatted' (human readable) or 'error'
+        dict with 'datetime' (ISO string) and 'formatted' (human readable), or None if unparseable
     """
     result = _parse_datetime_reference(reference)
 
@@ -347,7 +347,5 @@ def parse_datetime(reference: str) -> dict:
             "parsed_from": reference
         }
     else:
-        return {
-            "error": f"Could not parse datetime reference: '{reference}'",
-            "hint": "Supported formats: 'tomorrow at 3pm', 'next Friday at noon', 'in 2 hours', '3:30pm', 'monday morning', 'in 30 minutes', or ISO format"
-        }
+        # Return None on parse failure - let caller handle
+        return None

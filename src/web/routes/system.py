@@ -26,10 +26,6 @@ DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 QUOTES_FILE = DATA_DIR / "system" / "quotes.json"
 
 
-class FreshStartRequest(BaseModel):
-    confirm: str  # Must be "yes" to proceed
-
-
 # ============== Health ==============
 
 @router.get("/health")
@@ -318,10 +314,8 @@ def _perform_fresh_start() -> dict:
 
     # Close any open database connections
     try:
-        from ...tools.data.jobs import _connection_pool
-        for conn in _connection_pool.values():
-            conn.close()
-        _connection_pool.clear()
+        from ...tools.data.jobs import close_all_connections
+        close_all_connections()
     except Exception:
         pass
 
@@ -380,10 +374,8 @@ def _restore_backup(backup_name: str) -> dict:
 
     # Close any open database connections
     try:
-        from ...tools.data.jobs import _connection_pool
-        for conn in _connection_pool.values():
-            conn.close()
-        _connection_pool.clear()
+        from ...tools.data.jobs import close_all_connections
+        close_all_connections()
     except Exception:
         pass
 
@@ -547,50 +539,3 @@ async def events():
             "X-Accel-Buffering": "no",
         }
     )
-
-
-# ============== Test Endpoints ==============
-
-@router.post("/test/notification")
-def test_notification(data: dict = None):
-    """Test endpoint to manually trigger a notification.
-
-    Usage:
-        POST /api/test/notification
-        Body: {"message": "Test message", "agent": "Test Agent"}
-    """
-    from ...events import emit_ui_event, has_connected_clients
-
-    # Default test message
-    message = "Test notification - this is a test message from the server"
-    agent_name = "Test Agent"
-
-    # Override with provided data
-    if data:
-        message = data.get("message", message)
-        agent_name = data.get("agent", agent_name)
-
-    # Check if anyone is connected
-    connected = has_connected_clients()
-
-    if not connected:
-        return {
-            "success": False,
-            "delivered": False,
-            "reason": "No connected clients",
-            "message": "Make sure you have the web UI open to receive notifications"
-        }
-
-    # Emit the notification
-    emit_ui_event("agent_message", {
-        "message": message,
-        "agent": agent_name,
-        "timestamp": datetime.now().isoformat()
-    })
-
-    return {
-        "success": True,
-        "delivered": True,
-        "message": message,
-        "agent": agent_name
-    }

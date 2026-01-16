@@ -49,6 +49,7 @@
   },
   "reflection": {
     "enabled": true,
-    "trigger": "time:evening"
+    "trigger": "time:evening",
+    "cross_pollinate_to": "user"
   }
 }

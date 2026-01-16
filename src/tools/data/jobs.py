@@ -26,6 +26,10 @@ DB_PATH = JOBS_DIR / "db.sqlite"
 # Thread-local storage for database connections
 _local = threading.local()
 
+# Track all connections for cleanup (thread_id -> connection)
+_connection_pool: dict = {}
+_pool_lock = threading.Lock()
+
 
 def _get_connection() -> sqlite3.Connection:
     """Get a thread-local database connection."""
@@ -35,7 +39,24 @@ def _get_connection() -> sqlite3.Connection:
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
         _local.connection = conn
+        # Track for cleanup
+        with _pool_lock:
+            _connection_pool[threading.get_ident()] = conn
     return _local.connection
+
+
+def close_all_connections():
+    """Close all database connections. Call before moving/deleting the database."""
+    with _pool_lock:
+        for conn in _connection_pool.values():
+            try:
+                conn.close()
+            except Exception:
+                pass
+        _connection_pool.clear()
+    # Also clear thread-local reference
+    if hasattr(_local, 'connection'):
+        _local.connection = None
 
 
 @contextmanager
