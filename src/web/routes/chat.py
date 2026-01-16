@@ -12,6 +12,7 @@ from typing import Optional
 
 from ...agent import Agent, AGENTS_DIR
 from ...speech import get_speech_client, supports_tts
+from ...metacognition import AgentPausedError, get_velocity_tracker
 
 
 router = APIRouter()
@@ -53,7 +54,31 @@ def api_chat(request: ChatRequest) -> ChatResponse:
     # Set session - if None, agent will create a new one on first save
     agent.set_session(request.session_id)
 
-    response = agent.chat(request.message, voice_input=request.voice_input)
+    try:
+        response = agent.chat(request.message, voice_input=request.voice_input)
+    except AgentPausedError as e:
+        # Get remaining cooldown time
+        velocity_tracker = get_velocity_tracker()
+        pause_info = velocity_tracker.get_pause_info(request.agent_id)
+        remaining_seconds = pause_info.get("remaining_seconds", 0)
+
+        # Format remaining time for display
+        if remaining_seconds > 60:
+            time_str = f"{remaining_seconds // 60} minute{'s' if remaining_seconds >= 120 else ''}"
+        else:
+            time_str = f"{remaining_seconds} second{'s' if remaining_seconds != 1 else ''}"
+
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "agent_paused",
+                "message": f"I'm taking a short break due to high activity. I'll be back in about {time_str}.",
+                "reason": e.reason,
+                "agent_id": request.agent_id,
+                "remaining_seconds": remaining_seconds,
+                "retry": True
+            }
+        )
 
     # Emit chat:message event for agent triggers
     from ...events import emit_event, emit_ui_event

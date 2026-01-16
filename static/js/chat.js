@@ -184,10 +184,33 @@ const inlineMessages = document.getElementById('inline-messages');
 
 // Message queue for sequential processing
 let messageQueue = [];
+let lastFailedMessage = null; // Store failed message for retry
 let isProcessingQueue = false;
 
 // Cached quote for chat empty state
 let cachedChatQuote = null;
+
+// Format seconds into human-readable time
+function formatPauseTime(seconds) {
+    if (seconds >= 60) {
+        const minutes = Math.ceil(seconds / 60);
+        return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    }
+    return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+}
+
+// Retry the last failed message
+function retryLastMessage() {
+    if (lastFailedMessage) {
+        const message = lastFailedMessage;
+        lastFailedMessage = null;
+        // Remove the error message with retry button
+        const retryMsg = document.querySelector('.pause-error-message');
+        if (retryMsg) retryMsg.remove();
+        // Re-send the message
+        sendChatMessage(message);
+    }
+}
 
 // ============== Job Context (for context-aware chat routing) ==============
 
@@ -392,7 +415,46 @@ async function processMessageQueue() {
 
             if (!response.ok) {
                 removeInlineThinking();
-                addInlineMessage(`Something went wrong: ${data.detail || 'Unknown error'}`, 'friend');
+
+                // Handle agent paused error specially
+                if (response.status === 503 && data.detail && data.detail.error === 'agent_paused') {
+                    const detail = data.detail;
+                    const timeStr = formatPauseTime(detail.remaining_seconds || 60);
+                    lastFailedMessage = message; // Store for retry
+
+                    // Create message with retry button using safe DOM methods
+                    const div = document.createElement('div');
+                    div.className = 'inline-message inline-message-friend pause-error-message';
+
+                    const content = document.createElement('div');
+                    content.className = 'message-content';
+
+                    const p = document.createElement('p');
+                    p.textContent = "I'm taking a short break due to high activity. I'll be back in about ";
+                    const strong = document.createElement('strong');
+                    strong.textContent = timeStr;
+                    p.appendChild(strong);
+                    p.appendChild(document.createTextNode('.'));
+
+                    const btn = document.createElement('button');
+                    btn.textContent = 'Try Again';
+                    btn.className = 'retry-button';
+                    btn.onclick = retryLastMessage;
+
+                    content.appendChild(p);
+                    content.appendChild(btn);
+                    div.appendChild(content);
+
+                    removeChatEmptyState();
+                    inlineMessages.appendChild(div);
+                    const chatPane = document.getElementById('tab-chat');
+                    if (chatPane) chatPane.scrollTop = chatPane.scrollHeight;
+                } else {
+                    // Generic error
+                    const errorMsg = typeof data.detail === 'string' ? data.detail : 'Unknown error';
+                    addInlineMessage(`Something went wrong: ${errorMsg}`, 'friend');
+                }
+
                 if (messageQueue.length > 0) addInlineThinking();
                 continue;
             }

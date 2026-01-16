@@ -9,7 +9,7 @@ from typing import Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from ...rate_limiter import get_rate_limiter
+from ...metacognition import get_velocity_tracker
 from ...logger import get_logger
 
 
@@ -44,7 +44,7 @@ def get_rate_limiting_status():
         - paused_agents: List of paused agent IDs
         - pause_details: Details for each paused agent
     """
-    return get_rate_limiter().get_status()
+    return get_velocity_tracker().get_status()
 
 
 @router.get("/agents/{agent_id}/stats")
@@ -57,7 +57,7 @@ def get_agent_rate_stats(agent_id: str):
     Returns:
         Dict with agent-specific stats including calls per minute/hour
     """
-    return get_rate_limiter().get_agent_stats(agent_id)
+    return get_velocity_tracker().get_agent_stats(agent_id)
 
 
 # ============== Events ==============
@@ -88,12 +88,12 @@ def resume_agent(agent_id: str):
     Returns:
         Dict with resumed status
     """
-    rate_limiter = get_rate_limiter()
+    velocity_tracker = get_velocity_tracker()
 
-    if not rate_limiter.is_agent_paused(agent_id):
+    if not velocity_tracker.is_agent_paused(agent_id):
         return {"resumed": False, "agent_id": agent_id, "error": "Agent is not paused"}
 
-    rate_limiter.resume_agent(agent_id)
+    velocity_tracker.resume_agent(agent_id)
     return {"resumed": True, "agent_id": agent_id}
 
 
@@ -171,6 +171,6 @@ def update_rate_limiting_config(data: RateLimitingConfigUpdate):
         return {"error": f"Failed to save config: {e}"}
 
     # Invalidate cache
-    get_rate_limiter().invalidate_config()
+    get_velocity_tracker().invalidate_config()
 
     return rate_limiting

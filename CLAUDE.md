@@ -72,7 +72,14 @@ euno/
 ├── main.py                 # Entry point, CLI
 ├── src/
 │   ├── manager.py          # Agent Manager - starts/stops all agents
-│   ├── agent.py            # Generic Agent - config + profile + tools + reflection
+│   ├── agent.py            # Generic Agent - Identity + Cognition + Memory + Behavior
+│   ├── metacognition/      # Agent self-awareness and self-regulation
+│   │   ├── metacognition.py # Main Metacognition class
+│   │   ├── velocity.py     # Rate limiting and runaway detection
+│   │   ├── resources.py    # Budget and cost tracking
+│   │   ├── progress.py     # Stuck/thrashing detection
+│   │   ├── planning.py     # Strategic planning for complex tasks
+│   │   └── config.py       # Configuration handling
 │   ├── reflection/         # Memory and profile reflection
 │   │   ├── reflection.py   # Main Reflection class
 │   │   ├── append.py       # Lightweight extraction after chat
@@ -116,12 +123,22 @@ euno/
 ## Core Concepts
 
 ### Agents
-An agent is: **config + profile + tools + reflection**
+An agent is: **Identity + Cognition + Memory + Behavior**
 
-- Config (`config.json`): id, name, enabled, tools list, triggers, reflection settings
-- Profile (`profile.md`): Identity, behavioral rules, and learned patterns
-- Tools: Functions the agent can call (controlled by config)
-- Reflection: Internal process that manages memory and updates profiles
+- **Identity** (`profile.md`): Purpose, values, voice, stable attractors, context
+- **Cognition**: Reasoning (system prompts) + Metacognition (self-regulation, reflection)
+- **Memory**: Short-term (90 days) + Long-term (permanent archive)
+- **Behavior** (`config.json`): Tools + Triggers + Modes (90/10 exploration ratio)
+
+### Metacognition
+Metacognition is the agent's self-regulation and self-improvement system:
+- **Velocity**: Track call rate, pause if too fast (runaway detection)
+- **Resources**: Track costs, enforce budgets
+- **Progress**: Detect stuck patterns and break loops
+- **Planning**: Strategic thinking before complex tasks
+- **Reflection**: Process memories, update identity (self-improvement)
+
+System-wide defaults in `data/system/config.json` under `metacognition` key.
 
 ### Jobs
 Jobs replace projects and tasks. A single hierarchical structure:
@@ -135,7 +152,7 @@ Jobs replace projects and tasks. A single hierarchical structure:
 Memory tracks what's on an agent's mind for anticipation (every agent has memory):
 - Short-term: `data/agents/{id}/memory/short-term.jsonl` (90-day rolling)
 - Long-term: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md` (year-based archive)
-- Types: person, place, thing, goal, concern, idea
+- Types: person, place, thing, goal, concern, idea, learning, behavior
 - Entries expire after 90 days and archive to long-term memory
 
 ### Exploration
@@ -146,10 +163,10 @@ Exploration is scheduled discovery where agents research opportunities for the u
 - Creates `Trigger:exploration:{date}` jobs when triggered
 
 ### Reflection
-Reflection is an internal process each agent runs to manage memory and profiles:
+Reflection is a metacognition capability (self-improvement) that manages memory and identity:
 - **Append phase**: Lightweight extraction after each conversation (adds to short-term memory)
-- **Consolidate phase**: Heavy analysis on daily trigger (graduates memories, updates profile)
-- Configured per-agent in `config.json` under `reflection` key
+- **Consolidate phase**: Heavy analysis on daily trigger (graduates memories, updates identity)
+- Activation configured per-agent: `reflection.trigger` in `config.json`
 - Logs stored in `data/system/logs/reflection/`
 
 ### User as Agent

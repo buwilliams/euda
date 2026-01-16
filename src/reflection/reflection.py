@@ -133,3 +133,47 @@ class Reflection:
             })
             self._emit_to_sink("consolidate_error", {"error": str(e), "execution_id": execution_id})
             raise  # Re-raise for manager to handle retries
+
+    def append_batch(self, exchanges: list, execution_id: str = None) -> int:
+        """Batch append phase: Extract noteworthy items from multiple exchanges.
+
+        This is an efficiency optimization for work cycles. Instead of calling
+        append() after each iteration, we collect all exchanges and process
+        them in a single LLM call at the end.
+
+        Args:
+            exchanges: List of (user_message, assistant_response) tuples
+            execution_id: Optional execution ID for SSE progress tracking
+
+        Returns:
+            Total number of items added to memory
+        """
+        from .append import append_batch_phase
+
+        if not exchanges:
+            return 0
+
+        self._emit_to_sink("append_batch_start", {
+            "execution_id": execution_id,
+            "exchange_count": len(exchanges)
+        })
+
+        try:
+            items_added = append_batch_phase(self, exchanges, execution_id)
+            self._emit_to_sink("append_batch_complete", {
+                "items_added": items_added or 0,
+                "exchange_count": len(exchanges),
+                "execution_id": execution_id
+            })
+            return items_added or 0
+        except Exception as e:
+            # Log error but don't block
+            self.logger.error({
+                "event": "append_batch_error",
+                "agent_id": self.agent.id,
+                "execution_id": execution_id,
+                "exchange_count": len(exchanges),
+                "error": str(e)
+            })
+            self._emit_to_sink("append_batch_error", {"error": str(e), "execution_id": execution_id})
+            return 0

@@ -17,9 +17,9 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from .agent import Agent
-from .cost_tracker import BudgetExceeded, print_cost_summary
+from .metacognition import BudgetExceeded, AgentPausedError, get_velocity_tracker
+from .metacognition.resources import print_resource_summary
 from .events import EventBus, set_event_bus, get_event_bus
-from .rate_limiter import AgentPausedError, get_rate_limiter
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -389,8 +389,8 @@ class AgentManager:
                 })
                 print(f"\n[{agent.id}] PAUSED: {e.reason} - waiting for manual resume")
                 # Wait until resumed or shutdown
-                rate_limiter = get_rate_limiter()
-                while rate_limiter.is_agent_paused(agent.id) and self.running:
+                velocity_tracker = get_velocity_tracker()
+                while velocity_tracker.is_agent_paused(agent.id) and self.running:
                     time.sleep(30)  # Check every 30 seconds
                 if self.running:
                     agent._log("agent_resumed", {"resumed_by": "rate_limiter"})

@@ -6,8 +6,13 @@ Rules for the major entities in the system and how they relate.
 
 ## Agent
 
-Every agent (including the user) shares the same structure:
+Every agent (including the user) shares the same four-category structure:
+- **Identity** → `profile.md`
+- **Cognition** → `prompts/` + system `metacognition` config
+- **Memory** → `memory/short-term.jsonl` + `memory/long-term/`
+- **Behavior** → `config.json` (tools, triggers, exploration, reflection)
 
+Directory structure:
 - **Config:** `data/agents/{id}/config.json`
   - id, name, enabled, order, tools[], triggers[]
   - exploration{}: enabled, trigger (e.g., "time:hour_04")
@@ -66,9 +71,9 @@ Memory moves through two phases:
   - Creates `Trigger:reflection:{date}` jobs that appear in agent's queue
   - Reviews short-term memory, graduates items to long-term, updates profile
 
-### Profile Schema
+### Identity Schema (Profile)
 
-All agents (including user) share the same profile schema:
+All agents (including user) share the same identity schema stored in `profile.md`:
 - Purpose (what drives them / why they exist)
 - Behavioral Rules (learned must/must not constraints)
 - Voice (communication style)

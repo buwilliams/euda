@@ -1,10 +1,11 @@
 """
 Agent - Generic agent that runs based on configuration.
 
-An agent is defined by:
-1. Config (config.json) - operational parameters
-2. Profile (profile.md) - identity and behavior that evolves over time
-3. Tools - list of tool names the agent can use
+An agent follows the four-category ontology:
+1. Identity (profile.md) - Purpose, values, voice, stable attractors
+2. Cognition - Reasoning (prompts) + Metacognition (self-regulation)
+3. Memory - Short-term (90 days) + Long-term (permanent archive)
+4. Behavior (config.json) - Tools + Triggers + Modes
 """
 
 import json
@@ -15,6 +16,7 @@ from typing import Callable, Optional
 from .llms import get_client
 from .logger import get_logger
 from .reflection import Reflection
+from .metacognition import Metacognition
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -43,6 +45,9 @@ class Agent:
         reflection_config = self.config.get("reflection", {})
         reflection_enabled = reflection_config.get("enabled", True)
         self.reflection = Reflection(self) if reflection_enabled else None
+
+        # Initialize metacognition (always created - inherent to all agents)
+        self.metacognition = Metacognition(self)
 
     def wait_for_trigger(self, timeout: float = None) -> Optional[dict]:
         """Wait for a trigger event from the event bus.
@@ -352,7 +357,8 @@ class Agent:
             user_memory=user_memory
         )
 
-    def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True, voice_input: bool = False) -> str:
+    def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True,
+             voice_input: bool = False, defer_reflection: bool = False) -> str:
         """Process a chat message and return response.
 
         Args:
@@ -360,6 +366,7 @@ class Agent:
             log_to_memory: Whether to log this conversation to long-term memory (default True)
             save_to_history: Whether to save to conversation history (default True)
             voice_input: Whether input came from voice (enables conversational response style)
+            defer_reflection: If True, skip reflection append (caller will batch it)
         """
         self._log("chat_start", {"message_length": len(message)})
 
@@ -400,8 +407,19 @@ class Agent:
             "usage": {"input": response.usage.input_tokens, "output": response.usage.output_tokens}
         })
 
-        # Handle tool use in a loop
+        # Handle tool use in a loop with action awareness
+        self.metacognition.reset_iteration()
+        max_tool_calls = self.metacognition.get_max_tool_calls_per_iteration()
+
         while response.stop_reason == "tool_use":
+            # Check if tool call limit reached
+            if self.metacognition.check_tool_call_limit():
+                self._log("tool_limit_break", {
+                    "count": self.metacognition.get_tool_call_count(),
+                    "limit": max_tool_calls
+                })
+                break
+
             tool_results = self._execute_tools(response)
             messages.append({"role": "assistant", "content": response.content})
             messages.append({"role": "user", "content": tool_results})
@@ -436,7 +454,8 @@ class Agent:
             self._append_to_long_term_memory(message, text_response)
 
         # Run reflection append phase to extract noteworthy items
-        if self.reflection and log_to_memory:
+        # Skip if defer_reflection=True (caller will batch process)
+        if self.reflection and log_to_memory and not defer_reflection:
             self.reflection.append(message, text_response)
 
         return text_response
@@ -454,9 +473,11 @@ class Agent:
             # Collect all tool calls
             tool_calls = [block for block in response.content if block.type == "tool_use"]
 
-            # Log individual calls for debugging
+            # Log and record individual calls for debugging and metacognition
             for block in tool_calls:
                 self._log("tool_call", {"tool": block.name, "input": block.input})
+                # Record for action/progress awareness
+                self.metacognition.record_tool_call(block.name, block.input)
 
             # Execute with automatic batching
             results = execute_tools_batched(tool_calls, execute_tool, agent_id=self.id)
@@ -479,6 +500,7 @@ class Agent:
 
         self._log("work_cycle_start", {"trigger": trigger_context})
         self._work_done = False
+        self.metacognition.reset_work_cycle()  # Reset tracking for new work cycle
 
         # Get actionable jobs assigned to this agent
         jobs = list_jobs(status="todo", assignee=self.id, actionable=True)
@@ -501,30 +523,80 @@ class Agent:
         from .prompts import load_template
         prompt = self._format_job_prompt(current_job, remaining)
 
+        # Strategic planning phase (if configured for this job type)
+        plan = None
+        if self.metacognition.planner.should_plan(current_job):
+            self._log("planning_start", {"job_id": current_job.get("id")})
+            plan = self.metacognition.planner.create_plan(current_job)
+            if plan:
+                prompt = self.metacognition.planner.inject_plan(prompt, plan)
+                self._log("planning_injected", {"job_id": current_job.get("id"), "plan_length": len(plan)})
+
         # Autonomous loop - keep working until agent calls done_working
         max_iterations = self._get_system_config().get("agents", {}).get("max_work_iterations", 20)
         iteration = 0
+
+        # Check if deferred reflection is enabled (efficiency optimization)
+        defer_reflection = self.metacognition.should_defer_reflection()
+        exchanges = []  # Collect for batched reflection if deferred
 
         try:
             while not self._work_done and iteration < max_iterations:
                 iteration += 1
                 self._log("work_iteration", {"iteration": iteration})
 
+                # Check for stuck patterns before proceeding
+                stuck_reason = self.metacognition.check_stuck()
+                if stuck_reason:
+                    self._log("stuck_detected", {"reason": stuck_reason, "iteration": iteration})
+                    print(f"[{self.id}] Stuck detected: {stuck_reason}")
+                    # Don't break immediately - let the agent know it's stuck via the continue prompt
+                    break
+
                 # Log to memory for memory creation, but don't save to conversation history
-                response = self.chat(prompt, log_to_memory=True, save_to_history=False)
+                # Defer reflection if enabled (will batch process at end)
+                response = self.chat(prompt, log_to_memory=True, save_to_history=False,
+                                     defer_reflection=defer_reflection)
+
+                # Collect exchange for batched reflection
+                if defer_reflection and self.reflection:
+                    exchanges.append((prompt, response))
+
                 print(f"[{self.id}] {response[:100]}...")
 
                 if self._work_done:
                     break
 
-                # Continue prompt for subsequent iterations
-                prompt = load_template("agent/continue")
+                # Continue prompt for subsequent iterations with progress context
+                progress_ctx = self.metacognition.get_progress_context()
+
+                # Add max_iterations to context
+                progress_ctx["max_iterations"] = max_iterations
+
+                # Format stuck warning if approaching limits
+                stuck_warning = ""
+                if progress_ctx.get("stuck_warning"):
+                    stuck_warning = f"**Warning:** {progress_ctx['stuck_warning']}"
+                elif progress_ctx.get("approaching_limit"):
+                    stuck_warning = f"**Note:** Approaching tool call limit ({progress_ctx['tool_calls_this_cycle']}/{progress_ctx['max_tool_calls']})"
+
+                prompt = load_template("agent/continue_with_context").format(
+                    iteration=progress_ctx.get("iteration", iteration),
+                    max_iterations=max_iterations,
+                    tool_calls_this_cycle=progress_ctx.get("tool_calls_this_cycle", 0),
+                    stuck_warning=stuck_warning
+                )
 
             if iteration >= max_iterations:
                 self._log("work_cycle_end", {"reason": "max_iterations", "iterations": iteration})
             else:
                 self._log("work_cycle_end", {"reason": "done_working", "iterations": iteration})
         finally:
+            # Batch reflection at end of work cycle (if deferred)
+            if defer_reflection and self.reflection and exchanges:
+                self._log("reflection_batch", {"exchange_count": len(exchanges)})
+                self.reflection.append_batch(exchanges)
+
             # Clear job context
             self._current_job_id = None
 
