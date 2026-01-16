@@ -175,14 +175,46 @@ Jobs can flow between agents and users via `handoff_job`:
 - Can answer questions about Euno by reading docs/specs
 - Has access to user profile and memory for personalized responses
 
-## Metacognition
+## Agent Ontology
 
-Every agent has metacognition — self-awareness and self-regulation capabilities. This is inherent, not optional.
+Every agent shares the same four-category structure:
 
-**Agent Ontology:**
 ```
-Agent = Profile + Memory + Tools + Triggers + Metacognition
+Agent = Identity + Cognition + Memory + Behavior
 ```
+
+| Category | Question | What It Contains |
+|----------|----------|------------------|
+| **Identity** | Who am I? | Purpose, values, voice, attractors, context |
+| **Cognition** | How do I think? | Reasoning (prompts) + Metacognition (self-regulation) |
+| **Memory** | What do I know? | Short-term (90 days) + Long-term (permanent) |
+| **Behavior** | What can I do? | Tools + Triggers + Modes |
+
+### Identity
+
+- Stored in `profile.md` as markdown sections
+- Contains: Purpose, Behavioral Rules, Voice, Wants/Fears, Stable Attractors, Notable Events, Influences, Interests, Biographical Info
+- Evolves through reflection—discovered, not configured
+- AI agents start pre-filled; users start empty
+- Historical snapshots: `profile.{yyyy}.md`
+
+### Cognition
+
+Cognition has two aspects:
+
+**Reasoning** — First-order thinking (about the world)
+- Defined by system prompts in `data/system/prompts/agent/`
+- Agent-specific overrides in `data/agents/{id}/prompts/`
+- Template selection based on job type (job_assignment, exploration, reflection)
+
+**Metacognition** — Second-order thinking (about thinking)
+- Self-awareness and self-regulation capabilities
+- Inherent to all agents, not optional
+- Configuration in `data/system/config.json` under `metacognition`
+
+## Metacognition (Cognition Subsystem)
+
+Metacognition is the self-regulation component of Cognition. It answers "how do I regulate my own processes?"
 
 ### Velocity Awareness
 
@@ -190,7 +222,7 @@ Agent = Profile + Memory + Tools + Triggers + Metacognition
 - Rolling window rate limiting (default: 30 calls per 60 seconds)
 - Runaway detection pauses agents making too many calls too fast
 - Paused agents auto-resume after cooldown period
-- Configuration in `data/system/config.json` under `metacognition.velocity`
+- Configuration in `metacognition.velocity`
 
 ### Resource Awareness
 
@@ -199,32 +231,25 @@ Agent = Profile + Memory + Tools + Triggers + Metacognition
 - Logs all LLM usage to daily cost files
 - Configuration in `metacognition.resources`
 
-### Action Awareness
-
-- Counts tool calls per iteration
-- Breaks out of tool loop when limit reached (default: 50)
-- Prevents infinite loops within a single chat
-- Configuration in `metacognition.progress.max_tool_calls_per_iteration`
-
 ### Progress Awareness
 
+- Counts tool calls per iteration (max_tool_calls_per_iteration)
 - Detects stuck patterns: same tool called repeatedly with identical inputs
 - Breaks work cycle when stuck detected
-- Configurable thresholds in `metacognition.progress`
+- Configuration in `metacognition.progress`
 
 ### Strategic Planning
 
 - Planning phase for complex operations (exploration, reflection)
 - Creates a brief approach plan before execution
 - Plan is injected into the working prompt for context
-- Configured in `metacognition.planning.enabled_for`
+- Configuration in `metacognition.planning.enabled_for`
 
 ### Efficiency Optimization
 
 - Batches reflection at end of work cycle instead of per-iteration
 - Reduces LLM calls during autonomous work
-- Single LLM call processes all exchanges from the cycle
-- Configured in `metacognition.efficiency.defer_reflection_in_work_cycles`
+- Configuration in `metacognition.efficiency.defer_reflection_in_work_cycles`
 
 ### Configuration
 
@@ -242,3 +267,31 @@ System-wide defaults in `data/system/config.json`:
 ```
 
 Individual agents can override specific settings in their `config.json` but rarely need to.
+
+## Behavior
+
+Behavior defines what agents can do and when they activate.
+
+### Tools
+
+- Capabilities defined by `tools[]` in agent's config.json
+- All agents get base tools: list_jobs, get_job, create_job, complete_job, add_job_log, done_working
+- Additional tools granted per-agent based on role
+- An agent cannot use tools not in its config
+
+### Triggers
+
+- Configured per-agent in `config.json` under `triggers[]`
+- Triggers create jobs, they do not wake agents directly
+- Trigger job naming: `Trigger:{name}:{yyyy-mm-dd}`
+- Trigger types:
+  - `system:start` — fires once at system startup
+  - `time:{name}` — fires at scheduled times (morning, evening, hourly)
+  - `job:assigned` — fires when job assigned to agent
+
+### Modes
+
+- **Exploitation** (~90%): Regular job execution, working within known patterns
+- **Exploration** (~10%): Scheduled discovery, finding new opportunities
+- Exploration configured per-agent: `exploration.enabled`, `exploration.trigger`
+- Reflection enables identity evolution: `reflection.enabled`, `reflection.trigger`

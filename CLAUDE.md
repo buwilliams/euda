@@ -72,7 +72,7 @@ euno/
 ├── main.py                 # Entry point, CLI
 ├── src/
 │   ├── manager.py          # Agent Manager - starts/stops all agents
-│   ├── agent.py            # Generic Agent - config + profile + tools + reflection + metacognition
+│   ├── agent.py            # Generic Agent - Identity + Cognition + Memory + Behavior
 │   ├── metacognition/      # Agent self-awareness and self-regulation
 │   │   ├── metacognition.py # Main Metacognition class
 │   │   ├── velocity.py     # Rate limiting and runaway detection
@@ -123,13 +123,12 @@ euno/
 ## Core Concepts
 
 ### Agents
-An agent is: **config + profile + tools + reflection + metacognition**
+An agent is: **Identity + Cognition + Memory + Behavior**
 
-- Config (`config.json`): id, name, enabled, tools list, triggers, reflection settings
-- Profile (`profile.md`): Identity, behavioral rules, and learned patterns
-- Tools: Functions the agent can call (controlled by config)
-- Reflection: Internal process that manages memory and updates profiles
-- Metacognition: Self-awareness and self-regulation (inherent to all agents)
+- **Identity** (`profile.md`): Purpose, values, voice, stable attractors, context
+- **Cognition**: Reasoning (system prompts) + Metacognition (self-regulation)
+- **Memory**: Short-term (90 days) + Long-term (permanent archive)
+- **Behavior** (`config.json`): Tools + Triggers + Modes (90/10 exploration ratio)
 
 ### Metacognition
 Metacognition is the agent's awareness and regulation of its own processes:
