@@ -12,7 +12,7 @@ from typing import Optional
 
 from ...agent import Agent, AGENTS_DIR
 from ...speech import get_speech_client, supports_tts
-from ...rate_limiter import AgentPausedError, get_rate_limiter
+from ...metacognition import AgentPausedError, get_velocity_tracker
 
 
 router = APIRouter()
@@ -58,8 +58,8 @@ def api_chat(request: ChatRequest):
         response = agent.chat(request.message, voice_input=request.voice_input)
     except AgentPausedError as e:
         # Get remaining cooldown time
-        rate_limiter = get_rate_limiter()
-        pause_info = rate_limiter.get_pause_info(request.agent_id)
+        velocity_tracker = get_velocity_tracker()
+        pause_info = velocity_tracker.get_pause_info(request.agent_id)
         remaining_seconds = pause_info.get("remaining_seconds", 0)
 
         # Format remaining time for display

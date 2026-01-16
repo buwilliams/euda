@@ -14,7 +14,7 @@ from ..llms import get_client
 from ..events import emit_ui_event
 from ..tools.data.memory import _load_entries, _save_entries, VALID_TYPES
 
-from .prompts import get_append_system_prompt, build_append_prompt
+from .prompts import get_append_system_prompt, build_append_prompt, build_append_batch_prompt
 
 if TYPE_CHECKING:
     from .reflection import Reflection
@@ -293,3 +293,121 @@ def _cross_pollinate_to_user(items: List[dict], today: str) -> int:
         _save_entries(user_memory, "user")
 
     return added
+
+
+def append_batch_phase(reflection: "Reflection", exchanges: list, execution_id: str = None) -> int:
+    """Run the append phase for multiple conversation exchanges (batched).
+
+    This is an efficiency optimization that processes multiple exchanges in a
+    single LLM call instead of one call per exchange.
+
+    Args:
+        reflection: The Reflection instance
+        exchanges: List of (user_message, assistant_response) tuples
+        execution_id: Optional execution ID for SSE progress tracking
+
+    Returns:
+        Number of items added to memory
+    """
+    if not exchanges:
+        return 0
+
+    agent_id = reflection.agent.id
+
+    def emit_progress(step: str, message: str):
+        """Emit SSE progress event."""
+        emit_ui_event("reflection:progress", {
+            "execution_id": execution_id,
+            "agent_id": agent_id,
+            "phase": "append_batch",
+            "step": step,
+            "message": message
+        })
+
+    reflection.logger.info({
+        "event": "append_batch_start",
+        "agent_id": agent_id,
+        "execution_id": execution_id,
+        "exchange_count": len(exchanges)
+    })
+
+    emit_progress("loading_data", "Loading memory...")
+
+    # Load current short-term memory for context
+    existing_memory = _load_entries(agent_id)
+
+    emit_progress("building_prompt", f"Analyzing {len(exchanges)} exchanges...")
+
+    # Build batch prompt
+    prompt = build_append_batch_prompt(
+        agent_profile=reflection.agent.profile,
+        existing_memory=existing_memory,
+        exchanges=exchanges
+    )
+
+    emit_progress("calling_llm", "Extracting memories from exchanges...")
+
+    # Call LLM
+    client = get_client()
+    response = client.create(
+        max_tokens=1000,  # More tokens for batch
+        system=get_append_system_prompt(),
+        messages=[{"role": "user", "content": prompt}],
+        agent_id=f"{agent_id}/reflection"
+    )
+
+    # Extract text response
+    text_response = ""
+    for block in response.content:
+        if hasattr(block, "text"):
+            text_response += block.text
+
+    # Emit LLM complete event
+    emit_ui_event("reflection:llm_complete", {
+        "execution_id": execution_id,
+        "agent_id": agent_id,
+        "phase": "append_batch",
+        "input_tokens": response.usage.input_tokens,
+        "output_tokens": response.usage.output_tokens
+    })
+
+    # Parse JSON response
+    new_items = _parse_items(text_response)
+
+    reflection.logger.info({
+        "event": "append_batch_llm_response",
+        "agent_id": agent_id,
+        "execution_id": execution_id,
+        "items_extracted": len(new_items),
+        "exchange_count": len(exchanges),
+        "usage": {
+            "input": response.usage.input_tokens,
+            "output": response.usage.output_tokens
+        }
+    })
+
+    emit_progress("saving_results", "Saving memories...")
+
+    # Add valid items to short-term memory
+    items_added = 0
+    if new_items:
+        items_added = _add_items_to_memory(new_items, existing_memory, agent_id)
+
+    reflection.logger.info({
+        "event": "append_batch_complete",
+        "agent_id": agent_id,
+        "execution_id": execution_id,
+        "items_added": items_added,
+        "exchange_count": len(exchanges)
+    })
+
+    # Emit completion event
+    emit_ui_event("reflection:complete", {
+        "execution_id": execution_id,
+        "agent_id": agent_id,
+        "phase": "append_batch",
+        "items_added": items_added,
+        "exchange_count": len(exchanges)
+    })
+
+    return items_added

@@ -207,7 +207,7 @@ def api_get_job_api_calls(job_id: str, days: int = 7):
     Returns:
         Dict with call count, total cost, and list of API calls
     """
-    from ...cost_tracker import get_calls_by_job, get_job_call_count
+    from ...metacognition import get_calls_by_job, get_job_call_count
 
     summary = get_job_call_count(job_id, days)
     calls = get_calls_by_job(job_id, days)
@@ -290,7 +290,7 @@ def api_get_job_trace(job_id: str, days: int = 7):
 
     Returns a chronological timeline of events.
     """
-    from ...cost_tracker import get_calls_by_job
+    from ...metacognition import get_calls_by_job
 
     job = get_job(job_id)
     if not job:

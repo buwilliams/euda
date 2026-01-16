@@ -73,6 +73,35 @@ Agents act in response to triggers. There are three types:
 
 Each trigger type has its own prompt template. System defaults live in `data/system/prompts/agent/`; individual agents can override with custom prompts in `data/agents/{id}/prompts/`.
 
+### Metacognition
+
+Metacognition is the agent's self-awareness and self-regulation system. It answers "how do I regulate myself?" and is inherent to all agents—just like profile and memory.
+
+**The complete agent ontology:**
+```
+Agent = Profile + Memory + Tools + Triggers + Metacognition
+```
+
+**Metacognition capabilities:**
+
+| Capability | What It Does |
+|------------|--------------|
+| **Velocity Awareness** | Track call rate, pause if too fast |
+| **Resource Awareness** | Track costs, enforce budgets |
+| **Action Awareness** | Monitor tool calls per iteration |
+| **Progress Awareness** | Detect stuck/thrashing patterns |
+| **Strategic Planning** | Plan approach before complex tasks |
+| **Efficiency Optimization** | Batch operations, defer reflection |
+
+**Key behaviors:**
+- Agents automatically pause when runaway behavior is detected (making too many calls too fast)
+- Tool call limits prevent infinite loops within a single chat
+- Stuck detection breaks out of repeated identical tool calls
+- Planning phase for exploration/reflection improves outcomes
+- Batched reflection reduces LLM calls during work cycles
+
+System-wide defaults in `data/system/config.json` under the `metacognition` key apply to all agents. Individual agents can override specific settings in their `config.json` if needed, but this is rarely necessary.
+
 ## Jobs
 
 Jobs are how all agents coordinate work. Any agent can spawn a job, work on it, or route it to others.

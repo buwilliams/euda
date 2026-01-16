@@ -226,7 +226,7 @@ class UnifiedSpeechClient:
         if self._provider is None:
             raise ValueError(f"Provider '{self.provider_name}' does not support speech-to-text")
 
-        from ..cost_tracker import record_usage
+        from ..metacognition import record_usage
 
         # Wait for any active backoff
         self._wait_for_backoff()
@@ -292,7 +292,7 @@ class UnifiedSpeechClient:
         if self._provider is None:
             raise ValueError(f"Provider '{self.provider_name}' does not support text-to-speech")
 
-        from ..cost_tracker import record_usage
+        from ..metacognition import record_usage
 
         # Wait for any active backoff
         self._wait_for_backoff()

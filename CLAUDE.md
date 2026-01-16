@@ -72,7 +72,14 @@ euno/
 ├── main.py                 # Entry point, CLI
 ├── src/
 │   ├── manager.py          # Agent Manager - starts/stops all agents
-│   ├── agent.py            # Generic Agent - config + profile + tools + reflection
+│   ├── agent.py            # Generic Agent - config + profile + tools + reflection + metacognition
+│   ├── metacognition/      # Agent self-awareness and self-regulation
+│   │   ├── metacognition.py # Main Metacognition class
+│   │   ├── velocity.py     # Rate limiting and runaway detection
+│   │   ├── resources.py    # Budget and cost tracking
+│   │   ├── progress.py     # Stuck/thrashing detection
+│   │   ├── planning.py     # Strategic planning for complex tasks
+│   │   └── config.py       # Configuration handling
 │   ├── reflection/         # Memory and profile reflection
 │   │   ├── reflection.py   # Main Reflection class
 │   │   ├── append.py       # Lightweight extraction after chat
@@ -116,12 +123,23 @@ euno/
 ## Core Concepts
 
 ### Agents
-An agent is: **config + profile + tools + reflection**
+An agent is: **config + profile + tools + reflection + metacognition**
 
 - Config (`config.json`): id, name, enabled, tools list, triggers, reflection settings
 - Profile (`profile.md`): Identity, behavioral rules, and learned patterns
 - Tools: Functions the agent can call (controlled by config)
 - Reflection: Internal process that manages memory and updates profiles
+- Metacognition: Self-awareness and self-regulation (inherent to all agents)
+
+### Metacognition
+Metacognition is the agent's awareness and regulation of its own processes:
+- **Velocity**: Track call rate, pause if too fast (runaway detection)
+- **Resources**: Track costs, enforce budgets
+- **Progress**: Detect stuck patterns and break loops
+- **Planning**: Strategic thinking before complex tasks
+- **Efficiency**: Batch operations to reduce LLM calls
+
+System-wide defaults in `data/system/config.json` under `metacognition` key.
 
 ### Jobs
 Jobs replace projects and tasks. A single hierarchical structure:
