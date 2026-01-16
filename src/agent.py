@@ -1,10 +1,11 @@
 """
 Agent - Generic agent that runs based on configuration.
 
-An agent is defined by:
-1. Config (config.json) - operational parameters
-2. Profile (profile.md) - identity and behavior that evolves over time
-3. Tools - list of tool names the agent can use
+An agent follows the four-category ontology:
+1. Identity (profile.md) - Purpose, values, voice, stable attractors
+2. Cognition - Reasoning (prompts) + Metacognition (self-regulation)
+3. Memory - Short-term (90 days) + Long-term (permanent archive)
+4. Behavior (config.json) - Tools + Triggers + Modes
 """
 
 import json

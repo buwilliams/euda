@@ -152,7 +152,7 @@ Jobs replace projects and tasks. A single hierarchical structure:
 Memory tracks what's on an agent's mind for anticipation (every agent has memory):
 - Short-term: `data/agents/{id}/memory/short-term.jsonl` (90-day rolling)
 - Long-term: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md` (year-based archive)
-- Types: person, place, thing, goal, concern, idea
+- Types: person, place, thing, goal, concern, idea, learning, behavior
 - Entries expire after 90 days and archive to long-term memory
 
 ### Exploration

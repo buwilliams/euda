@@ -9,8 +9,10 @@ It provides a unified interface for:
 - Progress awareness (stuck detection)
 - Strategic planning
 
-This is part of the agent ontology:
-Agent = Profile + Memory + Tools + Triggers + Metacognition
+This is the Cognition subsystem of the agent ontology:
+Agent = Identity + Cognition + Memory + Behavior
+
+Where Cognition = Reasoning (prompts) + Metacognition (self-regulation)
 """
 
 from typing import Optional, TYPE_CHECKING
