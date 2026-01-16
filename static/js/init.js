@@ -49,17 +49,13 @@ function connectSSE() {
         // Show notification if not on chat tab
         showChatNotification();
 
+        // Request browser notification permission if needed (do this first, outside the check)
+        if (typeof maybeRequestNotificationPermission === 'function') {
+            maybeRequestNotificationPermission();
+        }
         // Show browser notification if appropriate
-        if (typeof shouldShowBrowserNotification === 'function' &&
-            shouldShowBrowserNotification()) {
-            // Request permission if first time
-            if (typeof maybeRequestNotificationPermission === 'function') {
-                maybeRequestNotificationPermission();
-            }
-            // Show browser notification
-            if (typeof showBrowserNotification === 'function') {
-                showBrowserNotification(data.message, data.agent || 'Euno');
-            }
+        if (typeof showBrowserNotification === 'function') {
+            showBrowserNotification(data.message, data.agent || 'Euno');
         }
     });
 
