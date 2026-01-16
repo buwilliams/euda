@@ -1,11 +1,14 @@
 """
-Rate Limiter - Controls LLM API call frequency and detects runaway agents.
+Velocity Awareness - Controls LLM API call frequency and detects runaway agents.
 
 Provides:
 - Rolling window rate limiting (global across all agents)
 - Queue-based throttling for controlled pacing
 - Runaway agent detection via call velocity monitoring
 - Event logging for rate limit events
+
+This module was migrated from src/rate_limiter.py as part of the
+metacognition consolidation.
 """
 
 import json
@@ -17,10 +20,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Set
 
-from .logger import get_logger
+from ..logger import get_logger
+from .config import get_global_config
 
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
 
 
@@ -38,13 +42,15 @@ class AgentPausedError(Exception):
         super().__init__(f"Agent {agent_id} is paused: {reason}")
 
 
-class RateLimiter:
-    """Global rate limiter for LLM API calls.
+class VelocityTracker:
+    """Global velocity tracker for LLM API calls.
 
     Thread-safe implementation that provides:
     - Rolling window rate limiting
     - Queue-based throttling (when enabled)
     - Runaway agent detection via call velocity spikes
+
+    This is the metacognition component for velocity awareness.
     """
 
     def __init__(self):
@@ -66,60 +72,40 @@ class RateLimiter:
         self._throttle_thread: Optional[threading.Thread] = None
         self._throttle_running = False
 
-        # Config caching
-        self._config_cache: Optional[dict] = None
-        self._config_mtime: float = 0
+        # Config - uses metacognition config
+        self._config = get_global_config()
 
         # Logger
         self._logger = get_logger("system/logs/rate-limiting")
 
-    def _load_config(self) -> dict:
-        """Load rate limiting config with file mtime caching."""
-        try:
-            current_mtime = CONFIG_PATH.stat().st_mtime
-            if self._config_cache is not None and current_mtime == self._config_mtime:
-                return self._config_cache
-
-            with open(CONFIG_PATH) as f:
-                config = json.load(f)
-
-            self._config_cache = config.get("llm", {}).get("rate_limiting", {})
-            self._config_mtime = current_mtime
-            return self._config_cache
-        except (FileNotFoundError, json.JSONDecodeError, OSError):
-            return {}
+    def _get_velocity_config(self) -> dict:
+        """Get velocity configuration from metacognition config."""
+        return self._config.get_velocity_config()
 
     def _get_rolling_window_config(self) -> dict:
         """Get rolling window configuration."""
-        config = self._load_config()
-        return config.get("rolling_window", {
-            "max_calls": 30,
-            "window_seconds": 60
-        })
-
-    def _get_throttle_config(self) -> dict:
-        """Get throttle configuration."""
-        config = self._load_config()
-        return config.get("throttle", {
-            "enabled": False,
-            "calls_per_minute": 10,
-            "queue_max_size": 100
-        })
+        config = self._get_velocity_config()
+        return {
+            "max_calls": config.get("max_calls_per_window", 30),
+            "window_seconds": config.get("window_seconds", 60)
+        }
 
     def _get_runaway_config(self) -> dict:
         """Get runaway detection configuration."""
-        config = self._load_config()
-        return config.get("runaway_detection", {
-            "enabled": True,
-            "baseline_window_minutes": 60,
-            "spike_multiplier": 5.0,
-            "min_baseline_calls": 5,
-            "min_spike_rate": 5  # Minimum calls/min before runaway detection triggers
-        })
+        config = self._get_velocity_config()
+        runaway = config.get("runaway_detection", {})
+        return {
+            "enabled": runaway.get("enabled", True),
+            "baseline_window_minutes": runaway.get("baseline_window_minutes", 60),
+            "spike_multiplier": runaway.get("spike_multiplier", 5.0),
+            "min_baseline_calls": runaway.get("min_baseline_calls", 5),
+            "min_spike_rate": runaway.get("min_spike_rate", 5),
+            "pause_cooldown_minutes": runaway.get("pause_cooldown_minutes", 5)
+        }
 
     def is_enabled(self) -> bool:
-        """Check if rate limiting is enabled."""
-        config = self._load_config()
+        """Check if velocity tracking is enabled."""
+        config = self._get_velocity_config()
         return config.get("enabled", True)
 
     def acquire(self, agent_id: Optional[str] = None, job_id: Optional[str] = None) -> bool:
@@ -160,11 +146,6 @@ class RateLimiter:
                     "reason": "rolling_window_exceeded"
                 })
                 raise RateLimitExceeded("Rolling window rate limit exceeded")
-
-            # Handle throttling (queue-based)
-            throttle_config = self._get_throttle_config()
-            if throttle_config.get("enabled", False):
-                return self._handle_throttle(agent_id, job_id)
 
             return True
 
@@ -234,7 +215,7 @@ class RateLimiter:
         baseline_minutes = config.get("baseline_window_minutes", 60)
         spike_mult = config.get("spike_multiplier", 5.0)
         min_calls = config.get("min_baseline_calls", 5)
-        min_spike_rate = config.get("min_spike_rate", 5)  # Absolute minimum before triggering
+        min_spike_rate = config.get("min_spike_rate", 5)
 
         history = self._agent_call_history.get(agent_id)
         if not history:
@@ -264,33 +245,6 @@ class RateLimiter:
 
         return False
 
-    def _handle_throttle(self, agent_id: Optional[str], job_id: Optional[str]) -> bool:
-        """Handle queue-based throttling.
-
-        When throttling is enabled, this enforces a fixed rate of calls
-        by adding delays between calls.
-
-        Returns:
-            True when ready to proceed (after any necessary delay)
-        """
-        config = self._get_throttle_config()
-        calls_per_minute = config.get("calls_per_minute", 10)
-
-        # Calculate delay needed between calls
-        delay_seconds = 60.0 / calls_per_minute
-
-        # Simple delay-based throttling
-        # For more sophisticated queue-based throttling, we'd use a background thread
-        time.sleep(delay_seconds)
-
-        self._log_event("throttle_delay", {
-            "agent_id": agent_id,
-            "job_id": job_id,
-            "delay_seconds": delay_seconds
-        })
-
-        return True
-
     def _pause_agent(self, agent_id: str, reason: str, job_id: Optional[str] = None):
         """Pause an agent due to runaway detection."""
         self._paused_agents.add(agent_id)
@@ -319,13 +273,86 @@ class RateLimiter:
             "spike_multiplier": config.get("spike_multiplier", 5.0)
         })
 
-        print(f"[RATE LIMITER] Agent '{agent_id}' paused: {reason} "
+        print(f"[METACOGNITION] Agent '{agent_id}' paused: {reason} "
               f"(current: {recent_calls}/min, baseline: {baseline_rate:.1f}/min)")
 
     def is_agent_paused(self, agent_id: str) -> bool:
         """Check if an agent is paused."""
         with self._lock:
-            return agent_id in self._paused_agents
+            if agent_id not in self._paused_agents:
+                return False
+
+            # Check if cooldown has expired
+            remaining = self._get_remaining_cooldown_seconds(agent_id)
+            if remaining <= 0:
+                # Auto-resume
+                self._auto_resume_agent(agent_id)
+                return False
+
+            return True
+
+    def _get_remaining_cooldown_seconds(self, agent_id: str) -> int:
+        """Get remaining cooldown time in seconds. Must be called with lock held."""
+        pause_timestamp = self._pause_timestamps.get(agent_id)
+        if not pause_timestamp:
+            return 0
+
+        config = self._get_runaway_config()
+        cooldown_minutes = config.get("pause_cooldown_minutes", 5)
+
+        try:
+            pause_time = datetime.fromisoformat(pause_timestamp)
+            elapsed = (datetime.now() - pause_time).total_seconds()
+            remaining = (cooldown_minutes * 60) - elapsed
+            return max(0, int(remaining))
+        except ValueError:
+            return 0
+
+    def _auto_resume_agent(self, agent_id: str):
+        """Auto-resume an agent after cooldown. Must be called with lock held."""
+        pause_timestamp = self._pause_timestamps.get(agent_id)
+
+        self._paused_agents.discard(agent_id)
+        self._pause_reasons.pop(agent_id, None)
+        self._pause_timestamps.pop(agent_id, None)
+
+        duration_minutes = None
+        if pause_timestamp:
+            try:
+                pause_time = datetime.fromisoformat(pause_timestamp)
+                duration = datetime.now() - pause_time
+                duration_minutes = round(duration.total_seconds() / 60, 1)
+            except ValueError:
+                pass
+
+        self._log_event("agent_resumed", {
+            "agent_id": agent_id,
+            "resumed_by": "cooldown",
+            "paused_duration_minutes": duration_minutes
+        })
+
+        print(f"[METACOGNITION] Agent '{agent_id}' auto-resumed after cooldown")
+
+    def get_pause_info(self, agent_id: str) -> dict:
+        """Get pause information for an agent.
+
+        Returns:
+            Dict with is_paused, reason, remaining_seconds
+        """
+        with self._lock:
+            if agent_id not in self._paused_agents:
+                return {"is_paused": False}
+
+            remaining = self._get_remaining_cooldown_seconds(agent_id)
+            if remaining <= 0:
+                self._auto_resume_agent(agent_id)
+                return {"is_paused": False}
+
+            return {
+                "is_paused": True,
+                "reason": self._pause_reasons.get(agent_id, "unknown"),
+                "remaining_seconds": remaining
+            }
 
     def resume_agent(self, agent_id: str):
         """Resume a paused agent.
@@ -357,18 +384,17 @@ class RateLimiter:
                     "paused_duration_minutes": duration_minutes
                 })
 
-                print(f"[RATE LIMITER] Agent '{agent_id}' resumed")
+                print(f"[METACOGNITION] Agent '{agent_id}' resumed")
 
     def get_status(self) -> dict:
-        """Get current rate limiting status for UI.
+        """Get current velocity tracking status for UI.
 
         Returns:
             Dict with current status information
         """
         with self._lock:
-            config = self._load_config()
+            config = self._get_velocity_config()
             rolling_config = self._get_rolling_window_config()
-            throttle_config = self._get_throttle_config()
             runaway_config = self._get_runaway_config()
 
             now = time.time()
@@ -383,10 +409,6 @@ class RateLimiter:
                     "max_calls": rolling_config.get("max_calls", 30),
                     "window_seconds": window_seconds,
                     "current_calls": calls_in_window
-                },
-                "throttle": {
-                    "enabled": throttle_config.get("enabled", False),
-                    "calls_per_minute": throttle_config.get("calls_per_minute", 10)
                 },
                 "runaway_detection": {
                     "enabled": runaway_config.get("enabled", True),
@@ -403,7 +425,7 @@ class RateLimiter:
             }
 
     def get_agent_stats(self, agent_id: str) -> dict:
-        """Get rate limiting stats for a specific agent.
+        """Get velocity stats for a specific agent.
 
         Args:
             agent_id: ID of the agent
@@ -454,7 +476,7 @@ class RateLimiter:
                 del self._agent_call_history[agent_id]
 
     def _log_event(self, event_type: str, details: dict):
-        """Log a rate limiting event."""
+        """Log a velocity/rate limiting event."""
         self._logger.info({
             "event": event_type,
             **details
@@ -462,20 +484,18 @@ class RateLimiter:
 
     def invalidate_config(self):
         """Invalidate cached config. Call when settings change."""
-        with self._lock:
-            self._config_cache = None
-            self._config_mtime = 0
+        self._config.invalidate()
 
 
 # Singleton instance
-_rate_limiter: Optional[RateLimiter] = None
-_rate_limiter_lock = threading.Lock()
+_velocity_tracker: Optional[VelocityTracker] = None
+_velocity_tracker_lock = threading.Lock()
 
 
-def get_rate_limiter() -> RateLimiter:
-    """Get the global rate limiter instance."""
-    global _rate_limiter
-    with _rate_limiter_lock:
-        if _rate_limiter is None:
-            _rate_limiter = RateLimiter()
-        return _rate_limiter
+def get_velocity_tracker() -> VelocityTracker:
+    """Get the global velocity tracker instance."""
+    global _velocity_tracker
+    with _velocity_tracker_lock:
+        if _velocity_tracker is None:
+            _velocity_tracker = VelocityTracker()
+        return _velocity_tracker

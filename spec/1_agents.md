@@ -174,3 +174,71 @@ Jobs can flow between agents and users via `handoff_job`:
 - Can create and manage other agents
 - Can answer questions about Euno by reading docs/specs
 - Has access to user profile and memory for personalized responses
+
+## Metacognition
+
+Every agent has metacognition — self-awareness and self-regulation capabilities. This is inherent, not optional.
+
+**Agent Ontology:**
+```
+Agent = Profile + Memory + Tools + Triggers + Metacognition
+```
+
+### Velocity Awareness
+
+- Tracks API call frequency globally across all agents
+- Rolling window rate limiting (default: 30 calls per 60 seconds)
+- Runaway detection pauses agents making too many calls too fast
+- Paused agents auto-resume after cooldown period
+- Configuration in `data/system/config.json` under `metacognition.velocity`
+
+### Resource Awareness
+
+- Tracks API costs per agent and per job
+- Enforces budget limits with warnings at 80% and 95%
+- Logs all LLM usage to daily cost files
+- Configuration in `metacognition.resources`
+
+### Action Awareness
+
+- Counts tool calls per iteration
+- Breaks out of tool loop when limit reached (default: 50)
+- Prevents infinite loops within a single chat
+- Configuration in `metacognition.progress.max_tool_calls_per_iteration`
+
+### Progress Awareness
+
+- Detects stuck patterns: same tool called repeatedly with identical inputs
+- Breaks work cycle when stuck detected
+- Configurable thresholds in `metacognition.progress`
+
+### Strategic Planning
+
+- Planning phase for complex operations (exploration, reflection)
+- Creates a brief approach plan before execution
+- Plan is injected into the working prompt for context
+- Configured in `metacognition.planning.enabled_for`
+
+### Efficiency Optimization
+
+- Batches reflection at end of work cycle instead of per-iteration
+- Reduces LLM calls during autonomous work
+- Single LLM call processes all exchanges from the cycle
+- Configured in `metacognition.efficiency.defer_reflection_in_work_cycles`
+
+### Configuration
+
+System-wide defaults in `data/system/config.json`:
+```json
+{
+  "metacognition": {
+    "velocity": { "enabled": true, "max_calls_per_window": 30 },
+    "resources": { "budget_limit": 10.0 },
+    "progress": { "max_tool_calls_per_iteration": 50 },
+    "planning": { "enabled_for": ["exploration", "reflection"] },
+    "efficiency": { "defer_reflection_in_work_cycles": true }
+  }
+}
+```
+
+Individual agents can override specific settings in their `config.json` but rarely need to.

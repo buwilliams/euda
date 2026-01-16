@@ -51,6 +51,49 @@ def build_append_prompt(
     )
 
 
+def build_append_batch_prompt(
+    agent_profile: str,
+    existing_memory: list,
+    exchanges: list
+) -> str:
+    """Build the user prompt for batched append phase.
+
+    Args:
+        agent_profile: The agent's current profile
+        existing_memory: Current short-term memory items
+        exchanges: List of (user_message, assistant_response) tuples
+
+    Returns:
+        Formatted prompt string
+    """
+    # Format existing memory for context
+    if existing_memory:
+        memory_lines = []
+        for item in existing_memory:
+            memory_lines.append(f"- [{item.get('type')}] {item.get('short_description')}")
+        memory_text = "\n".join(memory_lines)
+    else:
+        memory_text = "(empty)"
+
+    # Format all exchanges
+    exchange_lines = []
+    for i, (user_msg, assistant_msg) in enumerate(exchanges, 1):
+        exchange_lines.append(f"### Exchange {i}")
+        exchange_lines.append(f"**User:** {user_msg}")
+        exchange_lines.append(f"**Assistant:** {assistant_msg}")
+        exchange_lines.append("")
+
+    exchanges_text = "\n".join(exchange_lines)
+
+    return render_template(
+        "reflection/append_batch_user",
+        agent_profile=agent_profile,
+        existing_memory=memory_text,
+        exchanges=exchanges_text,
+        exchange_count=len(exchanges)
+    )
+
+
 # =============================================================================
 # Consolidate Phase Prompts
 # =============================================================================

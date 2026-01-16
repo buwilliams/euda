@@ -1,8 +1,11 @@
 """
-Cost Tracker - Tracks API costs and enforces budget limits.
+Resource Awareness - Tracks API costs and enforces budget limits.
 
 Provides centralized cost tracking for all LLM API calls. Costs are recorded
 by agents after each LLM call and persisted to daily log files.
+
+This module was migrated from src/cost_tracker.py as part of the
+metacognition consolidation.
 """
 
 import json
@@ -11,10 +14,11 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
-from .logger import get_logger
+from ..logger import get_logger
+from .config import get_global_config
 
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
 COSTS_DIR = DATA_DIR / "agents" / "user" / "costs"
 
@@ -28,31 +32,31 @@ DEFAULT_PRICING = {
     "output": 15.00,
 }
 
-# Cached config from file
-_config_cache: dict = None
+# Cached config from file (for pricing lookups)
+_llm_config_cache: dict = None
 
 
-def _load_config() -> dict:
-    """Load and cache config.json."""
-    global _config_cache
-    if _config_cache is not None:
-        return _config_cache
+def _load_llm_config() -> dict:
+    """Load and cache LLM config.json for pricing."""
+    global _llm_config_cache
+    if _llm_config_cache is not None:
+        return _llm_config_cache
 
     if CONFIG_PATH.exists():
         try:
             with open(CONFIG_PATH) as f:
-                _config_cache = json.load(f)
-                return _config_cache
+                _llm_config_cache = json.load(f)
+                return _llm_config_cache
         except (json.JSONDecodeError, IOError):
             pass
 
-    _config_cache = {}
-    return _config_cache
+    _llm_config_cache = {}
+    return _llm_config_cache
 
 
 def _get_provider_pricing(provider: str) -> dict:
     """Get pricing for a provider from config."""
-    config = _load_config()
+    config = _load_llm_config()
     llm = config.get("llm", {})
     providers = llm.get("providers", {})
 
@@ -75,8 +79,11 @@ class BudgetExceeded(Exception):
         super().__init__(f"Budget exceeded: ${spent:.4f} spent of ${budget:.2f} limit")
 
 
-class CostTracker:
-    """Tracks cumulative API costs and enforces budget limits."""
+class ResourceTracker:
+    """Tracks cumulative API costs and enforces budget limits.
+
+    This is the metacognition component for resource awareness.
+    """
 
     def __init__(self):
         self.budget: Optional[float] = None
@@ -89,18 +96,28 @@ class CostTracker:
         self._start_time = datetime.now()
         self._warned_thresholds: set = set()
 
+        # Config - uses metacognition config
+        self._config = get_global_config()
+
         # Load budget from config
         budget = self._load_budget_from_config()
         if budget is not None:
             self.set_budget(budget)
 
-    @staticmethod
-    def _load_budget_from_config() -> Optional[float]:
+    def _load_budget_from_config(self) -> Optional[float]:
         """Load budget limit from system config."""
-        config = _load_config()
+        # First try metacognition config
+        resources_config = self._config.get_resources_config()
+        budget = resources_config.get("budget_limit")
+        if budget is not None and budget > 0:
+            return float(budget)
+
+        # Fall back to legacy llm.budget_limit
+        config = _load_llm_config()
         budget = config.get("llm", {}).get("budget_limit")
         if budget is not None and budget > 0:
             return float(budget)
+
         return None
 
     @staticmethod
@@ -138,7 +155,7 @@ class CostTracker:
         entries = []
         current = start_date
         while current <= end_date:
-            entries.extend(CostTracker._load_costs_for_date(current))
+            entries.extend(ResourceTracker._load_costs_for_date(current))
             current += timedelta(days=1)
         return entries
 
@@ -147,7 +164,7 @@ class CostTracker:
         with self._lock:
             self.budget = dollars
             self._warned_thresholds.clear()
-            print(f"[CostTracker] Budget set: ${dollars:.2f}")
+            print(f"[METACOGNITION] Budget set: ${dollars:.2f}")
 
     def get_pricing(self, provider: str) -> dict:
         """Get pricing for a provider from config."""
@@ -240,9 +257,9 @@ class CostTracker:
         self._append_cost_entry(log_entry)
 
         if should_warn_95:
-            print(f"[CostTracker] WARNING: 95% of budget used (${total_cost:.4f} / ${budget:.2f})")
+            print(f"[METACOGNITION] WARNING: 95% of budget used (${total_cost:.4f} / ${budget:.2f})")
         elif should_warn_80:
-            print(f"[CostTracker] WARNING: 80% of budget used (${total_cost:.4f} / ${budget:.2f})")
+            print(f"[METACOGNITION] WARNING: 80% of budget used (${total_cost:.4f} / ${budget:.2f})")
 
         if should_raise:
             raise BudgetExceeded(budget, total_cost)
@@ -406,7 +423,7 @@ class CostTracker:
         stats = self.get_stats()
         lines = [
             "=" * 50,
-            "Cost Tracker Summary",
+            "Resource Tracker Summary",
             "=" * 50,
             f"Total Cost:    ${stats['total_cost']:.4f}",
         ]
@@ -428,31 +445,37 @@ class CostTracker:
 
         return "\n".join(lines)
 
+    def invalidate_config(self):
+        """Invalidate cached config. Call when settings change."""
+        global _llm_config_cache
+        _llm_config_cache = None
+        self._config.invalidate()
+
 
 # Global singleton instance
-_tracker: CostTracker = None
+_tracker: ResourceTracker = None
 _tracker_lock = threading.Lock()
 
 
-def get_tracker() -> CostTracker:
-    """Get the global cost tracker instance."""
+def get_resource_tracker() -> ResourceTracker:
+    """Get the global resource tracker instance."""
     global _tracker
     with _tracker_lock:
         if _tracker is None:
-            _tracker = CostTracker()
+            _tracker = ResourceTracker()
         return _tracker
 
 
 def set_budget(dollars: float):
     """Set the global budget limit."""
-    get_tracker().set_budget(dollars)
+    get_resource_tracker().set_budget(dollars)
 
 
 def record_usage(provider: str, model: str, input_tokens: int, output_tokens: int,
                  cached_input_tokens: int = 0, agent_id: str = None, job_id: str = None,
                  stop_reason: str = None, duration_ms: int = None):
     """Record usage to the global tracker."""
-    get_tracker().record_usage(
+    get_resource_tracker().record_usage(
         provider, model, input_tokens, output_tokens, cached_input_tokens,
         agent_id, job_id, stop_reason, duration_ms
     )
@@ -460,34 +483,34 @@ def record_usage(provider: str, model: str, input_tokens: int, output_tokens: in
 
 def get_calls_by_job(job_id: str, days: int = 7) -> list:
     """Get all API calls for a specific job."""
-    return get_tracker().get_calls_by_job(job_id, days)
+    return get_resource_tracker().get_calls_by_job(job_id, days)
 
 
 def get_job_call_count(job_id: str, days: int = 7) -> dict:
     """Get count and cost summary for a specific job."""
-    return get_tracker().get_job_call_count(job_id, days)
+    return get_resource_tracker().get_job_call_count(job_id, days)
 
 
 def check_budget():
     """Check if global budget exceeded."""
-    get_tracker().check_budget()
+    get_resource_tracker().check_budget()
 
 
 def get_stats() -> dict:
     """Get global usage stats."""
-    return get_tracker().get_stats()
+    return get_resource_tracker().get_stats()
 
 
 def get_cost_summary() -> dict:
     """Get cost summary for session, today, 7 days, and this month."""
-    return get_tracker().get_summary()
+    return get_resource_tracker().get_summary()
 
 
 def get_costs_by_agent(days: int = 30) -> dict:
     """Get cost breakdown by agent for the specified number of days."""
-    return get_tracker().get_costs_by_agent(days)
+    return get_resource_tracker().get_costs_by_agent(days)
 
 
-def print_cost_summary():
+def print_resource_summary():
     """Print usage summary to console."""
-    print(get_tracker().format_stats())
+    print(get_resource_tracker().format_stats())

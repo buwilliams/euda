@@ -312,13 +312,12 @@ class UnifiedClient:
             AgentPausedError: If agent is paused due to runaway detection
             RateLimitExceeded: If rate limit exceeded
         """
-        from ..cost_tracker import check_budget, record_usage
-        from ..rate_limiter import get_rate_limiter
+        from ..metacognition import check_budget, record_usage, get_velocity_tracker
 
-        rate_limiter = get_rate_limiter()
+        velocity_tracker = get_velocity_tracker()
 
-        # 1. Pre-call: check rate limits and runaway detection
-        rate_limiter.acquire(agent_id, job_id)
+        # 1. Pre-call: check velocity limits and runaway detection
+        velocity_tracker.acquire(agent_id, job_id)
 
         # 2. Pre-call: check budget
         if track_cost:
@@ -350,8 +349,8 @@ class UnifiedClient:
         # 5. Post-call: reset backoff on success
         self._reset_backoff()
 
-        # 6. Post-call: record for rate limiting
-        rate_limiter.record_call(agent_id, job_id)
+        # 6. Post-call: record for velocity tracking
+        velocity_tracker.record_call(agent_id, job_id)
 
         # 7. Post-call: record usage automatically
         if track_cost:
