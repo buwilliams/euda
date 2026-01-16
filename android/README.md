@@ -33,7 +33,7 @@ Android WebView client for Euno personal intelligence.
 
 ### Android Studio
 
-1. Open the `android-app` folder in Android Studio
+1. Open the `android` folder in Android Studio
 2. Sync Gradle files
 3. Run on device or emulator
 

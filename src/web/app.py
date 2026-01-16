@@ -82,11 +82,11 @@ app.include_router(transcribe.router, prefix="/api/transcribe", tags=["transcrib
 app.include_router(synthesize.router, prefix="/api/synthesize", tags=["synthesize"])
 app.include_router(rate_limiting.router, prefix="/api/rate-limiting", tags=["rate-limiting"])
 
-# Serve static files
-static_dir = Path(__file__).parent.parent.parent / "static"
-if static_dir.exists():
-    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+# Serve static files from web/ directory (URL path stays /static for compatibility)
+web_dir = Path(__file__).parent.parent.parent / "web"
+if web_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(web_dir)), name="static")
 
     @app.get("/")
     def serve_index():
-        return FileResponse(static_dir / "index.html")
+        return FileResponse(web_dir / "index.html")
