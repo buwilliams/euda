@@ -293,8 +293,9 @@ class Agent:
                 from .tools.data.jobs import get_job
                 job = get_job(job_context)
                 if job:
-                    prompt += "\n\n## Current Job Context\n"
-                    prompt += "The user is currently viewing this job in the Focus tab:\n"
+                    prompt += "\n\n## Immediate Conversation Context\n"
+                    prompt += "**This is NOT memory.** The user has a specific job open in the Focus tab right now and is asking about it.\n\n"
+                    prompt += "**Job they're viewing:**\n"
                     prompt += f"- **Name**: {job.get('name', 'Unknown')}\n"
                     if job.get('description'):
                         prompt += f"- **Description**: {job.get('description')}\n"
@@ -305,7 +306,7 @@ class Agent:
                     if job.get('due_date'):
                         prompt += f"- **Due**: {job.get('due_date')}\n"
                     prompt += f"- **Job ID**: {job_context}\n"
-                    prompt += "\nThe user's message likely relates to this job. Use this context to provide relevant assistance."
+                    prompt += "\n**Assume the user's message is about this job** unless they clearly indicate otherwise. Respond in context of this specific job."
             except Exception as e:
                 # Silently ignore errors loading job context
                 pass
