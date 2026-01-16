@@ -256,8 +256,10 @@ class AgentManager:
 
         today = datetime.now().strftime("%Y-%m-%d")
         system_container = get_system_container()
+        stagger_seconds = self._get_system_config().get("agents", {}).get("trigger_stagger_seconds", 30)
 
-        # Create system:start trigger jobs for subscribed agents
+        # Collect agents that need system:start trigger jobs
+        agents_to_start = []
         print("[startup] Creating system:start trigger jobs")
         for agent_id, agent in self.agents.items():
             config = agent.config
@@ -273,16 +275,24 @@ class AgentManager:
                 already_exists = any(j["name"] == job_name for j in existing)
 
                 if not already_exists:
-                    print(f"[startup] Creating trigger job: {job_name} for {agent_id}")
-                    create_job(
-                        name=job_name,
-                        description="System startup trigger",
-                        parent_id=system_container["id"],
-                        assignees=[agent_id],
-                        tags=["trigger:start"],
-                        due_date=None,
-                        created_by="system"
-                    )
+                    agents_to_start.append((agent_id, job_name))
+
+        # Create system:start trigger jobs with staggered delays
+        for idx, (agent_id, job_name) in enumerate(agents_to_start):
+            if idx > 0 and stagger_seconds > 0:
+                print(f"[startup] Staggering next trigger by {stagger_seconds}s...")
+                time.sleep(stagger_seconds)
+
+            print(f"[startup] Creating trigger job: {job_name} for {agent_id}")
+            create_job(
+                name=job_name,
+                description="System startup trigger",
+                parent_id=system_container["id"],
+                assignees=[agent_id],
+                tags=["trigger:start"],
+                due_date=None,
+                created_by="system"
+            )
 
         # Check for missed morning/evening triggers
         missed = self._check_missed_triggers()
@@ -292,6 +302,8 @@ class AgentManager:
             for trigger in missed:
                 trigger_type = trigger.split(":")[1]  # "morning" or "evening"
 
+                # Collect agents that need missed trigger jobs
+                agents_for_missed = []
                 for agent_id, agent in self.agents.items():
                     config = agent.config
                     if not config.get("enabled", True):
@@ -306,16 +318,24 @@ class AgentManager:
                         already_exists = any(j["name"] == job_name for j in existing)
 
                         if not already_exists:
-                            print(f"[startup] Creating missed trigger job: {job_name} for {agent_id}")
-                            create_job(
-                                name=job_name,
-                                description=f"Missed {trigger} trigger",
-                                parent_id=system_container["id"],
-                                assignees=[agent_id],
-                                tags=[f"trigger:{trigger_type}"],
-                                due_date=None,
-                                created_by="system"
-                            )
+                            agents_for_missed.append((agent_id, job_name, trigger_type))
+
+                # Create missed trigger jobs with staggered delays
+                for idx, (agent_id, job_name, trigger_type) in enumerate(agents_for_missed):
+                    if idx > 0 and stagger_seconds > 0:
+                        print(f"[startup] Staggering next missed trigger by {stagger_seconds}s...")
+                        time.sleep(stagger_seconds)
+
+                    print(f"[startup] Creating missed trigger job: {job_name} for {agent_id}")
+                    create_job(
+                        name=job_name,
+                        description=f"Missed {trigger} trigger",
+                        parent_id=system_container["id"],
+                        assignees=[agent_id],
+                        tags=[f"trigger:{trigger_type}"],
+                        due_date=None,
+                        created_by="system"
+                    )
 
             # Update state to mark these as "handled" by setting them to today
             state = self._get_system_state()
@@ -434,7 +454,7 @@ class AgentManager:
                     agent._log("transient_error_retry", {"delay_seconds": 5})
                     time.sleep(5)
 
-    def _create_reflection_jobs(self, trigger_name: str):
+    def _create_reflection_jobs(self, trigger_name: str, stagger_seconds: int = 30):
         """Create reflection jobs for agents with matching reflection trigger.
 
         Reflection is now a first-class behavioral trigger. Instead of running
@@ -443,13 +463,15 @@ class AgentManager:
 
         Args:
             trigger_name: The trigger that fired (e.g., "time:evening")
+            stagger_seconds: Delay between creating jobs for different agents
         """
         from .tools.data.jobs import create_job, list_jobs, get_system_container
-        from datetime import datetime
 
         system_container = get_system_container()
         today = datetime.now().strftime("%Y-%m-%d")
 
+        # Collect agents that need reflection jobs
+        agents_to_reflect = []
         for agent_id, agent in self.agents.items():
             if not agent.config.get("enabled", True):
                 continue
@@ -469,18 +491,26 @@ class AgentManager:
                 already_exists = any(j["name"] == job_name for j in existing)
 
                 if not already_exists:
-                    print(f"[scheduler] Creating reflection job for {agent_id}")
-                    create_job(
-                        name=job_name,
-                        description="Scheduled reflection: review memories, evolve profile, graduate learnings",
-                        parent_id=system_container["id"],
-                        assignees=[agent_id],
-                        tags=["trigger:reflection"],
-                        due_date=None,
-                        created_by="system"
-                    )
+                    agents_to_reflect.append((agent_id, job_name))
 
-    def _create_exploration_jobs(self, trigger_name: str):
+        # Create reflection jobs with staggered delays
+        for idx, (agent_id, job_name) in enumerate(agents_to_reflect):
+            if idx > 0 and stagger_seconds > 0:
+                print(f"[scheduler] Staggering next reflection by {stagger_seconds}s...")
+                time.sleep(stagger_seconds)
+
+            print(f"[scheduler] Creating reflection job for {agent_id}")
+            create_job(
+                name=job_name,
+                description="Scheduled reflection: review memories, evolve profile, graduate learnings",
+                parent_id=system_container["id"],
+                assignees=[agent_id],
+                tags=["trigger:reflection"],
+                due_date=None,
+                created_by="system"
+            )
+
+    def _create_exploration_jobs(self, trigger_name: str, stagger_seconds: int = 30):
         """Create exploration jobs for agents with matching exploration trigger.
 
         Exploration is a first-class behavioral trigger for scheduled discovery.
@@ -489,13 +519,15 @@ class AgentManager:
 
         Args:
             trigger_name: The trigger that fired (e.g., "time:hour_04")
+            stagger_seconds: Delay between creating jobs for different agents
         """
         from .tools.data.jobs import create_job, list_jobs, get_system_container
-        from datetime import datetime
 
         system_container = get_system_container()
         today = datetime.now().strftime("%Y-%m-%d")
 
+        # Collect agents that need exploration jobs
+        agents_to_explore = []
         for agent_id, agent in self.agents.items():
             if not agent.config.get("enabled", True):
                 continue
@@ -510,8 +542,6 @@ class AgentManager:
                 continue
 
             if trigger_name == exploration_trigger:
-                # Extract schedule name from trigger (e.g., "time:hour_04" -> "hour_04")
-                schedule_name = trigger_name.replace("time:", "") if trigger_name.startswith("time:") else trigger_name
                 job_name = f"Trigger:exploration:{today}"
 
                 # Check if exploration job already exists for this agent today
@@ -519,16 +549,24 @@ class AgentManager:
                 already_exists = any(j["name"] == job_name for j in existing)
 
                 if not already_exists:
-                    print(f"[scheduler] Creating exploration job for {agent_id}")
-                    create_job(
-                        name=job_name,
-                        description="Scheduled exploration: research opportunities, create suggestions for user",
-                        parent_id=system_container["id"],
-                        assignees=[agent_id],
-                        tags=["trigger:exploration"],
-                        due_date=None,
-                        created_by="system"
-                    )
+                    agents_to_explore.append((agent_id, job_name))
+
+        # Create exploration jobs with staggered delays
+        for idx, (agent_id, job_name) in enumerate(agents_to_explore):
+            if idx > 0 and stagger_seconds > 0:
+                print(f"[scheduler] Staggering next exploration by {stagger_seconds}s...")
+                time.sleep(stagger_seconds)
+
+            print(f"[scheduler] Creating exploration job for {agent_id}")
+            create_job(
+                name=job_name,
+                description="Scheduled exploration: research opportunities, create suggestions for user",
+                parent_id=system_container["id"],
+                assignees=[agent_id],
+                tags=["trigger:exploration"],
+                due_date=None,
+                created_by="system"
+            )
 
     def _run_time_scheduler(self):
         """Background thread that creates trigger jobs based on schedules."""
@@ -544,7 +582,9 @@ class AgentManager:
                 current_key = now.strftime("%Y-%m-%d-%H-%M")
                 today = now.strftime("%Y-%m-%d")
 
-                schedules = self._get_system_config().get("schedules", {})
+                config = self._get_system_config()
+                schedules = config.get("schedules", {})
+                stagger_seconds = config.get("agents", {}).get("trigger_stagger_seconds", 30)
 
                 for name, schedule in schedules.items():
                     fire_key = f"{name}:{current_key}"
@@ -567,12 +607,13 @@ class AgentManager:
                         last_fired[name] = fire_key
                         trigger_name = f"time:{name}"
 
-                        # Create trigger jobs for agents subscribed to this trigger
+                        # Collect agents that need trigger jobs
+                        agents_to_trigger = []
                         for agent_id, agent in self.agents.items():
-                            config = agent.config
-                            if not config.get("enabled", True):
+                            agent_config = agent.config
+                            if not agent_config.get("enabled", True):
                                 continue
-                            triggers = config.get("triggers", [])
+                            triggers = agent_config.get("triggers", [])
                             if trigger_name in triggers:
                                 job_name = f"Trigger:{name}:{today}"
 
@@ -581,16 +622,24 @@ class AgentManager:
                                 already_exists = any(j["name"] == job_name for j in existing)
 
                                 if not already_exists:
-                                    print(f"[scheduler] Creating trigger job: {job_name} for {agent_id}")
-                                    create_job(
-                                        name=job_name,
-                                        description=f"Scheduled trigger for {trigger_name}",
-                                        parent_id=system_container["id"],
-                                        assignees=[agent_id],
-                                        tags=[f"trigger:{name}"],
-                                        due_date=None,
-                                        created_by="system"
-                                    )
+                                    agents_to_trigger.append((agent_id, job_name))
+
+                        # Create trigger jobs with staggered delays
+                        for idx, (agent_id, job_name) in enumerate(agents_to_trigger):
+                            if idx > 0 and stagger_seconds > 0:
+                                print(f"[scheduler] Staggering next trigger by {stagger_seconds}s...")
+                                time.sleep(stagger_seconds)
+
+                            print(f"[scheduler] Creating trigger job: {job_name} for {agent_id}")
+                            create_job(
+                                name=job_name,
+                                description=f"Scheduled trigger for {trigger_name}",
+                                parent_id=system_container["id"],
+                                assignees=[agent_id],
+                                tags=[f"trigger:{name}"],
+                                due_date=None,
+                                created_by="system"
+                            )
 
                         # Save state for morning/evening triggers
                         if name in ["morning", "evening"]:
@@ -599,10 +648,10 @@ class AgentManager:
                             self._save_system_state(state)
 
                         # Create reflection jobs for agents with matching reflection trigger
-                        self._create_reflection_jobs(trigger_name)
+                        self._create_reflection_jobs(trigger_name, stagger_seconds)
 
                         # Create exploration jobs for agents with matching exploration trigger
-                        self._create_exploration_jobs(trigger_name)
+                        self._create_exploration_jobs(trigger_name, stagger_seconds)
 
             except Exception as e:
                 print(f"Scheduler error: {e}")

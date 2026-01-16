@@ -2,8 +2,8 @@
   "version": "3.0.0",
   "initialized": true,
   "llm": {
-    "provider": "openai",
-    "budget_limit": 4.0,
+    "provider": "anthropic",
+    "budget_limit": 10.0,
     "default_pricing": {
       "input": 3.0,
       "cached_input": 0.3,
@@ -73,7 +73,8 @@
   },
   "agents": {
     "max_work_iterations": 20,
-    "poll_interval": 0.1
+    "poll_interval": 0.1,
+    "trigger_stagger_seconds": 30
   },
   "schedules": {
     "morning": "08:00",
@@ -84,5 +85,15 @@
     "hour_06": "06:00",
     "hour_12": "12:00",
     "hour_18": "18:00"
+  },
+  "nextcloud": {
+    "instances": {
+      "nundrum": {
+        "display_name": "Nundrum.net",
+        "url": "https://www.nundrum.net/nextcloud",
+        "username": "robbie"
+      }
+    },
+    "default_instance": "nundrum"
   }
 }
