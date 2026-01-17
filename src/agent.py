@@ -382,12 +382,8 @@ class Agent:
             user_memory=user_memory
         )
 
-<<<<<<< HEAD
     def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True,
-             voice_input: bool = False, defer_reflection: bool = False) -> str:
-=======
-    def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True, voice_input: bool = False, job_context: str = None) -> str:
->>>>>>> a369bd6 (Add job context to chat when viewing tasks in Focus tab)
+             voice_input: bool = False, defer_reflection: bool = False, job_context: str = None) -> str:
         """Process a chat message and return response.
 
         Args:
@@ -395,11 +391,8 @@ class Agent:
             log_to_memory: Whether to log this conversation to long-term memory (default True)
             save_to_history: Whether to save to conversation history (default True)
             voice_input: Whether input came from voice (enables conversational response style)
-<<<<<<< HEAD
             defer_reflection: If True, skip reflection append (caller will batch it)
-=======
             job_context: Optional job ID the user is viewing (adds job details to context)
->>>>>>> a369bd6 (Add job context to chat when viewing tasks in Focus tab)
         """
         self._log("chat_start", {"message_length": len(message)})
 

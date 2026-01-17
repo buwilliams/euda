@@ -56,7 +56,7 @@ def api_chat(request: ChatRequest) -> ChatResponse:
     agent.set_session(request.session_id)
 
     try:
-        response = agent.chat(request.message, voice_input=request.voice_input)
+        response = agent.chat(request.message, voice_input=request.voice_input, job_context=request.job_context)
     except AgentPausedError as e:
         # Get remaining cooldown time
         velocity_tracker = get_velocity_tracker()
