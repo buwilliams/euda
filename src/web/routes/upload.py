@@ -7,12 +7,11 @@ Handles file uploads by:
 3. Chat agent processes the job asynchronously using existing asset tools
 """
 
-from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File
 
-from ...tools.data.jobs import create_job
+from ...tools.data.jobs import create_job, get_agent_inbox_job
 from ...tools.data.assets import write_asset_bytes
 from ...tools.data.memory import add_memory
 
@@ -54,7 +53,10 @@ async def upload_file(file: UploadFile = File(...)):
     file_size_str = f"{file_size / 1024:.1f}KB" if file_size >= 1024 else f"{file_size}B"
     is_text = is_text_file(filename)
 
-    # Create job for Chat agent
+    # Create job in Chat's inbox for processing
+    chat_inbox = get_agent_inbox_job("chat")
+    parent_id = chat_inbox["id"] if chat_inbox else None
+
     job = create_job(
         name=f"Analyze upload: {filename}",
         description=f"""A file has been uploaded for analysis.
@@ -68,6 +70,7 @@ Type: {"text" if is_text else "binary"}
 After processing, complete this job with `complete_job`.""",
         tags=["upload", "analysis"],
         assignees=["chat"],
+        parent_id=parent_id,
         created_by="user"
     )
 
