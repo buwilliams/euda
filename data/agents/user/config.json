@@ -1,0 +1,21 @@
+{
+  "id": "user",
+  "name": "User",
+  "enabled": true,
+  "tools": [
+    "done_working",
+    "list_memory",
+    "read_long_term_memory",
+    "list_long_term_memory_dates",
+    "update_user_profile",
+    "graduate_memory"
+  ],
+  "triggers": [],
+  "exploration": {
+    "enabled": false
+  },
+  "reflection": {
+    "enabled": true,
+    "trigger": "time:evening"
+  }
+}
