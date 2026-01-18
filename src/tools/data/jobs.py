@@ -499,7 +499,9 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
     _emit_jobs_update()
 
     # Record completion for velocity tracking (helps distinguish legitimate work from runaway)
-    get_velocity_tracker().record_completion(agent, job_id)
+    # Use assignees from job, not the agent parameter (which may be "assistant" or similar)
+    for assignee in job.get("assignees", []):
+        get_velocity_tracker().record_completion(assignee, job_id)
 
     return _load_job(job_id)
 
