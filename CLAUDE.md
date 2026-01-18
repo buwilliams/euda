@@ -116,7 +116,7 @@ euno/
 │   ├── 2_data.md
 │   ├── 3_backend.md
 │   └── 4_ux_ui.md
-├── static/                 # Web UI
+├── web/                    # Web UI
 └── devops/                 # Deployment scripts
 ```
 

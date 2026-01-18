@@ -17,7 +17,7 @@ let pendingRender = false;   // Track if a render is pending after animation
 
 function icon(name, className = '') {
     const cls = className ? ` class="${className}"` : '';
-    return `<img src="/static/icons/${name}.svg" alt="${name}"${cls}>`;
+    return `<img src="/web/icons/${name}.svg" alt="${name}"${cls}>`;
 }
 
 // ============== Focus Tab Navigation ==============
