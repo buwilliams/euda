@@ -526,22 +526,27 @@ def cmd_fresh_start(args):
     import shutil
     from pathlib import Path
 
+    CORE_AGENTS = {"chat", "user", "worker"}
+
     print("=" * 60)
     print("Euno - Fresh Start")
     print("=" * 60)
     print()
     print("This will DELETE:")
-    print("  - All long-term memory entries")
-    print("  - User profile")
-    print("  - Cost tracking history")
+    print("  - All agent memory (short-term and long-term)")
+    print("  - All agent logs, state, and conversation history")
     print("  - All jobs and job assets")
-    print("  - All agent logs, state, memory, and conversation history")
+    print("  - Cost tracking history")
     print("  - Reflection logs")
     print("  - System trigger state")
     print("  - Password (if set)")
+    print("  - Non-core agents (anything except chat, user, worker)")
+    print()
+    print("This will RESET:")
+    print("  - Core agent identities (from identity.md.example templates)")
     print()
     print("This will KEEP:")
-    print("  - Agent configurations and profiles")
+    print("  - Agent configurations")
     print("  - System configuration")
     print()
 
@@ -552,6 +557,7 @@ def cmd_fresh_start(args):
 
     data_dir = Path(__file__).parent / "data"
     deleted = []
+    reset = []
 
     # 1. Clear user data (costs)
     user_dir = data_dir / "agents" / "user"
@@ -583,31 +589,56 @@ def cmd_fresh_start(args):
             shutil.rmtree(assets_dir)
             deleted.append("jobs/assets/")
 
-    # 3. Clear agent logs, state, and memory (keep config and profile)
+    # 3. Process agents - clear data for core agents, remove non-core agents entirely
     agents_dir = data_dir / "agents"
     if agents_dir.exists():
         for agent_dir in agents_dir.iterdir():
             if agent_dir.is_dir():
-                # Remove logs
-                logs_dir = agent_dir / "logs"
-                if logs_dir.exists():
-                    shutil.rmtree(logs_dir)
-                    deleted.append(f"agents/{agent_dir.name}/logs/")
-                # Remove state directory (conversation history, memory)
-                state_dir = agent_dir / "state"
-                if state_dir.exists():
-                    shutil.rmtree(state_dir)
-                    deleted.append(f"agents/{agent_dir.name}/state/")
-                # Remove state.json (last_ran timestamp)
-                state_file = agent_dir / "state.json"
-                if state_file.exists():
-                    state_file.unlink()
-                    deleted.append(f"agents/{agent_dir.name}/state.json")
-                # Remove memory directory (short-term and long-term)
-                memory_dir = agent_dir / "memory"
-                if memory_dir.exists():
-                    shutil.rmtree(memory_dir)
-                    deleted.append(f"agents/{agent_dir.name}/memory/")
+                agent_id = agent_dir.name
+
+                if agent_id in CORE_AGENTS:
+                    # Core agent: clear logs, state, memory but keep config
+                    # Remove logs
+                    logs_dir = agent_dir / "logs"
+                    if logs_dir.exists():
+                        shutil.rmtree(logs_dir)
+                        deleted.append(f"agents/{agent_id}/logs/")
+                    # Remove state directory (conversation history)
+                    state_dir = agent_dir / "state"
+                    if state_dir.exists():
+                        shutil.rmtree(state_dir)
+                        deleted.append(f"agents/{agent_id}/state/")
+                    # Remove state.json (last_ran timestamp)
+                    state_file = agent_dir / "state.json"
+                    if state_file.exists():
+                        state_file.unlink()
+                        deleted.append(f"agents/{agent_id}/state.json")
+                    # Remove memory directory (short-term and long-term)
+                    memory_dir = agent_dir / "memory"
+                    if memory_dir.exists():
+                        shutil.rmtree(memory_dir)
+                        deleted.append(f"agents/{agent_id}/memory/")
+                    # Remove uploads directory (user agent)
+                    uploads_dir = agent_dir / "uploads"
+                    if uploads_dir.exists():
+                        shutil.rmtree(uploads_dir)
+                        deleted.append(f"agents/{agent_id}/uploads/")
+
+                    # Reset identity from template if available
+                    identity_template = agent_dir / "identity.md.example"
+                    identity_file = agent_dir / "identity.md"
+                    if identity_template.exists():
+                        template_content = identity_template.read_text()
+                        identity_file.write_text(template_content)
+                        reset.append(f"agents/{agent_id}/identity.md")
+                    elif identity_file.exists():
+                        # No template, just remove the identity
+                        identity_file.unlink()
+                        deleted.append(f"agents/{agent_id}/identity.md")
+                else:
+                    # Non-core agent: remove entirely
+                    shutil.rmtree(agent_dir)
+                    deleted.append(f"agents/{agent_id}/ (entire agent)")
 
     # 4. Remove system state, logs, and password
     system_dir = data_dir / "system"
@@ -629,11 +660,18 @@ def cmd_fresh_start(args):
             deleted.append("system/logs/reflection/")
 
     print()
-    print(f"Deleted {len(deleted)} items:")
-    for item in deleted[:10]:
-        print(f"  - {item}")
-    if len(deleted) > 10:
-        print(f"  ... and {len(deleted) - 10} more")
+    if deleted:
+        print(f"Deleted {len(deleted)} items:")
+        for item in deleted[:10]:
+            print(f"  - {item}")
+        if len(deleted) > 10:
+            print(f"  ... and {len(deleted) - 10} more")
+
+    if reset:
+        print()
+        print(f"Reset {len(reset)} identities from templates:")
+        for item in reset:
+            print(f"  - {item}")
 
     print()
     print("Fresh start complete. Ready for new data.")

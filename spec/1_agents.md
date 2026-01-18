@@ -61,24 +61,24 @@ Rules for how agents work and coordinate through jobs.
 - Changes to triggers require a restart to take effect
 - Agent files: `config.json` (settings) and `identity.md` (identity/instructions)
 
-## Agent Profiles
+## Writing Agent Identities
 
-- Profiles define the agent's purpose, voice, and approach — not rigid rules
+- Identities define the agent's purpose, voice, and approach — not rigid rules
 - Write for spirit and intention, not exhaustive instructions
 - The agent uses judgment to decide which tools and operations serve the user's intent
-- Avoid rule-heavy profiles that try to cover every scenario
-- Trust the LLM to interpret the profile's spirit and apply it to novel situations
+- Avoid rule-heavy identities that try to cover every scenario
+- Trust the LLM to interpret the identity's spirit and apply it to novel situations
 - Don't list available tools — they're included in the system prompt from config.json
-- Good profile: "I help users track what matters to them"
-- Bad profile: "When user says X, do Y. When user says Z, do W..."
+- Good identity: "I help users track what matters to them"
+- Bad identity: "When user says X, do Y. When user says Z, do W..."
 
 ## Design Philosophy
 
-All agents (users and AI) share the same profile schema and evolve through the same reflection process. The only difference is starting state: AI agents start pre-filled, users start empty.
+All agents (users and AI) share the same identity schema and evolve through the same reflection process. The only difference is starting state: AI agents start pre-filled, users start empty.
 
-Profiles reflect patterns of behavior, not rigid rules:
+Identities reflect patterns of behavior, not rigid rules:
 - Identity is the pattern of stable attractors over time
-- Both users and AI agents can develop any profile section through reflection
+- Both users and AI agents can develop any identity section through reflection
 - Both follow the 90/10 principle: 90% exploit known patterns, 10% explore new possibilities
 
 See docs/3_agents.md for the cognitive foundations behind this design.
@@ -111,8 +111,8 @@ Agents respond to three types of behavioral triggers, each with its own prompt t
 - **Reflection** (`agent/reflection.md`): Scheduled self-analysis
   - Triggered by consolidate trigger (e.g., `time:evening`)
   - Creates visible `Trigger:reflection:{date}` jobs
-  - Agent reviews memories, identifies patterns, evolves profile
-  - Uses tools: list_memory, read_long_term_memory, graduate_memory, update_own_profile
+  - Agent reviews memories, identifies patterns, evolves identity
+  - Uses tools: list_memory, read_long_term_memory, graduate_memory, update_own_identity
   - Consolidate includes recent completed jobs (last 20) for context on work patterns
 
 ## Prompt Templates
@@ -164,7 +164,7 @@ Jobs can flow between agents and users via `handoff_job`:
 ## Agent Routing
 
 - `list_agents_for_routing`: Get minimal agent info for routing decisions
-  - Returns id, name, purpose (first line of profile), enabled status
+  - Returns id, name, purpose (first line of identity), enabled status
   - Use when deciding which agent should handle a job
 
 ## Chat Agent Role
@@ -173,7 +173,7 @@ Jobs can flow between agents and users via `handoff_job`:
 - Routes user requests to appropriate agents with `user:request` tag
 - Can create and manage other agents
 - Can answer questions about Euno by reading docs/specs
-- Has access to user profile and memory for personalized responses
+- Has access to user identity and memory for personalized responses
 
 ## Agent Ontology
 
@@ -197,6 +197,15 @@ Agent = Identity + Cognition + Memory + Behavior
 - Evolves through reflection—discovered, not configured
 - AI agents start pre-filled; users start empty
 - Historical snapshots: `identity.{yyyy}.md`
+
+### Memory
+
+- **Short-term**: `memory/short-term.jsonl` — Rolling 90-day window of noteworthy items
+- **Long-term**: `memory/long-term/{yyyy}/{yyyy-mm-dd}.md` — Permanent chronological archive
+- Types: person, place, thing, goal, concern, idea, learning, behavior
+- Flow: Conversations → Append phase → Short-term → Consolidate phase → Long-term
+- Cross-pollination: Chat agent's user-relevant items flow to user's memory
+- See `spec/2_data.md` for detailed memory schemas and flow
 
 ### Cognition
 
@@ -266,7 +275,7 @@ Reflection is the metacognitive process of self-analysis and growth:
   - Heavy analysis triggered by `reflection.trigger` config
   - Creates `Trigger:reflection:{date}` jobs
   - Reviews short-term memory, graduates items to long-term
-  - Updates identity/profile based on patterns
+  - Updates identity based on patterns
 
 Note: `reflection.trigger` in config.json defines WHEN reflection runs (Behavior).
 The reflection process itself is Metacognition (Cognition).

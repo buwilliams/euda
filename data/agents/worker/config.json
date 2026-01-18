@@ -27,7 +27,7 @@
     "read_long_term_memory",
     "write_long_term_memory",
     "graduate_memory",
-    "update_own_profile"
+    "update_own_identity"
   ],
   "triggers": [
     "time:morning"

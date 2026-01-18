@@ -322,15 +322,15 @@ def update_agent_profile(agent_id: str, profile: str) -> dict:
     return update_agent_profile_internal(agent_id, profile)
 
 
-@tool("update_own_profile", "Update your own profile with learnings from reflection. Use during reflection to codify behavioral patterns.", tool_type="agents")
-def update_own_profile(updates: str, agent_id: str = None) -> dict:
-    """Append a reflection update section to your own profile.
+@tool("update_own_identity", "Update your own identity with learnings from reflection. Use during reflection to codify behavioral patterns.", tool_type="agents")
+def update_own_identity(updates: str, agent_id: str = None) -> dict:
+    """Append a reflection update section to your own identity.
 
     Args:
         updates: Description of updates to apply (behavioral rules, voice adjustments, etc.)
         agent_id: Your agent ID (automatically set by the system)
 
-    Note: This tool can only update your own profile, not other agents'.
+    Note: This tool can only update your own identity, not other agents'.
     """
     from datetime import datetime
 
