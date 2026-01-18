@@ -7,7 +7,7 @@ Rules for the major entities in the system and how they relate.
 ## Agent
 
 Every agent (including the user) shares the same four-category structure:
-- **Identity** → `profile.md`
+- **Identity** → `identity.md`
 - **Cognition** → `prompts/` + system `metacognition` config
 - **Memory** → `memory/short-term.jsonl` + `memory/long-term/`
 - **Behavior** → `config.json` (tools, triggers, exploration, reflection)
@@ -18,11 +18,11 @@ Directory structure:
   - exploration{}: enabled, trigger (e.g., "time:hour_04")
   - reflection{}: enabled, trigger
   - Triggers define which trigger jobs the agent receives
-- **Profile:** `data/agents/{id}/profile.md`
+- **Profile:** `data/agents/{id}/identity.md`
   - Evolves over time based on long-term memory
   - For AI agents: purpose, behavioral rules, voice
   - For user: biographical info, wants/fears, stable attractors
-  - Template: `profile.md.example` — preserved during Fresh Start for reinitialization
+  - Template: `identity.md.example` — preserved during Fresh Start for reinitialization
 - **Memory:**
   - Short-term: `data/agents/{id}/memory/short-term.jsonl` (90-day rolling)
   - Long-term: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md` (year-based archive)
@@ -73,7 +73,7 @@ Memory moves through two phases:
 
 ### Identity Schema (Profile)
 
-All agents (including user) share the same identity schema stored in `profile.md`:
+All agents (including user) share the same identity schema stored in `identity.md`:
 - Purpose (what drives them / why they exist)
 - Behavioral Rules (learned must/must not constraints)
 - Voice (communication style)

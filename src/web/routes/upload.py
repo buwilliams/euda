@@ -12,10 +12,11 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-import openai
 from fastapi import APIRouter, UploadFile, File
 
 from ...tools.data.memory import add_memory, write_long_term_memory
+from ...metacognition.config import get_global_config
+from ...llms import get_client
 
 
 router = APIRouter()
@@ -72,7 +73,7 @@ Guidelines:
 async def analyze_document(filename: str, content: str) -> dict | None:
     """Analyze uploaded document for identity extraction.
 
-    Uses gpt-4o-mini for fast, cheap analysis. Returns dict with
+    Uses the system's configured LLM provider. Returns dict with
     extracted info, or None if analysis fails.
 
     Args:
@@ -87,20 +88,55 @@ async def analyze_document(filename: str, content: str) -> dict | None:
         content = content[:MAX_ANALYSIS_SIZE] + "\n\n[Content truncated for analysis]"
 
     try:
-        client = openai.OpenAI()
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
+        client = get_client()
+        reflection_config = get_global_config().get_reflection_config()
+        response = client.create(
+            max_tokens=reflection_config.get("upload_analysis_max_tokens", 1000),
+            system="You are a document analyzer. Extract identity-relevant information and return valid JSON only.",
             messages=[{
                 "role": "user",
                 "content": ANALYSIS_PROMPT.format(filename=filename, content=content)
             }],
-            temperature=0.3,
-            max_tokens=1000,
-            response_format={"type": "json_object"}
+            agent_id="user/upload"
         )
-        return json.loads(response.choices[0].message.content)
+
+        # Extract text from response
+        text_response = ""
+        for block in response.content:
+            if hasattr(block, "text"):
+                text_response += block.text
+
+        # Parse JSON from response
+        return _parse_json_response(text_response)
     except Exception as e:
         print(f"[Upload] Document analysis failed: {e}")
+        return None
+
+
+def _parse_json_response(response: str) -> dict | None:
+    """Parse JSON from LLM response text.
+
+    Handles markdown code blocks and finds JSON object in response.
+    """
+    text = response.strip()
+
+    # Handle markdown code blocks
+    if text.startswith("```"):
+        lines = text.split("\n")
+        lines = [l for l in lines if not l.startswith("```")]
+        text = "\n".join(lines)
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # Try to find JSON object in response
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start != -1 and end > start:
+            try:
+                return json.loads(text[start:end])
+            except json.JSONDecodeError:
+                return None
         return None
 
 
@@ -178,7 +214,7 @@ async def upload_file(file: UploadFile = File(...)):
             # Create semantic memories from analysis
             if analysis:
                 # Add interests as memories
-                for interest in analysis.get("interests", [])[:3]:
+                for interest in analysis.get("interests", []):
                     add_memory(
                         short_description=f"Interest: {interest}",
                         type="idea",
@@ -187,7 +223,7 @@ async def upload_file(file: UploadFile = File(...)):
                     memories_created.append(f"[idea] {interest}")
 
                 # Add goals as memories
-                for goal in analysis.get("goals", [])[:2]:
+                for goal in analysis.get("goals", []):
                     add_memory(
                         short_description=goal,
                         type="goal",
@@ -196,7 +232,7 @@ async def upload_file(file: UploadFile = File(...)):
                     memories_created.append(f"[goal] {goal}")
 
                 # Add concerns as memories
-                for concern in analysis.get("concerns", [])[:2]:
+                for concern in analysis.get("concerns", []):
                     add_memory(
                         short_description=concern,
                         type="concern",

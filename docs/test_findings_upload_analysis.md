@@ -39,7 +39,7 @@ Euno is a personal intelligence that learns to anticipate you. Key vision points
 ### The User Agent
 
 The user is conceptually an agent with:
-- **Profile** (`data/agents/user/profile.md`): Identity, interests, biographical info
+- **Profile** (`data/agents/user/identity.md`): Identity, interests, biographical info
 - **Short-term memory** (`data/agents/user/memory/short-term.jsonl`): Active items (goals, concerns, people, etc.)
 - **Long-term memory** (`data/agents/user/memory/long-term/{year}/{date}.md`): Permanent archive
 
@@ -94,7 +94,7 @@ Profile updated (but focuses on behavioral patterns, not document content)
 | `src/reflection/consolidate.py` | Daily consolidation | `run_consolidate()` |
 | `src/reflection/prompts.py` | Builds LLM prompts | `build_consolidate_prompt()` |
 | `data/system/prompts/reflection/consolidate_system_user.md` | Consolidate system prompt | Needs document extraction instructions |
-| `data/agents/user/profile.md` | User profile | Target for extracted identity |
+| `data/agents/user/identity.md` | User profile | Target for extracted identity |
 | `src/llm.py` | LLM client | `call_llm()` for analysis calls |
 
 ---

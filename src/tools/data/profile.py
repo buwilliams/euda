@@ -1,7 +1,7 @@
 """
 Profile Tools - Access agent profiles.
 
-Every agent (including user) has a profile at data/agents/{agent_id}/profile.md
+Every agent (including user) has a profile at data/agents/{agent_id}/identity.md
 Profiles evolve over time based on long-term memory, updated by Reflection.
 """
 
@@ -18,7 +18,7 @@ AGENTS_DIR = DATA_DIR / "agents"
 
 def _get_profile_path(agent_id: str = "user") -> Path:
     """Get path to an agent's profile."""
-    return AGENTS_DIR / agent_id / "profile.md"
+    return AGENTS_DIR / agent_id / "identity.md"
 
 
 def _get_historical_profile_path(agent_id: str, year: str) -> Path:

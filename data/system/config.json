@@ -95,6 +95,12 @@
     },
     "efficiency": {
       "defer_reflection_in_work_cycles": true
+    },
+    "reflection": {
+      "append_max_tokens": 500,
+      "append_batch_max_tokens": 1000,
+      "consolidate_max_tokens": 2000,
+      "upload_analysis_max_tokens": 1000
     }
   },
   "logging": {

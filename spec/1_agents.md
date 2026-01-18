@@ -59,7 +59,7 @@ Rules for how agents work and coordinate through jobs.
 - Core agents are protected: chat, worker, user
 - All agents get base tools: list_jobs, get_job, create_job, complete_job, add_job_log, done_working
 - Changes to triggers require a restart to take effect
-- Agent files: `config.json` (settings) and `profile.md` (identity/instructions)
+- Agent files: `config.json` (settings) and `identity.md` (identity/instructions)
 
 ## Agent Profiles
 
@@ -192,7 +192,7 @@ Agent = Identity + Cognition + Memory + Behavior
 
 ### Identity
 
-- Stored in `profile.md` as markdown sections
+- Stored in `identity.md` as markdown sections
 - Contains: Purpose, Behavioral Rules, Voice, Wants/Fears, Stable Attractors, Notable Events, Influences, Interests, Biographical Info
 - Evolves through reflection—discovered, not configured
 - AI agents start pre-filled; users start empty
