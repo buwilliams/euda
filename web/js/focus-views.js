@@ -644,7 +644,7 @@ function renderCompletedJobsView() {
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
-                <span class="focus-view-title">${icon('check')} Completed Jobs</span>
+                <span class="focus-view-title">${icon('check')} Completed</span>
                 ${renderBreadcrumbs()}
             </div>
         </div>
