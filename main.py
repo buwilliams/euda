@@ -187,7 +187,7 @@ def cmd_chat(args):
 def cmd_agents(args):
     """List agents or perform agent actions."""
     import json
-    from src.tools.agents import list_agents
+    from src.tools.agents.agents import list_agents
 
     # Handle help action
     if args and args[0] == 'help':
@@ -343,7 +343,7 @@ def _agent_show_logs(agent_id: str):
 
 def cmd_jobs(args):
     """List all jobs."""
-    from src.tools.jobs import list_jobs
+    from src.tools.data.jobs import list_jobs
 
     print("=" * 60)
     print("Euno - Jobs")
