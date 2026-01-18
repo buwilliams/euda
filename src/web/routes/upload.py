@@ -2,27 +2,22 @@
 Upload API Route
 
 Handles file uploads by:
-1. Saving the file to data/agents/user/uploads/{date}/
-2. Analyzing text files for identity extraction (LLM-powered)
-3. Creating semantic memories (goals, interests, concerns)
-4. Adding full content to user's long-term memory (for text files)
+1. Creating a job for the Chat agent to analyze the file
+2. Saving the file as a job asset
+3. Chat agent processes the job asynchronously using existing asset tools
 """
 
-import json
 from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File
 
-from ...tools.data.memory import add_memory, write_long_term_memory
-from ...metacognition.config import get_global_config
-from ...llms import get_client
+from ...tools.data.jobs import create_job
+from ...tools.data.assets import write_asset_bytes
+from ...tools.data.memory import add_memory
 
 
 router = APIRouter()
-
-DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
-UPLOADS_DIR = DATA_DIR / "agents" / "user" / "uploads"
 
 # File extensions we can read as text
 TEXT_EXTENSIONS = {
@@ -36,109 +31,6 @@ TEXT_EXTENSIONS = {
     ".log", ".env", ".gitignore", ".dockerignore",
 }
 
-# Max size for text content to include in long-term memory (100KB)
-MAX_TEXT_SIZE = 100 * 1024
-
-# Max content length for LLM analysis (50KB)
-MAX_ANALYSIS_SIZE = 50 * 1024
-
-# Analysis prompt for identity extraction
-ANALYSIS_PROMPT = """Analyze this uploaded document and extract identity-relevant information.
-
-Document filename: {filename}
-Document content:
-{content}
-
-Return a JSON object with:
-{{
-  "document_type": "biography|essay|professional_profile|routine|journal|notes|other",
-  "summary": "1-2 sentence summary of what this document is",
-  "biographical_facts": ["fact1", "fact2", ...],
-  "interests": ["interest1", "interest2", ...],
-  "goals": ["goal1", "goal2", ...],
-  "concerns": ["concern1", ...],
-  "key_insights": ["insight1", "insight2", ...]
-}}
-
-Guidelines:
-- Only include fields where you find relevant information
-- biographical_facts: Name, family, location, career, education
-- interests: Topics, hobbies, intellectual interests, subjects they write about
-- goals: Aspirations, objectives, things they want to achieve
-- concerns: Worries, fears, challenges they face
-- key_insights: 3-5 most important takeaways about this person
-- Be concise but accurate"""
-
-
-async def analyze_document(filename: str, content: str) -> dict | None:
-    """Analyze uploaded document for identity extraction.
-
-    Uses the system's configured LLM provider. Returns dict with
-    extracted info, or None if analysis fails.
-
-    Args:
-        filename: Name of the uploaded file
-        content: Text content of the file
-
-    Returns:
-        Extracted identity information or None on failure
-    """
-    # Truncate very long content
-    if len(content) > MAX_ANALYSIS_SIZE:
-        content = content[:MAX_ANALYSIS_SIZE] + "\n\n[Content truncated for analysis]"
-
-    try:
-        client = get_client()
-        reflection_config = get_global_config().get_reflection_config()
-        response = client.create(
-            max_tokens=reflection_config.get("upload_analysis_max_tokens", 1000),
-            system="You are a document analyzer. Extract identity-relevant information and return valid JSON only.",
-            messages=[{
-                "role": "user",
-                "content": ANALYSIS_PROMPT.format(filename=filename, content=content)
-            }],
-            agent_id="user/upload"
-        )
-
-        # Extract text from response
-        text_response = ""
-        for block in response.content:
-            if hasattr(block, "text"):
-                text_response += block.text
-
-        # Parse JSON from response
-        return _parse_json_response(text_response)
-    except Exception as e:
-        print(f"[Upload] Document analysis failed: {e}")
-        return None
-
-
-def _parse_json_response(response: str) -> dict | None:
-    """Parse JSON from LLM response text.
-
-    Handles markdown code blocks and finds JSON object in response.
-    """
-    text = response.strip()
-
-    # Handle markdown code blocks
-    if text.startswith("```"):
-        lines = text.split("\n")
-        lines = [l for l in lines if not l.startswith("```")]
-        text = "\n".join(lines)
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        # Try to find JSON object in response
-        start = text.find("{")
-        end = text.rfind("}") + 1
-        if start != -1 and end > start:
-            try:
-                return json.loads(text[start:end])
-            except json.JSONDecodeError:
-                return None
-        return None
-
 
 def is_text_file(filename: str) -> bool:
     """Check if file is a readable text file based on extension."""
@@ -146,167 +38,53 @@ def is_text_file(filename: str) -> bool:
     return suffix in TEXT_EXTENSIONS
 
 
-def get_upload_dir() -> Path:
-    """Get today's upload directory, creating if needed."""
-    today = datetime.now().strftime("%Y-%m-%d")
-    upload_dir = UPLOADS_DIR / today
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    return upload_dir
-
-
-def make_unique_filename(directory: Path, filename: str) -> str:
-    """Generate a unique filename if one already exists."""
-    path = directory / filename
-    if not path.exists():
-        return filename
-
-    stem = Path(filename).stem
-    suffix = Path(filename).suffix
-    counter = 1
-
-    while (directory / f"{stem}_{counter}{suffix}").exists():
-        counter += 1
-
-    return f"{stem}_{counter}{suffix}"
-
-
 @router.post("")
 async def upload_file(file: UploadFile = File(...)):
     """Upload a file for processing.
 
-    Saves the file and analyzes it for identity extraction:
-    - Text files: analyzed by LLM for biographical facts, interests, goals
-    - All files: content stored in long-term memory
+    Creates a job with the file as an asset for Chat agent to analyze:
+    - Text files: Chat will analyze for identity extraction
+    - All files: stored as job assets
     """
-    today = datetime.now().strftime("%Y-%m-%d")
-    upload_dir = get_upload_dir()
-
-    # Save file with unique name if needed
-    filename = make_unique_filename(upload_dir, file.filename)
-    file_path = upload_dir / filename
+    filename = file.filename
     content_bytes = await file.read()
-    file_path.write_bytes(content_bytes)
 
     # Determine file type and size
     file_size = len(content_bytes)
     file_size_str = f"{file_size / 1024:.1f}KB" if file_size >= 1024 else f"{file_size}B"
     is_text = is_text_file(filename)
 
-    analysis = None
-    memories_created = []
+    # Create job for Chat agent
+    job = create_job(
+        name=f"Analyze upload: {filename}",
+        description=f"""A file has been uploaded for analysis.
 
-    # For text files, analyze and add to memory
-    if is_text and file_size <= MAX_TEXT_SIZE:
-        try:
-            text_content = content_bytes.decode("utf-8")
+Filename: {filename}
+Size: {file_size_str}
+Type: {"text" if is_text else "binary"}
 
-            # Analyze document for identity extraction
-            analysis = await analyze_document(filename, text_content)
+{"Use `read_asset` to read the file content, then extract identity-relevant information (interests, goals, concerns, biographical facts) and create appropriate memories using `add_memory`. Store analysis insights in long-term memory using `write_long_term_memory`." if is_text else "This is a binary file. Note its existence in the user's memory."}
 
-            # Store raw content in long-term memory
-            memory_content = f"**Uploaded file:** {filename}\n\n```\n{text_content}\n```"
-            write_long_term_memory(
-                content=memory_content,
-                agent_id="user",
-                source="Upload"
-            )
+After processing, complete this job with `complete_job`.""",
+        tags=["upload", "analysis"],
+        assignees=["chat"],
+        created_by="user"
+    )
 
-            # Create semantic memories from analysis
-            if analysis:
-                # Add interests as memories
-                for interest in analysis.get("interests", []):
-                    add_memory(
-                        short_description=f"Interest: {interest}",
-                        type="idea",
-                        agent_id="user"
-                    )
-                    memories_created.append(f"[idea] {interest}")
+    # Save file as job asset
+    write_asset_bytes(job["id"], filename, content_bytes)
 
-                # Add goals as memories
-                for goal in analysis.get("goals", []):
-                    add_memory(
-                        short_description=goal,
-                        type="goal",
-                        agent_id="user"
-                    )
-                    memories_created.append(f"[goal] {goal}")
-
-                # Add concerns as memories
-                for concern in analysis.get("concerns", []):
-                    add_memory(
-                        short_description=concern,
-                        type="concern",
-                        agent_id="user"
-                    )
-                    memories_created.append(f"[concern] {concern}")
-
-                # Store analysis summary in long-term memory
-                if analysis.get("key_insights"):
-                    insights_content = f"**Document analysis:** {filename}\n\n"
-                    insights_content += f"Type: {analysis.get('document_type', 'unknown')}\n"
-                    insights_content += f"Summary: {analysis.get('summary', 'N/A')}\n\n"
-                    insights_content += "Key insights:\n"
-                    for insight in analysis.get("key_insights", []):
-                        insights_content += f"- {insight}\n"
-
-                    if analysis.get("biographical_facts"):
-                        insights_content += "\nBiographical facts:\n"
-                        for fact in analysis.get("biographical_facts", []):
-                            insights_content += f"- {fact}\n"
-
-                    write_long_term_memory(
-                        content=insights_content,
-                        agent_id="user",
-                        source="Upload Analysis"
-                    )
-
-        except UnicodeDecodeError:
-            # Not actually text, just note the upload
-            write_long_term_memory(
-                content=f"**Uploaded file:** {filename} ({file_size_str}) - binary file saved to uploads/{today}/",
-                agent_id="user",
-                source="Upload"
-            )
-    elif is_text and file_size > MAX_TEXT_SIZE:
-        # Text file too large for memory, note location
-        write_long_term_memory(
-            content=f"**Uploaded file:** {filename} ({file_size_str}) - large text file saved to uploads/{today}/",
-            agent_id="user",
-            source="Upload"
-        )
-    else:
-        # Binary file - just note the upload
-        write_long_term_memory(
-            content=f"**Uploaded file:** {filename} ({file_size_str}) - saved to uploads/{today}/",
-            agent_id="user",
-            source="Upload"
-        )
-
-    # Add main upload entry to short-term memory (with better description if analyzed)
-    if analysis:
-        doc_type = analysis.get("document_type", "document")
-        summary = analysis.get("summary", f"Uploaded {filename}")
-        # Truncate summary if too long
-        if len(summary) > 100:
-            summary = summary[:97] + "..."
-        add_memory(
-            short_description=f"Uploaded {doc_type}: {summary}",
-            type="thing",
-            agent_id="user"
-        )
-    else:
-        add_memory(
-            short_description=f"Uploaded {filename}",
-            type="thing",
-            agent_id="user"
-        )
+    # Add to user's short-term memory
+    add_memory(
+        short_description=f"Uploaded {filename}",
+        type="thing",
+        agent_id="user"
+    )
 
     return {
         "status": "uploaded",
         "filename": filename,
-        "path": f"uploads/{today}/{filename}",
+        "job_id": job["id"],
         "size": file_size_str,
-        "analyzed": analysis is not None,
-        "memories_created": memories_created,
-        "message": "File saved and analyzed." if analysis else "File saved."
+        "message": "File uploaded. Analysis job created."
     }
