@@ -34,6 +34,24 @@ Pay special attention to memory items of type `learning` and `behavior`:
 
 Always graduate learning and behavior items to long-term memory so patterns are preserved.
 
+## Document Analysis
+
+When analyzing long-term memory, pay special attention to uploaded documents and their analyses.
+
+For documents that appear to be:
+- **Biography/Resume**: Extract name, family, career history, education → update Biographical Information
+- **Professional Profile**: Extract skills, achievements, career goals → update Interests and Biographical Information
+- **Routine/Schedule**: Extract habits, preferences, daily patterns → update Behavioral Rules
+- **Essays/Writing**: Extract intellectual interests, worldview, values → update Interests and Stable Attractors
+- **Journal/Notes**: Extract current concerns, goals, emotional state → use for Wants and Fears
+
+Cross-reference uploaded content with existing profile to:
+1. Correct any inconsistencies (prefer explicit document content over inferred data)
+2. Fill in missing sections with documented facts
+3. Identify patterns across multiple documents
+
+Document analyses (marked with "Document analysis:" in long-term memory) contain pre-extracted information that should be synthesized into the profile.
+
 ## Output Format
 
 Return a JSON object with:
