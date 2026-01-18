@@ -82,16 +82,16 @@ def _generate_quote(profile_content: str, history: list) -> dict:
         for q in recent:
             history_context += f"- \"{q['quote']}\" — {q['author']}\n"
 
-    prompt = f"""Based on this user's profile, select or compose an inspiring quote that would resonate with them today.
+    prompt = f"""Based on this user's identity, select or compose an inspiring quote that would resonate with them today.
 
-User Profile:
-{profile_content if profile_content else "No profile available - provide a generally inspiring quote."}
+User Identity:
+{profile_content if profile_content else "No identity available - provide a generally inspiring quote."}
 {history_context}
 
 Respond with ONLY a JSON object in this exact format (no markdown, no explanation):
 {{"quote": "The quote text here", "author": "Author Name"}}
 
-The quote can be from a famous person, philosopher, writer, or you can compose an original one attributed to "Unknown" or "Ancient Wisdom". Make it meaningful and relevant to the user's interests, goals, or values."""
+The quote can be from a famous person, philosopher, writer, or you can compose an original one attributed to "Unknown" or "Ancient Wisdom". Make it meaningful and relevant to the user's interests, goals, concerns, or values."""
 
     response = client.create(
         max_tokens=256,
@@ -123,7 +123,7 @@ def daily_quote():
     if state.get("date") == today and state.get("current"):
         return state["current"]
 
-    # Get user profile for personalization
+    # Get user identity for personalization
     profile = get_profile("user")
     profile_content = profile.get("content", "") if profile.get("exists") else ""
 
