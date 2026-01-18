@@ -51,8 +51,8 @@ async def auth_middleware(request: Request, call_next):
     if path in PUBLIC_PATHS:
         return await call_next(request)
 
-    # Allow static files
-    if path.startswith("/static"):
+    # Allow web files
+    if path.startswith("/web"):
         return await call_next(request)
 
     # If no password set, allow all
@@ -82,11 +82,11 @@ app.include_router(transcribe.router, prefix="/api/transcribe", tags=["transcrib
 app.include_router(synthesize.router, prefix="/api/synthesize", tags=["synthesize"])
 app.include_router(rate_limiting.router, prefix="/api/rate-limiting", tags=["rate-limiting"])
 
-# Serve static files
-static_dir = Path(__file__).parent.parent.parent / "static"
-if static_dir.exists():
-    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+# Serve web files
+web_dir = Path(__file__).parent.parent.parent / "web"
+if web_dir.exists():
+    app.mount("/web", StaticFiles(directory=str(web_dir)), name="web")
 
     @app.get("/")
     def serve_index():
-        return FileResponse(static_dir / "index.html")
+        return FileResponse(web_dir / "index.html")

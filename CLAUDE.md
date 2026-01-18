@@ -99,7 +99,7 @@ euno/
 │   ├── agents/             # Agent configs and state
 │   │   └── {agent-id}/
 │   │       ├── config.json
-│   │       ├── profile.md
+│   │       ├── identity.md
 │   │       ├── memory/
 │   │       │   ├── short-term.jsonl
 │   │       │   └── long-term/{yyyy}/{yyyy-mm-dd}.md
@@ -116,7 +116,7 @@ euno/
 │   ├── 2_data.md
 │   ├── 3_backend.md
 │   └── 4_ux_ui.md
-├── static/                 # Web UI
+├── web/                    # Web UI
 └── devops/                 # Deployment scripts
 ```
 
@@ -125,7 +125,7 @@ euno/
 ### Agents
 An agent is: **Identity + Cognition + Memory + Behavior**
 
-- **Identity** (`profile.md`): Purpose, values, voice, stable attractors, context
+- **Identity** (`identity.md`): Purpose, values, voice, stable attractors, context
 - **Cognition**: Reasoning (system prompts) + Metacognition (self-regulation, reflection)
 - **Memory**: Short-term (90 days) + Long-term (permanent archive)
 - **Behavior** (`config.json`): Tools + Triggers + Modes (90/10 exploration ratio)
@@ -193,7 +193,7 @@ The user is conceptually an agent too - just with a different interface (Web UI/
      }
    }
    ```
-3. Create `profile.md` with the agent's identity and behavioral rules
+3. Create `identity.md` with the agent's identity and behavioral rules
 4. Restart the application
 
 No Python code needed for new agents.

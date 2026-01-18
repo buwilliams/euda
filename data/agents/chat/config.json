@@ -8,7 +8,9 @@
     "get_job",
     "create_job",
     "update_job",
+    "complete_job",
     "add_job_log",
+    "done_working",
     "get_child_jobs",
     "assign_agent",
     "list_available_agents",
@@ -39,7 +41,7 @@
     "get_mastodon_posts",
     "speak_aloud",
     "graduate_memory",
-    "update_own_profile"
+    "update_own_identity"
   ],
   "triggers": [],
   "exploration": {

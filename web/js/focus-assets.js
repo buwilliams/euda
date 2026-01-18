@@ -188,7 +188,10 @@ function renderAssetView(jobId, filename) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Loading...</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Loading...</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="empty-section">Loading asset...</div>
@@ -204,7 +207,10 @@ function renderAssetView(jobId, filename) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">${escapeHtml(filename)}</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">${escapeHtml(filename)}</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             <!-- Actions Row -->
@@ -263,7 +269,10 @@ function renderAssetsListView(jobId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">Assets</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">Assets</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             <div class="job-section">

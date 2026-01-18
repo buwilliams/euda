@@ -61,7 +61,7 @@ def list_agents_for_routing() -> List[dict]:
     for agent_dir in AGENTS_DIR.iterdir():
         if agent_dir.is_dir():
             config_path = agent_dir / "config.json"
-            profile_path = agent_dir / "profile.md"
+            profile_path = agent_dir / "identity.md"
 
             if config_path.exists():
                 with open(config_path) as f:
@@ -105,7 +105,7 @@ def get_agent(agent_id: str) -> Optional[dict]:
             result["config"] = json.load(f)
 
     # Load profile (with fallback to old persona location)
-    profile_path = agent_dir / "profile.md"
+    profile_path = agent_dir / "identity.md"
     if profile_path.exists():
         result["profile"] = profile_path.read_text()
     else:
@@ -119,7 +119,7 @@ def get_agent(agent_id: str) -> Optional[dict]:
 
 def get_agent_profile(agent_id: str) -> Optional[str]:
     """Get an agent's profile markdown."""
-    profile_path = AGENTS_DIR / agent_id / "profile.md"
+    profile_path = AGENTS_DIR / agent_id / "identity.md"
     if profile_path.exists():
         return profile_path.read_text()
     # Fallback to old persona location
@@ -135,7 +135,7 @@ def update_agent_profile_internal(agent_id: str, profile: str) -> dict:
     if not agent_dir.exists():
         return {"error": f"Agent not found: {agent_id}"}
 
-    profile_path = agent_dir / "profile.md"
+    profile_path = agent_dir / "identity.md"
     profile_path.write_text(profile)
 
     return {"updated": True, "agent_id": agent_id}
@@ -290,7 +290,7 @@ I must:
 5. Call done_working to signal I'm finished
 """
 
-    profile_path = agent_dir / "profile.md"
+    profile_path = agent_dir / "identity.md"
     profile_path.write_text(profile)
 
     # Dynamically register and start the agent if manager is running
@@ -322,15 +322,15 @@ def update_agent_profile(agent_id: str, profile: str) -> dict:
     return update_agent_profile_internal(agent_id, profile)
 
 
-@tool("update_own_profile", "Update your own profile with learnings from reflection. Use during reflection to codify behavioral patterns.", tool_type="agents")
-def update_own_profile(updates: str, agent_id: str = None) -> dict:
-    """Append a reflection update section to your own profile.
+@tool("update_own_identity", "Update your own identity with learnings from reflection. Use during reflection to codify behavioral patterns.", tool_type="agents")
+def update_own_identity(updates: str, agent_id: str = None) -> dict:
+    """Append a reflection update section to your own identity.
 
     Args:
         updates: Description of updates to apply (behavioral rules, voice adjustments, etc.)
         agent_id: Your agent ID (automatically set by the system)
 
-    Note: This tool can only update your own profile, not other agents'.
+    Note: This tool can only update your own identity, not other agents'.
     """
     from datetime import datetime
 
@@ -341,7 +341,7 @@ def update_own_profile(updates: str, agent_id: str = None) -> dict:
     if not agent_dir.exists():
         return {"error": f"Agent not found: {agent_id}"}
 
-    profile_path = agent_dir / "profile.md"
+    profile_path = agent_dir / "identity.md"
 
     if profile_path.exists():
         current_profile = profile_path.read_text()
@@ -376,7 +376,7 @@ def append_to_agent_profile(agent_id: str, section_title: str, content: str) -> 
     if not agent_dir.exists():
         return {"error": f"Agent not found: {agent_id}"}
 
-    profile_path = agent_dir / "profile.md"
+    profile_path = agent_dir / "identity.md"
 
     if profile_path.exists():
         current_profile = profile_path.read_text()

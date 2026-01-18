@@ -23,7 +23,7 @@ CONV_DIR = AGENTS_DIR / "chat" / "state" / "conversation"
 
 class ChatRequest(BaseModel):
     message: str
-    agent_id: str = "assistant"
+    agent_id: str = "chat"
     session_id: Optional[str] = None
     voice_input: bool = False
 
@@ -114,7 +114,7 @@ def api_chat(request: ChatRequest) -> ChatResponse:
 
 
 @router.get("/history")
-def api_get_history(agent_id: str = "assistant", date: Optional[str] = None):
+def api_get_history(agent_id: str = "chat", date: Optional[str] = None):
     """Get conversation history."""
     agent = get_agent_instance(agent_id)
 

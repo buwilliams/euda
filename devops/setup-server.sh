@@ -147,8 +147,8 @@ server {
     listen 80;
     server_name _;
 
-    # Static files - no caching during development
-    location /static/ {
+    # Web files - no caching during development
+    location /web/ {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
 

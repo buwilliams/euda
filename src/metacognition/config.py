@@ -43,6 +43,12 @@ DEFAULT_CONFIG = {
     },
     "efficiency": {
         "defer_reflection_in_work_cycles": True
+    },
+    "reflection": {
+        "append_max_tokens": 500,
+        "append_batch_max_tokens": 1000,
+        "consolidate_max_tokens": 2000,
+        "upload_analysis_max_tokens": 1000
     }
 }
 
@@ -147,6 +153,11 @@ class MetacognitionConfig:
         """Get efficiency optimization configuration."""
         full = self.get_full_config()
         return full.get("efficiency", DEFAULT_CONFIG["efficiency"])
+
+    def get_reflection_config(self) -> dict:
+        """Get reflection (memory processing) configuration."""
+        full = self.get_full_config()
+        return full.get("reflection", DEFAULT_CONFIG["reflection"])
 
     def invalidate(self):
         """Invalidate cached config. Call when settings change."""

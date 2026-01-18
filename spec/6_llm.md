@@ -4,9 +4,10 @@ Rules for how agents interact with language models.
 
 ## System Prompts
 
-- Structure: agent profile, then available tools grouped by type
-- User profile and memory are NOT auto-included — reduces tokens, makes access explicit
-- Agents fetch user context explicitly via `get_profile` and `list_memory` tools
+- Structure: agent identity, user identity, then available tools grouped by type
+- Agent's identity (from `identity.md`) defines who the agent is
+- User's identity (from `data/agents/user/identity.md`) is auto-included so agents can anticipate needs
+- User memory is NOT auto-included — agents fetch specifics via `list_memory` tool when needed
 - Templates stored in `data/system/prompts/` as markdown files
 - Templates use Python format string syntax: `{variable_name}`
 
@@ -23,10 +24,10 @@ Rules for how agents interact with language models.
 
 ## Context Access
 
-- Agent profile: included in system prompt
-- User profile: `get_profile("user")` tool
-- Short-term memory: `list_memory(agent_id)` tool
-- Long-term memory: `read_long_term_memory(date, agent_id)` tool
+- Agent identity: included in system prompt (who the agent is)
+- User identity: included in system prompt (who the agent serves)
+- User short-term memory: `list_memory("user")` tool (what's on their mind)
+- User long-term memory: `read_long_term_memory(date, "user")` tool (their history)
 - Job assets: `list_assets`, `read_asset` tools
 - Conversation history: included in messages array (not system prompt)
 

@@ -246,7 +246,7 @@
 .focus-view-header {
     display: flex;
     align-items: center;
-    padding: var(--spacing-lg) var(--spacing-md);
+    padding: var(--spacing-xl) var(--spacing-md);
     border-bottom: 1px solid var(--color-border-light);
     margin: -1rem -1rem var(--spacing-lg) -1rem;
     cursor: pointer;
@@ -282,6 +282,35 @@
     width: 1em;
     height: 1em;
     flex-shrink: 0;
+}
+
+/* Focus View Header Content (title + breadcrumbs wrapper) */
+.focus-view-header-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* Focus View Breadcrumbs */
+.focus-view-breadcrumbs {
+    font-size: 9px;
+    color: #999;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.focus-view-breadcrumbs img {
+    width: 1em;
+    height: 1em;
+    opacity: 0.4;
 }
 
 /* Focus View Content */

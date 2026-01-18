@@ -34,7 +34,7 @@ def cmd_profile(args: List[str], json_mode: bool = False):
         print_error(f"Agent not found: {agent_id}", json_mode)
         sys.exit(1)
 
-    profile_path = agent_dir / "profile.md"
+    profile_path = agent_dir / "identity.md"
 
     if not profile_path.exists():
         print_error(f"Profile not found for agent: {agent_id}", json_mode)

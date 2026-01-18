@@ -17,7 +17,7 @@ let pendingRender = false;   // Track if a render is pending after animation
 
 function icon(name, className = '') {
     const cls = className ? ` class="${className}"` : '';
-    return `<img src="/static/icons/${name}.svg" alt="${name}"${cls}>`;
+    return `<img src="/web/icons/${name}.svg" alt="${name}"${cls}>`;
 }
 
 // ============== Focus Tab Navigation ==============
@@ -224,4 +224,232 @@ function navigateFocusBack() {
     }
 
     renderFocusTab();
+}
+
+// ============== Breadcrumbs ==============
+
+// Get short display name for a view (used in breadcrumbs)
+function getViewDisplayName(view) {
+    // Timeline views
+    if (view === 'menu') return 'Focus';
+    if (view === 'today') return 'Today';
+    if (view === 'upcoming') return 'Upcoming';
+    if (view === 'anytime') return 'Anytime';
+    if (view === 'someday') return 'Someday';
+    if (view === 'completed') return 'Completed';
+    if (view === 'newjob') return 'New Job';
+
+    // Job views - get job name from cache
+    if (view.startsWith('job-')) {
+        const jobId = view.substring(4);
+        const job = jobsData.find(j => j.id === jobId) || completedJobsData.find(j => j.id === jobId);
+        if (job) {
+            // Truncate long names for breadcrumbs
+            const name = job.name || 'Job';
+            return name.length > 20 ? name.substring(0, 18) + '...' : name;
+        }
+        return 'Job';
+    }
+
+    // Completed job views
+    if (view.startsWith('completed-')) {
+        const jobId = view.substring(10);
+        const job = completedJobsData.find(j => j.id === jobId);
+        if (job) {
+            const name = job.name || 'Job';
+            return name.length > 20 ? name.substring(0, 18) + '...' : name;
+        }
+        return 'Completed';
+    }
+
+    // Agent-related views
+    if (view.startsWith('manage-agent-')) {
+        return 'Manage';
+    }
+    if (view.startsWith('profile-')) {
+        return 'Profile';
+    }
+    if (view.startsWith('config-')) {
+        return 'Config';
+    }
+    if (view.startsWith('memory-list-')) {
+        return 'Memory';
+    }
+    if (view.startsWith('memory-item-')) {
+        return 'Item';
+    }
+    if (view.startsWith('long-term-memory-detail-')) {
+        return 'Entry';
+    }
+    if (view.startsWith('long-term-memory-')) {
+        return 'Long-term';
+    }
+    if (view.startsWith('monitoring-')) {
+        return 'Monitoring';
+    }
+    if (view.startsWith('prompt-')) {
+        return 'Prompt';
+    }
+    if (view.startsWith('rate-limits-')) {
+        return 'Rate Limits';
+    }
+    if (view.startsWith('trace-')) {
+        return 'Trace';
+    }
+
+    // Asset views
+    if (view.startsWith('assets-')) {
+        return 'Assets';
+    }
+    if (view.startsWith('asset-')) {
+        const rest = view.substring(6);
+        const filename = rest.substring(13); // skip jobId + "-"
+        return filename.length > 15 ? filename.substring(0, 13) + '...' : filename;
+    }
+
+    // Child job creation
+    if (view.startsWith('newjob-')) {
+        return 'Add Jobs';
+    }
+    if (view.startsWith('attach-')) {
+        return 'Add Assets';
+    }
+
+    return 'View';
+}
+
+// Build breadcrumb path from navigation history
+function getBreadcrumbPath() {
+    const path = [];
+    for (const view of focusViewHistory) {
+        path.push(getViewDisplayName(view));
+    }
+    return path;
+}
+
+// Render just the breadcrumbs HTML (for adding to existing headers)
+function renderBreadcrumbs() {
+    const breadcrumbs = getBreadcrumbPath();
+    if (breadcrumbs.length === 0) return '';
+    const arrow = `<img src="/web/icons/chevron-right.svg" alt=">">`;
+    const html = breadcrumbs.map(b => `<span>${b}</span>`).join(arrow);
+    return `<div class="focus-view-breadcrumbs">${html}</div>`;
+}
+
+// Render view header with title and breadcrumbs
+function renderViewHeader(title, options = {}) {
+    const { iconName = null, iconHtml = null } = options;
+
+    // Build the icon HTML
+    let titleIconHtml = '';
+    if (iconHtml) {
+        titleIconHtml = iconHtml;
+    } else if (iconName) {
+        titleIconHtml = icon(iconName);
+    }
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">${titleIconHtml}${title}</span>
+                ${renderBreadcrumbs()}
+            </div>
+        </div>
+    `;
+}
+
+// ============== Quick Add (from plus button) ==============
+
+// Get context for quick-add based on current focusView
+function getQuickAddContext() {
+    const today = new Date().toISOString().split('T')[0];
+
+    // Only apply context when on Focus tab
+    if (activeTab !== 'focus') {
+        return { due_date: today, label: 'Today' };
+    }
+
+    // Menu or Today view - create job for today
+    if (focusView === 'menu' || focusView === 'today') {
+        return { due_date: today, label: 'Today' };
+    }
+
+    // Upcoming view - create job for tomorrow
+    if (focusView === 'upcoming') {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return { due_date: tomorrow.toISOString().split('T')[0], label: 'Upcoming' };
+    }
+
+    // Anytime view - no due date
+    if (focusView === 'anytime') {
+        return { due_date: null, label: 'Anytime' };
+    }
+
+    // Someday view - far future date (signals someday)
+    if (focusView === 'someday') {
+        return { due_date: '2099-12-31', label: 'Someday' };
+    }
+
+    // Job detail view - create child job
+    if (focusView.startsWith('job-')) {
+        const jobId = focusView.substring(4);
+        const job = jobsData.find(j => j.id === jobId);
+        if (job) {
+            return { parent_id: jobId, label: job.name };
+        }
+    }
+
+    // Default to today
+    return { due_date: today, label: 'Today' };
+}
+
+// Quick add job from chat input (called from plus button)
+function quickAddFromInput() {
+    const input = document.getElementById('context-input');
+    if (!input) return;
+
+    const name = input.value.trim();
+    if (!name) {
+        // Focus the input if empty
+        input.focus();
+        return;
+    }
+
+    const context = getQuickAddContext();
+    const jobData = { name };
+
+    if (context.parent_id) {
+        jobData.parent_id = context.parent_id;
+    }
+    if (context.due_date) {
+        jobData.due_date = context.due_date;
+    }
+
+    // Clear input immediately for snappy UX
+    input.value = '';
+
+    // Create job in background (don't await)
+    fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(jobData)
+    }).then(response => {
+        if (response.ok) {
+            loadJobsData().then(() => {
+                // Refresh view if on Focus tab
+                if (activeTab === 'focus') {
+                    renderFocusTab();
+                }
+            });
+        }
+    }).catch(error => {
+        console.error('Failed to create job:', error);
+    });
+
+    // Switch to Focus tab immediately
+    if (activeTab !== 'focus') {
+        switchTab('focus');
+    }
 }

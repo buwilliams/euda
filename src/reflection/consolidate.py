@@ -21,6 +21,7 @@ from ..tools.data.memory import (
     _ensure_memory_dirs,
 )
 from ..tools.data.jobs import get_jobs_completed_by_agent
+from ..metacognition.config import get_global_config
 
 from .prompts import build_consolidate_prompt, get_consolidate_system_prompt
 
@@ -109,8 +110,9 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
 
     # Call LLM
     client = get_client()
+    reflection_config = get_global_config().get_reflection_config()
     response = client.create(
-        max_tokens=2000,
+        max_tokens=reflection_config.get("consolidate_max_tokens", 2000),
         system=get_consolidate_system_prompt(is_user),
         messages=[{"role": "user", "content": prompt}],
         agent_id=f"{agent_id}/reflection"
