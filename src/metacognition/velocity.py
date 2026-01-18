@@ -218,6 +218,50 @@ class VelocityTracker:
 
         return calls_in_window < max_calls
 
+    def get_utilization(self) -> dict:
+        """Get current rate limit utilization for load-based pacing.
+
+        Returns:
+            Dict with:
+            - calls_in_window: current call count
+            - max_calls: configured limit
+            - utilization: percentage (0.0 to 1.0+)
+            - recommended_delay: seconds to wait based on load (0 if low utilization)
+        """
+        config = self._get_rolling_window_config()
+        max_calls = config.get("max_calls", 30)
+        window_seconds = config.get("window_seconds", 60)
+
+        now = time.time()
+        cutoff = now - window_seconds
+
+        with self._lock:
+            calls_in_window = sum(1 for ts in self._call_timestamps if ts >= cutoff)
+
+        utilization = calls_in_window / max_calls if max_calls > 0 else 0
+
+        # Calculate recommended delay based on utilization
+        # < 50% → no delay (plenty of headroom)
+        # 50-80% → 1-3 second delay (moderate load)
+        # > 80% → 3-10 second delay (high load, need to pace)
+        if utilization < 0.5:
+            delay = 0
+        elif utilization < 0.8:
+            # Linear scale from 1s at 50% to 3s at 80%
+            delay = 1 + (utilization - 0.5) * (2 / 0.3)
+        else:
+            # Linear scale from 3s at 80% to 10s at 100%+
+            delay = 3 + (utilization - 0.8) * (7 / 0.2)
+            delay = min(delay, 15)  # Cap at 15 seconds
+
+        return {
+            "calls_in_window": calls_in_window,
+            "max_calls": max_calls,
+            "window_seconds": window_seconds,
+            "utilization": round(utilization, 2),
+            "recommended_delay": round(delay, 1)
+        }
+
     def _check_runaway(self, agent_id: str) -> bool:
         """Check for runaway agent behavior.
 

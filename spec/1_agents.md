@@ -235,6 +235,27 @@ Metacognition is the self-regulation and self-improvement component of Cognition
 - Paused agents auto-resume after cooldown period
 - Configuration in `metacognition.velocity`
 
+### Background Job Pacing
+
+Jobs tagged with `background` are paced based on current system load:
+
+- **Tag-based**: Only jobs with `background` tag are paced; regular jobs process immediately
+- **Load-based delay**: Delay calculated from current API utilization, not fixed timing
+- **Adaptive**: Low load = no delay, high load = longer delays
+
+Delay calculation based on utilization (calls in window / max calls):
+- < 50% utilization → no delay (plenty of headroom)
+- 50-80% utilization → 1-3 second delay (moderate load)
+- > 80% utilization → 3-10 second delay (high load)
+- Maximum delay capped at 15 seconds
+
+Use `background` tag for:
+- File uploads and integrations
+- Batch processing jobs
+- Any job that can tolerate delays for system health
+
+This keeps the system responsive for user interactions while pacing bulk operations.
+
 ### Resource Awareness
 
 - Tracks API costs per agent and per job

@@ -374,13 +374,19 @@ class AgentManager:
                     jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
                     self.agents_with_jobs[agent.id] = bool(jobs)
 
-                    # Apply cooldown only for background jobs (uploads, integrations)
+                    # Apply load-based pacing for background jobs (uploads, integrations)
                     # Regular jobs process immediately for responsive UX
                     if is_background and jobs:
-                        cooldown = self._get_system_config().get("agents", {}).get("background_job_cooldown", 5.0)
-                        if cooldown > 0:
-                            agent._log("background_job_cooldown", {"seconds": cooldown, "remaining_jobs": len(jobs)})
-                            time.sleep(cooldown)
+                        utilization = get_velocity_tracker().get_utilization()
+                        delay = utilization["recommended_delay"]
+                        if delay > 0:
+                            agent._log("background_job_pacing", {
+                                "delay": delay,
+                                "utilization": utilization["utilization"],
+                                "calls_in_window": utilization["calls_in_window"],
+                                "remaining_jobs": len(jobs)
+                            })
+                            time.sleep(delay)
                 else:
                     # Cache was stale - clear it
                     self.agents_with_jobs[agent.id] = False

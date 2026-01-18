@@ -186,3 +186,25 @@ python main.py dev prompt chat explore
 ```
 
 **Pass**: Prompt contains "## User Context" section with actual user memory items.
+
+### Background Job Pacing Test
+
+Verifies background-tagged jobs are paced based on load.
+
+```bash
+# Check current utilization
+python main.py dev tool get_velocity_status '{}'
+
+# Upload multiple files rapidly
+for i in 1 2 3 4 5; do
+  curl -F "file=@test_$i.txt" http://localhost:8000/api/upload
+done
+
+# Watch agent logs for pacing
+python main.py dev watch  # Look for "background_job_pacing" events
+```
+
+**Pass**:
+- Jobs tagged with `background` show pacing delays in logs
+- Delay increases as utilization increases
+- Regular jobs (without `background` tag) process immediately
