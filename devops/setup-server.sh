@@ -139,6 +139,9 @@ server {
     listen 80;
     server_name _;
 
+    # Allow large file uploads (25MB for audio transcription)
+    client_max_body_size 25M;
+
     # Static files - no caching during development
     location /static/ {
         proxy_pass http://127.0.0.1:8000;
