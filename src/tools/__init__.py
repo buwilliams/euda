@@ -105,6 +105,22 @@ def get_all_tools() -> List[dict]:
     ]
 
 
+def get_available_tools() -> Dict[str, dict]:
+    """Get all registered tools as a dict keyed by tool name.
+
+    Returns:
+        Dict mapping tool name to tool info (name, description, schema)
+    """
+    return {
+        name: {
+            "name": t["name"],
+            "description": t["description"],
+            "schema": t["schema"]
+        }
+        for name, t in _TOOL_REGISTRY.items()
+    }
+
+
 def get_tools_for_agent(tool_names: List[str]) -> List[dict]:
     """Get tool definitions for specific tool names."""
     tools = []
