@@ -361,6 +361,10 @@ class AgentManager:
                 jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
 
                 if jobs:
+                    # Track the job being processed for cooldown decision
+                    current_job = jobs[0]
+                    is_background = "background" in current_job.get("tags", [])
+
                     agent._log("polling_found_jobs", {"count": len(jobs)})
                     agent.work_cycle_sync()
                     # Success - reset backoff and update last_ran
@@ -370,12 +374,12 @@ class AgentManager:
                     jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
                     self.agents_with_jobs[agent.id] = bool(jobs)
 
-                    # If more jobs exist, add cooldown to pace processing
-                    # This prevents overwhelming the system during batch workloads
-                    if jobs:
-                        cooldown = self._get_system_config().get("agents", {}).get("job_processing_cooldown", 5.0)
+                    # Apply cooldown only for background jobs (uploads, integrations)
+                    # Regular jobs process immediately for responsive UX
+                    if is_background and jobs:
+                        cooldown = self._get_system_config().get("agents", {}).get("background_job_cooldown", 5.0)
                         if cooldown > 0:
-                            agent._log("job_processing_cooldown", {"seconds": cooldown, "remaining_jobs": len(jobs)})
+                            agent._log("background_job_cooldown", {"seconds": cooldown, "remaining_jobs": len(jobs)})
                             time.sleep(cooldown)
                 else:
                     # Cache was stale - clear it

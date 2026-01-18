@@ -68,7 +68,7 @@ Type: {"text" if is_text else "binary"}
 {"Use `read_asset` to read the file content, then extract identity-relevant information (interests, goals, concerns, biographical facts) and create appropriate memories using `add_memory`. Store analysis insights in long-term memory using `write_long_term_memory`." if is_text else "This is a binary file. Note its existence in the user's memory."}
 
 After processing, complete this job with `complete_job`.""",
-        tags=["upload", "analysis"],
+        tags=["upload", "analysis", "background"],
         assignees=["chat"],
         parent_id=parent_id,
         created_by="user"
