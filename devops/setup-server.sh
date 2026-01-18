@@ -41,6 +41,14 @@ echo "==================================="
 echo "Server: $SERVER"
 echo "Remote directory: $REMOTE_DIR"
 echo ""
+echo "This will install dependencies and configure the server."
+echo ""
+read -p "Type 'yes' to continue: " CONFIRM
+if [ "$CONFIRM" != "yes" ]; then
+    echo "Aborted."
+    exit 1
+fi
+echo ""
 
 # Check SSH connectivity
 echo "[1/6] Testing SSH connection..."
