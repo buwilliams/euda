@@ -369,6 +369,14 @@ class AgentManager:
                     # Re-check for more jobs and update cache
                     jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
                     self.agents_with_jobs[agent.id] = bool(jobs)
+
+                    # If more jobs exist, add cooldown to pace processing
+                    # This prevents overwhelming the system during batch workloads
+                    if jobs:
+                        cooldown = self._get_system_config().get("agents", {}).get("job_processing_cooldown", 5.0)
+                        if cooldown > 0:
+                            agent._log("job_processing_cooldown", {"seconds": cooldown, "remaining_jobs": len(jobs)})
+                            time.sleep(cooldown)
                 else:
                     # Cache was stale - clear it
                     self.agents_with_jobs[agent.id] = False

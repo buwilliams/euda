@@ -109,7 +109,8 @@
   },
   "agents": {
     "max_work_iterations": 20,
-    "poll_interval": 0.1
+    "poll_interval": 0.1,
+    "job_processing_cooldown": 5.0
   },
   "schedules": {
     "morning": "08:00",
