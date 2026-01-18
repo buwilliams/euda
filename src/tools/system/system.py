@@ -150,6 +150,7 @@ def schedule_reminder(message: str, scheduled_at: str) -> dict:
 
     The reminder will be delivered as a notification when the scheduled time arrives.
     This is a zero-cost operation - the Python scheduler handles delivery without LLM calls.
+    The reminder appears in the Focus tab until delivered.
 
     Args:
         message: The reminder message to send to the user
@@ -158,17 +159,19 @@ def schedule_reminder(message: str, scheduled_at: str) -> dict:
     Returns:
         Dict with scheduled status, job_id, and scheduled_at time
     """
-    from ..data.jobs import create_job, get_system_container
+    from ..data.jobs import create_job
 
-    system_container = get_system_container()
+    # Extract date portion from scheduled_at for due_date (YYYY-MM-DD)
+    due_date = scheduled_at.split("T")[0] if "T" in scheduled_at else scheduled_at[:10]
 
-    # Create a scheduled job that will be auto-delivered
+    # Create reminder as a top-level job (no parent) so it appears in Focus tab
     job = create_job(
         name=f"Reminder: {message[:50]}{'...' if len(message) > 50 else ''}",
         description=message,
-        parent_id=system_container["id"],
+        parent_id=None,  # Top-level job, visible in Focus tab
         tags=["scheduled", "reminder"],
         scheduled_at=scheduled_at,
+        due_date=due_date,  # Shows in Today/Upcoming based on scheduled date
         created_by="agent"
     )
 
