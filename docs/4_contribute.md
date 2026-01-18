@@ -70,9 +70,11 @@ The [spec/](../spec/) directory is the best place to understand how Euno works. 
 
 Single-user, single-server architecture. Each user deploys their own instance.
 
-Recommended: [Vultr](https://my.vultr.com/) $5/month (1 vCPU, 1GB RAM, 25GB SSD, Ubuntu 22.04)
+Recommended: [DigitalOcean](https://digitalocean.com/) $6/month Basic Droplet (1 vCPU, 1GB RAM, 25GB SSD, 1TB transfer, Ubuntu 24.04 LTS)
 
-1. Create server, note the IP
+> **Note:** We previously recommended Vultr but encountered intrusive and incompetent support after a runaway agent incident.
+
+1. Create a Droplet, note the IP
 2. Setup SSH keys (skip if you already have keys):
    ```bash
    ssh-keygen -t ed25519
