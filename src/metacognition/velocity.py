@@ -62,6 +62,9 @@ class VelocityTracker:
         # Per-agent call history for runaway detection
         self._agent_call_history: Dict[str, deque] = {}
 
+        # Per-agent job completion history for progress tracking
+        self._agent_completion_history: Dict[str, deque] = {}
+
         # Paused agents
         self._paused_agents: Set[str] = set()
         self._pause_reasons: Dict[str, str] = {}
@@ -177,6 +180,26 @@ class VelocityTracker:
             # Cleanup old entries periodically
             self._cleanup_old_entries()
 
+    def record_completion(self, agent_id: str, job_id: Optional[str] = None):
+        """Record a job completion for progress tracking.
+
+        This helps distinguish legitimate batch processing (completing jobs)
+        from runaway behavior (making calls without progress).
+
+        Args:
+            agent_id: ID of the agent that completed the job
+            job_id: ID of the completed job (optional, for logging)
+        """
+        if not self.is_enabled():
+            return
+
+        now = time.time()
+
+        with self._lock:
+            if agent_id not in self._agent_completion_history:
+                self._agent_completion_history[agent_id] = deque()
+            self._agent_completion_history[agent_id].append(now)
+
     def _check_rolling_window(self) -> bool:
         """Check if within rolling window limits.
 
@@ -199,9 +222,11 @@ class VelocityTracker:
         """Check for runaway agent behavior.
 
         Algorithm:
-        1. Calculate baseline: calls/minute over last baseline_window_minutes
-        2. Calculate current rate: calls in last 60 seconds
-        3. Only flag as runaway if BOTH:
+        1. Check if agent is making progress (completing jobs) - if so, not runaway
+        2. Calculate baseline: calls/minute over last baseline_window_minutes
+        3. Calculate current rate: calls in last 60 seconds
+        4. Only flag as runaway if ALL:
+           - No recent job completions (no progress)
            - current_rate > baseline * spike_multiplier
            - current_rate >= min_spike_rate (absolute threshold)
 
@@ -223,7 +248,16 @@ class VelocityTracker:
 
         now = time.time()
         one_minute_ago = now - 60
+        five_minutes_ago = now - 300
         baseline_start = now - (baseline_minutes * 60)
+
+        # Check for progress: job completions in last 5 minutes
+        # If agent is completing jobs, it's doing legitimate work, not runaway
+        completion_history = self._agent_completion_history.get(agent_id, deque())
+        recent_completions = sum(1 for ts in completion_history if ts >= five_minutes_ago)
+        if recent_completions > 0:
+            # Agent is making progress - not runaway
+            return False
 
         # Count calls in baseline window and last minute
         baseline_calls = sum(1 for ts in history if ts >= baseline_start)
@@ -465,7 +499,7 @@ class VelocityTracker:
         while self._call_timestamps and self._call_timestamps[0] < cutoff:
             self._call_timestamps.popleft()
 
-        # Clean per-agent history
+        # Clean per-agent call history
         for agent_id in list(self._agent_call_history.keys()):
             history = self._agent_call_history[agent_id]
             while history and history[0] < cutoff:
@@ -474,6 +508,16 @@ class VelocityTracker:
             # Remove empty histories
             if not history:
                 del self._agent_call_history[agent_id]
+
+        # Clean per-agent completion history
+        for agent_id in list(self._agent_completion_history.keys()):
+            history = self._agent_completion_history[agent_id]
+            while history and history[0] < cutoff:
+                history.popleft()
+
+            # Remove empty histories
+            if not history:
+                del self._agent_completion_history[agent_id]
 
     def _log_event(self, event_type: str, details: dict):
         """Log a velocity/rate limiting event."""
