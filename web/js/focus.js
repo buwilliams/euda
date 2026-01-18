@@ -358,3 +358,98 @@ function renderViewHeader(title, options = {}) {
         </div>
     `;
 }
+
+// ============== Quick Add (from plus button) ==============
+
+// Get context for quick-add based on current focusView
+function getQuickAddContext() {
+    const today = new Date().toISOString().split('T')[0];
+
+    // Only apply context when on Focus tab
+    if (activeTab !== 'focus') {
+        return { due_date: today, label: 'Today' };
+    }
+
+    // Menu or Today view - create job for today
+    if (focusView === 'menu' || focusView === 'today') {
+        return { due_date: today, label: 'Today' };
+    }
+
+    // Upcoming view - create job for tomorrow
+    if (focusView === 'upcoming') {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return { due_date: tomorrow.toISOString().split('T')[0], label: 'Upcoming' };
+    }
+
+    // Anytime view - no due date
+    if (focusView === 'anytime') {
+        return { due_date: null, label: 'Anytime' };
+    }
+
+    // Someday view - far future date (signals someday)
+    if (focusView === 'someday') {
+        return { due_date: '2099-12-31', label: 'Someday' };
+    }
+
+    // Job detail view - create child job
+    if (focusView.startsWith('job-')) {
+        const jobId = focusView.substring(4);
+        const job = jobsData.find(j => j.id === jobId);
+        if (job) {
+            return { parent_id: jobId, label: job.name };
+        }
+    }
+
+    // Default to today
+    return { due_date: today, label: 'Today' };
+}
+
+// Quick add job from chat input (called from plus button)
+function quickAddFromInput() {
+    const input = document.getElementById('context-input');
+    if (!input) return;
+
+    const name = input.value.trim();
+    if (!name) {
+        // Focus the input if empty
+        input.focus();
+        return;
+    }
+
+    const context = getQuickAddContext();
+    const jobData = { name };
+
+    if (context.parent_id) {
+        jobData.parent_id = context.parent_id;
+    }
+    if (context.due_date) {
+        jobData.due_date = context.due_date;
+    }
+
+    // Clear input immediately for snappy UX
+    input.value = '';
+
+    // Create job in background (don't await)
+    fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(jobData)
+    }).then(response => {
+        if (response.ok) {
+            loadJobsData().then(() => {
+                // Refresh view if on Focus tab
+                if (activeTab === 'focus') {
+                    renderFocusTab();
+                }
+            });
+        }
+    }).catch(error => {
+        console.error('Failed to create job:', error);
+    });
+
+    // Switch to Focus tab immediately
+    if (activeTab !== 'focus') {
+        switchTab('focus');
+    }
+}

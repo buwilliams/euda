@@ -716,9 +716,6 @@ function renderSystemContainerView(job, isAgentsContainer, isSystemJobsContainer
         }
     };
 
-    // Only show quick add for Projects container
-    const showQuickAdd = !isAgentsContainer && !isSystemJobsContainer;
-
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
@@ -732,13 +729,6 @@ function renderSystemContainerView(job, isAgentsContainer, isSystemJobsContainer
             <div class="job-section">
                 ${renderChildJobs()}
             </div>
-            ${showQuickAdd ? `
-            <!-- Quick Add for Projects -->
-            <div class="quick-add-section">
-                <input type="text" id="quick-add-${job.id}" class="quick-add-input" placeholder="Add new project..." onkeypress="handleQuickAddKeypress(event, 'quick-add-${job.id}', '${job.id}')">
-                <button class="quick-add-btn" onclick="quickAddJob('quick-add-${job.id}', '${job.id}')">${icon('plus')}</button>
-            </div>
-            ` : ''}
         </div>
     `;
 }
