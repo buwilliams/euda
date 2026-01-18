@@ -106,6 +106,18 @@ Historical identities: `data/agents/{id}/identity.{yyyy}.md`
 - Assets stored as files: `data/jobs/assets/{job-id}/{filename}`
 - Use SQLite because indexing and querying is required
 
+### Job Assets
+
+Job assets are files attached to a job. They serve multiple purposes:
+- **Integration data**: Uploaded files, imported content from external sources
+- **Work products**: Documents, reports, analysis results created by agents
+- **Context**: Supporting materials needed for job completion
+
+All integrations (file uploads, email import, etc.) should store content as job assets rather than in separate directories. This ensures:
+- Content is tied to the job that processes it
+- Agents can use standard asset tools (`read_asset`, `write_asset`, `list_assets`)
+- Cleanup happens naturally when jobs are archived/deleted
+
 ## Config
 
 - System config: `data/system/config.json`

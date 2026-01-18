@@ -43,17 +43,30 @@ Rules for the server, API, and infrastructure.
 - `POST /api/agents/{id}/reflection/trigger` — Manually trigger reflection, returns execution_id
 - `POST /api/agents/{id}/exploration/trigger` — Manually trigger exploration, returns execution_id
 
-## Upload Endpoint
+## Integrations
 
-- `POST /api/upload` — Upload file with automatic identity extraction
-- Saves files to `data/agents/user/uploads/{date}/`
-- For text files:
-  - Analyzes content using configured LLM provider
-  - Extracts: document type, biographical facts, interests, goals, concerns, key insights
-  - Creates semantic memories (type: idea, goal, concern) from extracted data
-  - Stores raw content and analysis in user's long-term memory
-- Token limit configured via `metacognition.reflection.upload_analysis_max_tokens`
-- Returns: filename, saved path, analysis results, memories created
+Integrations bring external data into Euno. All integrations follow the same pattern:
+
+1. **Create a job** — The integration creates a job assigned to an agent (usually Chat)
+2. **Store content as job assets** — Files/data are saved to `data/jobs/assets/{job-id}/`
+3. **Agent processes asynchronously** — The assigned agent handles the job using its tools
+4. **Results in memory** — Analysis and insights are stored in user's memory
+
+This pattern ensures:
+- Non-blocking operation (UI returns immediately)
+- Visibility into what's being processed (jobs appear in queue)
+- Consistent data storage (job assets)
+- Agent autonomy in how to process content
+
+### Upload Endpoint (File Integration)
+
+- `POST /api/upload` — Upload file for agent processing
+- Creates a job assigned to Chat agent with file as job asset
+- Chat uses `read_asset` to access file content
+- For text files: extracts identity info and creates memories
+- Returns: filename, job_id, size
+
+Future integrations (email, calendar, social media, etc.) should follow this same pattern.
 
 ## Fresh Start & Backups
 
