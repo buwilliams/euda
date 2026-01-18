@@ -156,24 +156,21 @@ class Planner:
 
     def _format_available_tools(self) -> str:
         """Format list of available tools for planning prompt."""
-        from ..tools import get_available_tools
-
-        tool_names = self.agent._get_tools()
-        if not tool_names:
+        tools = self.agent._get_tools()
+        if not tools:
             return "(no tools available)"
 
-        # Get tool descriptions
-        all_tools = get_available_tools()
+        # _get_tools() returns list of tool definitions with name/description
         lines = []
-        for name in tool_names[:15]:  # Limit to avoid overwhelming
-            tool_info = all_tools.get(name, {})
-            desc = tool_info.get("description", "")
+        for tool in tools[:15]:  # Limit to avoid overwhelming
+            name = tool.get("name", "unknown")
+            desc = tool.get("description", "")
             # Truncate long descriptions
             if len(desc) > 100:
                 desc = desc[:100] + "..."
             lines.append(f"- **{name}**: {desc}")
 
-        if len(tool_names) > 15:
-            lines.append(f"- ... and {len(tool_names) - 15} more tools")
+        if len(tools) > 15:
+            lines.append(f"- ... and {len(tools) - 15} more tools")
 
         return "\n".join(lines)
