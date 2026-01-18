@@ -387,7 +387,10 @@ function renderJobTraceView(jobId) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Job Trace</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Job Trace</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="focus-empty">Loading trace data...</div>
@@ -400,7 +403,10 @@ function renderJobTraceView(jobId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">${icon('chart-bar')} Trace: ${escapeHtml(job_name || 'Job')}</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">${icon('chart-bar')} Trace: ${escapeHtml(job_name || 'Job')}</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             <!-- Summary Stats -->
@@ -609,7 +615,10 @@ function renderTimelineView(category, title) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">${categoryIcon} ${title}</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">${categoryIcon} ${title}</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             ${jobs.length === 0
@@ -634,7 +643,10 @@ function renderCompletedJobsView() {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">${icon('check')} Completed Jobs</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">${icon('check')} Completed Jobs</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             ${rootCompletedJobs.length === 0
@@ -710,7 +722,10 @@ function renderSystemContainerView(job, isAgentsContainer, isSystemJobsContainer
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">${titleIcon}${containerName}</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">${titleIcon}${containerName}</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             <!-- Child Jobs -->
@@ -750,7 +765,10 @@ function renderAgentDetailView(job) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">${icon('bolt')}${escapeHtml(displayName)}</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">${icon('bolt')}${escapeHtml(displayName)}</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="focus-empty">Loading agent data...</div>
@@ -769,7 +787,10 @@ function renderAgentDetailView(job) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">${icon('bolt')}${escapeHtml(displayName)}</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">${icon('bolt')}${escapeHtml(displayName)}</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             <!-- Actions Row -->
@@ -850,7 +871,10 @@ function renderAgentManageView(agentId) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Manage</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Manage</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="focus-empty">Loading agent data...</div>
@@ -877,7 +901,10 @@ function renderAgentManageView(agentId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">${escapeHtml(displayName)} / Manage</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">Manage</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             <!-- Action Menu -->
@@ -956,7 +983,10 @@ function renderMemoryListView(agentId) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Short-term Memory</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Short-term Memory</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="focus-empty">Loading memory...</div>
@@ -979,7 +1009,10 @@ function renderMemoryListView(agentId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">Short-term Memory</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">Short-term Memory</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             <!-- Action Menu -->
@@ -1025,7 +1058,10 @@ function renderMemoryItemView(agentId, entryId) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Memory Item</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Memory Item</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="focus-empty">Loading...</div>
@@ -1047,7 +1083,10 @@ function renderMemoryItemView(agentId, entryId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">Memory Item</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">Memory Item</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             <!-- Action Menu -->
@@ -1119,7 +1158,10 @@ function renderLongTermMemoryListView(agentId) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Long-term Memory</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Long-term Memory</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="focus-empty">Loading memory...</div>
@@ -1132,7 +1174,10 @@ function renderLongTermMemoryListView(agentId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">Long-term Memory</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">Long-term Memory</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             ${entries.length === 0 ? '<div class="focus-empty">No long-term memory entries.</div>' :
@@ -1182,7 +1227,10 @@ function renderLongTermMemoryDetailView(agentId, date) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">${formatMemoryDate(date)}</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">${formatMemoryDate(date)}</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="focus-empty">Loading...</div>
@@ -1193,7 +1241,10 @@ function renderLongTermMemoryDetailView(agentId, date) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">${formatMemoryDate(date)}</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">${formatMemoryDate(date)}</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             <div class="long-term-memory-content">
@@ -1221,7 +1272,10 @@ function renderMonitoringView(agentId) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Monitoring</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Monitoring</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="focus-empty">Loading monitoring data...</div>
@@ -1237,7 +1291,10 @@ function renderMonitoringView(agentId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">Monitoring</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">Monitoring</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             <!-- Live Progress (if running) -->
@@ -1295,7 +1352,10 @@ function renderPromptDetailView(agentId, promptIndex) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Prompt</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Prompt</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="focus-empty">Loading...</div>
@@ -1308,7 +1368,10 @@ function renderPromptDetailView(agentId, promptIndex) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Prompt</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Prompt</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="focus-empty">Prompt not found</div>
@@ -1351,7 +1414,10 @@ function renderPromptDetailView(agentId, promptIndex) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">Prompt</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">Prompt</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             <!-- Summary -->
@@ -1439,7 +1505,10 @@ function renderProfileView(agentId) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Profile</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Profile</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="focus-empty">Loading...</div>
@@ -1459,7 +1528,10 @@ function renderProfileView(agentId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">Profile</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">Profile</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             ${isEditingProfile ? `
@@ -1504,7 +1576,10 @@ function renderConfigurationView(agentId) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Configuration</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Configuration</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="focus-empty">Loading...</div>
@@ -1525,7 +1600,10 @@ function renderConfigurationView(agentId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">Configuration</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">Configuration</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             ${isEditingConfig ? `
@@ -1638,7 +1716,10 @@ function renderRateLimitEventsView(agentId) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Rate Limit Events</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Rate Limit Events</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-view-content">
                 <div class="focus-empty">Loading...</div>
@@ -1652,7 +1733,10 @@ function renderRateLimitEventsView(agentId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">Rate Limit Events</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">Rate Limit Events</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             ${agentEvents.length === 0 ? '<div class="focus-empty">No rate limit events for this agent.</div>' :
@@ -1681,7 +1765,10 @@ function renderJobDetailView(jobId) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Job Not Found</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Job Not Found</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-empty">This job no longer exists.</div>
         `;
@@ -1742,7 +1829,10 @@ function renderJobDetailView(jobId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title${isAgentJob ? ' agent-job-title' : ''}">${titleIcon}${escapeHtml(displayName)}</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title${isAgentJob ? ' agent-job-title' : ''}">${titleIcon}${escapeHtml(displayName)}</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             <!-- Actions Row -->
@@ -1868,7 +1958,10 @@ function renderCompletedJobDetailView(jobId) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
-                <span class="focus-view-title">Job Not Found</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Job Not Found</span>
+                    ${renderBreadcrumbs()}
+                </div>
             </div>
             <div class="focus-empty">This job no longer exists.</div>
         `;
@@ -1905,7 +1998,10 @@ function renderCompletedJobDetailView(jobId) {
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
-            <span class="focus-view-title">${escapeHtml(displayName)}</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">${escapeHtml(displayName)}</span>
+                ${renderBreadcrumbs()}
+            </div>
         </div>
         <div class="focus-view-content">
             <!-- Actions Row -->
