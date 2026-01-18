@@ -196,7 +196,7 @@ Agent = Identity + Cognition + Memory + Behavior
 - Contains: Purpose, Behavioral Rules, Voice, Wants/Fears, Stable Attractors, Notable Events, Influences, Interests, Biographical Info
 - Evolves through reflection—discovered, not configured
 - AI agents start pre-filled; users start empty
-- Historical snapshots: `profile.{yyyy}.md`
+- Historical snapshots: `identity.{yyyy}.md`
 
 ### Cognition
 
@@ -281,7 +281,13 @@ System-wide defaults in `data/system/config.json`:
     "resources": { "budget_limit": 10.0 },
     "progress": { "max_tool_calls_per_iteration": 50 },
     "planning": { "enabled_for": ["exploration", "reflection"] },
-    "efficiency": { "defer_reflection_in_work_cycles": true }
+    "efficiency": { "defer_reflection_in_work_cycles": true },
+    "reflection": {
+      "append_max_tokens": 500,
+      "append_batch_max_tokens": 1000,
+      "consolidate_max_tokens": 2000,
+      "upload_analysis_max_tokens": 1000
+    }
   }
 }
 ```

@@ -19,7 +19,7 @@ Rules for the server, API, and infrastructure.
   - `/api/chat` — Chat with agents
   - `/api/user` — Profile and long-term memory
   - `/api/auth` — Authentication
-  - `/api/upload` — File uploads
+  - `/api/upload` — File uploads with identity extraction
   - `/api/events` — SSE endpoint
   - `/api/transcribe` — Audio transcription (speech-to-text)
   - `/api/synthesize` — Text-to-speech synthesis
@@ -42,6 +42,18 @@ Rules for the server, API, and infrastructure.
 - `GET /api/agents/{id}/logs/reflection?days={n}` — Get reflection logs
 - `POST /api/agents/{id}/reflection/trigger` — Manually trigger reflection, returns execution_id
 - `POST /api/agents/{id}/exploration/trigger` — Manually trigger exploration, returns execution_id
+
+## Upload Endpoint
+
+- `POST /api/upload` — Upload file with automatic identity extraction
+- Saves files to `data/agents/user/uploads/{date}/`
+- For text files:
+  - Analyzes content using configured LLM provider
+  - Extracts: document type, biographical facts, interests, goals, concerns, key insights
+  - Creates semantic memories (type: idea, goal, concern) from extracted data
+  - Stores raw content and analysis in user's long-term memory
+- Token limit configured via `metacognition.reflection.upload_analysis_max_tokens`
+- Returns: filename, saved path, analysis results, memories created
 
 ## Fresh Start & Backups
 
@@ -90,6 +102,6 @@ Rules for the server, API, and infrastructure.
 
 - The user is conceptually an agent with a different interface (web UI vs autonomous loop)
 - Tools are the only way agents interact with the system
-- Every LLM call includes rich context: agent profile, memory, job context
+- Every LLM call includes rich context: agent identity, user identity, available tools, job context
 - Self-hosted — users own their data and infrastructure
 - The intelligence is separate from the interface — today web, tomorrow voice/wearable

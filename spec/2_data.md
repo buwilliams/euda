@@ -86,7 +86,7 @@ All agents (including user) share the same identity schema stored in `identity.m
 
 AI agents start with Purpose, Behavioral Rules, Voice pre-filled. Users start empty. Both evolve through reflection and can develop any section over time.
 
-Historical profiles: `data/agents/{id}/profile.{yyyy}.md`
+Historical identities: `data/agents/{id}/identity.{yyyy}.md`
 
 ### Agent Behavior
 
