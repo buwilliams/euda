@@ -4,10 +4,8 @@ System API Routes - Health, about, settings, events
 
 import asyncio
 import json
-import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import List
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
@@ -15,8 +13,14 @@ from pydantic import BaseModel
 
 from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client
 from ...llms.base import _load_config, CONFIG_PATH, VALID_PROVIDERS
-from ...tools.data.jobs import list_jobs, _get_connection
+from ...tools.data.jobs import list_jobs
 from ...tools.data.identity import get_identity
+from ...fresh_start import (
+    perform_fresh_start,
+    list_backups as _list_backups,
+    restore_backup as _restore_backup,
+    delete_backup as _delete_backup,
+)
 
 
 router = APIRouter()
@@ -257,228 +261,22 @@ def update_schedules(data: dict):
 
 # ============== Fresh Start & Backups ==============
 
-BACKUP_PREFIX = "data_backup-"
-
-
-def _list_backups() -> List[dict]:
-    """List all available backups sorted by date (newest first)."""
-    project_dir = DATA_DIR.parent
-    backups = []
-
-    for item in project_dir.iterdir():
-        if item.is_dir() and item.name.startswith(BACKUP_PREFIX):
-            # Parse timestamp from name: data_backup-YYYYMMDD-HHMMSS
-            timestamp_str = item.name[len(BACKUP_PREFIX):]
-            try:
-                # Get actual modification time as fallback
-                mtime = item.stat().st_mtime
-                backups.append({
-                    "name": item.name,
-                    "timestamp": timestamp_str,
-                    "path": str(item),
-                    "mtime": mtime
-                })
-            except OSError:
-                continue
-
-    # Sort by modification time (newest first)
-    backups.sort(key=lambda x: x["mtime"], reverse=True)
-    return backups
-
-
-def _clear_logger_caches():
-    """Clear all logger caches to prevent stale file handles after fresh-start/restore."""
-    # Clear general loggers
-    try:
-        from ...logger import _loggers
-        _loggers.clear()
-    except Exception:
-        pass
-
-    # Clear LLM prompt logger cache
-    try:
-        import src.llms.base as llm_base
-        llm_base._prompt_logger = None
-    except Exception:
-        pass
-
-    # Clear cost logger cache
-    try:
-        import src.metacognition.resources as resources
-        resources._cost_logger = None
-    except Exception:
-        pass
-
-
-def _perform_fresh_start() -> dict:
-    """
-    Reset all user data for a clean slate.
-
-    Instead of deleting, moves the data directory to a timestamped backup,
-    then creates a fresh data directory preserving only agent configs and profiles.
-
-    Returns dict with backup_name and preserved items.
-    """
-    project_dir = DATA_DIR.parent
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    backup_name = f"{BACKUP_PREFIX}{timestamp}"
-    backup_path = project_dir / backup_name
-
-    # Collect agent configs and profiles to preserve
-    preserved = []
-    agents_to_preserve = {}
-
-    agents_dir = DATA_DIR / "agents"
-    if agents_dir.exists():
-        for agent_dir in agents_dir.iterdir():
-            if agent_dir.is_dir():
-                agent_id = agent_dir.name
-                agents_to_preserve[agent_id] = {}
-
-                # Preserve config.json
-                config_file = agent_dir / "config.json"
-                if config_file.exists():
-                    agents_to_preserve[agent_id]["config"] = config_file.read_text()
-                    preserved.append(f"agents/{agent_id}/config.json")
-
-                # Preserve identity.template.md (template)
-                identity_template = agent_dir / "identity.template.md"
-                if identity_template.exists():
-                    agents_to_preserve[agent_id]["identity_template"] = identity_template.read_text()
-                    preserved.append(f"agents/{agent_id}/identity.template.md")
-
-    # Preserve system config
-    system_config = None
-    system_config_file = DATA_DIR / "system" / "config.json"
-    if system_config_file.exists():
-        system_config = system_config_file.read_text()
-        preserved.append("system/config.json")
-
-    # Close any open database connections
-    try:
-        from ...tools.data.jobs import _connection_pool
-        for conn in _connection_pool.values():
-            conn.close()
-        _connection_pool.clear()
-    except Exception:
-        pass
-
-    # Clear logger caches so they don't recreate old paths after fresh start
-    _clear_logger_caches()
-
-    # Move data to backup
-    if DATA_DIR.exists():
-        shutil.move(str(DATA_DIR), str(backup_path))
-
-    # Create fresh data directory structure
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Restore agents directory with only configs and profile templates
-    if agents_to_preserve:
-        agents_dir = DATA_DIR / "agents"
-        agents_dir.mkdir(parents=True, exist_ok=True)
-
-        for agent_id, files in agents_to_preserve.items():
-            agent_dir = agents_dir / agent_id
-            agent_dir.mkdir(parents=True, exist_ok=True)
-
-            if "config" in files:
-                (agent_dir / "config.json").write_text(files["config"])
-            if "identity_template" in files:
-                (agent_dir / "identity.template.md").write_text(files["identity_template"])
-                # Also create identity.md from template for fresh start
-                (agent_dir / "identity.md").write_text(files["identity_template"])
-
-    # Restore system config
-    if system_config:
-        system_dir = DATA_DIR / "system"
-        system_dir.mkdir(parents=True, exist_ok=True)
-        (system_dir / "config.json").write_text(system_config)
-
-    # Create jobs directory
-    (DATA_DIR / "jobs").mkdir(parents=True, exist_ok=True)
-
-    return {
-        "backup_name": backup_name,
-        "preserved": preserved
-    }
-
-
-def _restore_backup(backup_name: str) -> dict:
-    """
-    Restore from a backup by swapping directories.
-
-    The current data becomes a new backup, and the selected backup becomes data.
-    """
-    project_dir = DATA_DIR.parent
-    backup_path = project_dir / backup_name
-
-    if not backup_path.exists():
-        return {"error": f"Backup not found: {backup_name}"}
-
-    if not backup_path.is_dir():
-        return {"error": f"Invalid backup: {backup_name}"}
-
-    # Close any open database connections
-    try:
-        from ...tools.data.jobs import _connection_pool
-        for conn in _connection_pool.values():
-            conn.close()
-        _connection_pool.clear()
-    except Exception:
-        pass
-
-    # Clear logger caches so they use new paths after restore
-    _clear_logger_caches()
-
-    # Create a backup of current data before restoring
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    current_backup_name = f"{BACKUP_PREFIX}{timestamp}"
-    current_backup_path = project_dir / current_backup_name
-
-    # Move current data to backup
-    if DATA_DIR.exists():
-        shutil.move(str(DATA_DIR), str(current_backup_path))
-
-    # Restore selected backup as data
-    shutil.move(str(backup_path), str(DATA_DIR))
-
-    return {
-        "restored_from": backup_name,
-        "current_backed_up_as": current_backup_name
-    }
-
-
-def _delete_backup(backup_name: str) -> dict:
-    """Delete a backup permanently."""
-    project_dir = DATA_DIR.parent
-    backup_path = project_dir / backup_name
-
-    if not backup_path.exists():
-        return {"error": f"Backup not found: {backup_name}"}
-
-    if not backup_name.startswith(BACKUP_PREFIX):
-        return {"error": "Invalid backup name"}
-
-    shutil.rmtree(backup_path)
-    return {"deleted": backup_name}
-
-
 @router.post("/fresh-start")
 def fresh_start():
     """
     Reset all user data for a clean slate.
 
-    Moves current data to a timestamped backup and creates a fresh data directory.
-    Agent configs and profiles are preserved. Use /api/backups to restore if needed.
+    Creates a backup first, then resets user data while preserving
+    agent configs, system config, and git-tracked files.
     """
-    result = _perform_fresh_start()
+    result = perform_fresh_start(create_backup_first=True)
 
     return {
         "success": True,
-        "backup_name": result["backup_name"],
-        "preserved": result["preserved"],
-        "message": f"Fresh start complete. Previous data backed up as {result['backup_name']}."
+        "backup_name": result.get("backup_name"),
+        "deleted": result.get("deleted", []),
+        "reset": result.get("reset", []),
+        "message": f"Fresh start complete. Previous data backed up as {result.get('backup_name')}."
     }
 
 
