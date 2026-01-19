@@ -163,12 +163,20 @@
                                         </div>
                                         <div class="settings-field">
                                             <label class="settings-label">Budget Limit</label>
-                                            <div class="budget-input-group">
-                                                <span class="budget-prefix">$</span>
-                                                <input type="number" class="settings-input budget-input" id="budget-limit"
-                                                       step="0.01" min="0" placeholder="50.00" onchange="handleBudgetChange()">
+                                            <div class="budget-row">
+                                                <div class="budget-input-group">
+                                                    <span class="budget-prefix">$</span>
+                                                    <input type="number" class="settings-input budget-input" id="budget-limit"
+                                                           step="0.01" min="0" placeholder="50.00" onchange="handleBudgetChange()">
+                                                </div>
+                                                <select class="settings-select budget-period-select" id="budget-period" onchange="handleBudgetPeriodChange()">
+                                                    <option value="daily">per day</option>
+                                                    <option value="weekly">per week</option>
+                                                    <option value="monthly" selected>per month</option>
+                                                    <option value="session">per session</option>
+                                                </select>
                                             </div>
-                                            <div class="settings-hint">Monthly spending limit for LLM API calls</div>
+                                            <div class="settings-hint">Spending limit for LLM API calls</div>
                                         </div>
                                         <div class="settings-field">
                                             <label class="settings-label">Schedules</label>

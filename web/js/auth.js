@@ -190,10 +190,14 @@ function renderSettings() {
         providerSelect.value = settingsData.llm.provider || 'anthropic';
     }
 
-    // Set budget limit
+    // Set budget limit and period
     const budgetInput = document.getElementById('budget-limit');
     if (budgetInput && settingsData.llm?.budget?.limit !== undefined) {
         budgetInput.value = settingsData.llm.budget.limit || '';
+    }
+    const budgetPeriod = document.getElementById('budget-period');
+    if (budgetPeriod && settingsData.llm?.budget?.period) {
+        budgetPeriod.value = settingsData.llm.budget.period;
     }
 
     // Render schedules
@@ -245,6 +249,36 @@ async function handleBudgetChange() {
 
         if (response.ok) {
             messageEl.textContent = 'Budget limit saved';
+            messageEl.className = 'settings-message success';
+            // Reload to update costs display
+            await loadCostsData();
+        } else {
+            const data = await response.json();
+            messageEl.textContent = data.detail || 'Failed to save';
+            messageEl.className = 'settings-message error';
+        }
+    } catch (error) {
+        messageEl.textContent = 'Connection error';
+        messageEl.className = 'settings-message error';
+    }
+
+    setTimeout(() => { messageEl.textContent = ''; }, 2000);
+}
+
+async function handleBudgetPeriodChange() {
+    const budgetPeriod = document.getElementById('budget-period');
+    const messageEl = document.getElementById('ai-message');
+    const value = budgetPeriod.value;
+
+    try {
+        const response = await fetch('/api/settings/llm', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ budget: { period: value } })
+        });
+
+        if (response.ok) {
+            messageEl.textContent = 'Budget period saved';
             messageEl.className = 'settings-message success';
             // Reload to update costs display
             await loadCostsData();
