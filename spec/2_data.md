@@ -18,24 +18,24 @@ Directory structure:
   - exploration{}: enabled, trigger (e.g., "time:hour_04")
   - reflection{}: enabled, trigger
   - Triggers define which trigger jobs the agent receives
-- **Profile:** `data/agents/{id}/identity.md`
+- **Identity:** `data/agents/{id}/identity.md`
   - Evolves over time based on long-term memory
   - For AI agents: purpose, behavioral rules, voice
   - For user: biographical info, wants/fears, stable attractors
-  - Template: `identity.md.example` — preserved during Fresh Start for reinitialization
+  - Template: `identity.template.md` — preserved during Fresh Start for reinitialization
 - **Memory:**
   - Short-term: `data/agents/{id}/memory/short-term.jsonl` (90-day rolling)
   - Long-term: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md` (year-based archive)
 - **State:** `data/agents/{id}/state/conversation/{session-id}.md`
 - **Logs:** `data/agents/{id}/logs/{date}.jsonl`
 
-No Python code needed to create new agents — just config and profile files.
+No Python code needed to create new agents — just config and identity files.
 
 ### User Agent
 
 The user is agent `user` with the same structure as AI agents:
 - Config defines tools available through the UI
-- Profile contains identity, patterns, values
+- Identity contains purpose, patterns, values
 - Short-term memory tracks what's on their mind (90 days)
 - Long-term memory archives important events indefinitely
 
@@ -69,9 +69,9 @@ Memory moves through two phases:
 - **Consolidate phase** (triggered, creates visible jobs)
   - Heavy analysis triggered by `time:evening` or custom trigger
   - Creates `Trigger:reflection:{date}` jobs that appear in agent's queue
-  - Reviews short-term memory, graduates items to long-term, updates profile
+  - Reviews short-term memory, graduates items to long-term, updates identity
 
-### Identity Schema (Profile)
+### Identity Schema
 
 All agents (including user) share the same identity schema stored in `identity.md`:
 - Purpose (what drives them / why they exist)
@@ -91,7 +91,7 @@ Historical identities: `data/agents/{id}/identity.{yyyy}.md`
 ### Agent Behavior
 
 - Capabilities defined by which tools it has access to
-- All agents share ethical constraints defined in the core profile
+- All agents share ethical constraints defined in the core identity
 - No coercion, no manipulation, no bypassing user resistance
 - Treat user resistance as information, not opposition
 - Require explicit user affirmation before irreversible actions
@@ -155,17 +155,17 @@ python main.py dev memory user --short  # Check after
 
 ### Consolidation Persistence Test
 
-Verifies profile updates from consolidation persist.
+Verifies identity updates from consolidation persist.
 
 ```bash
-python main.py dev profile chat > /tmp/profile-before.md
+python main.py dev identity chat > /tmp/identity-before.md
 python main.py dev reflect chat --consolidate
-python main.py dev profile chat > /tmp/profile-after.md
+python main.py dev identity chat > /tmp/identity-after.md
 sleep 120  # Wait 2 minutes
-python main.py dev profile chat > /tmp/profile-final.md
+python main.py dev identity chat > /tmp/identity-final.md
 ```
 
-**Pass**: Profile contains "Reflection Update" section that persists (not overwritten).
+**Pass**: Identity contains "Reflection Update" section that persists (not overwritten).
 
 ### Cross-Agent Memory Search Test
 

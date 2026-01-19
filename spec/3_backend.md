@@ -17,7 +17,7 @@ Rules for the server, API, and infrastructure.
   - `/api/jobs` — Job CRUD
   - `/api/agents` — Agent listing and management
   - `/api/chat` — Chat with agents
-  - `/api/user` — Profile and long-term memory
+  - `/api/user` — Identity and long-term memory
   - `/api/auth` — Authentication
   - `/api/upload` — File uploads with identity extraction
   - `/api/events` — SSE endpoint
@@ -29,8 +29,8 @@ Rules for the server, API, and infrastructure.
 
 ## Agent Management Endpoints
 
-- `GET /api/agents/{id}/profile` — Get agent profile (markdown)
-- `PATCH /api/agents/{id}/profile` — Update agent profile
+- `GET /api/agents/{id}/identity` — Get agent identity (markdown)
+- `PATCH /api/agents/{id}/identity` — Update agent identity
 - `GET /api/agents/{id}/config` — Get agent configuration
 - `PATCH /api/agents/{id}/config` — Update agent configuration
 - `GET /api/agents/{id}/memory/short-term` — List short-term memory items
@@ -71,7 +71,7 @@ Future integrations (email, calendar, social media, etc.) should follow this sam
 
 ## Fresh Start & Backups
 
-- `POST /api/fresh-start` — Reset all user data, create timestamped backup, preserve agent configs and profile templates
+- `POST /api/fresh-start` — Reset all user data, create timestamped backup, preserve agent configs and identity templates
 - `GET /api/backups` — List all available backups with timestamps
 - `POST /api/backups/restore` — Restore from a backup (current data backed up first)
 - `DELETE /api/backups/{backup_name}` — Permanently delete a backup

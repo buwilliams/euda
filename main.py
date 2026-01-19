@@ -538,12 +538,13 @@ def cmd_fresh_start(args):
     print("  - All jobs and job assets")
     print("  - Cost tracking history")
     print("  - Reflection logs")
+    print("  - Prompt logs (LLM API call history)")
     print("  - System trigger state")
     print("  - Password (if set)")
     print("  - Non-core agents (anything except chat, user, worker)")
     print()
     print("This will RESET:")
-    print("  - Core agent identities (from identity.md.example templates)")
+    print("  - Core agent identities (from identity.template.md templates)")
     print()
     print("This will KEEP:")
     print("  - Agent configurations")
@@ -625,7 +626,7 @@ def cmd_fresh_start(args):
                         deleted.append(f"agents/{agent_id}/uploads/")
 
                     # Reset identity from template if available
-                    identity_template = agent_dir / "identity.md.example"
+                    identity_template = agent_dir / "identity.template.md"
                     identity_file = agent_dir / "identity.md"
                     if identity_template.exists():
                         template_content = identity_template.read_text()
@@ -658,6 +659,11 @@ def cmd_fresh_start(args):
         if reflection_logs.exists():
             shutil.rmtree(reflection_logs)
             deleted.append("system/logs/reflection/")
+        # Remove prompt logs
+        prompt_logs = system_dir / "logs" / "prompts"
+        if prompt_logs.exists():
+            shutil.rmtree(prompt_logs)
+            deleted.append("system/logs/prompts/")
 
     print()
     if deleted:

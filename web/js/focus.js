@@ -1,5 +1,16 @@
 // Euno - Focus Tab Core (State, Icons, Navigation)
 
+// ============== Date Utilities ==============
+
+function getLocalDateString(date = null) {
+    // Get date in YYYY-MM-DD format using local timezone
+    const d = date || new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // ============== State ==============
 
 let jobsData = [];           // All active jobs
@@ -111,9 +122,9 @@ function renderFocusTab() {
     } else if (focusView.startsWith('long-term-memory-')) {
         const agentId = focusView.substring(17);
         content = renderLongTermMemoryListView(agentId);
-    } else if (focusView.startsWith('profile-')) {
-        const agentId = focusView.substring(8);
-        content = renderProfileView(agentId);
+    } else if (focusView.startsWith('identity-')) {
+        const agentId = focusView.substring(9);
+        content = renderIdentityView(agentId);
     } else if (focusView.startsWith('config-')) {
         const agentId = focusView.substring(7);
         content = renderConfigurationView(agentId);
@@ -266,8 +277,8 @@ function getViewDisplayName(view) {
     if (view.startsWith('manage-agent-')) {
         return 'Manage';
     }
-    if (view.startsWith('profile-')) {
-        return 'Profile';
+    if (view.startsWith('identity-')) {
+        return 'Identity';
     }
     if (view.startsWith('config-')) {
         return 'Config';
@@ -363,7 +374,7 @@ function renderViewHeader(title, options = {}) {
 
 // Get context for quick-add based on current focusView
 function getQuickAddContext() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
 
     // Only apply context when on Focus tab
     if (activeTab !== 'focus') {
@@ -379,7 +390,7 @@ function getQuickAddContext() {
     if (focusView === 'upcoming') {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
-        return { due_date: tomorrow.toISOString().split('T')[0], label: 'Upcoming' };
+        return { due_date: getLocalDateString(tomorrow), label: 'Upcoming' };
     }
 
     // Anytime view - no due date

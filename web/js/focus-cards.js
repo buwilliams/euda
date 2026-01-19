@@ -96,7 +96,7 @@ function renderFullJobCard(job) {
 }
 
 function getWhenLabel(job) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const dueDate = job.due_date;
     const someday = job.someday;
 

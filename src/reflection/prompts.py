@@ -44,7 +44,7 @@ def build_append_prompt(
 
     return render_template(
         "reflection/append_user",
-        agent_profile=agent_profile,
+        agent_identity=agent_profile,
         existing_memory=memory_text,
         user_message=user_message,
         assistant_response=assistant_response
@@ -87,7 +87,7 @@ def build_append_batch_prompt(
 
     return render_template(
         "reflection/append_batch_user",
-        agent_profile=agent_profile,
+        agent_identity=agent_profile,
         existing_memory=memory_text,
         exchanges=exchanges_text,
         exchange_count=len(exchanges)
@@ -170,7 +170,7 @@ def build_consolidate_prompt(
         "reflection/consolidate_user",
         profile_type=profile_type,
         agent_id=agent_id,
-        agent_profile=agent_profile,
+        agent_identity=agent_profile,
         short_term_memory=short_term_text,
         recent_long_term=long_term_text,
         completed_jobs=completed_jobs_text

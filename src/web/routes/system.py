@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client
 from ...llms.base import _load_config, CONFIG_PATH, VALID_PROVIDERS
 from ...tools.data.jobs import list_jobs, _get_connection
-from ...tools.data.profile import get_profile
+from ...tools.data.identity import get_identity
 
 
 router = APIRouter()
@@ -70,7 +70,7 @@ def _save_quotes_state(state: dict):
         json.dump(state, f, indent=2)
 
 
-def _generate_quote(profile_content: str, history: list) -> dict:
+def _generate_quote(identity_content: str, history: list) -> dict:
     """Generate a personalized quote using the configured LLM."""
     client = get_client()
 
@@ -85,7 +85,7 @@ def _generate_quote(profile_content: str, history: list) -> dict:
     prompt = f"""Based on this user's identity, select or compose an inspiring quote that would resonate with them today.
 
 User Identity:
-{profile_content if profile_content else "No identity available - provide a generally inspiring quote."}
+{identity_content if identity_content else "No identity available - provide a generally inspiring quote."}
 {history_context}
 
 Respond with ONLY a JSON object in this exact format (no markdown, no explanation):
@@ -124,14 +124,14 @@ def daily_quote():
         return state["current"]
 
     # Get user identity for personalization
-    profile = get_profile("user")
-    profile_content = profile.get("content", "") if profile.get("exists") else ""
+    identity = get_identity("user")
+    identity_content = identity.get("content", "") if identity.get("exists") else ""
 
     # Get history (last 365 quotes)
     history = state.get("history", [])[-365:]
 
     # Generate new quote
-    quote = _generate_quote(profile_content, history)
+    quote = _generate_quote(identity_content, history)
 
     # Update state
     history.append(quote)
@@ -170,12 +170,16 @@ def get_settings():
 
     config = _load_config()
     current_provider = get_provider()
+    budget_config = config.get("llm", {}).get("budget", {})
     return {
         "llm": {
             "provider": current_provider,
             "model": get_model(),
             "providers": get_providers_config(),
-            "budget_limit": config.get("llm", {}).get("budget_limit")
+            "budget": {
+                "limit": budget_config.get("limit"),
+                "period": budget_config.get("period", "monthly")
+            }
         },
         "speech": {
             "stt_available": supports_stt(current_provider),
@@ -187,7 +191,9 @@ def get_settings():
 
 @router.put("/settings/llm")
 def update_llm_settings(data: dict):
-    """Update LLM settings (provider, models, budget_limit)."""
+    """Update LLM settings (provider, models, budget)."""
+    from ...metacognition import get_resource_tracker
+
     config = _load_config()
 
     # Update provider if specified
@@ -202,9 +208,14 @@ def update_llm_settings(data: dict):
             if provider_id in VALID_PROVIDERS and "model" in settings:
                 config["llm"]["providers"][provider_id]["model"] = settings["model"]
 
-    # Update budget limit if specified
-    if "budget_limit" in data:
-        config["llm"]["budget_limit"] = data["budget_limit"]
+    # Update budget if specified (nested structure: budget.limit, budget.period)
+    if "budget" in data:
+        if "budget" not in config["llm"]:
+            config["llm"]["budget"] = {}
+        if "limit" in data["budget"]:
+            config["llm"]["budget"]["limit"] = data["budget"]["limit"]
+        if "period" in data["budget"]:
+            config["llm"]["budget"]["period"] = data["budget"]["period"]
 
     # Save config
     with open(CONFIG_PATH, "w") as f:
@@ -216,6 +227,9 @@ def update_llm_settings(data: dict):
     # Also invalidate speech client since it depends on provider
     from ...speech import invalidate_speech_client
     invalidate_speech_client()
+
+    # Invalidate resource tracker cache so budget changes take effect
+    get_resource_tracker().invalidate_config()
 
     return {"success": True, "llm": config["llm"]}
 
@@ -272,6 +286,30 @@ def _list_backups() -> List[dict]:
     return backups
 
 
+def _clear_logger_caches():
+    """Clear all logger caches to prevent stale file handles after fresh-start/restore."""
+    # Clear general loggers
+    try:
+        from ...logger import _loggers
+        _loggers.clear()
+    except Exception:
+        pass
+
+    # Clear LLM prompt logger cache
+    try:
+        import src.llms.base as llm_base
+        llm_base._prompt_logger = None
+    except Exception:
+        pass
+
+    # Clear cost logger cache
+    try:
+        import src.metacognition.resources as resources
+        resources._cost_logger = None
+    except Exception:
+        pass
+
+
 def _perform_fresh_start() -> dict:
     """
     Reset all user data for a clean slate.
@@ -303,11 +341,11 @@ def _perform_fresh_start() -> dict:
                     agents_to_preserve[agent_id]["config"] = config_file.read_text()
                     preserved.append(f"agents/{agent_id}/config.json")
 
-                # Preserve identity.md.example (template)
-                profile_example = agent_dir / "identity.md.example"
-                if profile_example.exists():
-                    agents_to_preserve[agent_id]["profile_example"] = profile_example.read_text()
-                    preserved.append(f"agents/{agent_id}/identity.md.example")
+                # Preserve identity.template.md (template)
+                identity_template = agent_dir / "identity.template.md"
+                if identity_template.exists():
+                    agents_to_preserve[agent_id]["identity_template"] = identity_template.read_text()
+                    preserved.append(f"agents/{agent_id}/identity.template.md")
 
     # Preserve system config
     system_config = None
@@ -324,6 +362,9 @@ def _perform_fresh_start() -> dict:
         _connection_pool.clear()
     except Exception:
         pass
+
+    # Clear logger caches so they don't recreate old paths after fresh start
+    _clear_logger_caches()
 
     # Move data to backup
     if DATA_DIR.exists():
@@ -343,10 +384,10 @@ def _perform_fresh_start() -> dict:
 
             if "config" in files:
                 (agent_dir / "config.json").write_text(files["config"])
-            if "profile_example" in files:
-                (agent_dir / "identity.md.example").write_text(files["profile_example"])
-                # Also create identity.md from example for fresh start
-                (agent_dir / "identity.md").write_text(files["profile_example"])
+            if "identity_template" in files:
+                (agent_dir / "identity.template.md").write_text(files["identity_template"])
+                # Also create identity.md from template for fresh start
+                (agent_dir / "identity.md").write_text(files["identity_template"])
 
     # Restore system config
     if system_config:
@@ -386,6 +427,9 @@ def _restore_backup(backup_name: str) -> dict:
         _connection_pool.clear()
     except Exception:
         pass
+
+    # Clear logger caches so they use new paths after restore
+    _clear_logger_caches()
 
     # Create a backup of current data before restoring
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")

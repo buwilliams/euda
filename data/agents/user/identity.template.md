@@ -1,6 +1,6 @@
 # User
 
-This profile will develop through reflection based on observed patterns in memory.
+This identity will develop through reflection based on observed patterns in memory.
 
 All sections below can emerge over time:
 - Purpose

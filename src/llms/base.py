@@ -35,10 +35,11 @@ def _get_prompt_logger():
     return _prompt_logger
 
 
-def _log_prompt(agent_id: str, model: str, system: str, messages: list, tools: list = None):
-    """Log the full prompt submitted to the API."""
+def _log_prompt(agent_id: str, model: str, system: str, messages: list, tools: list = None,
+                timestamp: str = None, response: "UnifiedResponse" = None):
+    """Log the full prompt and response to the API."""
     entry = {
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": timestamp or datetime.now().isoformat(),
         "agent": agent_id,
         "model": model,
         "system_prompt": system,
@@ -46,6 +47,24 @@ def _log_prompt(agent_id: str, model: str, system: str, messages: list, tools: l
         "messages": messages,
         "tools": [t.get("name") for t in tools] if tools else None,
     }
+
+    # Add response if available
+    if response:
+        response_content = []
+        for block in response.content:
+            if hasattr(block, 'text'):
+                response_content.append({"type": "text", "text": block.text})
+            elif hasattr(block, 'name'):
+                response_content.append({
+                    "type": "tool_use",
+                    "name": block.name,
+                    "input": block.input
+                })
+        entry["response"] = {
+            "content": response_content,
+            "stop_reason": response.stop_reason
+        }
+
     _get_prompt_logger().write_raw(entry)
 
 # Valid provider IDs (must have corresponding provider class)
@@ -326,8 +345,8 @@ class UnifiedClient:
         # 2. Pre-call: wait for any active backoff
         self._wait_for_backoff()
 
-        # 3. Log prompt
-        _log_prompt(agent_id, self.model_name, system, messages, tools)
+        # 3. Generate timestamp for correlation between prompt and cost logs
+        call_timestamp = datetime.now().isoformat()
 
         # 4. Make the call with timing
         start_time = time.time()
@@ -352,7 +371,11 @@ class UnifiedClient:
         # 6. Post-call: record for velocity tracking
         velocity_tracker.record_call(agent_id, job_id)
 
-        # 7. Post-call: record usage automatically
+        # 7. Post-call: log prompt and response together
+        _log_prompt(agent_id, self.model_name, system, messages, tools,
+                    timestamp=call_timestamp, response=response)
+
+        # 8. Post-call: record usage automatically
         if track_cost:
             record_usage(
                 provider=self.provider_name,
@@ -363,7 +386,8 @@ class UnifiedClient:
                 agent_id=agent_id,
                 job_id=job_id,
                 stop_reason=response.stop_reason,
-                duration_ms=duration_ms
+                duration_ms=duration_ms,
+                timestamp=call_timestamp
             )
 
         return response

@@ -1,5 +1,5 @@
 """
-Profile command - Inspect agent profiles.
+Identity command - Inspect agent identities.
 """
 
 import json
@@ -14,15 +14,15 @@ DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
 
 
-def cmd_profile(args: List[str], json_mode: bool = False):
-    """Show agent profile.
+def cmd_identity(args: List[str], json_mode: bool = False):
+    """Show agent identity.
 
     Usage:
-      dev profile <agent>           Show current profile
-      dev profile <agent> --history Show historical snapshots
+      dev identity <agent>           Show current identity
+      dev identity <agent> --history Show historical snapshots
     """
     if not args:
-        print_error("Usage: dev profile <agent> [--history]", json_mode)
+        print_error("Usage: dev identity <agent> [--history]", json_mode)
         sys.exit(1)
 
     agent_id = args[0]
@@ -34,40 +34,40 @@ def cmd_profile(args: List[str], json_mode: bool = False):
         print_error(f"Agent not found: {agent_id}", json_mode)
         sys.exit(1)
 
-    profile_path = agent_dir / "identity.md"
+    identity_path = agent_dir / "identity.md"
 
-    if not profile_path.exists():
-        print_error(f"Profile not found for agent: {agent_id}", json_mode)
+    if not identity_path.exists():
+        print_error(f"Identity not found for agent: {agent_id}", json_mode)
         sys.exit(1)
 
-    profile_content = profile_path.read_text()
+    identity_content = identity_path.read_text()
 
     if show_history:
-        _show_profile_history(agent_id, profile_content, json_mode)
+        _show_identity_history(agent_id, identity_content, json_mode)
     else:
-        _show_profile(agent_id, profile_content, json_mode)
+        _show_identity(agent_id, identity_content, json_mode)
 
 
-def _show_profile(agent_id: str, content: str, json_mode: bool):
-    """Show current profile."""
+def _show_identity(agent_id: str, content: str, json_mode: bool):
+    """Show current identity."""
     if json_mode:
         print(json.dumps({
             "agent_id": agent_id,
-            "profile": content
+            "identity": content
         }))
     else:
-        print_header(f"Profile: {agent_id}", json_mode)
+        print_header(f"Identity: {agent_id}", json_mode)
         print()
         print(content)
 
 
-def _show_profile_history(agent_id: str, current_content: str, json_mode: bool):
-    """Show profile history with historical snapshots."""
+def _show_identity_history(agent_id: str, current_content: str, json_mode: bool):
+    """Show identity history with historical snapshots."""
     agent_dir = AGENTS_DIR / agent_id
 
-    # Find historical profile files (profile.YYYY.md)
+    # Find historical identity files (identity.YYYY.md)
     historical = []
-    for f in agent_dir.glob("profile.*.md"):
+    for f in agent_dir.glob("identity.*.md"):
         year = f.stem.split(".")[-1]
         if year.isdigit() and len(year) == 4:
             historical.append({
@@ -84,7 +84,7 @@ def _show_profile_history(agent_id: str, current_content: str, json_mode: bool):
             "historical": historical
         }))
     else:
-        print_header(f"Profile History: {agent_id}", json_mode)
+        print_header(f"Identity History: {agent_id}", json_mode)
 
         if not historical:
             print("\n  No historical snapshots found.")

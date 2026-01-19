@@ -1260,9 +1260,9 @@
     color: #6b7280;
 }
 
-/* ============== Profile View ============== */
+/* ============== Identity View ============== */
 
-.profile-content {
+.identity-content {
     padding: var(--spacing-md);
     background: var(--color-bg-subtle);
     border-radius: var(--radius-md);
@@ -1271,47 +1271,47 @@
     color: var(--color-text-primary);
 }
 
-.profile-content.empty {
+.identity-content.empty {
     color: var(--color-text-tertiary);
     font-style: italic;
 }
 
-.profile-content h1,
-.profile-content h2,
-.profile-content h3 {
+.identity-content h1,
+.identity-content h2,
+.identity-content h3 {
     margin-top: var(--spacing-lg);
     margin-bottom: var(--spacing-sm);
     color: var(--color-text-primary);
 }
 
-.profile-content h1:first-child,
-.profile-content h2:first-child,
-.profile-content h3:first-child {
+.identity-content h1:first-child,
+.identity-content h2:first-child,
+.identity-content h3:first-child {
     margin-top: 0;
 }
 
-.profile-content p {
+.identity-content p {
     margin-bottom: var(--spacing-md);
 }
 
-.profile-content ul,
-.profile-content ol {
+.identity-content ul,
+.identity-content ol {
     margin-bottom: var(--spacing-md);
     padding-left: var(--spacing-lg);
 }
 
-.profile-content li {
+.identity-content li {
     margin-bottom: var(--spacing-xs);
 }
 
-.profile-content code {
+.identity-content code {
     background: var(--color-bg-muted);
     padding: 2px 4px;
     border-radius: var(--radius-xs);
     font-size: var(--font-size-sm);
 }
 
-.profile-content pre {
+.identity-content pre {
     background: var(--color-bg-muted);
     padding: var(--spacing-md);
     border-radius: var(--radius-sm);
@@ -1319,12 +1319,12 @@
     margin-bottom: var(--spacing-md);
 }
 
-.profile-content pre code {
+.identity-content pre code {
     background: none;
     padding: 0;
 }
 
-.profile-edit {
+.identity-edit {
     margin-top: var(--spacing-md);
 }
 
@@ -1522,3 +1522,130 @@
 .spinning img {
     animation: spin 1s linear infinite;
 }
+
+/* ============== Agent Paused Banner ============== */
+
+.agent-paused-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-md);
+}
+
+.pause-banner-content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    flex: 1;
+}
+
+.pause-banner-content > img {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    filter: invert(62%) sepia(97%) saturate(1114%) hue-rotate(360deg) brightness(100%) contrast(95%);
+}
+
+.pause-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.pause-banner-text strong {
+    color: #b45309;
+    font-size: var(--font-size-sm);
+}
+
+.pause-banner-text .pause-reason {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.pause-banner-text .pause-time {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+}
+
+.pause-resume-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    transition: background var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.pause-resume-btn:hover {
+    background: #d97706;
+}
+
+.pause-resume-btn img {
+    width: 16px;
+    height: 16px;
+    filter: brightness(0) invert(1);
+}
+
+/* ============== Prompt Tools Display ============== */
+
+.prompt-tools-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) 0;
+}
+
+.prompt-tool-tag {
+    display: inline-block;
+    font-size: var(--font-size-xs);
+    padding: 2px 8px;
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+}
+
+/* Response rendering */
+.response-text {
+    margin-bottom: var(--spacing-sm);
+}
+
+.response-tool-use {
+    background: var(--color-bg-muted);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-sm);
+    overflow: hidden;
+}
+
+.tool-use-header {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.tool-use-input {
+    margin: 0;
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    overflow-x: auto;
+    background: transparent;
+}
+

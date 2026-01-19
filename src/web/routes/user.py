@@ -9,7 +9,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
 
-from ...tools.data.profile import get_profile, update_profile
+from ...tools.data.identity import get_identity, update_identity
 from ...tools.data.memory import (
     list_memory, add_memory, remove_memory,
     read_long_term_memory, write_long_term_memory, list_long_term_memory_dates
@@ -19,7 +19,7 @@ from ...tools.data.memory import (
 router = APIRouter()
 
 
-class UpdateProfileRequest(BaseModel):
+class UpdateIdentityRequest(BaseModel):
     content: str
 
 
@@ -35,17 +35,30 @@ class AddMemoryRequest(BaseModel):
     date_expected: Optional[str] = None
 
 
-# Profile endpoints
+# Identity endpoints
+@router.get("/identity")
+def api_get_identity():
+    """Get user identity."""
+    return get_identity("user")
+
+
+@router.patch("/identity")
+def api_update_identity(request: UpdateIdentityRequest):
+    """Update user identity."""
+    return update_identity("user", request.content)
+
+
+# Backward-compatible profile endpoints (alias to identity)
 @router.get("/profile")
 def api_get_profile():
-    """Get user profile."""
-    return get_profile("user")
+    """Get user profile (alias for identity)."""
+    return get_identity("user")
 
 
 @router.patch("/profile")
-def api_update_profile(request: UpdateProfileRequest):
-    """Update user profile."""
-    return update_profile("user", request.content)
+def api_update_profile(request: UpdateIdentityRequest):
+    """Update user profile (alias for identity)."""
+    return update_identity("user", request.content)
 
 
 # Short-term memory endpoints
