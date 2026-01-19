@@ -30,7 +30,6 @@ DEFAULT_CONFIG = {
         }
     },
     "resources": {
-        "budget_limit": 10.0,
         "budget_period": "daily"
     },
     "progress": {

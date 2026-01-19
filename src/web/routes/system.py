@@ -170,16 +170,12 @@ def get_settings():
 
     config = _load_config()
     current_provider = get_provider()
-    # Get budget from metacognition config (primary) or fallback to legacy llm config
-    budget_limit = config.get("metacognition", {}).get("resources", {}).get("budget_limit")
-    if budget_limit is None:
-        budget_limit = config.get("llm", {}).get("budget_limit")
     return {
         "llm": {
             "provider": current_provider,
             "model": get_model(),
             "providers": get_providers_config(),
-            "budget_limit": budget_limit
+            "budget_limit": config.get("llm", {}).get("budget_limit")
         },
         "speech": {
             "stt_available": supports_stt(current_provider),
@@ -206,13 +202,9 @@ def update_llm_settings(data: dict):
             if provider_id in VALID_PROVIDERS and "model" in settings:
                 config["llm"]["providers"][provider_id]["model"] = settings["model"]
 
-    # Update budget limit if specified (store in metacognition config)
+    # Update budget limit if specified
     if "budget_limit" in data:
-        if "metacognition" not in config:
-            config["metacognition"] = {}
-        if "resources" not in config["metacognition"]:
-            config["metacognition"]["resources"] = {}
-        config["metacognition"]["resources"]["budget_limit"] = data["budget_limit"]
+        config["llm"]["budget_limit"] = data["budget_limit"]
 
     # Save config
     with open(CONFIG_PATH, "w") as f:

@@ -106,19 +106,11 @@ class ResourceTracker:
             self.set_budget(budget)
 
     def _load_budget_from_config(self) -> Optional[float]:
-        """Load budget limit from system config."""
-        # First try metacognition config
-        resources_config = self._config.get_resources_config()
-        budget = resources_config.get("budget_limit")
-        if budget is not None and budget > 0:
-            return float(budget)
-
-        # Fall back to legacy llm.budget_limit
+        """Load budget limit from system config (llm.budget_limit)."""
         config = _load_llm_config()
         budget = config.get("llm", {}).get("budget_limit")
         if budget is not None and budget > 0:
             return float(budget)
-
         return None
 
     def _get_budget_period(self) -> str:

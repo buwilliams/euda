@@ -3,6 +3,7 @@
   "initialized": true,
   "llm": {
     "provider": "openai",
+    "budget_limit": 10.0,
     "default_pricing": {
       "input": 3.0,
       "cached_input": 0.3,
@@ -81,7 +82,6 @@
       }
     },
     "resources": {
-      "budget_limit": 10.0,
       "budget_period": "monthly"
     },
     "progress": {
