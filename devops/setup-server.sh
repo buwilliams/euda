@@ -5,7 +5,7 @@
 # Usage: ./setup-server.sh [user@server-ip]
 #
 # This script:
-# 1. Installs Python 3, pip, and dependencies
+# 1. Installs Python 3 and uv package manager
 # 2. Creates the euno directory structure
 # 3. Sets up a systemd service
 # 4. Configures firewall (optional)
@@ -62,23 +62,31 @@ echo "[2/6] Installing system dependencies..."
 ssh "$SERVER" bash << 'REMOTE_SCRIPT'
 set -e
 
-# Detect package manager
+# Detect package manager and install Python
 if command -v apt-get &> /dev/null; then
     export DEBIAN_FRONTEND=noninteractive
     sudo apt-get update -qq
-    sudo apt-get install -y -qq python3 python3-pip python3-venv git
+    sudo apt-get install -y -qq python3 git curl
 elif command -v dnf &> /dev/null; then
-    sudo dnf install -y python3 python3-pip git
+    sudo dnf install -y python3 git curl
 elif command -v yum &> /dev/null; then
-    sudo yum install -y python3 python3-pip git
+    sudo yum install -y python3 git curl
 elif command -v pacman &> /dev/null; then
-    sudo pacman -Sy --noconfirm python python-pip git
+    sudo pacman -Sy --noconfirm python git curl
 else
     echo "Error: Could not detect package manager"
     exit 1
 fi
 
+# Install uv
+if ! command -v uv &> /dev/null; then
+    echo "Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
 echo "Python version: $(python3 --version)"
+echo "uv version: $(uv --version)"
 REMOTE_SCRIPT
 
 # Create directory structure
@@ -95,11 +103,6 @@ echo "[4/6] Setting up systemd service..."
 ssh "$SERVER" bash << REMOTE_SCRIPT
 set -e
 
-# Create virtual environment if it doesn't exist
-if [ ! -d "$REMOTE_DIR/venv" ]; then
-    python3 -m venv $REMOTE_DIR/venv
-fi
-
 # Create systemd service file
 sudo tee /etc/systemd/system/euno.service > /dev/null << 'EOF'
 [Unit]
@@ -111,8 +114,8 @@ Type=simple
 User=root
 WorkingDirectory=$REMOTE_DIR
 EnvironmentFile=$REMOTE_DIR/.env
-Environment=PATH=$REMOTE_DIR/venv/bin:/usr/bin:/bin
-ExecStart=$REMOTE_DIR/venv/bin/python main.py start
+Environment=PATH=/root/.local/bin:/usr/bin:/bin
+ExecStart=/root/.local/bin/uv run euno start
 Restart=always
 RestartSec=5
 TimeoutStopSec=10
@@ -243,6 +246,6 @@ echo "==================================="
 echo ""
 echo "Next steps:"
 echo "  1. Run ./deploy-euno.sh $SERVER to deploy the application"
-echo "  2. SSH in and run: cd $REMOTE_DIR && python main.py set-password"
+echo "  2. SSH in and run: cd $REMOTE_DIR && uv run euno set-password"
 echo "  3. Access at http://<server-ip>"
 echo ""

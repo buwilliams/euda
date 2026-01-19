@@ -81,9 +81,9 @@ If yes, your Arc is complete. Pick another, or take a beat and just use the syst
 
 1. Clone: `git clone https://github.com/buwilliams/euno.git && cd euno`
 2. Setup: `cp .env.example .env` and add your API key
-3. Install: `pip install -r requirements.txt`
-4. Set password: `python main.py set-password`
-5. Run: `python main.py start`
+3. Install [uv](https://docs.astral.sh/uv/) and run: `uv sync`
+4. Set password: `uv run euno set-password`
+5. Run: `uv run euno start`
 6. Open: [localhost:8000](http://localhost:8000)
 
 ## Your First Contributions

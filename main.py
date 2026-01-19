@@ -32,16 +32,16 @@ Commands:
   fresh-start      Reset all user data (memory, jobs, logs, password)
 
 Examples:
-  python main.py start             # Run web server + agents
-  python main.py chat              # Chat with default agent (chat)
-  python main.py chat chat         # Chat with specific agent
-  python main.py agents            # List agents
-  python main.py jobs              # List jobs
-  python main.py points            # Show contribution points
-  python main.py dev help          # Show dev commands
-  python main.py set-password      # Set access password
-  python main.py remove-password   # Disable authentication
-  python main.py fresh-start       # Clean slate (keeps agent configs)
+  euno start             # Run web server + agents
+  euno chat              # Chat with default agent (chat)
+  euno chat chat         # Chat with specific agent
+  euno agents            # List agents
+  euno jobs              # List jobs
+  euno points            # Show contribution points
+  euno dev help          # Show dev commands
+  euno set-password      # Set access password
+  euno remove-password   # Disable authentication
+  euno fresh-start       # Clean slate (keeps agent configs)
 """
     )
 
@@ -523,10 +523,7 @@ def cmd_remove_password(args):
 
 def cmd_fresh_start(args):
     """Reset all user data for a clean slate."""
-    import shutil
-    from pathlib import Path
-
-    CORE_AGENTS = {"chat", "user", "worker"}
+    from src.fresh_start import perform_fresh_start
 
     print("=" * 60)
     print("Euno - Fresh Start")
@@ -550,129 +547,30 @@ def cmd_fresh_start(args):
     print("  - Agent configurations")
     print("  - System configuration")
     print()
+    print("A backup will be created before resetting.")
+    print()
 
     confirm = input("Are you sure? Type 'yes' to confirm: ").strip().lower()
     if confirm != 'yes':
         print("Cancelled.")
         return
 
-    data_dir = Path(__file__).parent / "data"
-    deleted = []
-    reset = []
-
-    # 1. Clear user data (costs)
-    user_dir = data_dir / "agents" / "user"
-    if user_dir.exists():
-        # Remove cost tracking
-        costs_dir = user_dir / "costs"
-        if costs_dir.exists():
-            for f in costs_dir.glob("*.jsonl"):
-                f.unlink()
-                deleted.append(f"agents/user/costs/{f.name}")
-
-    # 2. Clear jobs database and assets
-    jobs_dir = data_dir / "jobs"
-    if jobs_dir.exists():
-        # Remove SQLite database
-        db_file = jobs_dir / "db.sqlite"
-        if db_file.exists():
-            db_file.unlink()
-            deleted.append("jobs/db.sqlite")
-        # Remove database journal files
-        for pattern in ["db.sqlite-journal", "db.sqlite-wal", "db.sqlite-shm"]:
-            journal = jobs_dir / pattern
-            if journal.exists():
-                journal.unlink()
-                deleted.append(f"jobs/{pattern}")
-        # Remove assets directory
-        assets_dir = jobs_dir / "assets"
-        if assets_dir.exists():
-            shutil.rmtree(assets_dir)
-            deleted.append("jobs/assets/")
-
-    # 3. Process agents - clear data for core agents, remove non-core agents entirely
-    agents_dir = data_dir / "agents"
-    if agents_dir.exists():
-        for agent_dir in agents_dir.iterdir():
-            if agent_dir.is_dir():
-                agent_id = agent_dir.name
-
-                if agent_id in CORE_AGENTS:
-                    # Core agent: clear logs, state, memory but keep config
-                    # Remove logs
-                    logs_dir = agent_dir / "logs"
-                    if logs_dir.exists():
-                        shutil.rmtree(logs_dir)
-                        deleted.append(f"agents/{agent_id}/logs/")
-                    # Remove state directory (conversation history)
-                    state_dir = agent_dir / "state"
-                    if state_dir.exists():
-                        shutil.rmtree(state_dir)
-                        deleted.append(f"agents/{agent_id}/state/")
-                    # Remove state.json (last_ran timestamp)
-                    state_file = agent_dir / "state.json"
-                    if state_file.exists():
-                        state_file.unlink()
-                        deleted.append(f"agents/{agent_id}/state.json")
-                    # Remove memory directory (short-term and long-term)
-                    memory_dir = agent_dir / "memory"
-                    if memory_dir.exists():
-                        shutil.rmtree(memory_dir)
-                        deleted.append(f"agents/{agent_id}/memory/")
-                    # Remove uploads directory (user agent)
-                    uploads_dir = agent_dir / "uploads"
-                    if uploads_dir.exists():
-                        shutil.rmtree(uploads_dir)
-                        deleted.append(f"agents/{agent_id}/uploads/")
-
-                    # Reset identity from template if available
-                    identity_template = agent_dir / "identity.template.md"
-                    identity_file = agent_dir / "identity.md"
-                    if identity_template.exists():
-                        template_content = identity_template.read_text()
-                        identity_file.write_text(template_content)
-                        reset.append(f"agents/{agent_id}/identity.md")
-                    elif identity_file.exists():
-                        # No template, just remove the identity
-                        identity_file.unlink()
-                        deleted.append(f"agents/{agent_id}/identity.md")
-                else:
-                    # Non-core agent: remove entirely
-                    shutil.rmtree(agent_dir)
-                    deleted.append(f"agents/{agent_id}/ (entire agent)")
-
-    # 4. Remove system state, logs, and password
-    system_dir = data_dir / "system"
-    if system_dir.exists():
-        # Remove system state (trigger tracking)
-        state_file = system_dir / "state.json"
-        if state_file.exists():
-            state_file.unlink()
-            deleted.append("system/state.json")
-        # Remove password
-        auth_file = system_dir / "auth.json"
-        if auth_file.exists():
-            auth_file.unlink()
-            deleted.append("system/auth.json")
-        # Remove reflection logs
-        reflection_logs = system_dir / "logs" / "reflection"
-        if reflection_logs.exists():
-            shutil.rmtree(reflection_logs)
-            deleted.append("system/logs/reflection/")
-        # Remove prompt logs
-        prompt_logs = system_dir / "logs" / "prompts"
-        if prompt_logs.exists():
-            shutil.rmtree(prompt_logs)
-            deleted.append("system/logs/prompts/")
+    result = perform_fresh_start(create_backup_first=True)
 
     print()
+    if result.get("backup_name"):
+        print(f"Backup created: {result['backup_name']}")
+
+    deleted = result.get("deleted", [])
     if deleted:
+        print()
         print(f"Deleted {len(deleted)} items:")
         for item in deleted[:10]:
             print(f"  - {item}")
         if len(deleted) > 10:
             print(f"  ... and {len(deleted) - 10} more")
 
+    reset = result.get("reset", [])
     if reset:
         print()
         print(f"Reset {len(reset)} identities from templates:")

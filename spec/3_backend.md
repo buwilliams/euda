@@ -112,6 +112,12 @@ Future integrations (email, calendar, social media, etc.) should follow this sam
 - Jobs in SQLite (`data/jobs/db.sqlite`)
 - Config, logs, state in JSON/JSONL files
 
+## Package Management
+
+- [uv](https://docs.astral.sh/uv/) is the only package manager
+- Dependencies in `pyproject.toml`, lock in `uv.lock`
+- Never use pip, requirements.txt, or manual virtualenvs
+
 ## Architecture
 
 - The user is conceptually an agent with a different interface (web UI vs autonomous loop)
