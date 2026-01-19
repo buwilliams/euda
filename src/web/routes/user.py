@@ -11,9 +11,9 @@ from typing import Optional
 
 from ...tools.data.identity import get_identity, update_identity
 from ...tools.data.memory import (
-    list_memory, add_memory, remove_memory,
-    read_long_term_memory, write_long_term_memory, list_long_term_memory_dates
+    list_memory, add_memory, remove_memory, write_long_term_memory
 )
+from ...rlm import read_memory_date, list_memory_dates
 
 
 router = APIRouter()
@@ -84,7 +84,10 @@ def api_remove_memory(entry_id: str):
 @router.get("/memory/long-term")
 def api_get_long_term_memory(date: Optional[str] = None):
     """Get long-term memory entries."""
-    return read_long_term_memory(date, "user")
+    if date:
+        return read_memory_date("user", date)
+    else:
+        return {"error": "date parameter required"}
 
 
 @router.post("/memory/long-term")
@@ -96,4 +99,6 @@ def api_write_long_term_memory(request: WriteMemoryRequest):
 @router.get("/memory/long-term/dates")
 def api_list_long_term_dates():
     """List all dates with long-term memory entries."""
-    return list_long_term_memory_dates("user")
+    result = list_memory_dates("user")
+    # Return just the dates array for backward compatibility with UI
+    return result["dates"]

@@ -244,3 +244,91 @@ def get_memory_summary(agent_id: str = "user") -> dict:
         "date_range": [dates[0], dates[-1]] if dates else [],
         "years": sorted(years)
     }
+
+
+# =============================================================================
+# Lightweight utilities for API file access (UI browsing)
+# =============================================================================
+
+def read_memory_date(agent_id: str, date: str) -> dict:
+    """Read a single date's memory file for UI display.
+
+    This is a lightweight utility for API routes that need to display
+    specific dates. For semantic search or analysis, use RLM methods instead.
+
+    Args:
+        agent_id: Which agent's memory to read
+        date: Date in YYYY-MM-DD format
+
+    Returns:
+        {
+            "date": "2026-01-19",
+            "content": "# Long-term Memory\n\n...",
+            "exists": true
+        }
+    """
+    year = date[:4]
+    memory_dir = DATA_DIR / "agents" / agent_id / "memory" / "long-term"
+    file_path = memory_dir / year / f"{date}.md"
+
+    if not file_path.exists():
+        return {
+            "date": date,
+            "content": "",
+            "exists": False
+        }
+
+    try:
+        content = file_path.read_text()
+        return {
+            "date": date,
+            "content": content,
+            "exists": True
+        }
+    except Exception as e:
+        return {
+            "date": date,
+            "content": "",
+            "exists": False,
+            "error": str(e)
+        }
+
+
+def list_memory_dates(agent_id: str) -> dict:
+    """List all dates with memory entries for UI browsing.
+
+    This is a lightweight utility for API routes that need to show
+    available dates. For semantic search or analysis, use RLM methods instead.
+
+    Args:
+        agent_id: Which agent's memory to list
+
+    Returns:
+        {
+            "dates": ["2026-01-19", "2026-01-18", ...],
+            "total": 42
+        }
+    """
+    memory_dir = DATA_DIR / "agents" / agent_id / "memory" / "long-term"
+
+    if not memory_dir.exists():
+        return {
+            "dates": [],
+            "total": 0
+        }
+
+    dates = []
+
+    # Iterate through year directories (reverse chronological)
+    for year_dir in sorted(memory_dir.iterdir(), reverse=True):
+        if not year_dir.is_dir() or not year_dir.name.isdigit():
+            continue
+
+        # Collect all date files in this year (reverse chronological)
+        for date_file in sorted(year_dir.glob("*.md"), reverse=True):
+            dates.append(date_file.stem)
+
+    return {
+        "dates": dates,
+        "total": len(dates)
+    }

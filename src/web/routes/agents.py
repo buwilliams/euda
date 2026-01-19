@@ -17,9 +17,9 @@ from ...tools.agents.monitoring import get_agent_monitoring
 from ...tools.data.jobs import get_jobs_completed_by_agent, create_job, get_system_container
 from ...tools.data.identity import get_identity, update_identity
 from ...tools.data.memory import (
-    list_memory, add_memory, remove_memory,
-    read_long_term_memory, write_long_term_memory, list_long_term_memory_dates
+    list_memory, add_memory, remove_memory, write_long_term_memory
 )
+from ...rlm import read_memory_date, list_memory_dates
 from ...logger import get_logger
 
 
@@ -202,7 +202,11 @@ def api_remove_short_term_memory(agent_id: str, entry_id: str):
 @router.get("/{agent_id}/memory/long-term")
 def api_get_long_term_memory(agent_id: str, date: Optional[str] = None):
     """Get agent's long-term memory entries."""
-    return read_long_term_memory(date, agent_id)
+    if date:
+        return read_memory_date(agent_id, date)
+    else:
+        # Return empty result if no date specified
+        return {"error": "date parameter required"}
 
 
 @router.post("/{agent_id}/memory/long-term")
@@ -214,7 +218,9 @@ def api_write_long_term_memory(agent_id: str, request: WriteLongTermMemoryReques
 @router.get("/{agent_id}/memory/long-term/dates")
 def api_list_long_term_memory_dates(agent_id: str):
     """List all dates with long-term memory entries."""
-    return list_long_term_memory_dates(agent_id)
+    result = list_memory_dates(agent_id)
+    # Return just the dates array for backward compatibility with UI
+    return result["dates"]
 
 
 # Completed jobs by agent endpoint

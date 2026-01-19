@@ -77,15 +77,23 @@ rsync -avz --delete \
     "$PROJECT_DIR/" "$SERVER:$REMOTE_DIR/"
 
 # Copy .env file
-echo "[4/6] Copying .env file..."
+echo "[4/7] Copying .env file..."
 scp "$PROJECT_DIR/.env" "$SERVER:$REMOTE_DIR/.env"
 
+# Sync system templates (needed for upgrades - templates in /data/ excluded from main sync)
+echo "[5/7] Syncing system templates..."
+ssh "$SERVER" "mkdir -p $REMOTE_DIR/data/system/prompts/agent $REMOTE_DIR/data/system/prompts/reflection"
+rsync -av \
+    --exclude '*.jsonl' \
+    "$PROJECT_DIR/data/system/prompts/" \
+    "$SERVER:$REMOTE_DIR/data/system/prompts/"
+
 # Install dependencies
-echo "[5/6] Installing dependencies..."
-ssh -T "$SERVER" "cd $REMOTE_DIR && uv sync"
+echo "[6/7] Installing dependencies..."
+ssh -T "$SERVER" "cd $REMOTE_DIR && source ~/.local/bin/env && uv sync"
 
 # Restart service
-echo "[6/6] Restarting service..."
+echo "[7/7] Restarting service..."
 timeout 30 ssh "$SERVER" "sudo systemctl restart euno" || echo "Warning: Restart timed out or failed, checking status..."
 
 # Check status
@@ -104,5 +112,5 @@ echo ""
 echo "Useful commands:"
 echo "  View logs:    ssh $SERVER 'journalctl -u euno -f'"
 echo "  Restart:      ssh $SERVER 'sudo systemctl restart euno'"
-echo "  Set password: ssh $SERVER 'cd $REMOTE_DIR && uv run euno set-password'"
+echo "  Set password: ssh $SERVER 'cd $REMOTE_DIR && source ~/.local/bin/env && uv run euno set-password'"
 echo ""
