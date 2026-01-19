@@ -140,6 +140,7 @@ class REPLEnvironment:
         import itertools
         import math
         import string
+        import statistics
 
         globals_dict['re'] = re
         globals_dict['json'] = json
@@ -148,6 +149,7 @@ class REPLEnvironment:
         globals_dict['itertools'] = itertools
         globals_dict['math'] = math
         globals_dict['string'] = string
+        globals_dict['statistics'] = statistics
 
         # Add memory data
         globals_dict['memory'] = self.memory

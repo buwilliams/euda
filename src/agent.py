@@ -299,10 +299,22 @@ class Agent:
         # Load user identity so agents know who they serve
         user_identity = self._get_user_identity()
 
+        # Load user patterns for anticipation (Chat agent gets high-confidence patterns)
+        user_patterns_section = ""
+        if self.id == "chat":
+            from .reflection.patterns import load_patterns, format_patterns_for_prompt
+            try:
+                user_store = load_patterns("user")
+                user_patterns_section = format_patterns_for_prompt(user_store, min_confidence=0.7)
+            except Exception:
+                # Don't fail if patterns can't be loaded
+                pass
+
         prompt = render_template(
             "agent/system",
             identity=self.identity,
             user_identity=user_identity,
+            user_patterns=user_patterns_section,
             tools_by_type=tools_text
         )
 
@@ -430,13 +442,23 @@ class Agent:
         # Select prompt template based on job type
         template_name = self._get_job_prompt_type(job)
 
-        # For exploration jobs, include user memory directly in the prompt
-        # This ensures agents have context without relying on them to call list_memory
+        # For exploration jobs, include user memory and patterns directly in the prompt
+        # This ensures agents have context without relying on them to call tools
         user_memory = ""
+        user_patterns = ""
         if template_name == "agent/exploration":
             user_memory = get_memory_for_prompt("user")
             if not user_memory:
                 user_memory = "(No items currently in user's memory)"
+
+            # Load user patterns for exploration guidance
+            from .reflection.patterns import load_patterns, format_patterns_for_prompt
+            try:
+                user_store = load_patterns("user")
+                user_patterns = format_patterns_for_prompt(user_store, min_confidence=0.7)
+            except Exception:
+                # Don't fail if patterns can't be loaded
+                pass
 
         return render_template(
             template_name,
@@ -448,7 +470,8 @@ class Agent:
             job_tags=tags_str,
             job_attachments=attachments,
             remaining_jobs_notice=remaining_notice,
-            user_memory=user_memory
+            user_memory=user_memory,
+            user_patterns=user_patterns
         )
 
     def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True,

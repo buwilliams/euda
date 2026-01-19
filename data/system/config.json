@@ -90,6 +90,14 @@
       "append_batch_max_tokens": 1000,
       "consolidate_max_tokens": 2000,
       "upload_analysis_max_tokens": 1000
+    },
+    "patterns": {
+      "enabled": true,
+      "discovery_passes": ["temporal", "correlation", "trajectory"],
+      "min_evidence_for_pattern": 3,
+      "hypothesis_expiry_days": 30,
+      "confidence_decay_rate": 0.1,
+      "confidence_boost_on_validation": 0.15
     }
   },
   "rlm": {

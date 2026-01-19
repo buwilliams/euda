@@ -3,9 +3,10 @@ Consolidate Phase - Heavy analysis for memory graduation and identity updates.
 
 This phase runs on daily trigger to:
 1. Analyze patterns in short-term and long-term memory (via RLM)
-2. Graduate important short-term items to long-term memory
-3. Update the agent's identity based on observed patterns
-4. Create historical identity snapshots at year boundaries
+2. Run multi-pass pattern discovery (temporal, correlation, trajectory)
+3. Graduate important short-term items to long-term memory
+4. Update the agent's identity based on observed patterns
+5. Create historical identity snapshots at year boundaries
 """
 
 import json
@@ -25,6 +26,28 @@ from ..metacognition.config import get_global_config
 from ..rlm import RLMClient, load_long_term_memory
 
 from .prompts import build_consolidate_prompt, get_consolidate_system_prompt
+from .patterns import (
+    load_patterns,
+    save_patterns,
+    create_empty_patterns,
+    format_patterns_for_prompt,
+    cleanup_expired_hypotheses,
+    update_confidence,
+    apply_confidence_decay,
+    find_similar_temporal,
+    find_similar_correlation,
+    find_trajectory_by_subject,
+    TemporalPattern,
+    Correlation,
+    Trajectory,
+    Hypothesis,
+    add_temporal_pattern,
+    add_correlation,
+    add_trajectory,
+    add_hypothesis,
+    get_pending_hypotheses,
+    validate_hypothesis,
+)
 
 if TYPE_CHECKING:
     from .reflection import Reflection
@@ -38,13 +61,14 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
     """Run the consolidate phase for an agent.
 
     Performs heavy analysis to graduate memories and update identity.
+    Includes multi-pass pattern discovery for improved user modeling.
 
     Args:
         reflection: The Reflection instance
         execution_id: Optional execution ID for SSE progress tracking
 
     Returns:
-        Dict with items_graduated, profile_updated, long_term_entry counts/flags
+        Dict with items_graduated, profile_updated, long_term_entry, patterns_discovered counts/flags
     """
     agent_id = reflection.agent.id
     is_user = agent_id == "user"
@@ -66,13 +90,52 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
     })
 
     # Emit start event
-    emit_progress("loading_data", "Loading memory and identity...")
+    emit_progress("loading_data", "Loading memory, identity, and patterns...")
 
     # Load short-term memory
     short_term_memory = _load_entries(agent_id)
 
+    # Load existing patterns
+    pattern_store = load_patterns(agent_id)
+
+    # Clean up expired hypotheses
+    expired_hypotheses = cleanup_expired_hypotheses(pattern_store)
+    if expired_hypotheses:
+        reflection.logger.info({
+            "event": "hypotheses_expired",
+            "agent_id": agent_id,
+            "count": len(expired_hypotheses)
+        })
+
+    # Load memory for RLM analysis
+    memory = load_long_term_memory(agent_id=agent_id, days=RLM_MEMORY_DAYS)
+
+    # Check if patterns are enabled
+    patterns_config = get_global_config().get("metacognition", {}).get("patterns", {})
+    patterns_enabled = patterns_config.get("enabled", True)
+
+    # Run multi-pass pattern discovery if enabled and we have memory
+    patterns_discovered = 0
+    patterns_decayed = 0
+    validated_ids = set()
+    if patterns_enabled and memory["metadata"]["total_entries"] > 0:
+        emit_progress("pattern_discovery", "Running multi-pass pattern discovery...")
+        patterns_discovered, validated_ids = _run_pattern_discovery(
+            reflection, memory, pattern_store, patterns_config
+        )
+
+        # Apply confidence decay to patterns that weren't validated this cycle
+        emit_progress("pattern_decay", "Applying confidence decay to unvalidated patterns...")
+        patterns_decayed = apply_confidence_decay(pattern_store, validated_ids)
+        if patterns_decayed > 0:
+            reflection.logger.info({
+                "event": "patterns_decayed",
+                "agent_id": agent_id,
+                "count": patterns_decayed
+            })
+
     # Use RLM to analyze long-term memory patterns (30-day window)
-    recent_long_term = _analyze_long_term_with_rlm(reflection, days=RLM_MEMORY_DAYS)
+    recent_long_term = _analyze_long_term_with_rlm(reflection, memory)
 
     # Load current identity
     current_profile = reflection.agent.identity
@@ -82,6 +145,10 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
 
     # Skip if no data to analyze
     if not short_term_memory and not recent_long_term and not completed_jobs:
+        # Still save patterns if any were discovered
+        if patterns_discovered > 0:
+            save_patterns(agent_id, pattern_store)
+
         reflection.logger.info({
             "event": "consolidate_skip",
             "agent_id": agent_id,
@@ -93,18 +160,22 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
             "phase": "consolidate",
             "skipped": True
         })
-        return {"items_graduated": 0, "profile_updated": False, "long_term_entry": False}
+        return {"items_graduated": 0, "profile_updated": False, "long_term_entry": False, "patterns_discovered": patterns_discovered}
 
     emit_progress("building_prompt", "Analyzing patterns...")
 
-    # Build prompt
+    # Format pattern context for prompt
+    pattern_context = format_patterns_for_prompt(pattern_store, min_confidence=0.5)
+
+    # Build prompt with pattern context
     prompt = build_consolidate_prompt(
         agent_id=agent_id,
         agent_profile=current_profile,
         short_term_memory=short_term_memory,
         recent_long_term=recent_long_term,
         completed_jobs=completed_jobs,
-        is_user=is_user
+        is_user=is_user,
+        pattern_context=pattern_context
     )
 
     emit_progress("calling_llm", "Consulting AI...")
@@ -178,8 +249,14 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
     if graduated_ids:
         _graduate_items(reflection, short_term_memory, graduated_ids)
 
-    # Check for year boundary and create historical snapshot
+    # Check for year boundary and create historical snapshots
     _maybe_snapshot_profile(reflection)
+    if patterns_enabled:
+        _maybe_snapshot_patterns(reflection, pattern_store)
+
+    # Save updated patterns
+    if patterns_enabled:
+        save_patterns(agent_id, pattern_store)
 
     reflection.logger.info({
         "event": "consolidate_complete",
@@ -187,7 +264,8 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
         "execution_id": execution_id,
         "long_term_entry": bool(result.get("long_term_entry")),
         "profile_updated": bool(result.get("profile_updates")),
-        "items_graduated": len(graduated_ids)
+        "items_graduated": len(graduated_ids),
+        "patterns_discovered": patterns_discovered
     })
 
     # Emit completion event
@@ -197,17 +275,157 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
         "phase": "consolidate",
         "items_graduated": len(graduated_ids),
         "profile_updated": bool(result.get("profile_updates")),
-        "long_term_entry": bool(result.get("long_term_entry"))
+        "long_term_entry": bool(result.get("long_term_entry")),
+        "patterns_discovered": patterns_discovered
     })
 
     return {
         "items_graduated": len(graduated_ids),
         "profile_updated": bool(result.get("profile_updates")),
-        "long_term_entry": bool(result.get("long_term_entry"))
+        "long_term_entry": bool(result.get("long_term_entry")),
+        "patterns_discovered": patterns_discovered
     }
 
 
-def _analyze_long_term_with_rlm(reflection: "Reflection", days: int) -> str:
+def _run_pattern_discovery(
+    reflection: "Reflection",
+    memory: dict,
+    pattern_store,
+    config: dict
+) -> tuple:
+    """Run multi-pass pattern discovery using RLM.
+
+    Args:
+        reflection: The Reflection instance
+        memory: Pre-loaded memory data
+        pattern_store: Existing pattern store to update
+        config: Patterns configuration
+
+    Returns:
+        Tuple of (new_patterns_count, validated_pattern_ids)
+    """
+    agent_id = reflection.agent.id
+    rlm = RLMClient(agent_id=agent_id)
+
+    # Get which passes to run
+    discovery_passes = config.get("discovery_passes", ["temporal", "correlation", "trajectory"])
+    min_evidence = config.get("min_evidence_for_pattern", 3)
+
+    # Run multi-pass discovery
+    try:
+        discovered = rlm.discover_patterns(
+            memory=memory,
+            pattern_types=discovery_passes
+        )
+    except Exception as e:
+        reflection.logger.warning({
+            "event": "pattern_discovery_error",
+            "agent_id": agent_id,
+            "error": str(e)
+        })
+        return (0, set())
+
+    new_patterns = 0
+    validated_ids = set()  # Track which patterns were validated this cycle
+
+    # Process temporal patterns
+    for raw_pattern in discovered.get("temporal", []):
+        description = raw_pattern.get("description", "")
+        granularity = raw_pattern.get("granularity", "daily")
+
+        # Check if similar pattern exists
+        existing = find_similar_temporal(pattern_store, description, granularity)
+        if existing:
+            # Update confidence on existing pattern
+            update_confidence(existing, validated=True)
+            validated_ids.add(existing["id"])
+        else:
+            # Create new pattern (starts as hypothesis if not enough evidence)
+            evidence_count = raw_pattern.get("evidence_count", 1)
+            if evidence_count >= min_evidence:
+                pattern = TemporalPattern.create(
+                    description=description,
+                    granularity=granularity,
+                    time_window=raw_pattern.get("time_window", {})
+                )
+                pattern.confidence = min(0.6, 0.3 + (evidence_count * 0.1))
+                pattern.evidence_count = evidence_count
+                add_temporal_pattern(pattern_store, pattern)
+                validated_ids.add(pattern.id)  # New patterns are validated
+                new_patterns += 1
+            else:
+                # Create hypothesis instead
+                hypothesis = Hypothesis.create(
+                    hypothesis_type="temporal",
+                    hypothesis=f"{granularity.title()} pattern: {description}",
+                    evidence_required=min_evidence
+                )
+                hypothesis.evidence_collected = evidence_count
+                add_hypothesis(pattern_store, hypothesis)
+
+    # Process correlations
+    for raw_corr in discovered.get("correlations", []):
+        items = raw_corr.get("items", [])
+        description = raw_corr.get("description", "")
+
+        existing = find_similar_correlation(pattern_store, items)
+        if existing:
+            update_confidence(existing, validated=True)
+            validated_ids.add(existing["id"])
+        else:
+            correlation = Correlation.create(
+                correlation_type=raw_corr.get("type", "co_occurrence"),
+                items=items,
+                description=description,
+                lag_days=raw_corr.get("lag_days", 0)
+            )
+            add_correlation(pattern_store, correlation)
+            validated_ids.add(correlation.id)  # New patterns are validated
+            new_patterns += 1
+
+    # Process trajectories
+    for raw_traj in discovered.get("trajectories", []):
+        subject = raw_traj.get("subject", "")
+
+        existing = find_trajectory_by_subject(pattern_store, subject)
+        if existing:
+            # Add new stages to existing trajectory
+            new_stages = raw_traj.get("stages", [])
+            existing_dates = {s["date"] for s in existing.get("stages", [])}
+            for stage in new_stages:
+                if stage.get("date") not in existing_dates:
+                    existing["stages"].append(stage)
+            existing["stages"].sort(key=lambda s: s["date"])
+            existing["direction"] = raw_traj.get("direction", existing.get("direction", "clarifying"))
+            update_confidence(existing, validated=True)
+            validated_ids.add(existing["id"])
+        else:
+            trajectory = Trajectory.create(
+                trajectory_type=raw_traj.get("type", "goal_evolution"),
+                subject=subject,
+                initial_state=raw_traj.get("stages", [{}])[0].get("state", ""),
+                direction=raw_traj.get("direction", "clarifying")
+            )
+            if len(raw_traj.get("stages", [])) > 1:
+                trajectory.stages = raw_traj["stages"]
+            add_trajectory(pattern_store, trajectory)
+            validated_ids.add(trajectory.id)  # New patterns are validated
+            new_patterns += 1
+
+    reflection.logger.info({
+        "event": "pattern_discovery_complete",
+        "agent_id": agent_id,
+        "new_patterns": new_patterns,
+        "validated_count": len(validated_ids),
+        "temporal": len(discovered.get("temporal", [])),
+        "correlations": len(discovered.get("correlations", [])),
+        "trajectories": len(discovered.get("trajectories", []))
+    })
+
+    return (new_patterns, validated_ids)
+
+
+def _analyze_long_term_with_rlm(reflection: "Reflection", memory: dict = None) -> str:
     """Analyze long-term memory using RLM for consolidation insights.
 
     Uses RLM to semantically analyze memory and extract relevant patterns,
@@ -215,15 +433,16 @@ def _analyze_long_term_with_rlm(reflection: "Reflection", days: int) -> str:
 
     Args:
         reflection: The Reflection instance
-        days: Number of days to analyze
+        memory: Pre-loaded memory data (optional, will load if not provided)
 
     Returns:
         RLM-generated insights about memory patterns, or empty string if no memory
     """
     agent_id = reflection.agent.id
 
-    # Load memory for RLM
-    memory = load_long_term_memory(agent_id=agent_id, days=days)
+    # Load memory for RLM if not provided
+    if memory is None:
+        memory = load_long_term_memory(agent_id=agent_id, days=RLM_MEMORY_DAYS)
 
     # If no memory entries, return empty
     if memory["metadata"]["total_entries"] == 0:
@@ -242,7 +461,7 @@ def _analyze_long_term_with_rlm(reflection: "Reflection", days: int) -> str:
             "5. Key decisions or turning points"
         ),
         memory=memory,
-        time_range_days=days
+        time_range_days=RLM_MEMORY_DAYS
     )
 
     if result.error:
@@ -649,4 +868,60 @@ def _maybe_snapshot_profile(reflection: "Reflection"):
                 "event": "identity_snapshot_created",
                 "agent_id": reflection.agent.id,
                 "year": previous_year
+            })
+
+
+def _maybe_snapshot_patterns(reflection: "Reflection", pattern_store):
+    """Create historical pattern snapshot if at year boundary.
+
+    Preserves pattern state at year boundaries for tracking pattern evolution
+    over time. Mirrors the identity snapshot behavior.
+
+    Args:
+        reflection: The Reflection instance
+        pattern_store: Current PatternStore to snapshot
+    """
+    today = datetime.now()
+    current_year = today.strftime("%Y")
+    previous_year = str(int(current_year) - 1)
+
+    # Check if we're in first week of year
+    if today.month == 1 and today.day <= 7:
+        agent_id = reflection.agent.id
+        from .patterns import _get_patterns_dir, _ensure_patterns_dir
+
+        patterns_dir = _get_patterns_dir(agent_id)
+        historical_file = patterns_dir / f"snapshot_{previous_year}.json"
+
+        # Only create if snapshot doesn't exist and we have patterns
+        has_patterns = (
+            pattern_store.temporal or
+            pattern_store.correlations or
+            pattern_store.trajectories
+        )
+
+        if not historical_file.exists() and has_patterns:
+            _ensure_patterns_dir(agent_id)
+
+            # Save snapshot
+            import json
+            snapshot = {
+                "version": pattern_store.version,
+                "year": previous_year,
+                "snapshot_date": today.strftime("%Y-%m-%d"),
+                "temporal": pattern_store.temporal,
+                "correlations": pattern_store.correlations,
+                "trajectories": pattern_store.trajectories,
+                # Exclude hypotheses - they're transient
+            }
+            with open(historical_file, "w") as f:
+                json.dump(snapshot, f, indent=2)
+
+            reflection.logger.info({
+                "event": "patterns_snapshot_created",
+                "agent_id": agent_id,
+                "year": previous_year,
+                "temporal_count": len(pattern_store.temporal),
+                "correlations_count": len(pattern_store.correlations),
+                "trajectories_count": len(pattern_store.trajectories)
             })
