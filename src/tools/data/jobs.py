@@ -141,6 +141,45 @@ def _ensure_schema():
         conn.execute("ALTER TABLE jobs ADD COLUMN scheduled_at TEXT")
         conn.commit()
 
+    # Migration: add due_at column (unified datetime field)
+    try:
+        conn.execute("SELECT due_at FROM jobs LIMIT 1")
+    except sqlite3.OperationalError:
+        conn.execute("ALTER TABLE jobs ADD COLUMN due_at TEXT")
+        conn.commit()
+
+    # Migration: add notify_on_due column (opt-in notification when due)
+    try:
+        conn.execute("SELECT notify_on_due FROM jobs LIMIT 1")
+    except sqlite3.OperationalError:
+        conn.execute("ALTER TABLE jobs ADD COLUMN notify_on_due INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+
+    # Migration: add notification_sent column (prevent duplicate notifications)
+    try:
+        conn.execute("SELECT notification_sent FROM jobs LIMIT 1")
+    except sqlite3.OperationalError:
+        conn.execute("ALTER TABLE jobs ADD COLUMN notification_sent INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+
+    # Data migration: convert existing due_date and scheduled_at to due_at
+    # Only run if due_at column is empty (first time migration)
+    cursor = conn.execute("SELECT COUNT(*) FROM jobs WHERE due_at IS NOT NULL")
+    if cursor.fetchone()[0] == 0:
+        # Migrate scheduled_at → due_at with notify_on_due=true (reminders)
+        conn.execute('''
+            UPDATE jobs
+            SET due_at = scheduled_at, notify_on_due = 1
+            WHERE scheduled_at IS NOT NULL AND due_at IS NULL
+        ''')
+        # Migrate due_date → due_at with T00:00:00 (regular jobs)
+        conn.execute('''
+            UPDATE jobs
+            SET due_at = due_date || 'T00:00:00'
+            WHERE due_date IS NOT NULL AND due_at IS NULL
+        ''')
+        conn.commit()
+
 
 # Initialize schema on module import
 _ensure_schema()
@@ -175,6 +214,14 @@ def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
     agent_id = row["agent_id"] if "agent_id" in row.keys() else None
     pending_from = row["pending_from"] if "pending_from" in row.keys() else None
     scheduled_at = row["scheduled_at"] if "scheduled_at" in row.keys() else None
+    due_at = row["due_at"] if "due_at" in row.keys() else None
+    notify_on_due = bool(row["notify_on_due"]) if "notify_on_due" in row.keys() else False
+    notification_sent = bool(row["notification_sent"]) if "notification_sent" in row.keys() else False
+
+    # Compute due_date from due_at for backward compatibility
+    # If due_at exists, extract date portion; otherwise fall back to legacy due_date
+    legacy_due_date = row["due_date"]
+    computed_due_date = due_at.split("T")[0] if due_at and "T" in due_at else (due_at or legacy_due_date)
 
     job = {
         "id": row["id"],
@@ -185,14 +232,17 @@ def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
         "updated_at": row["updated_at"],
         "created_by": row["created_by"],
         "description": row["description"],
-        "due_date": row["due_date"],
+        "due_at": due_at,
+        "due_date": computed_due_date,  # Backward compatible (computed from due_at)
+        "notify_on_due": notify_on_due,
+        "notification_sent": notification_sent,
         "someday": bool(row["someday"]),
         "tags": json.loads(row["tags"]) if row["tags"] else [],
         "assignees": json.loads(assignees_raw) if assignees_raw else [],
         "in_progress_by": in_progress_by,
         "agent_id": agent_id,
         "pending_from": pending_from,
-        "scheduled_at": scheduled_at,
+        "scheduled_at": scheduled_at,  # Deprecated, kept for backward compatibility
         "log": logs if logs is not None else []
     }
     if row["completed_at"]:
@@ -230,7 +280,7 @@ def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assign
         parent_id: Filter by parent job ID (empty string for root jobs)
         tag: Filter to jobs containing this tag
         assignee: Filter to jobs assigned to this agent ID
-        actionable: If True, only return jobs with due_date <= today or NULL, and not someday
+        actionable: If True, only return jobs with due_at date portion <= today or NULL, and not someday
     """
     from datetime import date
 
@@ -264,8 +314,9 @@ def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assign
 
     if actionable:
         # Only jobs that are due today, past, or have no due date (and not someday)
+        # Use DATE() to extract date portion from due_at for comparison
         today = date.today().isoformat()
-        query += " AND (due_date IS NULL OR due_date <= ?)"
+        query += " AND (due_at IS NULL OR DATE(due_at) <= ?)"
         params.append(today)
         query += " AND someday = 0"
 
@@ -322,16 +373,19 @@ def _get_default_parent_for_creator(created_by: str) -> Optional[str]:
     return projects["id"] if projects else None
 
 
-@tool("create_job", "Create a new job with optional parent, tags, assignees, due date, and scheduled time. Use when: breaking down work, creating tasks for yourself or other agents, or scheduling reminders.", tool_type="data")
+@tool("create_job", "Create a new job with optional parent, tags, assignees, and due datetime. Use when: breaking down work, creating tasks, or scheduling reminders (with notify_on_due=true).", tool_type="data")
 def create_job(
     name: str,
     description: str = None,
     parent_id: str = None,
     tags: list = None,
     assignees: list = None,
-    due_date: str = None,
+    due_at: str = None,
+    notify_on_due: bool = False,
     someday: bool = False,
     created_by: str = "user",
+    # Deprecated parameters (kept for backward compatibility)
+    due_date: str = None,
     scheduled_at: str = None
 ) -> dict:
     """Create a new job.
@@ -341,11 +395,30 @@ def create_job(
     - Jobs created by other agents go under their agent inbox
 
     Args:
-        scheduled_at: ISO datetime for scheduled delivery (e.g., "2026-01-15T15:00:00").
-                     Jobs with this field and "scheduled" tag will be auto-delivered as notifications.
+        due_at: ISO datetime for when job is due (e.g., "2026-01-15T15:00:00").
+                Use T00:00:00 for date-only (no specific time).
+        notify_on_due: If true, sends notification when due_at arrives.
+                      Assignees receive job:due event, user receives push notification.
+        due_date: DEPRECATED. Use due_at instead. Kept for backward compatibility.
+        scheduled_at: DEPRECATED. Use due_at with notify_on_due=true instead.
     """
     now = datetime.utcnow().isoformat() + "Z"
     job_id = f"job-{uuid.uuid4().hex[:8]}"
+
+    # Handle backward compatibility for deprecated parameters
+    effective_due_at = due_at
+    effective_notify = notify_on_due
+
+    if scheduled_at and not due_at:
+        # Legacy reminder: convert scheduled_at to due_at with notification
+        effective_due_at = scheduled_at
+        effective_notify = True
+    elif due_date and not due_at:
+        # Legacy due_date: convert to datetime at midnight
+        effective_due_at = f"{due_date}T00:00:00"
+
+    # Compute due_date for backward compatibility (stored in legacy column)
+    legacy_due_date = effective_due_at.split("T")[0] if effective_due_at and "T" in effective_due_at else effective_due_at
 
     # Set default parent if none provided
     effective_parent_id = parent_id
@@ -355,11 +428,13 @@ def create_job(
     with _transaction() as conn:
         conn.execute('''
             INSERT INTO jobs (id, name, parent_id, status, created_at, updated_at,
-                            created_by, description, due_date, someday, tags, assignees, scheduled_at)
-            VALUES (?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            created_by, description, due_at, due_date, notify_on_due,
+                            someday, tags, assignees, scheduled_at)
+            VALUES (?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             job_id, name, effective_parent_id, now, now, created_by,
-            description, due_date, int(someday), json.dumps(tags or []),
+            description, effective_due_at, legacy_due_date, int(effective_notify),
+            int(someday), json.dumps(tags or []),
             json.dumps(assignees or []), scheduled_at
         ))
 
@@ -381,7 +456,7 @@ def create_job(
     return job
 
 
-@tool("update_job", "Update a job's fields (name, description, status, tags, assignees, due date, scheduled time). Use when: modifying job details, changing assignments, rescheduling.", tool_type="data")
+@tool("update_job", "Update a job's fields (name, description, status, tags, assignees, due datetime, notification). Use when: modifying job details, changing assignments, rescheduling.", tool_type="data")
 def update_job(
     job_id: str,
     name: str = None,
@@ -389,11 +464,21 @@ def update_job(
     status: str = None,
     tags: list = None,
     assignees: list = None,
-    due_date: str = None,
+    due_at: str = None,
+    notify_on_due: bool = None,
     someday: bool = None,
+    # Deprecated parameters (kept for backward compatibility)
+    due_date: str = None,
     scheduled_at: str = None
 ) -> Optional[dict]:
-    """Update a job's fields."""
+    """Update a job's fields.
+
+    Args:
+        due_at: ISO datetime for when job is due. Empty string clears the value.
+        notify_on_due: If true, sends notification when due_at arrives.
+        due_date: DEPRECATED. Use due_at instead.
+        scheduled_at: DEPRECATED. Use due_at with notify_on_due=true instead.
+    """
     job = _load_job(job_id)
     if not job:
         return {"error": f"Job not found: {job_id}"}
@@ -423,15 +508,51 @@ def update_job(
     if assignees is not None:
         updates.append("assignees = ?")
         params.append(json.dumps(assignees))
-    if due_date is not None:
+
+    # Handle due_at (new unified field)
+    if due_at is not None:
+        effective_due_at = due_at if due_at else None  # Empty string means clear
+        updates.append("due_at = ?")
+        params.append(effective_due_at)
+        # Also update legacy due_date for backward compatibility
+        legacy_due_date = effective_due_at.split("T")[0] if effective_due_at and "T" in effective_due_at else effective_due_at
         updates.append("due_date = ?")
-        params.append(due_date if due_date else None)  # Empty string means clear
+        params.append(legacy_due_date)
+        # Reset notification_sent when due_at changes
+        updates.append("notification_sent = ?")
+        params.append(0)
+    elif due_date is not None:
+        # Legacy due_date: convert to due_at
+        effective_due_at = f"{due_date}T00:00:00" if due_date else None
+        updates.append("due_at = ?")
+        params.append(effective_due_at)
+        updates.append("due_date = ?")
+        params.append(due_date if due_date else None)
+        updates.append("notification_sent = ?")
+        params.append(0)
+
+    if notify_on_due is not None:
+        updates.append("notify_on_due = ?")
+        params.append(int(notify_on_due))
+        # Reset notification_sent when notify_on_due changes
+        if notify_on_due:
+            updates.append("notification_sent = ?")
+            params.append(0)
+
     if someday is not None:
         updates.append("someday = ?")
         params.append(int(someday))
+
+    # Deprecated: scheduled_at handling
     if scheduled_at is not None:
         updates.append("scheduled_at = ?")
-        params.append(scheduled_at if scheduled_at else None)  # Empty string means clear
+        params.append(scheduled_at if scheduled_at else None)
+        # Also set due_at and notify_on_due for new system
+        if scheduled_at and due_at is None:
+            updates.append("due_at = ?")
+            params.append(scheduled_at)
+            updates.append("notify_on_due = ?")
+            params.append(1)
 
     params.append(job_id)
 

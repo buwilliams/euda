@@ -117,9 +117,11 @@ def _parse_date_reference(reference: str) -> str:
     return None
 
 
-@tool("parse_date", "Convert a natural language date reference to YYYY-MM-DD format. Use when: setting due dates from user input like 'tomorrow' or 'next Friday'.", tool_type="system")
+@tool("parse_date", "DEPRECATED: Use parse_datetime instead. Converts date reference to YYYY-MM-DD.", tool_type="system")
 def parse_date(reference: str) -> dict:
     """
+    DEPRECATED: Use parse_datetime instead, which returns ISO datetime format.
+
     Parse a natural language date reference into YYYY-MM-DD format.
 
     Args:
@@ -134,7 +136,8 @@ def parse_date(reference: str) -> dict:
     if result:
         return {
             "date": result,
-            "parsed_from": reference
+            "parsed_from": reference,
+            "deprecated": "Use parse_datetime instead for the unified due_at system"
         }
     else:
         return {
@@ -322,30 +325,71 @@ def _parse_datetime_reference(reference: str) -> str:
     return f"{date_str}T{hour:02d}:{minute:02d}:00"
 
 
-@tool("parse_datetime", "Convert a natural language datetime reference to ISO format for scheduling. Use when: scheduling reminders like 'tomorrow at 3pm' or 'in 2 hours'.", tool_type="system")
+@tool("parse_datetime", "Convert natural language date/time to ISO format. Primary parser for due dates. Supports 'tomorrow', 'next Friday', 'tomorrow at 3pm', 'in 2 hours'.", tool_type="system")
 def parse_datetime(reference: str) -> dict:
     """
     Parse a natural language datetime reference into ISO format.
 
+    This is the PRIMARY date parser for the unified due_at system.
+    Handles both date-only input ("tomorrow") and datetime input ("tomorrow at 3pm").
+
     Args:
-        reference: Natural language datetime like "tomorrow at 3pm", "next Friday at noon",
-                   "in 2 hours", "3:30pm", "monday morning", etc.
+        reference: Natural language date/time like "tomorrow", "next Friday",
+                   "tomorrow at 3pm", "in 2 hours", "3:30pm", "monday morning", etc.
 
     Returns:
-        dict with 'datetime' (ISO string) and 'formatted' (human readable), or None if unparseable
+        dict with:
+        - 'datetime': ISO string (YYYY-MM-DDTHH:MM:SS)
+        - 'formatted': Human readable string
+        - 'has_time': bool indicating if a specific time was included
+        - 'parsed_from': Original input
+        Returns None if unparseable.
     """
+    ref_lower = reference.lower().strip()
+
+    # Detect if input contains time indicators
+    time_indicators = ['at ', 'pm', 'am', ':', 'noon', 'morning', 'afternoon', 'evening', 'night', 'midnight']
+    has_time = any(indicator in ref_lower for indicator in time_indicators) or ref_lower.startswith('in ')
+
+    # Try full datetime parsing first
     result = _parse_datetime_reference(reference)
 
     if result:
-        # Parse the result to create human-readable format
         dt = datetime.fromisoformat(result)
-        formatted = dt.strftime("%A, %B %d at %I:%M %p")
+
+        # Check if result has non-midnight time (more accurate has_time detection)
+        if result.endswith('T00:00:00') and not has_time:
+            has_time = False
+        elif result.endswith('T09:00:00') and not has_time:
+            # Default time (9am) for date-only input
+            has_time = False
+        else:
+            has_time = True
+
+        # Format based on whether time was specified
+        if has_time:
+            formatted = dt.strftime("%A, %B %d at %I:%M %p")
+        else:
+            formatted = dt.strftime("%A, %B %d")
 
         return {
             "datetime": result,
             "formatted": formatted,
+            "has_time": has_time,
             "parsed_from": reference
         }
-    else:
-        # Return None on parse failure - let caller handle
-        return None
+
+    # Fallback: try date-only parsing
+    date_result = _parse_date_reference(reference)
+    if date_result:
+        result = f"{date_result}T00:00:00"
+        dt = datetime.fromisoformat(result)
+        return {
+            "datetime": result,
+            "formatted": dt.strftime("%A, %B %d"),
+            "has_time": False,
+            "parsed_from": reference
+        }
+
+    # Return None on parse failure
+    return None

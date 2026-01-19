@@ -32,8 +32,10 @@ function renderJobCard(job, swipeable = false) {
 
 function renderMinimalJobCard(job) {
     const displayName = job.name || 'Untitled';
-    const dueDate = job.due_date;
-    const dueDateLabel = dueDate ? `<span class="card-due-date">${formatFriendlyDueDate(dueDate)}</span>` : '';
+    // Use due_at (new unified field) with fallback to due_date (legacy)
+    const dueAt = job.due_at;
+    const dueDateLabel = dueAt ? `<span class="card-due-date">${formatDueAt(dueAt)}</span>` :
+                        (job.due_date ? `<span class="card-due-date">${formatFriendlyDueDate(job.due_date)}</span>` : '');
     // Use context-aware descendant count (all descendants matching timeline)
     const childCount = getDescendantCountForContext(job.id);
     const childBadge = childCount > 0 ? `<span class="card-badge">${childCount}</span>` : '';
@@ -97,10 +99,13 @@ function renderFullJobCard(job) {
 
 function getWhenLabel(job) {
     const today = new Date().toISOString().split('T')[0];
-    const dueDate = job.due_date;
+    // Use due_at (new unified field) with fallback to due_date (legacy)
+    const dueAt = job.due_at;
+    const dueDate = dueAt ? dueAt.split('T')[0] : job.due_date;
     const someday = job.someday;
 
     if (dueDate === today) return 'Today';
+    if (dueAt) return formatDueAt(dueAt);  // Show with time if specified
     if (dueDate) return dueDate;
     if (someday) return 'Someday';
     return 'Anytime';

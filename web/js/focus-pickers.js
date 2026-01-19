@@ -182,17 +182,20 @@ function selectCalendarDate(dateStr) {
 }
 
 async function setWhen(type, id, whenType, date = null) {
-    // Build the update payload
+    // Build the update payload using unified due_at field
     let payload = {};
 
     if (whenType === 'today') {
-        payload = { due_date: new Date().toISOString().split('T')[0], someday: false };
+        // Use due_at with T00:00:00 for date-only (no specific time)
+        const today = new Date().toISOString().split('T')[0];
+        payload = { due_at: `${today}T00:00:00`, someday: false };
     } else if (whenType === 'date') {
-        payload = { due_date: date, someday: false };
+        // Use due_at with T00:00:00 for date-only
+        payload = { due_at: `${date}T00:00:00`, someday: false };
     } else if (whenType === 'someday') {
-        payload = { due_date: '', someday: true };  // Empty string means clear
+        payload = { due_at: '', someday: true };  // Empty string means clear
     } else if (whenType === 'clear') {
-        payload = { due_date: '', someday: false };  // Empty string means clear
+        payload = { due_at: '', someday: false };  // Empty string means clear
     }
 
     try {

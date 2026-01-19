@@ -144,41 +144,42 @@ def send_notifications_batch(notifications: list) -> dict:
     }
 
 
-@tool("schedule_reminder", "Schedule a reminder to be sent at a specific future time. Use when: user asks to be reminded about something at a certain time.", tool_type="system")
+@tool("schedule_reminder", "Schedule a reminder. DEPRECATED: Use create_job with notify_on_due=true instead.", tool_type="system")
 def schedule_reminder(message: str, scheduled_at: str) -> dict:
     """Schedule a reminder to be sent at a specific time.
 
-    The reminder will be delivered as a notification when the scheduled time arrives.
+    DEPRECATED: This is now a convenience wrapper around create_job with notify_on_due=true.
+    Agents should use create_job directly with the unified due_at system.
+
+    The reminder will be delivered as a notification when the due time arrives.
     This is a zero-cost operation - the Python scheduler handles delivery without LLM calls.
-    The reminder appears in the Focus tab until delivered.
+    The reminder appears in the Focus tab until delivered (job stays open after notification).
 
     Args:
         message: The reminder message to send to the user
         scheduled_at: ISO datetime string for when to send (e.g., "2026-01-15T15:00:00")
 
     Returns:
-        Dict with scheduled status, job_id, and scheduled_at time
+        Dict with scheduled status, job_id, and due_at time
     """
     from ..data.jobs import create_job
 
-    # Extract date portion from scheduled_at for due_date (YYYY-MM-DD)
-    due_date = scheduled_at.split("T")[0] if "T" in scheduled_at else scheduled_at[:10]
-
-    # Create reminder as a top-level job (no parent) so it appears in Focus tab
+    # Create reminder using the unified due_at system
     job = create_job(
         name=f"Reminder: {message[:50]}{'...' if len(message) > 50 else ''}",
         description=message,
         parent_id=None,  # Top-level job, visible in Focus tab
-        tags=["scheduled", "reminder"],
-        scheduled_at=scheduled_at,
-        due_date=due_date,  # Shows in Today/Upcoming based on scheduled date
+        tags=["reminder"],
+        due_at=scheduled_at,
+        notify_on_due=True,  # Triggers notification when due
         created_by="agent"
     )
 
     return {
         "scheduled": True,
         "job_id": job["id"],
-        "scheduled_at": scheduled_at,
-        "message": f"Reminder scheduled for {scheduled_at}"
+        "due_at": scheduled_at,
+        "message": f"Reminder scheduled for {scheduled_at}",
+        "deprecated": "Use create_job with due_at and notify_on_due=true instead"
     }
 

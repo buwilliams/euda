@@ -327,6 +327,9 @@ class AgentManager:
         # Check for missed scheduled reminders (scheduled_at in the past but still todo)
         self._process_missed_reminders()
 
+        # Check for missed due job notifications (due_at in the past with notify_on_due=true)
+        self._process_missed_due_jobs()
+
     def _deliver_due_reminders(self, log_prefix: str = "scheduler") -> int:
         """Process scheduled reminders that are due now.
 
@@ -369,6 +372,70 @@ class AgentManager:
         count = self._deliver_due_reminders(log_prefix="startup")
         if count > 0:
             print(f"[startup] Processed {count} missed reminder(s)")
+
+    def _process_due_jobs(self, log_prefix: str = "scheduler") -> int:
+        """Process jobs that are due now and have notify_on_due=true.
+
+        Emits job:due events scoped to each assignee.
+        Sends push notification to user if connected.
+        Does NOT auto-complete jobs (they stay open for user to complete).
+
+        Args:
+            log_prefix: Prefix for log messages (e.g., "scheduler" or "startup")
+
+        Returns:
+            Number of jobs processed
+        """
+        from .tools.data.jobs import _get_connection, _row_to_job
+        from .tools.system.notifications import send_chat_message
+        from .events import emit_event
+
+        now_iso = datetime.now().isoformat()
+        processed = 0
+
+        conn = _get_connection()
+        cursor = conn.execute('''
+            SELECT * FROM jobs
+            WHERE status = 'todo'
+            AND notify_on_due = 1
+            AND due_at IS NOT NULL
+            AND due_at <= ?
+            AND notification_sent = 0
+        ''', (now_iso,))
+
+        for row in cursor.fetchall():
+            job = _row_to_job(row)
+            processed += 1
+
+            # Emit job:due event to each assignee
+            for assignee in job.get("assignees", []):
+                emit_event("job:due", scope=assignee, data={
+                    "job_id": job["id"],
+                    "name": job["name"],
+                    "due_at": job["due_at"]
+                })
+                self.agents_with_jobs[assignee] = True
+
+            # Send push notification to user
+            message = job.get("description") or job.get("name")
+            if log_prefix == "startup":
+                message = f"[Missed] {message}"
+
+            result = send_chat_message(message, agent_name="Due", job_id=job["id"])
+            delivered = result.get('delivered', False)
+            print(f"[{log_prefix}] Job due: {job['name']} (delivered: {delivered})")
+
+            # Mark notification as sent (but don't complete the job)
+            conn.execute("UPDATE jobs SET notification_sent = 1 WHERE id = ?", (job["id"],))
+
+        conn.commit()
+        return processed
+
+    def _process_missed_due_jobs(self):
+        """Process any jobs that became due while the system was down."""
+        count = self._process_due_jobs(log_prefix="startup")
+        if count > 0:
+            print(f"[startup] Processed {count} missed due job notification(s)")
 
     def _run_agent_loop(self, agent: Agent):
         """Run an agent's work loop - polls for actionable jobs."""
@@ -596,8 +663,11 @@ class AgentManager:
                 current_key = now.strftime("%Y-%m-%d-%H-%M")
                 today = now.strftime("%Y-%m-%d")
 
-                # Process scheduled reminders
+                # Process scheduled reminders (legacy system)
                 self._deliver_due_reminders(log_prefix="scheduler")
+
+                # Process due jobs with notifications (new unified system)
+                self._process_due_jobs(log_prefix="scheduler")
 
                 schedules = self._get_system_config().get("schedules", {})
 

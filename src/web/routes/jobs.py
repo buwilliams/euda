@@ -23,8 +23,11 @@ class CreateJobRequest(BaseModel):
     parent_id: Optional[str] = None
     tags: Optional[List[str]] = None
     assignees: Optional[List[str]] = None
-    due_date: Optional[str] = None
+    due_at: Optional[str] = None  # ISO datetime (e.g., "2026-01-15T15:00:00")
+    notify_on_due: bool = False   # Send notification when due
     someday: bool = False
+    # Deprecated (kept for backward compatibility)
+    due_date: Optional[str] = None
 
 
 class UpdateJobRequest(BaseModel):
@@ -33,8 +36,11 @@ class UpdateJobRequest(BaseModel):
     status: Optional[str] = None
     tags: Optional[List[str]] = None
     assignees: Optional[List[str]] = None
-    due_date: Optional[str] = None
+    due_at: Optional[str] = None  # ISO datetime
+    notify_on_due: Optional[bool] = None
     someday: Optional[bool] = None
+    # Deprecated (kept for backward compatibility)
+    due_date: Optional[str] = None
 
 
 class AssignAgentRequest(BaseModel):
@@ -78,8 +84,10 @@ def api_create_job(request: CreateJobRequest):
         parent_id=request.parent_id,
         tags=request.tags,
         assignees=request.assignees,
-        due_date=request.due_date,
-        someday=request.someday
+        due_at=request.due_at,
+        notify_on_due=request.notify_on_due,
+        someday=request.someday,
+        due_date=request.due_date  # Deprecated, kept for backward compatibility
     )
 
 
@@ -93,8 +101,10 @@ def api_update_job(job_id: str, request: UpdateJobRequest):
         status=request.status,
         tags=request.tags,
         assignees=request.assignees,
-        due_date=request.due_date,
-        someday=request.someday
+        due_at=request.due_at,
+        notify_on_due=request.notify_on_due,
+        someday=request.someday,
+        due_date=request.due_date  # Deprecated, kept for backward compatibility
     )
     if isinstance(result, dict) and "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])

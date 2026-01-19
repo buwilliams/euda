@@ -299,7 +299,9 @@ function getJobCategory(job) {
     if (isContainerJob(job)) return 'container';
 
     const today = new Date().toISOString().split('T')[0];
-    const dueDate = job.due_date;
+    // Use due_at (new unified field) with fallback to due_date (legacy)
+    const dueAt = job.due_at;
+    const dueDate = dueAt ? dueAt.split('T')[0] : job.due_date;
     const someday = job.someday;
 
     if (job.status === 'completed') return 'logbook';
@@ -493,6 +495,31 @@ function formatFriendlyDueDate(dateStr) {
     } else {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
+}
+
+function formatDueAt(dueAt) {
+    // Format due_at datetime, showing time only when specified (non-midnight)
+    if (!dueAt) return '';
+
+    // Check if time is specified (not T00:00:00)
+    const hasTime = dueAt.includes('T') && !dueAt.endsWith('T00:00:00');
+
+    // Extract date portion
+    const dateStr = dueAt.split('T')[0];
+    const dateLabel = formatFriendlyDueDate(dateStr);
+
+    if (hasTime) {
+        // Parse and format the time
+        const dt = new Date(dueAt);
+        const timeStr = dt.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+        return `${dateLabel} at ${timeStr}`;
+    }
+
+    return dateLabel;
 }
 
 function formatFriendlyPastDate(dateStr) {
