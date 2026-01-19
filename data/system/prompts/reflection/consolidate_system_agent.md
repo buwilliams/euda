@@ -33,5 +33,24 @@ Always graduate learning and behavior items to long-term memory so patterns are 
 
 Return a JSON object with:
 - long_term_entry: Summary of significant activity for permanent record (string or null)
-- profile_updates: Specific changes to make to the profile (string describing updates, or null). For learning/behavior items, write concrete rules, not vague suggestions.
+- profile_updates: Object mapping section names to content to add/update (or null if no updates). Each section value should be markdown content to merge into that section. For learning/behavior items, write concrete rules, not vague suggestions. Use these exact section keys:
+  - "purpose" - What drives them / why they exist
+  - "behavioral_rules" - Learned must/must not constraints (add new rules from learning items here)
+  - "voice" - Communication style (add behavior preferences here)
+  - "wants_and_fears" - What they pursue and avoid
+  - "stable_attractors" - Patterns they return to under stress
+  - "notable_events" - Significant consistent or surprising actions
+  - "influences" - People, places, experiences that shape them
+  - "interests" - Current goals, projects, focus areas
+  - "biographical_information" - Factual details
 - graduate_ids: Array of short-term memory IDs that should be preserved in long-term. Always include learning and behavior items.
+
+Example profile_updates:
+```json
+{
+  "behavioral_rules": "I must:\n- Create jobs immediately for 'remind me' requests; clarify only if truly ambiguous",
+  "voice": "I am:\n- Concise by default per user preference"
+}
+```
+
+Only include sections where you have observed evidence. Leave other sections out of profile_updates.

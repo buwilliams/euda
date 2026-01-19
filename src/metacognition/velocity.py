@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Optional, Dict, Set
 
 from ..logger import get_logger
+from ..events import emit_ui_event
 from .config import get_global_config
 
 
@@ -277,6 +278,11 @@ class VelocityTracker:
         Returns:
             True if runaway detected, False otherwise
         """
+        # Exempt interactive agents - they're human-driven, not autonomous
+        # The 'user' and 'chat' agents naturally have bursty behavior from conversations
+        if agent_id in ("user", "chat"):
+            return False
+
         config = self._get_runaway_config()
         if not config.get("enabled", True):
             return False
@@ -351,6 +357,13 @@ class VelocityTracker:
             "spike_multiplier": config.get("spike_multiplier", 5.0)
         })
 
+        # Emit SSE event for real-time UI updates
+        emit_ui_event("agent:paused", {
+            "agent_id": agent_id,
+            "reason": reason,
+            "timestamp": self._pause_timestamps[agent_id]
+        })
+
         print(f"[METACOGNITION] Agent '{agent_id}' paused: {reason} "
               f"(current: {recent_calls}/min, baseline: {baseline_rate:.1f}/min)")
 
@@ -409,6 +422,11 @@ class VelocityTracker:
             "paused_duration_minutes": duration_minutes
         })
 
+        # Emit SSE event for real-time UI updates
+        emit_ui_event("agent:resumed", {
+            "agent_id": agent_id
+        })
+
         print(f"[METACOGNITION] Agent '{agent_id}' auto-resumed after cooldown")
 
     def get_pause_info(self, agent_id: str) -> dict:
@@ -460,6 +478,11 @@ class VelocityTracker:
                     "agent_id": agent_id,
                     "resumed_by": "user",
                     "paused_duration_minutes": duration_minutes
+                })
+
+                # Emit SSE event for real-time UI updates
+                emit_ui_event("agent:resumed", {
+                    "agent_id": agent_id
                 })
 
                 print(f"[METACOGNITION] Agent '{agent_id}' resumed")

@@ -120,6 +120,41 @@ class ResourceTracker:
 
         return None
 
+    def _get_budget_period(self) -> str:
+        """Get the budget period from config (daily, weekly, monthly, or session)."""
+        resources_config = self._config.get_resources_config()
+        return resources_config.get("budget_period", "daily")
+
+    def _get_period_spent(self) -> float:
+        """Get total spent in the current budget period."""
+        period = self._get_budget_period()
+        now = datetime.now()
+
+        if period == "session":
+            # Session tracking uses in-memory total
+            return self.total_cost
+
+        elif period == "daily":
+            # Load today's costs from file
+            entries = self._load_costs_for_date(now)
+            return sum(e.get("cost", 0) for e in entries)
+
+        elif period == "weekly":
+            # Load last 7 days
+            start = now - timedelta(days=6)
+            entries = self._load_costs_for_range(start, now)
+            return sum(e.get("cost", 0) for e in entries)
+
+        elif period == "monthly":
+            # Load from start of month
+            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            entries = self._load_costs_for_range(start, now)
+            return sum(e.get("cost", 0) for e in entries)
+
+        else:
+            # Unknown period, default to session
+            return self.total_cost
+
     @staticmethod
     def _get_cost_logger():
         """Get the cost logger instance."""
@@ -187,10 +222,12 @@ class ResourceTracker:
         return input_cost + cached_cost + output_cost
 
     def check_budget(self):
-        """Check if budget is exceeded. Raises BudgetExceeded if so."""
+        """Check if budget is exceeded for the configured period. Raises BudgetExceeded if so."""
         with self._lock:
-            if self.budget is not None and self.total_cost >= self.budget:
-                raise BudgetExceeded(self.budget, self.total_cost)
+            if self.budget is not None:
+                period_spent = self._get_period_spent()
+                if period_spent >= self.budget:
+                    raise BudgetExceeded(self.budget, period_spent)
 
     def record_usage(self, provider: str, model: str, input_tokens: int, output_tokens: int,
                      cached_input_tokens: int = 0, agent_id: str = None, job_id: str = None,
@@ -233,33 +270,44 @@ class ResourceTracker:
             self.total_cost += cost
             self.call_count += 1
 
-            # Check budget thresholds
-            should_warn_80 = False
-            should_warn_95 = False
-            should_raise = False
+        # Write log entry first (so period calculation includes it)
+        self._append_cost_entry(log_entry)
 
-            if self.budget is not None:
-                if self.total_cost >= self.budget:
-                    should_raise = True
-                else:
-                    percent_used = (self.total_cost / self.budget) * 100
-                    if percent_used >= 95 and 95 not in self._warned_thresholds:
-                        self._warned_thresholds.add(95)
+        # Check budget thresholds using period-based spending
+        should_warn_80 = False
+        should_warn_95 = False
+        should_raise = False
+        period = self._get_budget_period()
+
+        if self.budget is not None:
+            period_spent = self._get_period_spent()
+
+            if period_spent >= self.budget:
+                should_raise = True
+            else:
+                percent_used = (period_spent / self.budget) * 100
+                # Use period-specific warning keys to reset warnings at period boundaries
+                warn_key_80 = f"{period}:80"
+                warn_key_95 = f"{period}:95"
+
+                with self._lock:
+                    if percent_used >= 95 and warn_key_95 not in self._warned_thresholds:
+                        self._warned_thresholds.add(warn_key_95)
                         should_warn_95 = True
-                    elif percent_used >= 80 and 80 not in self._warned_thresholds:
-                        self._warned_thresholds.add(80)
+                    elif percent_used >= 80 and warn_key_80 not in self._warned_thresholds:
+                        self._warned_thresholds.add(warn_key_80)
                         should_warn_80 = True
 
             budget = self.budget
-            total_cost = self.total_cost
-
-        # File I/O and warnings outside lock
-        self._append_cost_entry(log_entry)
+            total_cost = period_spent
+        else:
+            budget = None
+            total_cost = 0
 
         if should_warn_95:
-            print(f"[METACOGNITION] WARNING: 95% of budget used (${total_cost:.4f} / ${budget:.2f})")
+            print(f"[METACOGNITION] WARNING: 95% of {period} budget used (${total_cost:.4f} / ${budget:.2f})")
         elif should_warn_80:
-            print(f"[METACOGNITION] WARNING: 80% of budget used (${total_cost:.4f} / ${budget:.2f})")
+            print(f"[METACOGNITION] WARNING: 80% of {period} budget used (${total_cost:.4f} / ${budget:.2f})")
 
         if should_raise:
             raise BudgetExceeded(budget, total_cost)

@@ -1522,3 +1522,80 @@
 .spinning img {
     animation: spin 1s linear infinite;
 }
+
+/* ============== Agent Paused Banner ============== */
+
+.agent-paused-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-md);
+}
+
+.pause-banner-content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    flex: 1;
+}
+
+.pause-banner-content > img {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    filter: invert(62%) sepia(97%) saturate(1114%) hue-rotate(360deg) brightness(100%) contrast(95%);
+}
+
+.pause-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.pause-banner-text strong {
+    color: #b45309;
+    font-size: var(--font-size-sm);
+}
+
+.pause-banner-text .pause-reason {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.pause-banner-text .pause-time {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+}
+
+.pause-resume-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    transition: background var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.pause-resume-btn:hover {
+    background: #d97706;
+}
+
+.pause-resume-btn img {
+    width: 16px;
+    height: 16px;
+    filter: brightness(0) invert(1);
+}

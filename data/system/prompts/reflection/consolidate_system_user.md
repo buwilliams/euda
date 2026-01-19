@@ -56,5 +56,25 @@ Document analyses (marked with "Document analysis:" in long-term memory) contain
 
 Return a JSON object with:
 - long_term_entry: Summary of significant observations for permanent record (string or null)
-- profile_updates: Specific changes to make to the profile (string describing updates, or null)
+- profile_updates: Object mapping section names to content to add/update (or null if no updates). Each section value should be markdown content to merge into that section. Use these exact section keys:
+  - "purpose" - What drives them / why they exist
+  - "behavioral_rules" - Learned must/must not constraints
+  - "voice" - Communication style
+  - "wants_and_fears" - What they pursue and avoid
+  - "stable_attractors" - Patterns they return to under stress
+  - "notable_events" - Significant consistent or surprising actions
+  - "influences" - People, places, experiences that shape them
+  - "interests" - Current goals, projects, focus areas
+  - "biographical_information" - Factual details
 - graduate_ids: Array of short-term memory IDs that should be preserved in long-term. Always include learning and behavior items.
+
+Example profile_updates:
+```json
+{
+  "behavioral_rules": "- Prefers morning work sessions\n- Avoids meetings before 10am",
+  "interests": "- Currently focused on building personal AI systems",
+  "wants_and_fears": "Wants:\n- Deep work time\n\nFears:\n- Fragmented attention"
+}
+```
+
+Only include sections where you have observed evidence. Leave other sections out of profile_updates.

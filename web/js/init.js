@@ -91,6 +91,33 @@ function connectSSE() {
         }
     });
 
+    // Handle agent pause/resume events (for real-time UI updates)
+    eventSource.addEventListener('agent:paused', (e) => {
+        const data = JSON.parse(e.data);
+        if (typeof agentPauseStatus !== 'undefined') {
+            agentPauseStatus[data.agent_id] = {
+                isPaused: true,
+                reason: data.reason || 'Agent paused',
+                timestamp: data.timestamp
+            };
+            // Re-render if viewing this agent's manage page
+            if (typeof focusView !== 'undefined' && focusView === `manage-agent-${data.agent_id}`) {
+                renderFocusTab();
+            }
+        }
+    });
+
+    eventSource.addEventListener('agent:resumed', (e) => {
+        const data = JSON.parse(e.data);
+        if (typeof agentPauseStatus !== 'undefined') {
+            delete agentPauseStatus[data.agent_id];
+            // Re-render if viewing this agent's manage page
+            if (typeof focusView !== 'undefined' && focusView === `manage-agent-${data.agent_id}`) {
+                renderFocusTab();
+            }
+        }
+    });
+
     eventSource.onerror = () => {
         eventSource.close();
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);

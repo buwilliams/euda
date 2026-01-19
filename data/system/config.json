@@ -83,7 +83,7 @@
     },
     "resources": {
       "budget_limit": 10.0,
-      "budget_period": "daily"
+      "budget_period": "monthly"
     },
     "progress": {
       "max_tool_calls_per_iteration": 50,

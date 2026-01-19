@@ -295,6 +295,62 @@ def api_trigger_exploration(agent_id: str):
     }
 
 
+# Active executions endpoint
+@router.get("/{agent_id}/active-executions")
+def api_get_active_executions(agent_id: str):
+    """Get active trigger jobs for an agent to restore UI state after page refresh.
+
+    Returns active trigger jobs (reflection or exploration) that are assigned to this agent
+    and still in todo status. This allows the UI to restore the running state of buttons.
+
+    Returns:
+        List of active executions with execution_id, phase, job_id, created_at
+    """
+    from ...tools.data.jobs import list_jobs
+
+    # Verify agent exists
+    config = get_agent_config(agent_id)
+    if config is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Get todo jobs assigned to this agent
+    jobs = list_jobs(status="todo", assignee=agent_id)
+
+    # Filter for trigger jobs and extract execution info
+    executions = []
+    for job in jobs:
+        tags = job.get("tags", [])
+
+        # Check for trigger tags
+        phase = None
+        for tag in tags:
+            if tag.startswith("trigger:reflection:"):
+                phase = tag.split(":")[-1]  # append, consolidate, or both
+                break
+            elif tag == "trigger:exploration":
+                phase = "exploration"
+                break
+
+        if not phase:
+            continue
+
+        # Extract execution_id from tags
+        execution_id = None
+        for tag in tags:
+            if tag.startswith("execution:"):
+                execution_id = tag.split(":", 1)[1]
+                break
+
+        executions.append({
+            "execution_id": execution_id,
+            "phase": phase,
+            "job_id": job["id"],
+            "created_at": job.get("created_at")
+        })
+
+    return executions
+
+
 # Reflection logs endpoint
 @router.get("/{agent_id}/logs/reflection")
 def api_get_reflection_logs(agent_id: str, days: int = 7):

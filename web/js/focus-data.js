@@ -4,6 +4,75 @@
 
 let activeExecution = null;
 
+// ============== Agent Pause Status ==============
+
+let agentPauseStatus = {};  // Cache: { agentId: { isPaused, reason, timestamp } }
+
+async function loadAgentPauseStatus(agentId) {
+    try {
+        const response = await fetch(`/api/rate-limiting/agents/${agentId}/stats`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            const data = await response.json();
+            agentPauseStatus[agentId] = {
+                isPaused: data.is_paused || false,
+                reason: data.pause_reason || null,
+                timestamp: data.pause_timestamp || null
+            };
+            return agentPauseStatus[agentId];
+        }
+    } catch (error) {
+        console.error('Failed to load agent pause status:', error);
+    }
+    return { isPaused: false, reason: null, timestamp: null };
+}
+
+async function resumeAgent(agentId) {
+    try {
+        const response = await fetch(`/api/rate-limiting/agents/${agentId}/resume`, {
+            method: 'POST',
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            // Clear cache entry
+            delete agentPauseStatus[agentId];
+            // Re-render the view
+            renderFocusTab();
+            return true;
+        }
+    } catch (error) {
+        console.error('Failed to resume agent:', error);
+    }
+    return false;
+}
+
+async function loadActiveExecutions(agentId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/active-executions`, {
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            const executions = await response.json();
+            // Restore activeExecution if there's an active trigger job
+            if (executions.length > 0) {
+                const exec = executions[0];  // Take the first (most recent)
+                activeExecution = {
+                    executionId: exec.execution_id,
+                    agentId: agentId,
+                    phase: exec.phase,
+                    step: 'running',
+                    message: 'In progress...'
+                };
+            }
+            return executions;
+        }
+    } catch (error) {
+        console.error('Failed to load active executions:', error);
+    }
+    return [];
+}
+
 function handleReflectionProgress(data) {
     // Match by execution_id if we have one, otherwise match by agent_id
     if (activeExecution &&

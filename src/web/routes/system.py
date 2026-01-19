@@ -272,6 +272,30 @@ def _list_backups() -> List[dict]:
     return backups
 
 
+def _clear_logger_caches():
+    """Clear all logger caches to prevent stale file handles after fresh-start/restore."""
+    # Clear general loggers
+    try:
+        from ...logger import _loggers
+        _loggers.clear()
+    except Exception:
+        pass
+
+    # Clear LLM prompt logger cache
+    try:
+        import src.llms.base as llm_base
+        llm_base._prompt_logger = None
+    except Exception:
+        pass
+
+    # Clear cost logger cache
+    try:
+        import src.metacognition.resources as resources
+        resources._cost_logger = None
+    except Exception:
+        pass
+
+
 def _perform_fresh_start() -> dict:
     """
     Reset all user data for a clean slate.
@@ -324,6 +348,9 @@ def _perform_fresh_start() -> dict:
         _connection_pool.clear()
     except Exception:
         pass
+
+    # Clear logger caches so they don't recreate old paths after fresh start
+    _clear_logger_caches()
 
     # Move data to backup
     if DATA_DIR.exists():
@@ -386,6 +413,9 @@ def _restore_backup(backup_name: str) -> dict:
         _connection_pool.clear()
     except Exception:
         pass
+
+    # Clear logger caches so they use new paths after restore
+    _clear_logger_caches()
 
     # Create a backup of current data before restoring
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")

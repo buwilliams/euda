@@ -318,28 +318,246 @@ def _write_long_term_entry(reflection: "Reflection", content: str):
     memory_path.write_text(new_content)
 
 
-def _update_profile(reflection: "Reflection", updates: str):
+# Profile section definitions - maps JSON keys to markdown headers
+PROFILE_SECTIONS = {
+    "purpose": "Purpose",
+    "behavioral_rules": "Behavioral Rules",
+    "voice": "Voice",
+    "wants_and_fears": "Wants and Fears",
+    "stable_attractors": "Stable Attractors",
+    "notable_events": "Notable Events",
+    "influences": "Influences",
+    "interests": "Interests",
+    "biographical_information": "Biographical Information",
+}
+
+# Section display order
+SECTION_ORDER = [
+    "purpose",
+    "behavioral_rules",
+    "voice",
+    "wants_and_fears",
+    "stable_attractors",
+    "notable_events",
+    "influences",
+    "interests",
+    "biographical_information",
+]
+
+
+def _parse_profile_sections(content: str) -> tuple[str, dict]:
+    """Parse a profile markdown into title and sections.
+
+    Handles various profile formats:
+    - Structured profiles with # Title and ## Sections
+    - Legacy profiles with unstructured content
+    - Profiles with "Reflection Update" sections to migrate
+
+    Args:
+        content: The profile markdown content
+
+    Returns:
+        Tuple of (title_line, sections_dict) where sections_dict maps
+        section keys to their content
+    """
+    import re
+
+    lines = content.split("\n")
+    title = ""
+    sections = {}
+    preamble = []  # Content before any section headers
+
+    # Extract title (first # line)
+    title_found = False
+    for i, line in enumerate(lines):
+        if line.startswith("# "):
+            title = line
+            lines = lines[i + 1:]
+            title_found = True
+            break
+
+    # If no title found, all lines are potential content
+    if not title_found:
+        lines = content.split("\n")
+
+    # Build reverse mapping from headers to keys
+    header_to_key = {v.lower(): k for k, v in PROFILE_SECTIONS.items()}
+
+    current_section = None
+    current_content = []
+    in_preamble = True  # Track content before first section
+
+    for line in lines:
+        # Check for section header (## Something)
+        if line.startswith("## "):
+            in_preamble = False
+
+            # Save previous section
+            if current_section:
+                sections[current_section] = "\n".join(current_content).strip()
+
+            # Parse new section
+            header_text = line[3:].strip()
+            # Remove any date suffix like "(2025-01-18)"
+            header_clean = re.sub(r'\s*\([^)]*\)\s*$', '', header_text).strip()
+            current_section = header_to_key.get(header_clean.lower())
+
+            # If not a recognized section, store under special key
+            if not current_section:
+                # Check for "Reflection Update" sections - these should be migrated
+                if header_clean.lower().startswith("reflection update"):
+                    current_section = "_reflection_update"
+                else:
+                    current_section = f"_other_{header_text}"
+
+            current_content = []
+        elif in_preamble:
+            preamble.append(line)
+        elif current_section:
+            current_content.append(line)
+
+    # Save last section
+    if current_section:
+        sections[current_section] = "\n".join(current_content).strip()
+
+    # Handle preamble content (unstructured legacy content)
+    preamble_text = "\n".join(preamble).strip()
+    if preamble_text:
+        # Store as behavioral observations that can be organized later
+        sections["_preamble"] = preamble_text
+
+    return title, sections
+
+
+def _build_profile_markdown(title: str, sections: dict, agent_id: str) -> str:
+    """Build profile markdown from title and sections.
+
+    Args:
+        title: The title line (e.g., "# User" or "# Chat")
+        sections: Dict mapping section keys to content
+        agent_id: Agent ID for default title
+
+    Returns:
+        Complete profile markdown
+    """
+    if not title:
+        title = f"# {agent_id.title()}"
+
+    lines = [title, ""]
+
+    # Add preamble as introductory text if present (legacy unstructured content)
+    if "_preamble" in sections and sections["_preamble"].strip():
+        lines.append(sections["_preamble"])
+        lines.append("")
+
+    # Add sections in defined order
+    for key in SECTION_ORDER:
+        if key in sections and sections[key].strip():
+            header = PROFILE_SECTIONS[key]
+            lines.append(f"## {header}")
+            lines.append("")
+            lines.append(sections[key])
+            lines.append("")
+
+    # Add any "other" sections (like Core Promise) at the end
+    # Skip _preamble (already handled) and _reflection_update (deprecated)
+    for key, content in sections.items():
+        if key.startswith("_other_") and content.strip():
+            header = key.replace("_other_", "")
+            lines.append(f"## {header}")
+            lines.append("")
+            lines.append(content)
+            lines.append("")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _merge_section_content(existing: str, new_content: str) -> str:
+    """Merge new content into an existing section.
+
+    Handles different content formats:
+    - Lists (bullet points): Appends new items, avoiding duplicates
+    - Prose: Appends with paragraph break
+
+    Args:
+        existing: Existing section content
+        new_content: New content to merge
+
+    Returns:
+        Merged content
+    """
+    if not existing.strip():
+        return new_content.strip()
+
+    if not new_content.strip():
+        return existing.strip()
+
+    existing = existing.strip()
+    new_content = new_content.strip()
+
+    # Check if content is list-based (starts with - or *)
+    existing_is_list = existing.lstrip().startswith(("-", "*", "I must", "I must not", "Wants:", "Fears:"))
+    new_is_list = new_content.lstrip().startswith(("-", "*", "I must", "I must not", "Wants:", "Fears:"))
+
+    if existing_is_list or new_is_list:
+        # For lists, check for duplicates before appending
+        existing_lines = set(line.strip().lower() for line in existing.split("\n") if line.strip())
+        new_lines = []
+
+        for line in new_content.split("\n"):
+            if line.strip() and line.strip().lower() not in existing_lines:
+                new_lines.append(line)
+
+        if new_lines:
+            return existing + "\n" + "\n".join(new_lines)
+        return existing
+    else:
+        # For prose, append with paragraph break
+        return existing + "\n\n" + new_content
+
+
+def _update_profile(reflection: "Reflection", updates):
     """Update the agent's profile with new information.
 
-    This appends a reflection section to the profile. The next consolidation
-    will read this and incorporate it properly.
+    Handles both structured updates (dict mapping section keys to content)
+    and legacy string updates (for backwards compatibility).
 
     Args:
         reflection: The Reflection instance
-        updates: Description of updates to apply
+        updates: Either a dict of section updates or a string description
     """
     profile_path = reflection._get_profile_path()
+    agent_id = reflection.agent.id
 
+    # Load current profile
     if profile_path.exists():
         current_profile = profile_path.read_text()
     else:
-        current_profile = f"# Profile: {reflection.agent.id}\n"
+        current_profile = f"# {agent_id.title()}\n"
 
-    # Add reflection update section
-    today = datetime.now().strftime("%Y-%m-%d")
-    update_section = f"\n\n---\n\n## Reflection Update ({today})\n\n{updates}"
+    # Handle legacy string updates (backwards compatibility)
+    if isinstance(updates, str):
+        today = datetime.now().strftime("%Y-%m-%d")
+        update_section = f"\n\n---\n\n## Reflection Update ({today})\n\n{updates}"
+        new_profile = current_profile + update_section
+        profile_path.write_text(new_profile)
+        return
 
-    new_profile = current_profile + update_section
+    # Handle structured dict updates
+    if not isinstance(updates, dict) or not updates:
+        return
+
+    # Parse existing profile into sections
+    title, sections = _parse_profile_sections(current_profile)
+
+    # Merge updates into sections
+    for key, content in updates.items():
+        if key in PROFILE_SECTIONS and content:
+            existing = sections.get(key, "")
+            sections[key] = _merge_section_content(existing, content)
+
+    # Build and write new profile
+    new_profile = _build_profile_markdown(title, sections, agent_id)
     profile_path.write_text(new_profile)
 
 

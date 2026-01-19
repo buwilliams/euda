@@ -848,6 +848,44 @@ function renderAgentDetailView(job) {
     `;
 }
 
+// ============== Agent Pause Banner ==============
+
+function renderPauseBanner(agentId, pauseStatus) {
+    const reason = pauseStatus.reason || 'Agent paused by rate limiting';
+    const timestamp = pauseStatus.timestamp;
+    const timeAgo = timestamp ? formatPauseTimestamp(timestamp) : '';
+
+    return `
+        <div class="agent-paused-banner">
+            <div class="pause-banner-content">
+                ${icon('exclamation-triangle')}
+                <div class="pause-banner-text">
+                    <strong>Agent Paused</strong>
+                    <span class="pause-reason">${escapeHtml(reason)}</span>
+                    ${timeAgo ? `<span class="pause-time">${timeAgo}</span>` : ''}
+                </div>
+            </div>
+            <button class="pause-resume-btn" onclick="resumeAgent('${agentId}')">
+                ${icon('play')} Resume
+            </button>
+        </div>
+    `;
+}
+
+function formatPauseTimestamp(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 // ============== Agent Manage View ==============
 
 function renderAgentManageView(agentId) {
@@ -872,7 +910,27 @@ function renderAgentManageView(agentId) {
         `;
     }
 
+    // Load pause status if not cached
+    if (!(agentId in agentPauseStatus)) {
+        loadAgentPauseStatus(agentId).then(() => renderFocusTab());
+    }
+
+    // Check active executions on initial load to restore button state after page refresh
+    // Only check if we don't already have an active execution for this agent
+    if (!activeExecution || activeExecution.agentId !== agentId) {
+        // Check if we've already loaded active executions for this agent
+        if (!agentDataCache[agentId]?._activeExecutionsLoaded) {
+            loadActiveExecutions(agentId).then(() => {
+                if (agentDataCache[agentId]) {
+                    agentDataCache[agentId]._activeExecutionsLoaded = true;
+                }
+                renderFocusTab();
+            });
+        }
+    }
+
     const displayName = agent?.name || agentData?.config?.name || agentId;
+    const pauseStatus = agentPauseStatus[agentId] || { isPaused: false };
 
     // Check if any execution is running for this agent
     const isRunning = activeExecution && activeExecution.agentId === agentId;
@@ -882,7 +940,7 @@ function renderAgentManageView(agentId) {
     const actionButton = (phase, iconName, label, onclick) => {
         const isThisRunning = runningPhase === phase;
         const classes = `task-detail-action${isThisRunning ? ' running' : ''}`;
-        const disabled = isRunning ? 'disabled' : '';
+        const disabled = isRunning || pauseStatus.isPaused ? 'disabled' : '';
         const displayIcon = isThisRunning ? icon('arrow-path', 'spinning') : icon(iconName);
         const displayLabel = isThisRunning ? `${label}...` : label;
         return `<button class="${classes}" onclick="${onclick}" ${disabled}>${displayIcon} ${displayLabel}</button>`;
@@ -897,6 +955,11 @@ function renderAgentManageView(agentId) {
             </div>
         </div>
         <div class="focus-view-content">
+            ${pauseStatus.isPaused ? renderPauseBanner(agentId, pauseStatus) : ''}
+
+            <!-- Live Execution Progress -->
+            ${getActiveExecutionHtml(agentId)}
+
             <!-- Action Menu -->
             <div class="task-detail-actions">
                 ${actionButton('append', 'arrow-path', 'Append', `triggerReflection('${agentId}', 'append')`)}
