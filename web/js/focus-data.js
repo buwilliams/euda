@@ -408,7 +408,7 @@ function getJobCategory(job) {
     // Container jobs don't belong in timeline categories
     if (isContainerJob(job)) return 'container';
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const dueDate = job.due_date;
     const someday = job.someday;
 

@@ -186,7 +186,7 @@ async function setWhen(type, id, whenType, date = null) {
     let payload = {};
 
     if (whenType === 'today') {
-        payload = { due_date: new Date().toISOString().split('T')[0], someday: false };
+        payload = { due_date: getLocalDateString(), someday: false };
     } else if (whenType === 'date') {
         payload = { due_date: date, someday: false };
     } else if (whenType === 'someday') {
