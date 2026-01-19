@@ -1,6 +1,6 @@
 ## Agent Identity
 
-{profile}
+{identity}
 
 ## User Context
 

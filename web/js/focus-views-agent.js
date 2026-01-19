@@ -246,10 +246,10 @@ function renderAgentManageView(agentId) {
                 ${actionButton('exploration', 'sparkles', 'Explore', `triggerExploration('${agentId}')`)}
             </div>
 
-            <!-- Profile Section - navigates to profile view -->
+            <!-- Identity Section - navigates to identity view -->
             <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('profile-${agentId}')">
-                    <span>Profile</span>
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('identity-${agentId}')">
+                    <span>Identity</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
             </div>
@@ -903,9 +903,9 @@ function renderPromptDetailView(agentId, promptIndex) {
     `;
 }
 
-// ============== Profile View ==============
+// ============== Identity View ==============
 
-function renderProfileView(agentId) {
+function renderIdentityView(agentId) {
     const agentData = agentDataCache[agentId];
 
     if (!agentData) {
@@ -914,7 +914,7 @@ function renderProfileView(agentId) {
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
-                    <span class="focus-view-title">Profile</span>
+                    <span class="focus-view-title">Identity</span>
                     ${renderBreadcrumbs()}
                 </div>
             </div>
@@ -924,28 +924,28 @@ function renderProfileView(agentId) {
         `;
     }
 
-    const profile = agentData.persona || '';
-    const hasProfile = profile.length > 0;
+    const identity = agentData.persona || '';
+    const hasIdentity = identity.length > 0;
 
     // Find the job for this agent (for editing state)
     const agentJob = jobsData.find(j => j.agent_id === agentId);
     const jobId = agentJob?.id || agentId;
 
-    const isEditingProfile = editingJobField?.jobId === jobId && editingJobField?.field === 'profile';
+    const isEditingIdentity = editingJobField?.jobId === jobId && editingJobField?.field === 'identity';
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
-                <span class="focus-view-title">Profile</span>
+                <span class="focus-view-title">Identity</span>
                 ${renderBreadcrumbs()}
             </div>
         </div>
         <div class="focus-view-content">
-            ${isEditingProfile ? `
+            ${isEditingIdentity ? `
                 <!-- Edit Mode -->
                 <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="saveAgentProfileField('${agentId}', '${jobId}')">
+                    <button class="task-detail-action" onclick="saveAgentIdentityField('${agentId}', '${jobId}')">
                         ${icon('check')} Save
                     </button>
                     <button class="task-detail-action" onclick="cancelEditing()">
@@ -953,21 +953,21 @@ function renderProfileView(agentId) {
                     </button>
                 </div>
 
-                <div class="profile-edit">
-                    <textarea class="job-description-input" id="edit-profile-${jobId}"
+                <div class="identity-edit">
+                    <textarea class="job-description-input" id="edit-identity-${jobId}"
                         placeholder="Define the agent's identity and behavioral rules..."
-                        style="min-height: 300px;">${escapeHtml(profile)}</textarea>
+                        style="min-height: 300px;">${escapeHtml(identity)}</textarea>
                 </div>
             ` : `
                 <!-- View Mode -->
                 <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="startEditingField('${jobId}', 'profile')">
+                    <button class="task-detail-action" onclick="startEditingField('${jobId}', 'identity')">
                         ${icon('pencil')} Edit
                     </button>
                 </div>
 
-                <div class="profile-content ${hasProfile ? '' : 'empty'}">
-                    ${hasProfile ? marked.parse(profile) : '<em class="text-muted">No profile defined. Click Edit to define the agent\'s identity and behavioral rules.</em>'}
+                <div class="identity-content ${hasIdentity ? '' : 'empty'}">
+                    ${hasIdentity ? marked.parse(identity) : '<em class="text-muted">No identity defined. Click Edit to define the agent\'s identity and behavioral rules.</em>'}
                 </div>
             `}
         </div>

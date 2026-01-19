@@ -10,12 +10,12 @@ from typing import Optional, List, Dict, Any
 
 from ...tools.agents.agents import (
     list_agents, get_agent,
-    get_agent_profile, update_agent_profile,
+    get_agent_identity, update_agent_identity,
     get_agent_config, update_agent_config
 )
 from ...tools.agents.monitoring import get_agent_monitoring
 from ...tools.data.jobs import get_jobs_completed_by_agent, create_job, get_system_container
-from ...tools.data.profile import get_profile, update_profile
+from ...tools.data.identity import get_identity, update_identity
 from ...tools.data.memory import (
     list_memory, add_memory, remove_memory,
     read_long_term_memory, write_long_term_memory, list_long_term_memory_dates
@@ -26,7 +26,7 @@ from ...logger import get_logger
 router = APIRouter()
 
 
-class UpdateProfileRequest(BaseModel):
+class UpdateIdentityRequest(BaseModel):
     content: str
 
 
@@ -69,39 +69,58 @@ def api_get_agent(agent_id: str):
     return agent
 
 
-# Profile endpoints
-@router.get("/{agent_id}/profile")
-def api_get_profile(agent_id: str):
-    """Get agent's profile markdown."""
-    profile = get_agent_profile(agent_id)
-    if profile is None:
-        raise HTTPException(status_code=404, detail="Agent or profile not found")
-    return {"agent_id": agent_id, "profile": profile}
+# Identity endpoints
+@router.get("/{agent_id}/identity")
+def api_get_identity(agent_id: str):
+    """Get agent's identity markdown."""
+    identity = get_agent_identity(agent_id)
+    if identity is None:
+        raise HTTPException(status_code=404, detail="Agent or identity not found")
+    return {"agent_id": agent_id, "identity": identity}
 
 
-@router.patch("/{agent_id}/profile")
-def api_update_profile(agent_id: str, request: UpdateProfileRequest):
-    """Update agent's profile markdown."""
-    result = update_agent_profile(agent_id, request.content)
+@router.patch("/{agent_id}/identity")
+def api_update_identity(agent_id: str, request: UpdateIdentityRequest):
+    """Update agent's identity markdown."""
+    result = update_agent_identity(agent_id, request.content)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
 
 
-# Backward-compatible persona endpoints (alias to profile)
+# Backward-compatible profile endpoints (alias to identity)
+@router.get("/{agent_id}/profile")
+def api_get_profile(agent_id: str):
+    """Get agent's profile markdown (alias for identity)."""
+    identity = get_agent_identity(agent_id)
+    if identity is None:
+        raise HTTPException(status_code=404, detail="Agent or profile not found")
+    return {"agent_id": agent_id, "profile": identity}
+
+
+@router.patch("/{agent_id}/profile")
+def api_update_profile(agent_id: str, request: UpdateIdentityRequest):
+    """Update agent's profile markdown (alias for identity)."""
+    result = update_agent_identity(agent_id, request.content)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+# Backward-compatible persona endpoints (alias to identity)
 @router.get("/{agent_id}/persona")
 def api_get_persona(agent_id: str):
-    """Get agent's persona markdown (alias for profile)."""
-    profile = get_agent_profile(agent_id)
-    if profile is None:
+    """Get agent's persona markdown (alias for identity)."""
+    identity = get_agent_identity(agent_id)
+    if identity is None:
         raise HTTPException(status_code=404, detail="Agent or persona not found")
-    return {"agent_id": agent_id, "persona": profile}
+    return {"agent_id": agent_id, "persona": identity}
 
 
 @router.patch("/{agent_id}/persona")
-def api_update_persona(agent_id: str, request: UpdateProfileRequest):
-    """Update agent's persona markdown (alias for profile)."""
-    result = update_agent_profile(agent_id, request.content)
+def api_update_persona(agent_id: str, request: UpdateIdentityRequest):
+    """Update agent's persona markdown (alias for identity)."""
+    result = update_agent_identity(agent_id, request.content)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result

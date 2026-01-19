@@ -1260,9 +1260,9 @@
     color: #6b7280;
 }
 
-/* ============== Profile View ============== */
+/* ============== Identity View ============== */
 
-.profile-content {
+.identity-content {
     padding: var(--spacing-md);
     background: var(--color-bg-subtle);
     border-radius: var(--radius-md);
@@ -1271,47 +1271,47 @@
     color: var(--color-text-primary);
 }
 
-.profile-content.empty {
+.identity-content.empty {
     color: var(--color-text-tertiary);
     font-style: italic;
 }
 
-.profile-content h1,
-.profile-content h2,
-.profile-content h3 {
+.identity-content h1,
+.identity-content h2,
+.identity-content h3 {
     margin-top: var(--spacing-lg);
     margin-bottom: var(--spacing-sm);
     color: var(--color-text-primary);
 }
 
-.profile-content h1:first-child,
-.profile-content h2:first-child,
-.profile-content h3:first-child {
+.identity-content h1:first-child,
+.identity-content h2:first-child,
+.identity-content h3:first-child {
     margin-top: 0;
 }
 
-.profile-content p {
+.identity-content p {
     margin-bottom: var(--spacing-md);
 }
 
-.profile-content ul,
-.profile-content ol {
+.identity-content ul,
+.identity-content ol {
     margin-bottom: var(--spacing-md);
     padding-left: var(--spacing-lg);
 }
 
-.profile-content li {
+.identity-content li {
     margin-bottom: var(--spacing-xs);
 }
 
-.profile-content code {
+.identity-content code {
     background: var(--color-bg-muted);
     padding: 2px 4px;
     border-radius: var(--radius-xs);
     font-size: var(--font-size-sm);
 }
 
-.profile-content pre {
+.identity-content pre {
     background: var(--color-bg-muted);
     padding: var(--spacing-md);
     border-radius: var(--radius-sm);
@@ -1319,12 +1319,12 @@
     margin-bottom: var(--spacing-md);
 }
 
-.profile-content pre code {
+.identity-content pre code {
     background: none;
     padding: 0;
 }
 
-.profile-edit {
+.identity-edit {
     margin-top: var(--spacing-md);
 }
 

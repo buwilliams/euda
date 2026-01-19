@@ -35,7 +35,7 @@ class Agent:
     ):
         self.id = agent_id
         self.config = config or self._load_config()
-        self.profile = self._load_profile()
+        self.identity = self._load_identity()
         self._work_done = False
         self._session_id = session_id
         self._current_job_id = None
@@ -79,11 +79,11 @@ class Agent:
             "triggers": ["job:assigned"]
         }
 
-    def _load_profile(self) -> str:
-        """Load agent profile from disk."""
-        profile_path = AGENTS_DIR / self.id / "identity.md"
-        if profile_path.exists():
-            return profile_path.read_text()
+    def _load_identity(self) -> str:
+        """Load agent identity from disk."""
+        identity_path = AGENTS_DIR / self.id / "identity.md"
+        if identity_path.exists():
+            return identity_path.read_text()
         # Fallback to old persona location for backward compatibility
         persona_path = AGENTS_DIR / self.id / f"{self.id}-persona.md"
         if persona_path.exists():
@@ -295,7 +295,7 @@ class Agent:
 
         prompt = render_template(
             "agent/system",
-            profile=self.profile,
+            identity=self.identity,
             user_identity=user_identity,
             tools_by_type=tools_text
         )

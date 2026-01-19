@@ -68,12 +68,12 @@ Euno is in early development. It's a self-hosted web app with a conversational i
 **The Foundation:**
 - **Chat** — Conversational interface powered by LLMs (Claude, OpenAI, Grok)
 - **Jobs** — Hierarchical task/project management with timeline views (Today, Upcoming, Anytime, Someday)
-- **User Profile** — A markdown file that captures who you are, referenced in every conversation
+- **User Identity** — A markdown file that captures who you are, referenced in every conversation
 - **Long-term Memory** — Daily records of your interactions and reflections
 - **File Upload** — Attach documents, images, and files to any job
 
 **The Agents:**
-- **Chat** — Your conversational interface; knows your profile; manages other agents
+- **Chat** — Your conversational interface; knows your identity; manages other agents
 - **Worker** — Can work on jobs autonomously; still learning what's useful
 - **Create your own** — Ask Chat to create specialized agents for your needs
 - **Agent Library** — Pre-built agents available in `agent-lib/` (fun, growth, socialize)
@@ -91,8 +91,8 @@ Euno is in early development. It's a self-hosted web app with a conversational i
 
 **Have Real Conversations:**
 - Talk through decisions, problems, or ideas with someone who knows your context
-- Ask "What do you know about me?" — see your profile and how Euno understands you
-- Your profile shapes every response — conversations feel personal, not generic
+- Ask "What do you know about me?" — see your identity and how Euno understands you
+- Your identity shapes every response — conversations feel personal, not generic
 
 **Organize Your Work:**
 - Create jobs and sub-jobs to break down projects

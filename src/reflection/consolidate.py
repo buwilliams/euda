@@ -1,11 +1,11 @@
 """
-Consolidate Phase - Heavy analysis for memory graduation and profile updates.
+Consolidate Phase - Heavy analysis for memory graduation and identity updates.
 
 This phase runs on daily trigger to:
 1. Analyze patterns in short-term and long-term memory
 2. Graduate important short-term items to long-term memory
-3. Update the agent's profile based on observed patterns
-4. Create historical profile snapshots at year boundaries
+3. Update the agent's identity based on observed patterns
+4. Create historical identity snapshots at year boundaries
 """
 
 import json
@@ -36,7 +36,7 @@ RECENT_MEMORY_DAYS = 7
 def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Optional[dict]:
     """Run the consolidate phase for an agent.
 
-    Performs heavy analysis to graduate memories and update profile.
+    Performs heavy analysis to graduate memories and update identity.
 
     Args:
         reflection: The Reflection instance
@@ -65,7 +65,7 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
     })
 
     # Emit start event
-    emit_progress("loading_data", "Loading memory and profile...")
+    emit_progress("loading_data", "Loading memory and identity...")
 
     # Load short-term memory
     short_term_memory = _load_entries(agent_id)
@@ -73,8 +73,8 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
     # Load recent long-term memory
     recent_long_term = _load_recent_long_term(reflection, days=RECENT_MEMORY_DAYS)
 
-    # Load current profile
-    current_profile = reflection.agent.profile
+    # Load current identity
+    current_profile = reflection.agent.identity
 
     # Load completed jobs for context
     completed_jobs = get_jobs_completed_by_agent(agent_id, limit=20)
@@ -162,7 +162,7 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
         })
         return {"items_graduated": 0, "profile_updated": False, "long_term_entry": False}
 
-    emit_progress("applying_results", "Updating profile and memory...")
+    emit_progress("applying_results", "Updating identity and memory...")
 
     # Apply long-term memory entry
     if result.get("long_term_entry"):
@@ -318,8 +318,8 @@ def _write_long_term_entry(reflection: "Reflection", content: str):
     memory_path.write_text(new_content)
 
 
-# Profile section definitions - maps JSON keys to markdown headers
-PROFILE_SECTIONS = {
+# Identity section definitions - maps JSON keys to markdown headers
+IDENTITY_SECTIONS = {
     "purpose": "Purpose",
     "behavioral_rules": "Behavioral Rules",
     "voice": "Voice",
@@ -345,16 +345,16 @@ SECTION_ORDER = [
 ]
 
 
-def _parse_profile_sections(content: str) -> tuple[str, dict]:
-    """Parse a profile markdown into title and sections.
+def _parse_identity_sections(content: str) -> tuple[str, dict]:
+    """Parse an identity markdown into title and sections.
 
-    Handles various profile formats:
-    - Structured profiles with # Title and ## Sections
-    - Legacy profiles with unstructured content
-    - Profiles with "Reflection Update" sections to migrate
+    Handles various identity formats:
+    - Structured identities with # Title and ## Sections
+    - Legacy identities with unstructured content
+    - Identities with "Reflection Update" sections to migrate
 
     Args:
-        content: The profile markdown content
+        content: The identity markdown content
 
     Returns:
         Tuple of (title_line, sections_dict) where sections_dict maps
@@ -381,7 +381,7 @@ def _parse_profile_sections(content: str) -> tuple[str, dict]:
         lines = content.split("\n")
 
     # Build reverse mapping from headers to keys
-    header_to_key = {v.lower(): k for k, v in PROFILE_SECTIONS.items()}
+    header_to_key = {v.lower(): k for k, v in IDENTITY_SECTIONS.items()}
 
     current_section = None
     current_content = []
@@ -429,8 +429,8 @@ def _parse_profile_sections(content: str) -> tuple[str, dict]:
     return title, sections
 
 
-def _build_profile_markdown(title: str, sections: dict, agent_id: str) -> str:
-    """Build profile markdown from title and sections.
+def _build_identity_markdown(title: str, sections: dict, agent_id: str) -> str:
+    """Build identity markdown from title and sections.
 
     Args:
         title: The title line (e.g., "# User" or "# Chat")
@@ -438,7 +438,7 @@ def _build_profile_markdown(title: str, sections: dict, agent_id: str) -> str:
         agent_id: Agent ID for default title
 
     Returns:
-        Complete profile markdown
+        Complete identity markdown
     """
     if not title:
         title = f"# {agent_id.title()}"
@@ -453,7 +453,7 @@ def _build_profile_markdown(title: str, sections: dict, agent_id: str) -> str:
     # Add sections in defined order
     for key in SECTION_ORDER:
         if key in sections and sections[key].strip():
-            header = PROFILE_SECTIONS[key]
+            header = IDENTITY_SECTIONS[key]
             lines.append(f"## {header}")
             lines.append("")
             lines.append(sections[key])
@@ -517,7 +517,7 @@ def _merge_section_content(existing: str, new_content: str) -> str:
 
 
 def _update_profile(reflection: "Reflection", updates):
-    """Update the agent's profile with new information.
+    """Update the agent's identity with new information.
 
     Handles both structured updates (dict mapping section keys to content)
     and legacy string updates (for backwards compatibility).
@@ -526,39 +526,39 @@ def _update_profile(reflection: "Reflection", updates):
         reflection: The Reflection instance
         updates: Either a dict of section updates or a string description
     """
-    profile_path = reflection._get_profile_path()
+    identity_path = reflection._get_identity_path()
     agent_id = reflection.agent.id
 
-    # Load current profile
-    if profile_path.exists():
-        current_profile = profile_path.read_text()
+    # Load current identity
+    if identity_path.exists():
+        current_identity = identity_path.read_text()
     else:
-        current_profile = f"# {agent_id.title()}\n"
+        current_identity = f"# {agent_id.title()}\n"
 
     # Handle legacy string updates (backwards compatibility)
     if isinstance(updates, str):
         today = datetime.now().strftime("%Y-%m-%d")
         update_section = f"\n\n---\n\n## Reflection Update ({today})\n\n{updates}"
-        new_profile = current_profile + update_section
-        profile_path.write_text(new_profile)
+        new_identity = current_identity + update_section
+        identity_path.write_text(new_identity)
         return
 
     # Handle structured dict updates
     if not isinstance(updates, dict) or not updates:
         return
 
-    # Parse existing profile into sections
-    title, sections = _parse_profile_sections(current_profile)
+    # Parse existing identity into sections
+    title, sections = _parse_identity_sections(current_identity)
 
     # Merge updates into sections
     for key, content in updates.items():
-        if key in PROFILE_SECTIONS and content:
+        if key in IDENTITY_SECTIONS and content:
             existing = sections.get(key, "")
             sections[key] = _merge_section_content(existing, content)
 
-    # Build and write new profile
-    new_profile = _build_profile_markdown(title, sections, agent_id)
-    profile_path.write_text(new_profile)
+    # Build and write new identity
+    new_identity = _build_identity_markdown(title, sections, agent_id)
+    identity_path.write_text(new_identity)
 
 
 def _graduate_items(reflection: "Reflection", short_term_memory: List[dict], graduate_ids: List[str]):
@@ -622,16 +622,16 @@ def _maybe_snapshot_profile(reflection: "Reflection"):
 
     # Check if we're in first week of year and previous year snapshot doesn't exist
     if today.month == 1 and today.day <= 7:
-        historical_path = reflection._get_historical_profile_path(previous_year)
-        current_path = reflection._get_profile_path()
+        historical_path = reflection._get_historical_identity_path(previous_year)
+        current_path = reflection._get_identity_path()
 
         if not historical_path.exists() and current_path.exists():
-            # Create snapshot of current profile as previous year's historical
-            current_profile = current_path.read_text()
-            historical_path.write_text(current_profile)
+            # Create snapshot of current identity as previous year's historical
+            current_identity = current_path.read_text()
+            historical_path.write_text(current_identity)
 
             reflection.logger.info({
-                "event": "profile_snapshot_created",
+                "event": "identity_snapshot_created",
                 "agent_id": reflection.agent.id,
                 "year": previous_year
             })

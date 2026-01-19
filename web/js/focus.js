@@ -111,9 +111,9 @@ function renderFocusTab() {
     } else if (focusView.startsWith('long-term-memory-')) {
         const agentId = focusView.substring(17);
         content = renderLongTermMemoryListView(agentId);
-    } else if (focusView.startsWith('profile-')) {
-        const agentId = focusView.substring(8);
-        content = renderProfileView(agentId);
+    } else if (focusView.startsWith('identity-')) {
+        const agentId = focusView.substring(9);
+        content = renderIdentityView(agentId);
     } else if (focusView.startsWith('config-')) {
         const agentId = focusView.substring(7);
         content = renderConfigurationView(agentId);
@@ -266,8 +266,8 @@ function getViewDisplayName(view) {
     if (view.startsWith('manage-agent-')) {
         return 'Manage';
     }
-    if (view.startsWith('profile-')) {
-        return 'Profile';
+    if (view.startsWith('identity-')) {
+        return 'Identity';
     }
     if (view.startsWith('config-')) {
         return 'Config';

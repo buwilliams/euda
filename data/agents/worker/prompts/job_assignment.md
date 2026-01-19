@@ -13,7 +13,7 @@
 
 1. Check for jobs with status "todo"
 2. Pick jobs that match my capabilities
-3. Read the user profile to understand constraints
+3. Read the user identity to understand constraints
 4. Execute work, adding a brief log entry when done
 5. Create sub-jobs for complex work
 6. Complete jobs **only when I have actually done the work**

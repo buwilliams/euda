@@ -19,7 +19,7 @@
     "read_asset",
     "write_asset",
     "delete_asset",
-    "get_profile",
+    "get_identity",
     "done_working",
     "parse_date",
     "get_current_date",

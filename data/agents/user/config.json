@@ -7,7 +7,7 @@
     "list_memory",
     "read_long_term_memory",
     "list_long_term_memory_dates",
-    "update_user_profile",
+    "update_user_identity",
     "graduate_memory"
   ],
   "triggers": [],

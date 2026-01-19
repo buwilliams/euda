@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client
 from ...llms.base import _load_config, CONFIG_PATH, VALID_PROVIDERS
 from ...tools.data.jobs import list_jobs, _get_connection
-from ...tools.data.profile import get_profile
+from ...tools.data.identity import get_identity
 
 
 router = APIRouter()
@@ -70,7 +70,7 @@ def _save_quotes_state(state: dict):
         json.dump(state, f, indent=2)
 
 
-def _generate_quote(profile_content: str, history: list) -> dict:
+def _generate_quote(identity_content: str, history: list) -> dict:
     """Generate a personalized quote using the configured LLM."""
     client = get_client()
 
@@ -85,7 +85,7 @@ def _generate_quote(profile_content: str, history: list) -> dict:
     prompt = f"""Based on this user's identity, select or compose an inspiring quote that would resonate with them today.
 
 User Identity:
-{profile_content if profile_content else "No identity available - provide a generally inspiring quote."}
+{identity_content if identity_content else "No identity available - provide a generally inspiring quote."}
 {history_context}
 
 Respond with ONLY a JSON object in this exact format (no markdown, no explanation):
@@ -124,14 +124,14 @@ def daily_quote():
         return state["current"]
 
     # Get user identity for personalization
-    profile = get_profile("user")
-    profile_content = profile.get("content", "") if profile.get("exists") else ""
+    identity = get_identity("user")
+    identity_content = identity.get("content", "") if identity.get("exists") else ""
 
     # Get history (last 365 quotes)
     history = state.get("history", [])[-365:]
 
     # Generate new quote
-    quote = _generate_quote(profile_content, history)
+    quote = _generate_quote(identity_content, history)
 
     # Update state
     history.append(quote)

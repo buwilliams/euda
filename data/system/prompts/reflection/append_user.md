@@ -1,6 +1,6 @@
-## Agent Profile
+## Agent Identity
 
-{agent_profile}
+{agent_identity}
 
 ## Currently Tracking (avoid duplicates)
 

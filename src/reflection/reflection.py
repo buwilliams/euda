@@ -1,9 +1,9 @@
 """
-Reflection - Core class for memory and profile reflection.
+Reflection - Core class for memory and identity reflection.
 
 Each Agent has a Reflection instance that handles:
 1. Append phase: Extract noteworthy items from conversations to short-term memory
-2. Consolidate phase: Graduate memories and update profiles based on patterns
+2. Consolidate phase: Graduate memories and update identities based on patterns
 """
 
 from datetime import datetime
@@ -21,7 +21,7 @@ AGENTS_DIR = DATA_DIR / "agents"
 
 
 class Reflection:
-    """Memory and profile reflection capability for agents.
+    """Memory and identity reflection capability for agents.
 
     Provides two phases:
     - append(): Lightweight extraction after each conversation
@@ -64,13 +64,13 @@ class Reflection:
         year = year or datetime.now().strftime("%Y")
         return AGENTS_DIR / self.agent.id / "memory" / "long-term" / year
 
-    def _get_profile_path(self) -> Path:
-        """Get path to agent's current profile."""
+    def _get_identity_path(self) -> Path:
+        """Get path to agent's current identity."""
         return AGENTS_DIR / self.agent.id / "identity.md"
 
-    def _get_historical_profile_path(self, year: str) -> Path:
-        """Get path to agent's historical profile for a specific year."""
-        return AGENTS_DIR / self.agent.id / f"profile.{year}.md"
+    def _get_historical_identity_path(self, year: str) -> Path:
+        """Get path to agent's historical identity for a specific year."""
+        return AGENTS_DIR / self.agent.id / f"identity.{year}.md"
 
     def append(self, user_message: str, assistant_response: str, execution_id: str = None):
         """Append phase: Extract noteworthy items from a conversation.
