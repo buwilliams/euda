@@ -84,6 +84,12 @@ class Agent:
         identity_path = AGENTS_DIR / self.id / "identity.md"
         if identity_path.exists():
             return identity_path.read_text()
+        # Create from template if available
+        template_path = AGENTS_DIR / self.id / "identity.template.md"
+        if template_path.exists():
+            identity_content = template_path.read_text()
+            identity_path.write_text(identity_content)
+            return identity_content
         # Fallback to old persona location for backward compatibility
         persona_path = AGENTS_DIR / self.id / f"{self.id}-persona.md"
         if persona_path.exists():
