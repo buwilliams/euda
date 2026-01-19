@@ -317,3 +317,18 @@ def print_success(message: str, json_mode: bool = False):
         green = COLORS["green"]
         reset = COLORS["reset"]
         print(f"{green}{message}{reset}")
+
+
+def print_info(message: str, json_mode: bool = False):
+    """Print an info message.
+
+    Args:
+        message: Info message
+        json_mode: If True, output JSON
+    """
+    if json_mode:
+        print(json.dumps({"info": message}), flush=True)
+    else:
+        cyan = COLORS["cyan"]
+        reset = COLORS["reset"]
+        print(f"{cyan}{message}{reset}")

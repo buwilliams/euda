@@ -74,6 +74,7 @@ data/system/prompts/*.jsonl
 data/system/logs/
 data/system/api_calls.json
 data/system/api_calls.jsonl
+data/system/store/
 
 # User data directory (personal data)
 data/user/
