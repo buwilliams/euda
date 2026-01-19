@@ -538,6 +538,7 @@ def cmd_fresh_start(args):
     print("  - All jobs and job assets")
     print("  - Cost tracking history")
     print("  - Reflection logs")
+    print("  - Prompt logs (LLM API call history)")
     print("  - System trigger state")
     print("  - Password (if set)")
     print("  - Non-core agents (anything except chat, user, worker)")
@@ -658,6 +659,11 @@ def cmd_fresh_start(args):
         if reflection_logs.exists():
             shutil.rmtree(reflection_logs)
             deleted.append("system/logs/reflection/")
+        # Remove prompt logs
+        prompt_logs = system_dir / "logs" / "prompts"
+        if prompt_logs.exists():
+            shutil.rmtree(prompt_logs)
+            deleted.append("system/logs/prompts/")
 
     print()
     if deleted:
