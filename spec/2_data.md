@@ -69,7 +69,31 @@ Memory moves through two phases:
 - **Consolidate phase** (triggered, creates visible jobs)
   - Heavy analysis triggered by `time:evening` or custom trigger
   - Creates `Trigger:reflection:{date}` jobs that appear in agent's queue
-  - Reviews short-term memory, graduates items to long-term, updates identity
+  - Uses RLM `extract_identity()` to analyze long-term memory for identity updates
+  - Discovers and validates behavioral patterns
+  - Updates identity with new patterns, interests, and biographical information
+
+### RLM (Recursive Language Model)
+
+RLM provides intelligent access to long-term memory via iterative exploration:
+- **Location:** `src/rlm/`
+- **Purpose:** Semantic search and pattern analysis across large memory archives
+- **Methods:**
+  - `analyze(query, memory)` — Open-ended exploration of memory
+  - `recall(query, memory)` — Find specific facts or events
+  - `extract_identity(memory, current_identity)` — Analyze memory for identity updates
+  - `process_conversation(conversation, context)` — Extract significant items from conversations
+
+RLM is used during consolidation to evolve identity based on observed patterns in long-term memory, rather than simple rule-based analysis.
+
+### File Import via Jobs
+
+External files are imported to long-term memory through job-based processing:
+- **Command:** `euno store <path>` creates `Store:ingest:{timestamp}` jobs
+- **Deduplication:** Content hash stored as job tag (`store:hash:{sha256}`)
+- **Assets:** Files attached to job as assets
+- **Processing:** Chat agent processes job, extracts dates, writes to long-term memory
+- **Tracking:** Job completion marks content as processed (no separate manifest)
 
 ### Patterns
 
