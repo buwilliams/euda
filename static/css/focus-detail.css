@@ -165,12 +165,6 @@
     padding: var(--spacing-md);
     border: 1px solid transparent;
     border-radius: var(--radius-md);
-    cursor: pointer;
-}
-
-.job-name-display:hover {
-    background: var(--color-bg-subtle);
-    border-color: var(--color-border-light);
 }
 
 .job-name-input {
@@ -188,14 +182,8 @@
     padding: var(--spacing-md);
     border: 1px solid transparent;
     border-radius: var(--radius-md);
-    cursor: pointer;
     min-height: 2rem;
     color: var(--color-text-muted);
-}
-
-.job-description-display:hover {
-    background: var(--color-bg-subtle);
-    border-color: var(--color-border-light);
 }
 
 .job-description-display.empty {

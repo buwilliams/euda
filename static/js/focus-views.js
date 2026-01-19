@@ -1755,13 +1755,19 @@ function renderJobDetailView(jobId) {
 
             <!-- Name Section -->
             <div class="job-section">
-                <div class="job-section-header">Name</div>
+                <div class="job-section-header">
+                    Name
+                    ${isEditingName ? `
+                        <span class="job-section-action" onclick="saveJobField('${job.id}', 'name', document.getElementById('edit-name-${job.id}').value)">Save</span>
+                    ` : `
+                        <span class="job-section-action" onclick="startEditingField('${job.id}', 'name')">${icon('pencil')}</span>
+                    `}
+                </div>
                 ${isEditingName ? `
                     <input type="text" class="job-name-input" id="edit-name-${job.id}" value="${escapeHtml(displayName)}"
-                        onkeydown="handleEditKeypress(event, '${job.id}', 'name')"
-                        onblur="saveJobField('${job.id}', 'name', this.value)">
+                        onkeydown="handleEditKeypress(event, '${job.id}', 'name')">
                 ` : `
-                    <div class="job-name-display" onclick="startEditingField('${job.id}', 'name')">${escapeHtml(displayName)}</div>
+                    <div class="job-name-display">${escapeHtml(displayName)}</div>
                 `}
             </div>
 
@@ -1769,15 +1775,19 @@ function renderJobDetailView(jobId) {
             <div class="job-section">
                 <div class="job-section-header">
                     Description
-                    ${isEditingDesc ? `<span class="job-section-action" onclick="saveJobField('${job.id}', 'description', document.getElementById('edit-description-${job.id}').value)">Save</span>` : ''}
+                    ${isEditingDesc ? `
+                        <span class="job-section-action" onclick="saveJobField('${job.id}', 'description', document.getElementById('edit-description-${job.id}').value)">Save</span>
+                    ` : `
+                        <span class="job-section-action" onclick="startEditingField('${job.id}', 'description')">${icon('pencil')}</span>
+                    `}
                 </div>
                 ${isEditingDesc ? `
                     <textarea class="job-description-input" id="edit-description-${job.id}"
                         onkeydown="handleDescriptionKeypress(event, '${job.id}')"
                         placeholder="Add a description...">${escapeHtml(job.description || '')}</textarea>
                 ` : `
-                    <div class="job-description-display ${hasDescription ? '' : 'empty'}" onclick="startEditingField('${job.id}', 'description')">
-                        ${hasDescription ? marked.parse(job.description) : 'Click to add description...'}
+                    <div class="job-description-display ${hasDescription ? '' : 'empty'}">
+                        ${hasDescription ? marked.parse(job.description) : 'No description'}
                     </div>
                 `}
             </div>
@@ -1921,13 +1931,19 @@ function renderCompletedJobDetailView(jobId) {
 
             <!-- Name Section -->
             <div class="job-section">
-                <div class="job-section-header">Name</div>
+                <div class="job-section-header">
+                    Name
+                    ${isEditingName ? `
+                        <span class="job-section-action" onclick="saveCompletedJobField('${job.id}', 'name', document.getElementById('edit-name-${job.id}').value)">Save</span>
+                    ` : `
+                        <span class="job-section-action" onclick="startEditingField('${job.id}', 'name')">${icon('pencil')}</span>
+                    `}
+                </div>
                 ${isEditingName ? `
                     <input type="text" class="job-name-input" id="edit-name-${job.id}" value="${escapeHtml(displayName)}"
-                        onkeydown="handleEditKeypress(event, '${job.id}', 'name')"
-                        onblur="saveCompletedJobField('${job.id}', 'name', this.value)">
+                        onkeydown="handleEditKeypress(event, '${job.id}', 'name')">
                 ` : `
-                    <div class="job-name-display" onclick="startEditingField('${job.id}', 'name')">${escapeHtml(displayName)}</div>
+                    <div class="job-name-display">${escapeHtml(displayName)}</div>
                 `}
             </div>
 
@@ -1935,15 +1951,19 @@ function renderCompletedJobDetailView(jobId) {
             <div class="job-section">
                 <div class="job-section-header">
                     Description
-                    ${isEditingDesc ? `<span class="job-section-action" onclick="saveCompletedJobField('${job.id}', 'description', document.getElementById('edit-description-${job.id}').value)">Save</span>` : ''}
+                    ${isEditingDesc ? `
+                        <span class="job-section-action" onclick="saveCompletedJobField('${job.id}', 'description', document.getElementById('edit-description-${job.id}').value)">Save</span>
+                    ` : `
+                        <span class="job-section-action" onclick="startEditingField('${job.id}', 'description')">${icon('pencil')}</span>
+                    `}
                 </div>
                 ${isEditingDesc ? `
                     <textarea class="job-description-input" id="edit-description-${job.id}"
                         onkeydown="handleCompletedDescriptionKeypress(event, '${job.id}')"
                         placeholder="Add a description...">${escapeHtml(job.description || '')}</textarea>
                 ` : `
-                    <div class="job-description-display ${hasDescription ? '' : 'empty'}" onclick="startEditingField('${job.id}', 'description')">
-                        ${hasDescription ? marked.parse(job.description) : 'Click to add description...'}
+                    <div class="job-description-display ${hasDescription ? '' : 'empty'}">
+                        ${hasDescription ? marked.parse(job.description) : 'No description'}
                     </div>
                 `}
             </div>
