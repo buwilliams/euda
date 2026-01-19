@@ -97,18 +97,52 @@ function handleReflectionComplete(data) {
          activeExecution.agentId === data.agent_id)) {
         activeExecution = null;
         updateExecutionUI();
-        // Refresh monitoring data after completion
-        if (data.agent_id) {
-            // Clear cache and loading flag to force reload
-            delete monitoringCache[data.agent_id];
-            if (typeof monitoringLoading !== 'undefined') {
-                delete monitoringLoading[data.agent_id];
+    }
+
+    // Always invalidate caches when reflection completes for any agent
+    if (data.agent_id) {
+        // Clear agent data cache (identity, config) to force reload
+        delete agentDataCache[data.agent_id];
+
+        // Clear memory caches for this agent
+        if (typeof memoryListCache !== 'undefined') {
+            delete memoryListCache[data.agent_id];
+        }
+        if (typeof longTermMemoryListCache !== 'undefined') {
+            delete longTermMemoryListCache[data.agent_id];
+        }
+        if (typeof longTermMemoryDetailCache !== 'undefined') {
+            // Clear all long-term memory detail entries for this agent
+            for (const key of Object.keys(longTermMemoryDetailCache)) {
+                if (key.startsWith(data.agent_id + '-')) {
+                    delete longTermMemoryDetailCache[key];
+                }
             }
-            // Reset pagination to first page
-            if (typeof monitoringPagination !== 'undefined') {
-                monitoringPagination[data.agent_id] = { offset: 0, limit: 20 };
+        }
+
+        // Clear monitoring cache and loading flag to force reload
+        delete monitoringCache[data.agent_id];
+        if (typeof monitoringLoading !== 'undefined') {
+            delete monitoringLoading[data.agent_id];
+        }
+        // Reset pagination to first page
+        if (typeof monitoringPagination !== 'undefined') {
+            monitoringPagination[data.agent_id] = { offset: 0, limit: 20 };
+        }
+
+        // Re-render if viewing any view related to this agent
+        if (focusView) {
+            const agentId = data.agent_id;
+            if (focusView === `manage-agent-${agentId}` ||
+                focusView === `identity-${agentId}` ||
+                focusView === `config-${agentId}` ||
+                focusView === `monitoring-${agentId}` ||
+                focusView === `memory-list-${agentId}` ||
+                focusView.startsWith(`memory-item-${agentId}-`) ||
+                focusView === `long-term-memory-${agentId}` ||
+                focusView.startsWith(`long-term-memory-detail-${agentId}-`)) {
+                renderFocusTab();
             }
-            loadAgentMonitoring(data.agent_id, 0, 20);
         }
     }
 }
