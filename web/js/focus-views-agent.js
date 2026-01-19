@@ -862,11 +862,11 @@ function renderPromptDetailView(agentId, promptIndex) {
             <!-- Messages (if available) -->
             ${prompt.messages ? `
             <div class="job-section">
-                <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
+                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
                     <span>Messages</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
-                <div class="collapsible-content" style="display: block;">
+                <div class="collapsible-content">
                     <div class="prompt-messages-list">${renderMessages(prompt.messages)}</div>
                 </div>
             </div>
@@ -875,11 +875,11 @@ function renderPromptDetailView(agentId, promptIndex) {
             <!-- Response (if available) -->
             ${prompt.response ? `
             <div class="job-section">
-                <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
+                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
                     <span>Response</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
-                <div class="collapsible-content" style="display: block;">
+                <div class="collapsible-content">
                     <div class="prompt-rendered-content">${renderResponse(prompt.response)}</div>
                 </div>
             </div>
