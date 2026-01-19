@@ -98,7 +98,7 @@ function renderFullJobCard(job) {
 }
 
 function getWhenLabel(job) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     // Use due_at (new unified field) with fallback to due_date (legacy)
     const dueAt = job.due_at;
     const dueDate = dueAt ? dueAt.split('T')[0] : job.due_date;

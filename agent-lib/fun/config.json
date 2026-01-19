@@ -14,7 +14,7 @@
     "list_agents",
     "get_agent",
     "list_available_agents",
-    "get_profile",
+    "get_identity",
     "read_long_term_memory",
     "write_long_term_memory",
     "list_memory",

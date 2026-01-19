@@ -88,7 +88,7 @@ def list_agents_for_routing() -> List[dict]:
     return agents
 
 
-@tool("get_agent", "Get an agent's configuration and profile. Use when: need detailed info about a specific agent.", tool_type="agents")
+@tool("get_agent", "Get an agent's configuration and identity. Use when: need detailed info about a specific agent.", tool_type="agents")
 def get_agent(agent_id: str) -> Optional[dict]:
     """Get detailed info about an agent."""
     agent_dir = AGENTS_DIR / agent_id
@@ -104,24 +104,24 @@ def get_agent(agent_id: str) -> Optional[dict]:
         with open(config_path) as f:
             result["config"] = json.load(f)
 
-    # Load profile (with fallback to old persona location)
-    profile_path = agent_dir / "identity.md"
-    if profile_path.exists():
-        result["profile"] = profile_path.read_text()
+    # Load identity (with fallback to old persona location)
+    identity_path = agent_dir / "identity.md"
+    if identity_path.exists():
+        result["identity"] = identity_path.read_text()
     else:
         # Fallback to old persona location
         persona_path = agent_dir / f"{agent_id}-persona.md"
         if persona_path.exists():
-            result["profile"] = persona_path.read_text()
+            result["identity"] = persona_path.read_text()
 
     return result
 
 
-def get_agent_profile(agent_id: str) -> Optional[str]:
-    """Get an agent's profile markdown."""
-    profile_path = AGENTS_DIR / agent_id / "identity.md"
-    if profile_path.exists():
-        return profile_path.read_text()
+def get_agent_identity(agent_id: str) -> Optional[str]:
+    """Get an agent's identity markdown."""
+    identity_path = AGENTS_DIR / agent_id / "identity.md"
+    if identity_path.exists():
+        return identity_path.read_text()
     # Fallback to old persona location
     persona_path = AGENTS_DIR / agent_id / f"{agent_id}-persona.md"
     if persona_path.exists():
@@ -129,14 +129,14 @@ def get_agent_profile(agent_id: str) -> Optional[str]:
     return None
 
 
-def update_agent_profile_internal(agent_id: str, profile: str) -> dict:
-    """Update an agent's profile markdown file."""
+def update_agent_identity_internal(agent_id: str, identity: str) -> dict:
+    """Update an agent's identity markdown file."""
     agent_dir = AGENTS_DIR / agent_id
     if not agent_dir.exists():
         return {"error": f"Agent not found: {agent_id}"}
 
-    profile_path = agent_dir / "identity.md"
-    profile_path.write_text(profile)
+    identity_path = agent_dir / "identity.md"
+    identity_path.write_text(identity)
 
     return {"updated": True, "agent_id": agent_id}
 
@@ -211,7 +211,7 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         triggers: Optional list of triggers (e.g., ['time:morning', 'system:start'])
         exploration: Optional dict to enable exploration (autonomous discovery).
                      Example: {"enabled": True, "trigger": "time:hour_04"}
-        reflection: Optional dict to enable reflection (memory consolidation and profile updates).
+        reflection: Optional dict to enable reflection (memory consolidation and identity updates).
                     Example: {"enabled": True, "trigger": "time:evening"}
 
     Returns:
@@ -265,8 +265,8 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
     with open(config_path, "w") as f:
         json.dump(config, f, indent=2)
 
-    # Create profile (replaces old persona)
-    profile = f"""# {name}
+    # Create identity (replaces old persona)
+    identity = f"""# {name}
 
 {purpose}
 
@@ -290,8 +290,8 @@ I must:
 5. Call done_working to signal I'm finished
 """
 
-    profile_path = agent_dir / "identity.md"
-    profile_path.write_text(profile)
+    identity_path = agent_dir / "identity.md"
+    identity_path.write_text(identity)
 
     # Dynamically register and start the agent if manager is running
     from ...manager import get_manager
@@ -306,20 +306,20 @@ I must:
         "created": True,
         "agent_id": agent_id,
         "config": config,
-        "profile_path": str(profile_path),
+        "identity_path": str(identity_path),
         "started": started
     }
 
 
-@tool("update_agent_profile", "Update an agent's profile/instructions. Use when: modifying how an agent behaves.", tool_type="agents")
-def update_agent_profile(agent_id: str, profile: str) -> dict:
-    """Update an agent's profile markdown file.
+@tool("update_agent_identity", "Update an agent's identity/instructions. Use when: modifying how an agent behaves.", tool_type="agents")
+def update_agent_identity(agent_id: str, identity: str) -> dict:
+    """Update an agent's identity markdown file.
 
     Args:
         agent_id: The agent to update
-        profile: The new profile markdown content
+        identity: The new identity markdown content
     """
-    return update_agent_profile_internal(agent_id, profile)
+    return update_agent_identity_internal(agent_id, identity)
 
 
 @tool("update_own_identity", "Update your own identity with learnings from reflection. Use during reflection to codify behavioral patterns.", tool_type="agents")
@@ -341,28 +341,28 @@ def update_own_identity(updates: str, agent_id: str = None) -> dict:
     if not agent_dir.exists():
         return {"error": f"Agent not found: {agent_id}"}
 
-    profile_path = agent_dir / "identity.md"
+    identity_path = agent_dir / "identity.md"
 
-    if profile_path.exists():
-        current_profile = profile_path.read_text()
+    if identity_path.exists():
+        current_identity = identity_path.read_text()
     else:
-        current_profile = f"# Profile: {agent_id}\n"
+        current_identity = f"# Identity: {agent_id}\n"
 
     # Add reflection update section
     today = datetime.now().strftime("%Y-%m-%d")
     update_section = f"\n\n---\n\n## Reflection Update ({today})\n\n{updates}"
 
-    new_profile = current_profile + update_section
-    profile_path.write_text(new_profile)
+    new_identity = current_identity + update_section
+    identity_path.write_text(new_identity)
 
     return {"updated": True, "agent_id": agent_id, "date": today}
 
 
-@tool("append_to_agent_profile", "Add a section to an agent's profile without overwriting existing content. Safer than update_agent_profile which replaces entirely.", tool_type="agents")
-def append_to_agent_profile(agent_id: str, section_title: str, content: str) -> dict:
-    """Safely append a new section to an agent's profile.
+@tool("append_to_agent_identity", "Add a section to an agent's identity without overwriting existing content. Safer than update_agent_identity which replaces entirely.", tool_type="agents")
+def append_to_agent_identity(agent_id: str, section_title: str, content: str) -> dict:
+    """Safely append a new section to an agent's identity.
 
-    Unlike update_agent_profile which replaces the entire profile, this appends
+    Unlike update_agent_identity which replaces the entire identity, this appends
     a new section without losing reflection updates or other existing content.
 
     Args:
@@ -376,27 +376,33 @@ def append_to_agent_profile(agent_id: str, section_title: str, content: str) -> 
     if not agent_dir.exists():
         return {"error": f"Agent not found: {agent_id}"}
 
-    profile_path = agent_dir / "identity.md"
+    identity_path = agent_dir / "identity.md"
 
-    if profile_path.exists():
-        current_profile = profile_path.read_text()
+    if identity_path.exists():
+        current_identity = identity_path.read_text()
     else:
-        current_profile = f"# {agent_id}\n"
+        current_identity = f"# {agent_id}\n"
 
     today = datetime.now().strftime("%Y-%m-%d")
     new_section = f"\n\n---\n\n## {section_title} ({today})\n\n{content}"
 
-    new_profile = current_profile + new_section
-    profile_path.write_text(new_profile)
+    new_identity = current_identity + new_section
+    identity_path.write_text(new_identity)
 
     return {"updated": True, "agent_id": agent_id, "section": section_title, "date": today}
 
 
-# Backward-compatible alias for old tool name
-@tool("update_agent_persona", "Update an agent's profile. (Alias for update_agent_profile)", tool_type="agents")
+# Backward-compatible aliases for old tool names
+@tool("update_agent_profile", "Update an agent's identity. (Alias for update_agent_identity)", tool_type="agents")
+def update_agent_profile(agent_id: str, profile: str) -> dict:
+    """Update an agent's identity. Alias for update_agent_identity."""
+    return update_agent_identity_internal(agent_id, profile)
+
+
+@tool("update_agent_persona", "Update an agent's identity. (Alias for update_agent_identity)", tool_type="agents")
 def update_agent_persona(agent_id: str, persona: str) -> dict:
-    """Update an agent's profile. Alias for update_agent_profile."""
-    return update_agent_profile_internal(agent_id, persona)
+    """Update an agent's identity. Alias for update_agent_identity."""
+    return update_agent_identity_internal(agent_id, persona)
 
 
 @tool("enable_agent", "Enable a disabled agent. Use when: reactivating an agent that was paused.", tool_type="agents")

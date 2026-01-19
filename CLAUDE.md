@@ -47,7 +47,7 @@ python main.py dev <command> [args] [--json]
 
 # Inspect agent state
 python main.py dev memory chat          # View agent's memory
-python main.py dev profile chat         # View agent's profile
+python main.py dev identity chat        # View agent's identity
 python main.py dev prompt chat system   # View system prompt
 
 # Test execution
@@ -80,7 +80,7 @@ euno/
 │   │   ├── progress.py     # Stuck/thrashing detection
 │   │   ├── planning.py     # Strategic planning for complex tasks
 │   │   └── config.py       # Configuration handling
-│   ├── reflection/         # Memory and profile reflection
+│   ├── reflection/         # Memory and identity reflection
 │   │   ├── reflection.py   # Main Reflection class
 │   │   ├── append.py       # Lightweight extraction after chat
 │   │   ├── consolidate.py  # Heavy analysis on daily trigger
@@ -89,7 +89,7 @@ euno/
 │   │   ├── jobs.py         # Job CRUD
 │   │   ├── assets.py       # File attachments per job
 │   │   ├── agents.py       # Agent introspection
-│   │   ├── user.py         # Profile and memory
+│   │   ├── user.py         # Identity and memory
 │   │   ├── memory.py       # Memory tracking for anticipation
 │   │   └── system.py       # Config and notifications
 │   └── web/
@@ -219,13 +219,13 @@ No Python code needed for new agents.
 - `GET/POST/DELETE /api/jobs/{id}/assets/{filename}` - Asset CRUD
 - `GET/POST /api/chat` - Chat with agent
 - `GET /api/agents` - List agents
-- `GET/PATCH /api/agents/{id}/profile` - Agent profile
+- `GET/PATCH /api/agents/{id}/identity` - Agent identity
 - `GET/PATCH /api/agents/{id}/config` - Agent config
 - `GET/POST/DELETE /api/agents/{id}/memory/short-term` - Agent memory
 - `GET /api/agents/{id}/monitoring` - Agent monitoring stats
 - `POST /api/agents/{id}/reflection/trigger` - Trigger reflection
 - `POST /api/agents/{id}/exploration/trigger` - Trigger exploration
-- `GET/PATCH /api/user/profile` - User profile
+- `GET/PATCH /api/user/identity` - User identity
 - `GET/POST /api/user/memory/long-term` - Long-term memory entries
 - `GET/POST/DELETE /api/user/memory` - Memory items
 - `POST /api/fresh-start` - Reset user data with backup

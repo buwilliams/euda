@@ -187,7 +187,7 @@ async function setWhen(type, id, whenType, date = null) {
 
     if (whenType === 'today') {
         // Use due_at with T00:00:00 for date-only (no specific time)
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
         payload = { due_at: `${today}T00:00:00`, someday: false };
     } else if (whenType === 'date') {
         // Use due_at with T00:00:00 for date-only

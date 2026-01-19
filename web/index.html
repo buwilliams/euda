@@ -98,7 +98,10 @@
                     <div class="tab-pane" id="tab-about">
                         <div class="focus-view-header" onclick="navigateMoreMenuBack()">
                             <span class="focus-back-btn"><img src="/web/icons/chevron-left.svg" alt="Back" class="icon"></span>
-                            <span class="focus-view-title">About</span>
+                            <div class="focus-view-header-content">
+                                <span class="focus-view-title">About</span>
+                                <div class="focus-view-breadcrumbs"><span>More</span><img src="/web/icons/chevron-right.svg" alt=">"><span>About</span></div>
+                            </div>
                         </div>
                         <div class="about-content" id="about-content">
                             <div class="focus-empty">Loading...</div>
@@ -109,7 +112,10 @@
                     <div class="tab-pane" id="tab-settings">
                         <div class="focus-view-header" onclick="navigateMoreMenuBack()">
                             <span class="focus-back-btn"><img src="/web/icons/chevron-left.svg" alt="Back" class="icon"></span>
-                            <span class="focus-view-title">Settings</span>
+                            <div class="focus-view-header-content">
+                                <span class="focus-view-title">Settings</span>
+                                <div class="focus-view-breadcrumbs"><span>More</span><img src="/web/icons/chevron-right.svg" alt=">"><span>Settings</span></div>
+                            </div>
                         </div>
                         <div class="settings-content" id="settings-content">
                             <!-- Costs Section -->
@@ -163,12 +169,20 @@
                                         </div>
                                         <div class="settings-field">
                                             <label class="settings-label">Budget Limit</label>
-                                            <div class="budget-input-group">
-                                                <span class="budget-prefix">$</span>
-                                                <input type="number" class="settings-input budget-input" id="budget-limit"
-                                                       step="0.01" min="0" placeholder="50.00" onchange="handleBudgetChange()">
+                                            <div class="budget-row">
+                                                <div class="budget-input-group">
+                                                    <span class="budget-prefix">$</span>
+                                                    <input type="number" class="settings-input budget-input" id="budget-limit"
+                                                           step="0.01" min="0" placeholder="50.00" onchange="handleBudgetChange()">
+                                                </div>
+                                                <select class="settings-select budget-period-select" id="budget-period" onchange="handleBudgetPeriodChange()">
+                                                    <option value="daily">per day</option>
+                                                    <option value="weekly">per week</option>
+                                                    <option value="monthly" selected>per month</option>
+                                                    <option value="session">per session</option>
+                                                </select>
                                             </div>
-                                            <div class="settings-hint">Monthly spending limit for LLM API calls</div>
+                                            <div class="settings-hint">Spending limit for LLM API calls</div>
                                         </div>
                                         <div class="settings-field">
                                             <label class="settings-label">Schedules</label>
@@ -428,7 +442,10 @@
     <script src="/web/js/focus.js"></script>
     <script src="/web/js/focus-data.js"></script>
     <script src="/web/js/focus-cards.js"></script>
-    <script src="/web/js/focus-views.js"></script>
+    <script src="/web/js/focus-views-ui.js"></script>
+    <script src="/web/js/focus-views-memory.js"></script>
+    <script src="/web/js/focus-views-agent.js"></script>
+    <script src="/web/js/focus-views-job.js"></script>
     <script src="/web/js/focus-pickers.js"></script>
     <script src="/web/js/focus-actions.js"></script>
     <script src="/web/js/focus-editing.js"></script>

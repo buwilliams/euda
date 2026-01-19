@@ -21,11 +21,41 @@ from pathlib import Path
 from typing import Optional, Dict, Set
 
 from ..logger import get_logger
-from .config import get_global_config
+from ..events import emit_ui_event
 
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
+
+# Cached config for rate limiting
+_rate_limiting_config_cache: dict = None
+_rate_limiting_config_mtime: float = 0
+
+
+def _load_rate_limiting_config() -> dict:
+    """Load rate limiting config from llm.rate_limiting with caching."""
+    global _rate_limiting_config_cache, _rate_limiting_config_mtime
+
+    try:
+        current_mtime = CONFIG_PATH.stat().st_mtime
+        if _rate_limiting_config_cache is not None and current_mtime == _rate_limiting_config_mtime:
+            return _rate_limiting_config_cache
+
+        with open(CONFIG_PATH) as f:
+            config = json.load(f)
+
+        _rate_limiting_config_cache = config.get("llm", {}).get("rate_limiting", {})
+        _rate_limiting_config_mtime = current_mtime
+        return _rate_limiting_config_cache
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {}
+
+
+def invalidate_rate_limiting_config():
+    """Invalidate the rate limiting config cache."""
+    global _rate_limiting_config_cache, _rate_limiting_config_mtime
+    _rate_limiting_config_cache = None
+    _rate_limiting_config_mtime = 0
 
 
 class RateLimitExceeded(Exception):
@@ -75,22 +105,20 @@ class VelocityTracker:
         self._throttle_thread: Optional[threading.Thread] = None
         self._throttle_running = False
 
-        # Config - uses metacognition config
-        self._config = get_global_config()
-
         # Logger
         self._logger = get_logger("system/logs/rate-limiting")
 
     def _get_velocity_config(self) -> dict:
-        """Get velocity configuration from metacognition config."""
-        return self._config.get_velocity_config()
+        """Get rate limiting configuration from llm.rate_limiting."""
+        return _load_rate_limiting_config()
 
     def _get_rolling_window_config(self) -> dict:
         """Get rolling window configuration."""
         config = self._get_velocity_config()
+        rolling_window = config.get("rolling_window", {})
         return {
-            "max_calls": config.get("max_calls_per_window", 30),
-            "window_seconds": config.get("window_seconds", 60)
+            "max_calls": rolling_window.get("max_calls", 30),
+            "window_seconds": rolling_window.get("window_seconds", 60)
         }
 
     def _get_runaway_config(self) -> dict:
@@ -277,6 +305,11 @@ class VelocityTracker:
         Returns:
             True if runaway detected, False otherwise
         """
+        # Exempt interactive agents - they're human-driven, not autonomous
+        # The 'user' and 'chat' agents naturally have bursty behavior from conversations
+        if agent_id in ("user", "chat"):
+            return False
+
         config = self._get_runaway_config()
         if not config.get("enabled", True):
             return False
@@ -351,6 +384,13 @@ class VelocityTracker:
             "spike_multiplier": config.get("spike_multiplier", 5.0)
         })
 
+        # Emit SSE event for real-time UI updates
+        emit_ui_event("agent:paused", {
+            "agent_id": agent_id,
+            "reason": reason,
+            "timestamp": self._pause_timestamps[agent_id]
+        })
+
         print(f"[METACOGNITION] Agent '{agent_id}' paused: {reason} "
               f"(current: {recent_calls}/min, baseline: {baseline_rate:.1f}/min)")
 
@@ -409,6 +449,11 @@ class VelocityTracker:
             "paused_duration_minutes": duration_minutes
         })
 
+        # Emit SSE event for real-time UI updates
+        emit_ui_event("agent:resumed", {
+            "agent_id": agent_id
+        })
+
         print(f"[METACOGNITION] Agent '{agent_id}' auto-resumed after cooldown")
 
     def get_pause_info(self, agent_id: str) -> dict:
@@ -460,6 +505,11 @@ class VelocityTracker:
                     "agent_id": agent_id,
                     "resumed_by": "user",
                     "paused_duration_minutes": duration_minutes
+                })
+
+                # Emit SSE event for real-time UI updates
+                emit_ui_event("agent:resumed", {
+                    "agent_id": agent_id
                 })
 
                 print(f"[METACOGNITION] Agent '{agent_id}' resumed")
@@ -572,7 +622,7 @@ class VelocityTracker:
 
     def invalidate_config(self):
         """Invalidate cached config. Call when settings change."""
-        self._config.invalidate()
+        invalidate_rate_limiting_config()
 
 
 # Singleton instance

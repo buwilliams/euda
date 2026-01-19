@@ -48,6 +48,12 @@
     flex-shrink: 0;
     margin: 0;
     margin-bottom: var(--spacing-lg);
+    padding-left: 0;
+}
+
+#tab-about > .focus-view-header .focus-back-btn,
+#tab-settings > .focus-view-header .focus-back-btn {
+    padding-left: 0;
 }
 
 .history-content {

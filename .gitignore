@@ -9,18 +9,18 @@
 # Base Agents (data/agents/)
 # ===================
 # Only user, chat, and worker are committed - other agents are user-created
-# Track config.json and profile.md.example (templates)
-# Actual profile.md files are user data and ignored
+# Track config.json and identity.template.md (templates)
+# Actual identity.md files are user data and ignored
 !data/agents/user/config.json
-!data/agents/user/profile.md.example
-data/agents/user/profile.md
+!data/agents/user/identity.template.md
+data/agents/user/identity.md
 !data/agents/chat/config.json
-!data/agents/chat/profile.md.example
-data/agents/chat/profile.md
+!data/agents/chat/identity.template.md
+data/agents/chat/identity.md
 !data/agents/chat/prompts/
 !data/agents/worker/config.json
-!data/agents/worker/profile.md.example
-data/agents/worker/profile.md
+!data/agents/worker/identity.template.md
+data/agents/worker/identity.md
 !data/agents/worker/prompts/
 
 # ===================

@@ -35,7 +35,7 @@ class Agent:
     ):
         self.id = agent_id
         self.config = config or self._load_config()
-        self.profile = self._load_profile()
+        self.identity = self._load_identity()
         self._work_done = False
         self._session_id = session_id
         self._current_job_id = None
@@ -79,11 +79,17 @@ class Agent:
             "triggers": ["job:assigned"]
         }
 
-    def _load_profile(self) -> str:
-        """Load agent profile from disk."""
-        profile_path = AGENTS_DIR / self.id / "identity.md"
-        if profile_path.exists():
-            return profile_path.read_text()
+    def _load_identity(self) -> str:
+        """Load agent identity from disk."""
+        identity_path = AGENTS_DIR / self.id / "identity.md"
+        if identity_path.exists():
+            return identity_path.read_text()
+        # Create from template if available
+        template_path = AGENTS_DIR / self.id / "identity.template.md"
+        if template_path.exists():
+            identity_content = template_path.read_text()
+            identity_path.write_text(identity_content)
+            return identity_content
         # Fallback to old persona location for backward compatibility
         persona_path = AGENTS_DIR / self.id / f"{self.id}-persona.md"
         if persona_path.exists():
@@ -296,7 +302,7 @@ class Agent:
 
         prompt = render_template(
             "agent/system",
-            profile=self.profile,
+            identity=self.identity,
             user_identity=user_identity,
             tools_by_type=tools_text
         )
@@ -342,6 +348,69 @@ class Agent:
         from .tools import get_tools_for_agent
         return get_tools_for_agent(self.config.get("tools", []))
 
+    def _is_reflection_trigger(self, job_tags: list, job_name: str) -> bool:
+        """Check if a job is a reflection trigger that should be handled directly."""
+        for tag in job_tags:
+            if tag.startswith("trigger:reflection"):
+                return True
+        return job_name.startswith("Trigger:reflection")
+
+    def _execute_reflection_trigger(self, job: dict):
+        """Execute a reflection trigger directly (not through chat loop).
+
+        This is more efficient than letting the agent chat loop handle reflection,
+        as it makes a single LLM call instead of many.
+        """
+        from .tools.data.jobs import complete_job
+
+        job_id = job.get("id")
+        job_tags = job.get("tags", [])
+
+        # Extract execution_id from tags if present
+        execution_id = None
+        for tag in job_tags:
+            if tag.startswith("execution:"):
+                execution_id = tag.split(":", 1)[1]
+                break
+
+        # Determine phase from tags
+        phase = "both"  # default
+        for tag in job_tags:
+            if tag.startswith("trigger:reflection:"):
+                phase = tag.split(":")[-1]
+                break
+
+        self._log("reflection_trigger_start", {
+            "job_id": job_id,
+            "phase": phase,
+            "execution_id": execution_id
+        })
+
+        try:
+            if self.reflection:
+                if phase in ("append", "both"):
+                    # Append is usually done automatically after chat, skip for manual triggers
+                    pass
+                if phase in ("consolidate", "both"):
+                    self.reflection.consolidate(execution_id=execution_id)
+
+            # Complete the trigger job
+            complete_job(job_id)
+
+            self._log("reflection_trigger_complete", {
+                "job_id": job_id,
+                "phase": phase,
+                "execution_id": execution_id
+            })
+
+        except Exception as e:
+            self._log("reflection_trigger_error", {
+                "job_id": job_id,
+                "phase": phase,
+                "error": str(e)
+            })
+            # Don't re-raise - let manager handle retries if needed
+
     def _get_job_prompt_type(self, job: dict) -> str:
         """Determine which prompt template to use based on job type.
 
@@ -351,7 +420,8 @@ class Agent:
         job_name = job.get("name", "")
         job_tags = job.get("tags", [])
 
-        # Reflection triggers
+        # Reflection triggers - note: these are now handled directly in _execute_reflection_trigger
+        # This path is kept for backwards compatibility with any code that calls this directly
         if "trigger:reflection" in job_tags or job_name.startswith("Trigger:reflection"):
             return "agent/reflection"
         # Exploration triggers
@@ -568,6 +638,15 @@ class Agent:
 
         # Set job context for cost/rate tracking
         self._current_job_id = current_job.get("id")
+
+        # Special handling for reflection triggers - call reflection directly instead of chat loop
+        # This is much more efficient (single LLM call vs many)
+        job_tags = current_job.get("tags", [])
+        job_name = current_job.get("name", "")
+        if self._is_reflection_trigger(job_tags, job_name):
+            self._execute_reflection_trigger(current_job)
+            self._current_job_id = None
+            return
 
         # Use standardized job prompt format
         from .prompts import load_template

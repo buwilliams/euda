@@ -113,8 +113,8 @@ async function saveAgentPersonaField(agentId, jobId) {
     }
 }
 
-async function saveAgentProfileField(agentId, jobId) {
-    const textarea = document.getElementById(`edit-profile-${jobId}`);
+async function saveAgentIdentityField(agentId, jobId) {
+    const textarea = document.getElementById(`edit-identity-${jobId}`);
     if (!textarea) return;
 
     const success = await saveAgentPersona(agentId, textarea.value);

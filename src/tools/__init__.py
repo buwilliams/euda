@@ -5,7 +5,7 @@ Tools are registered with decorators and can be looked up by name.
 Agents are granted access to specific tools via their config.
 
 Tools are organized by type:
-- data: Jobs, assets, user profile, memory
+- data: Jobs, assets, user identity, memory
 - agents: Agent management and introspection
 - system: Config, dates, notifications, work control
 - integration: External knowledge and documentation
@@ -185,7 +185,7 @@ def execute_tool(name: str, inputs: dict) -> Any:
 
 
 # Import all tool modules to register them
-from .data import jobs, assets, profile, memory
+from .data import jobs, assets, identity, memory
 from .agents import agents
 from .system import system, dates, notifications
 from .integration import knowledge, mastodon, speech

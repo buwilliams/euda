@@ -25,7 +25,7 @@ Your reflection asset should include:
 - Key observations from recent activity
 - Patterns noticed (recurring themes, behaviors, preferences)
 - Items graduated to long-term memory (and why)
-- Profile updates made (if any)
+- Identity updates made (if any)
 
 ## Job Coordination
 

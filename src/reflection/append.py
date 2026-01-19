@@ -65,7 +65,7 @@ def append_phase(reflection: "Reflection", user_message: str, assistant_response
 
     # Build prompt
     prompt = build_append_prompt(
-        agent_profile=reflection.agent.profile,
+        agent_profile=reflection.agent.identity,
         existing_memory=existing_memory,
         user_message=user_message,
         assistant_response=assistant_response
@@ -347,7 +347,7 @@ def append_batch_phase(reflection: "Reflection", exchanges: list, execution_id: 
 
     # Build batch prompt
     prompt = build_append_batch_prompt(
-        agent_profile=reflection.agent.profile,
+        agent_profile=reflection.agent.identity,
         existing_memory=existing_memory,
         exchanges=exchanges
     )

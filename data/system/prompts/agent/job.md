@@ -8,7 +8,7 @@ You have been assigned a job:
 
 {remaining_jobs_notice}
 
-Work on this job according to your profile. When finished:
+Work on this job according to your identity. When finished:
 - Use complete_job(job_id="{job_id}") if you should complete it
-- Or follow your profile's guidance for user:request jobs
+- Or follow your identity's guidance for user:request jobs
 - Always call done_working() at the end

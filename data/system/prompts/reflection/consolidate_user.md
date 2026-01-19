@@ -1,6 +1,6 @@
-## {profile_type} Profile: {agent_id}
+## {profile_type} Identity: {agent_id}
 
-{agent_profile}
+{agent_identity}
 
 ## Short-term Memory (last 90 days)
 

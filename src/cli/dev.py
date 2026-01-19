@@ -27,9 +27,9 @@ def cmd_dev(args: List[str]):
         from .commands.memory import cmd_memory
         cmd_memory(sub_args, json_mode)
 
-    elif subcommand == "profile":
-        from .commands.profile import cmd_profile
-        cmd_profile(sub_args, json_mode)
+    elif subcommand == "identity":
+        from .commands.identity import cmd_identity
+        cmd_identity(sub_args, json_mode)
 
     elif subcommand == "prompt":
         from .commands.prompt import cmd_prompt
@@ -117,9 +117,9 @@ MEMORY
     --add <type> <desc>     Add a memory entry manually
     --graduate <id>         Graduate a memory to long-term
 
-PROFILE
-  profile <agent>           Show agent's profile
-    --history               Show historical profile snapshots
+IDENTITY
+  identity <agent>          Show agent's identity
+    --history               Show historical identity snapshots
 
 TOOLS
   tools                     List all available tools

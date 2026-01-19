@@ -43,7 +43,7 @@ Rules for the developer experience CLI (`python main.py dev`).
 
 - `dev reflect <agent>` — Run full reflection (append + consolidate)
 - `--append` — Run only append phase (extract from recent conversation)
-- `--consolidate` — Run only consolidate phase (graduate memories, update profile)
+- `--consolidate` — Run only consolidate phase (graduate memories, update identity)
 - Append phase requires recent conversation; reads from session file
 - Consolidate phase can run independently anytime
 
@@ -62,10 +62,10 @@ Rules for the developer experience CLI (`python main.py dev`).
 - `--graduate <id>` — Manually graduate memory to long-term
 - Valid types: person, place, thing, goal, concern, idea, learning, behavior
 
-## Profile Commands
+## Identity Commands
 
-- `dev profile <agent>` — Show agent's current profile
-- `--history` — Show historical profile snapshots if they exist
+- `dev identity <agent>` — Show agent's current identity
+- `--history` — Show historical identity snapshots if they exist
 
 ## Tool Commands
 
@@ -79,7 +79,7 @@ Rules for the developer experience CLI (`python main.py dev`).
 - `dev prompt <agent> job <job_id>` — Show prompt that would be generated for job
 - `dev prompt <agent> reflect` — Show reflection prompt
 - `dev prompt <agent> explore` — Show exploration prompt
-- `dev prompt <agent> system` — Show system prompt (profile + tools)
+- `dev prompt <agent> system` — Show system prompt (identity + tools)
 - Read-only inspection, no LLM calls
 
 ## Chat Command
@@ -123,4 +123,4 @@ Rules for the developer experience CLI (`python main.py dev`).
 - Event sink is additive (doesn't replace logging)
 - Commands are independent — each handles its own setup/teardown
 - Fail gracefully with clear error messages
-- No side effects from read-only commands (memory, profile, prompt, tools)
+- No side effects from read-only commands (memory, identity, prompt, tools)

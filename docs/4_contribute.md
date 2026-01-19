@@ -90,7 +90,7 @@ If yes, your Arc is complete. Pick another, or take a beat and just use the syst
 
 **Assignment 1: Use the System** — Open Chat, introduce yourself, create a reminder, explore Jobs and Timeline views, ask "What do you know about me?"
 
-**Assignment 2: Create an Agent** — Ask Chat: "Create a social-media agent that finds interesting content daily based on my profile." The agent starts immediately.
+**Assignment 2: Create an Agent** — Ask Chat: "Create a social-media agent that finds interesting content daily based on my identity." The agent starts immediately.
 
 **Assignment 3: Contribute** — Pick an issue from [GitHub Projects](https://github.com/users/buwilliams/projects/2), create a feature branch, review against `spec/*.md`, add entry to `contrib/your-name.md`, submit PR.
 
@@ -113,7 +113,7 @@ The [spec/](../spec/) directory is the best place to understand how Euno works. 
 **Why specs matter:** Specs are our AI-first alternative to unit tests. They maintain system consistency across the entire platform. Before merging any PR, ask a coding agent to review the specs and check for implementation drift. This ensures changes align with the system's design.
 
 - [Agents](../spec/1_agents.md) — Agent behavior, job coordination, triggers, work cycles
-- [Data](../spec/2_data.md) — Entity schemas (memory, profile, agent, job, config)
+- [Data](../spec/2_data.md) — Entity schemas (memory, identity, agent, job, config)
 - [Backend](../spec/3_backend.md) — Server, API, authentication, storage
 - [UX & UI](../spec/4_ux_ui.md) — User experience and interface patterns
 - [CLI](../spec/5_cli.md) — Command-line interface commands and behavior

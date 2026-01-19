@@ -1,0 +1,1 @@
+Profile status: No lifelog entries available yet. No behavioral patterns, stable attractors, or biographical inferences can be made. Awaiting raw lifelog data to initialize profile.

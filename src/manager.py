@@ -591,7 +591,7 @@ class AgentManager:
                     print(f"[scheduler] Creating reflection job for {agent_id}")
                     create_job(
                         name=job_name,
-                        description="Scheduled reflection: review memories, evolve profile, graduate learnings",
+                        description="Scheduled reflection: review memories, evolve identity, graduate learnings",
                         parent_id=system_container["id"],
                         assignees=[agent_id],
                         tags=["trigger:reflection"],
