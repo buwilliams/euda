@@ -32,16 +32,16 @@ Commands:
   fresh-start      Reset all user data (memory, jobs, logs, password)
 
 Examples:
-  python main.py start             # Run web server + agents
-  python main.py chat              # Chat with default agent (chat)
-  python main.py chat chat         # Chat with specific agent
-  python main.py agents            # List agents
-  python main.py jobs              # List jobs
-  python main.py points            # Show contribution points
-  python main.py dev help          # Show dev commands
-  python main.py set-password      # Set access password
-  python main.py remove-password   # Disable authentication
-  python main.py fresh-start       # Clean slate (keeps agent configs)
+  euno start             # Run web server + agents
+  euno chat              # Chat with default agent (chat)
+  euno chat chat         # Chat with specific agent
+  euno agents            # List agents
+  euno jobs              # List jobs
+  euno points            # Show contribution points
+  euno dev help          # Show dev commands
+  euno set-password      # Set access password
+  euno remove-password   # Disable authentication
+  euno fresh-start       # Clean slate (keeps agent configs)
 """
     )
 
