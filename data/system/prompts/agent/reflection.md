@@ -14,7 +14,7 @@ Reflection is how you learn and evolve. Review what's happened, identify pattern
 2. Read recent long-term memory with `read_long_term_memory()` for context
 3. Identify patterns worth preserving
 4. Graduate important items to long-term memory with `graduate_memory(id, reason)`
-5. If you notice behavioral patterns worth codifying, update your profile with `update_own_profile(updates)`
+5. If you notice behavioral patterns worth codifying, update your identity with `update_own_identity(updates)`
 6. Write a reflection summary as a job asset with `write_asset("{job_id}", "reflection.md", content)`
 7. Complete the reflection job with `complete_job(job_id="{job_id}")`
 8. Call `done_working()`

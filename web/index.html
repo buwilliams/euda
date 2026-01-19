@@ -4,31 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Euno - Personal Intelligence</title>
-    <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="/web/images/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <!-- CSS Modules (order matters) -->
-    <link rel="stylesheet" href="/static/css/variables.css">
-    <link rel="stylesheet" href="/static/css/base.css">
-    <link rel="stylesheet" href="/static/css/layout.css">
-    <link rel="stylesheet" href="/static/css/voice.css">
-    <link rel="stylesheet" href="/static/css/components.css">
-    <link rel="stylesheet" href="/static/css/chat.css">
-    <link rel="stylesheet" href="/static/css/focus.css">
-    <link rel="stylesheet" href="/static/css/focus-cards.css">
-    <link rel="stylesheet" href="/static/css/focus-detail.css">
-    <link rel="stylesheet" href="/static/css/focus-markdown.css">
-    <link rel="stylesheet" href="/static/css/focus-assets.css">
-    <link rel="stylesheet" href="/static/css/focus-modals.css">
-    <link rel="stylesheet" href="/static/css/focus-forms.css">
-    <link rel="stylesheet" href="/static/css/focus-extras.css">
-    <link rel="stylesheet" href="/static/css/when-picker.css">
-    <link rel="stylesheet" href="/static/css/history.css">
-    <link rel="stylesheet" href="/static/css/swipe.css">
-    <link rel="stylesheet" href="/static/css/about.css">
-    <link rel="stylesheet" href="/static/css/auth.css">
-    <link rel="stylesheet" href="/static/css/responsive.css">
+    <link rel="stylesheet" href="/web/css/variables.css">
+    <link rel="stylesheet" href="/web/css/base.css">
+    <link rel="stylesheet" href="/web/css/layout.css">
+    <link rel="stylesheet" href="/web/css/voice.css">
+    <link rel="stylesheet" href="/web/css/components.css">
+    <link rel="stylesheet" href="/web/css/chat.css">
+    <link rel="stylesheet" href="/web/css/focus.css">
+    <link rel="stylesheet" href="/web/css/focus-cards.css">
+    <link rel="stylesheet" href="/web/css/focus-detail.css">
+    <link rel="stylesheet" href="/web/css/focus-markdown.css">
+    <link rel="stylesheet" href="/web/css/focus-assets.css">
+    <link rel="stylesheet" href="/web/css/focus-modals.css">
+    <link rel="stylesheet" href="/web/css/focus-forms.css">
+    <link rel="stylesheet" href="/web/css/focus-extras.css">
+    <link rel="stylesheet" href="/web/css/when-picker.css">
+    <link rel="stylesheet" href="/web/css/history.css">
+    <link rel="stylesheet" href="/web/css/swipe.css">
+    <link rel="stylesheet" href="/web/css/about.css">
+    <link rel="stylesheet" href="/web/css/auth.css">
+    <link rel="stylesheet" href="/web/css/responsive.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         /* API Costs - vertical list */
@@ -97,7 +97,7 @@
                     <!-- About Tab -->
                     <div class="tab-pane" id="tab-about">
                         <div class="focus-view-header" onclick="navigateMoreMenuBack()">
-                            <span class="focus-back-btn"><img src="/static/icons/chevron-left.svg" alt="Back" class="icon"></span>
+                            <span class="focus-back-btn"><img src="/web/icons/chevron-left.svg" alt="Back" class="icon"></span>
                             <span class="focus-view-title">About</span>
                         </div>
                         <div class="about-content" id="about-content">
@@ -108,7 +108,7 @@
                     <!-- Settings Tab -->
                     <div class="tab-pane" id="tab-settings">
                         <div class="focus-view-header" onclick="navigateMoreMenuBack()">
-                            <span class="focus-back-btn"><img src="/static/icons/chevron-left.svg" alt="Back" class="icon"></span>
+                            <span class="focus-back-btn"><img src="/web/icons/chevron-left.svg" alt="Back" class="icon"></span>
                             <span class="focus-view-title">Settings</span>
                         </div>
                         <div class="settings-content" id="settings-content">
@@ -116,7 +116,7 @@
                             <div class="settings-section">
                                 <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
                                     <span>Costs</span>
-                                    <span class="section-toggle"><img src="/static/icons/chevron-right.svg" alt="toggle"></span>
+                                    <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>
                                 <div class="collapsible-content open">
                                     <div class="costs-box">
@@ -150,7 +150,7 @@
                             <div class="settings-section">
                                 <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
                                     <span>LLMs</span>
-                                    <span class="section-toggle"><img src="/static/icons/chevron-right.svg" alt="toggle"></span>
+                                    <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>
                                 <div class="collapsible-content">
                                     <div class="settings-form">
@@ -184,7 +184,7 @@
                             <div class="settings-section">
                                 <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
                                     <span>Rate Limiting</span>
-                                    <span class="section-toggle"><img src="/static/icons/chevron-right.svg" alt="toggle"></span>
+                                    <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>
                                 <div class="collapsible-content">
                                     <div class="settings-form" id="rate-limiting-form">
@@ -264,7 +264,7 @@
                             <div class="settings-section">
                                 <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
                                     <span>Fresh Start</span>
-                                    <span class="section-toggle"><img src="/static/icons/chevron-right.svg" alt="toggle"></span>
+                                    <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>
                                 <div class="collapsible-content">
                                     <div class="settings-form">
@@ -287,7 +287,7 @@
                             <div class="settings-section">
                                 <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event); loadBackupsData();">
                                     <span>Backups</span>
-                                    <span class="section-toggle"><img src="/static/icons/chevron-right.svg" alt="toggle"></span>
+                                    <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>
                                 <div class="collapsible-content">
                                     <div class="settings-form">
@@ -303,7 +303,7 @@
                             <div class="settings-section">
                                 <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
                                     <span>Account</span>
-                                    <span class="section-toggle"><img src="/static/icons/chevron-right.svg" alt="toggle"></span>
+                                    <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>
                                 <div class="collapsible-content">
                                     <div class="settings-form">
@@ -330,43 +330,43 @@
                 <!-- Tab Menu (below content) -->
                 <div class="tab-menu">
                     <button class="tab-btn active" data-tab="focus" onclick="switchTab('focus')">
-                        <img src="/static/icons/queue-list.svg" alt="Focus">
+                        <img src="/web/icons/queue-list.svg" alt="Focus">
                         <span>Focus</span>
                         <span class="tab-badge" id="tasks-badge" style="display: none;">0</span>
                     </button>
                     <button class="tab-btn" data-tab="chat" onclick="switchTab('chat')">
-                        <img src="/static/icons/chat-bubble-left.svg" alt="Chat">
+                        <img src="/web/icons/chat-bubble-left.svg" alt="Chat">
                         <span>Chat</span>
                         <span class="tab-badge" id="chat-badge" style="display: none;">0</span>
                     </button>
                     <div class="tab-overflow">
                         <button class="tab-btn" onclick="toggleOverflowMenu()" id="overflow-btn">
-                            <img src="/static/icons/ellipsis-vertical.svg" alt="More">
+                            <img src="/web/icons/ellipsis-vertical.svg" alt="More">
                             <span>More</span>
                         </button>
                         <div class="overflow-menu" id="overflow-menu">
                             <button class="overflow-item" data-tab="about" onclick="openMoreMenuScreen('about'); closeOverflowMenu();">
-                                <img src="/static/icons/information-circle.svg" alt="About">
+                                <img src="/web/icons/information-circle.svg" alt="About">
                                 <span>About</span>
                             </button>
                             <button class="overflow-item" data-tab="settings" onclick="openMoreMenuScreen('settings'); closeOverflowMenu();">
-                                <img src="/static/icons/cog-6-tooth.svg" alt="Settings">
+                                <img src="/web/icons/cog-6-tooth.svg" alt="Settings">
                                 <span>Settings</span>
                             </button>
                             <button class="overflow-item" data-tab="history" onclick="openMoreMenuScreen('history'); closeOverflowMenu();">
-                                <img src="/static/icons/clock.svg" alt="History">
+                                <img src="/web/icons/clock.svg" alt="History">
                                 <span>History</span>
                             </button>
                             <button class="overflow-item" id="upload-btn" onclick="triggerUpload(); closeOverflowMenu();">
-                                <img src="/static/icons/arrow-up-tray.svg" alt="Upload">
+                                <img src="/web/icons/arrow-up-tray.svg" alt="Upload">
                                 <span>Upload</span>
                             </button>
                             <button class="overflow-item" onclick="openNewJobScreen(); closeOverflowMenu();">
-                                <img src="/static/icons/plus.svg" alt="New Job">
+                                <img src="/web/icons/plus.svg" alt="New Job">
                                 <span>New Job</span>
                             </button>
                             <button class="overflow-item" onclick="resetUI(); closeOverflowMenu();">
-                                <img src="/static/icons/arrow-path.svg" alt="New Chat">
+                                <img src="/web/icons/arrow-path.svg" alt="New Chat">
                                 <span>New Chat</span>
                             </button>
                         </div>
@@ -393,9 +393,14 @@
                         </div>
                     </button>
                 </div>
-                <button id="context-send-btn" onclick="sendContextMessage()" title="Send">
-                    <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                </button>
+                <div class="input-bar-buttons">
+                    <button id="context-send-btn" class="input-bar-btn" onclick="sendContextMessage()" title="Send">
+                        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    </button>
+                    <button id="quick-add-btn" class="input-bar-btn" onclick="quickAddFromInput()" title="Add job">
+                        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -413,28 +418,28 @@
     </div>
 
     <!-- JavaScript Modules (order matters) -->
-    <script src="/static/js/state.js"></script>
-    <script src="/static/js/utils.js"></script>
-    <script src="/static/js/notifications.js"></script>
-    <script src="/static/js/auth.js"></script>
-    <script src="/static/js/tabs.js"></script>
-    <script src="/static/js/tts.js"></script>
-    <script src="/static/js/chat.js"></script>
-    <script src="/static/js/focus.js"></script>
-    <script src="/static/js/focus-data.js"></script>
-    <script src="/static/js/focus-cards.js"></script>
-    <script src="/static/js/focus-views.js"></script>
-    <script src="/static/js/focus-pickers.js"></script>
-    <script src="/static/js/focus-actions.js"></script>
-    <script src="/static/js/focus-editing.js"></script>
-    <script src="/static/js/focus-assets.js"></script>
-    <script src="/static/js/focus-screens.js"></script>
-    <script src="/static/js/swipe.js"></script>
-    <script src="/static/js/history.js"></script>
-    <script src="/static/js/about.js"></script>
-    <script src="/static/js/upload.js"></script>
-    <script src="/static/js/voice.js"></script>
-    <script src="/static/js/splash.js"></script>
-    <script src="/static/js/init.js"></script>
+    <script src="/web/js/state.js"></script>
+    <script src="/web/js/utils.js"></script>
+    <script src="/web/js/notifications.js"></script>
+    <script src="/web/js/auth.js"></script>
+    <script src="/web/js/tabs.js"></script>
+    <script src="/web/js/tts.js"></script>
+    <script src="/web/js/chat.js"></script>
+    <script src="/web/js/focus.js"></script>
+    <script src="/web/js/focus-data.js"></script>
+    <script src="/web/js/focus-cards.js"></script>
+    <script src="/web/js/focus-views.js"></script>
+    <script src="/web/js/focus-pickers.js"></script>
+    <script src="/web/js/focus-actions.js"></script>
+    <script src="/web/js/focus-editing.js"></script>
+    <script src="/web/js/focus-assets.js"></script>
+    <script src="/web/js/focus-screens.js"></script>
+    <script src="/web/js/swipe.js"></script>
+    <script src="/web/js/history.js"></script>
+    <script src="/web/js/about.js"></script>
+    <script src="/web/js/upload.js"></script>
+    <script src="/web/js/voice.js"></script>
+    <script src="/web/js/splash.js"></script>
+    <script src="/web/js/init.js"></script>
 </body>
 </html>

@@ -78,16 +78,16 @@ def _generate_quote(profile_content: str, history: list) -> dict:
         for q in recent:
             history_context += f"- \"{q['quote']}\" — {q['author']}\n"
 
-    prompt = f"""Based on this user's profile, select or compose an inspiring quote that would resonate with them today.
+    prompt = f"""Based on this user's identity, select or compose an inspiring quote that would resonate with them today.
 
-User Profile:
-{profile_content if profile_content else "No profile available - provide a generally inspiring quote."}
+User Identity:
+{profile_content if profile_content else "No identity available - provide a generally inspiring quote."}
 {history_context}
 
 Respond with ONLY a JSON object in this exact format (no markdown, no explanation):
 {{"quote": "The quote text here", "author": "Author Name"}}
 
-The quote can be from a famous person, philosopher, writer, or you can compose an original one attributed to "Unknown" or "Ancient Wisdom". Make it meaningful and relevant to the user's interests, goals, or values."""
+The quote can be from a famous person, philosopher, writer, or you can compose an original one attributed to "Unknown" or "Ancient Wisdom". Make it meaningful and relevant to the user's interests, goals, concerns, or values."""
 
     response = client.create(
         max_tokens=256,
@@ -119,7 +119,7 @@ def daily_quote():
     if state.get("date") == today and state.get("current"):
         return state["current"]
 
-    # Get user profile for personalization
+    # Get user identity for personalization
     profile = get_profile("user")
     profile_content = profile.get("content", "") if profile.get("exists") else ""
 
@@ -299,11 +299,11 @@ def _perform_fresh_start() -> dict:
                     agents_to_preserve[agent_id]["config"] = config_file.read_text()
                     preserved.append(f"agents/{agent_id}/config.json")
 
-                # Preserve profile.md.example (template)
-                profile_example = agent_dir / "profile.md.example"
+                # Preserve identity.md.example (template)
+                profile_example = agent_dir / "identity.md.example"
                 if profile_example.exists():
                     agents_to_preserve[agent_id]["profile_example"] = profile_example.read_text()
-                    preserved.append(f"agents/{agent_id}/profile.md.example")
+                    preserved.append(f"agents/{agent_id}/identity.md.example")
 
     # Preserve system config
     system_config = None
@@ -338,9 +338,9 @@ def _perform_fresh_start() -> dict:
             if "config" in files:
                 (agent_dir / "config.json").write_text(files["config"])
             if "profile_example" in files:
-                (agent_dir / "profile.md.example").write_text(files["profile_example"])
-                # Also create profile.md from example for fresh start
-                (agent_dir / "profile.md").write_text(files["profile_example"])
+                (agent_dir / "identity.md.example").write_text(files["profile_example"])
+                # Also create identity.md from example for fresh start
+                (agent_dir / "identity.md").write_text(files["profile_example"])
 
     # Restore system config
     if system_config:

@@ -18,6 +18,65 @@ Ask yourself:
 
 The best contributions come from lived experience. Build for yourself first. If it helps you flourish, it will help others too.
 
+## Arcs
+
+An Arc is how contributors organize their work on Euno. It's not a technical roadmap—it's a personal chapter in your story of flourishing.
+
+### Philosophy
+
+An Arc answers one question: **What do I want Euno to do for me?**
+
+Not "what feature should I build" but "what value do I want in my life that Euno could provide?" The technical work follows from that.
+
+**Examples of Arcs (good):**
+- "I want Euno to anticipate my day so my energy feels good all day long"
+- "I want Euno to help me stay connected to the people I care about"
+- "I want Euno to surface opportunities I wouldn't find on my own"
+- "I want Euno to keep me accountable to my creative practice"
+
+**Examples of Arcs (too technical):**
+- "Calendar integration"
+- "Android app"
+- "Better memory system"
+- "API refactoring"
+
+The technical work might be identical—but the framing changes everything. When you're building toward *your own flourishing*, you know when it's working. You feel it.
+
+### Structure
+
+An Arc has two parts:
+
+**1. The Vision** — What value do you want Euno to provide? Write it as a sentence starting with "I want Euno to..."
+
+**2. The Work** — Whatever it takes to make that real: new features, bug fixes, UX improvements, documentation, agent configurations—anything that moves you closer.
+
+There's no time limit. You stay in an Arc until it works—until you're actually getting the value you set out to get. Then you move on to the next chapter.
+
+### Choosing an Arc
+
+Use the questions above in "How to Think About Contributions." Pick one area. Write it as "I want Euno to..." and commit to it.
+
+### Improvements Outside Your Arc
+
+Bug fixes and small improvements that fall outside your Arc are always welcome. The Arc isn't a constraint—it's a compass. If you see something broken, fix it. If you have a quick win, take it.
+
+But your *primary energy* should go toward your Arc until it's delivering real value.
+
+### Completing an Arc
+
+An Arc is complete when you're living the value you set out to create. Not when the feature is "done"—when it's actually working for you.
+
+Ask yourself: Is Euno doing this thing for me now? Do I feel it?
+
+If yes, your Arc is complete. Pick another, or take a beat and just use the system for a while.
+
+### Current Arcs
+
+| Contributor | Arc |
+|-------------|-----|
+| Buddy | I want Euno to understand who I am and help me stay productive on what matters |
+| *Your name* | *Your arc* |
+
 ## Getting Started
 
 1. Clone: `git clone https://github.com/buwilliams/euno.git && cd euno`
@@ -70,9 +129,11 @@ The [spec/](../spec/) directory is the best place to understand how Euno works. 
 
 Single-user, single-server architecture. Each user deploys their own instance.
 
-Recommended: [Vultr](https://my.vultr.com/) $5/month (1 vCPU, 1GB RAM, 25GB SSD, Ubuntu 22.04)
+Recommended: [DigitalOcean](https://digitalocean.com/) $6/month Basic Droplet (1 vCPU, 1GB RAM, 25GB SSD, 1TB transfer, Ubuntu 24.04 LTS)
 
-1. Create server, note the IP
+> **Note:** We previously recommended Vultr but encountered intrusive and incompetent support after a runaway agent incident.
+
+1. Create a Droplet, note the IP
 2. Setup SSH keys (skip if you already have keys):
    ```bash
    ssh-keygen -t ed25519

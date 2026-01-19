@@ -407,6 +407,10 @@ class AgentManager:
                 jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
 
                 if jobs:
+                    # Track the job being processed for cooldown decision
+                    current_job = jobs[0]
+                    is_background = "background" in current_job.get("tags", [])
+
                     agent._log("polling_found_jobs", {"count": len(jobs)})
                     agent.work_cycle_sync()
                     # Success - reset backoff and update last_ran
@@ -415,6 +419,20 @@ class AgentManager:
                     # Re-check for more jobs and update cache
                     jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
                     self.agents_with_jobs[agent.id] = bool(jobs)
+
+                    # Apply load-based pacing for background jobs (uploads, integrations)
+                    # Regular jobs process immediately for responsive UX
+                    if is_background and jobs:
+                        utilization = get_velocity_tracker().get_utilization()
+                        delay = utilization["recommended_delay"]
+                        if delay > 0:
+                            agent._log("background_job_pacing", {
+                                "delay": delay,
+                                "utilization": utilization["utilization"],
+                                "calls_in_window": utilization["calls_in_window"],
+                                "remaining_jobs": len(jobs)
+                            })
+                            time.sleep(delay)
                 else:
                     # Cache was stale - clear it
                     self.agents_with_jobs[agent.id] = False

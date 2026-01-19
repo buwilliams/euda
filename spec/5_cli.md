@@ -45,6 +45,16 @@ Rules for the command-line interface.
 ## fresh-start
 
 - Requires explicit confirmation (type 'yes')
-- Deletes: long-term memory, profile, short-term memory, costs, jobs, assets, agent logs/state, system state, password
-- Keeps: agent configs, agent profiles, system config
-- Shows summary of deleted items
+- Deletes:
+  - All agent memory (short-term and long-term)
+  - All agent logs, state, and conversation history
+  - All jobs and job assets
+  - Cost tracking history
+  - Reflection logs
+  - System trigger state
+  - Password (if set)
+  - Non-core agents (anything except chat, user, worker)
+  - User uploads
+- Resets: Core agent identities from `identity.md.example` templates
+- Keeps: Agent configurations, system configuration
+- Shows summary of deleted and reset items

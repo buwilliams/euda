@@ -97,3 +97,21 @@ def delete_asset(job_id: str, filename: str) -> dict:
 
     path.unlink()
     return {"filename": filename, "status": "deleted"}
+
+
+def write_asset_bytes(job_id: str, filename: str, content: bytes) -> dict:
+    """Write binary content to an asset file (internal use).
+
+    This is not a tool - it's used by the upload endpoint to save uploaded files.
+    """
+    assets_dir = _get_job_assets_dir(job_id)
+    assets_dir.mkdir(parents=True, exist_ok=True)
+
+    path = assets_dir / filename
+    path.write_bytes(content)
+
+    return {
+        "filename": filename,
+        "size": len(content),
+        "path": str(path.relative_to(DATA_DIR))
+    }

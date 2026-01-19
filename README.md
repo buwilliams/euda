@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="static/images/euno-logo-with-subtitle.png" alt="Euno" width="50%">
+  <img src="web/images/euno-logo-with-subtitle.png" alt="Euno" width="50%">
 </p>
 
 _Euno (you-know), from Eudaimonia (you-dye-MOH-nee-ah)—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities._

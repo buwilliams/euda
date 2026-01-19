@@ -41,6 +41,14 @@ echo "==================================="
 echo "Server: $SERVER"
 echo "Remote directory: $REMOTE_DIR"
 echo ""
+echo "This will install dependencies and configure the server."
+echo ""
+read -p "Type 'yes' to continue: " CONFIRM
+if [ "$CONFIRM" != "yes" ]; then
+    echo "Aborted."
+    exit 1
+fi
+echo ""
 
 # Check SSH connectivity
 echo "[1/6] Testing SSH connection..."
@@ -142,8 +150,8 @@ server {
     # Allow large file uploads (25MB for audio transcription)
     client_max_body_size 25M;
 
-    # Static files - no caching during development
-    location /static/ {
+    # Web files - no caching during development
+    location /web/ {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
 

@@ -66,7 +66,7 @@ class Reflection:
 
     def _get_profile_path(self) -> Path:
         """Get path to agent's current profile."""
-        return AGENTS_DIR / self.agent.id / "profile.md"
+        return AGENTS_DIR / self.agent.id / "identity.md"
 
     def _get_historical_profile_path(self, year: str) -> Path:
         """Get path to agent's historical profile for a specific year."""

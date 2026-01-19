@@ -2,23 +2,21 @@
 Upload API Route
 
 Handles file uploads by:
-1. Saving the file to data/agents/user/uploads/{date}/
-2. Adding full content to user's long-term memory (for text files)
-3. Adding a brief entry to user's short-term memory
+1. Creating a job for the Chat agent to analyze the file
+2. Saving the file as a job asset
+3. Chat agent processes the job asynchronously using existing asset tools
 """
 
-from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File
 
-from ...tools.data.memory import add_memory, write_long_term_memory
+from ...tools.data.jobs import create_job, get_agent_inbox_job
+from ...tools.data.assets import write_asset_bytes
+from ...tools.data.memory import add_memory
 
 
 router = APIRouter()
-
-DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
-UPLOADS_DIR = DATA_DIR / "agents" / "user" / "uploads"
 
 # File extensions we can read as text
 TEXT_EXTENSIONS = {
@@ -32,9 +30,6 @@ TEXT_EXTENSIONS = {
     ".log", ".env", ".gitignore", ".dockerignore",
 }
 
-# Max size for text content to include in long-term memory (100KB)
-MAX_TEXT_SIZE = 100 * 1024
-
 
 def is_text_file(filename: str) -> bool:
     """Check if file is a readable text file based on extension."""
@@ -42,85 +37,47 @@ def is_text_file(filename: str) -> bool:
     return suffix in TEXT_EXTENSIONS
 
 
-def get_upload_dir() -> Path:
-    """Get today's upload directory, creating if needed."""
-    today = datetime.now().strftime("%Y-%m-%d")
-    upload_dir = UPLOADS_DIR / today
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    return upload_dir
-
-
-def make_unique_filename(directory: Path, filename: str) -> str:
-    """Generate a unique filename if one already exists."""
-    path = directory / filename
-    if not path.exists():
-        return filename
-
-    stem = Path(filename).stem
-    suffix = Path(filename).suffix
-    counter = 1
-
-    while (directory / f"{stem}_{counter}{suffix}").exists():
-        counter += 1
-
-    return f"{stem}_{counter}{suffix}"
-
-
 @router.post("")
 async def upload_file(file: UploadFile = File(...)):
     """Upload a file for processing.
 
-    Saves the file and adds it to the user's memory:
-    - Text files: full content stored in long-term memory
-    - All files: brief entry added to short-term memory
+    Creates a job with the file as an asset for Chat agent to analyze:
+    - Text files: Chat will analyze for identity extraction
+    - All files: stored as job assets
     """
-    today = datetime.now().strftime("%Y-%m-%d")
-    upload_dir = get_upload_dir()
-
-    # Save file with unique name if needed
-    filename = make_unique_filename(upload_dir, file.filename)
-    file_path = upload_dir / filename
+    filename = file.filename
     content_bytes = await file.read()
-    file_path.write_bytes(content_bytes)
 
     # Determine file type and size
     file_size = len(content_bytes)
     file_size_str = f"{file_size / 1024:.1f}KB" if file_size >= 1024 else f"{file_size}B"
     is_text = is_text_file(filename)
 
-    # For text files, add content to long-term memory
-    if is_text and file_size <= MAX_TEXT_SIZE:
-        try:
-            text_content = content_bytes.decode("utf-8")
-            memory_content = f"**Uploaded file:** {filename}\n\n```\n{text_content}\n```"
-            write_long_term_memory(
-                content=memory_content,
-                agent_id="user",
-                source="Upload"
-            )
-        except UnicodeDecodeError:
-            # Not actually text, just note the upload
-            write_long_term_memory(
-                content=f"**Uploaded file:** {filename} ({file_size_str}) - binary file saved to uploads/{today}/",
-                agent_id="user",
-                source="Upload"
-            )
-    elif is_text and file_size > MAX_TEXT_SIZE:
-        # Text file too large for memory, note location
-        write_long_term_memory(
-            content=f"**Uploaded file:** {filename} ({file_size_str}) - large text file saved to uploads/{today}/",
-            agent_id="user",
-            source="Upload"
-        )
-    else:
-        # Binary file - just note the upload
-        write_long_term_memory(
-            content=f"**Uploaded file:** {filename} ({file_size_str}) - saved to uploads/{today}/",
-            agent_id="user",
-            source="Upload"
-        )
+    # Create job in Chat's inbox for processing
+    chat_inbox = get_agent_inbox_job("chat")
+    parent_id = chat_inbox["id"] if chat_inbox else None
 
-    # Add brief entry to short-term memory
+    job = create_job(
+        name=f"Analyze upload: {filename}",
+        description=f"""A file has been uploaded for analysis.
+
+Filename: {filename}
+Size: {file_size_str}
+Type: {"text" if is_text else "binary"}
+
+{"Use `read_asset` to read the file content, then extract identity-relevant information (interests, goals, concerns, biographical facts) and create appropriate memories using `add_memory`. Store analysis insights in long-term memory using `write_long_term_memory`." if is_text else "This is a binary file. Note its existence in the user's memory."}
+
+After processing, complete this job with `complete_job`.""",
+        tags=["upload", "analysis", "background"],
+        assignees=["chat"],
+        parent_id=parent_id,
+        created_by="user"
+    )
+
+    # Save file as job asset
+    write_asset_bytes(job["id"], filename, content_bytes)
+
+    # Add to user's short-term memory
     add_memory(
         short_description=f"Uploaded {filename}",
         type="thing",
@@ -130,7 +87,7 @@ async def upload_file(file: UploadFile = File(...)):
     return {
         "status": "uploaded",
         "filename": filename,
-        "path": f"uploads/{today}/{filename}",
+        "job_id": job["id"],
         "size": file_size_str,
-        "message": "File saved and added to memory."
+        "message": "File uploaded. Analysis job created."
     }

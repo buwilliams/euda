@@ -108,10 +108,12 @@ def get_all_tools() -> List[dict]:
 def get_available_tools() -> Dict[str, dict]:
     """Get all registered tools as a dict keyed by tool name.
 
-    Returns dict like: {"tool_name": {"description": "...", "schema": {...}}}
+    Returns:
+        Dict mapping tool name to tool info (name, description, schema, type)
     """
     return {
         name: {
+            "name": t["name"],
             "description": t["description"],
             "schema": t["schema"],
             "type": t.get("type")

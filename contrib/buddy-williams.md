@@ -1,5 +1,30 @@
 # Buddy Williams
 
+- [2026-01-18][--] - Replace Vultr hosting with DigitalOcean in documentation
+- [2026-01-18][--] - Add remove-server.sh script and confirmation prompts to setup scripts
+- [2026-01-16][--] - Introduce four-category agent ontology with Metacognition module
+- [2026-01-15][--] - Add real-time SSE monitoring for reflection operations
+- [2026-01-15][--] - Add stacked navigation for Agent Manage views
+- [2026-01-15][--] - Add Human Flourishing section to pitch document
+- [2026-01-15][--] - Use profile templates for base agents
+- [2026-01-15][--] - Add Agent Management UI and Fresh Start feature
+- [2026-01-15][--] - Improve Agent Ontology: memory flow, cross-agent access, exploration context
+- [2026-01-14][--] - Add dev CLI for debugging and improving agents
+- [2026-01-14][--] - Fix conversation history loading for chat context
+- [2026-01-13][--] - Add rate limiting and throttling for LLM API calls
+- [2026-01-13][--] - Add learning and behavior memory types for self-improvement
+- [2026-01-13][--] - Unify profile schema for all agents (users and AI)
+- [2026-01-13][--] - Make xai-sdk (Grok) optional dependency
+- [2026-01-13][--] - Fix speak_aloud tool to play audio through user's speakers
+- [2026-01-13][--] - Add Our Bold Conjecture section to agents doc
+- [2026-01-11][--] - Add text-to-speech with speed control and friendly voice
+- [2026-01-11][--] - Fix exploration runaway by allowing trigger job completion
+- [2026-01-11][--] - Rework Settings UI with collapsible sections and @job context fixes
+- [2026-01-11][--] - Add Discord webhook notification on PR merge
+- [2026-01-10][--] - Add /day budget limit to prevent runaway API costs
+- [2026-01-10][--] - Add reflection tools to user agent
+- [2026-01-10][--] - Dynamic agent registration - no restart required
+- [2026-01-10][--] - Add Completed by Agent and Monitoring sections to Agent detail view
 - [2026-01-09][--] - Add user-request workflow for agent job handoff with tag-based routing
 - [2026-01-09][--] - Fix job completion bug by including job_id in agent prompts
 - [2026-01-09][--] - Fix timeline filtering for system containers and completed ancestor jobs

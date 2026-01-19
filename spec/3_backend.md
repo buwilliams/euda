@@ -19,7 +19,7 @@ Rules for the server, API, and infrastructure.
   - `/api/chat` — Chat with agents
   - `/api/user` — Profile and long-term memory
   - `/api/auth` — Authentication
-  - `/api/upload` — File uploads
+  - `/api/upload` — File uploads with identity extraction
   - `/api/events` — SSE endpoint
   - `/api/transcribe` — Audio transcription (speech-to-text)
   - `/api/synthesize` — Text-to-speech synthesis
@@ -42,6 +42,32 @@ Rules for the server, API, and infrastructure.
 - `GET /api/agents/{id}/logs/reflection?days={n}` — Get reflection logs
 - `POST /api/agents/{id}/reflection/trigger` — Manually trigger reflection, returns execution_id
 - `POST /api/agents/{id}/exploration/trigger` — Manually trigger exploration, returns execution_id
+
+## Integrations
+
+Integrations bring external data into Euno. All integrations follow the same pattern:
+
+1. **Create a job** — The integration creates a job assigned to an agent (usually Chat)
+2. **Store content as job assets** — Files/data are saved to `data/jobs/assets/{job-id}/`
+3. **Agent processes asynchronously** — The assigned agent handles the job using its tools
+4. **Results in memory** — Analysis and insights are stored in user's memory
+
+This pattern ensures:
+- Non-blocking operation (UI returns immediately)
+- Visibility into what's being processed (jobs appear in queue)
+- Consistent data storage (job assets)
+- Agent autonomy in how to process content
+
+### Upload Endpoint (File Integration)
+
+- `POST /api/upload` — Upload file for agent processing
+- Creates a job assigned to Chat agent with file as job asset
+- Job is tagged with `background` for load-based pacing (see spec/1_agents.md)
+- Chat uses `read_asset` to access file content
+- For text files: extracts identity info and creates memories
+- Returns: filename, job_id, size
+
+Future integrations (email, calendar, social media, etc.) should follow this same pattern and include the `background` tag for pacing.
 
 ## Fresh Start & Backups
 
@@ -90,6 +116,6 @@ Rules for the server, API, and infrastructure.
 
 - The user is conceptually an agent with a different interface (web UI vs autonomous loop)
 - Tools are the only way agents interact with the system
-- Every LLM call includes rich context: agent profile, memory, job context
+- Every LLM call includes rich context: agent identity, user identity, available tools, job context
 - Self-hosted — users own their data and infrastructure
 - The intelligence is separate from the interface — today web, tomorrow voice/wearable

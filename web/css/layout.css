@@ -224,10 +224,17 @@
 /* Input Bar */
 .input-bar {
     display: flex;
-    align-items: flex-end;
-    gap: var(--spacing-md);
-    padding: var(--spacing-lg) 0;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    padding-top: var(--spacing-lg);
     border-top: none;
+}
+
+.input-bar-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: flex-start;
+    padding-top: 1px;
 }
 
 .input-wrapper {
@@ -262,7 +269,8 @@
     color: var(--color-text-placeholder);
 }
 
-#context-send-btn {
+/* Input bar buttons (send, plus) */
+.input-bar-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -270,12 +278,25 @@
     height: var(--input-height);
     border: none;
     border-radius: var(--radius-lg);
-    background: var(--color-accent-dark);
-    color: var(--color-bg-white);
     cursor: pointer;
     transition: all var(--transition-fast);
     flex-shrink: 0;
     box-sizing: border-box;
+}
+
+.input-bar-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+#context-send-btn {
+    background: var(--color-accent-dark);
+    color: var(--color-bg-white);
 }
 
 #context-send-btn:hover:not(:disabled) {
@@ -289,14 +310,14 @@
     cursor: not-allowed;
 }
 
-#context-send-btn svg {
-    width: 18px;
-    height: 18px;
-    stroke: currentColor;
-    fill: none;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+#quick-add-btn {
+    background: #e8e8e8;
+    color: var(--color-text-muted);
+}
+
+#quick-add-btn:hover {
+    background: #ddd;
+    color: var(--color-text-primary);
 }
 
 #context-send-btn.has-notification {

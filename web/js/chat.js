@@ -564,9 +564,12 @@ contextInput.addEventListener('input', () => {
     contextInput.style.height = Math.min(contextInput.scrollHeight, 200) + 'px';
 });
 
-// Enter to send in context input
+// Enter to send in context input, Ctrl+Enter for quick add
 contextInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault();
+        quickAddFromInput();
+    } else if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendContextMessage();
     }

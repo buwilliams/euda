@@ -2,7 +2,7 @@
 Agent - Generic agent that runs based on configuration.
 
 An agent follows the four-category ontology:
-1. Identity (profile.md) - Purpose, values, voice, stable attractors
+1. Identity (identity.md) - Purpose, values, voice, stable attractors
 2. Cognition - Reasoning (prompts) + Metacognition (self-regulation)
 3. Memory - Short-term (90 days) + Long-term (permanent archive)
 4. Behavior (config.json) - Tools + Triggers + Modes
@@ -81,7 +81,7 @@ class Agent:
 
     def _load_profile(self) -> str:
         """Load agent profile from disk."""
-        profile_path = AGENTS_DIR / self.id / "profile.md"
+        profile_path = AGENTS_DIR / self.id / "identity.md"
         if profile_path.exists():
             return profile_path.read_text()
         # Fallback to old persona location for backward compatibility
@@ -89,6 +89,22 @@ class Agent:
         if persona_path.exists():
             return persona_path.read_text()
         return f"You are {self.config.get('name', self.id)}, a helpful assistant."
+
+    def _get_user_identity(self) -> str:
+        """Load the user's identity for context.
+
+        All agents serve the user, so they need to know who the user is.
+        This returns the user's identity.md content, which contains their
+        purpose, values, interests, biographical info, etc.
+        """
+        # Don't include user identity for the user agent itself
+        if self.id == "user":
+            return "(You are the user.)"
+
+        user_identity_path = AGENTS_DIR / "user" / "identity.md"
+        if user_identity_path.exists():
+            return user_identity_path.read_text()
+        return "(User identity not yet established. Learn about them through conversation.)"
 
     def _get_conversation_dir(self) -> Path:
         """Get conversation directory for this agent."""
@@ -241,10 +257,14 @@ class Agent:
         return {}
 
     def _build_system_prompt(self, voice_input: bool = False, job_context: str = None) -> str:
-        """Build the system prompt from profile and tools (grouped by type).
+        """Build the system prompt from profile, user context, and tools.
 
-        Note: Memory is NOT auto-injected.
-        Agents should use list_memory and read_long_term_memory tools when needed.
+        Includes:
+        - Agent's identity (from identity.md)
+        - User's identity (so agents know who they serve)
+        - Available tools grouped by type
+
+        Note: User memory is NOT auto-injected (use list_memory tool for specifics).
 
         Args:
             voice_input: Whether input came from voice (enables conversational response style)
@@ -271,9 +291,13 @@ class Agent:
                     tools_sections.append(f"- **{t['name']}**: {t['description']}")
         tools_text = "\n".join(tools_sections) if tools_sections else "No tools available."
 
+        # Load user identity so agents know who they serve
+        user_identity = self._get_user_identity()
+
         prompt = render_template(
             "agent/system",
             profile=self.profile,
+            user_identity=user_identity,
             tools_by_type=tools_text
         )
 
