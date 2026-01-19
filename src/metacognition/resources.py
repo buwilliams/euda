@@ -16,7 +16,6 @@ from typing import Optional
 
 from ..logger import get_logger
 from ..events import emit_ui_event
-from .config import get_global_config
 
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
@@ -97,26 +96,25 @@ class ResourceTracker:
         self._start_time = datetime.now()
         self._warned_thresholds: set = set()
 
-        # Config - uses metacognition config
-        self._config = get_global_config()
-
         # Load budget from config
         budget = self._load_budget_from_config()
         if budget is not None:
             self.set_budget(budget)
 
     def _load_budget_from_config(self) -> Optional[float]:
-        """Load budget limit from system config (llm.budget_limit)."""
+        """Load budget limit from system config (llm.budget.limit)."""
         config = _load_llm_config()
-        budget = config.get("llm", {}).get("budget_limit")
-        if budget is not None and budget > 0:
-            return float(budget)
+        budget = config.get("llm", {}).get("budget", {})
+        limit = budget.get("limit")
+        if limit is not None and limit > 0:
+            return float(limit)
         return None
 
     def _get_budget_period(self) -> str:
-        """Get the budget period from config (daily, weekly, monthly, or session)."""
-        resources_config = self._config.get_resources_config()
-        return resources_config.get("budget_period", "daily")
+        """Get the budget period from config (llm.budget.period)."""
+        config = _load_llm_config()
+        budget = config.get("llm", {}).get("budget", {})
+        return budget.get("period", "daily")
 
     def _get_period_spent(self) -> float:
         """Get total spent in the current budget period."""
@@ -499,10 +497,13 @@ class ResourceTracker:
         return "\n".join(lines)
 
     def invalidate_config(self):
-        """Invalidate cached config. Call when settings change."""
+        """Invalidate cached config and reload budget. Call when settings change."""
         global _llm_config_cache
         _llm_config_cache = None
-        self._config.invalidate()
+        # Reload budget from config
+        budget = self._load_budget_from_config()
+        if budget is not None:
+            self.set_budget(budget)
 
 
 # Global singleton instance

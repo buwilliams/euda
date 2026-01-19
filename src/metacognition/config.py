@@ -15,23 +15,8 @@ CONFIG_PATH = DATA_DIR / "system" / "config.json"
 AGENTS_DIR = DATA_DIR / "agents"
 
 # Default metacognition settings (fallback if config is missing)
+# Note: velocity (rate limiting) and resources (budget) are now in llm.* config
 DEFAULT_CONFIG = {
-    "velocity": {
-        "enabled": True,
-        "window_seconds": 60,
-        "max_calls_per_window": 30,
-        "runaway_detection": {
-            "enabled": True,
-            "baseline_window_minutes": 60,
-            "spike_multiplier": 5.0,
-            "min_baseline_calls": 5,
-            "min_spike_rate": 5,
-            "pause_cooldown_minutes": 5
-        }
-    },
-    "resources": {
-        "budget_period": "daily"
-    },
     "progress": {
         "max_tool_calls_per_iteration": 50,
         "max_repeated_tool_calls": 3,
@@ -127,16 +112,6 @@ class MetacognitionConfig:
         config = self._deep_merge(config, agent)
 
         return config
-
-    def get_velocity_config(self) -> dict:
-        """Get velocity (rate limiting) configuration."""
-        full = self.get_full_config()
-        return full.get("velocity", DEFAULT_CONFIG["velocity"])
-
-    def get_resources_config(self) -> dict:
-        """Get resources (budget/cost) configuration."""
-        full = self.get_full_config()
-        return full.get("resources", DEFAULT_CONFIG["resources"])
 
     def get_progress_config(self) -> dict:
         """Get progress awareness configuration."""

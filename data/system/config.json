@@ -3,7 +3,10 @@
   "initialized": true,
   "llm": {
     "provider": "openai",
-    "budget_limit": 10.0,
+    "budget": {
+      "limit": 10.0,
+      "period": "monthly"
+    },
     "default_pricing": {
       "input": 3.0,
       "cached_input": 0.3,
@@ -68,29 +71,16 @@
     }
   },
   "metacognition": {
-    "velocity": {
-      "enabled": true,
-      "window_seconds": 60,
-      "max_calls_per_window": 30,
-      "runaway_detection": {
-        "enabled": true,
-        "baseline_window_minutes": 60,
-        "spike_multiplier": 5.0,
-        "min_baseline_calls": 5,
-        "min_spike_rate": 10,
-        "pause_cooldown_minutes": 5
-      }
-    },
-    "resources": {
-      "budget_period": "monthly"
-    },
     "progress": {
       "max_tool_calls_per_iteration": 50,
       "max_repeated_tool_calls": 3,
       "max_no_progress_iterations": 5
     },
     "planning": {
-      "enabled_for": ["exploration", "reflection"]
+      "enabled_for": [
+        "exploration",
+        "reflection"
+      ]
     },
     "efficiency": {
       "defer_reflection_in_work_cycles": true

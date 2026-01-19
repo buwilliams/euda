@@ -170,12 +170,16 @@ def get_settings():
 
     config = _load_config()
     current_provider = get_provider()
+    budget_config = config.get("llm", {}).get("budget", {})
     return {
         "llm": {
             "provider": current_provider,
             "model": get_model(),
             "providers": get_providers_config(),
-            "budget_limit": config.get("llm", {}).get("budget_limit")
+            "budget": {
+                "limit": budget_config.get("limit"),
+                "period": budget_config.get("period", "monthly")
+            }
         },
         "speech": {
             "stt_available": supports_stt(current_provider),
@@ -187,7 +191,9 @@ def get_settings():
 
 @router.put("/settings/llm")
 def update_llm_settings(data: dict):
-    """Update LLM settings (provider, models, budget_limit)."""
+    """Update LLM settings (provider, models, budget)."""
+    from ...metacognition import get_resource_tracker
+
     config = _load_config()
 
     # Update provider if specified
@@ -202,9 +208,14 @@ def update_llm_settings(data: dict):
             if provider_id in VALID_PROVIDERS and "model" in settings:
                 config["llm"]["providers"][provider_id]["model"] = settings["model"]
 
-    # Update budget limit if specified
-    if "budget_limit" in data:
-        config["llm"]["budget_limit"] = data["budget_limit"]
+    # Update budget if specified (nested structure: budget.limit, budget.period)
+    if "budget" in data:
+        if "budget" not in config["llm"]:
+            config["llm"]["budget"] = {}
+        if "limit" in data["budget"]:
+            config["llm"]["budget"]["limit"] = data["budget"]["limit"]
+        if "period" in data["budget"]:
+            config["llm"]["budget"]["period"] = data["budget"]["period"]
 
     # Save config
     with open(CONFIG_PATH, "w") as f:
@@ -216,6 +227,9 @@ def update_llm_settings(data: dict):
     # Also invalidate speech client since it depends on provider
     from ...speech import invalidate_speech_client
     invalidate_speech_client()
+
+    # Invalidate resource tracker cache so budget changes take effect
+    get_resource_tracker().invalidate_config()
 
     return {"success": True, "llm": config["llm"]}
 

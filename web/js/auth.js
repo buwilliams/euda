@@ -192,8 +192,8 @@ function renderSettings() {
 
     // Set budget limit
     const budgetInput = document.getElementById('budget-limit');
-    if (budgetInput && settingsData.llm?.budget_limit !== undefined) {
-        budgetInput.value = settingsData.llm.budget_limit || '';
+    if (budgetInput && settingsData.llm?.budget?.limit !== undefined) {
+        budgetInput.value = settingsData.llm.budget.limit || '';
     }
 
     // Render schedules
@@ -240,7 +240,7 @@ async function handleBudgetChange() {
         const response = await fetch('/api/settings/llm', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ budget_limit: value })
+            body: JSON.stringify({ budget: { limit: value } })
         });
 
         if (response.ok) {
