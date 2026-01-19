@@ -48,6 +48,7 @@
     flex-shrink: 0;
     margin: 0;
     margin-bottom: var(--spacing-lg);
+    padding-left: 0;
 }
 
 .history-content {
