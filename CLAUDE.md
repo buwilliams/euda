@@ -25,15 +25,15 @@ Euno is a personal intelligence that learns to anticipate you: doing tasks for y
    OPENAI_API_KEY=your-actual-key
    ```
 
-3. Install dependencies:
+3. Install dependencies (requires [uv](https://docs.astral.sh/uv/)):
    ```
-   pip install -r requirements.txt
+   uv sync
    ```
 
 4. Run Euno:
    ```
-   python main.py start    # Web server + agents (run in background in Claude Code)
-   python main.py chat     # Interactive chat with an agent
+   uv run euno start    # Web server + agents (run in background in Claude Code)
+   uv run euno chat     # Interactive chat with an agent
    ```
 
 **Important for Claude Code:** When starting Euno during development, run it as a background task so the conversation can continue while the server runs.
@@ -43,24 +43,24 @@ Euno is a personal intelligence that learns to anticipate you: doing tasks for y
 Use the dev CLI for testing agent internals:
 
 ```bash
-python main.py dev <command> [args] [--json]
+uv run euno dev <command> [args] [--json]
 
 # Inspect agent state
-python main.py dev memory chat          # View agent's memory
-python main.py dev identity chat        # View agent's identity
-python main.py dev prompt chat system   # View system prompt
+uv run euno dev memory chat          # View agent's memory
+uv run euno dev identity chat        # View agent's identity
+uv run euno dev prompt chat system   # View system prompt
 
 # Test execution
-python main.py dev job chat "Test task" --dry-run   # See prompt without executing
-python main.py dev tool list_jobs '{"status": "todo"}'  # Execute tool directly
+uv run euno dev job chat "Test task" --dry-run   # See prompt without executing
+uv run euno dev tool list_jobs '{"status": "todo"}'  # Execute tool directly
 
 # Trigger behaviors manually
-python main.py dev reflect chat --consolidate   # Run only consolidate phase
-python main.py dev explore chat                 # Trigger exploration
+uv run euno dev reflect chat --consolidate   # Run only consolidate phase
+uv run euno dev explore chat                 # Trigger exploration
 
 # Live monitoring
-python main.py dev watch                        # Stream all system events
-python main.py dev trace <job_id>               # Show execution trace
+uv run euno dev watch                        # Stream all system events
+uv run euno dev trace <job_id>               # Show execution trace
 ```
 
 Use `--json` for machine-readable output. See `spec/7_dev_cli.md` for full documentation.

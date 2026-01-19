@@ -28,6 +28,16 @@ DB_PATH = JOBS_DIR / "db.sqlite"
 _local = threading.local()
 
 
+def _clear_connection():
+    """Clear thread-local connection. Call after fresh-start/restore."""
+    if hasattr(_local, 'connection') and _local.connection is not None:
+        try:
+            _local.connection.close()
+        except Exception:
+            pass
+        _local.connection = None
+
+
 def _get_connection() -> sqlite3.Connection:
     """Get a thread-local database connection."""
     if not hasattr(_local, 'connection') or _local.connection is None:
