@@ -327,11 +327,11 @@ def _perform_fresh_start() -> dict:
                     agents_to_preserve[agent_id]["config"] = config_file.read_text()
                     preserved.append(f"agents/{agent_id}/config.json")
 
-                # Preserve identity.md.example (template)
-                profile_example = agent_dir / "identity.md.example"
-                if profile_example.exists():
-                    agents_to_preserve[agent_id]["profile_example"] = profile_example.read_text()
-                    preserved.append(f"agents/{agent_id}/identity.md.example")
+                # Preserve identity.template.md (template)
+                identity_template = agent_dir / "identity.template.md"
+                if identity_template.exists():
+                    agents_to_preserve[agent_id]["identity_template"] = identity_template.read_text()
+                    preserved.append(f"agents/{agent_id}/identity.template.md")
 
     # Preserve system config
     system_config = None
@@ -370,10 +370,10 @@ def _perform_fresh_start() -> dict:
 
             if "config" in files:
                 (agent_dir / "config.json").write_text(files["config"])
-            if "profile_example" in files:
-                (agent_dir / "identity.md.example").write_text(files["profile_example"])
-                # Also create identity.md from example for fresh start
-                (agent_dir / "identity.md").write_text(files["profile_example"])
+            if "identity_template" in files:
+                (agent_dir / "identity.template.md").write_text(files["identity_template"])
+                # Also create identity.md from template for fresh start
+                (agent_dir / "identity.md").write_text(files["identity_template"])
 
     # Restore system config
     if system_config:

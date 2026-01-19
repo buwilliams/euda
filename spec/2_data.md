@@ -22,7 +22,7 @@ Directory structure:
   - Evolves over time based on long-term memory
   - For AI agents: purpose, behavioral rules, voice
   - For user: biographical info, wants/fears, stable attractors
-  - Template: `identity.md.example` — preserved during Fresh Start for reinitialization
+  - Template: `identity.template.md` — preserved during Fresh Start for reinitialization
 - **Memory:**
   - Short-term: `data/agents/{id}/memory/short-term.jsonl` (90-day rolling)
   - Long-term: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md` (year-based archive)

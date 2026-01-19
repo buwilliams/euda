@@ -544,7 +544,7 @@ def cmd_fresh_start(args):
     print("  - Non-core agents (anything except chat, user, worker)")
     print()
     print("This will RESET:")
-    print("  - Core agent identities (from identity.md.example templates)")
+    print("  - Core agent identities (from identity.template.md templates)")
     print()
     print("This will KEEP:")
     print("  - Agent configurations")
@@ -626,7 +626,7 @@ def cmd_fresh_start(args):
                         deleted.append(f"agents/{agent_id}/uploads/")
 
                     # Reset identity from template if available
-                    identity_template = agent_dir / "identity.md.example"
+                    identity_template = agent_dir / "identity.template.md"
                     identity_file = agent_dir / "identity.md"
                     if identity_template.exists():
                         template_content = identity_template.read_text()

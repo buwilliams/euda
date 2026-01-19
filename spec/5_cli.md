@@ -55,6 +55,6 @@ Rules for the command-line interface.
   - Password (if set)
   - Non-core agents (anything except chat, user, worker)
   - User uploads
-- Resets: Core agent identities from `identity.md.example` templates
+- Resets: Core agent identities from `identity.template.md` templates
 - Keeps: Agent configurations, system configuration
 - Shows summary of deleted and reset items
