@@ -631,3 +631,194 @@ Call FINAL() with the JSON list of detected trajectories."""
                 pass
 
         return []
+
+    def extract_recent(self, memory: dict, days: int = 90) -> RLMResult:
+        """
+        Extract currently active/relevant items from long-term memory.
+
+        This derives a "short-term view" from long-term memory by finding
+        items that are currently active: recent goals, ongoing concerns,
+        important people, upcoming events, etc.
+
+        Args:
+            memory: Memory data structure from memory_loader
+            days: How many days back to consider "recent" (default 90)
+
+        Returns:
+            RLMResult with JSON list of active items:
+            [
+                {"type": "goal", "description": "...", "status": "active"},
+                {"type": "concern", "description": "...", "urgency": "high"},
+                {"type": "person", "name": "...", "relationship": "..."},
+                {"type": "event", "description": "...", "date": "YYYY-MM-DD"}
+            ]
+        """
+        task_type = f"""Extract currently active/relevant items from recent memory.
+
+Time window: Last {days} days
+
+Find items that are CURRENTLY relevant - not historical facts, but active concerns:
+
+1. **Active Goals**: Goals being worked on or recently mentioned
+2. **Current Concerns**: Worries or issues that are unresolved
+3. **Important People**: People mentioned recently (relationships, collaborators)
+4. **Upcoming Events**: Scheduled events, deadlines, or anticipated happenings
+5. **Active Ideas**: Ideas being explored or considered
+
+## Output Format
+Return a JSON array of active items:
+```json
+[
+    {{"type": "goal", "description": "...", "status": "active|progressing|stalled"}},
+    {{"type": "concern", "description": "...", "urgency": "high|medium|low"}},
+    {{"type": "person", "name": "...", "context": "..."}},
+    {{"type": "event", "description": "...", "date": "YYYY-MM-DD", "nature": "deadline|appointment|milestone"}},
+    {{"type": "idea", "description": "...", "stage": "exploring|developing|implementing"}}
+]
+```
+
+## Strategy
+1. Scan recent entries for mentions of goals, plans, concerns
+2. Use llm_query() to determine if items are still active
+3. Filter out resolved items or historical mentions
+4. Return only items relevant to current context
+
+Call FINAL() with the JSON array when done."""
+
+        return self._run_session(f"Extract active items from last {days} days", memory, task_type)
+
+    def extract_identity(self, memory: dict, current_identity: str) -> RLMResult:
+        """
+        Analyze memory for identity updates not yet captured.
+
+        Compares memory patterns against the current identity document
+        and identifies NEW patterns, learnings, or changes that should
+        be incorporated into the identity.
+
+        Args:
+            memory: Memory data structure from memory_loader
+            current_identity: Current identity.md content
+
+        Returns:
+            RLMResult with structured identity updates:
+            {
+                "sections": {
+                    "stable_attractors": ["new attractor 1", ...],
+                    "interests": ["emerging interest", ...],
+                    "notable_events": ["significant event", ...],
+                    ...
+                },
+                "reasoning": "Why these updates are warranted"
+            }
+        """
+        # Truncate identity if too long for context
+        identity_preview = current_identity[:4000] if len(current_identity) > 4000 else current_identity
+
+        task_type = f"""Analyze memory for identity updates not yet in the current identity document.
+
+## Current Identity (for reference)
+```
+{identity_preview}
+```
+
+## Your Task
+Compare recent memory against this identity and find:
+
+1. **NEW patterns** not reflected in identity - behaviors, preferences, values that have emerged
+2. **Changed priorities** - shifts in focus or interests
+3. **Notable events** - significant happenings that shaped who this person is
+4. **New stable attractors** - topics/activities they consistently return to
+5. **Emerging interests** - new areas of curiosity or engagement
+
+## Important Guidelines
+- Only suggest ADDITIONS, not removals
+- Focus on patterns with EVIDENCE in memory (multiple mentions, sustained over time)
+- Don't repeat what's already in the identity
+- Be specific and actionable
+
+## Output Format
+Return a JSON object with section updates:
+```json
+{{
+    "sections": {{
+        "stable_attractors": ["specific new attractor with evidence"],
+        "interests": ["emerging interest seen in memory"],
+        "notable_events": ["significant event: brief description"],
+        "wants_and_fears": ["newly apparent want or fear"],
+        "biographical_information": ["factual information learned"]
+    }},
+    "reasoning": "Brief explanation of why these updates are warranted based on memory evidence"
+}}
+```
+
+Only include sections that have genuine updates. Empty sections can be omitted.
+
+## Strategy
+1. First scan memory for recurring themes, topics, and patterns
+2. Compare against current identity to find what's NEW
+3. Use llm_query() to validate patterns have sufficient evidence
+4. Generate specific, evidence-backed updates
+
+Call FINAL() with the JSON object when done."""
+
+        return self._run_session("Extract identity updates from memory", memory, task_type)
+
+    def process_conversation(self, conversation: str, context: str = "") -> RLMResult:
+        """
+        Analyze a conversation for items worth preserving in long-term memory.
+
+        This processes a single conversation exchange to determine if
+        anything significant was mentioned that should be tracked.
+
+        Args:
+            conversation: The conversation text to analyze
+            context: Optional context (user identity, recent memory items)
+
+        Returns:
+            RLMResult with items to remember:
+            [
+                {"type": "goal", "description": "...", "significance": "..."},
+                ...
+            ]
+        """
+        # Build a minimal memory structure for the REPL
+        # (This method doesn't use full memory - just the conversation)
+        minimal_memory = {
+            "entries": [{"date": "today", "content": conversation}],
+            "by_date": {"today": conversation},
+            "metadata": {"total_entries": 1, "total_chars": len(conversation)}
+        }
+
+        context_section = f"\n## Context\n{context}" if context else ""
+
+        task_type = f"""Analyze this conversation for significant items worth remembering.
+{context_section}
+
+## Item Types to Look For
+- **goal**: Stated objectives, plans, or aspirations
+- **concern**: Worries, problems, or challenges mentioned
+- **person**: People mentioned (names, relationships)
+- **idea**: Concepts being explored or considered
+- **learning**: New knowledge or insights gained
+- **event**: Upcoming or past events mentioned (with dates if given)
+
+## Output Format
+Return a JSON array of items (or empty array if nothing significant):
+```json
+[
+    {{"type": "goal", "description": "...", "date_expected": "YYYY-MM-DD or null"}},
+    {{"type": "concern", "description": "..."}},
+    {{"type": "person", "name": "...", "context": "..."}},
+    {{"type": "event", "description": "...", "date": "YYYY-MM-DD"}}
+]
+```
+
+## Guidelines
+- Only extract SIGNIFICANT items worth tracking over time
+- Skip routine conversation filler
+- Be specific in descriptions
+- Include dates when explicitly mentioned
+
+Call FINAL() with the JSON array (can be empty [])."""
+
+        return self._run_session("Extract significant items from conversation", minimal_memory, task_type)

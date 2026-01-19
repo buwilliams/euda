@@ -1,9 +1,16 @@
 """
-Store command - Import files into long-term memory using RLM.
+Store command - Import files into long-term memory via job-based processing.
+
+Architecture:
+- Files are loaded and checked for duplicates via job tags
+- A Store:ingest job is created with files as assets
+- The chat agent processes the job using RLM
+- Job completion marks the content as processed (no manifest file needed)
 """
 
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import List
 
@@ -11,14 +18,14 @@ from ..formatters import print_error, print_success, print_info
 
 
 def cmd_store(args: List[str], json_mode: bool = False):
-    """Import files into long-term memory using RLM processing.
+    """Import files into long-term memory via job-based processing.
 
     Usage:
-      euno store [path]              Process files with RLM
+      euno store [path]              Create job to process files with RLM
       euno store                     Show help
       euno store --force             Reprocess duplicates
       euno store --dry-run           Show what would be processed
-      euno store --clear-manifest    Clear processing history
+      euno store --clear-manifest    Clear processing history (legacy - clears old manifest)
     """
     # Parse flags
     force = "--force" in args
@@ -26,14 +33,14 @@ def cmd_store(args: List[str], json_mode: bool = False):
     clear_manifest = "--clear-manifest" in args
     args = [a for a in args if not a.startswith("--")]
 
-    # Handle clear manifest
+    # Handle clear manifest (legacy support)
     if clear_manifest:
         from ...store.dedup import clear_manifest as do_clear
         count = do_clear()
         if json_mode:
             print(json.dumps({"cleared": count}))
         else:
-            print_success(f"Cleared {count} entries from processing manifest", json_mode)
+            print_success(f"Cleared {count} entries from legacy manifest", json_mode)
         return
 
     # Check for path argument
@@ -48,8 +55,8 @@ def cmd_store(args: List[str], json_mode: bool = False):
         sys.exit(1)
 
     # Load files
-    from ...store.loader import load_files, files_to_rlm_format
-    from ...store.dedup import is_duplicate, record_processed, compute_hash
+    from ...store.loader import load_files
+    from ...store.dedup import compute_hash
 
     if not json_mode:
         print_info(f"Loading files from: {path}", json_mode)
@@ -72,15 +79,16 @@ def cmd_store(args: List[str], json_mode: bool = False):
                 print(f"  Skipped {len(metadata['skipped']['too_large'])} files (too large)")
         sys.exit(1)
 
-    # Check for duplicates
+    # Check for duplicates via job tags
     to_process = []
     duplicates = []
 
     for item in items:
-        if not force and is_duplicate(item.content):
+        content_hash = compute_hash(item.content)
+        if not force and _is_already_processed(content_hash):
             duplicates.append(item.name)
         else:
-            to_process.append(item)
+            to_process.append((item, content_hash))
 
     if not json_mode:
         print_info(f"Found {len(items)} files, {len(to_process)} to process", json_mode)
@@ -102,94 +110,119 @@ def cmd_store(args: List[str], json_mode: bool = False):
         if json_mode:
             print(json.dumps({
                 "dry_run": True,
-                "would_process": [item.name for item in to_process],
+                "would_process": [item.name for item, _ in to_process],
                 "duplicates": duplicates,
-                "total_chars": sum(len(item.content) for item in to_process)
+                "total_chars": sum(len(item.content) for item, _ in to_process)
             }))
         else:
             print()
-            print("Would process:")
-            for item in to_process:
+            print("Would create job to process:")
+            for item, content_hash in to_process:
                 size_kb = len(item.content) / 1024
                 print(f"  - {item.name} ({size_kb:.1f} KB)")
             print()
             print(f"Total: {len(to_process)} files")
         return
 
-    # Process with RLM
+    # Create job with files as assets
     if not json_mode:
-        print_info("Processing with RLM...", json_mode)
+        print_info("Creating store job...", json_mode)
 
-    from ...store.loader import files_to_rlm_format
-    from ...store.rlm_processor import process_with_rlm
-    from ...store.writer import write_to_memory
-
-    files_data = files_to_rlm_format(to_process)
-    result = process_with_rlm(files_data)
-
-    if result.error:
-        print_error(f"RLM processing failed: {result.error}", json_mode)
-        sys.exit(1)
-
-    if not json_mode:
-        print_info(f"RLM completed in {result.iterations} iterations, {result.sub_calls} sub-calls", json_mode)
-
-    # Write to memory
-    if not json_mode:
-        print_info("Writing to long-term memory...", json_mode)
-
-    write_result = write_to_memory(result.results)
-
-    # Record processed files
-    for res in result.results:
-        if not res.error:
-            # Find original item to get content for hashing
-            for item in to_process:
-                if item.name == res.file:
-                    record_processed(
-                        path=item.path,
-                        content=item.content,
-                        date=res.date,
-                        date_source=res.date_source
-                    )
-                    break
+    job = _create_store_job(to_process)
 
     # Output results
     if json_mode:
         print(json.dumps({
-            "status": "completed",
-            "written": write_result["written"],
-            "errors": write_result["errors"],
-            "total_written": write_result["total_written"],
-            "rlm_iterations": result.iterations,
-            "rlm_sub_calls": result.sub_calls
+            "status": "job_created",
+            "job_id": job["id"],
+            "job_name": job["name"],
+            "files_count": len(to_process),
+            "duplicates_skipped": len(duplicates)
         }))
     else:
         print()
-        if write_result["written"]:
-            print_success(f"Imported {write_result['total_written']} files to long-term memory", json_mode)
-            print()
-            for w in write_result["written"]:
-                print(f"  {w['file']}")
-                print(f"    -> {w['date']} (from {w['date_source']})")
+        print_success(f"Created store job: {job['name']}", json_mode)
+        print(f"  Job ID: {job['id']}")
+        print(f"  Files: {len(to_process)}")
+        print()
+        print("Files attached:")
+        for item, _ in to_process:
+            print(f"  - {item.name}")
+        print()
+        print("The chat agent will process this job and import files to long-term memory.")
+        print("Run `uv run euno start` to trigger processing.")
 
-        if write_result["errors"]:
-            print()
-            print_error(f"Failed to import {len(write_result['errors'])} files:", json_mode)
-            for e in write_result["errors"]:
-                print(f"  {e['file']}: {e['error']}")
+
+def _is_already_processed(content_hash: str) -> bool:
+    """Check if content has already been processed via job tags.
+
+    Args:
+        content_hash: SHA-256 hash of the content
+
+    Returns:
+        True if a completed job exists with this hash tag
+    """
+    from ...tools.data.jobs import list_jobs
+
+    # Check for completed jobs with this hash tag
+    tag = f"store:hash:{content_hash}"
+    jobs = list_jobs(status="completed", tag=tag)
+    return len(jobs) > 0
+
+
+def _create_store_job(items_with_hashes: List[tuple]) -> dict:
+    """Create a store job with files as assets.
+
+    Args:
+        items_with_hashes: List of (FileItem, content_hash) tuples
+
+    Returns:
+        Created job dict
+    """
+    from ...tools.data.jobs import create_job, get_system_container
+    from ...tools.data.assets import write_asset
+
+    timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
+    # Collect hash tags for deduplication
+    hash_tags = [f"store:hash:{content_hash}" for _, content_hash in items_with_hashes]
+
+    # Create the job
+    system_container = get_system_container()
+    job = create_job(
+        name=f"Store:ingest:{timestamp}",
+        description=f"Import {len(items_with_hashes)} file(s) into long-term memory.\n\n"
+                    f"Process each attached file:\n"
+                    f"1. Extract date from content or filename\n"
+                    f"2. Write content to long-term memory at that date\n"
+                    f"3. Complete job when done",
+        parent_id=system_container["id"] if system_container else None,
+        assignees=["chat"],
+        tags=["store:ingest", "trigger:store"] + hash_tags,
+        created_by="user"
+    )
+
+    # Attach files as assets
+    for item, _ in items_with_hashes:
+        # Use the original filename
+        filename = item.name
+
+        # Write the content as an asset
+        write_asset(job["id"], filename, item.content)
+
+    return job
 
 
 def print_store_help():
     """Print help for store command."""
     print("""
-Store Command - Import files into long-term memory using RLM
+Store Command - Import files into long-term memory
 
 Usage:
-  euno store <path>              Process files at path
+  euno store <path>              Create job to process files
   euno store <path> --dry-run    Show what would be processed
   euno store <path> --force      Reprocess already-imported files
-  euno store --clear-manifest    Clear processing history
+  euno store --clear-manifest    Clear legacy processing history
 
 Examples:
   euno store ~/journal/          Import all journal files
@@ -201,16 +234,13 @@ Supported file types:
   .txt, .md, .markdown, .json, .yaml, .yml, .csv, .log, .rst, .org
 
 How it works:
-  1. Files are loaded and checked for duplicates
-  2. RLM (Recursive Language Model) analyzes each file
-  3. Dates are extracted from content, filename, or file metadata
-  4. Content is written to long-term memory at the appropriate date
+  1. Files are loaded and checked for duplicates (via job tags)
+  2. A Store:ingest job is created with files as assets
+  3. The chat agent processes the job, extracting dates and writing to memory
+  4. Job completion marks files as processed (no separate manifest)
 
-Date extraction priority:
-  1. Dates found in file content (headers, metadata)
-  2. Dates parsed from filename (2024-01-15, 20240115, etc.)
-  3. File modification time (fallback)
-
-The processing manifest tracks imported files to avoid duplicates.
-Use --force to reimport files, or --clear-manifest to reset history.
+Deduplication:
+  Files are identified by content hash (SHA-256).
+  Completed jobs with matching hash tags prevent reprocessing.
+  Use --force to reimport files that were already processed.
 """)

@@ -1,5 +1,15 @@
 """
 Deduplication - Track processed files to avoid reprocessing.
+
+LEGACY: This module is kept for backwards compatibility.
+The new architecture uses job tags for deduplication:
+- Each processed file gets a tag: store:hash:{sha256}
+- Completed jobs with matching hash tags indicate processed files
+- See cli/commands/store.py for the new approach
+
+The compute_hash() function is still used by the new system.
+The manifest-based functions (is_duplicate, record_processed, etc.)
+are deprecated but kept for --clear-manifest support.
 """
 
 import hashlib

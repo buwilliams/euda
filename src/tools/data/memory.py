@@ -7,6 +7,11 @@ Every agent (including user) has:
 
 Long-term memory access is mediated by RLM (Recursive Language Model) which allows
 semantic search and pattern analysis without loading full history into context.
+
+Architecture:
+- Long-term memory is the PRIMARY store (source of truth)
+- Short-term memory is a DERIVED view from long-term (recent 90 days, cached)
+- RLM methods extract_recent() and extract_identity() derive views from long-term
 """
 
 import json
@@ -24,6 +29,56 @@ AGENTS_DIR = DATA_DIR / "agents"
 
 VALID_TYPES = {"person", "place", "thing", "goal", "concern", "idea", "learning", "behavior"}
 VALIDITY_DAYS = 90  # 3 months
+
+# =============================================================================
+# Caching for RLM-derived views
+# =============================================================================
+
+# Cache for extract_recent() results - keyed by agent_id
+_recent_items_cache: dict = {}
+_recent_items_cache_time: dict = {}
+RECENT_ITEMS_CACHE_TTL_MINUTES = 15  # Cache for 15 minutes
+
+
+def _get_cached_recent_items(agent_id: str) -> Optional[List[dict]]:
+    """Get cached recent items if still valid.
+
+    Returns None if cache is stale or doesn't exist.
+    """
+    if agent_id not in _recent_items_cache:
+        return None
+
+    cache_time = _recent_items_cache_time.get(agent_id)
+    if not cache_time:
+        return None
+
+    age_minutes = (datetime.now() - cache_time).total_seconds() / 60
+    if age_minutes > RECENT_ITEMS_CACHE_TTL_MINUTES:
+        # Cache is stale
+        return None
+
+    return _recent_items_cache.get(agent_id)
+
+
+def _set_cached_recent_items(agent_id: str, items: List[dict]):
+    """Cache recent items for an agent."""
+    _recent_items_cache[agent_id] = items
+    _recent_items_cache_time[agent_id] = datetime.now()
+
+
+def invalidate_recent_items_cache(agent_id: str = None):
+    """Invalidate cached recent items.
+
+    Args:
+        agent_id: Specific agent to invalidate, or None for all
+    """
+    global _recent_items_cache, _recent_items_cache_time
+    if agent_id:
+        _recent_items_cache.pop(agent_id, None)
+        _recent_items_cache_time.pop(agent_id, None)
+    else:
+        _recent_items_cache = {}
+        _recent_items_cache_time = {}
 
 
 # =============================================================================
@@ -252,6 +307,9 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
 
     memory_path.write_text(new_content)
 
+    # Invalidate RLM cache since long-term memory has changed
+    invalidate_recent_items_cache(agent_id)
+
     # Create trigger jobs for agents subscribed to long-term memory updates
     if agent_id == "user":
         from .jobs import create_job, list_jobs, get_system_container
@@ -451,12 +509,114 @@ def analyze_memory(
 # Helper for system prompts (not a tool)
 # =============================================================================
 
-def get_memory_for_prompt(agent_id: str = "user") -> str:
-    """Get formatted short-term memory items for inclusion in system prompt.
+def get_recent_items_via_rlm(agent_id: str = "user", days: int = 90, use_cache: bool = True) -> List[dict]:
+    """Get recent active items from long-term memory via RLM.
+
+    This is the RLM-based approach to deriving a "short-term view" from long-term memory.
+    Results are cached to avoid repeated LLM calls.
+
+    Args:
+        agent_id: Agent ID to query
+        days: How far back to look (default 90)
+        use_cache: Whether to use cached results (default True)
+
+    Returns:
+        List of active items with type, description, and metadata
+    """
+    # Check cache first
+    if use_cache:
+        cached = _get_cached_recent_items(agent_id)
+        if cached is not None:
+            return cached
+
+    # Load memory for RLM
+    memory = load_long_term_memory(agent_id=agent_id, days=days)
+
+    if memory["metadata"]["total_entries"] == 0:
+        # No long-term memory - fall back to short-term entries
+        return list_memory(agent_id)
+
+    # Use RLM to extract active items
+    rlm = RLMClient(agent_id=agent_id)
+    result = rlm.extract_recent(memory, days=days)
+
+    if result.error:
+        # On error, fall back to short-term entries
+        return list_memory(agent_id)
+
+    # Parse the JSON result
+    items = rlm._parse_json_findings(result.findings)
+
+    # Cache the results
+    if use_cache:
+        _set_cached_recent_items(agent_id, items)
+
+    return items
+
+
+def format_recent_items_for_prompt(items: List[dict]) -> str:
+    """Format recent items as a string for system prompt.
+
+    Args:
+        items: List of items from get_recent_items_via_rlm() or list_memory()
+
+    Returns:
+        Formatted string for inclusion in prompt
+    """
+    if not items:
+        return ""
+
+    lines = ["## Memory", "", "Items that may be relevant:", ""]
+
+    # Sort by type for readability
+    items_by_type = {}
+    for item in items:
+        t = item.get('type', 'idea')
+        if t not in items_by_type:
+            items_by_type[t] = []
+        items_by_type[t].append(item)
+
+    for item_type in sorted(items_by_type.keys()):
+        for item in items_by_type[item_type]:
+            # Handle different formats (RLM vs short-term)
+            desc = item.get('description') or item.get('short_description', '')
+            status = item.get('status') or item.get('urgency') or item.get('stage', '')
+
+            # Build metadata string
+            meta_parts = []
+            if item.get('date_mentioned'):
+                meta_parts.append(f"mentioned {item['date_mentioned']}")
+            if item.get('date_expected') or item.get('date'):
+                date_val = item.get('date_expected') or item.get('date')
+                meta_parts.append(f"expected {date_val}")
+            if status:
+                meta_parts.append(status)
+
+            meta_str = f" ({', '.join(meta_parts)})" if meta_parts else ""
+            lines.append(f"- **{item_type}**: {desc}{meta_str}")
+
+    return "\n".join(lines)
+
+
+def get_memory_for_prompt(agent_id: str = "user", use_rlm: bool = False) -> str:
+    """Get formatted memory items for inclusion in system prompt.
 
     This is called by the Agent class when building system prompts.
     Returns empty string if no items.
+
+    Args:
+        agent_id: Agent ID to query
+        use_rlm: If True, use RLM extract_recent() (slower but more intelligent).
+                 If False, use short-term memory file (faster, default for now).
+
+    Returns:
+        Formatted string for prompt inclusion
     """
+    if use_rlm:
+        items = get_recent_items_via_rlm(agent_id)
+        return format_recent_items_for_prompt(items)
+
+    # Original short-term memory approach
     entries = list_memory(agent_id)
     if not entries:
         return ""
