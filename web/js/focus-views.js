@@ -1310,17 +1310,31 @@ function renderLongTermMemoryDetailView(agentId, date) {
 // ============== Monitoring View ==============
 
 let monitoringCache = {};
+let monitoringPagination = {};  // { agentId: { offset: 0, limit: 20 } }
+let monitoringLoading = {};     // { agentId: true } - prevents duplicate requests
 
 function renderMonitoringView(agentId) {
     const agentData = agentDataCache[agentId];
     const displayName = agentData?.config?.name || agentId;
 
-    // Check cache
+    // Initialize pagination state if not set
+    if (!monitoringPagination[agentId]) {
+        monitoringPagination[agentId] = { offset: 0, limit: 20 };
+    }
+    const { offset, limit } = monitoringPagination[agentId];
+
+    // Check cache - only use cache if offset matches
     const cached = monitoringCache[agentId];
-    if (!cached) {
-        loadAgentMonitoring(agentId).then(data => {
-            monitoringCache[agentId] = data || { stats: {}, recent_prompts: [] };
+    const cacheValid = cached && cached.pagination?.offset === offset;
+
+    if (!cacheValid && !monitoringLoading[agentId]) {
+        monitoringLoading[agentId] = true;
+        loadAgentMonitoring(agentId, offset, limit).then(data => {
+            monitoringCache[agentId] = data || { stats: {}, prompts: [], pagination: { offset: 0, limit: 20, total: 0, has_more: false } };
+            monitoringLoading[agentId] = false;
             renderFocusTab();
+        }).catch(() => {
+            monitoringLoading[agentId] = false;
         });
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -1336,10 +1350,19 @@ function renderMonitoringView(agentId) {
         `;
     }
 
-    const { stats, recent_prompts } = cached;
+    // Support both old (recent_prompts) and new (prompts) format
+    const { stats, prompts, recent_prompts, pagination } = cached;
+    const promptsList = prompts || recent_prompts || [];
+    const paginationInfo = pagination || { offset: 0, limit: 20, total: promptsList.length, has_more: false };
 
     // Get active execution progress HTML if any
     const progressHtml = getActiveExecutionHtml(agentId);
+
+    // Calculate pagination display info
+    const currentPage = Math.floor(paginationInfo.offset / paginationInfo.limit) + 1;
+    const totalPages = Math.ceil(paginationInfo.total / paginationInfo.limit);
+    const hasPrev = paginationInfo.offset > 0;
+    const hasNext = paginationInfo.has_more;
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -1374,12 +1397,12 @@ function renderMonitoringView(agentId) {
 
             <!-- Recent Prompts Header -->
             <div class="job-section">
-                <div class="job-section-header">Recent Prompts</div>
+                <div class="job-section-header">Recent Prompts${paginationInfo.total > 0 ? ` (${paginationInfo.total} total)` : ''}</div>
             </div>
 
             <!-- Prompts List -->
-            ${recent_prompts.length === 0 ? '<div class="focus-empty">No recent prompts</div>' :
-              recent_prompts.map((p, index) => `
+            ${promptsList.length === 0 ? '<div class="focus-empty">No recent prompts</div>' :
+              promptsList.map((p, index) => `
                 <div class="prompt-list-item" onclick="navigateFocus('prompt-${agentId}-${index}')">
                     <span class="prompt-time">${formatPromptTime(p.timestamp)}</span>
                     <span class="prompt-tokens">${p.input_tokens}/${p.output_tokens}</span>
@@ -1388,18 +1411,52 @@ function renderMonitoringView(agentId) {
                 </div>
               `).join('')
             }
+
+            <!-- Pagination Controls -->
+            ${totalPages > 1 ? `
+                <div class="memory-pagination" style="margin-top: var(--spacing-md); padding-top: var(--spacing-md); border-top: 1px solid var(--color-border-light); border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+                    <button class="memory-page-btn" onclick="monitoringPagePrev('${agentId}')" ${!hasPrev ? 'disabled' : ''}>Newer</button>
+                    <span class="memory-page-info">Page ${currentPage} of ${totalPages}</span>
+                    <button class="memory-page-btn" onclick="monitoringPageNext('${agentId}')" ${!hasNext ? 'disabled' : ''}>Older</button>
+                </div>
+            ` : ''}
         </div>
     `;
+}
+
+// Pagination functions for monitoring view
+function monitoringPagePrev(agentId) {
+    if (!monitoringPagination[agentId]) return;
+    const { offset, limit } = monitoringPagination[agentId];
+    const newOffset = Math.max(0, offset - limit);
+    monitoringPagination[agentId].offset = newOffset;
+    delete monitoringCache[agentId];  // Clear cache to force reload
+    delete monitoringLoading[agentId];  // Clear loading flag
+    renderFocusTab();
+}
+
+function monitoringPageNext(agentId) {
+    if (!monitoringPagination[agentId]) return;
+    const cached = monitoringCache[agentId];
+    if (!cached?.pagination?.has_more) return;
+    const { offset, limit } = monitoringPagination[agentId];
+    monitoringPagination[agentId].offset = offset + limit;
+    delete monitoringCache[agentId];  // Clear cache to force reload
+    delete monitoringLoading[agentId];  // Clear loading flag
+    renderFocusTab();
 }
 
 // ============== Prompt Detail View ==============
 
 function renderPromptDetailView(agentId, promptIndex) {
     const cached = monitoringCache[agentId];
-    if (!cached || !cached.recent_prompts) {
+    // Support both old (recent_prompts) and new (prompts) format
+    const promptsList = cached?.prompts || cached?.recent_prompts;
+    if (!cached || !promptsList) {
         // Need to load monitoring data first
-        loadAgentMonitoring(agentId).then(data => {
-            monitoringCache[agentId] = data || { stats: {}, recent_prompts: [] };
+        const pagination = monitoringPagination[agentId] || { offset: 0, limit: 20 };
+        loadAgentMonitoring(agentId, pagination.offset, pagination.limit).then(data => {
+            monitoringCache[agentId] = data || { stats: {}, prompts: [], pagination: { offset: 0, limit: 20, total: 0, has_more: false } };
             renderFocusTab();
         });
         return `
@@ -1416,7 +1473,7 @@ function renderPromptDetailView(agentId, promptIndex) {
         `;
     }
 
-    const prompt = cached.recent_prompts[parseInt(promptIndex)];
+    const prompt = promptsList[parseInt(promptIndex)];
     if (!prompt) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -1454,9 +1511,25 @@ function renderPromptDetailView(agentId, promptIndex) {
         if (typeof response === 'string') {
             return marked.parse(response);
         }
-        // Handle structured response (tool calls, etc.)
+        // Handle structured response with content array
         if (response && typeof response === 'object') {
-            if (response.content) {
+            if (Array.isArray(response.content)) {
+                // New format: content is an array of blocks
+                return response.content.map(block => {
+                    if (block.type === 'text') {
+                        return `<div class="response-text">${marked.parse(block.text || '')}</div>`;
+                    } else if (block.type === 'tool_use') {
+                        return `
+                            <div class="response-tool-use">
+                                <div class="tool-use-header">Tool: ${escapeHtml(block.name || 'unknown')}</div>
+                                <pre class="tool-use-input">${escapeHtml(JSON.stringify(block.input, null, 2))}</pre>
+                            </div>
+                        `;
+                    }
+                    return `<pre class="prompt-content">${escapeHtml(JSON.stringify(block, null, 2))}</pre>`;
+                }).join('');
+            }
+            if (typeof response.content === 'string') {
                 return marked.parse(response.content);
             }
             return `<pre class="prompt-content">${escapeHtml(JSON.stringify(response, null, 2))}</pre>`;
@@ -1541,6 +1614,21 @@ function renderPromptDetailView(agentId, promptIndex) {
                 </div>
                 <div class="collapsible-content" style="display: block;">
                     <div class="prompt-rendered-content">${renderResponse(prompt.response)}</div>
+                </div>
+            </div>
+            ` : ''}
+
+            <!-- Tools (if available) -->
+            ${prompt.tools && prompt.tools.length > 0 ? `
+            <div class="job-section">
+                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>Tools (${prompt.tools.length})</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="prompt-tools-list">
+                        ${prompt.tools.map(t => `<span class="prompt-tool-tag">${escapeHtml(t)}</span>`).join('')}
+                    </div>
                 </div>
             </div>
             ` : ''}

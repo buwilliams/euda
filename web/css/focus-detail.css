@@ -1599,3 +1599,53 @@
     height: 16px;
     filter: brightness(0) invert(1);
 }
+
+/* ============== Prompt Tools Display ============== */
+
+.prompt-tools-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) 0;
+}
+
+.prompt-tool-tag {
+    display: inline-block;
+    font-size: var(--font-size-xs);
+    padding: 2px 8px;
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+}
+
+/* Response rendering */
+.response-text {
+    margin-bottom: var(--spacing-sm);
+}
+
+.response-tool-use {
+    background: var(--color-bg-muted);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-sm);
+    overflow: hidden;
+}
+
+.tool-use-header {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.tool-use-input {
+    margin: 0;
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    overflow-x: auto;
+    background: transparent;
+}
+

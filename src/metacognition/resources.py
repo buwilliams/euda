@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Optional
 
 from ..logger import get_logger
+from ..events import emit_ui_event
 from .config import get_global_config
 
 
@@ -231,7 +232,7 @@ class ResourceTracker:
 
     def record_usage(self, provider: str, model: str, input_tokens: int, output_tokens: int,
                      cached_input_tokens: int = 0, agent_id: str = None, job_id: str = None,
-                     stop_reason: str = None, duration_ms: int = None):
+                     stop_reason: str = None, duration_ms: int = None, timestamp: str = None):
         """Record token usage and update cumulative cost.
 
         Args:
@@ -244,12 +245,13 @@ class ResourceTracker:
             job_id: ID of job being worked on (for per-job tracking)
             stop_reason: Reason the model stopped
             duration_ms: Duration of the API call
+            timestamp: ISO timestamp for correlation with prompt logs
         """
         cost = self.calculate_cost(provider, input_tokens, output_tokens, cached_input_tokens)
 
         # Prepare log entry before acquiring lock
         log_entry = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": timestamp or datetime.now().isoformat(),
             "agent": agent_id,
             "job_id": job_id,
             "provider": provider,
@@ -272,6 +274,17 @@ class ResourceTracker:
 
         # Write log entry first (so period calculation includes it)
         self._append_cost_entry(log_entry)
+
+        # Emit SSE event for UI updates (monitoring view)
+        emit_ui_event("monitoring:llm_call", {
+            "agent_id": agent_id,
+            "timestamp": log_entry["timestamp"],
+            "model": model,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "cost": log_entry["cost"],
+            "duration_ms": duration_ms,
+        })
 
         # Check budget thresholds using period-based spending
         should_warn_80 = False
@@ -521,11 +534,11 @@ def set_budget(dollars: float):
 
 def record_usage(provider: str, model: str, input_tokens: int, output_tokens: int,
                  cached_input_tokens: int = 0, agent_id: str = None, job_id: str = None,
-                 stop_reason: str = None, duration_ms: int = None):
+                 stop_reason: str = None, duration_ms: int = None, timestamp: str = None):
     """Record usage to the global tracker."""
     get_resource_tracker().record_usage(
         provider, model, input_tokens, output_tokens, cached_input_tokens,
-        agent_id, job_id, stop_reason, duration_ms
+        agent_id, job_id, stop_reason, duration_ms, timestamp
     )
 
 

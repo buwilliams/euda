@@ -99,9 +99,16 @@ function handleReflectionComplete(data) {
         updateExecutionUI();
         // Refresh monitoring data after completion
         if (data.agent_id) {
-            // Clear cache to force reload
+            // Clear cache and loading flag to force reload
             delete monitoringCache[data.agent_id];
-            loadAgentMonitoring(data.agent_id);
+            if (typeof monitoringLoading !== 'undefined') {
+                delete monitoringLoading[data.agent_id];
+            }
+            // Reset pagination to first page
+            if (typeof monitoringPagination !== 'undefined') {
+                monitoringPagination[data.agent_id] = { offset: 0, limit: 20 };
+            }
+            loadAgentMonitoring(data.agent_id, 0, 20);
         }
     }
 }
@@ -303,9 +310,9 @@ async function loadAgentCompletedJobs(agentId) {
     return [];
 }
 
-async function loadAgentMonitoring(agentId) {
+async function loadAgentMonitoring(agentId, offset = 0, limit = 20) {
     try {
-        const response = await fetch(`/api/agents/${agentId}/monitoring`, {
+        const response = await fetch(`/api/agents/${agentId}/monitoring?offset=${offset}&limit=${limit}`, {
             credentials: 'same-origin'
         });
         if (response.ok) {

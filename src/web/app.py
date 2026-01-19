@@ -4,6 +4,7 @@ FastAPI Web Application
 Provides REST API for the Euno system.
 """
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -14,6 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from .routes import jobs, agents, chat, user, auth, system, upload, transcribe, synthesize, rate_limiting
 from .routes.auth import get_session_token
 from ..auth import is_password_set, verify_session
+from ..events import trigger_shutdown
 
 
 # Paths that don't require authentication
@@ -25,10 +27,20 @@ PUBLIC_PATHS = {
 }
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle app startup and shutdown."""
+    # Startup
+    yield
+    # Shutdown - signal all SSE connections to close
+    trigger_shutdown()
+
+
 app = FastAPI(
     title="Euno",
     description="Personal Intelligence System",
-    version="3.0.0"
+    version="3.0.0",
+    lifespan=lifespan
 )
 
 # CORS for local development

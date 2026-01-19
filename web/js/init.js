@@ -118,6 +118,70 @@ function connectSSE() {
         }
     });
 
+    // Handle new LLM calls (for real-time monitoring updates)
+    eventSource.addEventListener('monitoring:llm_call', (e) => {
+        const data = JSON.parse(e.data);
+        const agentId = data.agent_id;
+
+        // Update stats in cache if we have it
+        if (typeof monitoringCache !== 'undefined' && monitoringCache[agentId]) {
+            const cached = monitoringCache[agentId];
+
+            // Update call counts
+            if (cached.stats) {
+                if (cached.stats.hour) cached.stats.hour.calls = (cached.stats.hour.calls || 0) + 1;
+                if (cached.stats.today) cached.stats.today.calls = (cached.stats.today.calls || 0) + 1;
+                if (cached.stats.week) cached.stats.week.calls = (cached.stats.week.calls || 0) + 1;
+
+                // Update token counts
+                const tokens = (data.input_tokens || 0) + (data.output_tokens || 0);
+                if (cached.stats.hour) cached.stats.hour.tokens = (cached.stats.hour.tokens || 0) + tokens;
+                if (cached.stats.today) cached.stats.today.tokens = (cached.stats.today.tokens || 0) + tokens;
+                if (cached.stats.week) cached.stats.week.tokens = (cached.stats.week.tokens || 0) + tokens;
+
+                // Update costs
+                if (cached.stats.hour) cached.stats.hour.cost = (cached.stats.hour.cost || 0) + (data.cost || 0);
+                if (cached.stats.today) cached.stats.today.cost = (cached.stats.today.cost || 0) + (data.cost || 0);
+                if (cached.stats.week) cached.stats.week.cost = (cached.stats.week.cost || 0) + (data.cost || 0);
+            }
+
+            // If viewing page 1 (offset 0), prepend the new call to the list
+            if (typeof monitoringPagination !== 'undefined') {
+                const pagination = monitoringPagination[agentId] || { offset: 0, limit: 20 };
+                if (pagination.offset === 0) {
+                    // Prepend new entry and update pagination total
+                    const promptsList = cached.prompts || cached.recent_prompts || [];
+                    promptsList.unshift({
+                        timestamp: data.timestamp,
+                        input_tokens: data.input_tokens || 0,
+                        output_tokens: data.output_tokens || 0,
+                        model: data.model,
+                        cost: data.cost || 0,
+                        duration_ms: data.duration_ms
+                    });
+
+                    // Remove excess if over limit
+                    if (promptsList.length > pagination.limit) {
+                        promptsList.pop();
+                    }
+
+                    // Update total count
+                    if (cached.pagination) {
+                        cached.pagination.total = (cached.pagination.total || 0) + 1;
+                        cached.pagination.has_more = promptsList.length >= pagination.limit;
+                    }
+
+                    cached.prompts = promptsList;
+                }
+            }
+        }
+
+        // Re-render if viewing this agent's monitoring page
+        if (typeof focusView !== 'undefined' && focusView === `monitoring-${agentId}`) {
+            renderFocusTab();
+        }
+    });
+
     eventSource.onerror = () => {
         eventSource.close();
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);

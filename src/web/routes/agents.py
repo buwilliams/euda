@@ -207,9 +207,15 @@ def api_get_completed_jobs(agent_id: str, limit: int = 20):
 
 # Monitoring endpoint
 @router.get("/{agent_id}/monitoring")
-def api_get_monitoring(agent_id: str):
-    """Get LLM monitoring stats for this agent."""
-    return get_agent_monitoring(agent_id)
+def api_get_monitoring(agent_id: str, offset: int = 0, limit: int = 20):
+    """Get LLM monitoring stats for this agent with pagination.
+
+    Args:
+        agent_id: The agent ID to query
+        offset: Number of entries to skip (for pagination)
+        limit: Maximum number of entries to return (default 20)
+    """
+    return get_agent_monitoring(agent_id, offset=offset, limit=limit)
 
 
 # Reflection trigger endpoint
