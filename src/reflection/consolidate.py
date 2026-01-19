@@ -108,7 +108,7 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
     memory = load_long_term_memory(agent_id=agent_id, days=RLM_MEMORY_DAYS)
 
     # Check if patterns are enabled
-    patterns_config = get_global_config().get("metacognition", {}).get("patterns", {})
+    patterns_config = get_global_config().get_full_config().get("patterns", {})
     patterns_enabled = patterns_config.get("enabled", True)
 
     # Run multi-pass pattern discovery if enabled and we have memory

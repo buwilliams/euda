@@ -166,9 +166,38 @@ function handleReflectionError(data) {
 }
 
 function updateExecutionUI() {
-    // Re-render if we're on a monitoring or manage view for this agent
-    if (focusView && (focusView.startsWith('monitoring-') || focusView.startsWith('manage-agent-'))) {
-        renderFocusTab();
+    // Try to update just the progress banner instead of re-rendering the entire view
+    const progressBanner = document.querySelector('.reflection-progress');
+
+    if (progressBanner && activeExecution) {
+        // Update message without recreating the spinner
+        const messageEl = progressBanner.querySelector('.progress-message');
+        if (messageEl) {
+            messageEl.textContent = activeExecution.message || 'Processing...';
+        }
+
+        // Update tokens if they exist
+        const tokensEl = progressBanner.querySelector('.progress-tokens');
+        if (activeExecution.tokens) {
+            if (tokensEl) {
+                tokensEl.textContent = `${activeExecution.tokens.input} in / ${activeExecution.tokens.output} out`;
+            } else {
+                // Add tokens display if it doesn't exist
+                const bodyEl = progressBanner.querySelector('.reflection-progress-body');
+                if (bodyEl) {
+                    bodyEl.insertAdjacentHTML('beforeend', `
+                        <div class="progress-tokens">
+                            ${activeExecution.tokens.input} in / ${activeExecution.tokens.output} out
+                        </div>
+                    `);
+                }
+            }
+        }
+    } else {
+        // Full re-render if progress banner doesn't exist or execution cleared
+        if (focusView && (focusView.startsWith('monitoring-') || focusView.startsWith('manage-agent-'))) {
+            renderFocusTab();
+        }
     }
 }
 
