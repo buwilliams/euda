@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from ...tools.data.jobs import (
     list_jobs, get_job, create_job, update_job,
     complete_job, restore_job, archive_job, add_job_log, get_child_jobs, delete_job,
-    assign_agent, unassign_agent, list_assignees, handoff_job
+    assign_agent, unassign_agent, list_assignees, handoff_job, unblock_job
 )
 from ...tools.data.assets import list_assets, read_asset, write_asset, delete_asset
 
@@ -128,6 +128,18 @@ def api_restore_job(job_id: str):
     return result
 
 
+@router.post("/{job_id}/unblock")
+def api_unblock_job(job_id: str):
+    """Remove blocking tags (waiting:*, blocked:*) from a job.
+
+    This puts the job back in agents' work queues.
+    """
+    was_blocked = unblock_job(job_id)
+    if was_blocked:
+        return {"status": "unblocked", "job_id": job_id}
+    return {"status": "not_blocked", "job_id": job_id}
+
+
 @router.delete("/{job_id}")
 def api_delete_job(job_id: str, delete_children: bool = False):
     """Delete a job permanently."""
@@ -155,6 +167,8 @@ def api_job_feedback(job_id: str, request: JobFeedbackRequest):
     2. First assignee (if job is assigned to an agent)
     3. Chat agent (fallback for routing)
     """
+    # User providing feedback means they're engaging - unblock if blocked
+    unblock_job(job_id)
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -267,6 +281,8 @@ def api_get_asset(job_id: str, filename: str):
 @router.post("/{job_id}/assets/{filename}")
 def api_write_asset(job_id: str, filename: str, request: WriteAssetRequest):
     """Write an asset."""
+    # User editing an asset signals they're working on this job - unblock it
+    unblock_job(job_id)
     return write_asset(job_id, filename, request.content)
 
 

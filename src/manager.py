@@ -326,7 +326,7 @@ class AgentManager:
 
     def _run_agent_loop(self, agent: Agent):
         """Run an agent's work loop - polls for actionable jobs."""
-        from .tools.data.jobs import list_jobs
+        from .tools.data.jobs import list_jobs, claim_job, release_job
 
         poll_interval = self._get_system_config().get("agents", {}).get("poll_interval", 0.1)
 
@@ -341,15 +341,16 @@ class AgentManager:
                 if agent.id in self.error_backoff:
                     backoff_state = self.error_backoff[agent.id]
                     if backoff_state["backoff_until"] and datetime.now() < backoff_state["backoff_until"]:
-                        remaining = (backoff_state["backoff_until"] - datetime.now()).seconds
+                        # Use total_seconds() not .seconds to get actual remaining time
+                        remaining = int((backoff_state["backoff_until"] - datetime.now()).total_seconds())
                         agent._log("backoff_wait", {
                             "reason": "quota_or_rate_limit",
                             "remaining_seconds": remaining,
                             "retry_at": backoff_state["backoff_until"].isoformat(),
                             "attempt": backoff_state["count"]
                         })
-                        # Sleep for 1 minute or remaining time, whichever is shorter
-                        time.sleep(min(remaining, 60))
+                        # Sleep for 1 minute or remaining time, with minimum 1 second
+                        time.sleep(max(min(remaining, 60), 1))
                         continue
 
                 # Check cache first (fast) - skip DB query if no jobs pending
@@ -363,30 +364,62 @@ class AgentManager:
                 if jobs:
                     # Track the job being processed for cooldown decision
                     current_job = jobs[0]
+                    job_id = current_job.get("id")
                     is_background = "background" in current_job.get("tags", [])
 
-                    agent._log("polling_found_jobs", {"count": len(jobs)})
-                    agent.work_cycle_sync()
+                    # Try to claim the job exclusively
+                    claim_result = claim_job(job_id, agent.id)
+                    if "error" in claim_result:
+                        # Job already claimed by another agent, skip it
+                        agent._log("job_already_claimed", {
+                            "job_id": job_id,
+                            "error": claim_result.get("error")
+                        })
+                        time.sleep(0.5)  # Brief delay before re-polling
+                        continue
+
+                    agent._log("polling_found_jobs", {"count": len(jobs), "claimed": job_id})
+                    try:
+                        agent.work_cycle_sync()
+                    finally:
+                        # Always release the job claim when done
+                        release_job(job_id, agent.id)
+
                     # Success - reset backoff and update last_ran
                     self._reset_backoff(agent.id)
                     self._update_agent_last_ran(agent.id)
+
+                    # Clear failure tags from previous attempts on success
+                    from .tools.data.jobs import update_job, get_job
+                    job = get_job(job_id)
+                    if job:
+                        tags = job.get("tags", [])
+                        clean_tags = [t for t in tags if not t.startswith("failure:")]
+                        if len(clean_tags) != len(tags):
+                            update_job(job_id, tags=clean_tags)
+
                     # Re-check for more jobs and update cache
                     jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
                     self.agents_with_jobs[agent.id] = bool(jobs)
 
-                    # Apply load-based pacing for background jobs (uploads, integrations)
-                    # Regular jobs process immediately for responsive UX
+                    # Apply pacing between work cycles to prevent runaway spinning
+                    # When jobs fail fast (errors swallowed, etc.), this prevents CPU-speed loops
+                    MIN_CYCLE_DELAY = 0.5  # 500ms minimum between cycles
+
                     if is_background and jobs:
+                        # Background jobs: load-based pacing with minimum floor
                         utilization = get_velocity_tracker().get_utilization()
-                        delay = utilization["recommended_delay"]
-                        if delay > 0:
-                            agent._log("background_job_pacing", {
-                                "delay": delay,
-                                "utilization": utilization["utilization"],
-                                "calls_in_window": utilization["calls_in_window"],
-                                "remaining_jobs": len(jobs)
-                            })
-                            time.sleep(delay)
+                        delay = max(utilization["recommended_delay"], MIN_CYCLE_DELAY)
+                        agent._log("background_job_pacing", {
+                            "delay": delay,
+                            "utilization": utilization["utilization"],
+                            "calls_in_window": utilization["calls_in_window"],
+                            "remaining_jobs": len(jobs)
+                        })
+                        time.sleep(delay)
+                    elif jobs:
+                        # Non-background jobs with more work: minimum delay to prevent spinning
+                        time.sleep(MIN_CYCLE_DELAY)
                 else:
                     # Cache was stale - clear it
                     self.agents_with_jobs[agent.id] = False
@@ -418,6 +451,34 @@ class AgentManager:
                 error_msg = str(e)
                 agent._log("error", {"message": error_msg})
                 print(f"Agent {agent.id} error: {e}")
+
+                # Track job failures and escalate to user after 3 consecutive failures
+                # This prevents infinite retry loops when jobs fail persistently
+                if 'job_id' in locals() and 'current_job' in locals():
+                    from .tools.data.jobs import update_job, handoff_job, get_job
+
+                    job = get_job(job_id)
+                    if job:
+                        tags = job.get("tags", [])
+
+                        # Count existing failure tags for this agent
+                        failure_prefix = f"failure:{agent.id}:"
+                        failure_count = sum(1 for t in tags if t.startswith(failure_prefix))
+
+                        # Add new failure tag (replacing previous count)
+                        new_tag = f"failure:{agent.id}:{failure_count + 1}"
+                        updated_tags = [t for t in tags if not t.startswith(failure_prefix)] + [new_tag]
+                        update_job(job_id, tags=updated_tags)
+
+                        if failure_count + 1 >= 3:
+                            # 3 strikes - hand off to user
+                            agent._log("job_escalated_to_user", {
+                                "job_id": job_id,
+                                "failure_count": failure_count + 1,
+                                "error": error_msg[:200]
+                            })
+                            handoff_job(job_id, "user", f"Agent {agent.id} failed 3 times: {error_msg[:200]}")
+                            print(f"[{agent.id}] Job {job_id} escalated to user after 3 failures")
 
                 # Smart handling based on error type
                 if self._is_quota_or_rate_limit(error_msg):
