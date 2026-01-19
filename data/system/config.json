@@ -92,6 +92,13 @@
       "upload_analysis_max_tokens": 1000
     }
   },
+  "rlm": {
+    "enabled": true,
+    "max_iterations": 20,
+    "max_recursion_depth": 1,
+    "execution_timeout_seconds": 30,
+    "output_truncation_chars": 10000
+  },
   "logging": {
     "level": "info",
     "retention_days": 31

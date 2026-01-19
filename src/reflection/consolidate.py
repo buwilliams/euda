@@ -2,7 +2,7 @@
 Consolidate Phase - Heavy analysis for memory graduation and identity updates.
 
 This phase runs on daily trigger to:
-1. Analyze patterns in short-term and long-term memory
+1. Analyze patterns in short-term and long-term memory (via RLM)
 2. Graduate important short-term items to long-term memory
 3. Update the agent's identity based on observed patterns
 4. Create historical identity snapshots at year boundaries
@@ -22,6 +22,7 @@ from ..tools.data.memory import (
 )
 from ..tools.data.jobs import get_jobs_completed_by_agent
 from ..metacognition.config import get_global_config
+from ..rlm import RLMClient, load_long_term_memory
 
 from .prompts import build_consolidate_prompt, get_consolidate_system_prompt
 
@@ -29,8 +30,8 @@ if TYPE_CHECKING:
     from .reflection import Reflection
 
 
-# How many days of long-term memory to include for context
-RECENT_MEMORY_DAYS = 7
+# How many days of long-term memory to analyze via RLM
+RLM_MEMORY_DAYS = 30
 
 
 def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Optional[dict]:
@@ -70,8 +71,8 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
     # Load short-term memory
     short_term_memory = _load_entries(agent_id)
 
-    # Load recent long-term memory
-    recent_long_term = _load_recent_long_term(reflection, days=RECENT_MEMORY_DAYS)
+    # Use RLM to analyze long-term memory patterns (30-day window)
+    recent_long_term = _analyze_long_term_with_rlm(reflection, days=RLM_MEMORY_DAYS)
 
     # Load current identity
     current_profile = reflection.agent.identity
@@ -206,39 +207,53 @@ def consolidate_phase(reflection: "Reflection", execution_id: str = None) -> Opt
     }
 
 
-def _load_recent_long_term(reflection: "Reflection", days: int) -> str:
-    """Load recent long-term memory entries.
+def _analyze_long_term_with_rlm(reflection: "Reflection", days: int) -> str:
+    """Analyze long-term memory using RLM for consolidation insights.
+
+    Uses RLM to semantically analyze memory and extract relevant patterns,
+    allowing analysis of a larger time window than direct context loading.
 
     Args:
         reflection: The Reflection instance
-        days: Number of days to look back
+        days: Number of days to analyze
 
     Returns:
-        Combined content from recent long-term memory files
+        RLM-generated insights about memory patterns, or empty string if no memory
     """
     agent_id = reflection.agent.id
-    today = datetime.now()
-    content_parts = []
 
-    for i in range(days):
-        date = today - timedelta(days=i)
-        year = date.strftime("%Y")
-        date_str = date.strftime("%Y-%m-%d")
+    # Load memory for RLM
+    memory = load_long_term_memory(agent_id=agent_id, days=days)
 
-        # Try year-based path first, then legacy flat path
-        year_path = reflection._get_long_term_dir(year) / f"{date_str}.md"
-        legacy_path = reflection._get_long_term_dir().parent / f"{date_str}.md"
+    # If no memory entries, return empty
+    if memory["metadata"]["total_entries"] == 0:
+        return ""
 
-        memory_path = None
-        if year_path.exists():
-            memory_path = year_path
-        elif legacy_path.exists():
-            memory_path = legacy_path
+    # Use RLM to analyze patterns for consolidation
+    rlm = RLMClient(agent_id=agent_id)
+    result = rlm.analyze(
+        query=(
+            "What patterns, themes, learnings, and significant events from recent memory "
+            "should inform identity updates? Focus on:\n"
+            "1. Recurring goals or concerns\n"
+            "2. Notable achievements or setbacks\n"
+            "3. Changes in interests or priorities\n"
+            "4. Important relationships or people mentioned\n"
+            "5. Key decisions or turning points"
+        ),
+        memory=memory,
+        time_range_days=days
+    )
 
-        if memory_path:
-            content_parts.append(memory_path.read_text())
+    if result.error:
+        reflection.logger.warning({
+            "event": "rlm_analysis_error",
+            "agent_id": agent_id,
+            "error": result.error
+        })
+        return ""
 
-    return "\n\n---\n\n".join(content_parts)
+    return result.findings
 
 
 def _parse_consolidate_result(response: str) -> Optional[dict]:
