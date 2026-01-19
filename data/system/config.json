@@ -109,5 +109,15 @@
     "hour_06": "06:00",
     "hour_12": "12:00",
     "hour_18": "18:00"
+  },
+  "nextcloud": {
+    "instances": {
+      "personal": {
+        "display_name": "Personal Nextcloud instance",
+        "url": "https://example.nextcloud.url",
+        "username": ""
+      }
+    },
+    "default_instance": "personal"
   }
 }
