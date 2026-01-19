@@ -1,0 +1,167 @@
+/* Asters Tab Styles */
+
+.asters-content {
+    padding: 1rem;
+    padding-bottom: 100px;
+}
+
+.asters-header {
+    margin-bottom: 1.5rem;
+}
+
+.asters-header h2 {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin: 0 0 0.25rem 0;
+    color: var(--text-primary);
+}
+
+.asters-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.asters-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Aster Card */
+.aster-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.aster-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.aster-card:active {
+    transform: translateY(0);
+}
+
+.aster-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.aster-name {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 0;
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+
+.aster-description {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.75rem 0;
+    line-height: 1.5;
+}
+
+/* Aster Logs */
+.aster-logs {
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.aster-log-entry {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.375rem;
+}
+
+.aster-log-entry:last-child {
+    margin-bottom: 0;
+}
+
+.aster-log-date {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+    min-width: 80px;
+}
+
+.aster-log-text {
+    color: var(--text-secondary);
+}
+
+.aster-logs-more {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-style: italic;
+    margin-top: 0.25rem;
+}
+
+/* Expanded state */
+.aster-card.expanded {
+    background: var(--surface-elevated, var(--surface));
+}
+
+.aster-card.expanded .aster-description {
+    white-space: pre-wrap;
+}
+
+/* Detail button */
+.aster-detail-btn {
+    background: none;
+    border: none;
+    padding: 0.25rem;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.aster-detail-btn:hover {
+    opacity: 1;
+    color: var(--accent);
+}
+
+.aster-detail-btn img {
+    width: 16px;
+    height: 16px;
+}
+
+/* Expand hint */
+.aster-expand-hint {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+    text-align: center;
+    margin-top: 0.5rem;
+    opacity: 0.6;
+}
+
+/* Empty State */
+.asters-content .focus-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.asters-content .focus-empty p {
+    margin: 0 0 0.5rem 0;
+}
+
+.asters-content .focus-empty-hint {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    max-width: 300px;
+    margin: 0 auto;
+    line-height: 1.5;
+}

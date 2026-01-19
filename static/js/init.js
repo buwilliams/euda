@@ -19,8 +19,12 @@ function connectSSE() {
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
             .slice(0, 20);
         updateTasksBadge();
+        updateAstersVisibility();
         if (activeTab === 'focus') {
             renderFocusTab();
+        }
+        if (activeTab === 'asters') {
+            renderAstersTab();
         }
         reconnectAttempts = 0;
     });
@@ -36,7 +40,11 @@ function connectSSE() {
         if (activeTab === 'focus') {
             renderFocusTab();
         }
+        if (activeTab === 'asters') {
+            renderAstersTab();
+        }
         updateTasksBadge();
+        updateAstersVisibility();
     });
 
     eventSource.addEventListener('ping', () => {});

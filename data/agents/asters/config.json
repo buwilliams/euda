@@ -1,0 +1,29 @@
+{
+  "id": "asters",
+  "name": "Asters",
+  "enabled": true,
+  "order": 5,
+  "tools": [
+    "list_jobs",
+    "get_job",
+    "create_job",
+    "update_job",
+    "archive_job",
+    "add_job_log",
+    "get_child_jobs",
+    "list_memory",
+    "read_long_term_memory",
+    "get_identity",
+    "parse_date",
+    "get_current_date"
+  ],
+  "triggers": [
+    "time:morning"
+  ],
+  "exploration": {
+    "enabled": false
+  },
+  "reflection": {
+    "enabled": false
+  }
+}

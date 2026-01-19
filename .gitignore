@@ -22,6 +22,9 @@ data/agents/chat/profile.md
 !data/agents/worker/profile.md.example
 data/agents/worker/profile.md
 !data/agents/worker/prompts/
+!data/agents/asters/config.json
+!data/agents/asters/identity.template.md
+data/agents/asters/identity.md
 
 # ===================
 # Agent Library (agent-lib/)

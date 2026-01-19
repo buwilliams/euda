@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="/static/css/focus-extras.css">
     <link rel="stylesheet" href="/static/css/when-picker.css">
     <link rel="stylesheet" href="/static/css/history.css">
+    <link rel="stylesheet" href="/static/css/asters.css">
     <link rel="stylesheet" href="/static/css/swipe.css">
     <link rel="stylesheet" href="/static/css/about.css">
     <link rel="stylesheet" href="/static/css/auth.css">
@@ -73,6 +74,13 @@
             <!-- Tabs Container -->
             <div class="tabs-container">
                 <div class="tab-content">
+                    <!-- Asters Tab -->
+                    <div class="tab-pane" id="tab-asters">
+                        <div class="asters-content" id="asters-content">
+                            <!-- Content dynamically rendered by renderAstersTab() -->
+                        </div>
+                    </div>
+
                     <!-- Focus Tab -->
                     <div class="tab-pane active" id="tab-focus">
                         <div class="focus-content" id="focus-content">
@@ -329,6 +337,10 @@
 
                 <!-- Tab Menu (below content) -->
                 <div class="tab-menu">
+                    <button class="tab-btn" data-tab="asters" onclick="switchTab('asters')" id="asters-btn" style="display: none;">
+                        <img src="/static/icons/sparkles.svg" alt="Asters">
+                        <span>Asters</span>
+                    </button>
                     <button class="tab-btn active" data-tab="focus" onclick="switchTab('focus')">
                         <img src="/static/icons/queue-list.svg" alt="Focus">
                         <span>Focus</span>
@@ -430,6 +442,7 @@
     <script src="/static/js/focus-screens.js"></script>
     <script src="/static/js/swipe.js"></script>
     <script src="/static/js/history.js"></script>
+    <script src="/static/js/asters.js"></script>
     <script src="/static/js/about.js"></script>
     <script src="/static/js/upload.js"></script>
     <script src="/static/js/voice.js"></script>

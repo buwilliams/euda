@@ -1141,6 +1141,10 @@ def sync_agent_inbox_jobs():
             if job["parent_id"] != agents_container["id"]:
                 updates_needed.append(("parent_id", agents_container["id"]))
 
+            # Un-archive if agent exists but job was archived
+            if job["status"] == "archived":
+                updates_needed.append(("status", "todo"))
+
             if updates_needed:
                 set_clauses = ", ".join(f"{k} = ?" for k, v in updates_needed)
                 values = [v for k, v in updates_needed] + [now, job["id"]]
