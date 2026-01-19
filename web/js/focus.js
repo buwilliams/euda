@@ -69,9 +69,6 @@ function renderFocusTab() {
         const jobId = rest.substring(0, 12);
         const filename = rest.substring(13); // skip jobId + "-"
         content = renderAssetView(jobId, filename);
-    } else if (focusView === 'newjob') {
-        // Standalone new job creator screen
-        content = renderNewJobCreatorScreen();
     } else if (focusView.startsWith('newjob-')) {
         // newjob-{jobId} - create new child jobs
         const jobId = focusView.substring(7);
@@ -248,7 +245,6 @@ function getViewDisplayName(view) {
     if (view === 'anytime') return 'Anytime';
     if (view === 'someday') return 'Someday';
     if (view === 'completed') return 'Completed';
-    if (view === 'newjob') return 'New Job';
 
     // Job views - get job name from cache
     if (view.startsWith('job-')) {

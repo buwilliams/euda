@@ -121,9 +121,3 @@
 .screen-action-btn.primary:hover {
     background: var(--color-accent-dark);
 }
-
-/* ============== New Job Creator Screen ============== */
-
-.new-job-item {
-    margin-bottom: var(--spacing-xs);
-}
