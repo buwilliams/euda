@@ -1,0 +1,13 @@
+{
+  "agent_usage": {
+    "test-agent": {
+      "period_key": "2026-01-20",
+      "input": 1000,
+      "output": 12047
+    }
+  },
+  "paused_agents": [],
+  "pause_reasons": {},
+  "pause_timestamps": {},
+  "last_updated": "2026-01-20T18:39:42.518972"
+}

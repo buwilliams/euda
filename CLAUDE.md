@@ -133,11 +133,12 @@ An agent is: **Identity + Cognition + Memory + Behavior**
 
 ### Metacognition
 Metacognition is the agent's self-regulation and self-improvement system:
-- **Velocity**: Track call rate, pause if too fast (runaway detection)
-- **Resources**: Track costs, enforce budgets
+- **Token Awareness**: Pre-call estimation, post-call recording, per-agent budgets with auto-pause
+- **Agent States**: `enabled`, `disabled`, `paused` (paused requires manual intervention)
 - **Progress**: Detect stuck patterns and break loops
 - **Planning**: Strategic thinking before complex tasks
 - **Reflection**: Process memories, update identity (self-improvement)
+- **Incidents**: Threshold breaches logged and surfaced via API
 
 System-wide defaults in `data/system/config.json` under `metacognition` key.
 

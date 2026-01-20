@@ -1,0 +1,18 @@
+[
+  {
+    "id": "inc-90a03ad2d106",
+    "agent_id": "test-agent",
+    "incident_type": "output_threshold_exceeded",
+    "severity": "critical",
+    "reason": "output token threshold exceeded (101%)",
+    "details": {
+      "usage": 12047,
+      "limit": 11947,
+      "percent": 100.83703021679082
+    },
+    "timestamp": "2026-01-20T18:39:36.294631",
+    "acknowledged": false,
+    "acknowledged_at": null,
+    "acknowledged_by": null
+  }
+]

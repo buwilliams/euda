@@ -224,30 +224,53 @@ Cognition has two aspects:
 ## Metacognition (Cognition Subsystem)
 
 Metacognition is the self-regulation and self-improvement component of Cognition:
-- **Self-regulation** — Velocity, resources, progress, planning (keeping the agent healthy)
+- **Self-regulation** — Token awareness, progress detection, planning (keeping the agent healthy)
 - **Self-improvement** — Reflection (helping the agent grow)
 
-### Velocity Awareness
+### Agent States
 
-- Tracks API call frequency globally across all agents
-- Rolling window rate limiting (default: 30 calls per 60 seconds)
-- Runaway detection pauses agents making too many calls too fast
-- Paused agents auto-resume after cooldown period
-- Configuration in `metacognition.velocity`
+Agents have three possible states:
 
-### Background Job Pacing
+| State | Description | Can Run? | Set By |
+|-------|-------------|----------|--------|
+| `enabled` | Normal operation | Yes | User/CLI/API |
+| `disabled` | User explicitly disabled | No | User/CLI/API |
+| `paused` | Threshold breach - awaiting manual intervention | No | System (auto) |
 
-- Jobs tagged `background` are paced based on API utilization
-- Regular jobs process immediately — only `background` jobs get delays
-- Delay scales with load: none at <50%, 1-3s at 50-80%, 3-10s at >80%
-- Use for uploads, integrations, batch processing
+**Transition Rules:**
+- `enabled` → `paused`: System auto-pauses when token threshold exceeded
+- `paused` → `enabled`: Manual intervention via CLI/UI/API required
+- Any state → `disabled`: User explicitly disables
 
-### Resource Awareness
+### Token Awareness
 
-- Tracks API costs per agent and per job
-- Enforces budget limits with warnings at 80% and 95%
-- Logs all LLM usage to daily cost files
-- Configuration in `metacognition.resources`
+Unified token tracking and budget enforcement:
+
+- **Pre-call estimation**: Estimates input tokens using tiktoken before API calls
+- **Post-call recording**: Records actual input/output tokens after API calls
+- **Per-agent budgets**: Global budget split equally among enabled agents
+- **Frequency-based limits**: Each agent chooses a frequency (daily, hourly, weekly, monthly)
+- **Separate I/O thresholds**: Default 80% input, 20% output token allocation
+- **Auto-pause**: Agents exceeding thresholds are paused (requires manual resume)
+- **Incident tracking**: Threshold breaches logged as incidents
+
+Budget calculation:
+```
+per_agent_monthly = global_budget_tokens / enabled_agent_count
+per_agent_daily = per_agent_monthly / 31
+per_agent_hourly = per_agent_daily / 24
+```
+
+Configuration in agent `config.json`:
+```json
+{
+  "token_budget": {
+    "frequency": "daily",
+    "input_ratio": 0.8,
+    "output_ratio": 0.2
+  }
+}
+```
 
 ### Progress Awareness
 
@@ -287,14 +310,26 @@ Reflection is the metacognitive process of self-analysis and growth:
 Note: `reflection.trigger` in config.json defines WHEN reflection runs (Behavior).
 The reflection process itself is Metacognition (Cognition).
 
+### Incidents
+
+When agents breach thresholds, incidents are recorded:
+- `token_threshold_exceeded`: Agent exceeded input or output token budget
+- Incidents appear in logs and via `GET /api/system/incidents`
+- Acknowledge incidents via `POST /api/system/incidents/{id}/acknowledge`
+
 ### Configuration
 
 System-wide defaults in `data/system/config.json`:
 ```json
 {
   "metacognition": {
-    "velocity": { "enabled": true, "max_calls_per_window": 30 },
-    "resources": { "budget_limit": 10.0 },
+    "token_awareness": {
+      "enabled": true,
+      "thresholds": {
+        "warning_percent": 80,
+        "pause_percent": 100
+      }
+    },
     "progress": { "max_tool_calls_per_iteration": 50 },
     "planning": { "enabled_for": ["exploration", "reflection"] },
     "efficiency": { "defer_reflection_in_work_cycles": true },

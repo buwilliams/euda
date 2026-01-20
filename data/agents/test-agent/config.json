@@ -1,0 +1,7 @@
+{
+  "id": "test-agent",
+  "state": "enabled",
+  "enabled": true,
+  "pause_reason": null,
+  "pause_timestamp": null
+}
