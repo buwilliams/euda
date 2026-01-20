@@ -6,8 +6,9 @@ Metacognition is inherent to all agents and has two aspects:
 - Self-improvement: Helping the agent grow (reflection)
 
 Self-regulation capabilities:
-- Velocity awareness (rate limiting)
-- Resource awareness (budget/cost tracking)
+- Token awareness (PRE-call token tracking, per-agent budgets)
+- Velocity awareness (rate limiting) - legacy
+- Resource awareness (budget/cost tracking) - legacy
 - Action awareness (tool call tracking)
 - Progress awareness (stuck detection)
 - Strategic planning
@@ -26,6 +27,7 @@ from typing import Optional, TYPE_CHECKING
 from .config import MetacognitionConfig
 from .velocity import get_velocity_tracker, VelocityTracker
 from .resources import get_resource_tracker, ResourceTracker
+from .tokens import get_token_awareness, TokenAwareness, AgentState
 from .planning import Planner
 from ..logger import get_logger
 
@@ -40,11 +42,12 @@ class Metacognition:
     Just like every agent has a profile and memory.
 
     Metacognition provides:
-    - Velocity awareness: Track call rate, pause if too fast
-    - Resource awareness: Track costs, enforce budgets
-    - Action awareness: Monitor tool calls per iteration (Phase 2)
-    - Progress awareness: Detect stuck patterns (Phase 3)
-    - Strategic planning: Plan approach before execution (Phase 5)
+    - Token awareness: Track tokens PRE-call, enforce per-agent budgets
+    - Velocity awareness: Track call rate, pause if too fast (legacy)
+    - Resource awareness: Track costs, enforce budgets (legacy)
+    - Action awareness: Monitor tool calls per iteration
+    - Progress awareness: Detect stuck patterns
+    - Strategic planning: Plan approach before execution
     """
 
     def __init__(self, agent: "Agent"):
@@ -59,27 +62,61 @@ class Metacognition:
         # Config (merges system defaults with agent overrides)
         self.config = MetacognitionConfig(agent.id)
 
-        # Global trackers (shared across all agents)
+        # Token awareness (new unified system)
+        self._tokens: TokenAwareness = get_token_awareness()
+
+        # Global trackers (legacy - kept for backward compatibility)
         self._velocity: VelocityTracker = get_velocity_tracker()
         self._resources: ResourceTracker = get_resource_tracker()
 
-        # Per-agent tracking state (for action/progress awareness - Phase 2/3)
+        # Per-agent tracking state (for action/progress awareness)
         self._tool_call_count: int = 0
         self._iteration_count: int = 0
         self._tool_history: list = []
 
-        # Strategic planning (Phase 5)
+        # Strategic planning
         self.planner = Planner(agent)
 
         # Logger
         self._logger = get_logger(f"agents/{agent.id}/metacognition")
 
-    # ============== Velocity Awareness ==============
+    # ============== Token Awareness (New Unified System) ==============
+
+    def get_agent_state(self) -> AgentState:
+        """Get the current state of this agent.
+
+        Returns:
+            AgentState enum: ENABLED, DISABLED, or PAUSED
+        """
+        return self._tokens.get_agent_state(self.agent_id)
+
+    def is_enabled(self) -> bool:
+        """Check if this agent is enabled (can run)."""
+        return self.get_agent_state() == AgentState.ENABLED
+
+    def enable(self):
+        """Enable this agent (resume from paused or disabled state)."""
+        self._tokens.enable_agent(self.agent_id)
+
+    def disable(self):
+        """Disable this agent."""
+        self._tokens.disable_agent(self.agent_id)
+
+    def get_token_usage(self) -> dict:
+        """Get token usage statistics for this agent.
+
+        Returns:
+            Dict with input, output token counts and budget info
+        """
+        return self._tokens.get_agent_usage(self.agent_id)
+
+    # ============== Velocity Awareness (Legacy) ==============
 
     def acquire_velocity(self, job_id: Optional[str] = None) -> bool:
         """Acquire permission for an LLM call (velocity check).
 
         This should be called BEFORE making an LLM API call.
+        NOTE: This is legacy - token awareness is now the primary system.
 
         Args:
             job_id: Optional job ID for tracking
@@ -104,15 +141,27 @@ class Metacognition:
         self._velocity.record_call(self.agent_id, job_id)
 
     def is_paused(self) -> bool:
-        """Check if this agent is paused due to runaway detection."""
+        """Check if this agent is paused (due to threshold breach or runaway)."""
+        # Check new token awareness system first
+        if self.get_agent_state() == AgentState.PAUSED:
+            return True
+        # Fall back to legacy velocity check
         return self._velocity.is_agent_paused(self.agent_id)
 
     def get_pause_info(self) -> dict:
         """Get pause information for this agent."""
+        # Check new system first
+        token_pause_info = self._tokens.get_pause_info(self.agent_id)
+        if token_pause_info.get("is_paused"):
+            return token_pause_info
+        # Fall back to legacy velocity info
         return self._velocity.get_pause_info(self.agent_id)
 
     def resume(self):
         """Resume this agent if paused."""
+        # Enable in new system (handles both paused and disabled)
+        self._tokens.enable_agent(self.agent_id)
+        # Also resume in legacy system
         self._velocity.resume_agent(self.agent_id)
 
     def get_velocity_stats(self) -> dict:
@@ -260,6 +309,8 @@ class Metacognition:
         """
         return {
             "agent_id": self.agent_id,
+            "state": self.get_agent_state().value,
+            "token_usage": self.get_token_usage(),
             "velocity": self.get_velocity_stats(),
             "resources": self.get_resource_stats(),
             "action": {
@@ -311,5 +362,6 @@ class Metacognition:
     def invalidate_config(self):
         """Invalidate cached configuration."""
         self.config.invalidate()
+        self._tokens.invalidate_config()
         self._velocity.invalidate_config()
         self._resources.invalidate_config()

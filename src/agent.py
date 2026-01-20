@@ -16,7 +16,7 @@ from typing import Callable, Optional
 from .llms import get_client
 from .logger import get_logger
 from .reflection import Reflection
-from .metacognition import Metacognition
+from .metacognition import Metacognition, AgentState
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -48,6 +48,26 @@ class Agent:
 
         # Initialize metacognition (always created - inherent to all agents)
         self.metacognition = Metacognition(self)
+
+    @property
+    def state(self) -> AgentState:
+        """Get the current operational state of this agent."""
+        return self.metacognition.get_agent_state()
+
+    def is_enabled(self) -> bool:
+        """Check if this agent is enabled and can run."""
+        return self.state == AgentState.ENABLED
+
+    def _get_enabled_agent_count(self) -> int:
+        """Get the number of enabled agents for budget splitting.
+
+        This is used when making LLM calls to split the budget fairly.
+        """
+        from .manager import get_manager
+        manager = get_manager()
+        if manager:
+            return manager.get_enabled_agent_count()
+        return 1  # Fallback for standalone usage
 
     def wait_for_trigger(self, timeout: float = None) -> Optional[dict]:
         """Wait for a trigger event from the event bus.
@@ -516,7 +536,8 @@ class Agent:
             messages=messages,
             tools=tools if tools else None,
             agent_id=self.id,
-            job_id=self._current_job_id
+            job_id=self._current_job_id,
+            enabled_agent_count=self._get_enabled_agent_count()
         )
 
         self._log("llm_response", {
@@ -547,7 +568,8 @@ class Agent:
                 messages=messages,
                 tools=tools if tools else None,
                 agent_id=self.id,
-                job_id=self._current_job_id
+                job_id=self._current_job_id,
+                enabled_agent_count=self._get_enabled_agent_count()
             )
 
             self._log("llm_response", {

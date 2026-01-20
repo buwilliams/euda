@@ -17,7 +17,13 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from .agent import Agent
-from .metacognition import BudgetExceeded, AgentPausedError, get_velocity_tracker
+from .metacognition import (
+    BudgetExceeded,
+    AgentPausedError,
+    get_velocity_tracker,
+    get_token_awareness,
+    AgentState,
+)
 from .metacognition.resources import print_resource_summary
 from .events import EventBus, set_event_bus, get_event_bus
 
@@ -51,6 +57,20 @@ class AgentManager:
         self.error_backoff: Dict[str, dict] = {}  # Track backoff state per agent
         self.agents_with_jobs: Dict[str, bool] = {}  # Cache: agent_id -> has_jobs
         self.event_bus = EventBus()
+
+    def get_enabled_agent_count(self) -> int:
+        """Get the number of enabled agents for budget splitting.
+
+        Returns:
+            Count of agents in ENABLED state
+        """
+        token_awareness = get_token_awareness()
+        count = 0
+        for agent_id in self.agents:
+            state = token_awareness.get_agent_state(agent_id)
+            if state == AgentState.ENABLED:
+                count += 1
+        return max(1, count)  # At least 1 to avoid division by zero
 
     def load_agent_configs(self) -> List[dict]:
         """Load all agent configurations from data/agents/*/config.json."""
@@ -329,10 +349,25 @@ class AgentManager:
         from .tools.data.jobs import list_jobs, claim_job, release_job
 
         poll_interval = self._get_system_config().get("agents", {}).get("poll_interval", 0.1)
+        token_awareness = get_token_awareness()
 
         while self.running:
             try:
-                # Skip if agent is disabled
+                # Check agent state (new token awareness system)
+                agent_state = token_awareness.get_agent_state(agent.id)
+                if agent_state == AgentState.DISABLED:
+                    time.sleep(poll_interval)
+                    continue
+                if agent_state == AgentState.PAUSED:
+                    # Agent is paused - wait for manual intervention
+                    pause_info = token_awareness.get_pause_info(agent.id)
+                    agent._log("agent_paused_waiting", {
+                        "reason": pause_info.get("reason", "unknown")
+                    })
+                    time.sleep(30)  # Check every 30 seconds
+                    continue
+
+                # Legacy check (backward compatibility)
                 if not agent.config.get("enabled", True):
                     time.sleep(poll_interval)
                     continue
@@ -434,18 +469,19 @@ class AgentManager:
                 # Continue running - don't hard exit
 
             except AgentPausedError as e:
-                # Agent paused due to runaway detection
-                agent._log("agent_paused_runaway", {
+                # Agent paused due to threshold breach or runaway detection
+                agent._log("agent_paused", {
                     "reason": e.reason
                 })
                 print(f"\n[{agent.id}] PAUSED: {e.reason} - waiting for manual resume")
-                # Wait until resumed or shutdown
-                velocity_tracker = get_velocity_tracker()
-                while velocity_tracker.is_agent_paused(agent.id) and self.running:
+                # Wait until resumed or shutdown (no auto-resume for token-based pauses)
+                while self.running:
+                    agent_state = token_awareness.get_agent_state(agent.id)
+                    if agent_state == AgentState.ENABLED:
+                        agent._log("agent_resumed", {"resumed_by": "user"})
+                        print(f"[{agent.id}] Resumed")
+                        break
                     time.sleep(30)  # Check every 30 seconds
-                if self.running:
-                    agent._log("agent_resumed", {"resumed_by": "rate_limiter"})
-                    print(f"[{agent.id}] Resumed")
 
             except Exception as e:
                 error_msg = str(e)

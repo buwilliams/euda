@@ -308,9 +308,10 @@ class UnifiedClient:
         system: str,
         messages: list,
         tools: Optional[list] = None,
-        agent_id: Optional[str] = None,
+        agent_id: str = "unknown",
         job_id: Optional[str] = None,
         track_cost: bool = True,
+        enabled_agent_count: int = 1,
     ) -> UnifiedResponse:
         """Create a message with automatic cost tracking and rate limiting.
 
@@ -319,36 +320,47 @@ class UnifiedClient:
             system: System prompt
             messages: Conversation messages
             tools: Optional tool definitions
-            agent_id: ID of calling agent (for cost attribution)
+            agent_id: ID of calling agent (required for cost attribution)
             job_id: ID of job being worked on (for per-job tracking)
             track_cost: Whether to track costs (default True)
+            enabled_agent_count: Number of enabled agents for budget splitting
 
         Returns:
             UnifiedResponse with content, stop_reason, and usage
 
         Raises:
             BudgetExceeded: If budget limit reached
-            AgentPausedError: If agent is paused due to runaway detection
+            AgentPausedError: If agent is paused due to threshold breach
             RateLimitExceeded: If rate limit exceeded
         """
-        from ..metacognition import check_budget, record_usage, get_velocity_tracker
+        from ..metacognition import (
+            check_budget, record_usage, get_velocity_tracker,
+            get_token_awareness, estimate_request_tokens
+        )
 
         velocity_tracker = get_velocity_tracker()
+        token_awareness = get_token_awareness()
 
-        # 1. Pre-call: check velocity limits and runaway detection
+        # 1. Pre-call: estimate input tokens
+        estimated_input = estimate_request_tokens(system, messages, tools)
+
+        # 2. Pre-call: check token awareness thresholds (may raise AgentPausedError)
+        token_awareness.acquire(agent_id, estimated_input, enabled_agent_count)
+
+        # 3. Pre-call: check velocity limits and runaway detection (legacy)
         velocity_tracker.acquire(agent_id, job_id)
 
-        # 2. Pre-call: check budget
+        # 4. Pre-call: check budget (legacy cost-based check)
         if track_cost:
             check_budget()
 
-        # 2. Pre-call: wait for any active backoff
+        # 5. Pre-call: wait for any active backoff
         self._wait_for_backoff()
 
-        # 3. Generate timestamp for correlation between prompt and cost logs
+        # 6. Generate timestamp for correlation between prompt and cost logs
         call_timestamp = datetime.now().isoformat()
 
-        # 4. Make the call with timing
+        # 7. Make the call with timing
         start_time = time.time()
         try:
             response = self._provider.create_message(
@@ -365,17 +377,27 @@ class UnifiedClient:
 
         duration_ms = int((time.time() - start_time) * 1000)
 
-        # 5. Post-call: reset backoff on success
+        # 8. Post-call: reset backoff on success
         self._reset_backoff()
 
-        # 6. Post-call: record for velocity tracking
+        # 9. Post-call: record for velocity tracking (legacy)
         velocity_tracker.record_call(agent_id, job_id)
 
-        # 7. Post-call: log prompt and response together
+        # 10. Post-call: record token usage in new system
+        token_awareness.record(
+            agent_id=agent_id,
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+            provider=self.provider_name,
+            model=self.model_name,
+            enabled_agent_count=enabled_agent_count
+        )
+
+        # 11. Post-call: log prompt and response together
         _log_prompt(agent_id, self.model_name, system, messages, tools,
                     timestamp=call_timestamp, response=response)
 
-        # 8. Post-call: record usage automatically
+        # 12. Post-call: record usage for cost tracking (legacy)
         if track_cost:
             record_usage(
                 provider=self.provider_name,

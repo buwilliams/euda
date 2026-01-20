@@ -21,6 +21,7 @@ from ...tools.data.memory import (
 )
 from ...rlm import read_memory_date, list_memory_dates
 from ...logger import get_logger
+from ...metacognition import get_token_awareness, AgentState
 
 
 router = APIRouter()
@@ -47,6 +48,11 @@ class AddMemoryRequest(BaseModel):
     short_description: str
     type: str
     date_expected: Optional[str] = None
+
+
+class UpdateStateRequest(BaseModel):
+    state: str  # "enabled", "disabled", "paused"
+    reason: Optional[str] = None  # Required for "paused"
 
 
 class WriteLongTermMemoryRequest(BaseModel):
@@ -167,6 +173,69 @@ def api_update_config(agent_id: str, request: UpdateConfigRequest):
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
+
+
+# Agent state endpoints
+@router.get("/{agent_id}/state")
+def api_get_state(agent_id: str):
+    """Get agent's current operational state.
+
+    Returns the agent state (enabled, disabled, paused) and related information
+    including token usage statistics.
+    """
+    config = get_agent_config(agent_id)
+    if config is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    token_awareness = get_token_awareness()
+    state = token_awareness.get_agent_state(agent_id)
+    pause_info = token_awareness.get_pause_info(agent_id)
+    usage = token_awareness.get_agent_usage(agent_id)
+
+    return {
+        "agent_id": agent_id,
+        "state": state.value,
+        "pause_info": pause_info if pause_info.get("is_paused") else None,
+        "token_usage": usage
+    }
+
+
+@router.patch("/{agent_id}/state")
+def api_update_state(agent_id: str, request: UpdateStateRequest):
+    """Update agent's operational state.
+
+    Allows enabling, disabling, or manually pausing an agent.
+    To resume a paused agent, set state to "enabled".
+    """
+    config = get_agent_config(agent_id)
+    if config is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Validate state
+    try:
+        new_state = AgentState(request.state)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid state: {request.state}. Must be 'enabled', 'disabled', or 'paused'"
+        )
+
+    # Paused state requires a reason
+    if new_state == AgentState.PAUSED and not request.reason:
+        raise HTTPException(
+            status_code=400,
+            detail="Reason is required when setting state to 'paused'"
+        )
+
+    token_awareness = get_token_awareness()
+    token_awareness.set_agent_state(agent_id, new_state, request.reason)
+
+    return {
+        "agent_id": agent_id,
+        "state": new_state.value,
+        "reason": request.reason,
+        "message": f"Agent state changed to {new_state.value}"
+    }
 
 
 # Short-term memory endpoints

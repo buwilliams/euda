@@ -2,6 +2,12 @@
   "id": "user",
   "name": "User",
   "enabled": true,
+  "state": "enabled",
+  "token_budget": {
+    "frequency": "hourly",
+    "input_ratio": 0.8,
+    "output_ratio": 0.2
+  },
   "tools": [
     "done_working",
     "list_memory",

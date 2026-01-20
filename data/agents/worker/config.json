@@ -2,7 +2,13 @@
   "id": "worker",
   "name": "Worker",
   "enabled": true,
+  "state": "enabled",
   "order": 10,
+  "token_budget": {
+    "frequency": "hourly",
+    "input_ratio": 0.8,
+    "output_ratio": 0.2
+  },
   "tools": [
     "list_jobs",
     "get_job",

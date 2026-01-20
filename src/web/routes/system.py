@@ -21,6 +21,7 @@ from ...fresh_start import (
     restore_backup as _restore_backup,
     delete_backup as _delete_backup,
 )
+from ...metacognition import get_incident_tracker
 
 
 router = APIRouter()
@@ -326,6 +327,81 @@ def delete_backup(backup_name: str):
         "success": True,
         "deleted": result["deleted"],
         "message": f"Backup {result['deleted']} deleted permanently."
+    }
+
+
+# ============== Incidents ==============
+
+@router.get("/incidents")
+def list_incidents(agent_id: str = None, days: int = 7):
+    """List incidents (unacknowledged and recent history).
+
+    Args:
+        agent_id: Optional filter by agent ID
+        days: Number of days of history to include (default 7)
+
+    Returns unacknowledged incidents and recent history.
+    """
+    tracker = get_incident_tracker()
+
+    # Get unacknowledged incidents
+    unacknowledged = tracker.get_unacknowledged(agent_id)
+
+    # Get history
+    history = tracker.get_history(days=days, agent_id=agent_id)
+
+    return {
+        "unacknowledged": [
+            {
+                "id": i.id,
+                "agent_id": i.agent_id,
+                "incident_type": i.incident_type,
+                "severity": i.severity,
+                "reason": i.reason,
+                "details": i.details,
+                "timestamp": i.timestamp
+            }
+            for i in unacknowledged
+        ],
+        "history": history,
+        "unacknowledged_count": len(unacknowledged)
+    }
+
+
+@router.post("/incidents/{incident_id}/acknowledge")
+def acknowledge_incident(incident_id: str):
+    """Acknowledge an incident.
+
+    Marks the incident as acknowledged, removing it from the unacknowledged list.
+    """
+    tracker = get_incident_tracker()
+    success = tracker.acknowledge(incident_id, acknowledged_by="api")
+
+    if not success:
+        return {"success": False, "error": "Incident not found or already acknowledged"}
+
+    return {
+        "success": True,
+        "incident_id": incident_id,
+        "message": "Incident acknowledged"
+    }
+
+
+@router.post("/incidents/acknowledge-all")
+def acknowledge_all_incidents(agent_id: str = None):
+    """Acknowledge all incidents for an agent (or all agents).
+
+    Args:
+        agent_id: Optional agent ID filter. If not provided, acknowledges all incidents.
+    """
+    tracker = get_incident_tracker()
+    count = tracker.acknowledge_all(agent_id, acknowledged_by="api")
+
+    return {
+        "success": True,
+        "acknowledged_count": count,
+        "agent_id": agent_id,
+        "message": f"Acknowledged {count} incident(s)"
     }
 
 
