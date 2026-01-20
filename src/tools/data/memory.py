@@ -4,6 +4,9 @@ Memory Tools - Track important items for proactive attention.
 Every agent (including user) has:
 - Short-term memory: JSONL file at data/agents/{agent_id}/memory/short-term.jsonl (90-day rolling)
 - Long-term memory: Markdown files at data/agents/{agent_id}/memory/long-term/{date}.md (indefinite)
+
+Long-term memory access is mediated by RLM (Recursive Language Model) which allows
+semantic search and pattern analysis without loading full history into context.
 """
 
 import json
@@ -13,6 +16,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from .. import tool
+from ...rlm import RLMClient, load_long_term_memory
 
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
@@ -209,47 +213,6 @@ def remove_memory(entry_id: str, agent_id: str = "user") -> dict:
 # Long-term memory tools
 # =============================================================================
 
-@tool("read_long_term_memory", "Read long-term memory entries for a date. Use when: need historical context about what happened on a specific day.", tool_type="data")
-def read_long_term_memory(date: str = None, agent_id: str = "user") -> dict:
-    """Read long-term memory entries.
-
-    Args:
-        date: Specific date (YYYY-MM-DD) or None for today
-        agent_id: Agent ID (defaults to "user")
-    """
-    _ensure_memory_dirs(agent_id)
-
-    if date is None:
-        date = datetime.now().strftime("%Y-%m-%d")
-
-    year = date[:4]  # Extract year from date
-
-    # Try year-based path first
-    long_term_dir = _get_long_term_dir(agent_id, year)
-    memory_path = long_term_dir / f"{date}.md"
-
-    # Fall back to legacy flat path for backward compatibility
-    if not memory_path.exists():
-        legacy_dir = AGENTS_DIR / agent_id / "memory" / "long-term"
-        legacy_path = legacy_dir / f"{date}.md"
-        if legacy_path.exists():
-            memory_path = legacy_path
-
-    if memory_path.exists():
-        return {
-            "date": date,
-            "agent_id": agent_id,
-            "content": memory_path.read_text(),
-            "exists": True
-        }
-    return {
-        "date": date,
-        "agent_id": agent_id,
-        "content": "",
-        "exists": False
-    }
-
-
 @tool("write_long_term_memory", "Add an entry to long-term memory. Use when: recording significant events or conversations.", tool_type="data")
 def write_long_term_memory(content: str, date: str = None, agent_id: str = "user", source: str = None) -> dict:
     """Add an entry to long-term memory.
@@ -373,114 +336,115 @@ def graduate_memory(memory_id: str, reason: str = None, agent_id: str = "user") 
     }
 
 
-@tool("list_long_term_memory_dates", "List all dates with long-term memory entries. Use when: finding available historical records.", tool_type="data")
-def list_long_term_memory_dates(agent_id: str = "user") -> List[str]:
-    """List all dates that have long-term memory entries for an agent.
-
-    Args:
-        agent_id: Agent ID (defaults to "user")
-    """
-    _ensure_memory_dirs(agent_id)
-
-    base_dir = AGENTS_DIR / agent_id / "memory" / "long-term"
-    if not base_dir.exists():
-        return []
-
-    dates = []
-
-    # Check year directories (new structure)
-    for year_dir in base_dir.iterdir():
-        if year_dir.is_dir() and year_dir.name.isdigit() and len(year_dir.name) == 4:
-            for path in year_dir.glob("*.md"):
-                dates.append(path.stem)
-
-    # Also check flat structure (legacy) for backward compatibility
-    for path in base_dir.glob("*.md"):
-        if path.stem not in dates:
-            dates.append(path.stem)
-
-    dates.sort(reverse=True)
-    return dates
-
-
-@tool("search_all_memory", "Search memory across all agents or specific agents. Use when: looking for information that might exist in another agent's memory.", tool_type="data")
-def search_all_memory(
+@tool("recall_memory", "Recall information from long-term memory using semantic search. Use when: you need to remember something from the past.", tool_type="data")
+def recall_memory(
     query: str,
-    agent_ids: List[str] = None,
-    memory_type: str = "short"
-) -> List[dict]:
-    """Search memory items across multiple agents.
+    time_range_days: int = 365,
+    agent_id: str = "user"
+) -> dict:
+    """RLM-powered memory recall.
 
-    This enables cross-agent memory access, allowing agents to find information
-    that may have been recorded by other agents.
-
-    Args:
-        query: Case-insensitive substring search term
-        agent_ids: List of agent IDs to search (default: all agents)
-        memory_type: "short" for short-term only, "long" for long-term only, "all" for both
-    """
-    results = []
-    query_lower = query.lower()
-
-    # Get list of agents to search
-    if agent_ids is None:
-        agent_ids = [d.name for d in AGENTS_DIR.iterdir() if d.is_dir()]
-
-    for agent_id in agent_ids:
-        # Search short-term memory
-        if memory_type in ("short", "all"):
-            entries = _load_entries(agent_id)
-            for entry in entries:
-                desc = entry.get("short_description", "").lower()
-                if query_lower in desc:
-                    results.append({
-                        **entry,
-                        "agent_id": agent_id,
-                        "memory_type": "short-term"
-                    })
-
-        # Search long-term memory
-        if memory_type in ("long", "all"):
-            long_term_dir = AGENTS_DIR / agent_id / "memory" / "long-term"
-            if long_term_dir.exists():
-                for year_dir in long_term_dir.iterdir():
-                    if year_dir.is_dir():
-                        for md_file in year_dir.glob("*.md"):
-                            content = md_file.read_text()
-                            if query_lower in content.lower():
-                                # Extract a snippet around the match
-                                snippet = _extract_snippet(content, query_lower, context=150)
-                                results.append({
-                                    "agent_id": agent_id,
-                                    "memory_type": "long-term",
-                                    "date": md_file.stem,
-                                    "file": str(md_file.relative_to(AGENTS_DIR.parent)),
-                                    "snippet": snippet
-                                })
-
-    return results
-
-
-def _extract_snippet(content: str, query: str, context: int = 100) -> str:
-    """Extract a snippet of text around a query match.
+    Uses a Recursive Language Model to semantically search long-term memory.
+    The LLM writes code to explore memory and uses sub-LLM calls for analysis.
 
     Args:
-        content: Full text content
-        query: Search term (lowercase)
-        context: Number of characters to show before/after match
+        query: What to recall (semantic, not keyword match)
+        time_range_days: How far back to search (default: 1 year)
+        agent_id: Whose memory to search
+
+    Returns:
+        {
+            "query": "...",
+            "findings": "Synthesized answer from memory",
+            "sources": [{"date": "...", "snippet": "..."}],
+            "iterations": 5,
+            "sub_calls": 3,
+            "error": null
+        }
     """
-    content_lower = content.lower()
-    pos = content_lower.find(query)
-    if pos == -1:
-        return ""
-    start = max(0, pos - context)
-    end = min(len(content), pos + len(query) + context)
-    snippet = content[start:end]
-    if start > 0:
-        snippet = "..." + snippet
-    if end < len(content):
-        snippet = snippet + "..."
-    return snippet
+    # Load memory for the specified time range
+    memory = load_long_term_memory(agent_id=agent_id, days=time_range_days)
+
+    if memory["metadata"]["total_entries"] == 0:
+        return {
+            "query": query,
+            "findings": "No long-term memory entries found.",
+            "sources": [],
+            "iterations": 0,
+            "sub_calls": 0,
+            "error": None
+        }
+
+    # Run RLM session
+    rlm = RLMClient(agent_id=agent_id)
+    result = rlm.recall(query, memory, time_range_days)
+
+    return {
+        "query": result.query,
+        "findings": result.findings,
+        "sources": result.sources,
+        "iterations": result.iterations,
+        "sub_calls": result.sub_calls,
+        "error": result.error
+    }
+
+
+@tool("analyze_memory", "Analyze patterns and trends in long-term memory. Use when: you need to understand how things have changed over time.", tool_type="data")
+def analyze_memory(
+    query: str,
+    time_range_days: int = 365,
+    agent_id: str = "user"
+) -> dict:
+    """Deep analysis of memory patterns.
+
+    Uses a Recursive Language Model to analyze patterns, trends, and evolution
+    across long-term memory entries.
+
+    Args:
+        query: What pattern to analyze
+        time_range_days: Analysis window (default: 1 year)
+        agent_id: Whose memory to analyze
+
+    Examples:
+        - "What recurring concerns appear in my memory?"
+        - "How have my goals evolved over the past year?"
+        - "What people have I mentioned most frequently?"
+
+    Returns:
+        {
+            "query": "...",
+            "findings": "Analysis of patterns found",
+            "sources": [...],
+            "iterations": 8,
+            "sub_calls": 5,
+            "error": null
+        }
+    """
+    # Load memory for the specified time range
+    memory = load_long_term_memory(agent_id=agent_id, days=time_range_days)
+
+    if memory["metadata"]["total_entries"] == 0:
+        return {
+            "query": query,
+            "findings": "No long-term memory entries found for analysis.",
+            "sources": [],
+            "iterations": 0,
+            "sub_calls": 0,
+            "error": None
+        }
+
+    # Run RLM session
+    rlm = RLMClient(agent_id=agent_id)
+    result = rlm.analyze(query, memory, time_range_days)
+
+    return {
+        "query": result.query,
+        "findings": result.findings,
+        "sources": result.sources,
+        "iterations": result.iterations,
+        "sub_calls": result.sub_calls,
+        "error": result.error
+    }
 
 
 # =============================================================================

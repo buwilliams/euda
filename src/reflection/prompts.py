@@ -117,7 +117,8 @@ def build_consolidate_prompt(
     short_term_memory: list,
     recent_long_term: str,
     completed_jobs: list = None,
-    is_user: bool = False
+    is_user: bool = False,
+    pattern_context: str = ""
 ) -> str:
     """Build the user prompt for the consolidate phase.
 
@@ -128,6 +129,7 @@ def build_consolidate_prompt(
         recent_long_term: Recent long-term memory content
         completed_jobs: List of recently completed jobs
         is_user: Whether this is the user agent (selects appropriate system prompt)
+        pattern_context: Formatted string of discovered patterns to include
 
     Returns:
         Formatted prompt string
@@ -173,5 +175,6 @@ def build_consolidate_prompt(
         agent_identity=agent_profile,
         short_term_memory=short_term_text,
         recent_long_term=long_term_text,
-        completed_jobs=completed_jobs_text
+        completed_jobs=completed_jobs_text,
+        pattern_context=pattern_context
     )

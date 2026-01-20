@@ -82,7 +82,7 @@ scp "$PROJECT_DIR/.env" "$SERVER:$REMOTE_DIR/.env"
 
 # Install dependencies
 echo "[5/6] Installing dependencies..."
-ssh -T "$SERVER" "cd $REMOTE_DIR && uv sync"
+ssh -T "$SERVER" "cd $REMOTE_DIR && source ~/.local/bin/env && uv sync"
 
 # Restart service
 echo "[6/6] Restarting service..."
@@ -104,5 +104,5 @@ echo ""
 echo "Useful commands:"
 echo "  View logs:    ssh $SERVER 'journalctl -u euno -f'"
 echo "  Restart:      ssh $SERVER 'sudo systemctl restart euno'"
-echo "  Set password: ssh $SERVER 'cd $REMOTE_DIR && uv run euno set-password'"
+echo "  Set password: ssh $SERVER 'cd $REMOTE_DIR && source ~/.local/bin/env && uv run euno set-password'"
 echo ""

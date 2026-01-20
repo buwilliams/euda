@@ -26,6 +26,7 @@ Commands:
   agents           List all agents
   jobs             List all jobs
   points           Show contribution points summary
+  store            Import files into long-term memory using RLM
   dev              Developer tools for debugging agents
   set-password     Set the access password
   remove-password  Remove the password (disable auth)
@@ -38,6 +39,7 @@ Examples:
   euno agents            # List agents
   euno jobs              # List jobs
   euno points            # Show contribution points
+  euno store ~/journal/  # Import journal files to memory
   euno dev help          # Show dev commands
   euno set-password      # Set access password
   euno remove-password   # Disable authentication
@@ -57,6 +59,7 @@ Examples:
         "agents": cmd_agents,
         "jobs": cmd_jobs,
         "points": cmd_points,
+        "store": cmd_store,
         "dev": cmd_dev,
         "set-password": cmd_set_password,
         "remove-password": cmd_remove_password,
@@ -579,6 +582,18 @@ def cmd_fresh_start(args):
 
     print()
     print("Fresh start complete. Ready for new data.")
+
+
+def cmd_store(args):
+    """Import files into long-term memory using RLM."""
+    from src.cli.commands.store import cmd_store as store_main
+
+    # Parse global flags
+    json_mode = "--json" in args
+    if json_mode:
+        args = [a for a in args if a != "--json"]
+
+    store_main(args, json_mode)
 
 
 def cmd_dev(args):

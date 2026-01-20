@@ -9,6 +9,16 @@ You've been triggered for scheduled exploration: {job_name}
 
 {user_memory}
 
+{user_patterns}
+
+## Exploration Guidance
+
+When patterns are available, use them to guide your discovery:
+- **Trajectories marked "expanding"**: Explore opportunities in these growth areas
+- **Trajectories marked "clarifying"**: Find resources that sharpen focus
+- **High-confidence temporal patterns**: Suggest content aligned with user's rhythms
+- **Correlations**: Understand what drives user engagement
+
 ## Guidelines
 
 1. Use the user context above to understand what matters to them right now
