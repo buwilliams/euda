@@ -18,6 +18,16 @@
 - Complete the job with complete_job(job_id="{job_id}") when work is done
 - Call done_working() at the end of your work cycle
 
+## Blocked Jobs
+
+If you cannot progress because you're waiting on something external:
+1. Add a `waiting:reason` tag to the job (e.g., `waiting:logan`, `waiting:user-input`, `waiting:external-api`)
+2. Log why it's blocked: add_job_log("{job_id}", "Blocked: waiting for Logan's response with QA findings")
+3. Then call done_working()
+
+This removes the job from your queue until the user interacts with it again.
+Do NOT keep checking the same blocked job repeatedly — mark it and move on.
+
 ## Special Case: User Request
 
 When a job has the `user:request` tag, someone specifically asked for your help:

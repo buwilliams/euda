@@ -163,6 +163,31 @@ All integrations (file uploads, email import, etc.) should store content as job 
 - Agents can use standard asset tools (`read_asset`, `write_asset`, `list_assets`)
 - Cleanup happens naturally when jobs are archived/deleted
 
+### Blocked Jobs
+
+Jobs can be blocked when waiting on external input. This prevents agents from repeatedly polling the same job.
+
+**Blocking tags:**
+- `waiting:{reason}` — Waiting on external input (e.g., `waiting:logan`, `waiting:user-input`)
+- `blocked:{reason}` — Blocked for other reasons
+
+**Agent behavior:**
+When an agent cannot progress on a job due to external dependencies:
+1. Add a `waiting:` tag: `update_job(job_id, tags=[...existing, "waiting:logan"])`
+2. Log the reason: `add_job_log(job_id, "Blocked: waiting for Logan's QA findings")`
+3. Call `done_working()` to end the work cycle
+
+**Actionable filter:**
+The `list_jobs(actionable=True)` filter excludes jobs with `waiting:*` or `blocked:*` tags.
+
+**Unblocking:**
+Jobs are automatically unblocked when the user:
+- Edits an asset on the job
+- Sends feedback about the job
+- Calls `POST /api/jobs/{id}/unblock` explicitly
+
+Unblocking removes the blocking tags and notifies assigned agents that the job is actionable again.
+
 ## Config
 
 - System config: `data/system/config.json`

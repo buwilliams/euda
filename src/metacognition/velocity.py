@@ -142,8 +142,9 @@ class VelocityTracker:
     def acquire(self, agent_id: Optional[str] = None, job_id: Optional[str] = None) -> bool:
         """Acquire permission to make an API call.
 
-        This is called BEFORE making an LLM API call. It may block if
-        throttling is enabled and the queue is processing.
+        This is called BEFORE making an LLM API call. It uses optimistic
+        booking to prevent TOCTOU races - the slot is booked immediately
+        upon passing checks, before the actual API call is made.
 
         Args:
             agent_id: ID of the calling agent
@@ -178,13 +179,21 @@ class VelocityTracker:
                 })
                 raise RateLimitExceeded("Rolling window rate limit exceeded")
 
+            # OPTIMISTIC BOOKING: Book the slot NOW, before the API call.
+            # This prevents TOCTOU races where multiple threads pass the check
+            # before any of them record their call.
+            self._call_timestamps.append(time.time())
+
             return True
 
     def record_call(self, agent_id: Optional[str] = None, job_id: Optional[str] = None):
-        """Record a completed API call for tracking.
+        """Record a completed API call for per-agent tracking.
 
         This is called AFTER a successful LLM API call to update
-        tracking for runaway detection and statistics.
+        per-agent history for runaway detection and statistics.
+
+        Note: The global rolling window slot is already booked in acquire()
+        via optimistic booking. This method only tracks per-agent history.
 
         Args:
             agent_id: ID of the calling agent
@@ -196,10 +205,10 @@ class VelocityTracker:
         now = time.time()
 
         with self._lock:
-            # Add to global rolling window
-            self._call_timestamps.append(now)
+            # Note: Global _call_timestamps is already updated in acquire()
+            # via optimistic booking. Here we only track per-agent history.
 
-            # Add to per-agent history
+            # Add to per-agent history for runaway detection
             if agent_id:
                 if agent_id not in self._agent_call_history:
                     self._agent_call_history[agent_id] = deque()

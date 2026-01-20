@@ -248,6 +248,14 @@ def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assign
         query += " AND (due_date IS NULL OR due_date <= ?)"
         params.append(today)
         query += " AND someday = 0"
+        # Exclude jobs with blocking tags (waiting:* or blocked:*)
+        query += " AND NOT EXISTS (SELECT 1 FROM json_each(tags) WHERE json_each.value LIKE 'waiting:%' OR json_each.value LIKE 'blocked:%')"
+        # Exclude jobs already claimed by another agent
+        if assignee:
+            query += " AND (in_progress_by IS NULL OR in_progress_by = ?)"
+            params.append(assignee)
+        else:
+            query += " AND in_progress_by IS NULL"
 
     query += " ORDER BY updated_at DESC"
 
@@ -540,6 +548,55 @@ def restore_job(job_id: str, agent: str = "user") -> Optional[dict]:
     _emit_jobs_update()
 
     return _load_job(job_id)
+
+
+def unblock_job(job_id: str) -> bool:
+    """Remove waiting:* and blocked:* tags from a job.
+
+    Called automatically when a user interacts with a blocked job
+    (views it, adds an asset, etc.) to put it back in the agent's queue.
+
+    Args:
+        job_id: The job to unblock
+
+    Returns:
+        True if the job was unblocked, False if it wasn't blocked
+    """
+    job = _load_job(job_id)
+    if not job:
+        return False
+
+    tags = job.get("tags", [])
+    blocking_tags = [t for t in tags if t.startswith(("waiting:", "blocked:"))]
+
+    if not blocking_tags:
+        return False  # Not blocked
+
+    # Remove blocking tags
+    new_tags = [t for t in tags if not t.startswith(("waiting:", "blocked:"))]
+
+    now = datetime.utcnow().isoformat() + "Z"
+
+    with _transaction() as conn:
+        conn.execute('''
+            UPDATE jobs SET tags = ?, updated_at = ?
+            WHERE id = ?
+        ''', (json.dumps(new_tags), now, job_id))
+
+        conn.execute('''
+            INSERT INTO job_logs (job_id, timestamp, agent, action, note)
+            VALUES (?, ?, ?, 'unblocked', ?)
+        ''', (job_id, now, "user", f"Removed: {', '.join(blocking_tags)}"))
+
+    # Notify assignees that job is actionable again
+    for assignee in job.get("assignees", []):
+        _emit_event("job:assigned", scope=assignee, data={"job_id": job_id, "name": job["name"]})
+        _notify_agent_has_jobs(assignee)
+
+    # Notify UI clients
+    _emit_jobs_update()
+
+    return True
 
 
 @tool("archive_job", "Archive a job (mark as no longer relevant). Use when: job is obsolete or cancelled.", tool_type="data")
@@ -980,7 +1037,10 @@ def list_available_agents() -> list:
 
 @tool("claim_job", "Claim a job for exclusive work. Use when: starting work to prevent conflicts.", tool_type="data")
 def claim_job(job_id: str, agent_id: str) -> dict:
-    """Claim a job to work on it exclusively.
+    """Atomically claim a job to work on it exclusively.
+
+    Uses atomic SQL to prevent TOCTOU race conditions where multiple threads
+    could all read "unclaimed" and then all write their claim.
 
     Returns error if already claimed by another agent.
 
@@ -998,16 +1058,26 @@ def claim_job(job_id: str, agent_id: str) -> dict:
     if any(tag in system_tags for tag in job.get("tags", [])):
         return {"error": "Cannot claim system jobs - only their descendants can be processed"}
 
-    current_holder = job.get("in_progress_by")
-    if current_holder and current_holder != agent_id:
-        return {"error": f"Job already claimed by {current_holder}"}
-
     now = datetime.utcnow().isoformat() + "Z"
+
     with _transaction() as conn:
-        conn.execute(
-            "UPDATE jobs SET in_progress_by = ?, updated_at = ? WHERE id = ?",
-            (agent_id, now, job_id)
+        # ATOMIC: Update only if unclaimed OR already claimed by us
+        # This prevents TOCTOU race where multiple threads read NULL and all claim
+        result = conn.execute(
+            """UPDATE jobs SET in_progress_by = ?, updated_at = ?
+               WHERE id = ? AND (in_progress_by IS NULL OR in_progress_by = ?)""",
+            (agent_id, now, job_id, agent_id)
         )
+
+        if result.rowcount == 0:
+            # Failed to claim - either job doesn't exist or someone else has it
+            current = conn.execute(
+                "SELECT in_progress_by FROM jobs WHERE id = ?", (job_id,)
+            ).fetchone()
+            if current:
+                holder = current[0] if current[0] else "unknown"
+                return {"error": f"Job already claimed by {holder}"}
+            return {"error": f"Job not found: {job_id}"}
 
     # Notify UI clients
     _emit_jobs_update()
