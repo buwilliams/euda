@@ -4,7 +4,7 @@
   "enabled": true,
   "state": "enabled",
   "token_budget": {
-    "frequency": "hourly",
+    "frequency": "daily",
     "input_ratio": 0.8,
     "output_ratio": 0.2
   },

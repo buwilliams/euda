@@ -248,7 +248,13 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         "id": agent_id,
         "name": name,
         "enabled": True,
+        "state": "enabled",
         "order": max_order + 1,
+        "token_budget": {
+            "frequency": "daily",
+            "input_ratio": 0.8,
+            "output_ratio": 0.2
+        },
         "tools": agent_tools,
         "triggers": triggers or []
     }

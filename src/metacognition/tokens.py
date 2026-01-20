@@ -75,7 +75,7 @@ class TokenAwareness:
     DEFAULT_OUTPUT_RATIO = 0.2
 
     # Default frequency for agents
-    DEFAULT_FREQUENCY = "hourly"
+    DEFAULT_FREQUENCY = "daily"
 
     def __init__(self):
         self._lock = threading.RLock()

@@ -14,9 +14,11 @@ Every agent (including the user) shares the same four-category structure:
 
 Directory structure:
 - **Config:** `data/agents/{id}/config.json`
-  - id, name, enabled, order, tools[], triggers[]
+  - id, name, enabled, state, order, tools[], triggers[]
+  - token_budget{}: frequency ("daily"|"hourly"|"weekly"|"monthly"), input_ratio, output_ratio
   - exploration{}: enabled, trigger (e.g., "time:hour_04")
   - reflection{}: enabled, trigger
+  - State: "enabled", "disabled", "paused" (paused requires manual intervention)
   - Triggers define which trigger jobs the agent receives
 - **Identity:** `data/agents/{id}/identity.md`
   - Evolves over time based on long-term memory
