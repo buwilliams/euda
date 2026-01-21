@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from .routes import jobs, agents, chat, user, auth, system, upload, transcribe, synthesize, patterns
 from .routes.auth import get_session_token
-from ..auth import is_password_set, verify_session
+from .auth import is_password_set, verify_session
 from .events import trigger_shutdown
 
 
