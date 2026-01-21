@@ -14,6 +14,11 @@ from .tokens import (
     AgentState,
     AgentPausedError,
     get_token_awareness,
+    get_calls_by_job,
+    get_job_call_count,
+    get_costs_by_agent,
+    get_cost_summary,
+    get_resource_tracker,
 )
 from .config import MetacognitionConfig
 from .progress import ProgressTracker
@@ -31,6 +36,11 @@ __all__ = [
     "AgentState",
     "AgentPausedError",
     "get_token_awareness",
+    "get_calls_by_job",
+    "get_job_call_count",
+    "get_costs_by_agent",
+    "get_cost_summary",
+    "get_resource_tracker",
     "MetacognitionConfig",
     "ProgressTracker",
     "count_tokens",

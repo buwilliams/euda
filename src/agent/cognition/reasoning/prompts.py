@@ -9,7 +9,7 @@ Variables use Python format string syntax: {variable_name}
 from pathlib import Path
 from typing import Dict, Optional
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent.parent / "data"
 PROMPTS_DIR = DATA_DIR / "system" / "prompts"
 AGENTS_DIR = DATA_DIR / "agents"
 

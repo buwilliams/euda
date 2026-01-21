@@ -45,7 +45,7 @@ def execute_tools_batched(tool_calls: List[dict], execute_fn, agent_id: str = No
     Returns:
         List of tool results in the same order as input calls
     """
-    from .tools.data.jobs import (
+    from .llms.tools.data.jobs import (
         create_jobs_batch, update_jobs_batch,
         complete_jobs_batch, add_job_logs_batch
     )

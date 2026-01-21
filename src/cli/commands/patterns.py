@@ -58,7 +58,7 @@ def cmd_patterns(args: List[str], json_mode: bool = False):
         return
 
     # Load patterns
-    from ...reflection.patterns import load_patterns
+    from ...agent.cognition.metacognition.consolidation.patterns import load_patterns
     store = load_patterns(agent_id)
 
     if json_mode:
@@ -207,7 +207,7 @@ def _show_hypotheses(hypotheses: list, json_mode: bool):
 
 def _clear_patterns(agent_id: str, json_mode: bool):
     """Clear all patterns for an agent."""
-    from ...reflection.patterns import create_empty_patterns, save_patterns
+    from ...agent.cognition.metacognition.consolidation.patterns import create_empty_patterns, save_patterns
 
     store = create_empty_patterns()
     save_patterns(agent_id, store)

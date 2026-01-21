@@ -226,7 +226,7 @@ class UnifiedSpeechClient:
         if self._provider is None:
             raise ValueError(f"Provider '{self.provider_name}' does not support speech-to-text")
 
-        from ..metacognition import record_usage
+        from ..agent.cognition.metacognition import get_token_awareness
 
         # Wait for any active backoff
         self._wait_for_backoff()
@@ -257,12 +257,12 @@ class UnifiedSpeechClient:
             estimated_input_tokens = max(1, int(audio_duration * 50))
             estimated_output_tokens = max(1, len(result.text) // 4)
 
-            record_usage(
-                provider=self.provider_name,
-                model="gpt-4o-transcribe",
+            get_token_awareness().record(
+                agent_id="transcribe",
                 input_tokens=estimated_input_tokens,
                 output_tokens=estimated_output_tokens,
-                agent_id="transcribe",
+                provider=self.provider_name,
+                model="gpt-4o-transcribe",
                 duration_ms=duration_ms
             )
 
@@ -292,7 +292,7 @@ class UnifiedSpeechClient:
         if self._provider is None:
             raise ValueError(f"Provider '{self.provider_name}' does not support text-to-speech")
 
-        from ..metacognition import record_usage
+        from ..agent.cognition.metacognition import get_token_awareness
 
         # Wait for any active backoff
         self._wait_for_backoff()
@@ -316,12 +316,12 @@ class UnifiedSpeechClient:
             # Estimate tokens: ~15 characters per token for TTS
             estimated_input_tokens = max(1, len(text) // 15)
 
-            record_usage(
-                provider=self.provider_name,
-                model="gpt-4o-mini-tts",
+            get_token_awareness().record(
+                agent_id="tts",
                 input_tokens=estimated_input_tokens,
                 output_tokens=0,
-                agent_id="tts",
+                provider=self.provider_name,
+                model="gpt-4o-mini-tts",
                 duration_ms=duration_ms
             )
 

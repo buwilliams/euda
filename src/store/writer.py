@@ -25,7 +25,7 @@ def write_to_memory(results: List[StoreResult], agent_id: str = "user") -> dict:
             "total_written": int
         }
     """
-    from ..tools.data.memory import write_long_term_memory
+    from ..llms.tools.data.memory import write_long_term_memory
 
     written = []
     errors = []

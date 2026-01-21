@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from .. import tool
-from ...rlm import RLMClient, load_long_term_memory
+from ....agent.rlm import RLMClient, load_long_term_memory
 
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"

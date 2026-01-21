@@ -15,13 +15,13 @@ Where Cognition = Reasoning (prompts) + Metacognition (self-regulation)
 
 from typing import Optional, TYPE_CHECKING
 
-from .config import MetacognitionConfig
-from .tokens import get_token_awareness, TokenAwareness, AgentState
-from .planning import Planner
-from ..logger import get_logger
+from .regulation.config import MetacognitionConfig
+from .regulation.tokens import get_token_awareness, TokenAwareness, AgentState
+from ..reasoning.planning import Planner
+from ....logger import get_logger
 
 if TYPE_CHECKING:
-    from ..agent import Agent
+    from ...agent import Agent
 
 
 class Metacognition:

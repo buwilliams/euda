@@ -35,7 +35,7 @@ def cmd_explore(args: List[str], json_mode: bool = False):
         sys.exit(1)
 
     # Create exploration job
-    from ...tools.data.jobs import create_job, get_system_container
+    from ...llms.tools.data.jobs import create_job, get_system_container
 
     today = datetime.now().strftime("%Y-%m-%d")
     system_container = get_system_container()

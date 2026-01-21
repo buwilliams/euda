@@ -42,8 +42,8 @@ def cmd_upload(args: List[str], json_mode: bool = False):
 
 def _upload_to_job(job_id: str, file_path: Path, json_mode: bool):
     """Upload file to an existing job."""
-    from ...tools.data.jobs import get_job
-    from ...tools.data.assets import write_asset
+    from ...llms.tools.data.jobs import get_job
+    from ...llms.tools.data.assets import write_asset
 
     # Verify job exists
     job = get_job(job_id)
@@ -90,8 +90,8 @@ def _upload_to_agent(agent_id: str, file_path: Path, json_mode: bool):
         print_error("Only text files are supported for upload", json_mode)
         sys.exit(1)
 
-    from ...tools.data.jobs import create_job, get_system_container
-    from ...tools.data.assets import write_asset
+    from ...llms.tools.data.jobs import create_job, get_system_container
+    from ...llms.tools.data.assets import write_asset
 
     # Create job
     system_container = get_system_container()

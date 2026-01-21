@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from ..rlm.repl import REPLEnvironment, ExecutionResult
+from ..agent.rlm.repl import REPLEnvironment, ExecutionResult
 from ..llms.base import get_client, UnifiedClient
 
 

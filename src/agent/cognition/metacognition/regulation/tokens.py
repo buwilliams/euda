@@ -843,3 +843,131 @@ def get_token_awareness() -> TokenAwareness:
         if _token_awareness is None:
             _token_awareness = TokenAwareness()
         return _token_awareness
+
+
+def get_calls_by_job(job_id: str, days: int = 30) -> list:
+    """Get all API calls for a specific job.
+
+    Args:
+        job_id: The job ID to filter by
+        days: Number of days to look back
+
+    Returns:
+        List of API call entries for this job
+    """
+    ta = get_token_awareness()
+    cutoff = datetime.now() - timedelta(days=days)
+    results = []
+
+    # Read from current month's log file
+    log_path = ta._cost_log_path
+    if log_path.exists():
+        try:
+            with open(log_path, "r") as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    try:
+                        entry = json.loads(line)
+                        if entry.get("job_id") == job_id:
+                            entry_time = datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
+                            if entry_time.replace(tzinfo=None) >= cutoff:
+                                results.append(entry)
+                    except (json.JSONDecodeError, KeyError, ValueError):
+                        continue
+        except Exception:
+            pass
+
+    return results
+
+
+def get_job_call_count(job_id: str, days: int = 30) -> dict:
+    """Get call count and cost summary for a job.
+
+    Args:
+        job_id: The job ID to summarize
+        days: Number of days to look back
+
+    Returns:
+        Dict with call_count and total_cost
+    """
+    calls = get_calls_by_job(job_id, days)
+    total_cost = sum(c.get("cost", 0) for c in calls)
+    total_input = sum(c.get("input_tokens", 0) for c in calls)
+    total_output = sum(c.get("output_tokens", 0) for c in calls)
+
+    return {
+        "job_id": job_id,
+        "call_count": len(calls),
+        "total_cost": round(total_cost, 6),
+        "total_input_tokens": total_input,
+        "total_output_tokens": total_output
+    }
+
+
+def get_costs_by_agent(days: int = 30) -> dict:
+    """Get cost breakdown by agent for the specified period.
+
+    Args:
+        days: Number of days to look back
+
+    Returns:
+        Dict mapping agent_id to cost summary
+    """
+    ta = get_token_awareness()
+    cutoff = datetime.now() - timedelta(days=days)
+    by_agent = {}
+
+    log_path = ta._cost_log_path
+    if log_path.exists():
+        try:
+            with open(log_path, "r") as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    try:
+                        entry = json.loads(line)
+                        entry_time = datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
+                        if entry_time.replace(tzinfo=None) >= cutoff:
+                            agent_id = entry.get("agent", "unknown")
+                            if agent_id not in by_agent:
+                                by_agent[agent_id] = {"calls": 0, "cost": 0, "input_tokens": 0, "output_tokens": 0}
+                            by_agent[agent_id]["calls"] += 1
+                            by_agent[agent_id]["cost"] += entry.get("cost", 0)
+                            by_agent[agent_id]["input_tokens"] += entry.get("input_tokens", 0)
+                            by_agent[agent_id]["output_tokens"] += entry.get("output_tokens", 0)
+                    except (json.JSONDecodeError, KeyError, ValueError):
+                        continue
+        except Exception:
+            pass
+
+    return by_agent
+
+
+def get_resource_tracker():
+    """Get resource tracking data (for backward compatibility).
+
+    Returns:
+        Dict with resource utilization metrics
+    """
+    # This is a stub for backward compatibility after removing resources.py
+    # Returns basic resource info derived from token tracking
+    ta = get_token_awareness()
+    return {
+        "tracked_agents": list(ta._agent_usage.keys()),
+        "paused_agents": list(ta._paused_agents),
+    }
+
+
+def get_cost_summary(days: int = 30) -> dict:
+    """Get cost summary for the specified number of days.
+
+    This is a convenience wrapper around TokenAwareness.get_cost_summary().
+
+    Args:
+        days: Number of days to look back (default 30)
+
+    Returns:
+        Dict with total cost, calls, and per-agent breakdown
+    """
+    return get_token_awareness().get_cost_summary(days)

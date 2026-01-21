@@ -162,7 +162,7 @@ def _is_already_processed(content_hash: str) -> bool:
     Returns:
         True if a completed job exists with this hash tag
     """
-    from ...tools.data.jobs import list_jobs
+    from ...llms.tools.data.jobs import list_jobs
 
     # Check for completed jobs with this hash tag
     tag = f"store:hash:{content_hash}"
@@ -179,8 +179,8 @@ def _create_store_job(items_with_hashes: List[tuple]) -> dict:
     Returns:
         Created job dict
     """
-    from ...tools.data.jobs import create_job, get_system_container
-    from ...tools.data.assets import write_asset
+    from ...llms.tools.data.jobs import create_job, get_system_container
+    from ...llms.tools.data.assets import write_asset
 
     timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 

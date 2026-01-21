@@ -27,7 +27,7 @@ def cmd_trace(args: List[str], json_mode: bool = False):
 
     job_id = args[0]
 
-    from ...tools.data.jobs import get_job
+    from ...llms.tools.data.jobs import get_job
 
     job = get_job(job_id)
     if not job:

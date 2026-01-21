@@ -13,15 +13,15 @@ from pydantic import BaseModel
 
 from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client
 from ...llms.base import _load_config, CONFIG_PATH, VALID_PROVIDERS
-from ...tools.data.jobs import list_jobs
-from ...tools.data.identity import get_identity
+from ...llms.tools.data.jobs import list_jobs
+from ...llms.tools.data.identity import get_identity
 from ...fresh_start import (
     perform_fresh_start,
     list_backups as _list_backups,
     restore_backup as _restore_backup,
     delete_backup as _delete_backup,
 )
-from ...metacognition import get_incident_tracker
+from ...agent.cognition.metacognition import get_incident_tracker
 
 
 router = APIRouter()
@@ -155,14 +155,14 @@ def daily_quote():
 @router.get("/costs")
 def get_costs():
     """Get cost summary for session, today, 7 days, and this month."""
-    from ...metacognition import get_cost_summary
+    from ...agent.cognition.metacognition import get_cost_summary
     return get_cost_summary()
 
 
 @router.get("/costs/by-agent")
 def get_costs_by_agent(days: int = 30):
     """Get cost breakdown by agent for the specified number of days."""
-    from ...metacognition import get_costs_by_agent
+    from ...agent.cognition.metacognition import get_costs_by_agent
     return get_costs_by_agent(days)
 
 
@@ -197,7 +197,7 @@ def get_settings():
 @router.put("/settings/llm")
 def update_llm_settings(data: dict):
     """Update LLM settings (provider, models, budget)."""
-    from ...metacognition import get_resource_tracker
+    from ...agent.cognition.metacognition import get_resource_tracker
 
     config = _load_config()
 

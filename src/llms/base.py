@@ -333,7 +333,7 @@ class UnifiedClient:
             AgentPausedError: If agent is paused due to threshold breach
             RateLimitExceeded: If rate limit exceeded
         """
-        from ..metacognition import (
+        from ..agent.cognition.metacognition import (
             get_token_awareness, estimate_request_tokens
         )
 

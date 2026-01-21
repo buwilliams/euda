@@ -15,8 +15,7 @@ from typing import Callable, Optional
 
 from ..llms import get_client
 from ..logger import get_logger
-from .cognition.metacognition.consolidation import Consolidation
-from ..metacognition import Metacognition, AgentState
+from .cognition.metacognition import Metacognition, AgentState, Consolidation
 
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
@@ -169,8 +168,8 @@ class Agent:
         if not self._current_job_id:
             return ""
 
-        from ..tools.data.jobs import get_job
-        from ..tools.data.assets import list_assets, read_asset
+        from ..llms.tools.data.jobs import get_job
+        from ..llms.tools.data.assets import list_assets, read_asset
 
         job = get_job(self._current_job_id)
         if not job:
@@ -248,7 +247,7 @@ class Agent:
 
     def _append_to_long_term_memory(self, user_message: str, assistant_response: str):
         """Append a conversation exchange to today's long-term memory."""
-        from ..tools.data.memory import write_long_term_memory
+        from ..llms.tools.data.memory import write_long_term_memory
 
         agent_name = self.config.get('name', self.id)
 
@@ -298,7 +297,7 @@ class Agent:
             voice_input: Whether input came from voice (enables conversational response style)
         """
         from ..tools import get_tools_grouped_by_type
-        from ..prompts import render_template
+        from .cognition.reasoning.prompts import render_template
 
         # Build tools section grouped by type
         tools_by_type = get_tools_grouped_by_type(self.config.get("tools", []))
@@ -324,7 +323,7 @@ class Agent:
         # Load user patterns for anticipation (Chat agent gets high-confidence patterns)
         user_patterns_section = ""
         if self.id == "chat":
-            from ..reflection.patterns import load_patterns, format_patterns_for_prompt
+            from .cognition.metacognition.consolidation.patterns import load_patterns, format_patterns_for_prompt
             try:
                 user_store = load_patterns("user")
                 user_patterns_section = format_patterns_for_prompt(user_store, min_confidence=0.7)
@@ -370,7 +369,7 @@ class Agent:
         This is more efficient than letting the agent chat loop handle reflection,
         as it makes a single LLM call instead of many.
         """
-        from ..tools.data.jobs import complete_job
+        from ..llms.tools.data.jobs import complete_job
 
         job_id = job.get("id")
         job_tags = job.get("tags", [])
@@ -445,9 +444,9 @@ class Agent:
 
     def _format_job_prompt(self, job: dict, remaining: int = 0) -> str:
         """Format a job as a standardized prompt for the agent."""
-        from ..tools.data.assets import list_assets
-        from ..tools.data.memory import get_memory_for_prompt
-        from ..prompts import render_template
+        from ..llms.tools.data.assets import list_assets
+        from ..llms.tools.data.memory import get_memory_for_prompt
+        from .cognition.reasoning.prompts import render_template
 
         assets = list_assets(job['id'])
         if assets:
@@ -474,7 +473,7 @@ class Agent:
                 user_memory = "(No items currently in user's memory)"
 
             # Load user patterns for exploration guidance
-            from ..reflection.patterns import load_patterns, format_patterns_for_prompt
+            from .cognition.metacognition.consolidation.patterns import load_patterns, format_patterns_for_prompt
             try:
                 user_store = load_patterns("user")
                 user_patterns = format_patterns_for_prompt(user_store, min_confidence=0.7)
@@ -604,7 +603,7 @@ class Agent:
     def _execute_tools(self, response) -> list:
         """Execute tool calls and return results."""
         from ..tools import execute_tool
-        from ..tools.system.system import set_agent_context, clear_agent_context
+        from ..llms.tools.system.system import set_agent_context, clear_agent_context
         from ..tool_batcher import execute_tools_batched
 
         # Set agent context so tools can access this agent
@@ -637,7 +636,7 @@ class Agent:
         Args:
             trigger_context: Optional event data that triggered this cycle
         """
-        from ..tools.data.jobs import list_jobs
+        from ..llms.tools.data.jobs import list_jobs
 
         self._log("work_cycle_start", {"trigger": trigger_context})
         self._work_done = False
@@ -670,7 +669,7 @@ class Agent:
             return
 
         # Use standardized job prompt format
-        from ..prompts import load_template
+        from .cognition.reasoning.prompts import load_template
         prompt = self._format_job_prompt(current_job, remaining)
 
         # Strategic planning phase (if configured for this job type)

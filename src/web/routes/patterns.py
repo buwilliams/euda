@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
-from ...reflection.patterns import (
+from ...agent.cognition.metacognition.consolidation.patterns import (
     load_patterns,
     save_patterns,
     format_patterns_for_prompt,
