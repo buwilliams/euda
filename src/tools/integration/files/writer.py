@@ -8,7 +8,7 @@ from pathlib import Path
 from .rlm_processor import StoreResult
 
 
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent.parent / "data"
 
 
 def write_to_memory(results: List[StoreResult], agent_id: str = "user") -> dict:
@@ -25,7 +25,7 @@ def write_to_memory(results: List[StoreResult], agent_id: str = "user") -> dict:
             "total_written": int
         }
     """
-    from ..llms.tools.data.memory import write_long_term_memory
+    from ...data.memory import write_long_term_memory
 
     written = []
     errors = []

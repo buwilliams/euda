@@ -73,7 +73,7 @@ def api_chat(request: ChatRequest) -> ChatResponse:
         )
 
     # Emit chat:message event for agent triggers
-    from ...events import emit_event, emit_ui_event
+    from ..events import emit_event, emit_ui_event
     emit_event("chat:message", data={"agent_id": request.agent_id})
 
     # Emit UI event for SSE clients

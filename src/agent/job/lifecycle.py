@@ -38,7 +38,7 @@ def claim_job(job_id: str, agent_id: str) -> bool:
     Returns:
         True if job was claimed, False if already claimed or not found
     """
-    from ...llms.tools.data.jobs import get_job, _update_job, _get_connection
+    from ...tools.data.jobs import get_job, _update_job, _get_connection
 
     job = get_job(job_id)
     if not job:
@@ -76,7 +76,7 @@ def complete_job(job_id: str, agent_id: str) -> bool:
     Returns:
         True if job was completed, False otherwise
     """
-    from ...llms.tools.data.jobs import complete_job as tools_complete_job
+    from ...tools.data.jobs import complete_job as tools_complete_job
 
     result = tools_complete_job(job_id, agent=agent_id)
     return result is not None and "error" not in result
@@ -93,7 +93,7 @@ def fail_job(job_id: str, agent_id: str, error: str) -> bool:
     Returns:
         True if job was marked as error, False otherwise
     """
-    from ...llms.tools.data.jobs import get_job, _get_connection
+    from ...tools.data.jobs import get_job, _get_connection
 
     job = get_job(job_id)
     if not job:
@@ -126,7 +126,7 @@ def release_job(job_id: str, agent_id: str) -> bool:
     Returns:
         True if job was released, False otherwise
     """
-    from ...llms.tools.data.jobs import get_job, _get_connection
+    from ...tools.data.jobs import get_job, _get_connection
 
     job = get_job(job_id)
     if not job:
@@ -163,7 +163,7 @@ def get_pending_jobs(agent_id: str, limit: int = 10) -> list:
     Returns:
         List of job dicts
     """
-    from ...llms.tools.data.jobs import list_jobs
+    from ...tools.data.jobs import list_jobs
 
     result = list_jobs(
         status="todo",

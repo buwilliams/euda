@@ -8,7 +8,7 @@ These tools allow agents to query patterns during conversations.
 from typing import Optional
 
 from .. import tool
-from ....agent.cognition.metacognition.consolidation.patterns import (
+from ...agent.cognition.metacognition.consolidation.patterns import (
     load_patterns,
     format_patterns_for_prompt,
     get_high_confidence_patterns,

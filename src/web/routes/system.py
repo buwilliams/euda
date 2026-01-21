@@ -13,9 +13,9 @@ from pydantic import BaseModel
 
 from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client
 from ...llms.base import _load_config, CONFIG_PATH, VALID_PROVIDERS
-from ...llms.tools.data.jobs import list_jobs
-from ...llms.tools.data.identity import get_identity
-from ...fresh_start import (
+from ...tools.data.jobs import list_jobs
+from ...tools.data.identity import get_identity
+from ...tools.system.fresh_start import (
     perform_fresh_start,
     list_backups as _list_backups,
     restore_backup as _restore_backup,
@@ -409,7 +409,7 @@ def acknowledge_all_incidents(agent_id: str = None):
 
 async def event_generator():
     """Generate SSE events for real-time updates."""
-    from ...events import subscribe_ui, unsubscribe_ui
+    from ..events import subscribe_ui, unsubscribe_ui
 
     # Send initial state
     all_jobs = list_jobs()

@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Optional
 
 from .. import tool
-from ....events import emit_ui_event, has_connected_clients
+from ...web.events import emit_ui_event, has_connected_clients
 
 
 @tool("send_chat_message", "Send a message to the user's chat (if connected). Use when: need to proactively inform user about something important.", tool_type="system")

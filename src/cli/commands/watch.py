@@ -33,7 +33,7 @@ def cmd_watch(args: List[str], json_mode: bool = False):
         else:
             i += 1
 
-    from ...events import subscribe_dev, unsubscribe_dev
+    from ...web.events import subscribe_dev, unsubscribe_dev
 
     # Subscribe to events
     q = subscribe_dev()

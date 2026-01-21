@@ -35,7 +35,7 @@ def cmd_store(args: List[str], json_mode: bool = False):
 
     # Handle clear manifest (legacy support)
     if clear_manifest:
-        from ...store.dedup import clear_manifest as do_clear
+        from ...tools.integration.files.dedup import clear_manifest as do_clear
         count = do_clear()
         if json_mode:
             print(json.dumps({"cleared": count}))
@@ -55,8 +55,8 @@ def cmd_store(args: List[str], json_mode: bool = False):
         sys.exit(1)
 
     # Load files
-    from ...store.loader import load_files
-    from ...store.dedup import compute_hash
+    from ...tools.integration.files.loader import load_files
+    from ...tools.integration.files.dedup import compute_hash
 
     if not json_mode:
         print_info(f"Loading files from: {path}", json_mode)
@@ -162,7 +162,7 @@ def _is_already_processed(content_hash: str) -> bool:
     Returns:
         True if a completed job exists with this hash tag
     """
-    from ...llms.tools.data.jobs import list_jobs
+    from ...tools.data.jobs import list_jobs
 
     # Check for completed jobs with this hash tag
     tag = f"store:hash:{content_hash}"
@@ -179,8 +179,8 @@ def _create_store_job(items_with_hashes: List[tuple]) -> dict:
     Returns:
         Created job dict
     """
-    from ...llms.tools.data.jobs import create_job, get_system_container
-    from ...llms.tools.data.assets import write_asset
+    from ...tools.data.jobs import create_job, get_system_container
+    from ...tools.data.assets import write_asset
 
     timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 

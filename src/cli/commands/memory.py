@@ -175,7 +175,7 @@ def _show_long_term(agent_id: str, json_mode: bool, days: int = 7):
 
 def _add_memory(agent_id: str, mem_type: str, description: str, json_mode: bool):
     """Add a memory entry manually."""
-    from ...llms.tools.data.memory import add_memory, VALID_TYPES
+    from ...tools.data.memory import add_memory, VALID_TYPES
 
     if mem_type not in VALID_TYPES:
         print_error(f"Invalid memory type: {mem_type}. Valid types: {', '.join(VALID_TYPES)}", json_mode)
@@ -197,7 +197,7 @@ def _add_memory(agent_id: str, mem_type: str, description: str, json_mode: bool)
 
 def _graduate_memory(agent_id: str, mem_id: str, json_mode: bool):
     """Graduate a memory to long-term."""
-    from ...llms.tools.data.memory import graduate_memory
+    from ...tools.data.memory import graduate_memory
 
     result = graduate_memory(
         memory_id=mem_id,
@@ -222,7 +222,7 @@ def _backfill_user_memory(json_mode: bool):
     user's profile can evolve through reflection. Only copies user-focused types.
     """
     import uuid
-    from ...llms.tools.data.memory import _load_entries, _save_entries
+    from ...tools.data.memory import _load_entries, _save_entries
 
     USER_RELEVANT_TYPES = {"person", "place", "goal", "concern", "idea"}
 

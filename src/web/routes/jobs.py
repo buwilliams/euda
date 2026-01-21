@@ -6,12 +6,12 @@ from typing import Optional, List
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from ...llms.tools.data.jobs import (
+from ...tools.data.jobs import (
     list_jobs, get_job, create_job, update_job,
     complete_job, restore_job, archive_job, add_job_log, get_child_jobs, delete_job,
     assign_agent, unassign_agent, list_assignees, handoff_job, unblock_job
 )
-from ...llms.tools.data.assets import list_assets, read_asset, write_asset, delete_asset
+from ...tools.data.assets import list_assets, read_asset, write_asset, delete_asset
 
 
 router = APIRouter()
@@ -313,7 +313,7 @@ def api_get_job_trace(job_id: str, days: int = 7):
         raise HTTPException(status_code=404, detail="Job not found")
 
     # Get job logs from database
-    from ...llms.tools.data.jobs import get_job_logs
+    from ...tools.data.jobs import get_job_logs
     job_logs = get_job_logs(job_id)
 
     # Get API calls

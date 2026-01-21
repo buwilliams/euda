@@ -53,8 +53,8 @@ class JobContext:
             return ""
 
         # Import here to avoid circular imports
-        from ...llms.tools.data.jobs import get_job
-        from ...llms.tools.data.assets import list_assets, read_asset
+        from ...tools.data.jobs import get_job
+        from ...tools.data.assets import list_assets, read_asset
 
         job = get_job(self._current_job_id)
         if not job:

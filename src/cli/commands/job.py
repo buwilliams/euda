@@ -67,7 +67,7 @@ def cmd_job(args: List[str], json_mode: bool = False):
         sys.exit(1)
 
     # Create the job
-    from ...llms.tools.data.jobs import create_job, get_system_container
+    from ...tools.data.jobs import create_job, get_system_container
 
     system_container = get_system_container()
 
@@ -131,7 +131,7 @@ def cmd_run(args: List[str], json_mode: bool = False):
         sys.exit(1)
 
     # Get the job
-    from ...llms.tools.data.jobs import get_job
+    from ...tools.data.jobs import get_job
 
     job = get_job(job_id)
     if not job:

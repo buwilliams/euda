@@ -142,7 +142,7 @@ def append_to_long_term_memory(
         agent_name: Display name of the agent for attribution
     """
     # Import here to avoid circular imports
-    from ...llms.tools.data.memory import write_long_term_memory
+    from ...tools.data.memory import write_long_term_memory
 
     # Format the conversation for long-term memory
     content = f"**User:** {user_message}\n\n"

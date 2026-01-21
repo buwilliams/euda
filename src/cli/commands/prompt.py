@@ -76,7 +76,7 @@ def _show_system_prompt(agent_id: str, json_mode: bool):
 def _show_job_prompt(agent_id: str, job_id: str, json_mode: bool):
     """Show the prompt that would be sent for a job."""
     from ...agent import Agent
-    from ...llms.tools.data.jobs import get_job
+    from ...tools.data.jobs import get_job
 
     job = get_job(job_id)
     if not job:
@@ -136,7 +136,7 @@ def _show_reflect_prompt(agent_id: str, json_mode: bool):
 def _show_explore_prompt(agent_id: str, json_mode: bool):
     """Show the exploration prompt template."""
     from ...prompts import render_template
-    from ...llms.tools.data.memory import get_memory_for_prompt
+    from ...tools.data.memory import get_memory_for_prompt
 
     # Get actual user memory to show what would be included
     user_memory = get_memory_for_prompt("user")

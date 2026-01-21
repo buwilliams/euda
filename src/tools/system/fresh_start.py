@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 BACKUP_PREFIX = "data_backup-"
 CORE_AGENTS = {"chat", "user", "worker"}
 
@@ -47,7 +47,7 @@ def perform_fresh_start(create_backup_first: bool = True) -> dict:
         - deleted: List of deleted items
         - reset: List of reset items
     """
-    from .llms.tools.data.jobs import _clear_connection, _ensure_schema
+    from ..data.jobs import _clear_connection, _ensure_schema
 
     backup_name = None
     if create_backup_first:
@@ -210,7 +210,7 @@ def restore_backup(backup_name: str) -> dict:
 
     The current data becomes a new backup, and the selected backup becomes data.
     """
-    from .llms.tools.data.jobs import _clear_connection
+    from ..data.jobs import _clear_connection
 
     project_dir = DATA_DIR.parent
     backup_path = project_dir / backup_name
@@ -264,7 +264,7 @@ def _clear_logger_caches():
     """Clear all logger caches to prevent stale file handles."""
     # Clear general loggers
     try:
-        from .logger import _loggers
+        from ...agent.logger import _loggers
         _loggers.clear()
     except Exception:
         pass
@@ -276,9 +276,4 @@ def _clear_logger_caches():
     except Exception:
         pass
 
-    # Clear cost logger cache
-    try:
-        import src.metacognition.resources as resources
-        resources._cost_logger = None
-    except Exception:
-        pass
+    # Clear cost logger cache (removed - metacognition.resources no longer exists)

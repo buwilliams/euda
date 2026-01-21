@@ -300,7 +300,7 @@ I must:
     identity_path.write_text(identity)
 
     # Dynamically register and start the agent if manager is running
-    from ....manager import get_manager
+    from ...agent.manager import get_manager
     manager = get_manager()
     if manager and manager.running:
         result = manager.register_new_agent(agent_id)

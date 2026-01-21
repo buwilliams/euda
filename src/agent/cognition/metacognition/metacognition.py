@@ -18,7 +18,7 @@ from typing import Optional, TYPE_CHECKING
 from .regulation.config import MetacognitionConfig
 from .regulation.tokens import get_token_awareness, TokenAwareness, AgentState
 from ..reasoning.planning import Planner
-from ....logger import get_logger
+from ...logger import get_logger
 
 if TYPE_CHECKING:
     from ...agent import Agent

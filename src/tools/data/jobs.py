@@ -129,20 +129,20 @@ _ensure_schema()
 
 def _emit_event(event: str, scope: str = None, data: dict = None):
     """Emit an event to the event bus."""
-    from ....events import emit_event
+    from ...web.events import emit_event
     emit_event(event, scope=scope, data=data)
 
 
 def _emit_jobs_update():
     """Notify UI clients that jobs have changed."""
-    from ....events import emit_ui_event
+    from ...web.events import emit_ui_event
     all_jobs = list_jobs()
     emit_ui_event("jobs_update", {"jobs": all_jobs})
 
 
 def _notify_agent_has_jobs(agent_id: str):
     """Notify the job cache that an agent has pending jobs."""
-    from ....manager import get_manager
+    from ...agent.manager import get_manager
     manager = get_manager()
     if manager:
         manager.agents_with_jobs[agent_id] = True

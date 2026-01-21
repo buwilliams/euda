@@ -80,11 +80,11 @@ def cmd_start(args):
     import signal
     import threading
     import uvicorn
-    from src.manager import AgentManager
+    from src.agent.manager import AgentManager
     from src.web.app import app
     from src.llms import ConfigError
     from src.llms.base import _load_config
-    from src.events import trigger_shutdown
+    from src.web.events import trigger_shutdown
 
     # Validate config at startup
     try:
@@ -104,8 +104,8 @@ def cmd_start(args):
 
     # Start agents in background thread
     def run_agents():
-        from src.manager import set_manager
-        from src.events import set_event_bus
+        from src.agent.manager import set_manager
+        from src.web.events import set_event_bus
         manager = AgentManager()
         set_manager(manager)
         set_event_bus(manager.event_bus)

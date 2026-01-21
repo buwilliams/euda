@@ -14,7 +14,7 @@ from enum import Enum
 from pathlib import Path
 from typing import List, Optional
 
-from .....logger import get_logger
+from ....logger import get_logger
 
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent.parent.parent / "data"

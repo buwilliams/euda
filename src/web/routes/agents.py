@@ -8,19 +8,19 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
-from ...llms.tools.agents.agents import (
+from ...tools.agents.agents import (
     list_agents, get_agent,
     get_agent_identity, update_agent_identity,
     get_agent_config, update_agent_config
 )
-from ...llms.tools.agents.monitoring import get_agent_monitoring
-from ...llms.tools.data.jobs import get_jobs_completed_by_agent, create_job, get_system_container
-from ...llms.tools.data.identity import get_identity, update_identity
-from ...llms.tools.data.memory import (
+from ...tools.agents.monitoring import get_agent_monitoring
+from ...tools.data.jobs import get_jobs_completed_by_agent, create_job, get_system_container
+from ...tools.data.identity import get_identity, update_identity
+from ...tools.data.memory import (
     list_memory, add_memory, remove_memory, write_long_term_memory
 )
 from ...agent.rlm import read_memory_date, list_memory_dates
-from ...logger import get_logger
+from ...agent.logger import get_logger
 from ...agent.cognition.metacognition import get_token_awareness, AgentState
 
 
@@ -406,7 +406,7 @@ def api_get_active_executions(agent_id: str):
     Returns:
         List of active executions with execution_id, phase, job_id, created_at
     """
-    from ...llms.tools.data.jobs import list_jobs
+    from ...tools.data.jobs import list_jobs
 
     # Verify agent exists
     config = get_agent_config(agent_id)

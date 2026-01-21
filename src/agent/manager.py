@@ -17,15 +17,15 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from .agent import Agent
-from .agent.cognition.metacognition import (
+from .cognition.metacognition import (
     AgentPausedError,
     get_token_awareness,
     AgentState,
 )
-from .events import EventBus, set_event_bus, get_event_bus
+from ..web.events import EventBus, set_event_bus, get_event_bus
 
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
 SYSTEM_STATE_PATH = DATA_DIR / "system" / "state.json"
 
@@ -135,7 +135,7 @@ class AgentManager:
             config["_dir"] = str(AGENTS_DIR / agent_id)
 
         # Sync agent inbox jobs to create the inbox for this agent
-        from .llms.tools.data.jobs import sync_agent_inbox_jobs
+        from ..tools.data.jobs import sync_agent_inbox_jobs
         sync_agent_inbox_jobs()
 
         # Start the agent if enabled
@@ -143,7 +143,7 @@ class AgentManager:
             self.start_agent(config)
 
             # Initialize job cache for this agent
-            from .llms.tools.data.jobs import list_jobs
+            from ..tools.data.jobs import list_jobs
             jobs = list_jobs(status="todo", assignee=agent_id, actionable=True)
             self.agents_with_jobs[agent_id] = bool(jobs)
 
@@ -268,7 +268,7 @@ class AgentManager:
 
     def _emit_startup_triggers(self):
         """Create trigger jobs for system:start and any missed time triggers at startup."""
-        from .llms.tools.data.jobs import create_job, list_jobs, get_system_container
+        from ..tools.data.jobs import create_job, list_jobs, get_system_container
 
         today = datetime.now().strftime("%Y-%m-%d")
         system_container = get_system_container()
@@ -343,7 +343,7 @@ class AgentManager:
 
     def _run_agent_loop(self, agent: Agent):
         """Run an agent's work loop - polls for actionable jobs."""
-        from .llms.tools.data.jobs import list_jobs, claim_job, release_job
+        from ..tools.data.jobs import list_jobs, claim_job, release_job
 
         poll_interval = self._get_system_config().get("agents", {}).get("poll_interval", 0.1)
         token_awareness = get_token_awareness()
@@ -422,7 +422,7 @@ class AgentManager:
                     self._update_agent_last_ran(agent.id)
 
                     # Clear failure tags from previous attempts on success
-                    from .llms.tools.data.jobs import update_job, get_job
+                    from ..tools.data.jobs import update_job, get_job
                     job = get_job(job_id)
                     if job:
                         tags = job.get("tags", [])
@@ -476,7 +476,7 @@ class AgentManager:
                 # Track job failures and escalate to user after 3 consecutive failures
                 # This prevents infinite retry loops when jobs fail persistently
                 if 'job_id' in locals() and 'current_job' in locals():
-                    from .llms.tools.data.jobs import update_job, handoff_job, get_job
+                    from ..tools.data.jobs import update_job, handoff_job, get_job
 
                     job = get_job(job_id)
                     if job:
@@ -532,7 +532,7 @@ class AgentManager:
         Args:
             trigger_name: The trigger that fired (e.g., "time:evening")
         """
-        from .llms.tools.data.jobs import create_job, list_jobs, get_system_container
+        from ..tools.data.jobs import create_job, list_jobs, get_system_container
         from datetime import datetime
 
         system_container = get_system_container()
@@ -578,7 +578,7 @@ class AgentManager:
         Args:
             trigger_name: The trigger that fired (e.g., "time:hour_04")
         """
-        from .llms.tools.data.jobs import create_job, list_jobs, get_system_container
+        from ..tools.data.jobs import create_job, list_jobs, get_system_container
         from datetime import datetime
 
         system_container = get_system_container()
@@ -620,7 +620,7 @@ class AgentManager:
 
     def _run_time_scheduler(self):
         """Background thread that creates trigger jobs based on schedules."""
-        from .llms.tools.data.jobs import create_job, list_jobs, get_system_container
+        from ..tools.data.jobs import create_job, list_jobs, get_system_container
 
         last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
         system_container = get_system_container()
@@ -720,7 +720,7 @@ class AgentManager:
         print(f"Found {len(configs)} agents, {len(enabled)} enabled")
 
         # Sync agent inbox jobs
-        from .llms.tools.data.jobs import sync_agent_inbox_jobs
+        from ..tools.data.jobs import sync_agent_inbox_jobs
         sync_agent_inbox_jobs()
         print("Agent inbox jobs synced")
 
@@ -735,7 +735,7 @@ class AgentManager:
             self._emit_startup_triggers()
 
         # Initialize job cache - check for existing actionable jobs
-        from .llms.tools.data.jobs import list_jobs
+        from ..tools.data.jobs import list_jobs
         for agent_id in self.agents:
             jobs = list_jobs(status="todo", assignee=agent_id, actionable=True)
             self.agents_with_jobs[agent_id] = bool(jobs)
