@@ -524,6 +524,73 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
     return _load_job(job_id)
 
 
+@tool("block_job", "Mark a job as blocked/waiting on external input. Use when: you cannot progress because you're waiting for user input, another person, or an external dependency. This removes the job from your queue and ends your work cycle.", tool_type="data")
+def block_job(job_id: str, waiting_for: str, reason: str = "", agent: str = "user") -> dict:
+    """Mark a job as blocked and exit the work cycle.
+
+    This is a single atomic operation that:
+    1. Adds a waiting:{waiting_for} tag to exclude the job from actionable queue
+    2. Logs why it's blocked
+    3. Signals done_working to end your work cycle
+
+    The job will return to your queue when a user interacts with it.
+
+    Args:
+        job_id: The job to block
+        waiting_for: What you're waiting for (e.g., "user-input", "logan", "external-api")
+        reason: Optional detailed explanation for the log
+        agent: Agent marking the job (auto-filled)
+
+    Returns:
+        Confirmation with job details
+    """
+    job = _load_job(job_id)
+    if not job:
+        return {"error": f"Job not found: {job_id}"}
+
+    # Normalize waiting_for to lowercase, replace spaces with dashes
+    waiting_for = waiting_for.lower().replace(" ", "-")
+    tag = f"waiting:{waiting_for}"
+
+    # Get existing tags and add the blocking tag
+    tags = job.get("tags", [])
+    if tag not in tags:
+        tags = tags + [tag]
+
+    now = datetime.utcnow().isoformat() + "Z"
+    log_note = reason if reason else f"Waiting for {waiting_for}"
+
+    with _transaction() as conn:
+        conn.execute('''
+            UPDATE jobs SET tags = ?, updated_at = ?
+            WHERE id = ?
+        ''', (json.dumps(tags), now, job_id))
+
+        conn.execute('''
+            INSERT INTO job_logs (job_id, timestamp, agent, action, note)
+            VALUES (?, ?, ?, 'blocked', ?)
+        ''', (job_id, now, agent, log_note))
+
+    # Notify UI clients
+    _emit_jobs_update()
+
+    # Signal done_working to end the work cycle
+    from ..system.system import get_agent_context
+    agent_ctx = get_agent_context()
+    if agent_ctx:
+        agent_ctx._work_done = True
+        agent_ctx._log("block_job", {"job_id": job_id, "waiting_for": waiting_for, "reason": reason})
+
+    return {
+        "status": "blocked",
+        "job_id": job_id,
+        "waiting_for": waiting_for,
+        "tag_added": tag,
+        "message": f"Job blocked. Waiting for {waiting_for}. Work cycle ended.",
+        "job": _load_job(job_id)
+    }
+
+
 @tool("restore_job", "Restore a completed job back to todo status. Use when: a completed job needs to be reopened.", tool_type="data")
 def restore_job(job_id: str, agent: str = "user") -> Optional[dict]:
     """Restore a completed job back to todo status."""

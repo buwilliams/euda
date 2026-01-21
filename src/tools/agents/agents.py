@@ -19,6 +19,7 @@ BASE_TOOLS = [
     "get_job",
     "create_job",
     "complete_job",
+    "block_job",
     "add_job_log",
     "done_working"
 ]
