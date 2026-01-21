@@ -95,7 +95,7 @@ app.include_router(transcribe.router, prefix="/api/transcribe", tags=["transcrib
 app.include_router(synthesize.router, prefix="/api/synthesize", tags=["synthesize"])
 
 # Serve web files
-web_dir = Path(__file__).parent.parent.parent / "web"
+web_dir = Path(__file__).parent / "frontend"
 if web_dir.exists():
     app.mount("/web", StaticFiles(directory=str(web_dir)), name="web")
 
