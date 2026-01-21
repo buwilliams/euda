@@ -19,8 +19,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, Optional, Set
 
-from ..logger import get_logger
-from ..events import emit_ui_event
+from .....logger import get_logger
+from .....events import emit_ui_event
 from .incidents import (
     get_incident_tracker,
     IncidentType,
@@ -28,7 +28,7 @@ from .incidents import (
 )
 
 
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent.parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
 AGENTS_DIR = DATA_DIR / "agents"
 USAGE_DIR = DATA_DIR / "system" / "token_usage"

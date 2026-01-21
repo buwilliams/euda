@@ -18,13 +18,10 @@ from typing import Dict, List, Optional
 
 from .agent import Agent
 from .metacognition import (
-    BudgetExceeded,
     AgentPausedError,
-    get_velocity_tracker,
     get_token_awareness,
     AgentState,
 )
-from .metacognition.resources import print_resource_summary
 from .events import EventBus, set_event_bus, get_event_bus
 
 
@@ -442,13 +439,10 @@ class AgentManager:
                     MIN_CYCLE_DELAY = 0.5  # 500ms minimum between cycles
 
                     if is_background and jobs:
-                        # Background jobs: load-based pacing with minimum floor
-                        utilization = get_velocity_tracker().get_utilization()
-                        delay = max(utilization["recommended_delay"], MIN_CYCLE_DELAY)
+                        # Background jobs: pacing with minimum floor
+                        delay = MIN_CYCLE_DELAY * 2  # 1 second for background jobs
                         agent._log("background_job_pacing", {
                             "delay": delay,
-                            "utilization": utilization["utilization"],
-                            "calls_in_window": utilization["calls_in_window"],
                             "remaining_jobs": len(jobs)
                         })
                         time.sleep(delay)
@@ -458,15 +452,6 @@ class AgentManager:
                 else:
                     # Cache was stale - clear it
                     self.agents_with_jobs[agent.id] = False
-
-            except BudgetExceeded as e:
-                # Budget exceeded - log warning but continue running
-                agent._log("budget_exceeded", {
-                    "budget": e.budget,
-                    "spent": e.spent
-                })
-                print(f"\n[{agent.id}] BUDGET WARNING: ${e.spent:.4f} spent of ${e.budget:.2f} limit")
-                # Continue running - don't hard exit
 
             except AgentPausedError as e:
                 # Agent paused due to threshold breach or runaway detection

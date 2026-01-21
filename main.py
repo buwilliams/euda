@@ -139,7 +139,7 @@ def cmd_chat(args):
     """Interactive chat with an agent."""
     from src.agent import Agent
     from src.tools import get_tools_for_agent
-    from src.cost_tracker import BudgetExceeded, print_cost_summary
+    from src.metacognition import AgentPausedError
     from src.llms import ConfigError
     from src.llms.base import _load_config
 
@@ -174,10 +174,9 @@ def cmd_chat(args):
             response = agent.chat(user_input)
             print(f"\n{agent_id}: {response}\n")
 
-        except BudgetExceeded as e:
-            print(f"\n\nBUDGET EXCEEDED: ${e.spent:.4f} spent of ${e.budget:.2f} limit")
-            print_cost_summary()
-            print("\nExiting due to budget limit.")
+        except AgentPausedError as e:
+            print(f"\n\nAGENT PAUSED: {e.reason}")
+            print("\nThe agent has been paused. Use 'uv run euno agents enable <agent_id>' to resume.")
             break
         except KeyboardInterrupt:
             print("\n\nGoodbye!")

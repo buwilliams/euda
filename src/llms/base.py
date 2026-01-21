@@ -334,11 +334,9 @@ class UnifiedClient:
             RateLimitExceeded: If rate limit exceeded
         """
         from ..metacognition import (
-            check_budget, record_usage, get_velocity_tracker,
             get_token_awareness, estimate_request_tokens
         )
 
-        velocity_tracker = get_velocity_tracker()
         token_awareness = get_token_awareness()
 
         # 1. Pre-call: estimate input tokens
@@ -346,13 +344,6 @@ class UnifiedClient:
 
         # 2. Pre-call: check token awareness thresholds (may raise AgentPausedError)
         token_awareness.acquire(agent_id, estimated_input, enabled_agent_count)
-
-        # 3. Pre-call: check velocity limits and runaway detection (legacy)
-        velocity_tracker.acquire(agent_id, job_id)
-
-        # 4. Pre-call: check budget (legacy cost-based check)
-        if track_cost:
-            check_budget()
 
         # 5. Pre-call: wait for any active backoff
         self._wait_for_backoff()
@@ -380,36 +371,23 @@ class UnifiedClient:
         # 8. Post-call: reset backoff on success
         self._reset_backoff()
 
-        # 9. Post-call: record for velocity tracking (legacy)
-        velocity_tracker.record_call(agent_id, job_id)
-
-        # 10. Post-call: record token usage in new system
+        # 9. Post-call: record token usage
         token_awareness.record(
             agent_id=agent_id,
             input_tokens=response.usage.input_tokens,
             output_tokens=response.usage.output_tokens,
             provider=self.provider_name,
             model=self.model_name,
-            enabled_agent_count=enabled_agent_count
+            enabled_agent_count=enabled_agent_count,
+            job_id=job_id,
+            cached_input_tokens=response.usage.cached_input_tokens,
+            stop_reason=response.stop_reason,
+            duration_ms=duration_ms,
+            timestamp=call_timestamp
         )
 
-        # 11. Post-call: log prompt and response together
+        # 10. Post-call: log prompt and response together
         _log_prompt(agent_id, self.model_name, system, messages, tools,
                     timestamp=call_timestamp, response=response)
-
-        # 12. Post-call: record usage for cost tracking (legacy)
-        if track_cost:
-            record_usage(
-                provider=self.provider_name,
-                model=self.model_name,
-                input_tokens=response.usage.input_tokens,
-                output_tokens=response.usage.output_tokens,
-                cached_input_tokens=response.usage.cached_input_tokens,
-                agent_id=agent_id,
-                job_id=job_id,
-                stop_reason=response.stop_reason,
-                duration_ms=duration_ms,
-                timestamp=call_timestamp
-            )
 
         return response

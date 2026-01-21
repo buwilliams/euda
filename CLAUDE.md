@@ -73,26 +73,30 @@ euno/
 ├── main.py                 # Entry point, CLI
 ├── src/
 │   ├── manager.py          # Agent Manager - starts/stops all agents
-│   ├── agent.py            # Generic Agent - Identity + Cognition + Memory + Behavior
-│   ├── metacognition/      # Agent self-awareness and self-regulation
-│   │   ├── metacognition.py # Main Metacognition class
-│   │   ├── velocity.py     # Rate limiting and runaway detection
-│   │   ├── resources.py    # Budget and cost tracking
-│   │   ├── progress.py     # Stuck/thrashing detection
-│   │   ├── planning.py     # Strategic planning for complex tasks
-│   │   └── config.py       # Configuration handling
-│   ├── reflection/         # Memory and identity reflection
-│   │   ├── reflection.py   # Main Reflection class
-│   │   ├── append.py       # Lightweight extraction after chat
-│   │   ├── consolidate.py  # Heavy analysis on daily trigger
-│   │   └── prompts.py      # LLM prompts for reflection
-│   ├── tools/              # All tools (registered with @tool decorator)
-│   │   ├── jobs.py         # Job CRUD
-│   │   ├── assets.py       # File attachments per job
-│   │   ├── agents.py       # Agent introspection
-│   │   ├── user.py         # Identity and memory
-│   │   ├── memory.py       # Memory tracking for anticipation
-│   │   └── system.py       # Config and notifications
+│   ├── agent/              # Agent module (Identity + Cognition + Memory + Behavior)
+│   │   ├── agent.py        # Main Agent class
+│   │   ├── cognition/      # Agent cognition (reasoning + metacognition)
+│   │   │   ├── reasoning/  # First-order thinking
+│   │   │   │   └── planning.py  # Strategic planning
+│   │   │   └── metacognition/   # Second-order thinking (self-regulation)
+│   │   │       ├── regulation/  # Self-regulation
+│   │   │       │   ├── tokens.py    # Token/cost awareness
+│   │   │       │   ├── progress.py  # Stuck detection
+│   │   │       │   └── config.py    # Configuration
+│   │   │       └── consolidation/   # Self-improvement (memory/identity)
+│   │   │           ├── consolidation.py  # Main Consolidation class
+│   │   │           ├── append.py    # Lightweight extraction after chat
+│   │   │           └── consolidate.py    # Heavy analysis on trigger
+│   │   └── rlm/            # Recursive Language Model for memory access
+│   ├── metacognition/      # Legacy metacognition (imports from agent/cognition)
+│   ├── reflection/         # Legacy reflection (imports from agent/cognition)
+│   ├── llms/               # LLM clients and tools
+│   │   ├── base.py         # Unified LLM client
+│   │   └── tools/          # All tools (registered with @tool decorator)
+│   │       ├── data/       # Jobs, assets, memory tools
+│   │       ├── agents/     # Agent introspection tools
+│   │       ├── system/     # Config, notifications tools
+│   │       └── integration/    # External integrations
 │   └── web/
 │       ├── app.py          # FastAPI application
 │       └── routes/         # API endpoints
@@ -133,12 +137,18 @@ An agent is: **Identity + Cognition + Memory + Behavior**
 
 ### Metacognition
 Metacognition is the agent's self-regulation and self-improvement system:
+Metacognition has two aspects:
+
+**Self-Regulation** (in `agent/cognition/metacognition/regulation/`):
 - **Token Awareness**: Pre-call estimation, post-call recording, per-agent budgets with auto-pause
 - **Agent States**: `enabled`, `disabled`, `paused` (paused requires manual intervention)
 - **Progress**: Detect stuck patterns and break loops
-- **Planning**: Strategic thinking before complex tasks
-- **Reflection**: Process memories, update identity (self-improvement)
 - **Incidents**: Threshold breaches logged and surfaced via API
+
+**Self-Improvement** (in `agent/cognition/metacognition/consolidation/`):
+- **Consolidation**: Process memories, update identity (formerly called Reflection)
+- **Append phase**: Lightweight extraction after each conversation
+- **Consolidate phase**: Heavy analysis on daily trigger
 
 System-wide defaults in `data/system/config.json` under `metacognition` key.
 
@@ -164,12 +174,12 @@ Exploration is scheduled discovery where agents research opportunities for the u
 - Configured per-agent in `config.json` under `exploration` key
 - Creates `Trigger:exploration:{date}` jobs when triggered
 
-### Reflection
-Reflection is a metacognition capability (self-improvement) that manages memory and identity:
+### Consolidation (formerly Reflection)
+Consolidation is a metacognition capability (self-improvement) that manages memory and identity:
 - **Append phase**: Lightweight extraction after each conversation (adds to short-term memory)
 - **Consolidate phase**: Heavy analysis on daily trigger (graduates memories, updates identity)
-- Activation configured per-agent: `reflection.trigger` in `config.json`
-- Logs stored in `data/system/logs/reflection/`
+- Activation configured per-agent: `consolidation.trigger` (or legacy `reflection.trigger`) in `config.json`
+- Logs stored in `data/system/logs/consolidation/`
 
 ### User as Agent
 The user is conceptually an agent too - just with a different interface (Web UI/CLI vs autonomous loop).

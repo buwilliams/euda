@@ -1,26 +1,22 @@
 """
-Metacognition Module - Self-awareness and self-regulation for agents.
+Regulation Module - Self-regulation capabilities for agents.
 
-Metacognition answers "how do I regulate myself?" and provides:
+Provides:
 - Token awareness: Track tokens PRE-call, enforce per-agent budgets
 - Progress awareness: Detect stuck/thrashing patterns
-- Strategic planning: Think before acting
+- Incident tracking: Log threshold breaches
 
-Every agent has metacognition - it's inherent, not optional.
+This is the self-regulation aspect of metacognition.
 """
 
-from .metacognition import Metacognition
-from .config import MetacognitionConfig
-from .progress import ProgressTracker
-from .planning import Planner
-
-# Token awareness system
 from .tokens import (
     TokenAwareness,
     AgentState,
     AgentPausedError,
     get_token_awareness,
 )
+from .config import MetacognitionConfig
+from .progress import ProgressTracker
 from .tokenizer import count_tokens, estimate_request_tokens
 from .incidents import (
     IncidentTracker,
@@ -31,18 +27,14 @@ from .incidents import (
 )
 
 __all__ = [
-    "Metacognition",
-    "MetacognitionConfig",
-    "ProgressTracker",
-    "Planner",
-    # Token awareness
     "TokenAwareness",
     "AgentState",
     "AgentPausedError",
     "get_token_awareness",
+    "MetacognitionConfig",
+    "ProgressTracker",
     "count_tokens",
     "estimate_request_tokens",
-    # Incidents
     "IncidentTracker",
     "Incident",
     "IncidentType",

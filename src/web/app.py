@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
-from .routes import jobs, agents, chat, user, auth, system, upload, transcribe, synthesize, rate_limiting, patterns
+from .routes import jobs, agents, chat, user, auth, system, upload, transcribe, synthesize, patterns
 from .routes.auth import get_session_token
 from ..auth import is_password_set, verify_session
 from ..events import trigger_shutdown
@@ -93,7 +93,6 @@ app.include_router(system.router, prefix="/api", tags=["system"])
 app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
 app.include_router(transcribe.router, prefix="/api/transcribe", tags=["transcribe"])
 app.include_router(synthesize.router, prefix="/api/synthesize", tags=["synthesize"])
-app.include_router(rate_limiting.router, prefix="/api/rate-limiting", tags=["rate-limiting"])
 
 # Serve web files
 web_dir = Path(__file__).parent.parent.parent / "web"

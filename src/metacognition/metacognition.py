@@ -1,32 +1,21 @@
 """
-Metacognition - The agent's self-regulation and self-improvement system.
+Metacognition - The agent's self-regulation system.
 
-Metacognition is inherent to all agents and has two aspects:
-- Self-regulation: Keeping the agent healthy
-- Self-improvement: Helping the agent grow (reflection)
-
-Self-regulation capabilities:
+Metacognition is inherent to all agents and provides:
 - Token awareness (PRE-call token tracking, per-agent budgets)
-- Velocity awareness (rate limiting) - legacy
-- Resource awareness (budget/cost tracking) - legacy
 - Action awareness (tool call tracking)
 - Progress awareness (stuck detection)
 - Strategic planning
 
-Self-improvement capabilities:
-- Reflection (memory processing, identity evolution)
-
 This is the Cognition subsystem of the agent ontology:
 Agent = Identity + Cognition + Memory + Behavior
 
-Where Cognition = Reasoning (prompts) + Metacognition (self-regulation, reflection)
+Where Cognition = Reasoning (prompts) + Metacognition (self-regulation)
 """
 
 from typing import Optional, TYPE_CHECKING
 
 from .config import MetacognitionConfig
-from .velocity import get_velocity_tracker, VelocityTracker
-from .resources import get_resource_tracker, ResourceTracker
 from .tokens import get_token_awareness, TokenAwareness, AgentState
 from .planning import Planner
 from ..logger import get_logger
@@ -43,8 +32,6 @@ class Metacognition:
 
     Metacognition provides:
     - Token awareness: Track tokens PRE-call, enforce per-agent budgets
-    - Velocity awareness: Track call rate, pause if too fast (legacy)
-    - Resource awareness: Track costs, enforce budgets (legacy)
     - Action awareness: Monitor tool calls per iteration
     - Progress awareness: Detect stuck patterns
     - Strategic planning: Plan approach before execution
@@ -62,12 +49,8 @@ class Metacognition:
         # Config (merges system defaults with agent overrides)
         self.config = MetacognitionConfig(agent.id)
 
-        # Token awareness (new unified system)
+        # Token awareness
         self._tokens: TokenAwareness = get_token_awareness()
-
-        # Global trackers (legacy - kept for backward compatibility)
-        self._velocity: VelocityTracker = get_velocity_tracker()
-        self._resources: ResourceTracker = get_resource_tracker()
 
         # Per-agent tracking state (for action/progress awareness)
         self._tool_call_count: int = 0
@@ -80,7 +63,7 @@ class Metacognition:
         # Logger
         self._logger = get_logger(f"agents/{agent.id}/metacognition")
 
-    # ============== Token Awareness (New Unified System) ==============
+    # ============== Token Awareness ==============
 
     def get_agent_state(self) -> AgentState:
         """Get the current state of this agent.
@@ -94,6 +77,10 @@ class Metacognition:
         """Check if this agent is enabled (can run)."""
         return self.get_agent_state() == AgentState.ENABLED
 
+    def is_paused(self) -> bool:
+        """Check if this agent is paused (due to threshold breach)."""
+        return self.get_agent_state() == AgentState.PAUSED
+
     def enable(self):
         """Enable this agent (resume from paused or disabled state)."""
         self._tokens.enable_agent(self.agent_id)
@@ -101,6 +88,10 @@ class Metacognition:
     def disable(self):
         """Disable this agent."""
         self._tokens.disable_agent(self.agent_id)
+
+    def resume(self):
+        """Resume this agent if paused."""
+        self._tokens.enable_agent(self.agent_id)
 
     def get_token_usage(self) -> dict:
         """Get token usage statistics for this agent.
@@ -110,83 +101,11 @@ class Metacognition:
         """
         return self._tokens.get_agent_usage(self.agent_id)
 
-    # ============== Velocity Awareness (Legacy) ==============
-
-    def acquire_velocity(self, job_id: Optional[str] = None) -> bool:
-        """Acquire permission for an LLM call (velocity check).
-
-        This should be called BEFORE making an LLM API call.
-        NOTE: This is legacy - token awareness is now the primary system.
-
-        Args:
-            job_id: Optional job ID for tracking
-
-        Returns:
-            True if call can proceed
-
-        Raises:
-            AgentPausedError: If agent is paused due to runaway detection
-            RateLimitExceeded: If rate limit exceeded
-        """
-        return self._velocity.acquire(self.agent_id, job_id)
-
-    def record_velocity(self, job_id: Optional[str] = None):
-        """Record a completed LLM call for velocity tracking.
-
-        This should be called AFTER a successful LLM API call.
-
-        Args:
-            job_id: Optional job ID for tracking
-        """
-        self._velocity.record_call(self.agent_id, job_id)
-
-    def is_paused(self) -> bool:
-        """Check if this agent is paused (due to threshold breach or runaway)."""
-        # Check new token awareness system first
-        if self.get_agent_state() == AgentState.PAUSED:
-            return True
-        # Fall back to legacy velocity check
-        return self._velocity.is_agent_paused(self.agent_id)
-
     def get_pause_info(self) -> dict:
         """Get pause information for this agent."""
-        # Check new system first
-        token_pause_info = self._tokens.get_pause_info(self.agent_id)
-        if token_pause_info.get("is_paused"):
-            return token_pause_info
-        # Fall back to legacy velocity info
-        return self._velocity.get_pause_info(self.agent_id)
+        return self._tokens.get_pause_info(self.agent_id)
 
-    def resume(self):
-        """Resume this agent if paused."""
-        # Enable in new system (handles both paused and disabled)
-        self._tokens.enable_agent(self.agent_id)
-        # Also resume in legacy system
-        self._velocity.resume_agent(self.agent_id)
-
-    def get_velocity_stats(self) -> dict:
-        """Get velocity statistics for this agent."""
-        return self._velocity.get_agent_stats(self.agent_id)
-
-    # ============== Resource Awareness ==============
-
-    def check_budget(self):
-        """Check if budget is exceeded.
-
-        Raises:
-            BudgetExceeded: If budget limit reached
-        """
-        self._resources.check_budget()
-
-    def get_resource_stats(self) -> dict:
-        """Get resource (cost) statistics."""
-        return self._resources.get_stats()
-
-    def get_cost_summary(self) -> dict:
-        """Get cost summary for session, today, 7 days, and month."""
-        return self._resources.get_summary()
-
-    # ============== Action Awareness (Phase 2) ==============
+    # ============== Action Awareness ==============
 
     def get_max_tool_calls_per_iteration(self) -> int:
         """Get the maximum tool calls allowed per iteration."""
@@ -237,7 +156,7 @@ class Metacognition:
         self._iteration_count = 0
         self._tool_history = []
 
-    # ============== Progress Awareness (Phase 3) ==============
+    # ============== Progress Awareness ==============
 
     def get_max_repeated_tool_calls(self) -> int:
         """Get the maximum repeated tool calls before stuck detection."""
@@ -264,7 +183,7 @@ class Metacognition:
 
         return None
 
-    # ============== Planning (Phase 5) ==============
+    # ============== Planning ==============
 
     def should_plan(self, job: dict) -> bool:
         """Check if planning is enabled for this job type.
@@ -292,7 +211,7 @@ class Metacognition:
 
         return False
 
-    # ============== Efficiency (Phase 4) ==============
+    # ============== Efficiency ==============
 
     def should_defer_reflection(self) -> bool:
         """Check if reflection should be deferred until end of work cycle."""
@@ -311,8 +230,6 @@ class Metacognition:
             "agent_id": self.agent_id,
             "state": self.get_agent_state().value,
             "token_usage": self.get_token_usage(),
-            "velocity": self.get_velocity_stats(),
-            "resources": self.get_resource_stats(),
             "action": {
                 "tool_call_count": self._tool_call_count,
                 "max_tool_calls": self.get_max_tool_calls_per_iteration(),
@@ -328,7 +245,7 @@ class Metacognition:
         }
 
     def get_progress_context(self) -> dict:
-        """Get progress context for injecting into continue prompt (Phase 6).
+        """Get progress context for injecting into continue prompt.
 
         Returns:
             Dict with progress info for prompt injection
@@ -363,5 +280,3 @@ class Metacognition:
         """Invalidate cached configuration."""
         self.config.invalidate()
         self._tokens.invalidate_config()
-        self._velocity.invalidate_config()
-        self._resources.invalidate_config()
