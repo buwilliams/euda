@@ -13,7 +13,7 @@ The best way to get started is to understand the mental model behind Euno.
 **Suggested reading:**
 1. [Pitch](docs/1_pitch.md) — What Euno is and why it exists
 2. [Business Plan](docs/2_business-plan.md) — Vision, affordable loss, crazy quilt, and gates
-3. [Agents](docs/3_agents.md) — How agents work and think
+3. [System](docs/3_system.md) — Entities, ontology, and lifecycle
 4. [Contributing](docs/4_contribute.md) — Setup, assignments, and PR process
 
 The [Contributing Guide](docs/4_contribute.md) provides three hands-on assignments to help you learn by doing.
@@ -26,7 +26,7 @@ Join our [Discord](https://discord.gg/5B9VdQ6vYP) — where we meet, plan, and d
 
 - [Pitch](docs/1_pitch.md) — Introduction and vision
 - [Business Plan](docs/2_business-plan.md) — Vision and growth gates
-- [Agents](docs/3_agents.md) — What agents are and how they work
+- [System](docs/3_system.md) — Entities, ontology, and lifecycle
 - [Contributing](docs/4_contribute.md) — Setup, PR process, deployment
 - [Points](docs/5_points.md) — Contribution tracking and rewards
 - [Operating Agreement](docs/6_operating-agreement.md) — Ownership and governance

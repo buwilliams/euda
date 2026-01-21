@@ -9,7 +9,7 @@ Euno is a personal intelligence that learns to anticipate you: doing tasks for y
 ## Key References
 
 - `docs/1_pitch.md` - Product vision
-- `docs/3_agents.md` - What agents are and how they work
+- `docs/3_system.md` - Entities, ontology, and lifecycle
 - `spec/*.md` - Design rules for drift detection
 - `main.py` - Entry point
 

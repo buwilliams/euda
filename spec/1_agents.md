@@ -81,7 +81,7 @@ Identities reflect patterns of behavior, not rigid rules:
 - Both users and AI agents can develop any identity section through reflection
 - Both follow the 90/10 principle: 90% exploit known patterns, 10% explore new possibilities
 
-See docs/3_agents.md for the cognitive foundations behind this design.
+See docs/3_system.md for the cognitive foundations behind this design.
 
 ## Memory Append
 
