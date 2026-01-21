@@ -171,7 +171,7 @@ def get_costs_by_agent(days: int = 30):
 @router.get("/settings")
 def get_settings():
     """Get current LLM settings with all providers and speech capabilities."""
-    from ...speech import supports_stt, supports_tts
+    from ...tools.speech import supports_stt, supports_tts
 
     config = _load_config()
     current_provider = get_provider()
@@ -230,7 +230,7 @@ def update_llm_settings(data: dict):
     invalidate_client()
 
     # Also invalidate speech client since it depends on provider
-    from ...speech import invalidate_speech_client
+    from ...tools.speech import invalidate_speech_client
     invalidate_speech_client()
 
     # Invalidate resource tracker cache so budget changes take effect

@@ -7,7 +7,7 @@ Provides tools for agents to read text aloud to the user.
 import base64
 
 from .. import tool
-from ...speech import get_speech_client, supports_tts
+from ..speech import get_speech_client, supports_tts
 from ...web.events import emit_ui_event
 
 

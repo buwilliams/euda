@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from ...agent import Agent, AGENTS_DIR
-from ...speech import get_speech_client, supports_tts
+from ...tools.speech import get_speech_client, supports_tts
 from ...agent.cognition.metacognition import AgentPausedError, get_token_awareness
 
 
