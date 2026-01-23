@@ -9,6 +9,9 @@ let activeExecution = null;
 let agentPauseStatus = {};  // Cache: { agentId: { isPaused, reason, timestamp } }
 
 async function loadAgentPauseStatus(agentId) {
+    // Default state - also used as fallback on error
+    const defaultState = { state: 'enabled', isPaused: false, isDisabled: false, isEnabled: true, reason: null, timestamp: null };
+
     try {
         const response = await fetch(`/api/agents/${agentId}/state`, {
             credentials: 'same-origin'
@@ -29,7 +32,9 @@ async function loadAgentPauseStatus(agentId) {
     } catch (error) {
         console.error('Failed to load agent pause status:', error);
     }
-    return { state: 'enabled', isPaused: false, isDisabled: false, isEnabled: true, reason: null, timestamp: null };
+    // Always set cache to prevent infinite reload loop
+    agentPauseStatus[agentId] = defaultState;
+    return defaultState;
 }
 
 async function setAgentState(agentId, state, reason = null) {

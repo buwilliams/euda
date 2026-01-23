@@ -96,7 +96,10 @@ function connectSSE() {
         const data = JSON.parse(e.data);
         if (typeof agentPauseStatus !== 'undefined') {
             agentPauseStatus[data.agent_id] = {
+                state: 'paused',
                 isPaused: true,
+                isDisabled: false,
+                isEnabled: false,
                 reason: data.reason || 'Agent paused',
                 timestamp: data.timestamp
             };
@@ -110,7 +113,15 @@ function connectSSE() {
     eventSource.addEventListener('agent:resumed', (e) => {
         const data = JSON.parse(e.data);
         if (typeof agentPauseStatus !== 'undefined') {
-            delete agentPauseStatus[data.agent_id];
+            // Set to enabled state instead of deleting (avoids refetch)
+            agentPauseStatus[data.agent_id] = {
+                state: 'enabled',
+                isPaused: false,
+                isDisabled: false,
+                isEnabled: true,
+                reason: null,
+                timestamp: null
+            };
             // Re-render if viewing this agent's manage page
             if (typeof focusView !== 'undefined' && focusView === `manage-agent-${data.agent_id}`) {
                 renderFocusTab();
