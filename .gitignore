@@ -76,6 +76,7 @@ data/system/incidents/
 data/system/api_calls.json
 data/system/api_calls.jsonl
 data/system/store/
+data/system/token_usage/
 
 # User data directory (personal data)
 data/user/
