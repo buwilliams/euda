@@ -58,4 +58,5 @@ asyncio_default_fixture_loop_scope = "function"
 addopts = "-v --strict-markers"
 markers = [
     "invariant: Design invariant tests from specs",
+    "unit: Unit tests for individual components",
 ]
