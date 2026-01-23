@@ -111,7 +111,18 @@ All agents (including user) share the same identity schema stored in `identity.m
 
 AI agents start with Purpose, Behavioral Rules, Voice pre-filled. Users start empty. Both evolve through consolidation and can develop any section over time.
 
-Historical identities: `data/agents/{id}/identity.{yyyy}.md`
+### Historical Identity Snapshots
+
+At year boundaries, consolidation creates historical snapshots of agent identities:
+- **Location:** `data/agents/{id}/identity.{yyyy}.md`
+- **Timing:** Created in the first week of January for the previous year
+- **Condition:** Only if the snapshot doesn't already exist
+- **Content:** Copy of the current identity at the moment of snapshot
+
+This preserves how an agent's identity has evolved over time, enabling:
+- Longitudinal analysis of personal growth
+- Recovery of previous identity states if needed
+- Understanding of how patterns and values have shifted
 
 ### Agent Behavior
 
