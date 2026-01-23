@@ -578,9 +578,9 @@ def unblock_job(job_id: str) -> bool:
         ''', (json.dumps(new_tags), now, job_id))
 
         conn.execute('''
-            INSERT INTO job_logs (job_id, timestamp, agent, action, note)
-            VALUES (?, ?, ?, 'unblocked', ?)
-        ''', (job_id, now, "user", f"Removed: {', '.join(blocking_tags)}"))
+            INSERT INTO job_logs (job_id, timestamp, agent, action)
+            VALUES (?, ?, ?, ?)
+        ''', (job_id, now, "user", f"unblocked: {', '.join(blocking_tags)}"))
 
     # Notify assignees that job is actionable again
     for assignee in job.get("assignees", []):
