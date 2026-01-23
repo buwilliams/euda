@@ -12,7 +12,7 @@ Responsibilities:
 import json
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -51,7 +51,6 @@ class AgentManager:
         self.agents: Dict[str, Agent] = {}
         self.threads: Dict[str, threading.Thread] = {}
         self.running = False
-        self.error_backoff: Dict[str, dict] = {}  # Track backoff state per agent
         self.agents_with_jobs: Dict[str, bool] = {}  # Cache: agent_id -> has_jobs
         self.event_bus = EventBus()
         # Config watching
@@ -200,7 +199,6 @@ class AgentManager:
         self._agent_stop_events.pop(agent_id, None)
         self._config_mtimes.pop(agent_id, None)
         self.agents_with_jobs.pop(agent_id, None)
-        self.error_backoff.pop(agent_id, None)
 
         return {"stopped": True, "agent_id": agent_id}
 
@@ -323,47 +321,6 @@ class AgentManager:
         state["last_ran"] = datetime.now().isoformat()
         self._save_agent_state(agent_id, state)
 
-    def _is_quota_or_rate_limit(self, error_msg: str) -> bool:
-        """Detect quota or rate limit errors."""
-        error_lower = str(error_msg).lower()
-        return any(phrase in error_lower for phrase in [
-            "429",
-            "insufficient_quota",
-            "rate_limit",
-            "quota exceeded",
-            "too many requests",
-            "rate limit",
-            "quota",
-        ])
-
-    def _calculate_backoff(self, agent_id: str) -> int:
-        """Calculate exponential backoff duration in seconds.
-
-        Returns backoff duration in seconds.
-        """
-        if agent_id not in self.error_backoff:
-            self.error_backoff[agent_id] = {
-                "count": 0,
-                "last_error": None,
-                "backoff_until": None
-            }
-
-        state = self.error_backoff[agent_id]
-        state["count"] += 1
-        state["last_error"] = datetime.now()
-
-        # Exponential backoff: 1min, 5min, 15min, 30min, 1hr, 2hr, 4hr (max)
-        # Formula: min(2^(count-1), 240) minutes
-        backoff_minutes = min(2 ** (state["count"] - 1), 240)  # Max 4 hours
-        state["backoff_until"] = datetime.now() + timedelta(minutes=backoff_minutes)
-
-        return backoff_minutes * 60  # Return seconds
-
-    def _reset_backoff(self, agent_id: str):
-        """Reset backoff counter after successful work cycle."""
-        if agent_id in self.error_backoff:
-            del self.error_backoff[agent_id]
-
     def _check_missed_triggers(self) -> set:
         """Check if morning or evening triggers were missed since last run.
 
@@ -425,7 +382,6 @@ class AgentManager:
                         description="System startup trigger",
                         parent_id=system_container["id"],
                         assignees=[agent_id],
-                        tags=["trigger:start"],
                         due_date=None,
                         created_by="system"
                     )
@@ -458,7 +414,6 @@ class AgentManager:
                                 description=f"Missed {trigger} trigger",
                                 parent_id=system_container["id"],
                                 assignees=[agent_id],
-                                tags=[f"trigger:{trigger_type}"],
                                 due_date=None,
                                 created_by="system"
                             )
@@ -475,7 +430,7 @@ class AgentManager:
         """Run an agent's work loop - monitors health while agent polls for jobs.
 
         The manager doesn't claim or work jobs - that's the agent's responsibility.
-        The manager only monitors agent state and handles errors/backoff.
+        The manager monitors agent state; regulation handles rate limits and budgets.
 
         Args:
             agent: The agent to run
@@ -488,7 +443,7 @@ class AgentManager:
 
         while self.running and not stop_event.is_set():
             try:
-                # Check agent state (new token awareness system)
+                # Check agent state (token awareness handles budgets and pausing)
                 agent_state = token_awareness.get_agent_state(agent.id)
                 if agent_state == AgentState.DISABLED:
                     if stop_event.wait(poll_interval):
@@ -510,23 +465,6 @@ class AgentManager:
                         break  # Stop requested
                     continue
 
-                # Check if we're in backoff period
-                if agent.id in self.error_backoff:
-                    backoff_state = self.error_backoff[agent.id]
-                    if backoff_state["backoff_until"] and datetime.now() < backoff_state["backoff_until"]:
-                        # Use total_seconds() not .seconds to get actual remaining time
-                        remaining = int((backoff_state["backoff_until"] - datetime.now()).total_seconds())
-                        agent._log("backoff_wait", {
-                            "reason": "quota_or_rate_limit",
-                            "remaining_seconds": remaining,
-                            "retry_at": backoff_state["backoff_until"].isoformat(),
-                            "attempt": backoff_state["count"]
-                        })
-                        # Wait for 1 minute or remaining time, with minimum 1 second
-                        if stop_event.wait(max(min(remaining, 60), 1)):
-                            break  # Stop requested
-                        continue
-
                 # Check cache first (fast) - skip work cycle if no jobs pending
                 if not self.agents_with_jobs.get(agent.id, False):
                     if stop_event.wait(poll_interval):
@@ -536,8 +474,7 @@ class AgentManager:
                 # Let the agent discover, claim, work, and release jobs autonomously
                 agent.work_cycle_sync()
 
-                # Success - reset backoff and update last_ran
-                self._reset_backoff(agent.id)
+                # Update last_ran timestamp
                 self._update_agent_last_ran(agent.id)
 
                 # Re-check for more jobs and update cache
@@ -570,59 +507,12 @@ class AgentManager:
                         break  # Stop requested
 
             except Exception as e:
-                error_msg = str(e)
-                agent._log("error", {"message": error_msg})
+                # Log error and wait briefly before retry
+                # Rate limits and budgets are handled by agent regulation (AgentPausedError)
+                agent._log("error", {"message": str(e)})
                 print(f"Agent {agent.id} error: {e}")
-
-                # Track job failures and escalate to user after 3 consecutive failures
-                # This prevents infinite retry loops when jobs fail persistently
-                if 'job_id' in locals() and 'current_job' in locals():
-                    from ..tools.data.jobs import update_job, handoff_job, get_job
-
-                    job = get_job(job_id)
-                    if job:
-                        tags = job.get("tags", [])
-
-                        # Count existing failure tags for this agent
-                        failure_prefix = f"failure:{agent.id}:"
-                        failure_count = sum(1 for t in tags if t.startswith(failure_prefix))
-
-                        # Add new failure tag (replacing previous count)
-                        new_tag = f"failure:{agent.id}:{failure_count + 1}"
-                        updated_tags = [t for t in tags if not t.startswith(failure_prefix)] + [new_tag]
-                        update_job(job_id, tags=updated_tags)
-
-                        if failure_count + 1 >= 3:
-                            # 3 strikes - hand off to user
-                            agent._log("job_escalated_to_user", {
-                                "job_id": job_id,
-                                "failure_count": failure_count + 1,
-                                "error": error_msg[:200]
-                            })
-                            handoff_job(job_id, "user", f"Agent {agent.id} failed 3 times: {error_msg[:200]}")
-                            print(f"[{agent.id}] Job {job_id} escalated to user after 3 failures")
-
-                # Smart handling based on error type
-                if self._is_quota_or_rate_limit(error_msg):
-                    backoff_secs = self._calculate_backoff(agent.id)
-                    backoff_mins = backoff_secs / 60
-
-                    agent._log("entering_backoff", {
-                        "reason": "quota_or_rate_limit",
-                        "backoff_duration_seconds": backoff_secs,
-                        "backoff_duration_minutes": backoff_mins,
-                        "retry_count": self.error_backoff[agent.id]["count"],
-                        "retry_at": self.error_backoff[agent.id]["backoff_until"].isoformat()
-                    })
-
-                    print(f"[{agent.id}] Quota/rate limit hit. Backing off for {backoff_mins:.1f} minutes (attempt #{self.error_backoff[agent.id]['count']})")
-
-                    # Don't sleep here - let the top of the loop handle backoff checking
-                else:
-                    # Other errors: short retry for transient issues
-                    agent._log("transient_error_retry", {"delay_seconds": 5})
-                    if stop_event.wait(5):
-                        break  # Stop requested
+                if stop_event.wait(5):
+                    break  # Stop requested
 
         # Log that agent loop has ended
         agent._log("agent_loop_stopped", {"reason": "stop_requested" if stop_event.is_set() else "shutdown"})
@@ -655,20 +545,21 @@ class AgentManager:
             consolidation_trigger = consolidation_config.get("trigger", "time:evening")
 
             if trigger_name == consolidation_trigger:
-                job_name = f"Trigger:consolidation:{today}"
-
                 # Check if consolidation job already exists for this agent today
+                # Name pattern: Trigger:consolidation:{phase}:{date}
                 existing = list_jobs(status="todo", assignee=agent_id)
-                already_exists = any(j["name"] == job_name for j in existing)
+                already_exists = any(
+                    j["name"].startswith(f"Trigger:consolidation:") and j["name"].endswith(f":{today}")
+                    for j in existing
+                )
 
                 if not already_exists:
                     print(f"[scheduler] Creating consolidation job for {agent_id}")
                     create_job(
-                        name=job_name,
+                        name=f"Trigger:consolidation:both:{today}",
                         description="Scheduled consolidation: review memories, evolve identity, graduate learnings",
                         parent_id=system_container["id"],
                         assignees=[agent_id],
-                        tags=["trigger:consolidation"],
                         due_date=None,
                         created_by="system"
                     )
@@ -730,7 +621,6 @@ class AgentManager:
                                         description=f"Scheduled trigger for {trigger_name}",
                                         parent_id=system_container["id"],
                                         assignees=[agent_id],
-                                        tags=[f"trigger:{name}"],
                                         due_date=None,
                                         created_by="system"
                                     )

@@ -339,11 +339,11 @@ class Agent:
         return get_tools_for_agent(self.config.get("tools", []))
 
     def _is_reflection_trigger(self, job_tags: list, job_name: str) -> bool:
-        """Check if a job is a reflection trigger that should be handled directly."""
-        for tag in job_tags:
-            if tag.startswith("trigger:consolidation"):
-                return True
-        return job_name.startswith("Trigger:consolidation")
+        """Check if a job is a reflection trigger that should be handled directly.
+
+        Consolidation jobs are identified by name pattern: Trigger:consolidation:{phase}:{date}
+        """
+        return job_name.startswith("Trigger:consolidation:")
 
     def _execute_reflection_trigger(self, job: dict):
         """Execute a reflection trigger directly (not through chat loop).
@@ -363,12 +363,13 @@ class Agent:
                 execution_id = tag.split(":", 1)[1]
                 break
 
-        # Determine phase from tags
+        # Determine phase from job name: Trigger:consolidation:{phase}:{date}
+        job_name = job.get("name", "")
         phase = "both"  # default
-        for tag in job_tags:
-            if tag.startswith("trigger:consolidation:"):
-                phase = tag.split(":")[-1]
-                break
+        if job_name.startswith("Trigger:consolidation:"):
+            parts = job_name.split(":")
+            if len(parts) >= 3:
+                phase = parts[2]  # Trigger:consolidation:{phase}:{date}
 
         self._log("reflection_trigger_start", {
             "job_id": job_id,
@@ -408,11 +409,11 @@ class Agent:
             Template name: 'agent/consolidation' or 'agent/job_assignment'
         """
         job_name = job.get("name", "")
-        job_tags = job.get("tags", [])
 
-        # Reflection triggers - note: these are now handled directly in _execute_reflection_trigger
+        # Consolidation jobs identified by name pattern: Trigger:consolidation:{phase}:{date}
+        # Note: these are now handled directly in _execute_reflection_trigger
         # This path is kept for backwards compatibility with any code that calls this directly
-        if "trigger:consolidation" in job_tags or job_name.startswith("Trigger:consolidation"):
+        if job_name.startswith("Trigger:consolidation:"):
             return "agent/consolidation"
         # Regular job assignment (includes user:request)
         else:

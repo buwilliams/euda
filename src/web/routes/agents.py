@@ -294,11 +294,11 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
     system_container = get_system_container()
 
     job = create_job(
-        name=f"Trigger:consolidation:{today}",
-        description=f"Manual reflection trigger (phase: {phase}, execution_id: {execution_id})",
+        name=f"Trigger:consolidation:{phase}:{today}",
+        description=f"Manual reflection trigger (execution_id: {execution_id})",
         parent_id=system_container["id"],
         assignees=[agent_id],
-        tags=[f"trigger:consolidation:{phase}", "ui:manual", f"execution:{execution_id}"],
+        tags=["ui:manual", f"execution:{execution_id}"],
         created_by="web-ui"
     )
 
@@ -333,20 +333,20 @@ def api_get_active_executions(agent_id: str):
     # Get todo jobs assigned to this agent
     jobs = list_jobs(status="todo", assignee=agent_id)
 
-    # Filter for trigger jobs and extract execution info
+    # Filter for consolidation jobs and extract execution info
+    # Consolidation jobs are identified by name pattern: Trigger:consolidation:{phase}:{date}
     executions = []
     for job in jobs:
+        job_name = job.get("name", "")
         tags = job.get("tags", [])
 
-        # Check for trigger tags
-        phase = None
-        for tag in tags:
-            if tag.startswith("trigger:consolidation:"):
-                phase = tag.split(":")[-1]  # append, consolidate, or both
-                break
-
-        if not phase:
+        # Check for consolidation job name pattern
+        if not job_name.startswith("Trigger:consolidation:"):
             continue
+
+        # Extract phase from job name: Trigger:consolidation:{phase}:{date}
+        parts = job_name.split(":")
+        phase = parts[2] if len(parts) >= 3 else "both"
 
         # Extract execution_id from tags
         execution_id = None

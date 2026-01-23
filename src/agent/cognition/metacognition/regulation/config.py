@@ -24,7 +24,7 @@ DEFAULT_CONFIG = {
     },
     "planning": {
         "enabled": True,  # Plan before executing jobs (per docs/3_system.md)
-        "excluded_for": []  # Job tags to skip planning for (e.g., "trigger:quick")
+        "excluded_for": []  # Job tags to skip planning for (e.g., "quick", "low-priority")
     },
     "efficiency": {
         "defer_consolidation_in_work_cycles": True

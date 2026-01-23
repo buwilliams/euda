@@ -198,7 +198,7 @@ def _create_store_job(items_with_hashes: List[tuple]) -> dict:
                     f"3. Complete job when done",
         parent_id=system_container["id"] if system_container else None,
         assignees=["chat"],
-        tags=["store:ingest", "trigger:store"] + hash_tags,
+        tags=["store:ingest"] + hash_tags,
         created_by="user"
     )
 

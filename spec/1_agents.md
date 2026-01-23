@@ -30,7 +30,6 @@ Rules for how agents work and coordinate through jobs.
 - Triggers are configured per-agent in `config.json` under `triggers[]`
 - Triggers create jobs, they do not wake agents directly
 - Trigger job naming: `Trigger:{name}:{yyyy-mm-dd}`
-- Trigger jobs have tag `trigger:{name}`
 - Trigger types:
   - `system:start` — fires once at system startup
   - `time:{name}` — fires at scheduled times (morning, evening, hourly)
@@ -103,7 +102,7 @@ Agents respond to two types of behavioral triggers, each with its own prompt tem
 
 - **Consolidation** (`agent/consolidation.md`): Scheduled self-analysis
   - Triggered by consolidation trigger (e.g., `time:evening`)
-  - Creates visible `Trigger:consolidation:{date}` jobs
+  - Creates visible `Trigger:consolidation:{phase}:{date}` jobs
   - Agent reviews memories, identifies patterns, evolves identity
   - Uses tools: list_memory, read_long_term_memory, graduate_memory, update_own_identity
   - Consolidate includes recent completed jobs (last 20) for context on work patterns
@@ -113,8 +112,8 @@ Agents respond to two types of behavioral triggers, each with its own prompt tem
 - Base templates in `data/system/prompts/agent/`
 - Agent-specific overrides in `data/agents/{agent}/prompts/`
 - System checks agent-specific first, falls back to base
-- Template selection based on job type:
-  - `Trigger:consolidation:*` jobs or `trigger:consolidation` tag → consolidation.md
+- Template selection based on job name:
+  - `Trigger:consolidation:*` jobs → consolidation.md
   - All other jobs → job_assignment.md
 
 ## Job Coordination

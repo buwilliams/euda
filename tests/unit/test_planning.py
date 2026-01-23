@@ -89,10 +89,10 @@ class TestShouldPlan:
 
         with patch.object(metacognition.config, 'get_planning_config', return_value={
             "enabled": True,
-            "excluded_for": ["trigger:quick", "system:cleanup"]
+            "excluded_for": ["quick", "system:cleanup"]
         }):
             # Job with excluded tag
-            job = {"id": "job-1", "name": "Quick task", "tags": ["trigger:quick"]}
+            job = {"id": "job-1", "name": "Quick task", "tags": ["quick"]}
             result = metacognition.should_plan(job)
 
         assert result is False
@@ -103,7 +103,7 @@ class TestShouldPlan:
 
         with patch.object(metacognition.config, 'get_planning_config', return_value={
             "enabled": True,
-            "excluded_for": ["trigger:quick"]
+            "excluded_for": ["quick"]
         }):
             # Job with different tags
             job = {"id": "job-1", "name": "Normal task", "tags": ["priority:high", "context:work"]}
@@ -117,7 +117,7 @@ class TestShouldPlan:
 
         with patch.object(metacognition.config, 'get_planning_config', return_value={
             "enabled": True,
-            "excluded_for": ["trigger:quick"]
+            "excluded_for": ["quick"]
         }):
             job = {"id": "job-1", "name": "Task without tags", "tags": []}
             result = metacognition.should_plan(job)
@@ -130,7 +130,7 @@ class TestShouldPlan:
 
         with patch.object(metacognition.config, 'get_planning_config', return_value={
             "enabled": True,
-            "excluded_for": ["trigger:quick"]
+            "excluded_for": ["quick"]
         }):
             job = {"id": "job-1", "name": "Minimal job"}  # No tags key
             result = metacognition.should_plan(job)
@@ -165,7 +165,7 @@ class TestPlannerIntegration:
         mock_agent.metacognition.should_plan.return_value = False
 
         planner = Planner(mock_agent)
-        job = {"id": "job-1", "name": "Excluded job", "tags": ["trigger:quick"]}
+        job = {"id": "job-1", "name": "Excluded job", "tags": ["quick"]}
 
         result = planner.should_plan(job)
 

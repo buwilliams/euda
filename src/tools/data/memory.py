@@ -275,7 +275,6 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
                         description="New long-term memory entry to process",
                         parent_id=system_container["id"],
                         assignees=[agent_config["id"]],
-                        tags=["trigger:memory-long-term"],
                         due_date=None,
                         created_by="system"
                     )

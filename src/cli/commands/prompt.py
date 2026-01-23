@@ -109,10 +109,10 @@ def _show_reflect_prompt(agent_id: str, json_mode: bool):
         "agent/consolidation",
         agent_id=agent_id,
         job_id="<job_id>",
-        job_name="Trigger:consolidation:2025-01-01",
+        job_name="Trigger:consolidation:both:2025-01-01",
         job_description="Daily reflection trigger",
         job_due_date="No deadline",
-        job_tags="trigger:consolidation",
+        job_tags="",
         job_attachments="No attachments",
         remaining_jobs_notice=""
     )
