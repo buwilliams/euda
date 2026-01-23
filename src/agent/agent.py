@@ -597,120 +597,132 @@ class Agent:
     def work_cycle_sync(self, trigger_context: dict = None):
         """Perform one cycle of autonomous work (synchronous version for threads).
 
+        The agent discovers, claims, works, and releases jobs autonomously.
+        The manager only starts agents and monitors health.
+
         Args:
             trigger_context: Optional event data that triggered this cycle
         """
-        from ..tools.data.jobs import list_jobs
+        from ..tools.data.jobs import list_jobs, claim_job, release_job
 
         self._log("work_cycle_start", {"trigger": trigger_context})
         self._work_done = False
         self.metacognition.reset_work_cycle()  # Reset tracking for new work cycle
 
-        # Get actionable jobs assigned to this agent
+        # Query for actionable todo jobs assigned to this agent
         jobs = list_jobs(status="todo", assignee=self.id, actionable=True)
-
         if not jobs:
             self._log("work_cycle_end", {"reason": "no_jobs"})
             return  # Nothing to do
 
         self._log("work_cycle_jobs_found", {"count": len(jobs)})
 
-        # Pass only the first job to avoid overwhelming the agent
-        # After this job is done, the manager will start another work cycle if more jobs exist
+        # Work the first job - after completion, manager will trigger another cycle if more exist
         current_job = jobs[0]
         remaining = len(jobs) - 1
+        job_id = current_job.get("id")
+
+        # Claim the job exclusively (sets status to 'working')
+        claim_result = claim_job(job_id, self.id)
+        if "error" in claim_result:
+            self._log("job_claim_failed", {"job_id": job_id, "error": claim_result.get("error")})
+            return  # Job was claimed by another agent
+
+        self._log("job_claimed", {"job_id": job_id})
 
         # Set job context for cost/rate tracking
-        self._current_job_id = current_job.get("id")
-
-        # Special handling for reflection triggers - call reflection directly instead of chat loop
-        # This is much more efficient (single LLM call vs many)
-        job_tags = current_job.get("tags", [])
-        job_name = current_job.get("name", "")
-        if self._is_reflection_trigger(job_tags, job_name):
-            self._execute_reflection_trigger(current_job)
-            self._current_job_id = None
-            return
-
-        # Use standardized job prompt format
-        from .cognition.reasoning.prompts import load_template
-        prompt = self._format_job_prompt(current_job, remaining)
-
-        # Strategic planning phase (if configured for this job type)
-        plan = None
-        if self.metacognition.planner.should_plan(current_job):
-            self._log("planning_start", {"job_id": current_job.get("id")})
-            plan = self.metacognition.planner.create_plan(current_job)
-            if plan:
-                prompt = self.metacognition.planner.inject_plan(prompt, plan)
-                self._log("planning_injected", {"job_id": current_job.get("id"), "plan_length": len(plan)})
-
-        # Autonomous loop - keep working until agent calls done_working
-        max_iterations = self._get_system_config().get("agents", {}).get("max_work_iterations", 20)
-        iteration = 0
-
-        # Check if deferred reflection is enabled (efficiency optimization)
-        defer_consolidation = self.metacognition.should_defer_consolidation()
-        exchanges = []  # Collect for batched reflection if deferred
+        self._current_job_id = job_id
 
         try:
-            while not self._work_done and iteration < max_iterations:
-                iteration += 1
-                self._log("work_iteration", {"iteration": iteration})
+            # Special handling for reflection triggers - call reflection directly instead of chat loop
+            # This is much more efficient (single LLM call vs many)
+            job_tags = current_job.get("tags", [])
+            job_name = current_job.get("name", "")
+            if self._is_reflection_trigger(job_tags, job_name):
+                self._execute_reflection_trigger(current_job)
+                return
 
-                # Check for stuck patterns before proceeding
-                stuck_reason = self.metacognition.check_stuck()
-                if stuck_reason:
-                    self._log("stuck_detected", {"reason": stuck_reason, "iteration": iteration})
-                    print(f"[{self.id}] Stuck detected: {stuck_reason}")
-                    # Don't break immediately - let the agent know it's stuck via the continue prompt
-                    break
+            # Use standardized job prompt format
+            from .cognition.reasoning.prompts import load_template
+            prompt = self._format_job_prompt(current_job, remaining)
 
-                # Log to memory for memory creation, but don't save to conversation history
-                # Defer reflection if enabled (will batch process at end)
-                response = self.chat(prompt, log_to_memory=True, save_to_history=False,
-                                     defer_consolidation=defer_consolidation)
+            # Strategic planning phase (if configured for this job type)
+            plan = None
+            if self.metacognition.planner.should_plan(current_job):
+                self._log("planning_start", {"job_id": current_job.get("id")})
+                plan = self.metacognition.planner.create_plan(current_job)
+                if plan:
+                    prompt = self.metacognition.planner.inject_plan(prompt, plan)
+                    self._log("planning_injected", {"job_id": current_job.get("id"), "plan_length": len(plan)})
 
-                # Collect exchange for batched reflection
-                if defer_consolidation and self.consolidation:
-                    exchanges.append((prompt, response))
+            # Autonomous loop - keep working until agent calls done_working
+            max_iterations = self._get_system_config().get("agents", {}).get("max_work_iterations", 20)
+            iteration = 0
 
-                print(f"[{self.id}] {response[:100]}...")
+            # Check if deferred reflection is enabled (efficiency optimization)
+            defer_consolidation = self.metacognition.should_defer_consolidation()
+            exchanges = []  # Collect for batched reflection if deferred
 
-                if self._work_done:
-                    break
+            try:
+                while not self._work_done and iteration < max_iterations:
+                    iteration += 1
+                    self._log("work_iteration", {"iteration": iteration})
 
-                # Continue prompt for subsequent iterations with progress context
-                progress_ctx = self.metacognition.get_progress_context()
+                    # Check for stuck patterns before proceeding
+                    stuck_reason = self.metacognition.check_stuck()
+                    if stuck_reason:
+                        self._log("stuck_detected", {"reason": stuck_reason, "iteration": iteration})
+                        print(f"[{self.id}] Stuck detected: {stuck_reason}")
+                        # Don't break immediately - let the agent know it's stuck via the continue prompt
+                        break
 
-                # Add max_iterations to context
-                progress_ctx["max_iterations"] = max_iterations
+                    # Log to memory for memory creation, but don't save to conversation history
+                    # Defer reflection if enabled (will batch process at end)
+                    response = self.chat(prompt, log_to_memory=True, save_to_history=False,
+                                         defer_consolidation=defer_consolidation)
 
-                # Format stuck warning if approaching limits
-                stuck_warning = ""
-                if progress_ctx.get("stuck_warning"):
-                    stuck_warning = f"**Warning:** {progress_ctx['stuck_warning']}"
-                elif progress_ctx.get("approaching_limit"):
-                    stuck_warning = f"**Note:** Approaching tool call limit ({progress_ctx['tool_calls_this_cycle']}/{progress_ctx['max_tool_calls']})"
+                    # Collect exchange for batched reflection
+                    if defer_consolidation and self.consolidation:
+                        exchanges.append((prompt, response))
 
-                prompt = load_template("agent/continue_with_context").format(
-                    iteration=progress_ctx.get("iteration", iteration),
-                    max_iterations=max_iterations,
-                    tool_calls_this_cycle=progress_ctx.get("tool_calls_this_cycle", 0),
-                    stuck_warning=stuck_warning
-                )
+                    print(f"[{self.id}] {response[:100]}...")
 
-            if iteration >= max_iterations:
-                self._log("work_cycle_end", {"reason": "max_iterations", "iterations": iteration})
-            else:
-                self._log("work_cycle_end", {"reason": "done_working", "iterations": iteration})
+                    if self._work_done:
+                        break
+
+                    # Continue prompt for subsequent iterations with progress context
+                    progress_ctx = self.metacognition.get_progress_context()
+
+                    # Add max_iterations to context
+                    progress_ctx["max_iterations"] = max_iterations
+
+                    # Format stuck warning if approaching limits
+                    stuck_warning = ""
+                    if progress_ctx.get("stuck_warning"):
+                        stuck_warning = f"**Warning:** {progress_ctx['stuck_warning']}"
+                    elif progress_ctx.get("approaching_limit"):
+                        stuck_warning = f"**Note:** Approaching tool call limit ({progress_ctx['tool_calls_this_cycle']}/{progress_ctx['max_tool_calls']})"
+
+                    prompt = load_template("agent/continue_with_context").format(
+                        iteration=progress_ctx.get("iteration", iteration),
+                        max_iterations=max_iterations,
+                        tool_calls_this_cycle=progress_ctx.get("tool_calls_this_cycle", 0),
+                        stuck_warning=stuck_warning
+                    )
+
+                if iteration >= max_iterations:
+                    self._log("work_cycle_end", {"reason": "max_iterations", "iterations": iteration})
+                else:
+                    self._log("work_cycle_end", {"reason": "done_working", "iterations": iteration})
+            finally:
+                # Batch reflection at end of work cycle (if deferred)
+                if defer_consolidation and self.consolidation and exchanges:
+                    self._log("reflection_batch", {"exchange_count": len(exchanges)})
+                    self.consolidation.append_batch(exchanges)
         finally:
-            # Batch reflection at end of work cycle (if deferred)
-            if defer_consolidation and self.consolidation and exchanges:
-                self._log("reflection_batch", {"exchange_count": len(exchanges)})
-                self.consolidation.append_batch(exchanges)
-
-            # Clear job context
+            # Always release job claim and clear context
+            release_job(job_id, self.id)
+            self._log("job_released", {"job_id": job_id})
             self._current_job_id = None
 
     async def work_cycle(self):

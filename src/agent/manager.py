@@ -54,6 +54,10 @@ class AgentManager:
         self.error_backoff: Dict[str, dict] = {}  # Track backoff state per agent
         self.agents_with_jobs: Dict[str, bool] = {}  # Cache: agent_id -> has_jobs
         self.event_bus = EventBus()
+        # Config watching
+        self._config_mtimes: Dict[str, float] = {}  # agent_id -> last mtime
+        self._agent_stop_events: Dict[str, threading.Event] = {}  # Signal agents to stop
+        self._config_watch_thread: Optional[threading.Thread] = None
 
     def get_enabled_agent_count(self) -> int:
         """Get the number of enabled agents for budget splitting.
@@ -96,13 +100,22 @@ class AgentManager:
         agent = Agent(agent_id, config)
         self.agents[agent_id] = agent
 
+        # Track config modification time for reload detection
+        config_path = AGENTS_DIR / agent_id / "config.json"
+        if config_path.exists():
+            self._config_mtimes[agent_id] = config_path.stat().st_mtime
+
+        # Create stop event for this agent
+        stop_event = threading.Event()
+        self._agent_stop_events[agent_id] = stop_event
+
         # Subscribe agent to its triggers
         self.event_bus.subscribe(agent_id, triggers)
 
         # Create thread for agent loop
         thread = threading.Thread(
             target=self._run_agent_loop,
-            args=(agent,),
+            args=(agent, stop_event),
             name=f"agent-{agent_id}",
             daemon=True
         )
@@ -150,6 +163,123 @@ class AgentManager:
             return {"registered": True, "agent_id": agent_id, "started": True}
 
         return {"registered": True, "agent_id": agent_id, "started": False, "note": "Agent is disabled"}
+
+    def stop_agent(self, agent_id: str, timeout: float = 5.0) -> dict:
+        """Stop a running agent gracefully.
+
+        Args:
+            agent_id: The agent to stop
+            timeout: How long to wait for the agent to stop (seconds)
+
+        Returns:
+            Status dict with success/error info
+        """
+        if agent_id not in self.agents:
+            return {"error": f"Agent {agent_id} is not running"}
+
+        print(f"Stopping agent: {agent_id}")
+
+        # Signal the agent to stop
+        stop_event = self._agent_stop_events.get(agent_id)
+        if stop_event:
+            stop_event.set()
+
+        # Wait for thread to finish
+        thread = self.threads.get(agent_id)
+        if thread and thread.is_alive():
+            thread.join(timeout=timeout)
+            if thread.is_alive():
+                print(f"Warning: Agent {agent_id} did not stop within {timeout}s")
+
+        # Unsubscribe from event bus
+        self.event_bus.unsubscribe(agent_id)
+
+        # Clean up
+        self.agents.pop(agent_id, None)
+        self.threads.pop(agent_id, None)
+        self._agent_stop_events.pop(agent_id, None)
+        self._config_mtimes.pop(agent_id, None)
+        self.agents_with_jobs.pop(agent_id, None)
+        self.error_backoff.pop(agent_id, None)
+
+        return {"stopped": True, "agent_id": agent_id}
+
+    def reload_agent(self, agent_id: str) -> dict:
+        """Reload an agent by stopping it and starting with fresh config.
+
+        Args:
+            agent_id: The agent to reload
+
+        Returns:
+            Status dict with success/error info
+        """
+        print(f"Reloading agent: {agent_id}")
+
+        # Stop if running
+        if agent_id in self.agents:
+            stop_result = self.stop_agent(agent_id)
+            if "error" in stop_result:
+                return stop_result
+
+        # Load fresh config
+        config_path = AGENTS_DIR / agent_id / "config.json"
+        if not config_path.exists():
+            return {"error": f"Agent config not found: {agent_id}"}
+
+        with open(config_path) as f:
+            config = json.load(f)
+            config["_dir"] = str(AGENTS_DIR / agent_id)
+
+        # Start with new config if enabled
+        if config.get("enabled", True):
+            self.start_agent(config)
+
+            # Initialize job cache
+            from ..tools.data.jobs import list_jobs
+            jobs = list_jobs(status="todo", assignee=agent_id, actionable=True)
+            self.agents_with_jobs[agent_id] = bool(jobs)
+
+            return {"reloaded": True, "agent_id": agent_id, "started": True}
+
+        return {"reloaded": True, "agent_id": agent_id, "started": False, "note": "Agent is disabled"}
+
+    def _watch_configs(self):
+        """Background thread that watches for config changes and reloads agents."""
+        check_interval = 2.0  # Check every 2 seconds
+
+        while self.running:
+            try:
+                # Check each agent's config for changes
+                for agent_id in list(self._config_mtimes.keys()):
+                    config_path = AGENTS_DIR / agent_id / "config.json"
+                    if not config_path.exists():
+                        # Config deleted - stop the agent
+                        print(f"Config deleted for agent {agent_id}, stopping...")
+                        self.stop_agent(agent_id)
+                        continue
+
+                    current_mtime = config_path.stat().st_mtime
+                    last_mtime = self._config_mtimes.get(agent_id, 0)
+
+                    if current_mtime > last_mtime:
+                        print(f"Config changed for agent {agent_id}, reloading...")
+                        self.reload_agent(agent_id)
+
+                # Check for new agent directories
+                if AGENTS_DIR.exists():
+                    for agent_dir in AGENTS_DIR.iterdir():
+                        if agent_dir.is_dir():
+                            agent_id = agent_dir.name
+                            config_path = agent_dir / "config.json"
+                            if config_path.exists() and agent_id not in self.agents:
+                                # New agent found - register it
+                                print(f"New agent found: {agent_id}, registering...")
+                                self.register_new_agent(agent_id)
+
+            except Exception as e:
+                print(f"Config watcher error: {e}")
+
+            time.sleep(check_interval)
 
     def _get_system_config(self) -> dict:
         """Load system configuration."""
@@ -341,19 +471,28 @@ class AgentManager:
                 state["last_evening"] = today
             self._save_system_state(state)
 
-    def _run_agent_loop(self, agent: Agent):
-        """Run an agent's work loop - polls for actionable jobs."""
-        from ..tools.data.jobs import list_jobs, claim_job, release_job
+    def _run_agent_loop(self, agent: Agent, stop_event: threading.Event):
+        """Run an agent's work loop - monitors health while agent polls for jobs.
+
+        The manager doesn't claim or work jobs - that's the agent's responsibility.
+        The manager only monitors agent state and handles errors/backoff.
+
+        Args:
+            agent: The agent to run
+            stop_event: Event to signal this agent should stop (for reload/shutdown)
+        """
+        from ..tools.data.jobs import list_jobs
 
         poll_interval = self._get_system_config().get("agents", {}).get("poll_interval", 0.1)
         token_awareness = get_token_awareness()
 
-        while self.running:
+        while self.running and not stop_event.is_set():
             try:
                 # Check agent state (new token awareness system)
                 agent_state = token_awareness.get_agent_state(agent.id)
                 if agent_state == AgentState.DISABLED:
-                    time.sleep(poll_interval)
+                    if stop_event.wait(poll_interval):
+                        break  # Stop requested
                     continue
                 if agent_state == AgentState.PAUSED:
                     # Agent is paused - wait for manual intervention
@@ -361,12 +500,14 @@ class AgentManager:
                     agent._log("agent_paused_waiting", {
                         "reason": pause_info.get("reason", "unknown")
                     })
-                    time.sleep(30)  # Check every 30 seconds
+                    if stop_event.wait(30):
+                        break  # Stop requested
                     continue
 
                 # Legacy check (backward compatibility)
                 if not agent.config.get("enabled", True):
-                    time.sleep(poll_interval)
+                    if stop_event.wait(poll_interval):
+                        break  # Stop requested
                     continue
 
                 # Check if we're in backoff period
@@ -381,76 +522,35 @@ class AgentManager:
                             "retry_at": backoff_state["backoff_until"].isoformat(),
                             "attempt": backoff_state["count"]
                         })
-                        # Sleep for 1 minute or remaining time, with minimum 1 second
-                        time.sleep(max(min(remaining, 60), 1))
+                        # Wait for 1 minute or remaining time, with minimum 1 second
+                        if stop_event.wait(max(min(remaining, 60), 1)):
+                            break  # Stop requested
                         continue
 
-                # Check cache first (fast) - skip DB query if no jobs pending
+                # Check cache first (fast) - skip work cycle if no jobs pending
                 if not self.agents_with_jobs.get(agent.id, False):
-                    time.sleep(poll_interval)
+                    if stop_event.wait(poll_interval):
+                        break  # Stop requested
                     continue
 
-                # Cache says jobs may exist - query DB to confirm
+                # Let the agent discover, claim, work, and release jobs autonomously
+                agent.work_cycle_sync()
+
+                # Success - reset backoff and update last_ran
+                self._reset_backoff(agent.id)
+                self._update_agent_last_ran(agent.id)
+
+                # Re-check for more jobs and update cache
                 jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
+                self.agents_with_jobs[agent.id] = bool(jobs)
 
+                # Apply pacing between work cycles to prevent runaway spinning
+                MIN_CYCLE_DELAY = 0.5  # 500ms minimum between cycles
                 if jobs:
-                    # Track the job being processed for cooldown decision
-                    current_job = jobs[0]
-                    job_id = current_job.get("id")
-                    is_background = "background" in current_job.get("tags", [])
-
-                    # Try to claim the job exclusively
-                    claim_result = claim_job(job_id, agent.id)
-                    if "error" in claim_result:
-                        # Job already claimed by another agent, skip it
-                        agent._log("job_already_claimed", {
-                            "job_id": job_id,
-                            "error": claim_result.get("error")
-                        })
-                        time.sleep(0.5)  # Brief delay before re-polling
-                        continue
-
-                    agent._log("polling_found_jobs", {"count": len(jobs), "claimed": job_id})
-                    try:
-                        agent.work_cycle_sync()
-                    finally:
-                        # Always release the job claim when done
-                        release_job(job_id, agent.id)
-
-                    # Success - reset backoff and update last_ran
-                    self._reset_backoff(agent.id)
-                    self._update_agent_last_ran(agent.id)
-
-                    # Clear failure tags from previous attempts on success
-                    from ..tools.data.jobs import update_job, get_job
-                    job = get_job(job_id)
-                    if job:
-                        tags = job.get("tags", [])
-                        clean_tags = [t for t in tags if not t.startswith("failure:")]
-                        if len(clean_tags) != len(tags):
-                            update_job(job_id, tags=clean_tags)
-
-                    # Re-check for more jobs and update cache
-                    jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
-                    self.agents_with_jobs[agent.id] = bool(jobs)
-
-                    # Apply pacing between work cycles to prevent runaway spinning
-                    # When jobs fail fast (errors swallowed, etc.), this prevents CPU-speed loops
-                    MIN_CYCLE_DELAY = 0.5  # 500ms minimum between cycles
-
-                    if is_background and jobs:
-                        # Background jobs: pacing with minimum floor
-                        delay = MIN_CYCLE_DELAY * 2  # 1 second for background jobs
-                        agent._log("background_job_pacing", {
-                            "delay": delay,
-                            "remaining_jobs": len(jobs)
-                        })
-                        time.sleep(delay)
-                    elif jobs:
-                        # Non-background jobs with more work: minimum delay to prevent spinning
-                        time.sleep(MIN_CYCLE_DELAY)
+                    if stop_event.wait(MIN_CYCLE_DELAY):
+                        break  # Stop requested
                 else:
-                    # Cache was stale - clear it
+                    # No more jobs - clear cache
                     self.agents_with_jobs[agent.id] = False
 
             except AgentPausedError as e:
@@ -460,13 +560,14 @@ class AgentManager:
                 })
                 print(f"\n[{agent.id}] PAUSED: {e.reason} - waiting for manual resume")
                 # Wait until resumed or shutdown (no auto-resume for token-based pauses)
-                while self.running:
+                while self.running and not stop_event.is_set():
                     agent_state = token_awareness.get_agent_state(agent.id)
                     if agent_state == AgentState.ENABLED:
                         agent._log("agent_resumed", {"resumed_by": "user"})
                         print(f"[{agent.id}] Resumed")
                         break
-                    time.sleep(30)  # Check every 30 seconds
+                    if stop_event.wait(30):
+                        break  # Stop requested
 
             except Exception as e:
                 error_msg = str(e)
@@ -520,7 +621,11 @@ class AgentManager:
                 else:
                     # Other errors: short retry for transient issues
                     agent._log("transient_error_retry", {"delay_seconds": 5})
-                    time.sleep(5)
+                    if stop_event.wait(5):
+                        break  # Stop requested
+
+        # Log that agent loop has ended
+        agent._log("agent_loop_stopped", {"reason": "stop_requested" if stop_event.is_set() else "shutdown"})
 
     def _create_consolidation_jobs(self, trigger_name: str):
         """Create consolidation jobs for agents with matching consolidation trigger.
@@ -688,6 +793,15 @@ class AgentManager:
             self.agents_with_jobs[agent_id] = bool(jobs)
         print("Job cache initialized")
 
+        # Start config watcher for hot reloading
+        self._config_watch_thread = threading.Thread(
+            target=self._watch_configs,
+            name="config-watcher",
+            daemon=True
+        )
+        self._config_watch_thread.start()
+        print("Config watcher started")
+
         # Wait until shutdown
         try:
             while self.running:
@@ -701,6 +815,10 @@ class AgentManager:
         """Gracefully shut down all agents."""
         print("Shutting down agents...")
         self.running = False
+
+        # Signal all agents to stop
+        for stop_event in self._agent_stop_events.values():
+            stop_event.set()
 
         # Emit shutdown event to wake any waiting agents
         for agent_id in self.agents:
