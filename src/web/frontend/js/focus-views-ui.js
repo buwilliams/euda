@@ -194,40 +194,39 @@ function renderJobApiCallsContent(data) {
 
 async function loadRateLimitEvents(agentId) {
     try {
-        const response = await fetch('/api/rate-limiting/events?days=7');
+        const response = await fetch(`/api/incidents?agent_id=${agentId}&days=7`);
         if (!response.ok) return null;
-        const events = await response.json();
-        // Filter events for this agent
-        return events.filter(e => e.agent_id === agentId || !e.agent_id);
+        const data = await response.json();
+        // Return history which includes all recent incidents
+        return data.history || [];
     } catch (error) {
-        console.error('Failed to load rate limit events:', error);
+        console.error('Failed to load incidents:', error);
         return null;
     }
 }
 
 function renderRateLimitEventsContent(events, agentId) {
     if (!events || events.length === 0) {
-        return '<div class="focus-empty">No rate limit events for this agent.</div>';
+        return '<div class="focus-empty">No incidents for this agent.</div>';
     }
 
-    // Filter to agent-specific events (exclude global events for now)
+    // Filter to agent-specific events
     const agentEvents = events.filter(e => e.agent_id === agentId);
 
     if (agentEvents.length === 0) {
-        return '<div class="focus-empty">No rate limit events for this agent.</div>';
+        return '<div class="focus-empty">No incidents for this agent.</div>';
     }
 
     return `
         <div class="rate-limit-events">
             ${agentEvents.slice(0, 50).map(e => {
-                const eventClass = e.event === 'agent_paused' ? 'event-paused' :
-                                   e.event === 'agent_resumed' ? 'event-resumed' :
-                                   e.event === 'rate_limit_hit' ? 'event-limited' : '';
+                const eventClass = e.severity === 'critical' ? 'event-paused' :
+                                   e.severity === 'warning' ? 'event-limited' : '';
                 return `
                     <div class="rate-limit-event ${eventClass}">
                         <span class="event-time">${formatPromptTime(e.timestamp)}</span>
-                        <span class="event-type">${escapeHtml(e.event)}</span>
-                        <span class="event-detail">${e.reason || e.details?.reason || ''}</span>
+                        <span class="event-type">${escapeHtml(e.incident_type || e.event || '')}</span>
+                        <span class="event-detail">${e.reason || ''}</span>
                     </div>
                 `;
             }).join('')}

@@ -10,15 +10,16 @@ let agentPauseStatus = {};  // Cache: { agentId: { isPaused, reason, timestamp }
 
 async function loadAgentPauseStatus(agentId) {
     try {
-        const response = await fetch(`/api/rate-limiting/agents/${agentId}/stats`, {
+        const response = await fetch(`/api/agents/${agentId}/state`, {
             credentials: 'same-origin'
         });
         if (response.ok) {
             const data = await response.json();
+            const pauseInfo = data.pause_info || {};
             agentPauseStatus[agentId] = {
-                isPaused: data.is_paused || false,
-                reason: data.pause_reason || null,
-                timestamp: data.pause_timestamp || null
+                isPaused: data.state === 'paused',
+                reason: pauseInfo.reason || null,
+                timestamp: pauseInfo.timestamp || null
             };
             return agentPauseStatus[agentId];
         }
@@ -30,9 +31,11 @@ async function loadAgentPauseStatus(agentId) {
 
 async function resumeAgent(agentId) {
     try {
-        const response = await fetch(`/api/rate-limiting/agents/${agentId}/resume`, {
-            method: 'POST',
-            credentials: 'same-origin'
+        const response = await fetch(`/api/agents/${agentId}/state`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ state: 'enabled' })
         });
         if (response.ok) {
             // Clear cache entry

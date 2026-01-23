@@ -298,7 +298,7 @@ function getViewDisplayName(view) {
         return 'Prompt';
     }
     if (view.startsWith('rate-limits-')) {
-        return 'Rate Limits';
+        return 'Incidents';
     }
     if (view.startsWith('trace-')) {
         return 'Trace';

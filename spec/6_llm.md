@@ -31,15 +31,6 @@ Rules for how agents interact with language models.
 - Job assets: `list_assets`, `read_asset` tools
 - Conversation history: included in messages array (not system prompt)
 
-## Rate Limiting
-
-- Global rate limiter controls LLM API call frequency
-- Rolling window: max calls per time window (default 30/minute)
-- Optional throttle queue for controlled pacing
-- Runaway detection pauses agents making excessive calls
-- Config in `data/system/config.json` under `llm.rate_limiting`
-- API endpoints at `/api/rate-limiting` for monitoring and control
-
 ## Prompt Logging
 
 - All prompts logged to `data/system/logs/prompts/{date}.jsonl`

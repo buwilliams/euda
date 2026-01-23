@@ -27,3 +27,67 @@ Rules for user experience and user interface. The interface should feel like wal
 - Chat expands in place — no jarring screen transitions between context and conversation
 - Agent Manage view uses sub-views: Identity, Config, Memory, Monitoring — each stacks forward with back button
 - Action buttons show running state during async operations (spinning icon, disabled siblings)
+
+## Navigation Structure
+
+Main tabs (bottom of screen):
+- **Jobs** — Primary work queue and job management
+- **Chat** — Conversation with agents
+- **Focus** — Agent management and monitoring (formerly "Agents")
+- **User** — User identity and memory
+- **Settings** — LLM provider, budget, schedules, system config
+
+## Jobs Tab
+
+- Hierarchical job list with nested children
+- Status indicators: todo (default), working (in progress), done, error, archived
+- Inline completion actions (complete, archive, delete)
+- Job detail view with:
+  - Description editing
+  - Tags and assignees
+  - Assets panel (files attached to job)
+  - Execution trace (logs + API calls)
+  - Child jobs
+
+## Chat Tab
+
+- Active conversation with selected agent (default: Chat agent)
+- Voice input/output when provider supports it
+- History access to past conversations
+- Fork conversation to continue from a past point
+
+## Focus Tab (Agent Management)
+
+Agent list with sub-views accessible via stacked navigation:
+- **Identity** — Markdown identity file, editable
+- **Config** — Triggers, tools, consolidation settings
+- **Memory** — Short-term and long-term memory browsing
+- **Monitoring** — Recent LLM calls with token counts and timing
+- **Incidents** — Threshold breaches and warnings
+- **Consolidation Logs** — History of consolidation runs
+
+Pause banner shown when agent is paused (with resume button).
+Trigger buttons for manual consolidation (append/consolidate/both).
+
+## User Tab
+
+- User identity editing (markdown)
+- Short-term memory list with add/delete
+- Long-term memory browser by date
+
+## Settings Tab
+
+Collapsible sections:
+- **LLM Provider** — Select provider (OpenAI, Anthropic, Grok), view model
+- **Budget** — Monthly spending limit
+- **Schedules** — Morning/evening trigger times
+- **Fresh Start** — Reset all data with backup
+- **Backups** — List and restore previous states
+
+## Real-Time Updates
+
+SSE connection provides live updates:
+- Job status changes refresh job list
+- Chat messages stream incrementally
+- Consolidation progress shows in Focus tab
+- Agent pause/resume events update UI immediately

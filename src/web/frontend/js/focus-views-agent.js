@@ -130,7 +130,7 @@ function renderAgentDetailView(job) {
 // ============== Agent Pause Banner ==============
 
 function renderPauseBanner(agentId, pauseStatus) {
-    const reason = pauseStatus.reason || 'Agent paused by rate limiting';
+    const reason = pauseStatus.reason || 'Agent paused due to threshold breach';
     const timestamp = pauseStatus.timestamp;
     const timeAgo = timestamp ? formatPauseTimestamp(timestamp) : '';
 
@@ -285,10 +285,10 @@ function renderAgentManageView(agentId) {
                 </div>
             </div>
 
-            <!-- Rate Limit Events Section - navigates to events view -->
+            <!-- Incidents Section - navigates to incidents view -->
             <div class="job-section">
                 <div class="job-section-header collapsible clickable" onclick="navigateFocus('rate-limits-${agentId}')">
-                    <span>Rate Limit Events</span>
+                    <span>Incidents</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
             </div>
@@ -1038,16 +1038,16 @@ function renderConfigurationView(agentId) {
                             placeholder="e.g., list_jobs, create_job">
                     </label>
                     <div class="agent-config-group">
-                        <div class="agent-config-group-title">Reflection</div>
+                        <div class="agent-config-group-title">Consolidation</div>
                         <label class="agent-config-checkbox">
-                            <input type="checkbox" id="edit-reflection-enabled-${jobId}"
-                                ${config.reflection?.enabled !== false ? 'checked' : ''}>
+                            <input type="checkbox" id="edit-consolidation-enabled-${jobId}"
+                                ${config.consolidation?.enabled !== false ? 'checked' : ''}>
                             <span>Enabled</span>
                         </label>
                         <label class="agent-config-label">
                             <span>Trigger</span>
-                            <input type="text" class="agent-config-input" id="edit-reflection-trigger-${jobId}"
-                                value="${escapeHtml(config.reflection?.trigger || 'time:evening')}"
+                            <input type="text" class="agent-config-input" id="edit-consolidation-trigger-${jobId}"
+                                value="${escapeHtml(config.consolidation?.trigger || 'time:evening')}"
                                 placeholder="e.g., time:evening">
                         </label>
                     </div>
@@ -1071,12 +1071,12 @@ function renderConfigurationView(agentId) {
                 </div>
 
                 <div class="job-section">
-                    <div class="job-section-header">Reflection</div>
+                    <div class="job-section-header">Consolidation</div>
                     <div class="config-value">
-                        <span class="config-status ${config.reflection?.enabled !== false ? 'enabled' : 'disabled'}">
-                            ${config.reflection?.enabled !== false ? 'Enabled' : 'Disabled'}
+                        <span class="config-status ${config.consolidation?.enabled !== false ? 'enabled' : 'disabled'}">
+                            ${config.consolidation?.enabled !== false ? 'Enabled' : 'Disabled'}
                         </span>
-                        <span class="config-trigger">${escapeHtml(config.reflection?.trigger || 'time:evening')}</span>
+                        <span class="config-trigger">${escapeHtml(config.consolidation?.trigger || 'time:evening')}</span>
                     </div>
                 </div>
             `}
@@ -1084,7 +1084,7 @@ function renderConfigurationView(agentId) {
     `;
 }
 
-// ============== Rate Limit Events View ==============
+// ============== Incidents View ==============
 
 function renderRateLimitEventsView(agentId) {
     const cached = rateLimitViewCache[agentId];
@@ -1098,7 +1098,7 @@ function renderRateLimitEventsView(agentId) {
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
-                    <span class="focus-view-title">Rate Limit Events</span>
+                    <span class="focus-view-title">Incidents</span>
                     ${renderBreadcrumbs()}
                 </div>
             </div>
@@ -1115,21 +1115,20 @@ function renderRateLimitEventsView(agentId) {
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
-                <span class="focus-view-title">Rate Limit Events</span>
+                <span class="focus-view-title">Incidents</span>
                 ${renderBreadcrumbs()}
             </div>
         </div>
         <div class="focus-view-content">
-            ${agentEvents.length === 0 ? '<div class="focus-empty">No rate limit events for this agent.</div>' :
+            ${agentEvents.length === 0 ? '<div class="focus-empty">No incidents for this agent.</div>' :
               agentEvents.slice(0, 50).map(e => {
-                  const eventClass = e.event === 'agent_paused' ? 'event-paused' :
-                                     e.event === 'agent_resumed' ? 'event-resumed' :
-                                     e.event === 'rate_limit_hit' ? 'event-limited' : '';
+                  const eventClass = e.severity === 'critical' ? 'event-paused' :
+                                     e.severity === 'warning' ? 'event-limited' : '';
                   return `
                     <div class="rate-limit-event ${eventClass}">
                         <span class="event-time">${formatPromptTime(e.timestamp)}</span>
-                        <span class="event-type">${escapeHtml(e.event || 'unknown')}</span>
-                        <span class="event-detail">${escapeHtml(e.reason || e.details?.reason || '')}</span>
+                        <span class="event-type">${escapeHtml(e.incident_type || '')}</span>
+                        <span class="event-detail">${escapeHtml(e.reason || '')}</span>
                     </div>
                   `;
               }).join('')

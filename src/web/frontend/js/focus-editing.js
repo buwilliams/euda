@@ -126,13 +126,13 @@ async function saveAgentConfigField(agentId, jobId) {
     // Build update object
     const updates = { triggers, tools };
 
-    // Get reflection settings
-    const reflectionEnabledInput = document.getElementById(`edit-reflection-enabled-${jobId}`);
-    const reflectionTriggerInput = document.getElementById(`edit-reflection-trigger-${jobId}`);
-    if (reflectionEnabledInput && reflectionTriggerInput) {
-        updates.reflection = {
-            enabled: reflectionEnabledInput.checked,
-            trigger: reflectionTriggerInput.value.trim() || 'time:evening'
+    // Get consolidation settings
+    const consolidationEnabledInput = document.getElementById(`edit-consolidation-enabled-${jobId}`);
+    const consolidationTriggerInput = document.getElementById(`edit-consolidation-trigger-${jobId}`);
+    if (consolidationEnabledInput && consolidationTriggerInput) {
+        updates.consolidation = {
+            enabled: consolidationEnabledInput.checked,
+            trigger: consolidationTriggerInput.value.trim() || 'time:evening'
         };
     }
 
