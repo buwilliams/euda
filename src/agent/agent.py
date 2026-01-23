@@ -109,10 +109,6 @@ class Agent:
             identity_content = template_path.read_text()
             identity_path.write_text(identity_content)
             return identity_content
-        # Fallback to old persona location for backward compatibility
-        persona_path = AGENTS_DIR / self.id / f"{self.id}-persona.md"
-        if persona_path.exists():
-            return persona_path.read_text()
         return f"You are {self.config.get('name', self.id)}, a helpful assistant."
 
     def _get_user_identity(self) -> str:
@@ -282,7 +278,7 @@ class Agent:
         return {}
 
     def _build_system_prompt(self, voice_input: bool = False) -> str:
-        """Build the system prompt from profile, user context, and tools.
+        """Build the system prompt from identity, user context, and tools.
 
         Includes:
         - Agent's identity (from identity.md)
@@ -318,22 +314,10 @@ class Agent:
         # Load user identity so agents know who they serve
         user_identity = self._get_user_identity()
 
-        # Load user patterns for anticipation (Chat agent gets high-confidence patterns)
-        user_patterns_section = ""
-        if self.id == "chat":
-            from .cognition.metacognition.consolidation.patterns import load_patterns, format_patterns_for_prompt
-            try:
-                user_store = load_patterns("user")
-                user_patterns_section = format_patterns_for_prompt(user_store, min_confidence=0.7)
-            except Exception:
-                # Don't fail if patterns can't be loaded
-                pass
-
         prompt = render_template(
             "agent/system",
             identity=self.identity,
             user_identity=user_identity,
-            user_patterns=user_patterns_section,
             tools_by_type=tools_text
         )
 

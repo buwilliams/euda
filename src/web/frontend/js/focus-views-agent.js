@@ -923,7 +923,7 @@ function renderIdentityView(agentId) {
         `;
     }
 
-    const identity = agentData.persona || '';
+    const identity = agentData.identity || '';
     const hasIdentity = identity.length > 0;
 
     // Find the job for this agent (for editing state)

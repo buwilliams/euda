@@ -17,7 +17,7 @@ def get_append_system_prompt() -> str:
 
 
 def build_append_prompt(
-    agent_profile: str,
+    agent_identity: str,
     existing_memory: list,
     user_message: str,
     assistant_response: str
@@ -25,7 +25,7 @@ def build_append_prompt(
     """Build the user prompt for the append phase.
 
     Args:
-        agent_profile: The agent's current profile
+        agent_identity: The agent's current identity
         existing_memory: Current short-term memory items
         user_message: The user's message from the conversation
         assistant_response: The assistant's response
@@ -44,7 +44,7 @@ def build_append_prompt(
 
     return render_template(
         "consolidation/append_user",
-        agent_identity=agent_profile,
+        agent_identity=agent_identity,
         existing_memory=memory_text,
         user_message=user_message,
         assistant_response=assistant_response
@@ -52,14 +52,14 @@ def build_append_prompt(
 
 
 def build_append_batch_prompt(
-    agent_profile: str,
+    agent_identity: str,
     existing_memory: list,
     exchanges: list
 ) -> str:
     """Build the user prompt for batched append phase.
 
     Args:
-        agent_profile: The agent's current profile
+        agent_identity: The agent's current identity
         existing_memory: Current short-term memory items
         exchanges: List of (user_message, assistant_response) tuples
 
@@ -87,7 +87,7 @@ def build_append_batch_prompt(
 
     return render_template(
         "consolidation/append_batch_user",
-        agent_identity=agent_profile,
+        agent_identity=agent_identity,
         existing_memory=memory_text,
         exchanges=exchanges_text,
         exchange_count=len(exchanges)
@@ -113,23 +113,21 @@ def get_consolidate_system_prompt(is_user: bool) -> str:
 
 def build_consolidate_prompt(
     agent_id: str,
-    agent_profile: str,
+    agent_identity: str,
     short_term_memory: list,
     recent_long_term: str,
     completed_jobs: list = None,
-    is_user: bool = False,
-    pattern_context: str = ""
+    is_user: bool = False
 ) -> str:
     """Build the user prompt for the consolidate phase.
 
     Args:
         agent_id: The agent's ID
-        agent_profile: The agent's current profile
+        agent_identity: The agent's current identity
         short_term_memory: All short-term memory items
         recent_long_term: Recent long-term memory content
         completed_jobs: List of recently completed jobs
         is_user: Whether this is the user agent (selects appropriate system prompt)
-        pattern_context: Formatted string of discovered patterns to include
 
     Returns:
         Formatted prompt string
@@ -166,15 +164,14 @@ def build_consolidate_prompt(
     else:
         completed_jobs_text = "(no recent completed jobs)"
 
-    profile_type = "User" if is_user else "AI Agent"
+    identity_type = "User" if is_user else "AI Agent"
 
     return render_template(
         "consolidation/consolidate_user",
-        profile_type=profile_type,
+        identity_type=identity_type,
         agent_id=agent_id,
-        agent_identity=agent_profile,
+        agent_identity=agent_identity,
         short_term_memory=short_term_text,
         recent_long_term=long_term_text,
-        completed_jobs=completed_jobs_text,
-        pattern_context=pattern_context
+        completed_jobs=completed_jobs_text
     )

@@ -103,28 +103,15 @@ class LongTermMemory:
         memory = self.load(days)
         return self._rlm.query(query, memory)
 
-    def extract_identity(self, current_profile: str, days: int = 30) -> dict:
+    def extract_identity(self, current_identity: str, days: int = 30) -> dict:
         """Extract identity updates from memory.
 
         Args:
-            current_profile: Current identity content
+            current_identity: Current identity content
             days: Number of days to analyze
 
         Returns:
             RLM result with identity update suggestions
         """
         memory = self.load(days)
-        return self._rlm.extract_identity(memory, current_profile)
-
-    def discover_patterns(self, pattern_types: list, days: int = 30) -> dict:
-        """Discover patterns in memory.
-
-        Args:
-            pattern_types: Types of patterns to discover
-            days: Number of days to analyze
-
-        Returns:
-            Dict of discovered patterns by type
-        """
-        memory = self.load(days)
-        return self._rlm.discover_patterns(memory, pattern_types)
+        return self._rlm.extract_identity(memory, current_identity)

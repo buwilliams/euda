@@ -286,16 +286,16 @@ async function loadAgents() {
 
 async function loadAgentData(agentId) {
     try {
-        const [personaRes, configRes] = await Promise.all([
-            fetch(`/api/agents/${agentId}/persona`, { credentials: 'same-origin' }),
+        const [identityRes, configRes] = await Promise.all([
+            fetch(`/api/agents/${agentId}/identity`, { credentials: 'same-origin' }),
             fetch(`/api/agents/${agentId}/config`, { credentials: 'same-origin' })
         ]);
 
         const data = { agentId };
 
-        if (personaRes.ok) {
-            const personaData = await personaRes.json();
-            data.persona = personaData.persona;
+        if (identityRes.ok) {
+            const identityData = await identityRes.json();
+            data.identity = identityData.identity;
         }
 
         if (configRes.ok) {
@@ -310,23 +310,23 @@ async function loadAgentData(agentId) {
     return null;
 }
 
-async function saveAgentPersona(agentId, persona) {
+async function saveAgentIdentity(agentId, identity) {
     try {
-        const response = await fetch(`/api/agents/${agentId}/persona`, {
+        const response = await fetch(`/api/agents/${agentId}/identity`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ persona })
+            body: JSON.stringify({ content: identity })
         });
 
         if (response.ok) {
             // Update cache
             if (agentDataCache[agentId]) {
-                agentDataCache[agentId].persona = persona;
+                agentDataCache[agentId].identity = identity;
             }
             return true;
         }
     } catch (error) {
-        console.error('Failed to save agent persona:', error);
+        console.error('Failed to save agent identity:', error);
     }
     return false;
 }

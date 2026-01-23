@@ -102,22 +102,11 @@ async function toggleAgentEnabled(agentId, enabled) {
     }
 }
 
-async function saveAgentPersonaField(agentId, jobId) {
-    const textarea = document.getElementById(`edit-persona-${jobId}`);
-    if (!textarea) return;
-
-    const success = await saveAgentPersona(agentId, textarea.value);
-    if (success) {
-        editingJobField = null;
-        renderFocusTab();
-    }
-}
-
 async function saveAgentIdentityField(agentId, jobId) {
     const textarea = document.getElementById(`edit-identity-${jobId}`);
     if (!textarea) return;
 
-    const success = await saveAgentPersona(agentId, textarea.value);
+    const success = await saveAgentIdentity(agentId, textarea.value);
     if (success) {
         editingJobField = null;
         renderFocusTab();
@@ -154,12 +143,12 @@ async function saveAgentConfigField(agentId, jobId) {
     }
 }
 
-function handleAgentPersonaKeypress(event, agentId, jobId) {
+function handleAgentIdentityKeypress(event, agentId, jobId) {
     if (event.key === 'Escape') {
         cancelEditing();
     }
     // Ctrl+Enter or Cmd+Enter to save
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-        saveAgentPersonaField(agentId, jobId);
+        saveAgentIdentityField(agentId, jobId);
     }
 }

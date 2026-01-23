@@ -5,4 +5,4 @@ Organizes routes by domain: jobs, agents, chat, user, auth, system.
 """
 
 # Route modules
-from . import jobs, agents, chat, user, auth, system, patterns
+from . import jobs, agents, chat, user, auth, system

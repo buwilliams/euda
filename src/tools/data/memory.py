@@ -99,7 +99,7 @@ def _archive_expired_memories(expired: List[dict], agent_id: str = "user"):
     """Archive expired short-term memories to long-term memory.
 
     This preserves memories that roll off after 90 days, allowing them
-    to become part of the agent's profile over time via the Profiler.
+    to become part of the agent's identity over time via consolidation.
     """
     # Group by type for readable formatting
     by_type = {}

@@ -48,19 +48,6 @@ def api_update_identity(request: UpdateIdentityRequest):
     return update_identity("user", request.content)
 
 
-# Backward-compatible profile endpoints (alias to identity)
-@router.get("/profile")
-def api_get_profile():
-    """Get user profile (alias for identity)."""
-    return get_identity("user")
-
-
-@router.patch("/profile")
-def api_update_profile(request: UpdateIdentityRequest):
-    """Update user profile (alias for identity)."""
-    return update_identity("user", request.content)
-
-
 # Short-term memory endpoints
 @router.get("/memory")
 def api_list_memory():

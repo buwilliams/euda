@@ -20,7 +20,7 @@ let editingJobField = null;  // Which field is being edited: {jobId, field}
 let currentAssetData = null; // Currently viewed asset
 let editingAssetFilename = null; // Track if we're editing an asset
 let agentsCache = null;      // Cache of available agents
-let agentDataCache = {};     // Cache of agent persona and config
+let agentDataCache = {};     // Cache of agent identity and config
 let isViewAnimating = false; // Track if view animation is in progress
 let pendingRender = false;   // Track if a render is pending after animation
 

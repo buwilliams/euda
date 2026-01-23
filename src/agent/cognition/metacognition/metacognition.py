@@ -28,7 +28,7 @@ class Metacognition:
     """The agent's self-awareness and self-regulation system.
 
     Every agent has metacognition - it's inherent, not optional.
-    Just like every agent has a profile and memory.
+    Just like every agent has an identity and memory.
 
     Metacognition provides:
     - Token awareness: Track tokens PRE-call, enforce per-agent budgets

@@ -71,10 +71,6 @@ def cmd_dev(args: List[str]):
         from .commands.trace import cmd_trace
         cmd_trace(sub_args, json_mode)
 
-    elif subcommand == "patterns":
-        from .commands.patterns import cmd_patterns
-        cmd_patterns(sub_args, json_mode)
-
     else:
         print(f"Unknown dev command: {subcommand}")
         print_help()
@@ -114,14 +110,6 @@ MEMORY
     --add <type> <desc>     Add a memory entry manually
     --graduate <id>         Graduate a memory to long-term
 
-PATTERNS
-  patterns <agent>          Show discovered patterns
-    --temporal              Show only temporal patterns
-    --corr                  Show only correlations
-    --traj                  Show only trajectories
-    --hyp                   Show only hypotheses
-    --clear                 Clear all patterns (reset)
-
 IDENTITY
   identity <agent>          Show agent's identity
     --history               Show historical identity snapshots
@@ -151,7 +139,6 @@ OBSERVABILITY
 
 Examples:
   python main.py dev memory chat
-  python main.py dev patterns user
   python main.py dev job chat "List my current jobs"
   python main.py dev reflect chat --consolidate
   python main.py dev tool list_jobs '{"status": "todo"}'

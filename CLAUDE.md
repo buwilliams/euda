@@ -48,7 +48,6 @@ uv run euno dev <command> [args] [--json]
 # Inspect agent state
 uv run euno dev memory chat          # View agent's memory
 uv run euno dev identity chat        # View agent's identity
-uv run euno dev patterns user        # View discovered patterns
 uv run euno dev prompt chat system   # View system prompt
 
 # Test execution
@@ -223,7 +222,6 @@ No Python code needed for new agents.
 - `GET/POST/DELETE /api/agents/{id}/memory/short-term` - Agent memory
 - `GET /api/agents/{id}/monitoring` - Agent monitoring stats
 - `POST /api/agents/{id}/reflection/trigger` - Trigger reflection
-- `GET /api/agents/{id}/patterns` - Agent's discovered patterns
 - `GET/PATCH /api/user/identity` - User identity
 - `GET/POST /api/user/memory/long-term` - Long-term memory entries
 - `GET/POST/DELETE /api/user/memory` - Memory items
@@ -247,4 +245,3 @@ Before submitting changes, review against `spec/*.md`:
 - `spec/4_ux_ui.md` — User experience and interface patterns
 - `spec/5_cli.md` — Command-line interface commands and behavior
 - `spec/7_dev_cli.md` — Developer CLI for debugging and improving agents
-- `spec/8_patterns.md` — Pattern discovery, storage, and integration

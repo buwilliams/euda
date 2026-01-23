@@ -62,7 +62,7 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
 
     # Build prompt
     prompt = build_append_prompt(
-        agent_profile=consolidation.agent.identity,
+        agent_identity=consolidation.agent.identity,
         existing_memory=existing_memory,
         user_message=user_message,
         assistant_response=assistant_response
@@ -241,7 +241,7 @@ def _add_items_to_memory(new_items: List[dict], existing_memory: List[dict], age
         _save_entries(existing_memory, agent_id)
 
         # Cross-pollinate user-relevant items to user's memory
-        # Chat conversations are about the user, so user's profile should learn from them
+        # Chat conversations are about the user, so user's identity should learn from them
         if agent_id == "chat":
             _cross_pollinate_to_user(added, today)
 
@@ -251,7 +251,7 @@ def _add_items_to_memory(new_items: List[dict], existing_memory: List[dict], age
 def _cross_pollinate_to_user(items: List[dict], today: str) -> int:
     """Copy user-relevant memory items from chat to user's short-term memory.
 
-    This enables the user's profile to evolve based on conversations with chat.
+    This enables the user's identity to evolve based on conversations with chat.
     Only user-focused types are copied (not learning/behavior which are agent-specific).
 
     Args:
@@ -342,7 +342,7 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
 
     # Build batch prompt
     prompt = build_append_batch_prompt(
-        agent_profile=consolidation.agent.identity,
+        agent_identity=consolidation.agent.identity,
         existing_memory=existing_memory,
         exchanges=exchanges
     )

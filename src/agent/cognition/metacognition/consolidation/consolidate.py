@@ -1,11 +1,10 @@
 """
-Consolidate Phase - Identity evolution and pattern discovery.
+Consolidate Phase - Identity evolution from long-term memory.
 
 This phase runs on daily trigger to:
-1. Run multi-pass pattern discovery (temporal, correlation, trajectory)
-2. Use RLM extract_identity() to analyze long-term memory for identity updates
-3. Update the agent's identity based on observed patterns
-4. Create historical identity snapshots at year boundaries
+1. Use RLM extract_identity() to analyze long-term memory for identity updates
+2. Update the agent's identity based on observed patterns
+3. Create historical identity snapshots at year boundaries
 
 Architecture Note:
 Long-term memory is the PRIMARY store. Identity is derived from long-term
@@ -18,31 +17,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
 
 from .....events import emit_ui_event
-from ...regulation.config import get_global_config
 from ....rlm import RLMClient, load_long_term_memory
-
-from .patterns import (
-    load_patterns,
-    save_patterns,
-    create_empty_patterns,
-    format_patterns_for_prompt,
-    cleanup_expired_hypotheses,
-    update_confidence,
-    apply_confidence_decay,
-    find_similar_temporal,
-    find_similar_correlation,
-    find_trajectory_by_subject,
-    TemporalPattern,
-    Correlation,
-    Trajectory,
-    Hypothesis,
-    add_temporal_pattern,
-    add_correlation,
-    add_trajectory,
-    add_hypothesis,
-    get_pending_hypotheses,
-    validate_hypothesis,
-)
 
 if TYPE_CHECKING:
     from .consolidation import Consolidation
@@ -57,21 +32,19 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
 
     Performs heavy analysis to update identity based on long-term memory.
     Uses RLM extract_identity() for intelligent identity evolution.
-    Includes multi-pass pattern discovery for improved user modeling.
 
     Architecture note: With long-term memory as the primary store,
     we no longer need to "graduate" short-term items. Identity is
     derived directly from long-term memory via RLM.
 
     Args:
-        reflection: The Reflection instance
+        consolidation: The Consolidation instance
         execution_id: Optional execution ID for SSE progress tracking
 
     Returns:
-        Dict with profile_updated, long_term_entry, patterns_discovered counts/flags
+        Dict with identity_updated flag
     """
     agent_id = consolidation.agent.id
-    is_user = agent_id == "user"
 
     def emit_progress(step: str, message: str):
         """Emit SSE progress event."""
@@ -90,53 +63,13 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
     })
 
     # Emit start event
-    emit_progress("loading_data", "Loading memory, identity, and patterns...")
-
-    # Load existing patterns
-    pattern_store = load_patterns(agent_id)
-
-    # Clean up expired hypotheses
-    expired_hypotheses = cleanup_expired_hypotheses(pattern_store)
-    if expired_hypotheses:
-        consolidation.logger.info({
-            "event": "hypotheses_expired",
-            "agent_id": agent_id,
-            "count": len(expired_hypotheses)
-        })
+    emit_progress("loading_data", "Loading memory and identity...")
 
     # Load memory for RLM analysis
     memory = load_long_term_memory(agent_id=agent_id, days=RLM_MEMORY_DAYS)
 
-    # Check if patterns are enabled
-    patterns_config = get_global_config().get_full_config().get("patterns", {})
-    patterns_enabled = patterns_config.get("enabled", True)
-
-    # Run multi-pass pattern discovery if enabled and we have memory
-    patterns_discovered = 0
-    patterns_decayed = 0
-    validated_ids = set()
-    if patterns_enabled and memory["metadata"]["total_entries"] > 0:
-        emit_progress("pattern_discovery", "Running multi-pass pattern discovery...")
-        patterns_discovered, validated_ids = _run_pattern_discovery(
-            reflection, memory, pattern_store, patterns_config
-        )
-
-        # Apply confidence decay to patterns that weren't validated this cycle
-        emit_progress("pattern_decay", "Applying confidence decay to unvalidated patterns...")
-        patterns_decayed = apply_confidence_decay(pattern_store, validated_ids)
-        if patterns_decayed > 0:
-            consolidation.logger.info({
-                "event": "patterns_decayed",
-                "agent_id": agent_id,
-                "count": patterns_decayed
-            })
-
     # Skip if no memory to analyze
     if memory["metadata"]["total_entries"] == 0:
-        # Still save patterns if any were discovered
-        if patterns_discovered > 0:
-            save_patterns(agent_id, pattern_store)
-
         consolidation.logger.info({
             "event": "consolidate_skip",
             "agent_id": agent_id,
@@ -148,27 +81,27 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
             "phase": "consolidate",
             "skipped": True
         })
-        return {"profile_updated": False, "long_term_entry": False, "patterns_discovered": patterns_discovered}
+        return {"identity_updated": False}
 
     # Load current identity
-    current_profile = consolidation.agent.identity
+    current_identity = consolidation.agent.identity
 
     emit_progress("identity_analysis", "Analyzing memory for identity updates via RLM...")
 
     # Use RLM to extract identity updates directly from long-term memory
     rlm = RLMClient(agent_id=agent_id)
-    identity_result = rlm.extract_identity(memory, current_profile)
+    identity_result = rlm.extract_identity(memory, current_identity)
 
-    profile_updates = None
+    identity_updates = None
     if not identity_result.error and identity_result.findings:
         # Parse the structured identity updates
-        profile_updates = _parse_identity_updates(identity_result.findings)
+        identity_updates = _parse_identity_updates(identity_result.findings)
 
     consolidation.logger.info({
         "event": "rlm_identity_analysis",
         "agent_id": agent_id,
         "execution_id": execution_id,
-        "has_updates": profile_updates is not None,
+        "has_updates": identity_updates is not None,
         "rlm_iterations": identity_result.iterations,
         "rlm_sub_calls": identity_result.sub_calls,
         "error": identity_result.error
@@ -176,27 +109,20 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
 
     emit_progress("applying_results", "Updating identity...")
 
-    # Apply profile updates from RLM
-    profile_updated = False
-    if profile_updates and profile_updates.get("sections"):
-        _update_profile(reflection, profile_updates["sections"])
-        profile_updated = True
+    # Apply identity updates from RLM
+    identity_updated = False
+    if identity_updates and identity_updates.get("sections"):
+        _update_identity(consolidation, identity_updates["sections"])
+        identity_updated = True
 
-    # Check for year boundary and create historical snapshots
-    _maybe_snapshot_profile(reflection)
-    if patterns_enabled:
-        _maybe_snapshot_patterns(reflection, pattern_store)
-
-    # Save updated patterns
-    if patterns_enabled:
-        save_patterns(agent_id, pattern_store)
+    # Check for year boundary and create historical snapshot
+    _maybe_snapshot_identity(consolidation)
 
     consolidation.logger.info({
         "event": "consolidate_complete",
         "agent_id": agent_id,
         "execution_id": execution_id,
-        "profile_updated": profile_updated,
-        "patterns_discovered": patterns_discovered
+        "identity_updated": identity_updated
     })
 
     # Emit completion event
@@ -204,16 +130,10 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
         "execution_id": execution_id,
         "agent_id": agent_id,
         "phase": "consolidate",
-        "profile_updated": profile_updated,
-        "long_term_entry": False,  # No longer writing reflection entries to long-term
-        "patterns_discovered": patterns_discovered
+        "identity_updated": identity_updated
     })
 
-    return {
-        "profile_updated": profile_updated,
-        "long_term_entry": False,
-        "patterns_discovered": patterns_discovered
-    }
+    return {"identity_updated": identity_updated}
 
 
 def _parse_identity_updates(findings: str) -> Optional[dict]:
@@ -252,144 +172,6 @@ def _parse_identity_updates(findings: str) -> Optional[dict]:
             pass
 
     return None
-
-
-def _run_pattern_discovery(
-    consolidation: "Consolidation",
-    memory: dict,
-    pattern_store,
-    config: dict
-) -> tuple:
-    """Run multi-pass pattern discovery using RLM.
-
-    Args:
-        reflection: The Reflection instance
-        memory: Pre-loaded memory data
-        pattern_store: Existing pattern store to update
-        config: Patterns configuration
-
-    Returns:
-        Tuple of (new_patterns_count, validated_pattern_ids)
-    """
-    agent_id = consolidation.agent.id
-    rlm = RLMClient(agent_id=agent_id)
-
-    # Get which passes to run
-    discovery_passes = config.get("discovery_passes", ["temporal", "correlation", "trajectory"])
-    min_evidence = config.get("min_evidence_for_pattern", 3)
-
-    # Run multi-pass discovery
-    try:
-        discovered = rlm.discover_patterns(
-            memory=memory,
-            pattern_types=discovery_passes
-        )
-    except Exception as e:
-        consolidation.logger.warning({
-            "event": "pattern_discovery_error",
-            "agent_id": agent_id,
-            "error": str(e)
-        })
-        return (0, set())
-
-    new_patterns = 0
-    validated_ids = set()  # Track which patterns were validated this cycle
-
-    # Process temporal patterns
-    for raw_pattern in discovered.get("temporal", []):
-        description = raw_pattern.get("description", "")
-        granularity = raw_pattern.get("granularity", "daily")
-
-        # Check if similar pattern exists
-        existing = find_similar_temporal(pattern_store, description, granularity)
-        if existing:
-            # Update confidence on existing pattern
-            update_confidence(existing, validated=True)
-            validated_ids.add(existing["id"])
-        else:
-            # Create new pattern (starts as hypothesis if not enough evidence)
-            evidence_count = raw_pattern.get("evidence_count", 1)
-            if evidence_count >= min_evidence:
-                pattern = TemporalPattern.create(
-                    description=description,
-                    granularity=granularity,
-                    time_window=raw_pattern.get("time_window", {})
-                )
-                pattern.confidence = min(0.6, 0.3 + (evidence_count * 0.1))
-                pattern.evidence_count = evidence_count
-                add_temporal_pattern(pattern_store, pattern)
-                validated_ids.add(pattern.id)  # New patterns are validated
-                new_patterns += 1
-            else:
-                # Create hypothesis instead
-                hypothesis = Hypothesis.create(
-                    hypothesis_type="temporal",
-                    hypothesis=f"{granularity.title()} pattern: {description}",
-                    evidence_required=min_evidence
-                )
-                hypothesis.evidence_collected = evidence_count
-                add_hypothesis(pattern_store, hypothesis)
-
-    # Process correlations
-    for raw_corr in discovered.get("correlations", []):
-        items = raw_corr.get("items", [])
-        description = raw_corr.get("description", "")
-
-        existing = find_similar_correlation(pattern_store, items)
-        if existing:
-            update_confidence(existing, validated=True)
-            validated_ids.add(existing["id"])
-        else:
-            correlation = Correlation.create(
-                correlation_type=raw_corr.get("type", "co_occurrence"),
-                items=items,
-                description=description,
-                lag_days=raw_corr.get("lag_days", 0)
-            )
-            add_correlation(pattern_store, correlation)
-            validated_ids.add(correlation.id)  # New patterns are validated
-            new_patterns += 1
-
-    # Process trajectories
-    for raw_traj in discovered.get("trajectories", []):
-        subject = raw_traj.get("subject", "")
-
-        existing = find_trajectory_by_subject(pattern_store, subject)
-        if existing:
-            # Add new stages to existing trajectory
-            new_stages = raw_traj.get("stages", [])
-            existing_dates = {s["date"] for s in existing.get("stages", [])}
-            for stage in new_stages:
-                if stage.get("date") not in existing_dates:
-                    existing["stages"].append(stage)
-            existing["stages"].sort(key=lambda s: s["date"])
-            existing["direction"] = raw_traj.get("direction", existing.get("direction", "clarifying"))
-            update_confidence(existing, validated=True)
-            validated_ids.add(existing["id"])
-        else:
-            trajectory = Trajectory.create(
-                trajectory_type=raw_traj.get("type", "goal_evolution"),
-                subject=subject,
-                initial_state=raw_traj.get("stages", [{}])[0].get("state", ""),
-                direction=raw_traj.get("direction", "clarifying")
-            )
-            if len(raw_traj.get("stages", [])) > 1:
-                trajectory.stages = raw_traj["stages"]
-            add_trajectory(pattern_store, trajectory)
-            validated_ids.add(trajectory.id)  # New patterns are validated
-            new_patterns += 1
-
-    consolidation.logger.info({
-        "event": "pattern_discovery_complete",
-        "agent_id": agent_id,
-        "new_patterns": new_patterns,
-        "validated_count": len(validated_ids),
-        "temporal": len(discovered.get("temporal", [])),
-        "correlations": len(discovered.get("correlations", [])),
-        "trajectories": len(discovered.get("trajectories", []))
-    })
-
-    return (new_patterns, validated_ids)
 
 
 # Identity section definitions - maps JSON keys to markdown headers
@@ -590,14 +372,14 @@ def _merge_section_content(existing: str, new_content: str) -> str:
         return existing + "\n\n" + new_content
 
 
-def _update_profile(consolidation: "Consolidation", updates):
+def _update_identity(consolidation: "Consolidation", updates):
     """Update the agent's identity with new information.
 
     Handles both structured updates (dict mapping section keys to content)
     and legacy string updates (for backwards compatibility).
 
     Args:
-        reflection: The Reflection instance
+        consolidation: The Consolidation instance
         updates: Either a dict of section updates or a string description
     """
     identity_path = consolidation._get_identity_path()
@@ -635,13 +417,13 @@ def _update_profile(consolidation: "Consolidation", updates):
     identity_path.write_text(new_identity)
 
 
-def _maybe_snapshot_profile(consolidation: "Consolidation"):
-    """Create historical profile snapshot if at year boundary.
+def _maybe_snapshot_identity(consolidation: "Consolidation"):
+    """Create historical identity snapshot if at year boundary.
 
     Checks if we're in a new year and the previous year's snapshot doesn't exist.
 
     Args:
-        reflection: The Reflection instance
+        consolidation: The Consolidation instance
     """
     today = datetime.now()
     current_year = today.strftime("%Y")
@@ -661,60 +443,4 @@ def _maybe_snapshot_profile(consolidation: "Consolidation"):
                 "event": "identity_snapshot_created",
                 "agent_id": consolidation.agent.id,
                 "year": previous_year
-            })
-
-
-def _maybe_snapshot_patterns(consolidation: "Consolidation", pattern_store):
-    """Create historical pattern snapshot if at year boundary.
-
-    Preserves pattern state at year boundaries for tracking pattern evolution
-    over time. Mirrors the identity snapshot behavior.
-
-    Args:
-        reflection: The Reflection instance
-        pattern_store: Current PatternStore to snapshot
-    """
-    today = datetime.now()
-    current_year = today.strftime("%Y")
-    previous_year = str(int(current_year) - 1)
-
-    # Check if we're in first week of year
-    if today.month == 1 and today.day <= 7:
-        agent_id = consolidation.agent.id
-        from .patterns import _get_patterns_dir, _ensure_patterns_dir
-
-        patterns_dir = _get_patterns_dir(agent_id)
-        historical_file = patterns_dir / f"snapshot_{previous_year}.json"
-
-        # Only create if snapshot doesn't exist and we have patterns
-        has_patterns = (
-            pattern_store.temporal or
-            pattern_store.correlations or
-            pattern_store.trajectories
-        )
-
-        if not historical_file.exists() and has_patterns:
-            _ensure_patterns_dir(agent_id)
-
-            # Save snapshot
-            import json
-            snapshot = {
-                "version": pattern_store.version,
-                "year": previous_year,
-                "snapshot_date": today.strftime("%Y-%m-%d"),
-                "temporal": pattern_store.temporal,
-                "correlations": pattern_store.correlations,
-                "trajectories": pattern_store.trajectories,
-                # Exclude hypotheses - they're transient
-            }
-            with open(historical_file, "w") as f:
-                json.dump(snapshot, f, indent=2)
-
-            consolidation.logger.info({
-                "event": "patterns_snapshot_created",
-                "agent_id": agent_id,
-                "year": previous_year,
-                "temporal_count": len(pattern_store.temporal),
-                "correlations_count": len(pattern_store.correlations),
-                "trajectories_count": len(pattern_store.trajectories)
             })

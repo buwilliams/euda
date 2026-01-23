@@ -62,11 +62,6 @@ def load_identity(agent_id: str, config: Optional[dict] = None) -> str:
         identity_path.write_text(identity_content)
         return identity_content
 
-    # Fallback to old persona location for backward compatibility
-    persona_path = AGENTS_DIR / agent_id / f"{agent_id}-persona.md"
-    if persona_path.exists():
-        return persona_path.read_text()
-
     # Default identity
     name = config.get("name", agent_id) if config else agent_id
     return f"You are {name}, a helpful assistant."

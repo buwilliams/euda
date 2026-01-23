@@ -1,4 +1,4 @@
-## {profile_type} Identity: {agent_id}
+## {identity_type} Identity: {agent_id}
 
 {agent_identity}
 
@@ -14,15 +14,8 @@
 
 {completed_jobs}
 
-{pattern_context}
-
 ---
 
 Analyze the patterns across memory and completed work. Consider what these completions reveal about priorities, working style, and areas of focus.
-
-If discovered patterns are provided above, use them to inform your identity updates:
-- **Temporal patterns** with high confidence can inform Stable Attractors (routines, habits)
-- **Correlations** can inform Wants and Fears (what triggers what)
-- **Trajectories** can inform Interests (evolving focus areas) and Notable Events (turning points)
 
 Return JSON only.

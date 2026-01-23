@@ -105,13 +105,13 @@ class Consolidation:
             self._emit_to_sink("append_error", {"error": str(e), "execution_id": execution_id})
 
     def consolidate(self, execution_id: str = None):
-        """Consolidate phase: Graduate memories and update profile.
+        """Consolidate phase: Graduate memories and update identity.
 
-        This is a heavy operation run on daily trigger. Analyzes patterns
-        in short-term and long-term memory to:
+        This is a heavy operation run on daily trigger. Analyzes long-term
+        memory to:
         1. Graduate important short-term items to long-term memory
-        2. Update the agent's profile based on observed patterns
-        3. Create historical profile snapshot at year boundaries
+        2. Update the agent's identity based on observed patterns
+        3. Create historical identity snapshot at year boundaries
 
         Args:
             execution_id: Optional execution ID for SSE progress tracking
@@ -124,7 +124,7 @@ class Consolidation:
             result = consolidate_phase(self, execution_id)
             self._emit_to_sink("consolidate_complete", {
                 "items_graduated": result.get("items_graduated", 0) if result else 0,
-                "profile_updated": result.get("profile_updated", False) if result else False,
+                "identity_updated": result.get("identity_updated", False) if result else False,
                 "long_term_entry": result.get("long_term_entry", False) if result else False,
                 "execution_id": execution_id,
             })

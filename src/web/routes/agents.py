@@ -93,44 +93,6 @@ def api_update_identity(agent_id: str, request: UpdateIdentityRequest):
     return result
 
 
-# Backward-compatible profile endpoints (alias to identity)
-@router.get("/{agent_id}/profile")
-def api_get_profile(agent_id: str):
-    """Get agent's profile markdown (alias for identity)."""
-    identity = get_agent_identity(agent_id)
-    if identity is None:
-        raise HTTPException(status_code=404, detail="Agent or profile not found")
-    return {"agent_id": agent_id, "profile": identity}
-
-
-@router.patch("/{agent_id}/profile")
-def api_update_profile(agent_id: str, request: UpdateIdentityRequest):
-    """Update agent's profile markdown (alias for identity)."""
-    result = update_agent_identity(agent_id, request.content)
-    if "error" in result:
-        raise HTTPException(status_code=404, detail=result["error"])
-    return result
-
-
-# Backward-compatible persona endpoints (alias to identity)
-@router.get("/{agent_id}/persona")
-def api_get_persona(agent_id: str):
-    """Get agent's persona markdown (alias for identity)."""
-    identity = get_agent_identity(agent_id)
-    if identity is None:
-        raise HTTPException(status_code=404, detail="Agent or persona not found")
-    return {"agent_id": agent_id, "persona": identity}
-
-
-@router.patch("/{agent_id}/persona")
-def api_update_persona(agent_id: str, request: UpdateIdentityRequest):
-    """Update agent's persona markdown (alias for identity)."""
-    result = update_agent_identity(agent_id, request.content)
-    if "error" in result:
-        raise HTTPException(status_code=404, detail=result["error"])
-    return result
-
-
 # Config endpoints
 @router.get("/{agent_id}/config")
 def api_get_config(agent_id: str):

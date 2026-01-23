@@ -99,7 +99,6 @@ Mapping design requirements from `docs/3_system.md` and `spec/*.md` to test cove
 |-------------|--------|-------|
 | Append phase after conversations | [ ] | append.py 0% |
 | Consolidate phase on trigger | [ ] | consolidate.py 0% |
-| Pattern discovery and validation | [~] | patterns.py 60% |
 
 ---
 

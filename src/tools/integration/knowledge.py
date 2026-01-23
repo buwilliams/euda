@@ -1,7 +1,7 @@
 """
 Knowledge Tools - Read Euno documentation and agent logs.
 
-Provides safe access to docs, specs, agent personas, and logs.
+Provides safe access to docs, specs, agent identities, and logs.
 """
 
 import json
@@ -33,7 +33,7 @@ def list_euno_docs() -> dict:
     result = {
         "docs": [],
         "specs": [],
-        "agent_personas": []
+        "agent_identities": []
     }
 
     # List docs
@@ -54,21 +54,21 @@ def list_euno_docs() -> dict:
                 "path": f"spec/{f.name}"
             })
 
-    # List agent personas
+    # List agent identities
     if AGENTS_DIR.exists():
         for agent_dir in sorted(AGENTS_DIR.iterdir()):
             if agent_dir.is_dir():
-                persona_path = agent_dir / f"{agent_dir.name}-persona.md"
-                if persona_path.exists():
-                    result["agent_personas"].append({
+                identity_path = agent_dir / "identity.md"
+                if identity_path.exists():
+                    result["agent_identities"].append({
                         "agent": agent_dir.name,
-                        "path": f"data/agents/{agent_dir.name}/{agent_dir.name}-persona.md"
+                        "path": f"data/agents/{agent_dir.name}/identity.md"
                     })
 
     return result
 
 
-@tool("read_euno_doc", "Read a Euno documentation, spec, or agent persona file. Use when: need detailed information about how Euno works.", tool_type="integration")
+@tool("read_euno_doc", "Read a Euno documentation, spec, or agent identity file. Use when: need detailed information about how Euno works.", tool_type="integration")
 def read_euno_doc(path: str) -> dict:
     """Read a documentation file from safe directories.
 
@@ -100,18 +100,18 @@ def read_euno_doc(path: str) -> dict:
         if full_path.suffix == ".md":
             allowed = True
 
-    # Check agent personas
-    elif path.startswith("data/agents/") and path.endswith("-persona.md"):
+    # Check agent identities
+    elif path.startswith("data/agents/") and path.endswith("identity.md"):
         full_path = PROJECT_DIR / path
         allowed = True
 
     if not allowed:
         return {
-            "error": "Access denied. Only docs/*.md, spec/*.md, and agent persona files are readable.",
+            "error": "Access denied. Only docs/*.md, spec/*.md, and agent identity files are readable.",
             "allowed_paths": [
                 "docs/*.md",
                 "spec/*.md",
-                "data/agents/{agent}/{agent}-persona.md"
+                "data/agents/{agent}/identity.md"
             ]
         }
 

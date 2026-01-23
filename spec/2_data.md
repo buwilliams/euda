@@ -96,26 +96,6 @@ External files are imported to long-term memory through job-based processing:
 - **Processing:** Chat agent processes job, extracts dates, writes to long-term memory
 - **Tracking:** Job completion marks content as processed (no separate manifest)
 
-### Patterns
-
-Patterns are behavioral regularities discovered during consolidation:
-- **Storage:** `data/agents/{id}/patterns/`
-  - `temporal.json` — Daily/weekly/seasonal rhythms
-  - `correlations.json` — Co-occurrence relationships
-  - `trajectories.json` — Goal/concern/interest evolution
-  - `hypotheses.json` — Unvalidated patterns awaiting evidence
-- **Confidence model:** Patterns start at 0.5, boost +0.15 on validation, decay -0.1 if not re-observed
-- **High confidence threshold:** 0.7 (auto-included in prompts)
-- **Hypothesis graduation:** 3+ evidence observations required
-- **Historical snapshots:** `data/agents/{id}/patterns/snapshot_{yyyy}.json`
-
-Pattern integration:
-- Chat agent system prompt includes user patterns (confidence > 0.7)
-- Consolidation prompt includes all patterns for identity updates
-- API exposes patterns at `/api/agents/{id}/patterns`
-
-See `spec/8_patterns.md` for full documentation.
-
 ### Identity Schema
 
 All agents (including user) share the same identity schema stored in `identity.md`:
