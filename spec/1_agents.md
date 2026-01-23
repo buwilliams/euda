@@ -47,6 +47,8 @@ Rules for how agents work and coordinate through jobs.
 ## Work Cycle
 
 - Agent receives ONE job per work cycle — prevents context overflow
+- Work cycle phases: claim → plan → execute → complete
+- Planning creates a brief approach (tool sequence, delegation, strategy) before execution
 - Agent works autonomously until calling `done_working` (max iterations configurable)
 - After `done_working`, manager checks for more jobs and starts another cycle if needed
 - Agent decides when any job is complete — including trigger jobs
@@ -175,7 +177,7 @@ Agent = Identity + Cognition + Memory + Behavior
 | Category | Question | What It Contains |
 |----------|----------|------------------|
 | **Identity** | Who am I? | Purpose, values, voice, attractors, context |
-| **Cognition** | How do I think? | Reasoning (prompts) + Metacognition (self-regulation, consolidation) |
+| **Cognition** | How do I think? | Reasoning (job planning, prompts) + Metacognition (self-regulation, consolidation) |
 | **Memory** | What do I know? | Short-term (90 days) + Long-term (permanent) |
 | **Behavior** | What can I do? | Tools + Triggers + Modes |
 
@@ -201,6 +203,7 @@ Agent = Identity + Cognition + Memory + Behavior
 Cognition has two aspects:
 
 **Reasoning** — First-order thinking (about the world)
+- Job planning: when work begins, agent creates a brief plan (tool sequence, delegation, approach)
 - Defined by system prompts in `data/system/prompts/agent/`
 - Agent-specific overrides in `data/agents/{id}/prompts/`
 - Template selection based on job type (job_assignment, consolidation)
@@ -213,7 +216,7 @@ Cognition has two aspects:
 ## Metacognition (Cognition Subsystem)
 
 Metacognition is the self-regulation and self-improvement component of Cognition:
-- **Self-regulation** — Token awareness, progress detection, planning (keeping the agent healthy)
+- **Self-regulation** — Token awareness, progress detection (keeping the agent healthy)
 - **Self-improvement** — Consolidation (helping the agent grow)
 
 ### Agent States
@@ -267,16 +270,6 @@ Configuration in agent `config.json`:
 - Detects stuck patterns: same tool called repeatedly with identical inputs
 - Breaks work cycle when stuck detected
 - Configuration in `metacognition.progress`
-
-### Job Planning
-
-Job planning is part of Reasoning (first-order thinking), not Metacognition:
-
-- When an agent begins work on a job, it first creates a brief plan
-- Plan includes: tool sequence, delegation decisions, approach
-- Plan is injected into the working prompt for context
-- Planning reduces wasted effort and enables efficient batching (e.g., deferring consolidation to end of work cycle)
-- Configuration in `metacognition.planning.enabled_for`
 
 ### Consolidation (Self-Improvement)
 
