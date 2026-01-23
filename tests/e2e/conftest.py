@@ -1,15 +1,13 @@
 """Playwright E2E test fixtures."""
 
 import os
-import subprocess
-import time
 from typing import Generator
 
 import pytest
 from playwright.sync_api import Page, BrowserContext, expect
 
-# Default test server URL
-BASE_URL = os.environ.get("EUNO_TEST_URL", "http://localhost:8000")
+# Default test server URL and password
+DEFAULT_BASE_URL = "http://localhost:8000"
 TEST_PASSWORD = os.environ.get("EUNO_TEST_PASSWORD", "test")
 
 
@@ -22,18 +20,10 @@ def browser_context_args():
     }
 
 
-@pytest.fixture
-def page(context: BrowserContext) -> Generator[Page, None, None]:
-    """Create a new page for each test."""
-    page = context.new_page()
-    yield page
-    page.close()
-
-
-@pytest.fixture
-def base_url() -> str:
-    """Get the base URL for tests."""
-    return BASE_URL
+@pytest.fixture(scope="session")
+def base_url():
+    """Get the base URL for tests. Uses EUNO_TEST_URL env var or default."""
+    return os.environ.get("EUNO_TEST_URL", DEFAULT_BASE_URL)
 
 
 @pytest.fixture

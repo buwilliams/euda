@@ -146,6 +146,10 @@ class AgentManager:
             config = json.load(f)
             config["_dir"] = str(AGENTS_DIR / agent_id)
 
+        # Track config mtime so watcher knows this agent was seen
+        # (even if disabled, we don't want to keep re-registering)
+        self._config_mtimes[agent_id] = config_path.stat().st_mtime
+
         # Sync agent inbox jobs to create the inbox for this agent
         from ..tools.data.jobs import sync_agent_inbox_jobs
         sync_agent_inbox_jobs()
@@ -269,7 +273,8 @@ class AgentManager:
                         if agent_dir.is_dir():
                             agent_id = agent_dir.name
                             config_path = agent_dir / "config.json"
-                            if config_path.exists() and agent_id not in self.agents:
+                            # Only register if not already tracked (running or seen)
+                            if config_path.exists() and agent_id not in self._config_mtimes:
                                 # New agent found - register it
                                 print(f"New agent found: {agent_id}, registering...")
                                 self.register_new_agent(agent_id)
@@ -658,6 +663,7 @@ class AgentManager:
         # Load and start all enabled agents
         configs = self.load_agent_configs()
         enabled = [c for c in configs if c.get("enabled", True)]
+        disabled = [c for c in configs if not c.get("enabled", True)]
 
         print(f"Found {len(configs)} agents, {len(enabled)} enabled")
 
@@ -668,6 +674,13 @@ class AgentManager:
 
         for config in enabled:
             self.start_agent(config)
+
+        # Track disabled agents so config watcher doesn't keep trying to register them
+        for config in disabled:
+            agent_id = config["id"]
+            config_path = AGENTS_DIR / agent_id / "config.json"
+            if config_path.exists():
+                self._config_mtimes[agent_id] = config_path.stat().st_mtime
 
         if not enabled:
             print("No enabled agents. Waiting...")
