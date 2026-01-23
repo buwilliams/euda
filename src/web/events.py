@@ -14,7 +14,7 @@ import asyncio
 import queue
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Dict, List, Optional, Set
 
 
@@ -82,7 +82,7 @@ class EventBus:
             event=event,
             scope=scope,
             data=data or {},
-            timestamp=datetime.utcnow().isoformat() + "Z"
+            timestamp=datetime.now(UTC).isoformat().replace("+00:00", "Z")
         )
 
         with self._lock:
@@ -251,7 +251,7 @@ def emit_dev_event(source: str, event: str, data: dict = None):
         data: Event data
     """
     entry = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "source": source,
         "event": event,
         "data": data or {}

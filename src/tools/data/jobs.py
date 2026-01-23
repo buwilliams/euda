@@ -12,7 +12,7 @@ import sqlite3
 import threading
 import uuid
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Optional, List
 
@@ -338,7 +338,7 @@ def create_job(
     - Jobs created by user/chat go under Projects
     - Jobs created by other agents go under their agent inbox
     """
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     job_id = f"job-{uuid.uuid4().hex[:8]}"
 
     # Set default parent if none provided
@@ -396,7 +396,7 @@ def update_job(
     if status is not None and any(tag in system_tags for tag in job.get("tags", [])):
         return {"error": "Cannot change status of system jobs"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     updates = ["updated_at = ?"]
     params = [now]
@@ -463,7 +463,7 @@ def handoff_job(job_id: str, to: str, note: str = None, agent: str = "user") -> 
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     # Update assignees and pending_from
     with _transaction() as conn:
@@ -507,7 +507,7 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
         if any(tag in system_tags for tag in job.get("tags", [])):
             return {"error": "Cannot complete system jobs"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute('''
@@ -537,7 +537,7 @@ def restore_job(job_id: str, agent: str = "user") -> Optional[dict]:
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute('''
@@ -581,7 +581,7 @@ def unblock_job(job_id: str) -> bool:
     # Remove blocking tags
     new_tags = [t for t in tags if not t.startswith(("waiting:", "blocked:"))]
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute('''
@@ -617,7 +617,7 @@ def archive_job(job_id: str, agent: str = "user") -> Optional[dict]:
     if any(tag in system_tags for tag in job.get("tags", [])):
         return {"error": "Cannot archive system jobs"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute('''
@@ -647,7 +647,7 @@ def add_job_log(job_id: str, action: str, agent: str = "user") -> Optional[dict]
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute("UPDATE jobs SET updated_at = ? WHERE id = ?", (now, job_id))
@@ -959,7 +959,7 @@ def assign_agent(job_id: str, agent_id: str) -> Optional[dict]:
         return {"error": f"Agent {agent_id} already assigned"}
 
     assignees.append(agent_id)
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute(
@@ -998,7 +998,7 @@ def unassign_agent(job_id: str, agent_id: str) -> Optional[dict]:
         return {"error": f"Agent {agent_id} not assigned to this job"}
 
     assignees.remove(agent_id)
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute(
@@ -1064,7 +1064,7 @@ def claim_job(job_id: str, agent_id: str) -> dict:
     if any(tag in system_tags for tag in job.get("tags", [])):
         return {"error": "Cannot claim system jobs - only their descendants can be processed"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         # ATOMIC: Update only if unclaimed OR already claimed by us
@@ -1103,7 +1103,7 @@ def get_or_create_system_job(name: str, system_tag: str) -> dict:
         The system job dict
     """
     all_jobs = list_jobs()
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     # Find existing system job by tag at root level
     for job in all_jobs:
@@ -1193,7 +1193,7 @@ def sync_agent_inbox_jobs():
     agent_names = {a["id"]: a.get("name", a["id"]) for a in agents}
 
     all_jobs = list_jobs()
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     changes_made = False
 
     # Get existing agent inbox jobs (jobs with agent_id set)
@@ -1308,7 +1308,7 @@ def release_job(job_id: str, agent_id: str) -> dict:
         job_id: The job to release
         agent_id: The agent releasing the job
     """
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     with _transaction() as conn:
         # Reset status to 'todo' and clear in_progress_by
         conn.execute(
@@ -1335,7 +1335,7 @@ def error_job(job_id: str, error_message: str, agent: str = "user") -> Optional[
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute('''
