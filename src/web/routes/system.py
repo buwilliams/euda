@@ -418,14 +418,18 @@ async def event_generator():
     # Subscribe to UI events (returns queue and shutdown event)
     event_queue, shutdown_event = subscribe_ui()
 
+    # Track current tasks so we can cancel them on disconnect
+    current_tasks = []
+
     try:
         while True:
             # Wait for either: queue event, shutdown signal, or timeout
             queue_task = asyncio.create_task(event_queue.get())
             shutdown_task = asyncio.create_task(shutdown_event.wait())
+            current_tasks = [queue_task, shutdown_task]
 
             done, pending = await asyncio.wait(
-                [queue_task, shutdown_task],
+                current_tasks,
                 timeout=30,
                 return_when=asyncio.FIRST_COMPLETED
             )
@@ -438,6 +442,9 @@ async def event_generator():
                 except asyncio.CancelledError:
                     pass
 
+            # Clear task references after handling
+            current_tasks = []
+
             # Check if shutdown was signaled
             if shutdown_task in done:
                 break
@@ -449,7 +456,18 @@ async def event_generator():
             else:
                 # Timeout - send ping to keep connection alive
                 yield f"event: ping\ndata: {{}}\n\n"
+    except asyncio.CancelledError:
+        # Client disconnected - clean up gracefully
+        pass
     finally:
+        # Cancel any still-running tasks to prevent "Task was destroyed" warnings
+        for task in current_tasks:
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
         unsubscribe_ui(event_queue, shutdown_event)
 
 
