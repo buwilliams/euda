@@ -32,9 +32,9 @@ Identity is discovered, not configured. It evolves as patterns emerge through co
 
 ### Cognition
 
-Cognition is the abililty to think. It has two layers:
+Cognition is the ability to think. It has two layers:
 
-- Reasoning is first-order thinking about the world—how the agent approaches problems and communicates.
+- Reasoning is first-order thinking about the world—how the agent approaches problems and communicates. This includes job planning: when an agent begins work on a job, it first creates a brief plan (tool sequence, delegation decisions, approach) then executes that plan. Planning reduces wasted effort and enables efficient batching.
 - Metacognition is second-order thinking, or thinking about thinking. It includes token awareness for budget enforcement, progress awareness for stuck detection, and consolidation for memory processing and identity evolution.
 
 ### Memory
@@ -43,6 +43,10 @@ Memory is the context that informs decisions.
 
 - Short-term memory holds current concerns: people, goals, ideas, learnings. It's a rolling window that informs immediate behavior.
 - Long-term memory is a permanent chronological archive. It's the source material for identity evolution.
+
+### RLM (Recursive Language Model)
+
+RLM provides intelligent access to long-term memory through iterative exploration. Rather than simple keyword search, RLM uses an LLM to semantically navigate and analyze memory archives. Methods include `analyze()` for open-ended exploration, `recall()` for finding specific facts, and `extract_identity()` for discovering patterns that update identity. RLM is used during consolidation to evolve identity based on observed patterns.
 
 ### Behavior
 
@@ -70,7 +74,7 @@ Here's how agents operate:
 1. Manager instantiates agents and monitors their health (handling reloads and shutdown)
 2. Each agent has a state: enabled, disabled, or paused
 3. Enabled agents poll for assigned jobs
-4. When a job is found, the agent runs a work cycle: claim → reason with tools → complete
+4. When a job is found, the agent runs a work cycle: claim → plan → execute → complete
 5. Jobs progress through states: todo → working → done (or error)
 6. Metacognition regulates all LLM calls—if a breach is detected (e.g., budget exceeded), the agent is paused
 7. Between jobs, consolidation reviews memory and evolves identity
@@ -94,6 +98,7 @@ Jobs progress through states based on assignment and work:
 - working + assignee: agent is actively working on the job
 - done: completed successfully
 - error: something went wrong
+- archived: soft-deleted, no longer active
 
 An agent can have multiple jobs assigned (queued), but only works one at a time.
 
@@ -113,9 +118,9 @@ Blocked jobs are excluded from actionable queries—agents won't pick them up un
 
 #### Work Cycle
 
-When an agent starts working a job, it sets the status to `working`, executes a reasoning loop with tools until complete, then marks the job `done` and returns to polling.
+When an agent starts working a job, it sets the status to `working`, creates a brief plan (tool sequence, delegation decisions, approach), then executes that plan until complete. Finally it marks the job `done` and returns to polling.
 
-All LLM calls go through metacognition for budget tracking and stuck detection.
+Planning is part of Reasoning—it reduces wasted effort and enables efficient batching (e.g., deferring consolidation to end of work cycle). All LLM calls go through metacognition for budget tracking and stuck detection.
 
 #### Regulation
 

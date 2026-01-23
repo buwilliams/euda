@@ -268,18 +268,15 @@ Configuration in agent `config.json`:
 - Breaks work cycle when stuck detected
 - Configuration in `metacognition.progress`
 
-### Strategic Planning
+### Job Planning
 
-- Planning phase for complex operations (consolidation)
-- Creates a brief approach plan before execution
+Job planning is part of Reasoning (first-order thinking), not Metacognition:
+
+- When an agent begins work on a job, it first creates a brief plan
+- Plan includes: tool sequence, delegation decisions, approach
 - Plan is injected into the working prompt for context
+- Planning reduces wasted effort and enables efficient batching (e.g., deferring consolidation to end of work cycle)
 - Configuration in `metacognition.planning.enabled_for`
-
-### Efficiency Optimization
-
-- Batches consolidation at end of work cycle instead of per-iteration
-- Reduces LLM calls during autonomous work
-- Configuration in `metacognition.efficiency.defer_consolidation_in_work_cycles`
 
 ### Consolidation (Self-Improvement)
 
@@ -353,7 +350,6 @@ Behavior defines what agents can do and when they activate.
 - Trigger types:
   - `system:start` — fires once at system startup
   - `time:{name}` — fires at scheduled times (morning, evening, hourly)
-  - `job:assigned` — fires when job assigned to agent
 
 ### Triggers vs Processes
 
