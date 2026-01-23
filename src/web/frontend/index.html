@@ -56,46 +56,46 @@
     </div>
 
     <!-- Login Overlay -->
-    <div class="login-overlay hidden" id="login-overlay">
+    <div class="login-overlay hidden" id="login-overlay" data-testid="login-overlay">
         <div class="login-box">
             <h1 class="login-title">Euno</h1>
             <p class="login-subtitle">Personal Intelligence</p>
             <form onsubmit="handleLogin(event)">
-                <input type="password" class="login-input" id="login-password" placeholder="Password" autocomplete="current-password" autofocus>
-                <button type="submit" class="login-btn" id="login-btn">Sign In</button>
+                <input type="password" class="login-input" id="login-password" data-testid="login-password" placeholder="Password" autocomplete="current-password" autofocus>
+                <button type="submit" class="login-btn" id="login-btn" data-testid="login-btn">Sign In</button>
             </form>
-            <div class="login-error" id="login-error"></div>
+            <div class="login-error" id="login-error" data-testid="login-error"></div>
         </div>
     </div>
 
-    <div class="app-container" id="app-container">
+    <div class="app-container" id="app-container" data-testid="app-container">
         <div class="app">
             <!-- Tabs Container -->
             <div class="tabs-container">
                 <div class="tab-content">
                     <!-- Focus Tab -->
-                    <div class="tab-pane active" id="tab-focus">
-                        <div class="focus-content" id="focus-content">
+                    <div class="tab-pane active" id="tab-focus" data-testid="tab-focus">
+                        <div class="focus-content" id="focus-content" data-testid="focus-content">
                             <!-- Content dynamically rendered by renderFocusTab() -->
                         </div>
                     </div>
 
                     <!-- Chat Tab -->
-                    <div class="tab-pane" id="tab-chat">
+                    <div class="tab-pane" id="tab-chat" data-testid="tab-chat">
                         <div class="chat-content">
-                            <div class="inline-chat-messages" id="inline-messages"></div>
+                            <div class="inline-chat-messages" id="inline-messages" data-testid="inline-messages"></div>
                         </div>
                     </div>
 
                     <!-- History Tab -->
-                    <div class="tab-pane" id="tab-history">
-                        <div class="history-content" id="history-content">
+                    <div class="tab-pane" id="tab-history" data-testid="tab-history">
+                        <div class="history-content" id="history-content" data-testid="history-content">
                             <div class="focus-empty">Loading...</div>
                         </div>
                     </div>
 
                     <!-- About Tab -->
-                    <div class="tab-pane" id="tab-about">
+                    <div class="tab-pane" id="tab-about" data-testid="tab-about">
                         <div class="focus-view-header" onclick="navigateMoreMenuBack()">
                             <span class="focus-back-btn"><img src="/web/icons/chevron-left.svg" alt="Back" class="icon"></span>
                             <div class="focus-view-header-content">
@@ -109,7 +109,7 @@
                     </div>
 
                     <!-- Settings Tab -->
-                    <div class="tab-pane" id="tab-settings">
+                    <div class="tab-pane" id="tab-settings" data-testid="tab-settings">
                         <div class="focus-view-header" onclick="navigateMoreMenuBack()">
                             <span class="focus-back-btn"><img src="/web/icons/chevron-left.svg" alt="Back" class="icon"></span>
                             <div class="focus-view-header-content">
@@ -117,7 +117,7 @@
                                 <div class="focus-view-breadcrumbs"><span>More</span><img src="/web/icons/chevron-right.svg" alt=">"><span>Settings</span></div>
                             </div>
                         </div>
-                        <div class="settings-content" id="settings-content">
+                        <div class="settings-content" id="settings-content" data-testid="settings-content">
                             <!-- Costs Section -->
                             <div class="settings-section">
                                 <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
@@ -126,21 +126,21 @@
                                 </div>
                                 <div class="collapsible-content open">
                                     <div class="costs-box">
-                                        <div class="costs-row" id="costs-session">
+                                        <div class="costs-row" id="costs-session" data-testid="costs-session">
                                             <span class="costs-label">Session</span>
                                             <div class="costs-value">
                                                 <div class="costs-amount">—</div>
                                                 <div class="costs-calls">Loading...</div>
                                             </div>
                                         </div>
-                                        <div class="costs-row" id="costs-seven-days">
+                                        <div class="costs-row" id="costs-seven-days" data-testid="costs-seven-days">
                                             <span class="costs-label">7 Days</span>
                                             <div class="costs-value">
                                                 <div class="costs-amount">—</div>
                                                 <div class="costs-calls">Loading...</div>
                                             </div>
                                         </div>
-                                        <div class="costs-row" id="costs-month">
+                                        <div class="costs-row" id="costs-month" data-testid="costs-month">
                                             <span class="costs-label">Month</span>
                                             <div class="costs-value">
                                                 <div class="costs-amount">—</div>
@@ -162,7 +162,7 @@
                                     <div class="settings-form">
                                         <div class="settings-field">
                                             <label class="settings-label">Default Provider</label>
-                                            <select class="settings-select" id="default-provider" onchange="handleProviderChange()">
+                                            <select class="settings-select" id="default-provider" data-testid="default-provider" onchange="handleProviderChange()">
                                                 <!-- Options populated dynamically from API -->
                                             </select>
                                             <div class="settings-message" id="ai-message"></div>
@@ -172,10 +172,10 @@
                                             <div class="budget-row">
                                                 <div class="budget-input-group">
                                                     <span class="budget-prefix">$</span>
-                                                    <input type="number" class="settings-input budget-input" id="budget-limit"
+                                                    <input type="number" class="settings-input budget-input" id="budget-limit" data-testid="budget-limit"
                                                            step="0.01" min="0" placeholder="50.00" onchange="handleBudgetChange()">
                                                 </div>
-                                                <select class="settings-select budget-period-select" id="budget-period" onchange="handleBudgetPeriodChange()">
+                                                <select class="settings-select budget-period-select" id="budget-period" data-testid="budget-period" onchange="handleBudgetPeriodChange()">
                                                     <option value="daily">per day</option>
                                                     <option value="weekly">per week</option>
                                                     <option value="monthly" selected>per month</option>
@@ -210,7 +210,7 @@
                                             </div>
                                         </div>
                                         <div class="settings-field">
-                                            <button class="settings-btn settings-btn-danger" onclick="handleFreshStart()">Fresh Start</button>
+                                            <button class="settings-btn settings-btn-danger" data-testid="fresh-start-btn" onclick="handleFreshStart()">Fresh Start</button>
                                             <div class="settings-message" id="fresh-start-message"></div>
                                         </div>
                                     </div>
@@ -225,7 +225,7 @@
                                 </div>
                                 <div class="collapsible-content">
                                     <div class="settings-form">
-                                        <div class="backups-list" id="backups-list">
+                                        <div class="backups-list" id="backups-list" data-testid="backups-list">
                                             <div class="focus-empty">Click to load backups...</div>
                                         </div>
                                         <div class="settings-message" id="backups-message"></div>
@@ -252,7 +252,7 @@
                                             </form>
                                         </div>
                                         <div class="settings-field">
-                                            <button class="settings-btn settings-btn-danger" onclick="logout()">Sign Out</button>
+                                            <button class="settings-btn settings-btn-danger" data-testid="signout-btn" onclick="logout()">Sign Out</button>
                                         </div>
                                     </div>
                                 </div>
@@ -263,39 +263,39 @@
 
                 <!-- Tab Menu (below content) -->
                 <div class="tab-menu">
-                    <button class="tab-btn active" data-tab="focus" onclick="switchTab('focus')">
+                    <button class="tab-btn active" data-tab="focus" data-testid="tab-btn-focus" onclick="switchTab('focus')">
                         <img src="/web/icons/queue-list.svg" alt="Focus">
                         <span>Focus</span>
                         <span class="tab-badge" id="tasks-badge" style="display: none;">0</span>
                     </button>
-                    <button class="tab-btn" data-tab="chat" onclick="switchTab('chat')">
+                    <button class="tab-btn" data-tab="chat" data-testid="tab-btn-chat" onclick="switchTab('chat')">
                         <img src="/web/icons/chat-bubble-left.svg" alt="Chat">
                         <span>Chat</span>
                         <span class="tab-badge" id="chat-badge" style="display: none;">0</span>
                     </button>
                     <div class="tab-overflow">
-                        <button class="tab-btn" onclick="toggleOverflowMenu()" id="overflow-btn">
+                        <button class="tab-btn" onclick="toggleOverflowMenu()" id="overflow-btn" data-testid="overflow-btn">
                             <img src="/web/icons/ellipsis-vertical.svg" alt="More">
                             <span>More</span>
                         </button>
-                        <div class="overflow-menu" id="overflow-menu">
-                            <button class="overflow-item" data-tab="about" onclick="openMoreMenuScreen('about'); closeOverflowMenu();">
+                        <div class="overflow-menu" id="overflow-menu" data-testid="overflow-menu">
+                            <button class="overflow-item" data-tab="about" data-testid="overflow-about" onclick="openMoreMenuScreen('about'); closeOverflowMenu();">
                                 <img src="/web/icons/information-circle.svg" alt="About">
                                 <span>About</span>
                             </button>
-                            <button class="overflow-item" data-tab="settings" onclick="openMoreMenuScreen('settings'); closeOverflowMenu();">
+                            <button class="overflow-item" data-tab="settings" data-testid="overflow-settings" onclick="openMoreMenuScreen('settings'); closeOverflowMenu();">
                                 <img src="/web/icons/cog-6-tooth.svg" alt="Settings">
                                 <span>Settings</span>
                             </button>
-                            <button class="overflow-item" data-tab="history" onclick="openMoreMenuScreen('history'); closeOverflowMenu();">
+                            <button class="overflow-item" data-tab="history" data-testid="overflow-history" onclick="openMoreMenuScreen('history'); closeOverflowMenu();">
                                 <img src="/web/icons/clock.svg" alt="History">
                                 <span>History</span>
                             </button>
-                            <button class="overflow-item" id="upload-btn" onclick="triggerUpload(); closeOverflowMenu();">
+                            <button class="overflow-item" id="upload-btn" data-testid="upload-btn" onclick="triggerUpload(); closeOverflowMenu();">
                                 <img src="/web/icons/arrow-up-tray.svg" alt="Upload">
                                 <span>Upload</span>
                             </button>
-                            <button class="overflow-item" onclick="resetUI(); closeOverflowMenu();">
+                            <button class="overflow-item" data-testid="new-chat-btn" onclick="resetUI(); closeOverflowMenu();">
                                 <img src="/web/icons/arrow-path.svg" alt="New Chat">
                                 <span>New Chat</span>
                             </button>
@@ -308,9 +308,9 @@
             <!-- Input Bar (always visible) -->
             <div class="input-bar">
                 <div class="input-wrapper">
-                    <textarea id="context-input" placeholder="What's on your mind?" rows="1"></textarea>
+                    <textarea id="context-input" data-testid="context-input" placeholder="What's on your mind?" rows="1"></textarea>
                     <span class="job-context-label" id="job-context-label"></span>
-                    <button id="voice-btn" onclick="toggleVoiceRecording()" title="Voice input">
+                    <button id="voice-btn" data-testid="voice-btn" onclick="toggleVoiceRecording()" title="Voice input">
                         <span class="voice-indicator"></span>
                         <svg viewBox="0 0 24 24" id="voice-icon">
                             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
@@ -324,10 +324,10 @@
                     </button>
                 </div>
                 <div class="input-bar-buttons">
-                    <button id="context-send-btn" class="input-bar-btn" onclick="sendContextMessage()" title="Send">
+                    <button id="context-send-btn" class="input-bar-btn" data-testid="send-btn" onclick="sendContextMessage()" title="Send">
                         <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                     </button>
-                    <button id="quick-add-btn" class="input-bar-btn" onclick="quickAddFromInput()" title="Add job">
+                    <button id="quick-add-btn" class="input-bar-btn" data-testid="quick-add-btn" onclick="quickAddFromInput()" title="Add job">
                         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
                     </button>
                 </div>

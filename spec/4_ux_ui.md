@@ -91,3 +91,30 @@ SSE connection provides live updates:
 - Chat messages stream incrementally
 - Consolidation progress shows in Focus tab
 - Agent pause/resume events update UI immediately
+
+## Testing
+
+### E2E Testing with Playwright
+
+Euno uses Playwright for end-to-end UI testing. Tests run in headless Chromium by default.
+
+### data-testid Conventions
+
+All interactive elements use `data-testid` attributes for reliable test selectors.
+
+Naming:
+- **Tabs:** `tab-{name}`, `tab-btn-{name}`
+- **Buttons:** `{action}-btn` (e.g., `send-btn`, `pause-btn`)
+- **Inputs:** `{field-name}` (e.g., `context-input`, `budget-limit`)
+- **Containers:** `{component}-content` or `{component}-container`
+- **Cards:** `{type}-card` (e.g., `job-card`, `agent-card`)
+- **Messages:** `message-{role}` (e.g., `message-user`, `message-agent`)
+- **Menu items:** `menu-{name}` or `overflow-{name}`
+
+### Running Tests
+
+```bash
+uv run pytest tests/e2e/ -v              # Headless (default)
+uv run pytest tests/e2e/ -v --headed     # With browser visible
+uv run pytest tests/e2e/ -v --headed --slowmo=500  # Slow for debugging
+```

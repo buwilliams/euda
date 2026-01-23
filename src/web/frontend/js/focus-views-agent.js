@@ -61,7 +61,7 @@ function renderAgentDetailView(job) {
                 ${renderBreadcrumbs()}
             </div>
         </div>
-        <div class="focus-view-content">
+        <div class="focus-view-content" data-testid="agent-detail">
             <!-- Actions Row -->
             <div class="task-detail-actions">
                 <button class="task-detail-action" onclick="toggleAgentEnabled('${agentId}', ${!isEnabled})">${isEnabled ? icon('x-mark') + ' Disable' : icon('check') + ' Enable'}</button>
@@ -144,7 +144,7 @@ function renderPauseBanner(agentId, pauseStatus) {
                     ${timeAgo ? `<span class="pause-time">${timeAgo}</span>` : ''}
                 </div>
             </div>
-            <button class="pause-resume-btn" onclick="resumeAgent('${agentId}')">
+            <button class="pause-resume-btn" data-testid="resume-btn" onclick="resumeAgent('${agentId}')">
                 ${icon('play')} Resume
             </button>
         </div>
@@ -235,7 +235,7 @@ function renderAgentManageView(agentId) {
     const renderStatusControls = () => {
         if (agentState === 'enabled') {
             return `
-                <button class="task-detail-action" onclick="pauseAgent('${agentId}')">${icon('pause')} Pause</button>
+                <button class="task-detail-action" data-testid="pause-btn" onclick="pauseAgent('${agentId}')">${icon('pause')} Pause</button>
                 <button class="task-detail-action" onclick="disableAgent('${agentId}')">${icon('x-mark')} Disable</button>
             `;
         } else if (agentState === 'paused') {
@@ -381,6 +381,7 @@ function renderMemoryListView(agentId) {
             </div>
 
             <!-- Memory Items -->
+            <div data-testid="memory-list">
             ${items.length === 0 ? '<div class="focus-empty">No short-term memory items.</div>' :
               items.map(item => `
                 <div class="memory-list-item" onclick="navigateFocus('memory-item-${agentId}-${item.id}')">
@@ -390,6 +391,7 @@ function renderMemoryListView(agentId) {
                 </div>
               `).join('')
             }
+            </div>
         </div>
     `;
 }
@@ -996,7 +998,7 @@ function renderIdentityView(agentId) {
                     </button>
                 </div>
 
-                <div class="identity-content ${hasIdentity ? '' : 'empty'}">
+                <div class="identity-content ${hasIdentity ? '' : 'empty'}" data-testid="identity-content">
                     ${hasIdentity ? marked.parse(identity) : '<em class="text-muted">No identity defined. Click Edit to define the agent\'s identity and behavioral rules.</em>'}
                 </div>
             `}

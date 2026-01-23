@@ -331,7 +331,7 @@ function showChatEmptyState() {
         : '<div class="chat-empty-quote"><div class="quote-text" style="color: #999;">Loading...</div></div>';
 
     inlineMessages.innerHTML = `
-        <div class="chat-empty-state" id="chat-empty-state">
+        <div class="chat-empty-state" id="chat-empty-state" data-testid="chat-empty-state">
             <div class="chat-empty-greeting">What's on your mind?</div>
             ${quoteHtml}
         </div>
@@ -506,6 +506,7 @@ function addInlineMessage(content, role, context = null) {
 
     const div = document.createElement('div');
     div.className = `inline-message inline-message-${role}`;
+    div.setAttribute('data-testid', role === 'you' ? 'message-user' : 'message-agent');
     const html = role === 'friend' ? marked.parse(content) : escapeHtml(content);
 
     // Add context label if provided (e.g., "Re: Job Name")
@@ -522,6 +523,7 @@ function addInlineThinking() {
     const div = document.createElement('div');
     div.className = 'inline-message inline-message-friend';
     div.id = 'inline-thinking';
+    div.setAttribute('data-testid', 'thinking-indicator');
     div.innerHTML = `<div class="message-content" style="color: #999; font-style: italic;">Thinking<span class="thinking-dots"><span></span><span></span><span></span></span></div>`;
     inlineMessages.appendChild(div);
     const chatPane = document.getElementById('tab-chat');

@@ -131,7 +131,7 @@ function renderFocusMenu() {
     let todaySection = '';
     if (todayJobs.length > 0) {
         todaySection = `
-            <div class="focus-menu-section">
+            <div class="focus-menu-section" data-testid="today-section">
                 <div class="focus-menu-section-label">Today</div>
                 <div class="focus-today-jobs">
                     ${todayJobs.map(job => renderJobCard(job, isSwipeable(job))).join('')}
@@ -140,7 +140,7 @@ function renderFocusMenu() {
         `;
     } else {
         todaySection = `
-            <div class="focus-menu-section">
+            <div class="focus-menu-section" data-testid="today-section">
                 <div class="focus-menu-section-label">Today</div>
                 <div class="focus-free-message">
                     <span class="focus-free-text">Your day is free.</span>
@@ -195,25 +195,25 @@ function renderFocusMenu() {
                 <span class="section-toggle">${icon('chevron-right')}</span>
             </div>
             <div class="focus-menu collapsible-content ${timelinesOpen ? 'open' : ''}">
-                <div class="focus-menu-item" onclick="navigateFocus('upcoming')">
+                <div class="focus-menu-item" data-testid="menu-upcoming" onclick="navigateFocus('upcoming')">
                     <span class="focus-menu-icon">${icon('calendar')}</span>
                     <span class="focus-menu-label">Upcoming</span>
                     <span class="focus-menu-count">${counts.upcoming}</span>
                     <span class="focus-menu-arrow">›</span>
                 </div>
-                <div class="focus-menu-item" onclick="navigateFocus('anytime')">
+                <div class="focus-menu-item" data-testid="menu-anytime" onclick="navigateFocus('anytime')">
                     <span class="focus-menu-icon">${icon('clock')}</span>
                     <span class="focus-menu-label">Anytime</span>
                     <span class="focus-menu-count">${counts.anytime}</span>
                     <span class="focus-menu-arrow">›</span>
                 </div>
-                <div class="focus-menu-item" onclick="navigateFocus('someday')">
+                <div class="focus-menu-item" data-testid="menu-someday" onclick="navigateFocus('someday')">
                     <span class="focus-menu-icon">${icon('cloud')}</span>
                     <span class="focus-menu-label">Someday</span>
                     <span class="focus-menu-count">${counts.someday}</span>
                     <span class="focus-menu-arrow">›</span>
                 </div>
-                <div class="focus-menu-item" onclick="navigateFocus('completed')">
+                <div class="focus-menu-item" data-testid="menu-completed" onclick="navigateFocus('completed')">
                     <span class="focus-menu-icon">${icon('check')}</span>
                     <span class="focus-menu-label">Completed</span>
                     <span class="focus-menu-count">${topLevelCompletedJobs.length}</span>
@@ -328,7 +328,7 @@ function renderSystemContainerView(job, isAgentsContainer, isSystemJobsContainer
                         const grandchildCount = jobsData.filter(j => j.parent_id === child.id).length;
                         const childIcon = icon('bolt');
                         return `
-                            <div class="child-job-card" onclick="navigateFocus('job-${child.id}')">
+                            <div class="child-job-card" data-testid="agent-card" onclick="navigateFocus('job-${child.id}')">
                                 <span class="child-job-icon">${childIcon}</span>
                                 <span class="child-job-name">${escapeHtml(child.name)}</span>
                                 <span class="child-job-count">${grandchildCount}</span>
@@ -356,7 +356,7 @@ function renderSystemContainerView(job, isAgentsContainer, isSystemJobsContainer
                 ${renderBreadcrumbs()}
             </div>
         </div>
-        <div class="focus-view-content">
+        <div class="focus-view-content" data-testid="agents-container">
             <!-- Child Jobs -->
             <div class="job-section">
                 ${renderChildJobs()}
@@ -442,7 +442,7 @@ function renderJobDetailView(jobId) {
                 ${renderBreadcrumbs()}
             </div>
         </div>
-        <div class="focus-view-content">
+        <div class="focus-view-content" data-testid="job-detail">
             <!-- Actions Row -->
             <div class="task-detail-actions">
                 <button class="task-detail-action" onclick="openWhenPicker('job', '${job.id}')">${icon('calendar')} ${escapeHtml(whenLabel)}</button>
@@ -454,7 +454,7 @@ function renderJobDetailView(jobId) {
             </div>
 
             <!-- Name Section -->
-            <div class="job-section">
+            <div class="job-section" data-testid="job-name">
                 <div class="job-section-header">Name</div>
                 ${isEditingName ? `
                     <input type="text" class="job-name-input" id="edit-name-${job.id}" value="${escapeHtml(displayName)}"
@@ -466,7 +466,7 @@ function renderJobDetailView(jobId) {
             </div>
 
             <!-- Description Section -->
-            <div class="job-section">
+            <div class="job-section" data-testid="job-description">
                 <div class="job-section-header">
                     Description
                     ${isEditingDesc ? `<span class="job-section-action" onclick="saveJobField('${job.id}', 'description', document.getElementById('edit-description-${job.id}').value)">Save</span>` : ''}

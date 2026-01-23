@@ -357,7 +357,7 @@ function renderViewHeader(title, options = {}) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">${titleIconHtml}${title}</span>
                 ${renderBreadcrumbs()}

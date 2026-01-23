@@ -42,7 +42,7 @@ function renderMinimalJobCard(job) {
     const assignedIndicator = !job.in_progress_by && assignees.length > 0 ? '<span class="card-assigned-indicator" title="Assigned to ' + assignees.join(', ') + '">' + icon('user') + '</span>' : '';
 
     return `
-        <div class="card card-minimal" data-job-id="${job.id}" onclick="navigateFocus('job-${job.id}')">
+        <div class="card card-minimal" data-job-id="${job.id}" data-testid="job-card" onclick="navigateFocus('job-${job.id}')">
             ${workingIndicator}${assignedIndicator}
             <span class="card-title">${escapeHtml(displayName)}</span>
             ${childBadge}
@@ -69,7 +69,7 @@ function renderFullJobCard(job) {
     }
 
     return `
-        <div class="card card-full" data-job-id="${job.id}">
+        <div class="card card-full" data-job-id="${job.id}" data-testid="job-card">
             <div class="card-header">
                 <span class="card-title" onclick="toggleJobCard('${job.id}')">${escapeHtml(displayName)}</span>
                 <button class="card-collapse" onclick="event.stopPropagation(); toggleJobCard('${job.id}')">−</button>
@@ -81,8 +81,8 @@ function renderFullJobCard(job) {
             </div>
             <div class="card-actions">
                 <button class="card-action" onclick="event.stopPropagation(); openWhenPicker('job', '${job.id}')">${icon('calendar')} ${escapeHtml(whenLabel)}</button>
-                <button class="card-action" onclick="completeJob(event, '${job.id}')">Complete</button>
-                <button class="card-action" onclick="showArchiveInput(event, '${job.id}')">${isArchiving ? 'Cancel' : 'Archive'}</button>
+                <button class="card-action" data-testid="action-complete" onclick="completeJob(event, '${job.id}')">Complete</button>
+                <button class="card-action" data-testid="action-archive" onclick="showArchiveInput(event, '${job.id}')">${isArchiving ? 'Cancel' : 'Archive'}</button>
                 <button class="card-action danger" onclick="deleteJob(event, '${job.id}')">Delete</button>
             </div>
             ${isArchiving ? `

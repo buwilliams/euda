@@ -47,6 +47,7 @@ dev = [
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=5.0.0",
     "pytest-mock>=3.14.0",
+    "pytest-playwright>=0.4.4",
     "freezegun>=1.4.0",
 ]
 
@@ -59,4 +60,5 @@ addopts = "-v --strict-markers"
 markers = [
     "invariant: Design invariant tests from specs",
     "unit: Unit tests for individual components",
+    "e2e: End-to-end Playwright tests",
 ]

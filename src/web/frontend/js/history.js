@@ -165,7 +165,7 @@ function renderHistoryList() {
 
     return `
         ${header}
-        <div class="focus-view-content">
+        <div class="focus-view-content" data-testid="history-list">
             ${items}
         </div>
     `;
@@ -177,7 +177,7 @@ function renderHistoryCard(item) {
     const preview = item.preview || 'No preview';
 
     const cardHtml = `
-        <div class="card card-minimal" onclick="navigateHistory('conversation-${item.session_id}')">
+        <div class="card card-minimal" data-testid="history-card" onclick="navigateHistory('conversation-${item.session_id}')">
             <span class="card-title">${friendlyDate} ${friendlyTime}</span>
             <span class="card-preview">${escapeHtml(preview)}</span>
             <span class="card-arrow">${icon('chevron-right')}</span>
@@ -226,14 +226,14 @@ function renderHistoryDetail(sessionId) {
             <span class="focus-back-btn">${icon('chevron-left')}</span>
             <span class="focus-view-title">${friendlyDate} ${friendlyTime}</span>
         </div>
-        <div class="focus-view-content">
+        <div class="focus-view-content" data-testid="history-detail">
             <div class="history-detail">
                 <div class="history-detail-preview">${marked.parse(item.preview || 'No preview')}</div>
                 <div class="history-detail-meta">${item.message_count || '?'} messages</div>
             </div>
             <div class="task-detail-actions">
-                <button class="task-detail-action" onclick="loadConversation('${item.session_id}')">${icon('chat-bubble-left')} Continue</button>
-                <button class="task-detail-action danger" onclick="deleteConversation('${item.session_id}')">${icon('trash')} Delete</button>
+                <button class="task-detail-action" data-testid="continue-btn" onclick="loadConversation('${item.session_id}')">${icon('chat-bubble-left')} Continue</button>
+                <button class="task-detail-action danger" data-testid="delete-btn" onclick="deleteConversation('${item.session_id}')">${icon('trash')} Delete</button>
             </div>
         </div>
     `;
