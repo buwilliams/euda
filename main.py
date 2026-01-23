@@ -118,7 +118,7 @@ def cmd_start(args):
 
     # Run web server with custom signal handling
     async def serve():
-        config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="info")
+        config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="warning")
         server = uvicorn.Server(config)
 
         # Custom signal handler: close SSE connections BEFORE uvicorn shutdown
