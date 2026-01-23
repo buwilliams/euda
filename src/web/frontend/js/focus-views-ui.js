@@ -66,8 +66,6 @@ async function toggleAgentSection(header, event, sectionType, agentId) {
                 } else if (sectionType === 'reflection') {
                     const data = await loadConsolidationLogs(agentId);
                     content.innerHTML = renderReflectionContent(data, agentId);
-                } else if (sectionType === 'exploration') {
-                    content.innerHTML = renderExplorationContent(agentId);
                 }
                 content.dataset.loaded = 'true';
             }

@@ -17,9 +17,6 @@
     "graduate_memory"
   ],
   "triggers": [],
-  "exploration": {
-    "enabled": false
-  },
   "consolidation": {
     "enabled": true,
     "trigger": "time:evening"

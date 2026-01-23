@@ -1,5 +1,5 @@
 // Euno - Focus View Memory Renderers
-// Memory-related render helpers (short-term, long-term, reflection, exploration)
+// Memory-related render helpers (short-term, long-term, reflection)
 
 // ============== Memory Render Functions ==============
 
@@ -110,21 +110,3 @@ function renderReflectionContent(data, agentId) {
     `;
 }
 
-// ============== Exploration Render Functions ==============
-
-function renderExplorationContent(agentId) {
-    return `
-        <div class="exploration-section">
-            <div class="exploration-info">
-                <p>Exploration runs scheduled discovery where the agent researches opportunities and ideas for you.</p>
-            </div>
-            <div class="exploration-actions">
-                <button class="btn-primary" onclick="triggerExploration('${agentId}')">Run Exploration</button>
-            </div>
-            <div class="exploration-status">
-                <span class="status-label">Status:</span>
-                <span class="status-value">Ready to explore</span>
-            </div>
-        </div>
-    `;
-}

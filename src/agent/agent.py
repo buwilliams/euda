@@ -421,7 +421,7 @@ class Agent:
         """Determine which prompt template to use based on job type.
 
         Returns:
-            Template name: 'agent/consolidation', 'agent/exploration', or 'agent/job_assignment'
+            Template name: 'agent/consolidation' or 'agent/job_assignment'
         """
         job_name = job.get("name", "")
         job_tags = job.get("tags", [])
@@ -430,12 +430,6 @@ class Agent:
         # This path is kept for backwards compatibility with any code that calls this directly
         if "trigger:consolidation" in job_tags or job_name.startswith("Trigger:consolidation"):
             return "agent/consolidation"
-        # Exploration triggers
-        elif "trigger:exploration" in job_tags or job_name.startswith("Trigger:exploration"):
-            return "agent/exploration"
-        # Other trigger jobs (legacy support)
-        elif job_name.startswith("Trigger:"):
-            return "agent/exploration"
         # Regular job assignment (includes user:request)
         else:
             return "agent/job_assignment"
@@ -461,24 +455,6 @@ class Agent:
         # Select prompt template based on job type
         template_name = self._get_job_prompt_type(job)
 
-        # For exploration jobs, include user memory and patterns directly in the prompt
-        # This ensures agents have context without relying on them to call tools
-        user_memory = ""
-        user_patterns = ""
-        if template_name == "agent/exploration":
-            user_memory = get_memory_for_prompt("user")
-            if not user_memory:
-                user_memory = "(No items currently in user's memory)"
-
-            # Load user patterns for exploration guidance
-            from .cognition.metacognition.consolidation.patterns import load_patterns, format_patterns_for_prompt
-            try:
-                user_store = load_patterns("user")
-                user_patterns = format_patterns_for_prompt(user_store, min_confidence=0.7)
-            except Exception:
-                # Don't fail if patterns can't be loaded
-                pass
-
         return render_template(
             template_name,
             agent_id=self.id,  # For agent-specific template lookup
@@ -488,9 +464,7 @@ class Agent:
             job_due_date=job.get('due_date') or 'No deadline',
             job_tags=tags_str,
             job_attachments=attachments,
-            remaining_jobs_notice=remaining_notice,
-            user_memory=user_memory,
-            user_patterns=user_patterns
+            remaining_jobs_notice=remaining_notice
         )
 
     def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True,

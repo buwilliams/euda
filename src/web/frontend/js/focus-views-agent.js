@@ -243,7 +243,6 @@ function renderAgentManageView(agentId) {
             <div class="task-detail-actions">
                 ${actionButton('append', 'arrow-path', 'Append', `triggerReflection('${agentId}', 'append')`)}
                 ${actionButton('consolidate', 'archive-box', 'Consolidate', `triggerReflection('${agentId}', 'consolidate')`)}
-                ${actionButton('exploration', 'sparkles', 'Explore', `triggerExploration('${agentId}')`)}
             </div>
 
             <!-- Identity Section - navigates to identity view -->
@@ -1052,20 +1051,6 @@ function renderConfigurationView(agentId) {
                                 placeholder="e.g., time:evening">
                         </label>
                     </div>
-                    <div class="agent-config-group">
-                        <div class="agent-config-group-title">Exploration</div>
-                        <label class="agent-config-checkbox">
-                            <input type="checkbox" id="edit-exploration-enabled-${jobId}"
-                                ${config.exploration?.enabled ? 'checked' : ''}>
-                            <span>Enabled</span>
-                        </label>
-                        <label class="agent-config-label">
-                            <span>Trigger</span>
-                            <input type="text" class="agent-config-input" id="edit-exploration-trigger-${jobId}"
-                                value="${escapeHtml(config.exploration?.trigger || 'time:hour_04')}"
-                                placeholder="e.g., time:hour_04">
-                        </label>
-                    </div>
                 </div>
             ` : `
                 <!-- View Mode -->
@@ -1092,16 +1077,6 @@ function renderConfigurationView(agentId) {
                             ${config.reflection?.enabled !== false ? 'Enabled' : 'Disabled'}
                         </span>
                         <span class="config-trigger">${escapeHtml(config.reflection?.trigger || 'time:evening')}</span>
-                    </div>
-                </div>
-
-                <div class="job-section">
-                    <div class="job-section-header">Exploration</div>
-                    <div class="config-value">
-                        <span class="config-status ${config.exploration?.enabled ? 'enabled' : 'disabled'}">
-                            ${config.exploration?.enabled ? 'Enabled' : 'Disabled'}
-                        </span>
-                        <span class="config-trigger">${escapeHtml(config.exploration?.trigger || 'time:hour_04')}</span>
                     </div>
                 </div>
             `}

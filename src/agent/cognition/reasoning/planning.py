@@ -1,7 +1,7 @@
 """
 Strategic Planning - Think before acting for complex operations.
 
-Provides a planning phase for complex operations like exploration and reflection
+Provides a planning phase for complex operations like consolidation
 where thinking through the approach first leads to better outcomes.
 """
 

@@ -147,16 +147,6 @@ async function saveAgentConfigField(agentId, jobId) {
         };
     }
 
-    // Get exploration settings
-    const explorationEnabledInput = document.getElementById(`edit-exploration-enabled-${jobId}`);
-    const explorationTriggerInput = document.getElementById(`edit-exploration-trigger-${jobId}`);
-    if (explorationEnabledInput && explorationTriggerInput) {
-        updates.exploration = {
-            enabled: explorationEnabledInput.checked,
-            trigger: explorationTriggerInput.value.trim() || 'time:hour_04'
-        };
-    }
-
     const success = await saveAgentConfig(agentId, updates);
     if (success) {
         editingJobField = null;

@@ -92,7 +92,7 @@ See docs/3_system.md for the cognitive foundations behind this design.
 
 ## Behavioral Triggers
 
-Agents respond to three types of behavioral triggers, each with its own prompt template:
+Agents respond to two types of behavioral triggers, each with its own prompt template:
 
 - **Job Assignment** (`agent/job_assignment.md`): Regular job execution
   - Triggered when an agent receives a job to complete
@@ -100,17 +100,9 @@ Agents respond to three types of behavioral triggers, each with its own prompt t
   - Agent decides when work is complete
   - Jobs with `user:request` tag: write findings as asset, hand back to user
 
-- **Exploration** (`agent/exploration.md`): Scheduled discovery
-  - Configured per-agent in `config.json` under `exploration` key
-  - `exploration.enabled`: Whether exploration is active (default false)
-  - `exploration.trigger`: Which time trigger to use (e.g., `time:hour_04`)
-  - Creates visible `Trigger:exploration:{date}` jobs
-  - User-created agents can use this for autonomous discovery (see agent-lib/ for examples)
-  - Apply 90/10 principle: 90% grounded in user's interests, 10% novel exposure
-
-- **Reflection** (`agent/reflection.md`): Scheduled self-analysis
-  - Triggered by consolidate trigger (e.g., `time:evening`)
-  - Creates visible `Trigger:reflection:{date}` jobs
+- **Consolidation** (`agent/consolidation.md`): Scheduled self-analysis
+  - Triggered by consolidation trigger (e.g., `time:evening`)
+  - Creates visible `Trigger:consolidation:{date}` jobs
   - Agent reviews memories, identifies patterns, evolves identity
   - Uses tools: list_memory, read_long_term_memory, graduate_memory, update_own_identity
   - Consolidate includes recent completed jobs (last 20) for context on work patterns
@@ -121,9 +113,7 @@ Agents respond to three types of behavioral triggers, each with its own prompt t
 - Agent-specific overrides in `data/agents/{agent}/prompts/`
 - System checks agent-specific first, falls back to base
 - Template selection based on job type:
-  - `Trigger:reflection:*` jobs or `trigger:reflection` tag → reflection.md
-  - `Trigger:exploration:*` jobs or `trigger:exploration` tag → exploration.md
-  - Other `Trigger:*` jobs → exploration.md (legacy support)
+  - `Trigger:consolidation:*` jobs or `trigger:consolidation` tag → consolidation.md
   - All other jobs → job_assignment.md
 
 ## Job Coordination
@@ -214,7 +204,7 @@ Cognition has two aspects:
 **Reasoning** — First-order thinking (about the world)
 - Defined by system prompts in `data/system/prompts/agent/`
 - Agent-specific overrides in `data/agents/{id}/prompts/`
-- Template selection based on job type (job_assignment, exploration, reflection)
+- Template selection based on job type (job_assignment, consolidation)
 
 **Metacognition** — Second-order thinking (about thinking)
 - Self-awareness, self-regulation, and self-improvement
@@ -281,7 +271,7 @@ Configuration in agent `config.json`:
 
 ### Strategic Planning
 
-- Planning phase for complex operations (exploration, reflection)
+- Planning phase for complex operations (consolidation)
 - Creates a brief approach plan before execution
 - Plan is injected into the working prompt for context
 - Configuration in `metacognition.planning.enabled_for`
@@ -331,7 +321,7 @@ System-wide defaults in `data/system/config.json`:
       }
     },
     "progress": { "max_tool_calls_per_iteration": 50 },
-    "planning": { "enabled_for": ["exploration", "reflection"] },
+    "planning": { "enabled_for": ["consolidation"] },
     "efficiency": { "defer_reflection_in_work_cycles": true },
     "reflection": {
       "append_max_tokens": 500,
@@ -366,12 +356,6 @@ Behavior defines what agents can do and when they activate.
   - `time:{name}` — fires at scheduled times (morning, evening, hourly)
   - `job:assigned` — fires when job assigned to agent
 
-### Modes
-
-- **Exploitation** (~90%): Regular job execution, working within known patterns
-- **Exploration** (~10%): Scheduled discovery, finding new opportunities
-- Exploration configured per-agent: `exploration.enabled`, `exploration.trigger`
-
 ### Triggers vs Processes
 
 Behavior defines *when* things activate via triggers. The processes themselves may belong to other categories:
@@ -379,5 +363,4 @@ Behavior defines *when* things activate via triggers. The processes themselves m
 | Trigger Config | Activates | Process Lives In |
 |---------------|-----------|------------------|
 | `triggers[]` | Job assignment | Behavior (tool execution) |
-| `exploration.trigger` | Discovery mode | Behavior (exploration mode) |
-| `reflection.trigger` | Self-analysis | Cognition (metacognition) |
+| `consolidation.trigger` | Self-analysis | Cognition (metacognition) |

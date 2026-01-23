@@ -21,10 +21,9 @@ def cmd_prompt(args: List[str], json_mode: bool = False):
       dev prompt <agent> system         Show system prompt
       dev prompt <agent> job <job_id>   Show prompt for a specific job
       dev prompt <agent> reflect        Show reflection prompt
-      dev prompt <agent> explore        Show exploration prompt
     """
     if len(args) < 2:
-        print_error("Usage: dev prompt <agent> <system|job|reflect|explore> [job_id]", json_mode)
+        print_error("Usage: dev prompt <agent> <system|job|reflect> [job_id]", json_mode)
         sys.exit(1)
 
     agent_id = args[0]
@@ -46,8 +45,6 @@ def cmd_prompt(args: List[str], json_mode: bool = False):
         _show_job_prompt(agent_id, job_id, json_mode)
     elif prompt_type == "reflect":
         _show_reflect_prompt(agent_id, json_mode)
-    elif prompt_type == "explore":
-        _show_explore_prompt(agent_id, json_mode)
     else:
         print_error(f"Unknown prompt type: {prompt_type}", json_mode)
         sys.exit(1)
@@ -133,38 +130,3 @@ def _show_reflect_prompt(agent_id: str, json_mode: bool):
         print(prompt)
 
 
-def _show_explore_prompt(agent_id: str, json_mode: bool):
-    """Show the exploration prompt template."""
-    from ...prompts import render_template
-    from ...tools.data.memory import get_memory_for_prompt
-
-    # Get actual user memory to show what would be included
-    user_memory = get_memory_for_prompt("user")
-    if not user_memory:
-        user_memory = "(No items currently in user's memory)"
-
-    # Create a fake exploration job to show the prompt
-    prompt = render_template(
-        "agent/exploration",
-        agent_id=agent_id,
-        job_id="<job_id>",
-        job_name="Trigger:exploration:2025-01-01",
-        job_description="Scheduled exploration",
-        job_due_date="No deadline",
-        job_tags="trigger:exploration",
-        job_attachments="No attachments",
-        remaining_jobs_notice="",
-        user_memory=user_memory
-    )
-
-    if json_mode:
-        print(json.dumps({
-            "agent_id": agent_id,
-            "prompt_type": "exploration",
-            "template": "agent/exploration",
-            "prompt": prompt
-        }))
-    else:
-        print_header(f"Exploration Prompt Template: {agent_id}", json_mode)
-        print()
-        print(prompt)

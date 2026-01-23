@@ -56,9 +56,6 @@
   "triggers": [
     "time:morning"
   ],
-  "exploration": {
-    "enabled": false
-  },
   "consolidation": {
     "enabled": true,
     "trigger": "time:evening"

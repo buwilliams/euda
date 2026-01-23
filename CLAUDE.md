@@ -57,7 +57,6 @@ uv run euno dev tool list_jobs '{"status": "todo"}'  # Execute tool directly
 
 # Trigger behaviors manually
 uv run euno dev reflect chat --consolidate   # Run only consolidate phase
-uv run euno dev explore chat                 # Trigger exploration
 
 # Live monitoring
 uv run euno dev watch                        # Stream all system events
@@ -133,7 +132,7 @@ An agent is: **Identity + Cognition + Memory + Behavior**
 - **Identity** (`identity.md`): Purpose, values, voice, stable attractors, context
 - **Cognition**: Reasoning (system prompts) + Metacognition (self-regulation, reflection)
 - **Memory**: Short-term (90 days) + Long-term (permanent archive)
-- **Behavior** (`config.json`): Tools + Triggers + Modes (90/10 exploration ratio)
+- **Behavior** (`config.json`): Tools + Triggers
 
 ### Metacognition
 Metacognition is the agent's self-regulation and self-improvement system:
@@ -167,13 +166,6 @@ Memory tracks what's on an agent's mind for anticipation (every agent has memory
 - Types: person, place, thing, goal, concern, idea, learning, behavior
 - Entries expire after 90 days and archive to long-term memory
 
-### Exploration
-Exploration is scheduled discovery where agents research opportunities for the user:
-- Creates suggestions aligned with the agent's purpose and user's interests
-- Applies 90/10 principle: 90% grounded in user's goals, 10% novel exposure
-- Configured per-agent in `config.json` under `exploration` key
-- Creates `Trigger:exploration:{date}` jobs when triggered
-
 ### Consolidation
 Consolidation is a metacognition capability (self-improvement) that manages memory and identity:
 - **Append phase**: Lightweight extraction after each conversation (adds to short-term memory)
@@ -195,10 +187,6 @@ The user is conceptually an agent too - just with a different interface (Web UI/
      "enabled": true,
      "tools": ["list_jobs", "create_job", ...],
      "triggers": ["time:morning", "system:start"],
-     "exploration": {
-       "enabled": true,
-       "trigger": "time:hour_04"
-     },
      "consolidation": {
        "enabled": true,
        "trigger": "time:evening"
@@ -235,7 +223,6 @@ No Python code needed for new agents.
 - `GET/POST/DELETE /api/agents/{id}/memory/short-term` - Agent memory
 - `GET /api/agents/{id}/monitoring` - Agent monitoring stats
 - `POST /api/agents/{id}/reflection/trigger` - Trigger reflection
-- `POST /api/agents/{id}/exploration/trigger` - Trigger exploration
 - `GET /api/agents/{id}/patterns` - Agent's discovered patterns
 - `GET/PATCH /api/user/identity` - User identity
 - `GET/POST /api/user/memory/long-term` - Long-term memory entries

@@ -41,7 +41,6 @@ Rules for the server, API, and infrastructure.
 - `GET /api/agents/{id}/monitoring` — Get monitoring stats and recent prompts
 - `GET /api/agents/{id}/logs/reflection?days={n}` — Get reflection logs
 - `POST /api/agents/{id}/reflection/trigger` — Manually trigger reflection, returns execution_id
-- `POST /api/agents/{id}/exploration/trigger` — Manually trigger exploration, returns execution_id
 
 ## Integrations
 

@@ -207,8 +207,7 @@ function getActiveExecutionHtml(agentId) {
     }
 
     const phaseLabel = activeExecution.phase === 'append' ? 'Append' :
-                       activeExecution.phase === 'consolidate' ? 'Consolidate' :
-                       activeExecution.phase === 'exploration' ? 'Explore' : activeExecution.phase;
+                       activeExecution.phase === 'consolidate' ? 'Consolidate' : activeExecution.phase;
 
     const isError = activeExecution.step === 'error';
     const statusClass = isError ? 'reflection-progress error' : 'reflection-progress';
@@ -969,47 +968,6 @@ async function triggerReflection(agentId, phase) {
         }
     } catch (error) {
         console.error('Failed to trigger reflection:', error);
-        button.textContent = originalText;
-        button.disabled = false;
-    }
-}
-
-async function triggerExploration(agentId) {
-    const button = event.target;
-    const originalText = button.textContent;
-    button.textContent = 'Triggering...';
-    button.disabled = true;
-
-    try {
-        const response = await fetch(`/api/agents/${agentId}/exploration/trigger`, {
-            method: 'POST',
-            credentials: 'same-origin'
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-
-            // Set up active execution for SSE tracking
-            activeExecution = {
-                executionId: result.execution_id,
-                agentId: agentId,
-                phase: 'exploration',
-                step: 'triggered',
-                message: 'Starting exploration...'
-            };
-            updateExecutionUI();
-
-            button.textContent = originalText;
-            button.disabled = false;
-        } else {
-            button.textContent = 'Failed';
-            setTimeout(() => {
-                button.textContent = originalText;
-                button.disabled = false;
-            }, 2000);
-        }
-    } catch (error) {
-        console.error('Failed to trigger exploration:', error);
         button.textContent = originalText;
         button.disabled = false;
     }

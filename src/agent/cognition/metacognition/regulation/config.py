@@ -23,7 +23,7 @@ DEFAULT_CONFIG = {
         "max_no_progress_iterations": 5
     },
     "planning": {
-        "enabled_for": ["exploration", "consolidation"]
+        "enabled_for": ["consolidation"]
     },
     "efficiency": {
         "defer_consolidation_in_work_cycles": True

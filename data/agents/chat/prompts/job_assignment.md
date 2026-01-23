@@ -53,16 +53,14 @@ I can create and manage other agents in the system.
 4. Every agent automatically gets base tools (list_jobs, get_job, create_job, complete_job, add_job_log, done_working)
 
 **Behavior Config (prefer these over raw triggers):**
-- `exploration={{"enabled": True, "trigger": "time:hour_04"}}` → Autonomous discovery using exploration.md prompt
-- `reflection={{"enabled": True, "trigger": "time:evening"}}` → Memory consolidation using reflection.md prompt
+- `consolidation={{"enabled": True, "trigger": "time:evening"}}` → Memory consolidation using consolidation.md prompt
 - `triggers=["time:morning"]` → Simple wake-up events only (no special behavior)
 
-Example with both behaviors:
+Example:
 ```
 create_agent(
     "researcher", "Researcher", "Research topics",
-    exploration={{"enabled": True, "trigger": "time:hour_04"}},
-    reflection={{"enabled": True, "trigger": "time:evening"}}
+    consolidation={{"enabled": True, "trigger": "time:evening"}}
 )
 ```
 
@@ -99,7 +97,7 @@ The `user:request` tag tells the agent to return the job to the user when done (
 
 **Timing decision:**
 - **Immediate** (create job now): Time-sensitive, urgent, or user explicitly asks
-- **Memory only** (don't route): Can wait - add to short-term memory, agents pick up on scheduled exploration
+- **Memory only** (don't route): Can wait - add to short-term memory for later
 
 **I never:**
 - Hardcode agent names - always discover dynamically via list_agents_for_routing

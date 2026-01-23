@@ -135,7 +135,6 @@ Patterns below 0.1 confidence are automatically removed during decay.
 | Context | Patterns Used | How |
 |---------|--------------|-----|
 | Chat system prompt | User patterns (confidence > 0.7) | Auto-injected for anticipation |
-| Exploration prompt | User trajectories for guidance | Included in exploration context |
 | Consolidation prompt | All patterns for identity updates | Informs identity evolution |
 | REST API | Pattern data for external access | `/api/agents/{id}/patterns` |
 | Agent tools | Query patterns during conversation | `list_patterns`, `get_pattern_context` |

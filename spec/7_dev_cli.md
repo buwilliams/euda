@@ -47,12 +47,6 @@ Rules for the developer experience CLI (`python main.py dev`).
 - Append phase requires recent conversation; reads from session file
 - Consolidate phase can run independently anytime
 
-## Exploration
-
-- `dev explore <agent>` — Create exploration trigger job and run it
-- Creates job: `Trigger:exploration:{date}` with tag `trigger:exploration`
-- Runs using agent/exploration.md prompt template
-
 ## Memory Commands
 
 - `dev memory <agent>` — Show all memory (short-term + recent long-term)
@@ -78,7 +72,6 @@ Rules for the developer experience CLI (`python main.py dev`).
 
 - `dev prompt <agent> job <job_id>` — Show prompt that would be generated for job
 - `dev prompt <agent> reflect` — Show reflection prompt
-- `dev prompt <agent> explore` — Show exploration prompt
 - `dev prompt <agent> system` — Show system prompt (identity + tools)
 - Read-only inspection, no LLM calls
 

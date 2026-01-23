@@ -666,56 +666,6 @@
     flex: 1;
 }
 
-/* ============== Exploration Section ============== */
-
-.exploration-section {
-    padding: var(--spacing-md);
-}
-
-.exploration-actions {
-    margin-bottom: var(--spacing-lg);
-}
-
-.exploration-actions .task-detail-action.primary {
-    background: var(--color-accent);
-    color: white;
-    border-color: var(--color-accent);
-}
-
-.exploration-actions .task-detail-action.primary:hover {
-    background: var(--color-accent-hover);
-}
-
-.exploration-status {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-}
-
-.exploration-info {
-    display: flex;
-    gap: var(--spacing-md);
-    font-size: var(--font-size-sm);
-}
-
-.exploration-label {
-    color: var(--color-text-tertiary);
-    min-width: 80px;
-}
-
-.exploration-value {
-    color: var(--color-text-primary);
-}
-
-.exploration-value a {
-    color: var(--color-accent);
-    text-decoration: none;
-}
-
-.exploration-value a:hover {
-    text-decoration: underline;
-}
-
 /* ============== Config Groups ============== */
 
 .agent-config-group {

@@ -177,16 +177,7 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
         "name": {"type": "string", "description": "Display name (e.g., 'Researcher')"},
         "purpose": {"type": "string", "description": "Description of what the agent does"},
         "tools": {"type": "array", "items": {"type": "string"}, "description": "List of tool names to assign"},
-        "triggers": {"type": "array", "items": {"type": "string"}, "description": "Simple wake-up triggers (e.g., ['time:morning']). Prefer exploration/reflection for behavioral triggers."},
-        "exploration": {
-            "type": "object",
-            "description": "Enable autonomous discovery behavior with exploration.md prompt",
-            "properties": {
-                "enabled": {"type": "boolean", "description": "Whether exploration is active"},
-                "trigger": {"type": "string", "description": "When to run (e.g., 'time:hour_04')"}
-            },
-            "required": ["enabled", "trigger"]
-        },
+        "triggers": {"type": "array", "items": {"type": "string"}, "description": "Wake-up triggers (e.g., ['time:morning'])"},
         "consolidation": {
             "type": "object",
             "description": "Enable memory consolidation behavior",
@@ -199,7 +190,7 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
     },
     "required": ["agent_id", "name", "purpose"]
 })
-def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None, exploration: dict = None, consolidation: dict = None) -> dict:
+def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None, consolidation: dict = None) -> dict:
     """Create a new agent with the specified configuration.
 
     Args:
@@ -209,8 +200,6 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         tools: List of tool names to assign (use list_available_tools to see options).
                If not provided, uses minimal base tools.
         triggers: Optional list of triggers (e.g., ['time:morning', 'system:start'])
-        exploration: Optional dict to enable exploration (autonomous discovery).
-                     Example: {"enabled": True, "trigger": "time:hour_04"}
         consolidation: Optional dict to enable consolidation (memory consolidation and identity updates).
                        Example: {"enabled": True, "trigger": "time:evening"}
 
@@ -258,10 +247,6 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         "tools": agent_tools,
         "triggers": triggers or []
     }
-
-    # Add exploration if provided
-    if exploration:
-        config["exploration"] = exploration
 
     # Add consolidation if provided
     if consolidation:

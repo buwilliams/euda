@@ -10,14 +10,13 @@ Every agent (including the user) shares the same four-category structure:
 - **Identity** → `identity.md`
 - **Cognition** → `prompts/` + system `metacognition` config
 - **Memory** → `memory/short-term.jsonl` + `memory/long-term/`
-- **Behavior** → `config.json` (tools, triggers, exploration, reflection)
+- **Behavior** → `config.json` (tools, triggers, consolidation)
 
 Directory structure:
 - **Config:** `data/agents/{id}/config.json`
   - id, name, enabled, state, order, tools[], triggers[]
   - token_budget{}: frequency ("daily"|"hourly"|"weekly"|"monthly"), input_ratio, output_ratio
-  - exploration{}: enabled, trigger (e.g., "time:hour_04")
-  - reflection{}: enabled, trigger
+  - consolidation{}: enabled, trigger (e.g., "time:evening")
   - State: "enabled", "disabled", "paused" (paused requires manual intervention)
   - Triggers define which trigger jobs the agent receives
 - **Identity:** `data/agents/{id}/identity.md`
@@ -112,7 +111,6 @@ Patterns are behavioral regularities discovered during reflection consolidation:
 
 Pattern integration:
 - Chat agent system prompt includes user patterns (confidence > 0.7)
-- Exploration prompt includes user trajectories for guidance
 - Consolidation prompt includes all patterns for identity updates
 - API exposes patterns at `/api/agents/{id}/patterns`
 
@@ -248,16 +246,6 @@ python main.py dev tool search_all_memory '{"query": "some_term"}'
 ```
 
 **Pass**: Returns results with `agent_id` field from multiple agents.
-
-### Exploration Memory Injection Test
-
-Verifies exploration prompt includes user memory.
-
-```bash
-python main.py dev prompt chat explore
-```
-
-**Pass**: Prompt contains "## User Context" section with actual user memory items.
 
 ### Background Job Pacing Test
 

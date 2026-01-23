@@ -59,10 +59,6 @@ def cmd_dev(args: List[str]):
         from .commands.reflect import cmd_reflect
         cmd_reflect(sub_args, json_mode)
 
-    elif subcommand == "explore":
-        from .commands.explore import cmd_explore
-        cmd_explore(sub_args, json_mode)
-
     elif subcommand == "upload":
         from .commands.upload import cmd_upload
         cmd_upload(sub_args, json_mode)
@@ -111,9 +107,6 @@ REFLECTION
     --append                Run only append phase
     --consolidate           Run only consolidate phase
 
-EXPLORATION
-  explore <agent>           Create and run exploration job
-
 MEMORY
   memory <agent>            Show all memory
     --short                 Show only short-term memory
@@ -141,7 +134,6 @@ PROMPTS
   prompt <agent> system     Show system prompt
   prompt <agent> job <id>   Show job prompt
   prompt <agent> reflect    Show reflection prompt
-  prompt <agent> explore    Show exploration prompt
 
 CHAT
   chat <agent> <message>    Single LLM turn (no work cycle)

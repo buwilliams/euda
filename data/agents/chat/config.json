@@ -71,9 +71,6 @@
     "nc_delete_card"
   ],
   "triggers": [],
-  "exploration": {
-    "enabled": false
-  },
   "consolidation": {
     "enabled": true,
     "trigger": "time:evening"

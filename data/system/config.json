@@ -86,7 +86,6 @@
     },
     "planning": {
       "enabled_for": [
-        "exploration",
         "consolidation"
       ]
     },

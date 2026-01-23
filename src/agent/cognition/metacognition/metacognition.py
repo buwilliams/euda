@@ -201,10 +201,6 @@ class Metacognition:
         job_tags = job.get("tags", [])
 
         # Check if job type matches enabled planning triggers
-        if "exploration" in enabled_for:
-            if "trigger:exploration" in job_tags or job_name.startswith("Trigger:exploration"):
-                return True
-
         if "consolidation" in enabled_for:
             if "trigger:consolidation" in job_tags or job_name.startswith("Trigger:consolidation"):
                 return True

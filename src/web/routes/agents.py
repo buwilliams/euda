@@ -37,7 +37,6 @@ class UpdateConfigRequest(BaseModel):
     tools: Optional[List[str]] = None
     triggers: Optional[List[str]] = None
     consolidation: Optional[Dict[str, Any]] = None  # {enabled, trigger}
-    exploration: Optional[Dict[str, Any]] = None  # {enabled, trigger}
 
 
 class TriggerReflectionRequest(BaseModel):
@@ -163,11 +162,6 @@ def api_update_config(agent_id: str, request: UpdateConfigRequest):
         if "consolidation" not in current_config:
             current_config["consolidation"] = {}
         current_config["consolidation"].update(request.consolidation)
-    if request.exploration is not None:
-        # Merge exploration settings
-        if "exploration" not in current_config:
-            current_config["exploration"] = {}
-        current_config["exploration"].update(request.exploration)
 
     result = update_agent_config(agent_id, current_config)
     if "error" in result:
@@ -356,51 +350,12 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
     }
 
 
-# Exploration trigger endpoint
-@router.post("/{agent_id}/exploration/trigger")
-def api_trigger_exploration(agent_id: str):
-    """Trigger exploration for an agent by creating a trigger job.
-
-    Creates a job with tags=["trigger:exploration"] that the agent
-    will pick up and process during its work cycle.
-
-    Returns an execution_id for SSE progress tracking.
-    """
-    # Verify agent exists
-    config = get_agent_config(agent_id)
-    if config is None:
-        raise HTTPException(status_code=404, detail="Agent not found")
-
-    # Generate execution_id for SSE tracking
-    execution_id = f"exec-{uuid.uuid4().hex[:8]}"
-
-    today = datetime.now().strftime("%Y-%m-%d")
-    system_container = get_system_container()
-
-    job = create_job(
-        name=f"Trigger:exploration:{today}",
-        description=f"Manual exploration trigger (execution_id: {execution_id})",
-        parent_id=system_container["id"],
-        assignees=[agent_id],
-        tags=["trigger:exploration", "ui:manual", f"execution:{execution_id}"],
-        created_by="web-ui"
-    )
-
-    return {
-        "status": "triggered",
-        "execution_id": execution_id,
-        "agent_id": agent_id,
-        "job_id": job["id"],
-        "timestamp": datetime.now().isoformat()
-    }
-
-
 # Active executions endpoint
 @router.get("/{agent_id}/active-executions")
 def api_get_active_executions(agent_id: str):
     """Get active trigger jobs for an agent to restore UI state after page refresh.
 
-    Returns active trigger jobs (reflection or exploration) that are assigned to this agent
+    Returns active trigger jobs (consolidation) that are assigned to this agent
     and still in todo status. This allows the UI to restore the running state of buttons.
 
     Returns:
@@ -426,9 +381,6 @@ def api_get_active_executions(agent_id: str):
         for tag in tags:
             if tag.startswith("trigger:consolidation:"):
                 phase = tag.split(":")[-1]  # append, consolidate, or both
-                break
-            elif tag == "trigger:exploration":
-                phase = "exploration"
                 break
 
         if not phase:
