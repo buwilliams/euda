@@ -14,8 +14,8 @@ function connectSSE() {
         const data = JSON.parse(e.data);
         const allJobs = data.jobs || [];
         // Split jobs into active and completed (filter out archived)
-        jobsData = allJobs.filter(j => j.status !== 'completed' && j.status !== 'archived');
-        completedJobsData = allJobs.filter(j => j.status === 'completed')
+        jobsData = allJobs.filter(j => j.status !== 'done' && j.status !== 'archived');
+        completedJobsData = allJobs.filter(j => j.status === 'done')
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
             .slice(0, 20);
         updateTasksBadge();
@@ -29,8 +29,8 @@ function connectSSE() {
         const data = JSON.parse(e.data);
         const allJobs = data.jobs || [];
         // Split jobs into active and completed (filter out archived)
-        jobsData = allJobs.filter(j => j.status !== 'completed' && j.status !== 'archived');
-        completedJobsData = allJobs.filter(j => j.status === 'completed')
+        jobsData = allJobs.filter(j => j.status !== 'done' && j.status !== 'archived');
+        completedJobsData = allJobs.filter(j => j.status === 'done')
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
             .slice(0, 20);
         if (activeTab === 'focus') {

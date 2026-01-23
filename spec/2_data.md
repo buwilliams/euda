@@ -77,7 +77,7 @@ Memory moves through two phases:
 ### RLM (Recursive Language Model)
 
 RLM provides intelligent access to long-term memory via iterative exploration:
-- **Location:** `src/rlm/`
+- **Location:** `src/agent/rlm/`
 - **Purpose:** Semantic search and pattern analysis across large memory archives
 - **Methods:**
   - `analyze(query, memory)` — Open-ended exploration of memory
@@ -184,9 +184,9 @@ These tests verify the memory flow works correctly. Run with dev CLI.
 Verifies chat conversations extract to short-term memory.
 
 ```bash
-python main.py dev memory chat --json > /tmp/before.json
-python main.py chat  # Say: "I'm planning to visit Tokyo for a conference"
-python main.py dev memory chat --json > /tmp/after.json
+uv run euno dev memory chat --json > /tmp/before.json
+uv run euno chat  # Say: "I'm planning to visit Tokyo for a conference"
+uv run euno dev memory chat --json > /tmp/after.json
 ```
 
 **Pass**: New items appear in chat's short-term memory for place/idea types.
@@ -196,9 +196,9 @@ python main.py dev memory chat --json > /tmp/after.json
 Verifies user-relevant items from chat flow to user's memory.
 
 ```bash
-python main.py dev memory user --short  # Check before
-python main.py chat  # Mention: "Casey suggested we visit Paris next summer"
-python main.py dev memory user --short  # Check after
+uv run euno dev memory user --short  # Check before
+uv run euno chat  # Mention: "Casey suggested we visit Paris next summer"
+uv run euno dev memory user --short  # Check after
 ```
 
 **Pass**: User's short-term memory contains person (Casey) and place (Paris) items.
@@ -208,11 +208,11 @@ python main.py dev memory user --short  # Check after
 Verifies identity updates from consolidation persist.
 
 ```bash
-python main.py dev identity chat > /tmp/identity-before.md
-python main.py dev consolidate chat --consolidate
-python main.py dev identity chat > /tmp/identity-after.md
+uv run euno dev identity chat > /tmp/identity-before.md
+uv run euno dev consolidate chat --consolidate
+uv run euno dev identity chat > /tmp/identity-after.md
 sleep 120  # Wait 2 minutes
-python main.py dev identity chat > /tmp/identity-final.md
+uv run euno dev identity chat > /tmp/identity-final.md
 ```
 
 **Pass**: Identity contains "Consolidation Update" section that persists (not overwritten).
@@ -222,7 +222,7 @@ python main.py dev identity chat > /tmp/identity-final.md
 Verifies agents can search other agents' memories.
 
 ```bash
-python main.py dev tool search_all_memory '{"query": "some_term"}'
+uv run euno dev tool search_all_memory '{"query": "some_term"}'
 ```
 
 **Pass**: Returns results with `agent_id` field from multiple agents.
@@ -234,7 +234,7 @@ Verifies background-tagged jobs are paced based on load.
 ```bash
 # Upload multiple files, then watch for pacing events
 for i in 1 2 3; do curl -F "file=@test.txt" http://localhost:8000/api/upload; done
-python main.py dev watch  # Look for "background_job_pacing" events
+uv run euno dev watch  # Look for "background_job_pacing" events
 ```
 
 **Pass**: Agent logs show `background_job_pacing` events with delays scaling to utilization.

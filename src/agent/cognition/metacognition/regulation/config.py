@@ -23,7 +23,8 @@ DEFAULT_CONFIG = {
         "max_no_progress_iterations": 5
     },
     "planning": {
-        "enabled_for": ["consolidation"]
+        "enabled": True,  # Plan before executing jobs (per docs/3_system.md)
+        "excluded_for": []  # Job tags to skip planning for (e.g., "trigger:quick")
     },
     "efficiency": {
         "defer_consolidation_in_work_cycles": True

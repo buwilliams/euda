@@ -237,7 +237,7 @@ async function loadJobsData() {
         const fetchOpts = { credentials: 'same-origin' };
         const [activeRes, completedRes] = await Promise.all([
             fetch('/api/jobs?status=todo', fetchOpts),
-            fetch('/api/jobs?status=completed', fetchOpts)
+            fetch('/api/jobs?status=done', fetchOpts)
         ]);
 
         if (activeRes.status === 401 || completedRes.status === 401) {
@@ -440,7 +440,7 @@ function getJobCategory(job) {
     const dueDate = job.due_date;
     const someday = job.someday;
 
-    if (job.status === 'completed') return 'logbook';
+    if (job.status === 'done') return 'logbook';
     if (dueDate && dueDate <= today) return 'today';  // Includes past due
     if (dueDate && dueDate > today) return 'upcoming';
     if (!dueDate && someday) return 'someday';
@@ -486,12 +486,12 @@ function getChildJobsForContext(parentId) {
     // Filter to only children (or descendants) that match the timeline context
     return allChildren.filter(child => {
         // Check if this child or any of its descendants match the context
-        if (child.status !== 'completed' && getJobCategory(child) === context) {
+        if (child.status !== 'done' && getJobCategory(child) === context) {
             return true;
         }
         // Check descendants
         const descendants = getAllDescendants(child.id);
-        return descendants.some(d => d.status !== 'completed' && getJobCategory(d) === context);
+        return descendants.some(d => d.status !== 'done' && getJobCategory(d) === context);
     });
 }
 
@@ -507,7 +507,7 @@ function getDescendantCountForContext(jobId) {
 
     // Count only descendants that match the context and are incomplete
     return allDescendants.filter(d =>
-        d.status !== 'completed' && getJobCategory(d) === context
+        d.status !== 'done' && getJobCategory(d) === context
     ).length;
 }
 
@@ -567,14 +567,14 @@ function hasMatchingIncompleteDescendant(job, category) {
     // 2. Is not completed
 
     // Check the job itself (only if it's a leaf or has the category set)
-    if (job.status !== 'completed' && getJobCategory(job) === category) {
+    if (job.status !== 'done' && getJobCategory(job) === category) {
         return true;
     }
 
     // Check all descendants
     const descendants = getAllDescendants(job.id);
     for (const descendant of descendants) {
-        if (descendant.status !== 'completed' && getJobCategory(descendant) === category) {
+        if (descendant.status !== 'done' && getJobCategory(descendant) === category) {
             return true;
         }
     }
@@ -596,7 +596,7 @@ function getRootJobsForCategory(category) {
         if (hasCompletedAncestor(job)) continue;
 
         // Check if this job matches the category and is incomplete
-        if (job.status !== 'completed' && getJobCategory(job) === category) {
+        if (job.status !== 'done' && getJobCategory(job) === category) {
             // Find its root ancestor
             const root = getRootAncestor(job);
 
@@ -664,7 +664,7 @@ function getFocusCounts() {
         // Skip containers
         if (isContainerJob(job)) return;
         // Skip completed
-        if (job.status === 'completed') return;
+        if (job.status === 'done') return;
         // Skip jobs with completed ancestors (orphaned children)
         if (hasCompletedAncestor(job)) return;
 

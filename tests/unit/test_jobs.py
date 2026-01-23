@@ -95,13 +95,13 @@ class TestJobRetrieval:
         complete_job(job2["id"], agent="test")
 
         todo_jobs = list_jobs(status="todo")
-        completed_jobs = list_jobs(status="completed")
+        done_jobs = list_jobs(status="done")
 
         todo_ids = [j["id"] for j in todo_jobs]
-        completed_ids = [j["id"] for j in completed_jobs]
+        done_ids = [j["id"] for j in done_jobs]
 
         assert job1["id"] in todo_ids
-        assert job2["id"] in completed_ids
+        assert job2["id"] in done_ids
         assert job2["id"] not in todo_ids
 
     def test_list_jobs_by_tag(self, test_db, mock_emit_event, mock_emit_ui_event):
@@ -158,7 +158,7 @@ class TestJobCompletion:
         job = create_job(name="Complete Me", parent_id=None, created_by="test")
         completed = complete_job(job["id"], agent="test")
 
-        assert completed["status"] == "completed"
+        assert completed["status"] == "done"
         assert "completed_at" in completed
 
     def test_complete_job_adds_log(self, test_db, mock_emit_event, mock_emit_ui_event):
@@ -198,6 +198,7 @@ class TestJobClaiming:
 
         updated = get_job(job["id"])
         assert updated["in_progress_by"] == "agent1"
+        assert updated["status"] == "working"  # Per spec: claim sets status to 'working'
 
     def test_claim_already_claimed_fails(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Cannot claim job already claimed by another agent."""
@@ -224,6 +225,33 @@ class TestJobClaiming:
 
         updated = get_job(job["id"])
         assert updated["in_progress_by"] is None
+        assert updated["status"] == "todo"  # Per spec: release resets status to 'todo'
+
+
+class TestJobError:
+    """Test job error functionality."""
+
+    def test_error_job(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Mark a job as failed with error."""
+        from src.tools.data.jobs import create_job, error_job, get_job
+
+        job = create_job(name="Error Me", parent_id=None, created_by="test")
+        result = error_job(job["id"], "Something went wrong", agent="test-agent")
+
+        assert result["status"] == "error"
+        assert result["in_progress_by"] is None
+
+    def test_error_job_adds_log(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Error job should add log entry with error message."""
+        from src.tools.data.jobs import create_job, error_job
+
+        job = create_job(name="Log Error", parent_id=None, created_by="test")
+        result = error_job(job["id"], "Database connection failed", agent="worker")
+
+        error_logs = [l for l in result["log"] if "error:" in l.get("action", "")]
+        assert len(error_logs) == 1
+        assert "Database connection failed" in error_logs[0]["action"]
+        assert error_logs[0]["agent"] == "worker"
 
 
 class TestJobHierarchy:

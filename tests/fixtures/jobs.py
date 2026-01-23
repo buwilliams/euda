@@ -25,7 +25,7 @@ def create_test_job(
     Args:
         name: Job name
         description: Job description
-        status: Job status (todo, completed, archived)
+        status: Job status (todo, working, done, error, archived)
         tags: List of tags
         assignees: List of agent IDs assigned to this job
         due_date: Due date (YYYY-MM-DD)

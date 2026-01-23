@@ -310,7 +310,7 @@ System-wide defaults in `data/system/config.json`:
       }
     },
     "progress": { "max_tool_calls_per_iteration": 50 },
-    "planning": { "enabled_for": ["consolidation"] },
+    "planning": { "enabled": true, "excluded_for": [] },
     "efficiency": { "defer_consolidation_in_work_cycles": true },
     "consolidation": {
       "append_max_tokens": 500,

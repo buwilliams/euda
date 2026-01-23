@@ -4,7 +4,7 @@ Rules for the command-line interface.
 
 ## Entry Point
 
-- Single entry point: `python main.py {command}`
+- Single entry point: `uv run euno {command}`
 - Default command is `help` if none specified
 - Unknown commands show help and exit with code 1
 

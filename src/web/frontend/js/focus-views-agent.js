@@ -21,8 +21,8 @@ function renderAgentDetailView(job) {
     const completedChildJobs = completedJobsData.filter(j => j.parent_id === job.id);
     // Merge and sort: open jobs first, then completed
     const allChildJobs = [...childJobs, ...completedChildJobs].sort((a, b) => {
-        const aCompleted = a.status === 'completed' ? 1 : 0;
-        const bCompleted = b.status === 'completed' ? 1 : 0;
+        const aCompleted = a.status === 'done' ? 1 : 0;
+        const bCompleted = b.status === 'done' ? 1 : 0;
         return aCompleted - bCompleted;
     });
     const assets = jobAssetsCache[job.id] || [];
@@ -77,7 +77,7 @@ function renderAgentDetailView(job) {
                 <div class="collapsible-content ${allChildJobs.length > 0 ? 'open' : ''}">
                     ${allChildJobs.length === 0 ? '<div class="focus-empty">No jobs assigned to this agent.</div>' :
                       allChildJobs.map(child => {
-                          const isCompleted = child.status === 'completed';
+                          const isCompleted = child.status === 'done';
                           if (isCompleted) {
                               const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
                               return renderCompletedJobCard(child, grandchildCount, true);

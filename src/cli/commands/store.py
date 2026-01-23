@@ -160,13 +160,13 @@ def _is_already_processed(content_hash: str) -> bool:
         content_hash: SHA-256 hash of the content
 
     Returns:
-        True if a completed job exists with this hash tag
+        True if a done job exists with this hash tag
     """
     from ...tools.data.jobs import list_jobs
 
-    # Check for completed jobs with this hash tag
+    # Check for done jobs with this hash tag
     tag = f"store:hash:{content_hash}"
-    jobs = list_jobs(status="completed", tag=tag)
+    jobs = list_jobs(status="done", tag=tag)
     return len(jobs) > 0
 
 

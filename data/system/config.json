@@ -85,9 +85,8 @@
       "max_no_progress_iterations": 5
     },
     "planning": {
-      "enabled_for": [
-        "consolidation"
-      ]
+      "enabled": true,
+      "excluded_for": []
     },
     "efficiency": {
       "defer_consolidation_in_work_cycles": true

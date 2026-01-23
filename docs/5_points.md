@@ -59,8 +59,8 @@ Points are retroactively assigned for contributions made before Gate 4, so early
 ## Checking Your Points
 
 ```bash
-python main.py points           # Show all contributors
-python main.py points logan     # Filter by name (fuzzy match)
+uv run euno points           # Show all contributors
+uv run euno points logan     # Filter by name (fuzzy match)
 ```
 
 ## Related Documents

@@ -186,7 +186,10 @@ class Metacognition:
     # ============== Planning ==============
 
     def should_plan(self, job: dict) -> bool:
-        """Check if planning is enabled for this job type.
+        """Check if planning is enabled for this job.
+
+        Per docs/3_system.md: "when an agent begins work on a job, it first
+        creates a brief plan". Planning is enabled by default for all jobs.
 
         Args:
             job: The job dict to check
@@ -195,17 +198,20 @@ class Metacognition:
             True if planning should be done for this job
         """
         planning_config = self.config.get_planning_config()
-        enabled_for = planning_config.get("enabled_for", [])
 
-        job_name = job.get("name", "")
+        # Planning is enabled by default per spec
+        if not planning_config.get("enabled", True):
+            return False
+
+        # Check if job matches any exclusion patterns
+        excluded_for = planning_config.get("excluded_for", [])
         job_tags = job.get("tags", [])
 
-        # Check if job type matches enabled planning triggers
-        if "consolidation" in enabled_for:
-            if "trigger:consolidation" in job_tags or job_name.startswith("Trigger:consolidation"):
-                return True
+        for exclusion in excluded_for:
+            if exclusion in job_tags:
+                return False
 
-        return False
+        return True
 
     # ============== Efficiency ==============
 

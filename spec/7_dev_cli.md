@@ -1,6 +1,6 @@
 # Dev CLI
 
-Rules for the developer experience CLI (`python main.py dev`).
+Rules for the developer experience CLI (`uv run euno dev`).
 
 ## Purpose
 
@@ -11,7 +11,7 @@ Rules for the developer experience CLI (`python main.py dev`).
 
 ## Entry Point
 
-- `python main.py dev <subcommand> [args]`
+- `uv run euno dev <subcommand> [args]`
 - Global `--json` flag outputs JSON lines instead of human-readable text
 - Unknown subcommands show help and exit with code 1
 
