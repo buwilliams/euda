@@ -1,7 +1,7 @@
 """
 Token Budget Enforcement Invariant Tests.
 
-Spec: spec/1_agents.md lines 236-262
+Spec: specs/1_agents.md lines 236-262
 
 These tests verify the token budget system that prevents runaway costs.
 

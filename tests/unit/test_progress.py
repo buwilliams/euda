@@ -3,7 +3,7 @@ Unit tests for progress awareness module.
 
 Tests for src/agent/cognition/metacognition/regulation/progress.py
 
-Design: spec/1_agents.md - Progress Awareness
+Design: specs/1_agents.md - Progress Awareness
 - Counts tool calls per iteration
 - Detects stuck patterns (same tool with identical inputs)
 - Breaks work cycle when stuck detected
@@ -57,7 +57,7 @@ class TestProgressTracker:
 class TestStuckDetection:
     """Test stuck pattern detection.
 
-    Design: spec/1_agents.md - "Detects stuck patterns: same tool called
+    Design: specs/1_agents.md - "Detects stuck patterns: same tool called
     repeatedly with identical inputs"
     """
 

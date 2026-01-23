@@ -195,7 +195,7 @@ Agent = Identity + Cognition + Memory + Behavior
 - Types: person, place, thing, goal, concern, idea, learning, behavior
 - Flow: Conversations → Append phase → Short-term → Consolidate phase → Long-term
 - Cross-pollination: Chat agent's user-relevant items flow to user's memory
-- See `spec/2_data.md` for detailed memory schemas and flow
+- See `specs/2_data.md` for detailed memory schemas and flow
 
 ### Cognition
 

@@ -104,11 +104,22 @@ class TestMoreMenuNavigation:
 class TestBackNavigation:
     """Tests for back navigation."""
 
+    def _expand_timelines_section(self, page: Page):
+        """Helper to expand the Timelines section if collapsed."""
+        section = page.locator('[data-testid="section-timelines"]')
+        section.scroll_into_view_if_needed()
+        # Check if section is collapsed (doesn't have 'open' class)
+        if "open" not in (section.get_attribute("class") or ""):
+            section.click()
+            # Wait for the section to expand
+            page.wait_for_timeout(300)
+
     def test_back_button_returns_to_previous(self, authenticated_page: Page):
         """Back button should return to previous view."""
         page = authenticated_page
 
-        # Navigate to a timeline view
+        # Expand Timelines section and navigate to upcoming
+        self._expand_timelines_section(page)
         page.locator('[data-testid="menu-upcoming"]').click()
 
         # Back button should be visible
@@ -124,7 +135,8 @@ class TestBackNavigation:
         """Back button should work through multiple navigation levels."""
         page = authenticated_page
 
-        # Navigate to upcoming
+        # Expand Timelines section and navigate to upcoming
+        self._expand_timelines_section(page)
         page.locator('[data-testid="menu-upcoming"]').click()
         expect(page.locator('[data-testid="back-btn"]')).to_be_visible(timeout=5000)
 

@@ -22,6 +22,15 @@ The [Contributing Guide](docs/4_contribute.md) provides three hands-on assignmen
 
 Join our [Discord](https://discord.gg/5B9VdQ6vYP) — where we meet, plan, and discuss Euno updates and what's happening. Merged PRs are automatically posted to #updates so everyone stays in sync.
 
+## Source of Truth
+
+Euno follows a top-down information hierarchy. When making changes, update higher levels first:
+
+- **docs/** — most reliable understanding of Euno (what and why)
+- **specs/** — technical details enforcing the docs (single-depth bullet rules)
+- **tests/** — enforces the specs and docs, not the Python code
+- **src/** — implementation produced from docs, specs, and tests
+
 ## Documentation
 
 - [Pitch](docs/1_pitch.md) — Introduction and vision

@@ -10,7 +10,7 @@ Euno is a personal intelligence that learns to anticipate you: doing tasks for y
 
 - `docs/1_pitch.md` - Product vision
 - `docs/3_system.md` - Entities, ontology, and lifecycle
-- `spec/*.md` - Design rules for drift detection
+- `specs/*.md` - Design rules for drift detection
 - `main.py` - Entry point
 
 ## Setup
@@ -62,7 +62,7 @@ uv run euno dev watch                        # Stream all system events
 uv run euno dev trace <job_id>               # Show execution trace
 ```
 
-Use `--json` for machine-readable output. See `spec/7_dev_cli.md` for full documentation.
+Use `--json` for machine-readable output. See `specs/7_dev_cli.md` for full documentation.
 
 ## Project Structure
 
@@ -114,7 +114,7 @@ euno/
 │   └── system/
 │       ├── config.json
 │       └── logs/reflection/ # Reflection logs
-├── spec/                   # Design rules for drift detection
+├── specs/                   # Design rules for drift detection
 │   ├── 1_agents.md
 │   ├── 2_data.md
 │   ├── 3_backend.md
@@ -238,10 +238,10 @@ Build for yourself first, not "other people." This is not a solution looking for
 
 ## Checking for Drift
 
-Before submitting changes, review against `spec/*.md`:
-- `spec/1_agents.md` — Agent behavior, job coordination, triggers, work cycles
-- `spec/2_data.md` — Data structures, file paths, schemas
-- `spec/3_backend.md` — Server, API, authentication, storage
-- `spec/4_ux_ui.md` — User experience and interface patterns
-- `spec/5_cli.md` — Command-line interface commands and behavior
-- `spec/7_dev_cli.md` — Developer CLI for debugging and improving agents
+Before submitting changes, review against `specs/*.md`:
+- `specs/1_agents.md` — Agent behavior, job coordination, triggers, work cycles
+- `specs/2_data.md` — Data structures, file paths, schemas
+- `specs/3_backend.md` — Server, API, authentication, storage
+- `specs/4_ux_ui.md` — User experience and interface patterns
+- `specs/5_cli.md` — Command-line interface commands and behavior
+- `specs/7_dev_cli.md` — Developer CLI for debugging and improving agents

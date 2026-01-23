@@ -286,7 +286,7 @@ class TestMemoryDirectoryCreation:
 class TestMemoryExpiration:
     """Test memory expiration and archival logic.
 
-    Spec: spec/2_data.md - "Entries expire after 90 days from date_mentioned"
+    Spec: specs/2_data.md - "Entries expire after 90 days from date_mentioned"
     """
 
     def test_is_valid_within_90_days(self, patch_data_dir):
@@ -337,7 +337,7 @@ class TestMemoryExpiration:
 class TestMemoryArchival:
     """Test automatic archival of expired memories.
 
-    Spec: spec/2_data.md - "Expired entries archive to long-term memory"
+    Spec: specs/2_data.md - "Expired entries archive to long-term memory"
     """
 
     def test_archive_expired_memories_writes_to_long_term(self, patch_data_dir):

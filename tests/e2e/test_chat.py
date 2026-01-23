@@ -91,8 +91,13 @@ class TestSendMessage:
 class TestReceiveResponse:
     """Tests for receiving agent responses."""
 
+    @pytest.mark.skip(reason="Requires running agent with LLM API - run manually when testing agent responses")
     def test_receive_agent_response(self, authenticated_page: Page):
-        """Should receive an agent response after sending message."""
+        """Should receive an agent response after sending message.
+
+        Note: This test requires a running agent with LLM API configured.
+        It is skipped by default since agent response time depends on external services.
+        """
         page = authenticated_page
 
         # Switch to chat tab

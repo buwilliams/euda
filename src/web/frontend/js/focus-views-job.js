@@ -18,7 +18,7 @@ function renderJobTraceView(jobId) {
         });
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Job Trace</span>
                     ${renderBreadcrumbs()}
@@ -34,7 +34,7 @@ function renderJobTraceView(jobId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">${icon('chart-bar')} Trace: ${escapeHtml(job_name || 'Job')}</span>
                 ${renderBreadcrumbs()}
@@ -190,7 +190,7 @@ function renderFocusMenu() {
         <div id="daily-quote-container"></div>
         ${todaySection}
         <div class="focus-menu-section">
-            <div class="focus-menu-section-label collapsible ${timelinesOpen ? 'open' : ''}" onclick="toggleSection('timelines')">
+            <div class="focus-menu-section-label collapsible ${timelinesOpen ? 'open' : ''}" data-testid="section-timelines" onclick="toggleSection('timelines')">
                 <span>Timelines</span>
                 <span class="section-toggle">${icon('chevron-right')}</span>
             </div>
@@ -246,7 +246,7 @@ function renderTimelineView(category, title) {
     const categoryIcon = getTimelineIcon(category);
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">${categoryIcon} ${title}</span>
                 ${renderBreadcrumbs()}
@@ -274,7 +274,7 @@ function renderCompletedJobsView() {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">${icon('check')} Completed</span>
                 ${renderBreadcrumbs()}
@@ -350,7 +350,7 @@ function renderSystemContainerView(job, isAgentsContainer, isSystemJobsContainer
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">${titleIcon}${containerName}</span>
                 ${renderBreadcrumbs()}
@@ -372,7 +372,7 @@ function renderJobDetailView(jobId) {
     if (!job) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Job Not Found</span>
                     ${renderBreadcrumbs()}
@@ -436,7 +436,7 @@ function renderJobDetailView(jobId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title${isAgentJob ? ' agent-job-title' : ''}">${titleIcon}${escapeHtml(displayName)}</span>
                 ${renderBreadcrumbs()}
@@ -567,7 +567,7 @@ function renderCompletedJobDetailView(jobId) {
     if (!job) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Job Not Found</span>
                     ${renderBreadcrumbs()}
@@ -607,7 +607,7 @@ function renderCompletedJobDetailView(jobId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">${escapeHtml(displayName)}</span>
                 ${renderBreadcrumbs()}

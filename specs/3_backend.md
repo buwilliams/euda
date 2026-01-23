@@ -120,7 +120,7 @@ This pattern ensures:
 
 - `POST /api/upload` — Upload file for agent processing
 - Creates a job assigned to Chat agent with file as job asset
-- Job is tagged with `background` for load-based pacing (see spec/1_agents.md)
+- Job is tagged with `background` for load-based pacing (see specs/1_agents.md)
 - Chat uses `read_asset` to access file content
 - For text files: extracts identity info and creates memories
 - Returns: filename, job_id, size

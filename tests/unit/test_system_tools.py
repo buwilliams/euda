@@ -3,7 +3,7 @@ Unit tests for system tools module.
 
 Tests for src/tools/system/system.py
 
-Design: spec/1_agents.md - Work Cycle
+Design: specs/1_agents.md - Work Cycle
 - Agent calls done_working when work is complete
 - Agent decides when any job is complete
 """
@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, patch
 class TestDoneWorking:
     """Test done_working tool.
 
-    Design: spec/1_agents.md - "Agent works autonomously until calling done_working"
+    Design: specs/1_agents.md - "Agent works autonomously until calling done_working"
     """
 
     def test_done_working_sets_flag(self):

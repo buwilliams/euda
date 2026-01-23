@@ -1,7 +1,7 @@
 """
 Memory Expiration Invariant Tests.
 
-Spec: spec/2_data.md lines 45-49
+Spec: specs/2_data.md lines 45-49
 
 These tests verify the memory expiration rules for short-term memory.
 

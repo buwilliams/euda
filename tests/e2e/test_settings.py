@@ -55,10 +55,10 @@ class TestProviderSelect:
         # Wait for settings content
         expect(page.locator('[data-testid="settings-content"]')).to_be_visible(timeout=5000)
 
-        # Expand LLMs section if collapsed (click header)
-        llms_section = page.get_by_text("LLMs")
-        if llms_section.is_visible():
-            llms_section.click()
+        # Expand LLMs section if collapsed
+        section = page.locator('[data-testid="section-llms"]')
+        if "open" not in (section.get_attribute("class") or ""):
+            section.click()
 
         # Check for provider select
         expect(page.locator('[data-testid="default-provider"]')).to_be_visible(timeout=5000)
@@ -79,9 +79,9 @@ class TestBudgetInput:
         expect(page.locator('[data-testid="settings-content"]')).to_be_visible(timeout=5000)
 
         # Expand LLMs section if collapsed
-        llms_section = page.get_by_text("LLMs")
-        if llms_section.is_visible():
-            llms_section.click()
+        section = page.locator('[data-testid="section-llms"]')
+        if "open" not in (section.get_attribute("class") or ""):
+            section.click()
 
         # Check for budget inputs
         expect(page.locator('[data-testid="budget-limit"]')).to_be_visible(timeout=5000)
@@ -102,10 +102,10 @@ class TestFreshStart:
         # Wait for settings content
         expect(page.locator('[data-testid="settings-content"]')).to_be_visible(timeout=5000)
 
-        # Expand Fresh Start section
-        fresh_start_section = page.get_by_text("Fresh Start")
-        if fresh_start_section.is_visible():
-            fresh_start_section.click()
+        # Expand Fresh Start section if collapsed
+        section = page.locator('[data-testid="section-fresh-start"]')
+        if "open" not in (section.get_attribute("class") or ""):
+            section.click()
 
         # Check for fresh start button
         expect(page.locator('[data-testid="fresh-start-btn"]')).to_be_visible(timeout=5000)
@@ -125,10 +125,10 @@ class TestBackups:
         # Wait for settings content
         expect(page.locator('[data-testid="settings-content"]')).to_be_visible(timeout=5000)
 
-        # Expand Backups section
-        backups_section = page.get_by_text("Backups")
-        if backups_section.is_visible():
-            backups_section.click()
+        # Expand Backups section if collapsed
+        section = page.locator('[data-testid="section-backups"]')
+        if "open" not in (section.get_attribute("class") or ""):
+            section.click()
 
         # Check for backups list
         expect(page.locator('[data-testid="backups-list"]')).to_be_visible(timeout=5000)

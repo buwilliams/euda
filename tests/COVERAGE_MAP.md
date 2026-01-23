@@ -1,6 +1,6 @@
 # Test Coverage Map
 
-Mapping design requirements from `docs/3_system.md` and `spec/*.md` to test coverage.
+Mapping design requirements from `docs/3_system.md` and `specs/*.md` to test coverage.
 
 ## Legend
 - [x] Tested
@@ -76,7 +76,7 @@ Mapping design requirements from `docs/3_system.md` and `spec/*.md` to test cove
 
 ---
 
-## spec/1_agents.md
+## specs/1_agents.md
 
 ### Token Awareness
 | Requirement | Tested | Notes |
@@ -102,7 +102,7 @@ Mapping design requirements from `docs/3_system.md` and `spec/*.md` to test cove
 
 ---
 
-## spec/2_data.md
+## specs/2_data.md
 
 ### Short-term Memory
 | Requirement | Tested | Notes |

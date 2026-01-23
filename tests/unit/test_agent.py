@@ -390,7 +390,7 @@ class TestAgentLogging:
 class TestAgentState:
     """Test Agent.state property and is_enabled() method.
 
-    Spec: spec/1_agents.md - Agent States section
+    Spec: specs/1_agents.md - Agent States section
     """
 
     def _create_agent(self, tmp_path, state="enabled"):
@@ -545,7 +545,7 @@ class TestUserIdentityContext:
 class TestReflectionTrigger:
     """Test Agent reflection trigger detection and execution.
 
-    Spec: spec/1_agents.md - Consolidation section
+    Spec: specs/1_agents.md - Consolidation section
     """
 
     def _create_agent(self, tmp_path):
@@ -645,7 +645,7 @@ class TestReflectionTrigger:
 class TestWorkCycle:
     """Test Agent.work_cycle_sync() method.
 
-    Spec: spec/1_agents.md - Work Cycle section
+    Spec: specs/1_agents.md - Work Cycle section
     """
 
     def _create_agent(self, tmp_path, tools=None):
@@ -831,7 +831,7 @@ class TestWorkCycle:
 class TestWorkCyclePlanning:
     """Test planning integration in work_cycle_sync().
 
-    Spec: spec/1_agents.md - "Planning creates a brief approach before execution"
+    Spec: specs/1_agents.md - "Planning creates a brief approach before execution"
     """
 
     def _create_agent(self, tmp_path):
@@ -927,7 +927,7 @@ class TestWorkCyclePlanning:
 class TestWorkCycleStuckDetection:
     """Test stuck detection in work_cycle_sync().
 
-    Spec: spec/1_agents.md - "Progress Awareness" section
+    Spec: specs/1_agents.md - "Progress Awareness" section
     """
 
     def _create_agent(self, tmp_path):
@@ -1018,7 +1018,7 @@ class TestWorkCycleStuckDetection:
 class TestWorkCycleDeferredConsolidation:
     """Test deferred consolidation batching in work_cycle_sync().
 
-    Spec: spec/1_agents.md - "efficiency.defer_consolidation_in_work_cycles"
+    Spec: specs/1_agents.md - "efficiency.defer_consolidation_in_work_cycles"
     """
 
     def _create_agent(self, tmp_path):

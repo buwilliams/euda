@@ -1,7 +1,7 @@
 """
 Agent State Transition Invariant Tests.
 
-Spec: docs/3_system.md lines 78-85, spec/1_agents.md lines 219-233
+Spec: docs/3_system.md lines 78-85, specs/1_agents.md lines 219-233
 
 These tests verify the agent state machine and transition rules.
 

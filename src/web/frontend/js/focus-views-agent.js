@@ -33,7 +33,7 @@ function renderAgentDetailView(job) {
         loadAgentData(agentId).then(() => renderFocusTab());
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">${icon('bolt')}${escapeHtml(displayName)}</span>
                     ${renderBreadcrumbs()}
@@ -55,7 +55,7 @@ function renderAgentDetailView(job) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">${icon('bolt')}${escapeHtml(displayName)}</span>
                 ${renderBreadcrumbs()}
@@ -177,7 +177,7 @@ function renderAgentManageView(agentId) {
         loadAgentData(agentId).then(() => renderFocusTab());
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Manage</span>
                     ${renderBreadcrumbs()}
@@ -252,7 +252,7 @@ function renderAgentManageView(agentId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">Manage</span>
                 ${renderBreadcrumbs()}
@@ -342,7 +342,7 @@ function renderMemoryListView(agentId) {
         });
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Short-term Memory</span>
                     ${renderBreadcrumbs()}
@@ -368,7 +368,7 @@ function renderMemoryListView(agentId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">Short-term Memory</span>
                 ${renderBreadcrumbs()}
@@ -417,7 +417,7 @@ function renderMemoryItemView(agentId, entryId) {
         });
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Memory Item</span>
                     ${renderBreadcrumbs()}
@@ -442,7 +442,7 @@ function renderMemoryItemView(agentId, entryId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">Memory Item</span>
                 ${renderBreadcrumbs()}
@@ -515,7 +515,7 @@ function renderLongTermMemoryListView(agentId) {
         });
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Long-term Memory</span>
                     ${renderBreadcrumbs()}
@@ -531,7 +531,7 @@ function renderLongTermMemoryListView(agentId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">Long-term Memory</span>
                 ${renderBreadcrumbs()}
@@ -582,7 +582,7 @@ function renderLongTermMemoryDetailView(agentId, date) {
         });
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">${formatMemoryDate(date)}</span>
                     ${renderBreadcrumbs()}
@@ -596,7 +596,7 @@ function renderLongTermMemoryDetailView(agentId, date) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">${formatMemoryDate(date)}</span>
                 ${renderBreadcrumbs()}
@@ -637,7 +637,7 @@ function renderMonitoringView(agentId) {
         });
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Monitoring</span>
                     ${renderBreadcrumbs()}
@@ -665,7 +665,7 @@ function renderMonitoringView(agentId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">Monitoring</span>
                 ${renderBreadcrumbs()}
@@ -760,7 +760,7 @@ function renderPromptDetailView(agentId, promptIndex) {
         });
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Prompt</span>
                     ${renderBreadcrumbs()}
@@ -776,7 +776,7 @@ function renderPromptDetailView(agentId, promptIndex) {
     if (!prompt) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Prompt</span>
                     ${renderBreadcrumbs()}
@@ -838,7 +838,7 @@ function renderPromptDetailView(agentId, promptIndex) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">Prompt</span>
                 ${renderBreadcrumbs()}
@@ -944,7 +944,7 @@ function renderIdentityView(agentId) {
         loadAgentData(agentId).then(() => renderFocusTab());
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Identity</span>
                     ${renderBreadcrumbs()}
@@ -967,7 +967,7 @@ function renderIdentityView(agentId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">Identity</span>
                 ${renderBreadcrumbs()}
@@ -1015,7 +1015,7 @@ function renderConfigurationView(agentId) {
         loadAgentData(agentId).then(() => renderFocusTab());
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Configuration</span>
                     ${renderBreadcrumbs()}
@@ -1039,7 +1039,7 @@ function renderConfigurationView(agentId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">Configuration</span>
                 ${renderBreadcrumbs()}
@@ -1129,7 +1129,7 @@ function renderRateLimitEventsView(agentId) {
         });
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Incidents</span>
                     ${renderBreadcrumbs()}
@@ -1146,7 +1146,7 @@ function renderRateLimitEventsView(agentId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">Incidents</span>
                 ${renderBreadcrumbs()}

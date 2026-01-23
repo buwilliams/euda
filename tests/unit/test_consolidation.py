@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 class TestIdentitySectionParsing:
     """Test identity markdown parsing.
 
-    Spec: spec/2_data.md - Identity Schema
+    Spec: specs/2_data.md - Identity Schema
     """
 
     def test_parse_identity_with_title_and_sections(self):
@@ -352,7 +352,7 @@ class TestIdentityUpdate:
 class TestYearBoundarySnapshots:
     """Test historical identity snapshots at year boundaries.
 
-    Spec: spec/2_data.md - Historical Identity Snapshots
+    Spec: specs/2_data.md - Historical Identity Snapshots
     """
 
     def test_snapshot_created_in_first_week_of_year(self, tmp_path):

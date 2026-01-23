@@ -51,7 +51,7 @@ def list_euno_docs() -> dict:
         for f in sorted(spec_dir.glob("*.md")):
             result["specs"].append({
                 "name": f.name,
-                "path": f"spec/{f.name}"
+                "path": f"specs/{f.name}"
             })
 
     # List agent identities
@@ -73,7 +73,7 @@ def read_euno_doc(path: str) -> dict:
     """Read a documentation file from safe directories.
 
     Args:
-        path: Relative path like 'docs/1_pitch.md', 'spec/1_agents.md',
+        path: Relative path like 'docs/1_pitch.md', 'specs/1_agents.md',
               or 'data/agents/chat/identity.md'
 
     Returns:
@@ -94,8 +94,8 @@ def read_euno_doc(path: str) -> dict:
         if full_path.suffix == ".md":
             allowed = True
 
-    # Check spec/
-    elif path.startswith("spec/"):
+    # Check specs/
+    elif path.startswith("specs/"):
         full_path = PROJECT_DIR / path
         if full_path.suffix == ".md":
             allowed = True
@@ -107,10 +107,10 @@ def read_euno_doc(path: str) -> dict:
 
     if not allowed:
         return {
-            "error": "Access denied. Only docs/*.md, spec/*.md, and agent identity files are readable.",
+            "error": "Access denied. Only docs/*.md, specs/*.md, and agent identity files are readable.",
             "allowed_paths": [
                 "docs/*.md",
-                "spec/*.md",
+                "specs/*.md",
                 "data/agents/{agent}/identity.md"
             ]
         }

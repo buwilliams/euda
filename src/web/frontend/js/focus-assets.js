@@ -191,7 +191,7 @@ function renderAssetView(jobId, filename) {
         loadAssetContent(jobId, filename).then(() => renderFocusTab());
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
                     <span class="focus-view-title">Loading...</span>
                     ${renderBreadcrumbs()}
@@ -210,7 +210,7 @@ function renderAssetView(jobId, filename) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">${escapeHtml(filename)}</span>
                 ${renderBreadcrumbs()}
@@ -272,7 +272,7 @@ function renderAssetsListView(jobId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">Assets</span>
                 ${renderBreadcrumbs()}

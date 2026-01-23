@@ -7,7 +7,7 @@ Tests for src/agent/manager.py including:
 - Config hot-reload
 - Job cache notification
 
-Spec: spec/1_agents.md - Manager section
+Spec: specs/1_agents.md - Manager section
 """
 
 import json

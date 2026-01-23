@@ -147,7 +147,7 @@ function animateHistoryTransition(container, newContent, direction) {
 function renderHistoryList() {
     const header = `
         <div class="focus-view-header" onclick="navigateHistoryBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <span class="focus-view-title">History</span>
         </div>
     `;
@@ -209,7 +209,7 @@ function renderHistoryDetail(sessionId) {
     if (!item) {
         return `
             <div class="focus-view-header" onclick="navigateHistoryBack()">
-                <span class="focus-back-btn">${icon('chevron-left')}</span>
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <span class="focus-view-title">Not Found</span>
             </div>
             <div class="focus-view-content">
@@ -223,7 +223,7 @@ function renderHistoryDetail(sessionId) {
 
     return `
         <div class="focus-view-header" onclick="navigateHistoryBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <span class="focus-view-title">${friendlyDate} ${friendlyTime}</span>
         </div>
         <div class="focus-view-content" data-testid="history-detail">

@@ -63,6 +63,8 @@ Behavior is what enables action. It has two parts.
 
 Jobs are the unit of work and how agents coordinate. Any agent can create, work on, or route jobs to others. A job has a name, description, hierarchy, assignment, status, and assets. Jobs can be handed off between agents, enabling collaboration patterns like request-response and delegation.
 
+Think of jobs as a filesystem: jobs are directories, assets are files. Jobs can contain child jobs (subdirectories), and any job can be assigned to an agent. Some jobs are permanent containers—"Projects" holds user projects, "Agents" holds agent inboxes. These never close; they organize other jobs.
+
 ### Manager
 
 The Manager orchestrates the system—it starts agents, runs the scheduler, and monitors health. At startup, it loads agent configurations and starts each agent in its own thread. A background scheduler creates trigger jobs at configured times. Agents discover these jobs through polling; the Manager doesn't wake agents directly.

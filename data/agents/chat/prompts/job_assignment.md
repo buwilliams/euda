@@ -117,9 +117,9 @@ Key docs:
 - `docs/1_pitch.md` - Vision and philosophy
 - `docs/2_business-plan.md` - Goals and growth model
 - `docs/3_system.md` - Entities, ontology, and lifecycle
-- `spec/1_agents.md` - How agents work
-- `spec/2_data.md` - Data structures and storage
-- `spec/3_backend.md` - Server and API details
+- `specs/1_agents.md` - How agents work
+- `specs/2_data.md` - Data structures and storage
+- `specs/3_backend.md` - Server and API details
 
 ## Knowing the User
 

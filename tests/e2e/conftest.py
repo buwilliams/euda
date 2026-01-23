@@ -34,16 +34,20 @@ def authenticated_page(page: Page, base_url: str) -> Page:
     """
     page.goto(base_url)
 
-    # Wait for either login overlay or app container
-    page.wait_for_selector('[data-testid="login-overlay"], [data-testid="app-container"]')
+    # Wait for page to fully load (check for app container in DOM)
+    page.wait_for_selector('[data-testid="app-container"]', state="attached", timeout=10000)
 
-    # If login overlay is visible, perform login
-    if page.locator('[data-testid="login-overlay"]').is_visible():
+    # Give the JS time to check auth and potentially show login overlay
+    page.wait_for_timeout(500)
+
+    # If login overlay is visible (not hidden), perform login
+    login_overlay = page.locator('[data-testid="login-overlay"]:not(.hidden)')
+    if login_overlay.is_visible():
         page.locator('[data-testid="login-password"]').fill(TEST_PASSWORD)
         page.locator('[data-testid="login-btn"]').click()
 
-        # Wait for app container to be visible (login successful)
-        page.wait_for_selector('[data-testid="app-container"]', state="visible", timeout=10000)
+        # Wait for login overlay to be hidden (login successful)
+        page.wait_for_selector('[data-testid="login-overlay"].hidden', state="attached", timeout=10000)
 
     return page
 
@@ -54,10 +58,14 @@ def unauthenticated_page(page: Page, base_url: str) -> Page:
 
     Use this fixture when testing login/authentication flows.
     """
+    # Clear any stored auth by going to page in fresh context
     page.goto(base_url)
 
-    # Wait for page to load
-    page.wait_for_selector('[data-testid="login-overlay"], [data-testid="app-container"]')
+    # Wait for page to fully load
+    page.wait_for_selector('[data-testid="app-container"]', state="attached", timeout=10000)
+
+    # Give the JS time to run
+    page.wait_for_timeout(500)
 
     return page
 

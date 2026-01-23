@@ -154,7 +154,7 @@
 
                             <!-- LLMs Section -->
                             <div class="settings-section">
-                                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                                <div class="job-section-header collapsible" data-testid="section-llms" onclick="togglePersonaSection(this, event)">
                                     <span>LLMs</span>
                                     <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>
@@ -196,7 +196,7 @@
 
                             <!-- Fresh Start Section -->
                             <div class="settings-section">
-                                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                                <div class="job-section-header collapsible" data-testid="section-fresh-start" onclick="togglePersonaSection(this, event)">
                                     <span>Fresh Start</span>
                                     <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>
@@ -219,7 +219,7 @@
 
                             <!-- Backups Section -->
                             <div class="settings-section">
-                                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event); loadBackupsData();">
+                                <div class="job-section-header collapsible" data-testid="section-backups" onclick="togglePersonaSection(this, event); loadBackupsData();">
                                     <span>Backups</span>
                                     <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>

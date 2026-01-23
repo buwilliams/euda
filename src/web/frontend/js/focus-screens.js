@@ -9,7 +9,7 @@ function renderNewJobScreen(parentJobId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">Add Jobs</span>
                 ${renderBreadcrumbs()}
@@ -75,7 +75,7 @@ function renderAttachScreen(jobId) {
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn">${icon('chevron-left')}</span>
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">Add Assets</span>
                 ${renderBreadcrumbs()}

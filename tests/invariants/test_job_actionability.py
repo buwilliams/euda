@@ -1,7 +1,7 @@
 """
 Job Actionability Invariant Tests.
 
-Spec: spec/1_agents.md lines 169-189, spec/2_data.md
+Spec: specs/1_agents.md lines 169-189, specs/2_data.md
 
 These tests verify the job actionability rules that determine which jobs
 an agent should work on.
