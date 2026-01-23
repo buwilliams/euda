@@ -1,5 +1,12 @@
 # Buddy Williams
 
+- [2026-01-23][--] - Add comprehensive test suite: 230 unit tests, 46 E2E Playwright tests, invariant tests for design compliance
+- [2026-01-23][--] - Refactor agent lifecycle: agents own job claiming, manager watches configs, fix infinite render loops
+- [2026-01-23][--] - Add use cases documentation (Euno for People) with actionable examples
+- [2026-01-23][--] - Fix-frenzy: SSE cleanup, config watcher, datetime deprecation, frontend-backend alignment
+- [2026-01-21][--] - Major codebase refactor to Agent Ontology architecture with clean module separation
+- [2026-01-20][--] - Add unified token awareness system for metacognition with per-agent budgets
+- [2026-01-19][--] - Fix runaway agent loops causing cost explosion
 - [2026-01-18][--] - Replace Vultr hosting with DigitalOcean in documentation
 - [2026-01-18][--] - Add remove-server.sh script and confirmation prompts to setup scripts
 - [2026-01-16][--] - Introduce four-category agent ontology with Metacognition module
