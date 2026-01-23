@@ -24,7 +24,7 @@ Identity is rooted in a cognitive core—a schema that all agents share. It defi
 - Wants and Fears: what it pursues and avoids
 - Stable Attractors: patterns it returns to under pressure
 - Notable Events: significant actions, consistent or surprising
-- Influences: people, places, experiences that shape them
+- Influences: people/agents, places, experiences that shape them
 - Interests: current goals, projects, focus areas
 - Biographical Information: factual details
 
@@ -32,29 +32,24 @@ Identity is discovered, not configured. It evolves as patterns emerge through co
 
 ### Cognition
 
-Cognition is the thinking apparatus. It has two layers.
+Cognition is the abililty to think. It has two layers:
 
-Reasoning is first-order thinking about the world—how the agent approaches problems and communicates.
-
-Metacognition is second-order thinking, or thinking about thinking. It includes token awareness for budget enforcement, progress awareness for stuck detection, and consolidation for memory processing and identity evolution.
+- Reasoning is first-order thinking about the world—how the agent approaches problems and communicates.
+- Metacognition is second-order thinking, or thinking about thinking. It includes token awareness for budget enforcement, progress awareness for stuck detection, and consolidation for memory processing and identity evolution.
 
 ### Memory
 
 Memory is the context that informs decisions.
 
-Short-term memory holds current concerns: people, goals, ideas, learnings. It's a rolling window that informs immediate behavior.
-
-Long-term memory is a permanent chronological archive. It's the source material for identity evolution.
-
-Memory flows from conversations to short-term to long-term. Consolidation processes these transitions.
+- Short-term memory holds current concerns: people, goals, ideas, learnings. It's a rolling window that informs immediate behavior.
+- Long-term memory is a permanent chronological archive. It's the source material for identity evolution.
 
 ### Behavior
 
 Behavior is what enables action. It has two parts.
 
-Tools are capabilities that agents use to act in the world. Each tool is a function with a name, description, and parameters. Each agent has access to a configured subset of available tools.
-
-Triggers determine when agents act—job assignment, scheduled times, or system events.
+- Tools are capabilities that agents use to act in the world. Each tool is a function with a name, description, and parameters. Each agent has access to a configured subset of available tools.
+- Triggers determine when agents act—job assignment, scheduled times, or system events.
 
 ---
 
@@ -68,34 +63,50 @@ Jobs are the unit of work and how agents coordinate. Any agent can create, work 
 
 The Manager orchestrates the system—it starts agents, runs the scheduler, and monitors health. At startup, it loads agent configurations and starts each agent in its own thread. A background scheduler creates trigger jobs at configured times. Agents discover these jobs through polling; the Manager doesn't wake agents directly.
 
-### Agent States
+### Agent Lifecycle
+
+Here's how agents operate:
+
+1. Manager instantiates agents and monitors their health (handling reloads and shutdown)
+2. Each agent has a state: enabled, disabled, or paused
+3. Enabled agents poll for assigned jobs
+4. When a job is found, the agent runs a work cycle: claim → reason with tools → complete
+5. Jobs progress through states: todo → working → done (or error)
+6. Metacognition regulates all LLM calls—if a breach is detected (e.g., budget exceeded), the agent is paused
+7. Between jobs, consolidation reviews memory and evolves identity
+
+#### Agent States
 
 Agents transition between three states:
 - Enabled: normal operation, polling for jobs and working on them
 - Disabled: user explicitly turned it off, no work happens
 - Paused: system auto-paused (usually budget exceeded), requires manual resume
 
-### Work Cycle
+#### Polling
 
-When an agent finds an actionable job, it claims exclusive ownership, executes a reasoning loop with tools until complete, then marks the job done and returns to polling. Agents work one job at a time. All LLM calls go through metacognition for budget tracking.
+Enabled agents poll for assigned jobs. They're not pushed—this keeps them decoupled and resilient to failures. When an agent finds an actionable job, it begins a work cycle.
 
-### Job Flow
+#### Job States
 
-Jobs flow between agents and users in a few patterns:
-- Direct: an agent creates a job, works it, and completes it
-- Handoff: Agent A creates a job, hands it to Agent B, B works it and hands it back, then A completes it
-- Escalation: an agent fails repeatedly and the job auto-hands off to the user
+Jobs progress through states based on assignment and work:
+- todo + no assignee: unassigned, waiting to be picked up
+- todo + assignee: queued, assigned but not yet being worked
+- working + assignee: agent is actively working on the job
+- done: completed successfully
+- error: something went wrong
 
----
+An agent can have multiple jobs assigned (queued), but only works one at a time.
 
-## Key Principles
+#### Work Cycle
 
-- Jobs are the only work mechanism. No hidden channels; all work is visible.
-- Agents poll, they're not pushed. Decoupled and resilient to failures.
-- All LLM calls go through metacognition. Budget enforcement and cost tracking.
-- Tools are shared infrastructure. Same tools available to agents, API, and CLI.
-- Identity is discovered, not configured. Agents evolve through consolidation.
+When an agent starts working a job, it sets the status to `working`, executes a reasoning loop with tools until complete, then marks the job `done` and returns to polling.
 
----
+All LLM calls go through metacognition for budget tracking and stuck detection.
 
-**Technical Details:** See `spec/1_agents.md` for implementation rules, `spec/2_data.md` for data schemas.
+#### Regulation
+
+Metacognition monitors all LLM calls for self-awareness. It tracks token usage against budgets, detects stuck patterns (like repeated tool calls), and enforces limits. When a threshold is breached, the agent is automatically paused and requires manual intervention to resume.
+
+#### Consolidation
+
+Agents run scheduled reviews of their memory to update their identity. This is how identity is discovered, not configured—agents evolve through consolidation.
