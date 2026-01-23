@@ -71,21 +71,27 @@
     }
   },
   "metacognition": {
+    "token_awareness": {
+      "enabled": true,
+      "thresholds": {
+        "warning_percent": 80,
+        "pause_percent": 100
+      },
+      "frequencies": ["monthly", "weekly", "daily", "hourly"]
+    },
     "progress": {
       "max_tool_calls_per_iteration": 50,
       "max_repeated_tool_calls": 3,
       "max_no_progress_iterations": 5
     },
     "planning": {
-      "enabled_for": [
-        "exploration",
-        "reflection"
-      ]
+      "enabled": true,
+      "excluded_for": []
     },
     "efficiency": {
-      "defer_reflection_in_work_cycles": true
+      "defer_consolidation_in_work_cycles": true
     },
-    "reflection": {
+    "consolidation": {
       "append_max_tokens": 500,
       "append_batch_max_tokens": 1000,
       "consolidate_max_tokens": 2000,

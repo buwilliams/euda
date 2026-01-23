@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Euno - Personal Intelligence</title>
+    <link rel="icon" type="image/svg+xml" href="/web/images/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- CSS Modules (order matters) -->
+    <link rel="stylesheet" href="/web/css/variables.css">
+    <link rel="stylesheet" href="/web/css/base.css">
+    <link rel="stylesheet" href="/web/css/layout.css">
+    <link rel="stylesheet" href="/web/css/voice.css">
+    <link rel="stylesheet" href="/web/css/components.css">
+    <link rel="stylesheet" href="/web/css/chat.css">
+    <link rel="stylesheet" href="/web/css/focus.css">
+    <link rel="stylesheet" href="/web/css/focus-cards.css">
+    <link rel="stylesheet" href="/web/css/focus-detail.css">
+    <link rel="stylesheet" href="/web/css/focus-markdown.css">
+    <link rel="stylesheet" href="/web/css/focus-assets.css">
+    <link rel="stylesheet" href="/web/css/focus-modals.css">
+    <link rel="stylesheet" href="/web/css/focus-forms.css">
+    <link rel="stylesheet" href="/web/css/focus-extras.css">
+    <link rel="stylesheet" href="/web/css/when-picker.css">
+    <link rel="stylesheet" href="/web/css/history.css">
+    <link rel="stylesheet" href="/web/css/swipe.css">
+    <link rel="stylesheet" href="/web/css/about.css">
+    <link rel="stylesheet" href="/web/css/auth.css">
+    <link rel="stylesheet" href="/web/css/responsive.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* API Costs - vertical list */
+        .costs-box { display:flex; flex-direction:column; border:1px solid #e0e0e0; overflow:hidden; background:#f8f8f8; }
+        .costs-row { display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1rem; border-bottom:1px solid #eee; }
+        .costs-row:last-child { border-bottom:none; }
+        .costs-label { font-size:0.9rem; color:#666; }
+        .costs-value { text-align:right; }
+        .costs-amount { font-size:1.25rem; font-weight:500; color:#333; }
+        .costs-calls { font-size:0.75rem; color:#888; }
+        .costs-budget { text-align:center; font-size:0.85rem; color:#666; padding:0.75rem 1rem; background:#f9f9f9; border-top:1px solid #eee; }
+        .costs-budget:empty { display:none; }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splash-screen">
+        <div class="splash-content">
+            <h1 class="splash-title" id="splash-title">
+                <span class="splash-letter">E</span><span class="splash-letter">u</span><span class="splash-letter">n</span><span class="splash-letter">o</span>
+            </h1>
+            <p class="splash-tagline" id="splash-tagline">PERSONAL INTELLIGENCE</p>
+            <p class="splash-pronunciation" id="splash-pronunciation">(you-know)</p>
+        </div>
+    </div>
+
+    <!-- Login Overlay -->
+    <div class="login-overlay hidden" id="login-overlay" data-testid="login-overlay">
+        <div class="login-box">
+            <h1 class="login-title">Euno</h1>
+            <p class="login-subtitle">Personal Intelligence</p>
+            <form onsubmit="handleLogin(event)">
+                <input type="password" class="login-input" id="login-password" data-testid="login-password" placeholder="Password" autocomplete="current-password" autofocus>
+                <button type="submit" class="login-btn" id="login-btn" data-testid="login-btn">Sign In</button>
+            </form>
+            <div class="login-error" id="login-error" data-testid="login-error"></div>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-container" data-testid="app-container">
+        <div class="app">
+            <!-- Tabs Container -->
+            <div class="tabs-container">
+                <div class="tab-content">
+                    <!-- Focus Tab -->
+                    <div class="tab-pane active" id="tab-focus" data-testid="tab-focus">
+                        <div class="focus-content" id="focus-content" data-testid="focus-content">
+                            <!-- Content dynamically rendered by renderFocusTab() -->
+                        </div>
+                    </div>
+
+                    <!-- Chat Tab -->
+                    <div class="tab-pane" id="tab-chat" data-testid="tab-chat">
+                        <div class="chat-content">
+                            <div class="inline-chat-messages" id="inline-messages" data-testid="inline-messages"></div>
+                        </div>
+                    </div>
+
+                    <!-- History Tab -->
+                    <div class="tab-pane" id="tab-history" data-testid="tab-history">
+                        <div class="history-content" id="history-content" data-testid="history-content">
+                            <div class="focus-empty">Loading...</div>
+                        </div>
+                    </div>
+
+                    <!-- About Tab -->
+                    <div class="tab-pane" id="tab-about" data-testid="tab-about">
+                        <div class="focus-view-header" onclick="navigateMoreMenuBack()">
+                            <span class="focus-back-btn"><img src="/web/icons/chevron-left.svg" alt="Back" class="icon"></span>
+                            <div class="focus-view-header-content">
+                                <span class="focus-view-title">About</span>
+                                <div class="focus-view-breadcrumbs"><span>More</span><img src="/web/icons/chevron-right.svg" alt=">"><span>About</span></div>
+                            </div>
+                        </div>
+                        <div class="about-content" id="about-content">
+                            <div class="focus-empty">Loading...</div>
+                        </div>
+                    </div>
+
+                    <!-- Settings Tab -->
+                    <div class="tab-pane" id="tab-settings" data-testid="tab-settings">
+                        <div class="focus-view-header" onclick="navigateMoreMenuBack()">
+                            <span class="focus-back-btn"><img src="/web/icons/chevron-left.svg" alt="Back" class="icon"></span>
+                            <div class="focus-view-header-content">
+                                <span class="focus-view-title">Settings</span>
+                                <div class="focus-view-breadcrumbs"><span>More</span><img src="/web/icons/chevron-right.svg" alt=">"><span>Settings</span></div>
+                            </div>
+                        </div>
+                        <div class="settings-content" id="settings-content" data-testid="settings-content">
+                            <!-- Costs Section -->
+                            <div class="settings-section">
+                                <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
+                                    <span>Costs</span>
+                                    <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
+                                </div>
+                                <div class="collapsible-content open">
+                                    <div class="costs-box">
+                                        <div class="costs-row" id="costs-session" data-testid="costs-session">
+                                            <span class="costs-label">Session</span>
+                                            <div class="costs-value">
+                                                <div class="costs-amount">—</div>
+                                                <div class="costs-calls">Loading...</div>
+                                            </div>
+                                        </div>
+                                        <div class="costs-row" id="costs-seven-days" data-testid="costs-seven-days">
+                                            <span class="costs-label">7 Days</span>
+                                            <div class="costs-value">
+                                                <div class="costs-amount">—</div>
+                                                <div class="costs-calls">Loading...</div>
+                                            </div>
+                                        </div>
+                                        <div class="costs-row" id="costs-month" data-testid="costs-month">
+                                            <span class="costs-label">Month</span>
+                                            <div class="costs-value">
+                                                <div class="costs-amount">—</div>
+                                                <div class="costs-calls">Loading...</div>
+                                            </div>
+                                        </div>
+                                        <div class="costs-budget" id="costs-budget"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- LLMs Section -->
+                            <div class="settings-section">
+                                <div class="job-section-header collapsible" data-testid="section-llms" onclick="togglePersonaSection(this, event)">
+                                    <span>LLMs</span>
+                                    <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
+                                </div>
+                                <div class="collapsible-content">
+                                    <div class="settings-form">
+                                        <div class="settings-field">
+                                            <label class="settings-label">Default Provider</label>
+                                            <select class="settings-select" id="default-provider" data-testid="default-provider" onchange="handleProviderChange()">
+                                                <!-- Options populated dynamically from API -->
+                                            </select>
+                                            <div class="settings-message" id="ai-message"></div>
+                                        </div>
+                                        <div class="settings-field">
+                                            <label class="settings-label">Budget Limit</label>
+                                            <div class="budget-row">
+                                                <div class="budget-input-group">
+                                                    <span class="budget-prefix">$</span>
+                                                    <input type="number" class="settings-input budget-input" id="budget-limit" data-testid="budget-limit"
+                                                           step="0.01" min="0" placeholder="50.00" onchange="handleBudgetChange()">
+                                                </div>
+                                                <select class="settings-select budget-period-select" id="budget-period" data-testid="budget-period" onchange="handleBudgetPeriodChange()">
+                                                    <option value="daily">per day</option>
+                                                    <option value="weekly">per week</option>
+                                                    <option value="monthly" selected>per month</option>
+                                                    <option value="session">per session</option>
+                                                </select>
+                                            </div>
+                                            <div class="settings-hint">Spending limit for LLM API calls</div>
+                                        </div>
+                                        <div class="settings-field">
+                                            <label class="settings-label">Schedules</label>
+                                            <div class="schedules-table" id="schedules-table">
+                                                <!-- Rendered dynamically -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Fresh Start Section -->
+                            <div class="settings-section">
+                                <div class="job-section-header collapsible" data-testid="section-fresh-start" onclick="togglePersonaSection(this, event)">
+                                    <span>Fresh Start</span>
+                                    <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
+                                </div>
+                                <div class="collapsible-content">
+                                    <div class="settings-form">
+                                        <div class="settings-field">
+                                            <div class="fresh-start-info">
+                                                <p>Reset to a clean slate. Your current data is automatically backed up and can be restored at any time.</p>
+                                                <p><strong>Preserved:</strong> Agent configs & identities, system settings</p>
+                                                <p><strong>Reset:</strong> Jobs, memory, logs, conversation history, password</p>
+                                            </div>
+                                        </div>
+                                        <div class="settings-field">
+                                            <button class="settings-btn settings-btn-danger" data-testid="fresh-start-btn" onclick="handleFreshStart()">Fresh Start</button>
+                                            <div class="settings-message" id="fresh-start-message"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Backups Section -->
+                            <div class="settings-section">
+                                <div class="job-section-header collapsible" data-testid="section-backups" onclick="togglePersonaSection(this, event); loadBackupsData();">
+                                    <span>Backups</span>
+                                    <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
+                                </div>
+                                <div class="collapsible-content">
+                                    <div class="settings-form">
+                                        <div class="backups-list" id="backups-list" data-testid="backups-list">
+                                            <div class="focus-empty">Click to load backups...</div>
+                                        </div>
+                                        <div class="settings-message" id="backups-message"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Account Section -->
+                            <div class="settings-section">
+                                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                                    <span>Account</span>
+                                    <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
+                                </div>
+                                <div class="collapsible-content">
+                                    <div class="settings-form">
+                                        <div class="settings-field">
+                                            <label class="settings-label">Change Password</label>
+                                            <form onsubmit="handleChangePassword(event)" class="password-form">
+                                                <input type="password" class="settings-input" id="current-password" placeholder="Current password" autocomplete="current-password">
+                                                <input type="password" class="settings-input" id="new-password" placeholder="New password" autocomplete="new-password">
+                                                <input type="password" class="settings-input" id="confirm-password" placeholder="Confirm new password" autocomplete="new-password">
+                                                <button type="submit" class="settings-btn">Update Password</button>
+                                                <div class="settings-message" id="password-message"></div>
+                                            </form>
+                                        </div>
+                                        <div class="settings-field">
+                                            <button class="settings-btn settings-btn-danger" data-testid="signout-btn" onclick="logout()">Sign Out</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Menu (below content) -->
+                <div class="tab-menu">
+                    <button class="tab-btn active" data-tab="focus" data-testid="tab-btn-focus" onclick="switchTab('focus')">
+                        <img src="/web/icons/queue-list.svg" alt="Focus">
+                        <span>Focus</span>
+                        <span class="tab-badge" id="tasks-badge" style="display: none;">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="chat" data-testid="tab-btn-chat" onclick="switchTab('chat')">
+                        <img src="/web/icons/chat-bubble-left.svg" alt="Chat">
+                        <span>Chat</span>
+                        <span class="tab-badge" id="chat-badge" style="display: none;">0</span>
+                    </button>
+                    <div class="tab-overflow">
+                        <button class="tab-btn" onclick="toggleOverflowMenu()" id="overflow-btn" data-testid="overflow-btn">
+                            <img src="/web/icons/ellipsis-vertical.svg" alt="More">
+                            <span>More</span>
+                        </button>
+                        <div class="overflow-menu" id="overflow-menu" data-testid="overflow-menu">
+                            <button class="overflow-item" data-tab="about" data-testid="overflow-about" onclick="openMoreMenuScreen('about'); closeOverflowMenu();">
+                                <img src="/web/icons/information-circle.svg" alt="About">
+                                <span>About</span>
+                            </button>
+                            <button class="overflow-item" data-tab="settings" data-testid="overflow-settings" onclick="openMoreMenuScreen('settings'); closeOverflowMenu();">
+                                <img src="/web/icons/cog-6-tooth.svg" alt="Settings">
+                                <span>Settings</span>
+                            </button>
+                            <button class="overflow-item" data-tab="history" data-testid="overflow-history" onclick="openMoreMenuScreen('history'); closeOverflowMenu();">
+                                <img src="/web/icons/clock.svg" alt="History">
+                                <span>History</span>
+                            </button>
+                            <button class="overflow-item" id="upload-btn" data-testid="upload-btn" onclick="triggerUpload(); closeOverflowMenu();">
+                                <img src="/web/icons/arrow-up-tray.svg" alt="Upload">
+                                <span>Upload</span>
+                            </button>
+                            <button class="overflow-item" data-testid="new-chat-btn" onclick="resetUI(); closeOverflowMenu();">
+                                <img src="/web/icons/arrow-path.svg" alt="New Chat">
+                                <span>New Chat</span>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="file" id="file-input" style="display:none" onchange="handleFileSelect(event)" multiple>
+                </div>
+            </div>
+
+            <!-- Input Bar (always visible) -->
+            <div class="input-bar">
+                <div class="input-wrapper">
+                    <textarea id="context-input" data-testid="context-input" placeholder="What's on your mind?" rows="1"></textarea>
+                    <span class="job-context-label" id="job-context-label"></span>
+                    <button id="voice-btn" data-testid="voice-btn" onclick="toggleVoiceRecording()" title="Voice input">
+                        <span class="voice-indicator"></span>
+                        <svg viewBox="0 0 24 24" id="voice-icon">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" y1="19" x2="12" y2="23"/>
+                            <line x1="8" y1="23" x2="16" y2="23"/>
+                        </svg>
+                        <div class="voice-waveform" id="voice-waveform">
+                            <span></span><span></span><span></span><span></span><span></span>
+                        </div>
+                    </button>
+                </div>
+                <div class="input-bar-buttons">
+                    <button id="context-send-btn" class="input-bar-btn" data-testid="send-btn" onclick="sendContextMessage()" title="Send">
+                        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    </button>
+                    <button id="quick-add-btn" class="input-bar-btn" data-testid="quick-add-btn" onclick="quickAddFromInput()" title="Add job">
+                        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Progress -->
+        <div class="upload-progress" id="upload-progress">
+            <div class="upload-progress-header">
+                <span class="upload-progress-filename" id="upload-filename">filename.pdf</span>
+                <span class="upload-progress-percent" id="upload-percent">0%</span>
+            </div>
+            <div class="upload-progress-bar">
+                <div class="upload-progress-fill" id="upload-fill"></div>
+            </div>
+            <div class="upload-progress-status" id="upload-status">Uploading...</div>
+        </div>
+    </div>
+
+    <!-- JavaScript Modules (order matters) -->
+    <script src="/web/js/state.js"></script>
+    <script src="/web/js/utils.js"></script>
+    <script src="/web/js/auth.js"></script>
+    <script src="/web/js/tabs.js"></script>
+    <script src="/web/js/tts.js"></script>
+    <script src="/web/js/chat.js"></script>
+    <script src="/web/js/focus.js"></script>
+    <script src="/web/js/focus-data.js"></script>
+    <script src="/web/js/focus-cards.js"></script>
+    <script src="/web/js/focus-views-ui.js"></script>
+    <script src="/web/js/focus-views-memory.js"></script>
+    <script src="/web/js/focus-views-agent.js"></script>
+    <script src="/web/js/focus-views-job.js"></script>
+    <script src="/web/js/focus-pickers.js"></script>
+    <script src="/web/js/focus-actions.js"></script>
+    <script src="/web/js/focus-editing.js"></script>
+    <script src="/web/js/focus-assets.js"></script>
+    <script src="/web/js/focus-screens.js"></script>
+    <script src="/web/js/swipe.js"></script>
+    <script src="/web/js/history.js"></script>
+    <script src="/web/js/about.js"></script>
+    <script src="/web/js/upload.js"></script>
+    <script src="/web/js/voice.js"></script>
+    <script src="/web/js/splash.js"></script>
+    <script src="/web/js/init.js"></script>
+</body>
+</html>

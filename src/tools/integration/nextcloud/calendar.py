@@ -3,7 +3,7 @@ Nextcloud Calendar Tools - CalDAV calendar operations.
 """
 
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import List, Optional
 import uuid
 import requests
@@ -207,7 +207,7 @@ def _create_vevent(
     Returns:
         iCalendar text
     """
-    now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    now = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     start_ical = _format_ical_datetime(start)
     end_ical = _format_ical_datetime(end)
 

@@ -80,11 +80,11 @@ def cmd_start(args):
     import signal
     import threading
     import uvicorn
-    from src.manager import AgentManager
+    from src.agent.manager import AgentManager
     from src.web.app import app
     from src.llms import ConfigError
     from src.llms.base import _load_config
-    from src.events import trigger_shutdown
+    from src.web.events import trigger_shutdown
 
     # Validate config at startup
     try:
@@ -104,8 +104,8 @@ def cmd_start(args):
 
     # Start agents in background thread
     def run_agents():
-        from src.manager import set_manager
-        from src.events import set_event_bus
+        from src.agent.manager import set_manager
+        from src.web.events import set_event_bus
         manager = AgentManager()
         set_manager(manager)
         set_event_bus(manager.event_bus)
@@ -118,7 +118,7 @@ def cmd_start(args):
 
     # Run web server with custom signal handling
     async def serve():
-        config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="info")
+        config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="warning")
         server = uvicorn.Server(config)
 
         # Custom signal handler: close SSE connections BEFORE uvicorn shutdown
@@ -139,7 +139,7 @@ def cmd_chat(args):
     """Interactive chat with an agent."""
     from src.agent import Agent
     from src.tools import get_tools_for_agent
-    from src.cost_tracker import BudgetExceeded, print_cost_summary
+    from src.agent.cognition.metacognition import AgentPausedError
     from src.llms import ConfigError
     from src.llms.base import _load_config
 
@@ -174,10 +174,9 @@ def cmd_chat(args):
             response = agent.chat(user_input)
             print(f"\n{agent_id}: {response}\n")
 
-        except BudgetExceeded as e:
-            print(f"\n\nBUDGET EXCEEDED: ${e.spent:.4f} spent of ${e.budget:.2f} limit")
-            print_cost_summary()
-            print("\nExiting due to budget limit.")
+        except AgentPausedError as e:
+            print(f"\n\nAGENT PAUSED: {e.reason}")
+            print("\nThe agent has been paused. Use 'uv run euno agents enable <agent_id>' to resume.")
             break
         except KeyboardInterrupt:
             print("\n\nGoodbye!")
@@ -191,6 +190,7 @@ def cmd_agents(args):
     """List agents or perform agent actions."""
     import json
     from src.tools.agents.agents import list_agents
+    from src.agent.cognition.metacognition import get_token_awareness, AgentState
 
     # Handle help action
     if args and args[0] == 'help':
@@ -201,13 +201,16 @@ def cmd_agents(args):
         print()
         print("Actions:")
         print("  (none)    Show agent info")
-        print("  enable    Enable the agent")
+        print("  enable    Enable the agent (resume from paused/disabled)")
         print("  disable   Disable the agent")
+        print("  resume    Resume a paused agent (alias for enable)")
+        print("  status    Show detailed state and token usage")
         print("  logs      Show last 50 log entries")
         print("  help      Show this help")
         return
 
     data_dir = Path(__file__).parent / "data"
+    token_awareness = get_token_awareness()
 
     # Parse args: [name] [action]
     agent_filter = args[0] if args else None
@@ -215,15 +218,17 @@ def cmd_agents(args):
 
     # Handle actions
     if agent_filter and action:
-        if action == "enable":
-            _agent_set_enabled(agent_filter, True)
+        if action == "enable" or action == "resume":
+            _agent_set_state(agent_filter, AgentState.ENABLED)
         elif action == "disable":
-            _agent_set_enabled(agent_filter, False)
+            _agent_set_state(agent_filter, AgentState.DISABLED)
+        elif action == "status":
+            _agent_show_status(agent_filter)
         elif action == "logs":
             _agent_show_logs(agent_filter)
         else:
             print(f"Unknown action: {action}")
-            print("Valid actions: enable, disable, logs")
+            print("Valid actions: enable, disable, resume, status, logs")
         return
 
     print("=" * 60)
@@ -262,19 +267,28 @@ def cmd_agents(args):
     agents.sort(key=lambda a: a.get("order", 999))
 
     for agent in agents:
-        status = "enabled" if agent.get("enabled") else "disabled"
         agent_id = agent['id']
         order = agent.get("order", "-")
         triggers = ", ".join(agent.get("triggers", [])) or "none"
+
+        # Get state from token awareness
+        state = token_awareness.get_agent_state(agent_id)
+        status = state.value
+
+        # Add pause reason if paused
+        if state == AgentState.PAUSED:
+            pause_info = token_awareness.get_pause_info(agent_id)
+            reason = pause_info.get("reason", "unknown")
+            status = f"PAUSED ({reason})"
 
         # Load agent state to get last_ran
         state_path = data_dir / "agents" / agent_id / "state.json"
         last_ran = "never"
         if state_path.exists():
             with open(state_path) as f:
-                state = json.load(f)
-                if "last_ran" in state:
-                    last_ran = state["last_ran"]
+                file_state = json.load(f)
+                if "last_ran" in file_state:
+                    last_ran = file_state["last_ran"]
 
         print(f"  [{order}] {agent_id}: {agent['name']} [{status}]")
         print(f"      triggers: {triggers}")
@@ -282,26 +296,56 @@ def cmd_agents(args):
         print()
 
 
-def _agent_set_enabled(agent_id: str, enabled: bool):
-    """Enable or disable an agent."""
-    import json
+def _agent_set_state(agent_id: str, state):
+    """Set agent state using the token awareness system."""
+    from src.agent.cognition.metacognition import get_token_awareness, AgentState
 
     config_path = Path(__file__).parent / "data" / "agents" / agent_id / "config.json"
     if not config_path.exists():
         print(f"Agent not found: {agent_id}")
         return
 
-    with open(config_path) as f:
-        config = json.load(f)
+    token_awareness = get_token_awareness()
+    token_awareness.set_agent_state(agent_id, state)
+    print(f"Agent {agent_id} {state.value}.")
 
-    config["enabled"] = enabled
 
-    with open(config_path, "w") as f:
-        json.dump(config, f, indent=2)
-        f.write("\n")
+def _agent_set_enabled(agent_id: str, enabled: bool):
+    """Enable or disable an agent (legacy wrapper)."""
+    from src.agent.cognition.metacognition import AgentState
 
-    status = "enabled" if enabled else "disabled"
-    print(f"Agent {agent_id} {status}.")
+    state = AgentState.ENABLED if enabled else AgentState.DISABLED
+    _agent_set_state(agent_id, state)
+
+
+def _agent_show_status(agent_id: str):
+    """Show detailed agent status including token usage."""
+    from src.agent.cognition.metacognition import get_token_awareness
+
+    config_path = Path(__file__).parent / "data" / "agents" / agent_id / "config.json"
+    if not config_path.exists():
+        print(f"Agent not found: {agent_id}")
+        return
+
+    token_awareness = get_token_awareness()
+    state = token_awareness.get_agent_state(agent_id)
+    usage = token_awareness.get_agent_usage(agent_id)
+    pause_info = token_awareness.get_pause_info(agent_id)
+
+    print(f"Agent: {agent_id}")
+    print(f"State: {state.value}")
+    print()
+
+    if pause_info.get("is_paused"):
+        print(f"Pause Reason: {pause_info.get('reason', 'unknown')}")
+        print(f"Paused At: {pause_info.get('timestamp', 'unknown')}")
+        print()
+
+    print("Token Usage (current period):")
+    print(f"  Frequency: {usage.get('frequency', 'hourly')}")
+    print(f"  Period: {usage.get('period', 'unknown')}")
+    print(f"  Input: {usage.get('input_tokens', 0):,} / {usage.get('input_budget', 0):,} ({usage.get('input_percent', 0)}%)")
+    print(f"  Output: {usage.get('output_tokens', 0):,} / {usage.get('output_budget', 0):,} ({usage.get('output_percent', 0)}%)")
 
 
 def _agent_show_logs(agent_id: str):
@@ -469,7 +513,7 @@ def cmd_points(args):
 def cmd_set_password(args):
     """Set the access password."""
     import getpass
-    from src.auth import set_password, is_password_set
+    from src.web.auth import set_password, is_password_set
 
     print("=" * 60)
     print("Euno - Set Password")
@@ -503,7 +547,7 @@ def cmd_set_password(args):
 
 def cmd_remove_password(args):
     """Remove the access password (disable authentication)."""
-    from src.auth import remove_password, is_password_set
+    from src.web.auth import remove_password, is_password_set
 
     print("=" * 60)
     print("Euno - Remove Password")
@@ -526,7 +570,7 @@ def cmd_remove_password(args):
 
 def cmd_fresh_start(args):
     """Reset all user data for a clean slate."""
-    from src.fresh_start import perform_fresh_start
+    from src.tools.system.fresh_start import perform_fresh_start
 
     print("=" * 60)
     print("Euno - Fresh Start")

@@ -59,10 +59,6 @@ def cmd_dev(args: List[str]):
         from .commands.reflect import cmd_reflect
         cmd_reflect(sub_args, json_mode)
 
-    elif subcommand == "explore":
-        from .commands.explore import cmd_explore
-        cmd_explore(sub_args, json_mode)
-
     elif subcommand == "upload":
         from .commands.upload import cmd_upload
         cmd_upload(sub_args, json_mode)
@@ -74,10 +70,6 @@ def cmd_dev(args: List[str]):
     elif subcommand == "trace":
         from .commands.trace import cmd_trace
         cmd_trace(sub_args, json_mode)
-
-    elif subcommand == "patterns":
-        from .commands.patterns import cmd_patterns
-        cmd_patterns(sub_args, json_mode)
 
     else:
         print(f"Unknown dev command: {subcommand}")
@@ -111,23 +103,12 @@ REFLECTION
     --append                Run only append phase
     --consolidate           Run only consolidate phase
 
-EXPLORATION
-  explore <agent>           Create and run exploration job
-
 MEMORY
   memory <agent>            Show all memory
     --short                 Show only short-term memory
     --long                  Show only long-term memory (last 7 days)
     --add <type> <desc>     Add a memory entry manually
     --graduate <id>         Graduate a memory to long-term
-
-PATTERNS
-  patterns <agent>          Show discovered patterns
-    --temporal              Show only temporal patterns
-    --corr                  Show only correlations
-    --traj                  Show only trajectories
-    --hyp                   Show only hypotheses
-    --clear                 Clear all patterns (reset)
 
 IDENTITY
   identity <agent>          Show agent's identity
@@ -141,7 +122,6 @@ PROMPTS
   prompt <agent> system     Show system prompt
   prompt <agent> job <id>   Show job prompt
   prompt <agent> reflect    Show reflection prompt
-  prompt <agent> explore    Show exploration prompt
 
 CHAT
   chat <agent> <message>    Single LLM turn (no work cycle)
@@ -159,7 +139,6 @@ OBSERVABILITY
 
 Examples:
   python main.py dev memory chat
-  python main.py dev patterns user
   python main.py dev job chat "List my current jobs"
   python main.py dev reflect chat --consolidate
   python main.py dev tool list_jobs '{"status": "todo"}'

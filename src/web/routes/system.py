@@ -15,12 +15,13 @@ from ...llms import get_client, get_model, get_provider, get_providers_config, i
 from ...llms.base import _load_config, CONFIG_PATH, VALID_PROVIDERS
 from ...tools.data.jobs import list_jobs
 from ...tools.data.identity import get_identity
-from ...fresh_start import (
+from ...tools.system.fresh_start import (
     perform_fresh_start,
     list_backups as _list_backups,
     restore_backup as _restore_backup,
     delete_backup as _delete_backup,
 )
+from ...agent.cognition.metacognition import get_incident_tracker
 
 
 router = APIRouter()
@@ -154,14 +155,14 @@ def daily_quote():
 @router.get("/costs")
 def get_costs():
     """Get cost summary for session, today, 7 days, and this month."""
-    from ...metacognition import get_cost_summary
+    from ...agent.cognition.metacognition import get_cost_summary
     return get_cost_summary()
 
 
 @router.get("/costs/by-agent")
 def get_costs_by_agent(days: int = 30):
     """Get cost breakdown by agent for the specified number of days."""
-    from ...metacognition import get_costs_by_agent
+    from ...agent.cognition.metacognition import get_costs_by_agent
     return get_costs_by_agent(days)
 
 
@@ -170,7 +171,7 @@ def get_costs_by_agent(days: int = 30):
 @router.get("/settings")
 def get_settings():
     """Get current LLM settings with all providers and speech capabilities."""
-    from ...speech import supports_stt, supports_tts
+    from ...tools.speech import supports_stt, supports_tts
 
     config = _load_config()
     current_provider = get_provider()
@@ -196,7 +197,7 @@ def get_settings():
 @router.put("/settings/llm")
 def update_llm_settings(data: dict):
     """Update LLM settings (provider, models, budget)."""
-    from ...metacognition import get_resource_tracker
+    from ...agent.cognition.metacognition import get_resource_tracker
 
     config = _load_config()
 
@@ -229,7 +230,7 @@ def update_llm_settings(data: dict):
     invalidate_client()
 
     # Also invalidate speech client since it depends on provider
-    from ...speech import invalidate_speech_client
+    from ...tools.speech import invalidate_speech_client
     invalidate_speech_client()
 
     # Invalidate resource tracker cache so budget changes take effect
@@ -329,11 +330,86 @@ def delete_backup(backup_name: str):
     }
 
 
+# ============== Incidents ==============
+
+@router.get("/incidents")
+def list_incidents(agent_id: str = None, days: int = 7):
+    """List incidents (unacknowledged and recent history).
+
+    Args:
+        agent_id: Optional filter by agent ID
+        days: Number of days of history to include (default 7)
+
+    Returns unacknowledged incidents and recent history.
+    """
+    tracker = get_incident_tracker()
+
+    # Get unacknowledged incidents
+    unacknowledged = tracker.get_unacknowledged(agent_id)
+
+    # Get history
+    history = tracker.get_history(days=days, agent_id=agent_id)
+
+    return {
+        "unacknowledged": [
+            {
+                "id": i.id,
+                "agent_id": i.agent_id,
+                "incident_type": i.incident_type,
+                "severity": i.severity,
+                "reason": i.reason,
+                "details": i.details,
+                "timestamp": i.timestamp
+            }
+            for i in unacknowledged
+        ],
+        "history": history,
+        "unacknowledged_count": len(unacknowledged)
+    }
+
+
+@router.post("/incidents/{incident_id}/acknowledge")
+def acknowledge_incident(incident_id: str):
+    """Acknowledge an incident.
+
+    Marks the incident as acknowledged, removing it from the unacknowledged list.
+    """
+    tracker = get_incident_tracker()
+    success = tracker.acknowledge(incident_id, acknowledged_by="api")
+
+    if not success:
+        return {"success": False, "error": "Incident not found or already acknowledged"}
+
+    return {
+        "success": True,
+        "incident_id": incident_id,
+        "message": "Incident acknowledged"
+    }
+
+
+@router.post("/incidents/acknowledge-all")
+def acknowledge_all_incidents(agent_id: str = None):
+    """Acknowledge all incidents for an agent (or all agents).
+
+    Args:
+        agent_id: Optional agent ID filter. If not provided, acknowledges all incidents.
+    """
+    tracker = get_incident_tracker()
+    count = tracker.acknowledge_all(agent_id, acknowledged_by="api")
+
+    return {
+        "success": True,
+        "acknowledged_count": count,
+        "agent_id": agent_id,
+        "message": f"Acknowledged {count} incident(s)"
+    }
+
+
 # ============== SSE Events ==============
 
 async def event_generator():
     """Generate SSE events for real-time updates."""
-    from ...events import subscribe_ui, unsubscribe_ui
+    from ..events import subscribe_ui, unsubscribe_ui
 
     # Send initial state
     all_jobs = list_jobs()
@@ -342,14 +418,18 @@ async def event_generator():
     # Subscribe to UI events (returns queue and shutdown event)
     event_queue, shutdown_event = subscribe_ui()
 
+    # Track current tasks so we can cancel them on disconnect
+    current_tasks = []
+
     try:
         while True:
             # Wait for either: queue event, shutdown signal, or timeout
             queue_task = asyncio.create_task(event_queue.get())
             shutdown_task = asyncio.create_task(shutdown_event.wait())
+            current_tasks = [queue_task, shutdown_task]
 
             done, pending = await asyncio.wait(
-                [queue_task, shutdown_task],
+                current_tasks,
                 timeout=30,
                 return_when=asyncio.FIRST_COMPLETED
             )
@@ -362,6 +442,9 @@ async def event_generator():
                 except asyncio.CancelledError:
                     pass
 
+            # Clear task references after handling
+            current_tasks = []
+
             # Check if shutdown was signaled
             if shutdown_task in done:
                 break
@@ -373,7 +456,18 @@ async def event_generator():
             else:
                 # Timeout - send ping to keep connection alive
                 yield f"event: ping\ndata: {{}}\n\n"
+    except asyncio.CancelledError:
+        # Client disconnected - clean up gracefully
+        pass
     finally:
+        # Cancel any still-running tasks to prevent "Task was destroyed" warnings
+        for task in current_tasks:
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
         unsubscribe_ui(event_queue, shutdown_event)
 
 

@@ -9,8 +9,8 @@ Euno is a personal intelligence that learns to anticipate you: doing tasks for y
 ## Key References
 
 - `docs/1_pitch.md` - Product vision
-- `docs/3_agents.md` - What agents are and how they work
-- `spec/*.md` - Design rules for drift detection
+- `docs/4_system.md` - Entities, ontology, and lifecycle
+- `specs/*.md` - Design rules for drift detection
 - `main.py` - Entry point
 
 ## Setup
@@ -48,7 +48,6 @@ uv run euno dev <command> [args] [--json]
 # Inspect agent state
 uv run euno dev memory chat          # View agent's memory
 uv run euno dev identity chat        # View agent's identity
-uv run euno dev patterns user        # View discovered patterns
 uv run euno dev prompt chat system   # View system prompt
 
 # Test execution
@@ -57,14 +56,13 @@ uv run euno dev tool list_jobs '{"status": "todo"}'  # Execute tool directly
 
 # Trigger behaviors manually
 uv run euno dev reflect chat --consolidate   # Run only consolidate phase
-uv run euno dev explore chat                 # Trigger exploration
 
 # Live monitoring
 uv run euno dev watch                        # Stream all system events
 uv run euno dev trace <job_id>               # Show execution trace
 ```
 
-Use `--json` for machine-readable output. See `spec/7_dev_cli.md` for full documentation.
+Use `--json` for machine-readable output. See `specs/7_dev_cli.md` for full documentation.
 
 ## Project Structure
 
@@ -73,26 +71,30 @@ euno/
 ├── main.py                 # Entry point, CLI
 ├── src/
 │   ├── manager.py          # Agent Manager - starts/stops all agents
-│   ├── agent.py            # Generic Agent - Identity + Cognition + Memory + Behavior
-│   ├── metacognition/      # Agent self-awareness and self-regulation
-│   │   ├── metacognition.py # Main Metacognition class
-│   │   ├── velocity.py     # Rate limiting and runaway detection
-│   │   ├── resources.py    # Budget and cost tracking
-│   │   ├── progress.py     # Stuck/thrashing detection
-│   │   ├── planning.py     # Strategic planning for complex tasks
-│   │   └── config.py       # Configuration handling
-│   ├── reflection/         # Memory and identity reflection
-│   │   ├── reflection.py   # Main Reflection class
-│   │   ├── append.py       # Lightweight extraction after chat
-│   │   ├── consolidate.py  # Heavy analysis on daily trigger
-│   │   └── prompts.py      # LLM prompts for reflection
-│   ├── tools/              # All tools (registered with @tool decorator)
-│   │   ├── jobs.py         # Job CRUD
-│   │   ├── assets.py       # File attachments per job
-│   │   ├── agents.py       # Agent introspection
-│   │   ├── user.py         # Identity and memory
-│   │   ├── memory.py       # Memory tracking for anticipation
-│   │   └── system.py       # Config and notifications
+│   ├── agent/              # Agent module (Identity + Cognition + Memory + Behavior)
+│   │   ├── agent.py        # Main Agent class
+│   │   ├── cognition/      # Agent cognition (reasoning + metacognition)
+│   │   │   ├── reasoning/  # First-order thinking
+│   │   │   │   └── planning.py  # Strategic planning
+│   │   │   └── metacognition/   # Second-order thinking (self-regulation)
+│   │   │       ├── regulation/  # Self-regulation
+│   │   │       │   ├── tokens.py    # Token/cost awareness
+│   │   │       │   ├── progress.py  # Stuck detection
+│   │   │       │   └── config.py    # Configuration
+│   │   │       └── consolidation/   # Self-improvement (memory/identity)
+│   │   │           ├── consolidation.py  # Main Consolidation class
+│   │   │           ├── append.py    # Lightweight extraction after chat
+│   │   │           └── consolidate.py    # Heavy analysis on trigger
+│   │   └── rlm/            # Recursive Language Model for memory access
+│   ├── metacognition/      # Legacy metacognition (imports from agent/cognition)
+│   ├── reflection/         # Legacy reflection (imports from agent/cognition)
+│   ├── llms/               # LLM clients and tools
+│   │   ├── base.py         # Unified LLM client
+│   │   └── tools/          # All tools (registered with @tool decorator)
+│   │       ├── data/       # Jobs, assets, memory tools
+│   │       ├── agents/     # Agent introspection tools
+│   │       ├── system/     # Config, notifications tools
+│   │       └── integration/    # External integrations
 │   └── web/
 │       ├── app.py          # FastAPI application
 │       └── routes/         # API endpoints
@@ -112,7 +114,7 @@ euno/
 │   └── system/
 │       ├── config.json
 │       └── logs/reflection/ # Reflection logs
-├── spec/                   # Design rules for drift detection
+├── specs/                   # Design rules for drift detection
 │   ├── 1_agents.md
 │   ├── 2_data.md
 │   ├── 3_backend.md
@@ -129,15 +131,22 @@ An agent is: **Identity + Cognition + Memory + Behavior**
 - **Identity** (`identity.md`): Purpose, values, voice, stable attractors, context
 - **Cognition**: Reasoning (system prompts) + Metacognition (self-regulation, reflection)
 - **Memory**: Short-term (90 days) + Long-term (permanent archive)
-- **Behavior** (`config.json`): Tools + Triggers + Modes (90/10 exploration ratio)
+- **Behavior** (`config.json`): Tools + Triggers
 
 ### Metacognition
 Metacognition is the agent's self-regulation and self-improvement system:
-- **Velocity**: Track call rate, pause if too fast (runaway detection)
-- **Resources**: Track costs, enforce budgets
+Metacognition has two aspects:
+
+**Self-Regulation** (in `agent/cognition/metacognition/regulation/`):
+- **Token Awareness**: Pre-call estimation, post-call recording, per-agent budgets with auto-pause
+- **Agent States**: `enabled`, `disabled`, `paused` (paused requires manual intervention)
 - **Progress**: Detect stuck patterns and break loops
-- **Planning**: Strategic thinking before complex tasks
-- **Reflection**: Process memories, update identity (self-improvement)
+- **Incidents**: Threshold breaches logged and surfaced via API
+
+**Self-Improvement** (in `agent/cognition/metacognition/consolidation/`):
+- **Consolidation**: Process memories, update identity (formerly called Reflection)
+- **Append phase**: Lightweight extraction after each conversation
+- **Consolidate phase**: Heavy analysis on daily trigger
 
 System-wide defaults in `data/system/config.json` under `metacognition` key.
 
@@ -156,19 +165,12 @@ Memory tracks what's on an agent's mind for anticipation (every agent has memory
 - Types: person, place, thing, goal, concern, idea, learning, behavior
 - Entries expire after 90 days and archive to long-term memory
 
-### Exploration
-Exploration is scheduled discovery where agents research opportunities for the user:
-- Creates suggestions aligned with the agent's purpose and user's interests
-- Applies 90/10 principle: 90% grounded in user's goals, 10% novel exposure
-- Configured per-agent in `config.json` under `exploration` key
-- Creates `Trigger:exploration:{date}` jobs when triggered
-
-### Reflection
-Reflection is a metacognition capability (self-improvement) that manages memory and identity:
+### Consolidation
+Consolidation is a metacognition capability (self-improvement) that manages memory and identity:
 - **Append phase**: Lightweight extraction after each conversation (adds to short-term memory)
 - **Consolidate phase**: Heavy analysis on daily trigger (graduates memories, updates identity)
-- Activation configured per-agent: `reflection.trigger` in `config.json`
-- Logs stored in `data/system/logs/reflection/`
+- Activation configured per-agent: `consolidation.trigger` in `config.json`
+- Logs stored in `data/system/logs/consolidation/`
 
 ### User as Agent
 The user is conceptually an agent too - just with a different interface (Web UI/CLI vs autonomous loop).
@@ -184,11 +186,7 @@ The user is conceptually an agent too - just with a different interface (Web UI/
      "enabled": true,
      "tools": ["list_jobs", "create_job", ...],
      "triggers": ["time:morning", "system:start"],
-     "exploration": {
-       "enabled": true,
-       "trigger": "time:hour_04"
-     },
-     "reflection": {
+     "consolidation": {
        "enabled": true,
        "trigger": "time:evening"
      }
@@ -224,8 +222,6 @@ No Python code needed for new agents.
 - `GET/POST/DELETE /api/agents/{id}/memory/short-term` - Agent memory
 - `GET /api/agents/{id}/monitoring` - Agent monitoring stats
 - `POST /api/agents/{id}/reflection/trigger` - Trigger reflection
-- `POST /api/agents/{id}/exploration/trigger` - Trigger exploration
-- `GET /api/agents/{id}/patterns` - Agent's discovered patterns
 - `GET/PATCH /api/user/identity` - User identity
 - `GET/POST /api/user/memory/long-term` - Long-term memory entries
 - `GET/POST/DELETE /api/user/memory` - Memory items
@@ -242,11 +238,10 @@ Build for yourself first, not "other people." This is not a solution looking for
 
 ## Checking for Drift
 
-Before submitting changes, review against `spec/*.md`:
-- `spec/1_agents.md` — Agent behavior, job coordination, triggers, work cycles
-- `spec/2_data.md` — Data structures, file paths, schemas
-- `spec/3_backend.md` — Server, API, authentication, storage
-- `spec/4_ux_ui.md` — User experience and interface patterns
-- `spec/5_cli.md` — Command-line interface commands and behavior
-- `spec/7_dev_cli.md` — Developer CLI for debugging and improving agents
-- `spec/8_patterns.md` — Pattern discovery, storage, and integration
+Before submitting changes, review against `specs/*.md`:
+- `specs/1_agents.md` — Agent behavior, job coordination, triggers, work cycles
+- `specs/2_data.md` — Data structures, file paths, schemas
+- `specs/3_backend.md` — Server, API, authentication, storage
+- `specs/4_ux_ui.md` — User experience and interface patterns
+- `specs/5_cli.md` — Command-line interface commands and behavior
+- `specs/7_dev_cli.md` — Developer CLI for debugging and improving agents

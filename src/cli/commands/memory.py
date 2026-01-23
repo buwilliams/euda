@@ -219,7 +219,7 @@ def _backfill_user_memory(json_mode: bool):
     """One-time migration of user-relevant items from chat memory to user memory.
 
     This backfills existing chat memory to user's short-term memory so that
-    user's profile can evolve through reflection. Only copies user-focused types.
+    user's identity can evolve through consolidation. Only copies user-focused types.
     """
     import uuid
     from ...tools.data.memory import _load_entries, _save_entries

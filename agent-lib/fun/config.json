@@ -25,10 +25,6 @@
     "get_current_date"
   ],
   "triggers": [],
-  "exploration": {
-    "enabled": true,
-    "trigger": "time:hour_04"
-  },
   "reflection": {
     "enabled": true,
     "trigger": "time:evening"

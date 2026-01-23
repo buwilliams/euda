@@ -12,10 +12,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
-from .routes import jobs, agents, chat, user, auth, system, upload, transcribe, synthesize, rate_limiting, patterns
+from .routes import jobs, agents, chat, user, auth, system, upload, transcribe, synthesize
 from .routes.auth import get_session_token
-from ..auth import is_password_set, verify_session
-from ..events import trigger_shutdown
+from .auth import is_password_set, verify_session
+from .events import trigger_shutdown
 
 
 # Paths that don't require authentication
@@ -85,7 +85,6 @@ async def auth_middleware(request: Request, call_next):
 # Include routers
 app.include_router(jobs.router, prefix="/api/jobs", tags=["jobs"])
 app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
-app.include_router(patterns.router, prefix="/api/agents", tags=["patterns"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(user.router, prefix="/api/user", tags=["user"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
@@ -93,10 +92,9 @@ app.include_router(system.router, prefix="/api", tags=["system"])
 app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
 app.include_router(transcribe.router, prefix="/api/transcribe", tags=["transcribe"])
 app.include_router(synthesize.router, prefix="/api/synthesize", tags=["synthesize"])
-app.include_router(rate_limiting.router, prefix="/api/rate-limiting", tags=["rate-limiting"])
 
 # Serve web files
-web_dir = Path(__file__).parent.parent.parent / "web"
+web_dir = Path(__file__).parent / "frontend"
 if web_dir.exists():
     app.mount("/web", StaticFiles(directory=str(web_dir)), name="web")
 

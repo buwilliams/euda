@@ -124,8 +124,8 @@ def _chat_no_tools(agent_id: str, message: str, no_reflect: bool, stream, json_m
         stream.sink("chat_end", {"response_length": len(text_response)})
 
         # Run reflection append if not disabled
-        if not no_reflect and agent.reflection:
-            agent.reflection.append(message, text_response)
+        if not no_reflect and agent.consolidation:
+            agent.consolidation.append(message, text_response)
 
         if json_mode:
             print(json.dumps({

@@ -11,8 +11,8 @@ from pydantic import BaseModel
 from typing import Optional
 
 from ...agent import Agent, AGENTS_DIR
-from ...speech import get_speech_client, supports_tts
-from ...metacognition import AgentPausedError, get_velocity_tracker
+from ...tools.speech import get_speech_client, supports_tts
+from ...agent.cognition.metacognition import AgentPausedError, get_token_awareness
 
 
 router = APIRouter()
@@ -57,31 +57,23 @@ def api_chat(request: ChatRequest) -> ChatResponse:
     try:
         response = agent.chat(request.message, voice_input=request.voice_input)
     except AgentPausedError as e:
-        # Get remaining cooldown time
-        velocity_tracker = get_velocity_tracker()
-        pause_info = velocity_tracker.get_pause_info(request.agent_id)
-        remaining_seconds = pause_info.get("remaining_seconds", 0)
-
-        # Format remaining time for display
-        if remaining_seconds > 60:
-            time_str = f"{remaining_seconds // 60} minute{'s' if remaining_seconds >= 120 else ''}"
-        else:
-            time_str = f"{remaining_seconds} second{'s' if remaining_seconds != 1 else ''}"
+        # Get pause info from token awareness
+        token_awareness = get_token_awareness()
+        pause_info = token_awareness.get_pause_info(request.agent_id)
 
         raise HTTPException(
             status_code=503,
             detail={
                 "error": "agent_paused",
-                "message": f"I'm taking a short break due to high activity. I'll be back in about {time_str}.",
+                "message": f"Agent is paused: {e.reason}. Please resume manually or wait for the next budget period.",
                 "reason": e.reason,
                 "agent_id": request.agent_id,
-                "remaining_seconds": remaining_seconds,
-                "retry": True
+                "retry": False
             }
         )
 
     # Emit chat:message event for agent triggers
-    from ...events import emit_event, emit_ui_event
+    from ..events import emit_event, emit_ui_event
     emit_event("chat:message", data={"agent_id": request.agent_id})
 
     # Emit UI event for SSE clients

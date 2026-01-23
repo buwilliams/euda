@@ -12,12 +12,11 @@ import sqlite3
 import threading
 import uuid
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Optional, List
 
 from .. import tool
-from ...metacognition.velocity import get_velocity_tracker
 
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
@@ -69,7 +68,7 @@ def _ensure_schema():
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             parent_id TEXT REFERENCES jobs(id) ON DELETE SET NULL,
-            status TEXT NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'completed', 'archived')),
+            status TEXT NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'working', 'done', 'error', 'archived')),
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             created_by TEXT NOT NULL DEFAULT 'user',
@@ -123,6 +122,18 @@ def _ensure_schema():
         conn.execute("ALTER TABLE jobs ADD COLUMN pending_from TEXT")
         conn.commit()
 
+    # Migration: rename 'completed' status to 'done' and update CHECK constraint
+    # SQLite doesn't support ALTER TABLE to change constraints, so we check and migrate data
+    try:
+        cursor = conn.execute("SELECT COUNT(*) FROM jobs WHERE status = 'completed'")
+        completed_count = cursor.fetchone()[0]
+        if completed_count > 0:
+            conn.execute("UPDATE jobs SET status = 'done' WHERE status = 'completed'")
+            conn.commit()
+            print(f"Migrated {completed_count} jobs from 'completed' to 'done' status")
+    except Exception:
+        pass  # Table may not exist yet
+
 
 # Initialize schema on module import
 _ensure_schema()
@@ -130,20 +141,20 @@ _ensure_schema()
 
 def _emit_event(event: str, scope: str = None, data: dict = None):
     """Emit an event to the event bus."""
-    from ...events import emit_event
+    from ...web.events import emit_event
     emit_event(event, scope=scope, data=data)
 
 
 def _emit_jobs_update():
     """Notify UI clients that jobs have changed."""
-    from ...events import emit_ui_event
+    from ...web.events import emit_ui_event
     all_jobs = list_jobs()
     emit_ui_event("jobs_update", {"jobs": all_jobs})
 
 
 def _notify_agent_has_jobs(agent_id: str):
     """Notify the job cache that an agent has pending jobs."""
-    from ...manager import get_manager
+    from ...agent.manager import get_manager
     manager = get_manager()
     if manager:
         manager.agents_with_jobs[agent_id] = True
@@ -206,7 +217,7 @@ def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assign
     """List jobs with optional filters.
 
     Args:
-        status: Filter by status (todo, completed, archived)
+        status: Filter by status (todo, working, done, error, archived)
         parent_id: Filter by parent job ID (empty string for root jobs)
         tag: Filter to jobs containing this tag
         assignee: Filter to jobs assigned to this agent ID
@@ -327,7 +338,7 @@ def create_job(
     - Jobs created by user/chat go under Projects
     - Jobs created by other agents go under their agent inbox
     """
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     job_id = f"job-{uuid.uuid4().hex[:8]}"
 
     # Set default parent if none provided
@@ -385,7 +396,7 @@ def update_job(
     if status is not None and any(tag in system_tags for tag in job.get("tags", [])):
         return {"error": "Cannot change status of system jobs"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     updates = ["updated_at = ?"]
     params = [now]
@@ -452,7 +463,7 @@ def handoff_job(job_id: str, to: str, note: str = None, agent: str = "user") -> 
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     # Update assignees and pending_from
     with _transaction() as conn:
@@ -481,9 +492,9 @@ def handoff_job(job_id: str, to: str, note: str = None, agent: str = "user") -> 
     return _load_job(job_id)
 
 
-@tool("complete_job", "Mark a job as completed. Use when: work is finished and verified, task is no longer needed.", tool_type="data")
+@tool("complete_job", "Mark a job as done. Use when: work is finished and verified, task is no longer needed.", tool_type="data")
 def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
-    """Mark a job as completed."""
+    """Mark a job as done."""
     job = _load_job(job_id)
     if not job:
         return {"error": f"Job not found: {job_id}"}
@@ -496,11 +507,11 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
         if any(tag in system_tags for tag in job.get("tags", [])):
             return {"error": "Cannot complete system jobs"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute('''
-            UPDATE jobs SET status = 'completed', completed_at = ?, updated_at = ?
+            UPDATE jobs SET status = 'done', completed_at = ?, updated_at = ?
             WHERE id = ?
         ''', (now, now, job_id))
 
@@ -516,22 +527,17 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
     # Notify UI clients
     _emit_jobs_update()
 
-    # Record completion for velocity tracking (helps distinguish legitimate work from runaway)
-    # Use assignees from job, not the agent parameter (which may be "assistant" or similar)
-    for assignee in job.get("assignees", []):
-        get_velocity_tracker().record_completion(assignee, job_id)
-
     return _load_job(job_id)
 
 
-@tool("restore_job", "Restore a completed job back to todo status. Use when: a completed job needs to be reopened.", tool_type="data")
+@tool("restore_job", "Restore a done job back to todo status. Use when: a done job needs to be reopened.", tool_type="data")
 def restore_job(job_id: str, agent: str = "user") -> Optional[dict]:
-    """Restore a completed job back to todo status."""
+    """Restore a done job back to todo status."""
     job = _load_job(job_id)
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute('''
@@ -575,7 +581,7 @@ def unblock_job(job_id: str) -> bool:
     # Remove blocking tags
     new_tags = [t for t in tags if not t.startswith(("waiting:", "blocked:"))]
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute('''
@@ -584,9 +590,9 @@ def unblock_job(job_id: str) -> bool:
         ''', (json.dumps(new_tags), now, job_id))
 
         conn.execute('''
-            INSERT INTO job_logs (job_id, timestamp, agent, action, note)
-            VALUES (?, ?, ?, 'unblocked', ?)
-        ''', (job_id, now, "user", f"Removed: {', '.join(blocking_tags)}"))
+            INSERT INTO job_logs (job_id, timestamp, agent, action)
+            VALUES (?, ?, ?, ?)
+        ''', (job_id, now, "user", f"unblocked: {', '.join(blocking_tags)}"))
 
     # Notify assignees that job is actionable again
     for assignee in job.get("assignees", []):
@@ -611,7 +617,7 @@ def archive_job(job_id: str, agent: str = "user") -> Optional[dict]:
     if any(tag in system_tags for tag in job.get("tags", [])):
         return {"error": "Cannot archive system jobs"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute('''
@@ -641,7 +647,7 @@ def add_job_log(job_id: str, action: str, agent: str = "user") -> Optional[dict]
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute("UPDATE jobs SET updated_at = ? WHERE id = ?", (now, job_id))
@@ -786,7 +792,7 @@ def create_jobs_batch(jobs: list, created_by: str = "agent") -> dict:
                         "job_id": {"type": "string", "description": "Job ID to update (required)"},
                         "name": {"type": "string", "description": "New job name"},
                         "description": {"type": "string", "description": "New description"},
-                        "status": {"type": "string", "enum": ["todo", "completed", "archived"], "description": "New status"},
+                        "status": {"type": "string", "enum": ["todo", "working", "done", "error", "archived"], "description": "New status"},
                         "tags": {"type": "array", "items": {"type": "string"}, "description": "New tags"},
                         "due_date": {"type": "string", "description": "New due date"},
                         "someday": {"type": "boolean", "description": "Someday/maybe flag"}
@@ -953,7 +959,7 @@ def assign_agent(job_id: str, agent_id: str) -> Optional[dict]:
         return {"error": f"Agent {agent_id} already assigned"}
 
     assignees.append(agent_id)
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute(
@@ -992,7 +998,7 @@ def unassign_agent(job_id: str, agent_id: str) -> Optional[dict]:
         return {"error": f"Agent {agent_id} not assigned to this job"}
 
     assignees.remove(agent_id)
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute(
@@ -1058,14 +1064,15 @@ def claim_job(job_id: str, agent_id: str) -> dict:
     if any(tag in system_tags for tag in job.get("tags", [])):
         return {"error": "Cannot claim system jobs - only their descendants can be processed"}
 
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         # ATOMIC: Update only if unclaimed OR already claimed by us
         # This prevents TOCTOU race where multiple threads read NULL and all claim
+        # Also set status to 'working' per spec (docs/3_system.md)
         result = conn.execute(
-            """UPDATE jobs SET in_progress_by = ?, updated_at = ?
-               WHERE id = ? AND (in_progress_by IS NULL OR in_progress_by = ?)""",
+            """UPDATE jobs SET in_progress_by = ?, status = 'working', updated_at = ?
+               WHERE id = ? AND status = 'todo' AND (in_progress_by IS NULL OR in_progress_by = ?)""",
             (agent_id, now, job_id, agent_id)
         )
 
@@ -1096,7 +1103,7 @@ def get_or_create_system_job(name: str, system_tag: str) -> dict:
         The system job dict
     """
     all_jobs = list_jobs()
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     # Find existing system job by tag at root level
     for job in all_jobs:
@@ -1186,7 +1193,7 @@ def sync_agent_inbox_jobs():
     agent_names = {a["id"]: a.get("name", a["id"]) for a in agents}
 
     all_jobs = list_jobs()
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     changes_made = False
 
     # Get existing agent inbox jobs (jobs with agent_id set)
@@ -1295,14 +1302,17 @@ def sync_agent_inbox_jobs():
 def release_job(job_id: str, agent_id: str) -> dict:
     """Release a job after working on it.
 
+    Resets status from 'working' back to 'todo' so another agent can claim it.
+
     Args:
         job_id: The job to release
         agent_id: The agent releasing the job
     """
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     with _transaction() as conn:
+        # Reset status to 'todo' and clear in_progress_by
         conn.execute(
-            "UPDATE jobs SET in_progress_by = NULL, updated_at = ? WHERE id = ? AND in_progress_by = ?",
+            "UPDATE jobs SET in_progress_by = NULL, status = 'todo', updated_at = ? WHERE id = ? AND in_progress_by = ?",
             (now, job_id, agent_id)
         )
 
@@ -1310,6 +1320,42 @@ def release_job(job_id: str, agent_id: str) -> dict:
     _emit_jobs_update()
 
     return {"released": True, "job_id": job_id}
+
+
+@tool("error_job", "Mark a job as failed with an error. Use when: job cannot be completed due to an error.", tool_type="data")
+def error_job(job_id: str, error_message: str, agent: str = "user") -> Optional[dict]:
+    """Mark a job as failed with an error.
+
+    Args:
+        job_id: The job to mark as error
+        error_message: Description of what went wrong
+        agent: Who is marking the error
+    """
+    job = _load_job(job_id)
+    if not job:
+        return {"error": f"Job not found: {job_id}"}
+
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+    with _transaction() as conn:
+        conn.execute('''
+            UPDATE jobs SET status = 'error', in_progress_by = NULL, updated_at = ?
+            WHERE id = ?
+        ''', (now, job_id))
+
+        conn.execute('''
+            INSERT INTO job_logs (job_id, timestamp, agent, action)
+            VALUES (?, ?, ?, ?)
+        ''', (job_id, now, agent, f"error: {error_message}"))
+
+    # Emit job:error to each assignee
+    for assignee in job.get("assignees", []):
+        _emit_event("job:error", scope=assignee, data={"job_id": job_id, "name": job["name"], "error": error_message})
+
+    # Notify UI clients
+    _emit_jobs_update()
+
+    return _load_job(job_id)
 
 
 # =============================================================================

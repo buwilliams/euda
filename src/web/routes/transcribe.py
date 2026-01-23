@@ -7,8 +7,8 @@ Handles audio file uploads and transcription using the speech provider abstracti
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from pydantic import BaseModel
 
-from ...speech import get_speech_client, supports_stt
-from ...speech.openai import is_openai_configured
+from ...tools.speech import get_speech_client, supports_stt
+from ...tools.speech.openai import is_openai_configured
 from ...llms import get_provider
 
 

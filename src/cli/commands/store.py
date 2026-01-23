@@ -35,7 +35,7 @@ def cmd_store(args: List[str], json_mode: bool = False):
 
     # Handle clear manifest (legacy support)
     if clear_manifest:
-        from ...store.dedup import clear_manifest as do_clear
+        from ...tools.integration.files.dedup import clear_manifest as do_clear
         count = do_clear()
         if json_mode:
             print(json.dumps({"cleared": count}))
@@ -55,8 +55,8 @@ def cmd_store(args: List[str], json_mode: bool = False):
         sys.exit(1)
 
     # Load files
-    from ...store.loader import load_files
-    from ...store.dedup import compute_hash
+    from ...tools.integration.files.loader import load_files
+    from ...tools.integration.files.dedup import compute_hash
 
     if not json_mode:
         print_info(f"Loading files from: {path}", json_mode)
@@ -160,13 +160,13 @@ def _is_already_processed(content_hash: str) -> bool:
         content_hash: SHA-256 hash of the content
 
     Returns:
-        True if a completed job exists with this hash tag
+        True if a done job exists with this hash tag
     """
     from ...tools.data.jobs import list_jobs
 
-    # Check for completed jobs with this hash tag
+    # Check for done jobs with this hash tag
     tag = f"store:hash:{content_hash}"
-    jobs = list_jobs(status="completed", tag=tag)
+    jobs = list_jobs(status="done", tag=tag)
     return len(jobs) > 0
 
 
@@ -198,7 +198,7 @@ def _create_store_job(items_with_hashes: List[tuple]) -> dict:
                     f"3. Complete job when done",
         parent_id=system_container["id"] if system_container else None,
         assignees=["chat"],
-        tags=["store:ingest", "trigger:store"] + hash_tags,
+        tags=["store:ingest"] + hash_tags,
         created_by="user"
     )
 

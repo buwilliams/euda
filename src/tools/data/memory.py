@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from .. import tool
-from ...rlm import RLMClient, load_long_term_memory
+from ...agent.rlm import RLMClient, load_long_term_memory
 
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
@@ -99,7 +99,7 @@ def _archive_expired_memories(expired: List[dict], agent_id: str = "user"):
     """Archive expired short-term memories to long-term memory.
 
     This preserves memories that roll off after 90 days, allowing them
-    to become part of the agent's profile over time via the Profiler.
+    to become part of the agent's identity over time via consolidation.
     """
     # Group by type for readable formatting
     by_type = {}
@@ -275,7 +275,6 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
                         description="New long-term memory entry to process",
                         parent_id=system_container["id"],
                         assignees=[agent_config["id"]],
-                        tags=["trigger:memory-long-term"],
                         due_date=None,
                         created_by="system"
                     )

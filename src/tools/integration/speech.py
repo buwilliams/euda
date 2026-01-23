@@ -7,8 +7,8 @@ Provides tools for agents to read text aloud to the user.
 import base64
 
 from .. import tool
-from ...speech import get_speech_client, supports_tts
-from ...events import emit_ui_event
+from ..speech import get_speech_client, supports_tts
+from ...web.events import emit_ui_event
 
 
 @tool("speak_aloud", "Read text aloud using text-to-speech. The audio will be played through the user's speakers.", tool_type="integration")

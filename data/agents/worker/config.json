@@ -1,8 +1,14 @@
 {
   "id": "worker",
   "name": "Worker",
-  "enabled": true,
+  "enabled": false,
+  "state": "paused",
   "order": 10,
+  "token_budget": {
+    "frequency": "daily",
+    "input_ratio": 0.8,
+    "output_ratio": 0.2
+  },
   "tools": [
     "list_jobs",
     "get_job",
@@ -50,11 +56,10 @@
   "triggers": [
     "time:morning"
   ],
-  "exploration": {
-    "enabled": false
-  },
-  "reflection": {
+  "consolidation": {
     "enabled": true,
     "trigger": "time:evening"
-  }
+  },
+  "pause_reason": "input token threshold exceeded (106%)",
+  "pause_timestamp": "2026-01-23T14:21:50.502943"
 }

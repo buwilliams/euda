@@ -13,7 +13,7 @@ from ...tools.data.identity import get_identity, update_identity
 from ...tools.data.memory import (
     list_memory, add_memory, remove_memory, write_long_term_memory
 )
-from ...rlm import read_memory_date, list_memory_dates
+from ...agent.rlm import read_memory_date, list_memory_dates
 
 
 router = APIRouter()
@@ -45,19 +45,6 @@ def api_get_identity():
 @router.patch("/identity")
 def api_update_identity(request: UpdateIdentityRequest):
     """Update user identity."""
-    return update_identity("user", request.content)
-
-
-# Backward-compatible profile endpoints (alias to identity)
-@router.get("/profile")
-def api_get_profile():
-    """Get user profile (alias for identity)."""
-    return get_identity("user")
-
-
-@router.patch("/profile")
-def api_update_profile(request: UpdateIdentityRequest):
-    """Update user profile (alias for identity)."""
     return update_identity("user", request.content)
 
 

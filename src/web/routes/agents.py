@@ -19,8 +19,9 @@ from ...tools.data.identity import get_identity, update_identity
 from ...tools.data.memory import (
     list_memory, add_memory, remove_memory, write_long_term_memory
 )
-from ...rlm import read_memory_date, list_memory_dates
-from ...logger import get_logger
+from ...agent.rlm import read_memory_date, list_memory_dates
+from ...agent.logger import get_logger
+from ...agent.cognition.metacognition import get_token_awareness, AgentState
 
 
 router = APIRouter()
@@ -35,8 +36,7 @@ class UpdateConfigRequest(BaseModel):
     enabled: Optional[bool] = None
     tools: Optional[List[str]] = None
     triggers: Optional[List[str]] = None
-    reflection: Optional[Dict[str, Any]] = None  # {enabled, trigger}
-    exploration: Optional[Dict[str, Any]] = None  # {enabled, trigger}
+    consolidation: Optional[Dict[str, Any]] = None  # {enabled, trigger}
 
 
 class TriggerReflectionRequest(BaseModel):
@@ -47,6 +47,11 @@ class AddMemoryRequest(BaseModel):
     short_description: str
     type: str
     date_expected: Optional[str] = None
+
+
+class UpdateStateRequest(BaseModel):
+    state: str  # "enabled", "disabled", "paused"
+    reason: Optional[str] = None  # Required for "paused"
 
 
 class WriteLongTermMemoryRequest(BaseModel):
@@ -88,44 +93,6 @@ def api_update_identity(agent_id: str, request: UpdateIdentityRequest):
     return result
 
 
-# Backward-compatible profile endpoints (alias to identity)
-@router.get("/{agent_id}/profile")
-def api_get_profile(agent_id: str):
-    """Get agent's profile markdown (alias for identity)."""
-    identity = get_agent_identity(agent_id)
-    if identity is None:
-        raise HTTPException(status_code=404, detail="Agent or profile not found")
-    return {"agent_id": agent_id, "profile": identity}
-
-
-@router.patch("/{agent_id}/profile")
-def api_update_profile(agent_id: str, request: UpdateIdentityRequest):
-    """Update agent's profile markdown (alias for identity)."""
-    result = update_agent_identity(agent_id, request.content)
-    if "error" in result:
-        raise HTTPException(status_code=404, detail=result["error"])
-    return result
-
-
-# Backward-compatible persona endpoints (alias to identity)
-@router.get("/{agent_id}/persona")
-def api_get_persona(agent_id: str):
-    """Get agent's persona markdown (alias for identity)."""
-    identity = get_agent_identity(agent_id)
-    if identity is None:
-        raise HTTPException(status_code=404, detail="Agent or persona not found")
-    return {"agent_id": agent_id, "persona": identity}
-
-
-@router.patch("/{agent_id}/persona")
-def api_update_persona(agent_id: str, request: UpdateIdentityRequest):
-    """Update agent's persona markdown (alias for identity)."""
-    result = update_agent_identity(agent_id, request.content)
-    if "error" in result:
-        raise HTTPException(status_code=404, detail=result["error"])
-    return result
-
-
 # Config endpoints
 @router.get("/{agent_id}/config")
 def api_get_config(agent_id: str):
@@ -152,21 +119,79 @@ def api_update_config(agent_id: str, request: UpdateConfigRequest):
         current_config["tools"] = request.tools
     if request.triggers is not None:
         current_config["triggers"] = request.triggers
-    if request.reflection is not None:
-        # Merge reflection settings
-        if "reflection" not in current_config:
-            current_config["reflection"] = {}
-        current_config["reflection"].update(request.reflection)
-    if request.exploration is not None:
-        # Merge exploration settings
-        if "exploration" not in current_config:
-            current_config["exploration"] = {}
-        current_config["exploration"].update(request.exploration)
+    if request.consolidation is not None:
+        # Merge consolidation settings
+        if "consolidation" not in current_config:
+            current_config["consolidation"] = {}
+        current_config["consolidation"].update(request.consolidation)
 
     result = update_agent_config(agent_id, current_config)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
+
+
+# Agent state endpoints
+@router.get("/{agent_id}/state")
+def api_get_state(agent_id: str):
+    """Get agent's current operational state.
+
+    Returns the agent state (enabled, disabled, paused) and related information
+    including token usage statistics.
+    """
+    config = get_agent_config(agent_id)
+    if config is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    token_awareness = get_token_awareness()
+    state = token_awareness.get_agent_state(agent_id)
+    pause_info = token_awareness.get_pause_info(agent_id)
+    usage = token_awareness.get_agent_usage(agent_id)
+
+    return {
+        "agent_id": agent_id,
+        "state": state.value,
+        "pause_info": pause_info if pause_info.get("is_paused") else None,
+        "token_usage": usage
+    }
+
+
+@router.patch("/{agent_id}/state")
+def api_update_state(agent_id: str, request: UpdateStateRequest):
+    """Update agent's operational state.
+
+    Allows enabling, disabling, or manually pausing an agent.
+    To resume a paused agent, set state to "enabled".
+    """
+    config = get_agent_config(agent_id)
+    if config is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Validate state
+    try:
+        new_state = AgentState(request.state)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid state: {request.state}. Must be 'enabled', 'disabled', or 'paused'"
+        )
+
+    # Paused state requires a reason
+    if new_state == AgentState.PAUSED and not request.reason:
+        raise HTTPException(
+            status_code=400,
+            detail="Reason is required when setting state to 'paused'"
+        )
+
+    token_awareness = get_token_awareness()
+    token_awareness.set_agent_state(agent_id, new_state, request.reason)
+
+    return {
+        "agent_id": agent_id,
+        "state": new_state.value,
+        "reason": request.reason,
+        "message": f"Agent state changed to {new_state.value}"
+    }
 
 
 # Short-term memory endpoints
@@ -248,7 +273,7 @@ def api_get_monitoring(agent_id: str, offset: int = 0, limit: int = 20):
 def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = None):
     """Trigger reflection for an agent by creating a trigger job.
 
-    Creates a job with tags=["trigger:reflection:{phase}"] that the agent
+    Creates a job with tags=["trigger:consolidation:{phase}"] that the agent
     will pick up and process during its work cycle.
 
     Returns an execution_id for SSE progress tracking.
@@ -269,11 +294,11 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
     system_container = get_system_container()
 
     job = create_job(
-        name=f"Trigger:reflection:{today}",
-        description=f"Manual reflection trigger (phase: {phase}, execution_id: {execution_id})",
+        name=f"Trigger:consolidation:{phase}:{today}",
+        description=f"Manual reflection trigger (execution_id: {execution_id})",
         parent_id=system_container["id"],
         assignees=[agent_id],
-        tags=[f"trigger:reflection:{phase}", "ui:manual", f"execution:{execution_id}"],
+        tags=["ui:manual", f"execution:{execution_id}"],
         created_by="web-ui"
     )
 
@@ -287,51 +312,12 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
     }
 
 
-# Exploration trigger endpoint
-@router.post("/{agent_id}/exploration/trigger")
-def api_trigger_exploration(agent_id: str):
-    """Trigger exploration for an agent by creating a trigger job.
-
-    Creates a job with tags=["trigger:exploration"] that the agent
-    will pick up and process during its work cycle.
-
-    Returns an execution_id for SSE progress tracking.
-    """
-    # Verify agent exists
-    config = get_agent_config(agent_id)
-    if config is None:
-        raise HTTPException(status_code=404, detail="Agent not found")
-
-    # Generate execution_id for SSE tracking
-    execution_id = f"exec-{uuid.uuid4().hex[:8]}"
-
-    today = datetime.now().strftime("%Y-%m-%d")
-    system_container = get_system_container()
-
-    job = create_job(
-        name=f"Trigger:exploration:{today}",
-        description=f"Manual exploration trigger (execution_id: {execution_id})",
-        parent_id=system_container["id"],
-        assignees=[agent_id],
-        tags=["trigger:exploration", "ui:manual", f"execution:{execution_id}"],
-        created_by="web-ui"
-    )
-
-    return {
-        "status": "triggered",
-        "execution_id": execution_id,
-        "agent_id": agent_id,
-        "job_id": job["id"],
-        "timestamp": datetime.now().isoformat()
-    }
-
-
 # Active executions endpoint
 @router.get("/{agent_id}/active-executions")
 def api_get_active_executions(agent_id: str):
     """Get active trigger jobs for an agent to restore UI state after page refresh.
 
-    Returns active trigger jobs (reflection or exploration) that are assigned to this agent
+    Returns active trigger jobs (consolidation) that are assigned to this agent
     and still in todo status. This allows the UI to restore the running state of buttons.
 
     Returns:
@@ -347,23 +333,20 @@ def api_get_active_executions(agent_id: str):
     # Get todo jobs assigned to this agent
     jobs = list_jobs(status="todo", assignee=agent_id)
 
-    # Filter for trigger jobs and extract execution info
+    # Filter for consolidation jobs and extract execution info
+    # Consolidation jobs are identified by name pattern: Trigger:consolidation:{phase}:{date}
     executions = []
     for job in jobs:
+        job_name = job.get("name", "")
         tags = job.get("tags", [])
 
-        # Check for trigger tags
-        phase = None
-        for tag in tags:
-            if tag.startswith("trigger:reflection:"):
-                phase = tag.split(":")[-1]  # append, consolidate, or both
-                break
-            elif tag == "trigger:exploration":
-                phase = "exploration"
-                break
-
-        if not phase:
+        # Check for consolidation job name pattern
+        if not job_name.startswith("Trigger:consolidation:"):
             continue
+
+        # Extract phase from job name: Trigger:consolidation:{phase}:{date}
+        parts = job_name.split(":")
+        phase = parts[2] if len(parts) >= 3 else "both"
 
         # Extract execution_id from tags
         execution_id = None
@@ -382,10 +365,10 @@ def api_get_active_executions(agent_id: str):
     return executions
 
 
-# Reflection logs endpoint
-@router.get("/{agent_id}/logs/reflection")
-def api_get_reflection_logs(agent_id: str, days: int = 7):
-    """Get reflection logs for this agent.
+# Consolidation logs endpoint
+@router.get("/{agent_id}/logs/consolidation")
+def api_get_consolidation_logs(agent_id: str, days: int = 7):
+    """Get consolidation logs for this agent.
 
     Returns log entries from the last N days, filtered by agent_id.
     """
@@ -394,7 +377,7 @@ def api_get_reflection_logs(agent_id: str, days: int = 7):
     if config is None:
         raise HTTPException(status_code=404, detail="Agent not found")
 
-    logger = get_logger("system/logs/reflection")
+    logger = get_logger("system/logs/consolidation")
     all_logs = logger.read_logs(days=days)
 
     # Filter by agent_id

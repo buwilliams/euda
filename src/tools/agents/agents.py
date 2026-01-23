@@ -50,7 +50,7 @@ def list_agents_for_routing() -> List[dict]:
     Returns a minimal summary for each agent:
     - id: The agent's identifier
     - name: Display name
-    - purpose: First line/paragraph of profile (what they do)
+    - purpose: First line/paragraph of identity (what they do)
     - enabled: Whether the agent is active
     """
     agents = []
@@ -61,16 +61,16 @@ def list_agents_for_routing() -> List[dict]:
     for agent_dir in AGENTS_DIR.iterdir():
         if agent_dir.is_dir():
             config_path = agent_dir / "config.json"
-            profile_path = agent_dir / "identity.md"
+            identity_path = agent_dir / "identity.md"
 
             if config_path.exists():
                 with open(config_path) as f:
                     config = json.load(f)
 
-                # Extract purpose from profile (first non-heading paragraph)
+                # Extract purpose from identity (first non-heading paragraph)
                 purpose = ""
-                if profile_path.exists():
-                    content = profile_path.read_text()
+                if identity_path.exists():
+                    content = identity_path.read_text()
                     # Skip title and empty lines, get first real paragraph
                     for line in content.split("\n"):
                         stripped = line.strip()
@@ -104,15 +104,10 @@ def get_agent(agent_id: str) -> Optional[dict]:
         with open(config_path) as f:
             result["config"] = json.load(f)
 
-    # Load identity (with fallback to old persona location)
+    # Load identity
     identity_path = agent_dir / "identity.md"
     if identity_path.exists():
         result["identity"] = identity_path.read_text()
-    else:
-        # Fallback to old persona location
-        persona_path = agent_dir / f"{agent_id}-persona.md"
-        if persona_path.exists():
-            result["identity"] = persona_path.read_text()
 
     return result
 
@@ -122,10 +117,6 @@ def get_agent_identity(agent_id: str) -> Optional[str]:
     identity_path = AGENTS_DIR / agent_id / "identity.md"
     if identity_path.exists():
         return identity_path.read_text()
-    # Fallback to old persona location
-    persona_path = AGENTS_DIR / agent_id / f"{agent_id}-persona.md"
-    if persona_path.exists():
-        return persona_path.read_text()
     return None
 
 
@@ -170,28 +161,19 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
     return {"updated": True, "agent_id": agent_id, "config": config}
 
 
-@tool("create_agent", "Create a new agent with config and profile. Use when: user asks for a new specialized agent or automation capability.", tool_type="agents", input_schema={
+@tool("create_agent", "Create a new agent with config and identity. Use when: user asks for a new specialized agent or automation capability.", tool_type="agents", input_schema={
     "type": "object",
     "properties": {
         "agent_id": {"type": "string", "description": "Unique identifier (lowercase, no spaces, e.g., 'researcher')"},
         "name": {"type": "string", "description": "Display name (e.g., 'Researcher')"},
         "purpose": {"type": "string", "description": "Description of what the agent does"},
         "tools": {"type": "array", "items": {"type": "string"}, "description": "List of tool names to assign"},
-        "triggers": {"type": "array", "items": {"type": "string"}, "description": "Simple wake-up triggers (e.g., ['time:morning']). Prefer exploration/reflection for behavioral triggers."},
-        "exploration": {
+        "triggers": {"type": "array", "items": {"type": "string"}, "description": "Wake-up triggers (e.g., ['time:morning'])"},
+        "consolidation": {
             "type": "object",
-            "description": "Enable autonomous discovery behavior with exploration.md prompt",
+            "description": "Enable memory consolidation behavior",
             "properties": {
-                "enabled": {"type": "boolean", "description": "Whether exploration is active"},
-                "trigger": {"type": "string", "description": "When to run (e.g., 'time:hour_04')"}
-            },
-            "required": ["enabled", "trigger"]
-        },
-        "reflection": {
-            "type": "object",
-            "description": "Enable memory consolidation behavior with reflection.md prompt",
-            "properties": {
-                "enabled": {"type": "boolean", "description": "Whether reflection is active"},
+                "enabled": {"type": "boolean", "description": "Whether consolidation is active"},
                 "trigger": {"type": "string", "description": "When to run (e.g., 'time:evening')"}
             },
             "required": ["enabled", "trigger"]
@@ -199,7 +181,7 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
     },
     "required": ["agent_id", "name", "purpose"]
 })
-def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None, exploration: dict = None, reflection: dict = None) -> dict:
+def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None, consolidation: dict = None) -> dict:
     """Create a new agent with the specified configuration.
 
     Args:
@@ -209,10 +191,8 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         tools: List of tool names to assign (use list_available_tools to see options).
                If not provided, uses minimal base tools.
         triggers: Optional list of triggers (e.g., ['time:morning', 'system:start'])
-        exploration: Optional dict to enable exploration (autonomous discovery).
-                     Example: {"enabled": True, "trigger": "time:hour_04"}
-        reflection: Optional dict to enable reflection (memory consolidation and identity updates).
-                    Example: {"enabled": True, "trigger": "time:evening"}
+        consolidation: Optional dict to enable consolidation (memory consolidation and identity updates).
+                       Example: {"enabled": True, "trigger": "time:evening"}
 
     Returns:
         Success status and agent details
@@ -248,24 +228,26 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         "id": agent_id,
         "name": name,
         "enabled": True,
+        "state": "enabled",
         "order": max_order + 1,
+        "token_budget": {
+            "frequency": "daily",
+            "input_ratio": 0.8,
+            "output_ratio": 0.2
+        },
         "tools": agent_tools,
         "triggers": triggers or []
     }
 
-    # Add exploration if provided
-    if exploration:
-        config["exploration"] = exploration
-
-    # Add reflection if provided
-    if reflection:
-        config["reflection"] = reflection
+    # Add consolidation if provided
+    if consolidation:
+        config["consolidation"] = consolidation
 
     config_path = agent_dir / "config.json"
     with open(config_path, "w") as f:
         json.dump(config, f, indent=2)
 
-    # Create identity (replaces old persona)
+    # Create identity
     identity = f"""# {name}
 
 {purpose}
@@ -294,7 +276,7 @@ I must:
     identity_path.write_text(identity)
 
     # Dynamically register and start the agent if manager is running
-    from ...manager import get_manager
+    from ...agent.manager import get_manager
     manager = get_manager()
     if manager and manager.running:
         result = manager.register_new_agent(agent_id)
@@ -392,17 +374,6 @@ def append_to_agent_identity(agent_id: str, section_title: str, content: str) ->
     return {"updated": True, "agent_id": agent_id, "section": section_title, "date": today}
 
 
-# Backward-compatible aliases for old tool names
-@tool("update_agent_profile", "Update an agent's identity. (Alias for update_agent_identity)", tool_type="agents")
-def update_agent_profile(agent_id: str, profile: str) -> dict:
-    """Update an agent's identity. Alias for update_agent_identity."""
-    return update_agent_identity_internal(agent_id, profile)
-
-
-@tool("update_agent_persona", "Update an agent's identity. (Alias for update_agent_identity)", tool_type="agents")
-def update_agent_persona(agent_id: str, persona: str) -> dict:
-    """Update an agent's identity. Alias for update_agent_identity."""
-    return update_agent_identity_internal(agent_id, persona)
 
 
 @tool("enable_agent", "Enable a disabled agent. Use when: reactivating an agent that was paused.", tool_type="agents")

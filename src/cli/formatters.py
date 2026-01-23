@@ -169,9 +169,9 @@ def format_human(event: str, data: dict, show_timestamp: bool = True) -> str:
 
     elif event == "consolidate_complete":
         graduated = data.get("items_graduated", 0)
-        profile = " + profile updated" if data.get("profile_updated") else ""
+        identity = " + identity updated" if data.get("identity_updated") else ""
         long_term = " + long-term entry" if data.get("long_term_entry") else ""
-        return f"{ts}{agent}{color}Reflection consolidate{reset} {graduated} graduated{profile}{long_term}"
+        return f"{ts}{agent}{color}Reflection consolidate{reset} {graduated} graduated{identity}{long_term}"
 
     elif event == "memory_add":
         mem_type = data.get("type", "unknown")

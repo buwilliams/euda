@@ -26,11 +26,11 @@ data/agents/worker/identity.md
 # ===================
 # Agent Library (agent-lib/)
 # ===================
-# Shareable agent templates - track config, profile, prompts only
+# Shareable agent templates - track config, identity, prompts only
 !agent-lib/
 !agent-lib/*/
 !agent-lib/*/config.json
-!agent-lib/*/profile.md
+!agent-lib/*/identity.md
 !agent-lib/*/prompts/
 
 # Runtime data in agent-lib is ignored
@@ -72,9 +72,11 @@ data/system/quotes.json
 data/system/prompts.jsonl
 data/system/prompts/*.jsonl
 data/system/logs/
+data/system/incidents/
 data/system/api_calls.json
 data/system/api_calls.jsonl
 data/system/store/
+data/system/token_usage/
 
 # User data directory (personal data)
 data/user/
@@ -92,6 +94,13 @@ data/jobs_backup_*/
 # Keep old-architecture tracked for reference
 # But ignore its data directory (user data)
 old-architecture/data/
+
+# ===================
+# Testing
+# ===================
+.coverage
+htmlcov/
+.pytest_cache/
 
 # ===================
 # Python

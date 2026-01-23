@@ -5,7 +5,7 @@ Auth API Routes
 from fastapi import APIRouter, Request, Response, HTTPException
 from pydantic import BaseModel
 
-from ...auth import (
+from ..auth import (
     is_password_set, verify_password, create_session,
     verify_session, invalidate_session
 )
