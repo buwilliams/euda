@@ -97,6 +97,20 @@ Jobs progress through states based on assignment and work:
 
 An agent can have multiple jobs assigned (queued), but only works one at a time.
 
+#### Job Routing
+
+Jobs move between agents (and users) through reassignment. When an agent needs input or wants to delegate, it reassigns the job and sets status back to `todo`. The recipient picks it up when they poll for work.
+
+**Handoff**: An agent can hand off a job to another agent or the user. This updates the assignee and records who sent it (`pending_from`), so the job can be returned after review. Example: an agent needs user approval, so it hands off to `user` with a note explaining what's needed.
+
+**Blocking**: Jobs can be marked as blocked using tags:
+- `waiting:*` — waiting for external input (e.g., `waiting:user-response`)
+- `blocked:*` — blocked by a dependency (e.g., `blocked:api-access`)
+
+Blocked jobs are excluded from actionable queries—agents won't pick them up until unblocked. When a user interacts with a blocked job (views it, adds an asset), the blocking tags are automatically removed and the job returns to the agent's queue.
+
+**The user as agent**: The user participates in job routing like any other agent. Jobs can be assigned to `user`, handed off to `user`, or created by `user`. The difference is interface—users work through the UI, agents work through polling and tool calls.
+
 #### Work Cycle
 
 When an agent starts working a job, it sets the status to `working`, executes a reasoning loop with tools until complete, then marks the job `done` and returns to polling.
