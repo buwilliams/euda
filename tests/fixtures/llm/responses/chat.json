@@ -1,0 +1,46 @@
+{
+  "name": "chat",
+  "description": "Mock responses for agent chat LLM calls",
+  "responses": [
+    {
+      "scenario": "chat_greeting",
+      "message_contains": "hello",
+      "text": "Hello! I'm doing well, thank you for asking. How can I help you today?",
+      "tool_calls": [],
+      "stop_reason": "end_turn",
+      "input_tokens": 100,
+      "output_tokens": 25
+    },
+    {
+      "scenario": "chat_productivity",
+      "message_contains": "productivity",
+      "text": "Here are three habits that can boost your productivity:\n\n1. **Time blocking**: Schedule specific blocks of time for focused work\n2. **Morning routine**: Start your day with a consistent routine\n3. **Regular breaks**: Take short breaks to maintain energy and focus",
+      "tool_calls": [],
+      "stop_reason": "end_turn",
+      "input_tokens": 150,
+      "output_tokens": 80
+    },
+    {
+      "scenario": "chat_with_tool",
+      "message_contains": "create a job",
+      "text": "I'll create that job for you.",
+      "tool_calls": [
+        {
+          "id": "tool_1",
+          "name": "create_job",
+          "input": {
+            "title": "New Task",
+            "description": "Task created via chat"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "input_tokens": 200,
+      "output_tokens": 50
+    }
+  ],
+  "default": {
+    "text": "I understand. How can I help you with that?",
+    "stop_reason": "end_turn"
+  }
+}

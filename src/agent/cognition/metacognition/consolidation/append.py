@@ -13,7 +13,7 @@ import uuid
 from .....llms import get_client
 from .....web.events import emit_ui_event
 from .....tools.data.memory import _load_entries, _save_entries, VALID_TYPES
-from ...regulation.config import get_global_config
+from ..regulation.config import get_global_config
 
 from .prompts import get_append_system_prompt, build_append_prompt, build_append_batch_prompt
 
