@@ -12,11 +12,32 @@ The best way to get started is to understand the mental model behind Euno.
 
 **Suggested reading:**
 1. [Pitch](docs/1_pitch.md) — What Euno is and why it exists
-2. [Business Plan](docs/2_business-plan.md) — Vision, affordable loss, crazy quilt, and gates
-3. [System](docs/3_system.md) — Entities, ontology, and lifecycle
-4. [Contributing](docs/4_contribute.md) — Setup, assignments, and PR process
+2. [Use Cases](docs/2_use_cases.md) — Example workflows and scenarios
+3. [Business Plan](docs/3_business-plan.md) — Vision, affordable loss, crazy quilt, and gates
+4. [System](docs/4_system.md) — Entities, ontology, and lifecycle
 
-The [Contributing Guide](docs/4_contribute.md) provides three hands-on assignments to help you learn by doing.
+The [Contributing Guide](docs/5_contribute.md) provides three hands-on assignments to help you learn by doing.
+
+## Usage
+
+```bash
+# Install dependencies (requires uv: https://docs.astral.sh/uv/)
+uv sync
+playwright install chromium  # for e2e tests
+
+# Start Euno (web server + agents)
+uv run euno start
+
+# Run tests
+uv run pytest tests/unit/          # unit tests
+uv run pytest tests/invariants/    # design invariant tests
+uv run pytest tests/e2e/           # e2e UI tests (requires running server)
+
+# CLI commands
+uv run euno chat                   # interactive chat with agent
+uv run euno dev watch              # stream all system events
+uv run euno dev memory chat        # view agent's memory
+```
 
 ## Community
 
@@ -34,12 +55,13 @@ Euno follows a top-down information hierarchy. When making changes, update highe
 ## Documentation
 
 - [Pitch](docs/1_pitch.md) — Introduction and vision
-- [Business Plan](docs/2_business-plan.md) — Vision and growth gates
-- [System](docs/3_system.md) — Entities, ontology, and lifecycle
-- [Contributing](docs/4_contribute.md) — Setup, PR process, deployment
-- [Points](docs/5_points.md) — Contribution tracking and rewards
-- [Operating Agreement](docs/6_operating-agreement.md) — Ownership and governance
-- [Privacy](docs/7_privacy.md) — Privacy philosophy and current state
+- [Use Cases](docs/2_use_cases.md) — Example workflows and scenarios
+- [Business Plan](docs/3_business-plan.md) — Vision and growth gates
+- [System](docs/4_system.md) — Entities, ontology, and lifecycle
+- [Contributing](docs/5_contribute.md) — Setup, PR process, deployment
+- [Points](docs/6_points.md) — Contribution tracking and rewards
+- [Operating Agreement](docs/7_operating-agreement.md) — Ownership and governance
+- [Privacy](docs/8_privacy.md) — Privacy philosophy and current state
 
 ## License
 
