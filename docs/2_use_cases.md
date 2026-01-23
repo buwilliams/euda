@@ -16,9 +16,9 @@ Jayden has ADHD and a mind that moves faster than his body. He starts ten projec
 
 - **Finds the thread.** Jayden's octopus phase focused on camouflage; his castle phase focused on hidden passages. Euno notices the pattern: *"You're not randomly jumping between topics—you're circling the same question. You're fascinated by how things protect themselves. Want to make that your actual project?"* For the first time, Jayden feels like his brain isn't broken—it's just nonlinear.
 
-- **Redirects without controlling.** After 90 minutes down a YouTube rabbit hole, Euno doesn't lecture: *"You started needing three examples for your project—you've now seen 200 flags. Want to keep going, or should I save this rabbit hole for later?"* Jayden finishes the project. Later, Euno sends him a documentary: *"For when you're actually free."*
+- **Surfaces opportunities.** Euno finds a youth science competition with a category for "biomimicry"—designs inspired by nature. It drafts a project proposal combining Jayden's octopus research with a concept for adaptive camouflage fabric. *"This competition deadline is in six weeks. I outlined your entry based on what you already know. Want to see it?"* Jayden enters. He doesn't win, but he finishes—and gets honorable mention.
 
-- **Keeps a proud record.** When Jayden says "I never finish anything," Euno responds: *"That's not true. Since September you've finished: the octopus report, the stop-motion video, the recipe for 'chaos nachos,' the map of your imaginary kingdom. That's five finished things. You also started twelve others—that's not failure, that's how you explore."*
+- **Builds the portfolio.** Euno quietly archives Jayden's scattered work: the octopus report, the stop-motion video, the castle drawings, the game designs. When Jayden says "I never finish anything," Euno shows him the collection: *"You've made more than you realize. Want me to turn this into a website? Your own museum of ideas."* Jayden's dad helps him launch it. His teacher shares it with the class.
 
 ---
 
@@ -28,11 +28,11 @@ Sofia is the middle of three kids. Her older sister is the star athlete; her you
 
 **How Euno helps Sofia flourish:**
 
-- **Sees what she creates.** Sofia writes a poem about feeling like furniture and saves it privately. A week later, Euno surfaces it: *"You wrote something true. There's a submission window for Teen Ink. You don't have to send it, but you could. You have things worth saying, even if nobody at home is asking to hear them."* Three months later, she's published.
+- **Finds her audience.** Sofia writes a poem about feeling like furniture and saves it privately. Euno surfaces an opportunity: *"There's a submission window for Teen Ink, and a spoken word open mic at the library next month. You don't have to share publicly, but you could. You have things worth saying."* Sofia submits to Teen Ink. Three months later, she's published.
 
-- **Helps her claim space.** Sofia made regional choir but hasn't told her family—her sister's volleyball signing day is coming. Euno: *"Your choir news is big. Do you want to tell them? I know it's hard to make space when your sister's thing is happening. I can help you figure out how to bring it up—or help you sit with it if you'd rather keep it yours."* She tells her mom. Her mom cries: "Why didn't you tell me sooner?"
+- **Does the research.** Sofia mentions she might want to study creative writing but doesn't know where. Euno compiles a list: *"Here are twelve colleges with strong writing programs, sorted by size and location. Three have summer workshops for high schoolers—applications open next month. I drafted your personal statement based on your published poem. Want to review it?"* Sofia applies to a summer program. She gets in.
 
-- **Notices the shift.** Sofia's been quieter. Her writing has turned darker—nothing alarming, but a pattern. Euno doesn't diagnose: *"Hey. You've seemed heavier this week. I wanted to check in. You don't have to explain anything. I'm just here, paying attention."* Sofia cries. Not because anything is terribly wrong—because someone noticed.
+- **Creates the space.** Sofia's been quieter, her writing darker. Euno doesn't diagnose—it acts: *"I made you a private journal space that's just for venting. Nothing gets analyzed, nothing gets surfaced. Just a place to put the heavy stuff. Also, here's a playlist I built from artists you've mentioned—for when words aren't working."* Sofia uses both. The playlist becomes her anchor.
 
 ---
 
@@ -42,11 +42,11 @@ Rachel is a product manager, mom of two, and default household CEO. She makes se
 
 **How Euno helps Rachel flourish:**
 
-- **Intervenes on the marriage.** Rachel and her husband haven't had a date in eight months. Euno notices they both had Thursday free: *"Neither of you made a move. Want me to fix this? I can find a sitter, make a reservation at that Italian place you mentioned two years ago, and put it on both calendars before you optimize it away. Just say yes."* The dinner is unremarkable. They hold hands in the car. That's everything.
+- **Takes the logistics.** Euno handles the invisible work: *"I've scheduled the kids' dentist appointments, ordered the birthday gift for Saturday's party, renewed the car registration, and meal-planned the week based on what's already in your fridge. Here's your Sunday review—veto anything wrong, otherwise it's handled."* Rachel gains back three hours a week she didn't know she was losing.
 
-- **Audits the decision load.** Euno analyzes: *"Last month you made 400 household decisions. 60% were reversible and low-stakes. You're spending executive function on choices that don't matter. Proposal: I default-handle the 60%—meal plans, errands, routine purchases. You review Sunday and veto anything wrong. Want to try it?"* Rachel cries from relief.
+- **Engineers the reconnection.** Rachel and her husband haven't had a date in eight months. Euno notices they both have Thursday free, finds a sitter with availability, makes a reservation at a restaurant Rachel mentioned two years ago, and sends them both a calendar invite: *"Date night. Thursday. 7pm. I handled it—just show up."* The dinner is unremarkable. They hold hands in the car. That's everything.
 
-- **Returns the reader.** Rachel used to love books. Euno remembers: *"I picked one for you. 218 pages—you can finish it in your commute over two weeks. It's about a woman reclaiming her life in midlife. I've added it to your Audible queue. You don't have to read it. But I want you to remember you're a person who loves books, not just a person who manages calendars."*
+- **Restores the reader.** Rachel used to love books. Euno doesn't just recommend one—it acts: *"I added a book to your Audible queue that fits your commute. I also found a book club in your area that meets monthly, kid-friendly timing. And I blocked 20 minutes on Sunday mornings—your 'reading window.' The family knows not to interrupt."* Rachel finishes three books that quarter. She joins the club.
 
 ---
 
@@ -56,11 +56,11 @@ David got laid off six months ago. He hasn't told his extended family. He spends
 
 **How Euno helps David flourish:**
 
-- **Breaks the shame spiral.** Euno knows because David's behavior changed—location data, messages, energy. It opens a door: *"You've been carrying something heavy for six months. You haven't told your brother, and I think the secret is harder than the situation. You're not a fraud—you got caught in a layoff. What would it feel like to tell one person this week?"* David tells his brother. His brother says: "Dude, why didn't you call me? I've been there."
+- **Does the job hunt.** Euno stops waiting for David to act: *"I analyzed 40 job postings in your space. You're underselling your project leadership—you led a team of eight and never mention it. I rewrote your resume, customized cover letters for six roles that actually fit your level, and scheduled them to send one per day. You just need to hit approve."* David gets an interview that week.
 
-- **Reframes the narrative.** David's inner story is failure. Euno offers another frame: *"You've spent six months with your kids like never before. You drove them to school every day. You were there for the kindergarten play. Your kids will remember this as the time Dad was around. That's not nothing. It might be everything."*
+- **Reframes the story.** David's inner narrative is failure. Euno offers another frame and a project: *"You've spent six months with your kids like never before. That's not nothing—it might be everything. Want to make something of it? I can help you write a short piece about what you've learned. There's a parenting blog that accepts submissions from dads. Your story might help someone else."* David writes it. It gets published. Three strangers email to say thanks.
 
-- **Does the actual work.** Euno analyzes 40 job postings: *"You're underselling your project leadership—you led a team of eight and never mention it. You're applying below your level out of fear. I rewrote your resume and found six roles that fit. One application a day, me helping you customize each. Want to start?"* David gets an interview that week.
+- **Finds the hidden opportunity.** While scanning job boards, Euno notices something: *"A startup in your industry is looking for a part-time advisor, not a full-time employee. Lower pay, but flexible hours and equity. It matches your skills exactly, and you'd keep the time with your kids. Want me to draft an intro email?"* David hadn't considered consulting. Now he has two income streams.
 
 ---
 
@@ -70,11 +70,11 @@ Vivian spent 35 years in a marriage that was "fine." When her husband died, she 
 
 **How Euno helps Vivian flourish:**
 
-- **Gives permission.** Vivian wants to travel alone but feels ridiculous. Euno: *"You keep saying 'at my age' like it's a disqualification. You're 67—you might have 25 more years. You've spent 35 years living someone else's life. Now you figure out your own. That's not sad. That's extraordinary. What do you actually want to try?"* She goes to Portugal alone. She eats at restaurants solo and doesn't feel pathetic. She feels free.
+- **Plans the adventure.** Vivian mentions wanting to see Portugal. Euno doesn't just encourage—it builds: *"I made you a 10-day itinerary: Lisbon, Sintra, Porto. Paced for walking, not rushing. Hotels with good reviews from solo travelers. I booked refundable reservations for next month—cancel anytime, but now it's real."* Vivian goes. She eats at restaurants alone and doesn't feel pathetic. She feels free.
 
-- **Excavates her identity.** For 35 years, Vivian's preferences merged with her husband's. Euno runs an experiment: *"This week I'll suggest things—songs, recipes, places—and you tell me what resonates. Yes or no, no explanations. We're building a map of who you are when no one else is shaping it."* She discovers she loves jazz (he hated it), spicy food (he couldn't handle it), and long walks in rain (he thought them pointless).
+- **Excavates the identity.** For 35 years, Vivian's preferences merged with her husband's. Euno runs an active experiment: *"This week I'm sending you one thing each day—a song, a recipe, an article, a place. Just tell me yes or no. We're building a map of who you are when no one else is shaping it."* Vivian discovers she loves jazz, spicy food, and rain. She starts a blog called "67 and Beginning."
 
-- **Guides the dating navigation.** Vivian hasn't dated since 1978. Euno becomes her guide: *"Dating at 67 is different—in good ways. You know who you are. You're not auditioning for marriage. Let's create a profile that's honest about who you are now, then set the bar low: coffee, public place, no pressure."* She goes on three dates. Two are duds. One becomes a friend she talks to weekly. That's enough for now.
+- **Opens new doors.** Euno notices Vivian's watercolors are getting good. *"There's a local gallery that hosts amateur shows quarterly. Submission deadline is in three weeks. I photographed your last four paintings from your phone's camera roll and formatted them for submission. Also, there's an online community of late-blooming artists—want me to introduce you?"* Vivian submits. One painting sells for $200. She cries.
 
 ---
 
@@ -84,11 +84,11 @@ Earl was a union carpenter who built half the houses in his county. His hands do
 
 **How Euno helps Earl flourish:**
 
-- **Resurrects the memoir.** Euno: *"Let's get your book done. I read what you wrote—it's good. You stopped because you didn't know how to structure the middle. Proposal: we work together, 20 minutes a day. You talk, I organize. We're not aiming for the New York Times. We're aiming for your great-grandkids to know who you were."* Three months later, there's a printed copy on his shelf.
+- **Finishes the book.** Euno doesn't wait for Earl to figure it out: *"I read your memoir draft. It's good—you stopped because you didn't know how to structure the middle. Here's my proposal: 20 minutes a day, you talk, I organize. I'll handle transcription, editing, and layout. We're not aiming for the New York Times. We're aiming for a printed copy your great-grandkids can hold."* Three months later, it's on his shelf. He orders ten copies for the family.
 
-- **Transfers the knowledge.** Earl's carpentry skills are intact but unused. Euno finds an audience: *"There's a community college woodworking program that would love a guest speaker. You wouldn't do the work—you'd teach it. I can arrange a video call if travel is hard."* Earl does a Zoom with twenty students. They ask questions for an hour. He hasn't felt useful in years.
+- **Transfers the craft.** Earl's carpentry knowledge is intact but unused. Euno finds the audience: *"A community college 40 minutes away has a woodworking program. They want guest speakers. I drafted an email to the instructor offering a video call. Also, I found a YouTube channel that documents master craftsmen—they're looking for subjects. Want me to reach out?"* Earl does the college Zoom. Twenty students ask questions for an hour. The YouTube crew visits next month.
 
-- **Writes the last letters.** Euno: *"Want to write them now? The things you want to say to each of your kids and grandkids—the advice, the apologies, the things you're proud of. One a week. They don't have to read them now, but they'll have them when they need them."* Earl writes seventeen letters over four months. The urgency dissolves into peace.
+- **Writes the legacy.** Euno proposes a project: *"You have things to say to your kids and grandkids—advice, apologies, pride. Want to write the letters now? One per week, you dictate, I polish. They don't read them now, but they'll have them when they need them. I'll also compile a 'wisdom document'—the life lessons you want passed down, organized by topic."* Earl dictates seventeen letters and forty-three lessons. The urgency he felt dissolves into peace.
 
 ---
 
@@ -96,6 +96,6 @@ Earl was a union carpenter who built half the houses in his county. His hands do
 
 This is what a personal intelligence does. Not filtering your Twitter feed. *Knowing you well enough to anticipate what you need before you know you need it—and acting on your behalf to help you flourish.*
 
-Euno sees patterns you can't see. Carries what you're tired of carrying. Remembers what you've forgotten. Acts before you ask.
+Euno sees patterns you can't see. Does work you don't have time to do. Finds opportunities you'd never discover. Carries what you're tired of carrying. Helps you become more than you were—not just solving problems, but opening doors you didn't know existed.
 
 That's eudaimonia. That's Euno.
