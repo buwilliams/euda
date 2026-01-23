@@ -1,4 +1,4 @@
-# Euno Use Cases
+# Euno for People
 
 **A personal intelligence that anticipates you.**
 

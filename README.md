@@ -12,7 +12,7 @@ The best way to get started is to understand the mental model behind Euno.
 
 **Suggested reading:**
 1. [Pitch](docs/1_pitch.md) — What Euno is and why it exists
-2. [Use Cases](docs/2_use_cases.md) — Example workflows and scenarios
+2. [Euno for People](docs/2_euno_for_people.md) — Personas and how Euno helps them flourish
 3. [Business Plan](docs/3_business-plan.md) — Vision, affordable loss, crazy quilt, and gates
 4. [System](docs/4_system.md) — Entities, ontology, and lifecycle
 
@@ -55,7 +55,7 @@ Euno follows a top-down information hierarchy. When making changes, update highe
 ## Documentation
 
 - [Pitch](docs/1_pitch.md) — Introduction and vision
-- [Use Cases](docs/2_use_cases.md) — Example workflows and scenarios
+- [Euno for People](docs/2_euno_for_people.md) — Personas and how Euno helps them flourish
 - [Business Plan](docs/3_business-plan.md) — Vision and growth gates
 - [System](docs/4_system.md) — Entities, ontology, and lifecycle
 - [Contributing](docs/5_contribute.md) — Setup, PR process, deployment
