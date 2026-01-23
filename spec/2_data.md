@@ -69,7 +69,7 @@ Memory moves through two phases:
 
 - **Consolidate phase** (triggered, creates visible jobs)
   - Heavy analysis triggered by `time:evening` or custom trigger
-  - Creates `Trigger:consolidation:{date}` jobs that appear in agent's queue
+  - Creates `Trigger:consolidation:{phase}:{date}` jobs that appear in agent's queue
   - Uses RLM `extract_identity()` to analyze long-term memory for identity updates
   - Discovers and validates behavioral patterns
   - Updates identity with new patterns, interests, and biographical information

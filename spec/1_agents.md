@@ -281,7 +281,7 @@ Consolidation is the metacognitive process of self-analysis and growth:
 
 - **Consolidate phase** (triggered, creates visible jobs)
   - Heavy analysis triggered by `consolidation.trigger` config
-  - Creates `Trigger:consolidation:{date}` jobs
+  - Creates `Trigger:consolidation:{phase}:{date}` jobs
   - Reviews short-term memory, graduates items to long-term
   - Updates identity based on patterns
 
