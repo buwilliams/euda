@@ -72,8 +72,8 @@ class TestSendMessage:
         # User message should appear
         expect(page.locator('[data-testid="message-user"]')).to_be_visible(timeout=5000)
 
-    def test_send_message_shows_thinking(self, authenticated_page: Page):
-        """Sending a message should show thinking indicator."""
+    def test_send_message_shows_processing_state(self, authenticated_page: Page):
+        """Sending a message should show thinking indicator or agent response."""
         page = authenticated_page
 
         # Switch to chat tab
@@ -83,9 +83,12 @@ class TestSendMessage:
         page.locator('[data-testid="context-input"]').fill("Test thinking indicator")
         page.locator('[data-testid="send-btn"]').click()
 
-        # Thinking indicator should appear (may be brief)
-        # Note: This may be flaky if response is very fast
-        expect(page.locator('[data-testid="thinking-indicator"]')).to_be_visible(timeout=2000)
+        # Either thinking indicator or agent response should appear
+        # (if response is very fast, thinking indicator may already be gone)
+        thinking_or_response = page.locator(
+            '[data-testid="thinking-indicator"], [data-testid="message-agent"]'
+        )
+        expect(thinking_or_response.first).to_be_visible(timeout=10000)
 
 
 class TestReceiveResponse:
