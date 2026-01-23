@@ -39,7 +39,7 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
 
     def emit_progress(step: str, message: str):
         """Emit SSE progress event."""
-        emit_ui_event("reflection:progress", {
+        emit_ui_event("consolidation:progress", {
             "execution_id": execution_id,
             "agent_id": agent_id,
             "phase": "append",
@@ -87,7 +87,7 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
             text_response += block.text
 
     # Emit LLM complete event
-    emit_ui_event("reflection:llm_complete", {
+    emit_ui_event("consolidation:llm_complete", {
         "execution_id": execution_id,
         "agent_id": agent_id,
         "phase": "append",
@@ -124,7 +124,7 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
     })
 
     # Emit completion event
-    emit_ui_event("reflection:complete", {
+    emit_ui_event("consolidation:complete", {
         "execution_id": execution_id,
         "agent_id": agent_id,
         "phase": "append",
@@ -318,7 +318,7 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
 
     def emit_progress(step: str, message: str):
         """Emit SSE progress event."""
-        emit_ui_event("reflection:progress", {
+        emit_ui_event("consolidation:progress", {
             "execution_id": execution_id,
             "agent_id": agent_id,
             "phase": "append_batch",
@@ -366,7 +366,7 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
             text_response += block.text
 
     # Emit LLM complete event
-    emit_ui_event("reflection:llm_complete", {
+    emit_ui_event("consolidation:llm_complete", {
         "execution_id": execution_id,
         "agent_id": agent_id,
         "phase": "append_batch",
@@ -405,7 +405,7 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
     })
 
     # Emit completion event
-    emit_ui_event("reflection:complete", {
+    emit_ui_event("consolidation:complete", {
         "execution_id": execution_id,
         "agent_id": agent_id,
         "phase": "append_batch",

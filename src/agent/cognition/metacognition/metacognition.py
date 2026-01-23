@@ -205,18 +205,18 @@ class Metacognition:
             if "trigger:exploration" in job_tags or job_name.startswith("Trigger:exploration"):
                 return True
 
-        if "reflection" in enabled_for:
-            if "trigger:reflection" in job_tags or job_name.startswith("Trigger:reflection"):
+        if "consolidation" in enabled_for:
+            if "trigger:consolidation" in job_tags or job_name.startswith("Trigger:consolidation"):
                 return True
 
         return False
 
     # ============== Efficiency ==============
 
-    def should_defer_reflection(self) -> bool:
-        """Check if reflection should be deferred until end of work cycle."""
+    def should_defer_consolidation(self) -> bool:
+        """Check if consolidation should be deferred until end of work cycle."""
         efficiency_config = self.config.get_efficiency_config()
-        return efficiency_config.get("defer_reflection_in_work_cycles", True)
+        return efficiency_config.get("defer_consolidation_in_work_cycles", True)
 
     # ============== Combined Status ==============
 

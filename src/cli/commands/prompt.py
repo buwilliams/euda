@@ -109,13 +109,13 @@ def _show_reflect_prompt(agent_id: str, json_mode: bool):
 
     # Create a fake reflection job to show the prompt
     prompt = render_template(
-        "agent/reflection",
+        "agent/consolidation",
         agent_id=agent_id,
         job_id="<job_id>",
-        job_name="Trigger:reflection:2025-01-01",
+        job_name="Trigger:consolidation:2025-01-01",
         job_description="Daily reflection trigger",
         job_due_date="No deadline",
-        job_tags="trigger:reflection",
+        job_tags="trigger:consolidation",
         job_attachments="No attachments",
         remaining_jobs_notice=""
     )
@@ -124,7 +124,7 @@ def _show_reflect_prompt(agent_id: str, json_mode: bool):
         print(json.dumps({
             "agent_id": agent_id,
             "prompt_type": "reflection",
-            "template": "agent/reflection",
+            "template": "agent/consolidation",
             "prompt": prompt
         }))
     else:

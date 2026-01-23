@@ -41,11 +41,9 @@ class Agent:
         self._event_sink = event_sink
 
         # Initialize consolidation (self-improvement) if enabled
-        consolidation_config = self.config.get("consolidation", self.config.get("reflection", {}))
+        consolidation_config = self.config.get("consolidation", {})
         consolidation_enabled = consolidation_config.get("enabled", True)
         self.consolidation = Consolidation(self) if consolidation_enabled else None
-        # Keep reflection alias for backward compatibility
-        self.reflection = self.consolidation
 
         # Initialize metacognition (always created - inherent to all agents)
         self.metacognition = Metacognition(self)
@@ -359,9 +357,9 @@ class Agent:
     def _is_reflection_trigger(self, job_tags: list, job_name: str) -> bool:
         """Check if a job is a reflection trigger that should be handled directly."""
         for tag in job_tags:
-            if tag.startswith("trigger:reflection"):
+            if tag.startswith("trigger:consolidation"):
                 return True
-        return job_name.startswith("Trigger:reflection")
+        return job_name.startswith("Trigger:consolidation")
 
     def _execute_reflection_trigger(self, job: dict):
         """Execute a reflection trigger directly (not through chat loop).
@@ -384,7 +382,7 @@ class Agent:
         # Determine phase from tags
         phase = "both"  # default
         for tag in job_tags:
-            if tag.startswith("trigger:reflection:"):
+            if tag.startswith("trigger:consolidation:"):
                 phase = tag.split(":")[-1]
                 break
 
@@ -395,12 +393,12 @@ class Agent:
         })
 
         try:
-            if self.reflection:
+            if self.consolidation:
                 if phase in ("append", "both"):
                     # Append is usually done automatically after chat, skip for manual triggers
                     pass
                 if phase in ("consolidate", "both"):
-                    self.reflection.consolidate(execution_id=execution_id)
+                    self.consolidation.consolidate(execution_id=execution_id)
 
             # Complete the trigger job
             complete_job(job_id)
@@ -423,15 +421,15 @@ class Agent:
         """Determine which prompt template to use based on job type.
 
         Returns:
-            Template name: 'agent/reflection', 'agent/exploration', or 'agent/job_assignment'
+            Template name: 'agent/consolidation', 'agent/exploration', or 'agent/job_assignment'
         """
         job_name = job.get("name", "")
         job_tags = job.get("tags", [])
 
         # Reflection triggers - note: these are now handled directly in _execute_reflection_trigger
         # This path is kept for backwards compatibility with any code that calls this directly
-        if "trigger:reflection" in job_tags or job_name.startswith("Trigger:reflection"):
-            return "agent/reflection"
+        if "trigger:consolidation" in job_tags or job_name.startswith("Trigger:consolidation"):
+            return "agent/consolidation"
         # Exploration triggers
         elif "trigger:exploration" in job_tags or job_name.startswith("Trigger:exploration"):
             return "agent/exploration"
@@ -496,7 +494,7 @@ class Agent:
         )
 
     def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True,
-             voice_input: bool = False, defer_reflection: bool = False) -> str:
+             voice_input: bool = False, defer_consolidation: bool = False) -> str:
         """Process a chat message and return response.
 
         Args:
@@ -504,7 +502,7 @@ class Agent:
             log_to_memory: Whether to log this conversation to long-term memory (default True)
             save_to_history: Whether to save to conversation history (default True)
             voice_input: Whether input came from voice (enables conversational response style)
-            defer_reflection: If True, skip reflection append (caller will batch it)
+            defer_consolidation: If True, skip reflection append (caller will batch it)
         """
         self._log("chat_start", {"message_length": len(message)})
 
@@ -594,9 +592,9 @@ class Agent:
             self._append_to_long_term_memory(message, text_response)
 
         # Run reflection append phase to extract noteworthy items
-        # Skip if defer_reflection=True (caller will batch process)
-        if self.reflection and log_to_memory and not defer_reflection:
-            self.reflection.append(message, text_response)
+        # Skip if defer_consolidation=True (caller will batch process)
+        if self.consolidation and log_to_memory and not defer_consolidation:
+            self.consolidation.append(message, text_response)
 
         return text_response
 
@@ -694,7 +692,7 @@ class Agent:
         iteration = 0
 
         # Check if deferred reflection is enabled (efficiency optimization)
-        defer_reflection = self.metacognition.should_defer_reflection()
+        defer_consolidation = self.metacognition.should_defer_consolidation()
         exchanges = []  # Collect for batched reflection if deferred
 
         try:
@@ -713,10 +711,10 @@ class Agent:
                 # Log to memory for memory creation, but don't save to conversation history
                 # Defer reflection if enabled (will batch process at end)
                 response = self.chat(prompt, log_to_memory=True, save_to_history=False,
-                                     defer_reflection=defer_reflection)
+                                     defer_consolidation=defer_consolidation)
 
                 # Collect exchange for batched reflection
-                if defer_reflection and self.reflection:
+                if defer_consolidation and self.consolidation:
                     exchanges.append((prompt, response))
 
                 print(f"[{self.id}] {response[:100]}...")
@@ -750,9 +748,9 @@ class Agent:
                 self._log("work_cycle_end", {"reason": "done_working", "iterations": iteration})
         finally:
             # Batch reflection at end of work cycle (if deferred)
-            if defer_reflection and self.reflection and exchanges:
+            if defer_consolidation and self.consolidation and exchanges:
                 self._log("reflection_batch", {"exchange_count": len(exchanges)})
-                self.reflection.append_batch(exchanges)
+                self.consolidation.append_batch(exchanges)
 
             # Clear job context
             self._current_job_id = None

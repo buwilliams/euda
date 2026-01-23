@@ -45,7 +45,7 @@ def cmd_reflect(args: List[str], json_mode: bool = False):
     # Create agent with event sink
     agent = Agent(agent_id, event_sink=stream.sink)
 
-    if not agent.reflection:
+    if not agent.consolidation:
         print_error(f"Reflection not enabled for agent: {agent_id}", json_mode)
         sys.exit(1)
 
@@ -100,7 +100,7 @@ def _run_append(agent, stream, json_mode: bool):
         print(f"User message: {user_msg[:50]}...")
 
     # Run append
-    agent.reflection.append(user_msg, assistant_msg)
+    agent.consolidation.append(user_msg, assistant_msg)
 
     if not json_mode:
         print_success("Append phase complete", json_mode)
@@ -112,7 +112,7 @@ def _run_consolidate(agent, stream, json_mode: bool):
         print_header("Consolidate Phase", json_mode)
 
     # Run consolidate
-    agent.reflection.consolidate()
+    agent.consolidation.consolidate()
 
     if not json_mode:
         print_success("Consolidate phase complete", json_mode)

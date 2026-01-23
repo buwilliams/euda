@@ -807,16 +807,16 @@ async function loadLongTermMemoryWithPreviews(agentId) {
     return [];
 }
 
-async function loadReflectionLogs(agentId) {
+async function loadConsolidationLogs(agentId) {
     try {
-        const response = await fetch(`/api/agents/${agentId}/logs/reflection?days=7`, {
+        const response = await fetch(`/api/agents/${agentId}/logs/consolidation?days=7`, {
             credentials: 'same-origin'
         });
         if (response.ok) {
             return await response.json();
         }
     } catch (error) {
-        console.error('Failed to load reflection logs:', error);
+        console.error('Failed to load consolidation logs:', error);
     }
     return { agent_id: agentId, logs: [] };
 }
@@ -1022,7 +1022,7 @@ async function refreshReflectionSection(agentId) {
         if (header && header.textContent.includes('Reflection')) {
             const content = header.nextElementSibling;
             if (content && content.classList.contains('collapsible-content') && content.classList.contains('open')) {
-                const data = await loadReflectionLogs(agentId);
+                const data = await loadConsolidationLogs(agentId);
                 content.innerHTML = renderReflectionContent(data, agentId);
             }
             break;

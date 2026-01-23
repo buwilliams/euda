@@ -187,11 +187,11 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
             },
             "required": ["enabled", "trigger"]
         },
-        "reflection": {
+        "consolidation": {
             "type": "object",
-            "description": "Enable memory consolidation behavior with reflection.md prompt",
+            "description": "Enable memory consolidation behavior",
             "properties": {
-                "enabled": {"type": "boolean", "description": "Whether reflection is active"},
+                "enabled": {"type": "boolean", "description": "Whether consolidation is active"},
                 "trigger": {"type": "string", "description": "When to run (e.g., 'time:evening')"}
             },
             "required": ["enabled", "trigger"]
@@ -199,7 +199,7 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
     },
     "required": ["agent_id", "name", "purpose"]
 })
-def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None, exploration: dict = None, reflection: dict = None) -> dict:
+def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None, exploration: dict = None, consolidation: dict = None) -> dict:
     """Create a new agent with the specified configuration.
 
     Args:
@@ -211,8 +211,8 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         triggers: Optional list of triggers (e.g., ['time:morning', 'system:start'])
         exploration: Optional dict to enable exploration (autonomous discovery).
                      Example: {"enabled": True, "trigger": "time:hour_04"}
-        reflection: Optional dict to enable reflection (memory consolidation and identity updates).
-                    Example: {"enabled": True, "trigger": "time:evening"}
+        consolidation: Optional dict to enable consolidation (memory consolidation and identity updates).
+                       Example: {"enabled": True, "trigger": "time:evening"}
 
     Returns:
         Success status and agent details
@@ -263,9 +263,9 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
     if exploration:
         config["exploration"] = exploration
 
-    # Add reflection if provided
-    if reflection:
-        config["reflection"] = reflection
+    # Add consolidation if provided
+    if consolidation:
+        config["consolidation"] = consolidation
 
     config_path = agent_dir / "config.json"
     with open(config_path, "w") as f:

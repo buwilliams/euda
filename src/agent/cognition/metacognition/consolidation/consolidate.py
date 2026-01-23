@@ -75,7 +75,7 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
 
     def emit_progress(step: str, message: str):
         """Emit SSE progress event."""
-        emit_ui_event("reflection:progress", {
+        emit_ui_event("consolidation:progress", {
             "execution_id": execution_id,
             "agent_id": agent_id,
             "phase": "consolidate",
@@ -142,7 +142,7 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
             "agent_id": agent_id,
             "reason": "no_memory"
         })
-        emit_ui_event("reflection:complete", {
+        emit_ui_event("consolidation:complete", {
             "execution_id": execution_id,
             "agent_id": agent_id,
             "phase": "consolidate",
@@ -200,7 +200,7 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
     })
 
     # Emit completion event
-    emit_ui_event("reflection:complete", {
+    emit_ui_event("consolidation:complete", {
         "execution_id": execution_id,
         "agent_id": agent_id,
         "phase": "consolidate",

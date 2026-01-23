@@ -23,12 +23,12 @@ DEFAULT_CONFIG = {
         "max_no_progress_iterations": 5
     },
     "planning": {
-        "enabled_for": ["exploration", "reflection"]
+        "enabled_for": ["exploration", "consolidation"]
     },
     "efficiency": {
-        "defer_reflection_in_work_cycles": True
+        "defer_consolidation_in_work_cycles": True
     },
-    "reflection": {
+    "consolidation": {
         "append_max_tokens": 500,
         "append_batch_max_tokens": 1000,
         "consolidate_max_tokens": 2000,
@@ -128,10 +128,10 @@ class MetacognitionConfig:
         full = self.get_full_config()
         return full.get("efficiency", DEFAULT_CONFIG["efficiency"])
 
-    def get_reflection_config(self) -> dict:
-        """Get reflection (memory processing) configuration."""
+    def get_consolidation_config(self) -> dict:
+        """Get consolidation (memory processing) configuration."""
         full = self.get_full_config()
-        return full.get("reflection", DEFAULT_CONFIG["reflection"])
+        return full.get("consolidation", DEFAULT_CONFIG["consolidation"])
 
     def invalidate(self):
         """Invalidate cached config. Call when settings change."""

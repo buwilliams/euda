@@ -522,12 +522,12 @@ class AgentManager:
                     agent._log("transient_error_retry", {"delay_seconds": 5})
                     time.sleep(5)
 
-    def _create_reflection_jobs(self, trigger_name: str):
-        """Create reflection jobs for agents with matching reflection trigger.
+    def _create_consolidation_jobs(self, trigger_name: str):
+        """Create consolidation jobs for agents with matching consolidation trigger.
 
-        Reflection is now a first-class behavioral trigger. Instead of running
-        consolidation directly, we create a reflection job that the agent
-        processes using the reflection.md prompt and memory tools.
+        Consolidation is a first-class behavioral trigger. Instead of running
+        consolidation directly, we create a consolidation job that the agent
+        processes using the consolidation prompt and memory tools.
 
         Args:
             trigger_name: The trigger that fired (e.g., "time:evening")
@@ -542,28 +542,28 @@ class AgentManager:
             if not agent.config.get("enabled", True):
                 continue
 
-            # Check if agent has reflection enabled and if this trigger matches
-            reflection_config = agent.config.get("reflection", {})
-            if not reflection_config.get("enabled", True):
+            # Check if agent has consolidation enabled and if this trigger matches
+            consolidation_config = agent.config.get("consolidation", {})
+            if not consolidation_config.get("enabled", True):
                 continue
 
-            reflection_trigger = reflection_config.get("trigger", "time:evening")
+            consolidation_trigger = consolidation_config.get("trigger", "time:evening")
 
-            if trigger_name == reflection_trigger:
-                job_name = f"Trigger:reflection:{today}"
+            if trigger_name == consolidation_trigger:
+                job_name = f"Trigger:consolidation:{today}"
 
-                # Check if reflection job already exists for this agent today
+                # Check if consolidation job already exists for this agent today
                 existing = list_jobs(status="todo", assignee=agent_id)
                 already_exists = any(j["name"] == job_name for j in existing)
 
                 if not already_exists:
-                    print(f"[scheduler] Creating reflection job for {agent_id}")
+                    print(f"[scheduler] Creating consolidation job for {agent_id}")
                     create_job(
                         name=job_name,
-                        description="Scheduled reflection: review memories, evolve identity, graduate learnings",
+                        description="Scheduled consolidation: review memories, evolve identity, graduate learnings",
                         parent_id=system_container["id"],
                         assignees=[agent_id],
-                        tags=["trigger:reflection"],
+                        tags=["trigger:consolidation"],
                         due_date=None,
                         created_by="system"
                     )
@@ -686,8 +686,8 @@ class AgentManager:
                             state[f"last_{name}"] = today
                             self._save_system_state(state)
 
-                        # Create reflection jobs for agents with matching reflection trigger
-                        self._create_reflection_jobs(trigger_name)
+                        # Create consolidation jobs for agents with matching consolidation trigger
+                        self._create_consolidation_jobs(trigger_name)
 
                         # Create exploration jobs for agents with matching exploration trigger
                         self._create_exploration_jobs(trigger_name)

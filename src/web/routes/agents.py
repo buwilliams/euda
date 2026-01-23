@@ -36,7 +36,7 @@ class UpdateConfigRequest(BaseModel):
     enabled: Optional[bool] = None
     tools: Optional[List[str]] = None
     triggers: Optional[List[str]] = None
-    reflection: Optional[Dict[str, Any]] = None  # {enabled, trigger}
+    consolidation: Optional[Dict[str, Any]] = None  # {enabled, trigger}
     exploration: Optional[Dict[str, Any]] = None  # {enabled, trigger}
 
 
@@ -158,11 +158,11 @@ def api_update_config(agent_id: str, request: UpdateConfigRequest):
         current_config["tools"] = request.tools
     if request.triggers is not None:
         current_config["triggers"] = request.triggers
-    if request.reflection is not None:
-        # Merge reflection settings
-        if "reflection" not in current_config:
-            current_config["reflection"] = {}
-        current_config["reflection"].update(request.reflection)
+    if request.consolidation is not None:
+        # Merge consolidation settings
+        if "consolidation" not in current_config:
+            current_config["consolidation"] = {}
+        current_config["consolidation"].update(request.consolidation)
     if request.exploration is not None:
         # Merge exploration settings
         if "exploration" not in current_config:
@@ -317,7 +317,7 @@ def api_get_monitoring(agent_id: str, offset: int = 0, limit: int = 20):
 def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = None):
     """Trigger reflection for an agent by creating a trigger job.
 
-    Creates a job with tags=["trigger:reflection:{phase}"] that the agent
+    Creates a job with tags=["trigger:consolidation:{phase}"] that the agent
     will pick up and process during its work cycle.
 
     Returns an execution_id for SSE progress tracking.
@@ -338,11 +338,11 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
     system_container = get_system_container()
 
     job = create_job(
-        name=f"Trigger:reflection:{today}",
+        name=f"Trigger:consolidation:{today}",
         description=f"Manual reflection trigger (phase: {phase}, execution_id: {execution_id})",
         parent_id=system_container["id"],
         assignees=[agent_id],
-        tags=[f"trigger:reflection:{phase}", "ui:manual", f"execution:{execution_id}"],
+        tags=[f"trigger:consolidation:{phase}", "ui:manual", f"execution:{execution_id}"],
         created_by="web-ui"
     )
 
@@ -424,7 +424,7 @@ def api_get_active_executions(agent_id: str):
         # Check for trigger tags
         phase = None
         for tag in tags:
-            if tag.startswith("trigger:reflection:"):
+            if tag.startswith("trigger:consolidation:"):
                 phase = tag.split(":")[-1]  # append, consolidate, or both
                 break
             elif tag == "trigger:exploration":
@@ -451,10 +451,10 @@ def api_get_active_executions(agent_id: str):
     return executions
 
 
-# Reflection logs endpoint
-@router.get("/{agent_id}/logs/reflection")
-def api_get_reflection_logs(agent_id: str, days: int = 7):
-    """Get reflection logs for this agent.
+# Consolidation logs endpoint
+@router.get("/{agent_id}/logs/consolidation")
+def api_get_consolidation_logs(agent_id: str, days: int = 7):
+    """Get consolidation logs for this agent.
 
     Returns log entries from the last N days, filtered by agent_id.
     """
@@ -463,7 +463,7 @@ def api_get_reflection_logs(agent_id: str, days: int = 7):
     if config is None:
         raise HTTPException(status_code=404, detail="Agent not found")
 
-    logger = get_logger("system/logs/reflection")
+    logger = get_logger("system/logs/consolidation")
     all_logs = logger.read_logs(days=days)
 
     # Filter by agent_id

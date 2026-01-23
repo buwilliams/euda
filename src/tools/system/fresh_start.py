@@ -160,11 +160,11 @@ def perform_fresh_start(create_backup_first: bool = True) -> dict:
         if quotes_file.exists():
             quotes_file.unlink()
             deleted.append("system/quotes.json")
-        # Remove reflection logs
-        reflection_logs = system_dir / "logs" / "reflection"
-        if reflection_logs.exists():
-            shutil.rmtree(reflection_logs)
-            deleted.append("system/logs/reflection/")
+        # Remove consolidation logs
+        consolidation_logs = system_dir / "logs" / "consolidation"
+        if consolidation_logs.exists():
+            shutil.rmtree(consolidation_logs)
+            deleted.append("system/logs/consolidation/")
         # Remove prompt logs
         prompt_logs = system_dir / "logs" / "prompts"
         if prompt_logs.exists():

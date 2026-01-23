@@ -1,5 +1,5 @@
 """
-Reflection Prompts - LLM prompts for append and consolidate phases.
+Consolidation Prompts - LLM prompts for append and consolidate phases.
 
 Prompts are loaded from data/system/prompts/ templates.
 """
@@ -13,7 +13,7 @@ from .....prompts import load_template, render_template
 
 def get_append_system_prompt() -> str:
     """Get the system prompt for the append phase."""
-    return load_template("reflection/append_system")
+    return load_template("consolidation/append_system")
 
 
 def build_append_prompt(
@@ -43,7 +43,7 @@ def build_append_prompt(
         memory_text = "(empty)"
 
     return render_template(
-        "reflection/append_user",
+        "consolidation/append_user",
         agent_identity=agent_profile,
         existing_memory=memory_text,
         user_message=user_message,
@@ -86,7 +86,7 @@ def build_append_batch_prompt(
     exchanges_text = "\n".join(exchange_lines)
 
     return render_template(
-        "reflection/append_batch_user",
+        "consolidation/append_batch_user",
         agent_identity=agent_profile,
         existing_memory=memory_text,
         exchanges=exchanges_text,
@@ -107,7 +107,7 @@ def get_consolidate_system_prompt(is_user: bool) -> str:
     Returns:
         System prompt string
     """
-    template_name = "reflection/consolidate_system_user" if is_user else "reflection/consolidate_system_agent"
+    template_name = "consolidation/consolidate_system_user" if is_user else "consolidation/consolidate_system_agent"
     return load_template(template_name)
 
 
@@ -169,7 +169,7 @@ def build_consolidate_prompt(
     profile_type = "User" if is_user else "AI Agent"
 
     return render_template(
-        "reflection/consolidate_user",
+        "consolidation/consolidate_user",
         profile_type=profile_type,
         agent_id=agent_id,
         agent_identity=agent_profile,

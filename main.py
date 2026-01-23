@@ -139,7 +139,7 @@ def cmd_chat(args):
     """Interactive chat with an agent."""
     from src.agent import Agent
     from src.tools import get_tools_for_agent
-    from src.metacognition import AgentPausedError
+    from src.agent.cognition.metacognition import AgentPausedError
     from src.llms import ConfigError
     from src.llms.base import _load_config
 
@@ -190,7 +190,7 @@ def cmd_agents(args):
     """List agents or perform agent actions."""
     import json
     from src.tools.agents.agents import list_agents
-    from src.metacognition import get_token_awareness, AgentState
+    from src.agent.cognition.metacognition import get_token_awareness, AgentState
 
     # Handle help action
     if args and args[0] == 'help':
@@ -298,7 +298,7 @@ def cmd_agents(args):
 
 def _agent_set_state(agent_id: str, state):
     """Set agent state using the token awareness system."""
-    from src.metacognition import get_token_awareness, AgentState
+    from src.agent.cognition.metacognition import get_token_awareness, AgentState
 
     config_path = Path(__file__).parent / "data" / "agents" / agent_id / "config.json"
     if not config_path.exists():
@@ -312,7 +312,7 @@ def _agent_set_state(agent_id: str, state):
 
 def _agent_set_enabled(agent_id: str, enabled: bool):
     """Enable or disable an agent (legacy wrapper)."""
-    from src.metacognition import AgentState
+    from src.agent.cognition.metacognition import AgentState
 
     state = AgentState.ENABLED if enabled else AgentState.DISABLED
     _agent_set_state(agent_id, state)
@@ -320,7 +320,7 @@ def _agent_set_enabled(agent_id: str, enabled: bool):
 
 def _agent_show_status(agent_id: str):
     """Show detailed agent status including token usage."""
-    from src.metacognition import get_token_awareness
+    from src.agent.cognition.metacognition import get_token_awareness
 
     config_path = Path(__file__).parent / "data" / "agents" / agent_id / "config.json"
     if not config_path.exists():
@@ -513,7 +513,7 @@ def cmd_points(args):
 def cmd_set_password(args):
     """Set the access password."""
     import getpass
-    from src.auth import set_password, is_password_set
+    from src.web.auth import set_password, is_password_set
 
     print("=" * 60)
     print("Euno - Set Password")
@@ -547,7 +547,7 @@ def cmd_set_password(args):
 
 def cmd_remove_password(args):
     """Remove the access password (disable authentication)."""
-    from src.auth import remove_password, is_password_set
+    from src.web.auth import remove_password, is_password_set
 
     print("=" * 60)
     print("Euno - Remove Password")
@@ -570,7 +570,7 @@ def cmd_remove_password(args):
 
 def cmd_fresh_start(args):
     """Reset all user data for a clean slate."""
-    from src.fresh_start import perform_fresh_start
+    from src.tools.system.fresh_start import perform_fresh_start
 
     print("=" * 60)
     print("Euno - Fresh Start")

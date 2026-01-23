@@ -58,15 +58,15 @@ function connectSSE() {
         }
     });
 
-    // Handle reflection progress events (for live monitoring)
-    eventSource.addEventListener('reflection:progress', (e) => {
+    // Handle consolidation progress events (for live monitoring)
+    eventSource.addEventListener('consolidation:progress', (e) => {
         const data = JSON.parse(e.data);
         if (typeof handleReflectionProgress === 'function') {
             handleReflectionProgress(data);
         }
     });
 
-    eventSource.addEventListener('reflection:llm_complete', (e) => {
+    eventSource.addEventListener('consolidation:llm_complete', (e) => {
         const data = JSON.parse(e.data);
         if (typeof handleReflectionProgress === 'function') {
             handleReflectionProgress({
@@ -77,14 +77,14 @@ function connectSSE() {
         }
     });
 
-    eventSource.addEventListener('reflection:complete', (e) => {
+    eventSource.addEventListener('consolidation:complete', (e) => {
         const data = JSON.parse(e.data);
         if (typeof handleReflectionComplete === 'function') {
             handleReflectionComplete(data);
         }
     });
 
-    eventSource.addEventListener('reflection:error', (e) => {
+    eventSource.addEventListener('consolidation:error', (e) => {
         const data = JSON.parse(e.data);
         if (typeof handleReflectionError === 'function') {
             handleReflectionError(data);

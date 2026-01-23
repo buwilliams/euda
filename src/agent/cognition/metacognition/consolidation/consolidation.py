@@ -53,11 +53,7 @@ class Consolidation:
 
     def _get_config(self) -> dict:
         """Get consolidation configuration from agent config."""
-        # Support both new "consolidation" and legacy "reflection" keys
-        config = self.agent.config.get("consolidation", {})
-        if not config:
-            config = self.agent.config.get("reflection", {})
-        return config
+        return self.agent.config.get("consolidation", {})
 
     def _get_short_term_path(self) -> Path:
         """Get path to agent's short-term memory file."""

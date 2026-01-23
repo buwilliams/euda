@@ -174,11 +174,11 @@ Exploration is scheduled discovery where agents research opportunities for the u
 - Configured per-agent in `config.json` under `exploration` key
 - Creates `Trigger:exploration:{date}` jobs when triggered
 
-### Consolidation (formerly Reflection)
+### Consolidation
 Consolidation is a metacognition capability (self-improvement) that manages memory and identity:
 - **Append phase**: Lightweight extraction after each conversation (adds to short-term memory)
 - **Consolidate phase**: Heavy analysis on daily trigger (graduates memories, updates identity)
-- Activation configured per-agent: `consolidation.trigger` (or legacy `reflection.trigger`) in `config.json`
+- Activation configured per-agent: `consolidation.trigger` in `config.json`
 - Logs stored in `data/system/logs/consolidation/`
 
 ### User as Agent
@@ -199,7 +199,7 @@ The user is conceptually an agent too - just with a different interface (Web UI/
        "enabled": true,
        "trigger": "time:hour_04"
      },
-     "reflection": {
+     "consolidation": {
        "enabled": true,
        "trigger": "time:evening"
      }

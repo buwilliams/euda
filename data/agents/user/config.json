@@ -20,7 +20,7 @@
   "exploration": {
     "enabled": false
   },
-  "reflection": {
+  "consolidation": {
     "enabled": true,
     "trigger": "time:evening"
   }
