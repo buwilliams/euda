@@ -446,7 +446,9 @@ function renderJobDetailView(jobId) {
             <!-- Actions Row -->
             <div class="task-detail-actions">
                 <button class="task-detail-action" onclick="openWhenPicker('job', '${job.id}')">${icon('calendar')} ${escapeHtml(whenLabel)}</button>
+                <button class="task-detail-action" onclick="openStatePicker('${job.id}')">${getJobStatusIcon(job)} ${getJobStatusLabel(job)}</button>
                 <button class="task-detail-action" onclick="openAssigneesPicker('${job.id}')">${getAssigneesLabel(job)}</button>
+                <button class="task-detail-action" onclick="openReassignPicker('${job.id}')">${icon('arrow-path')} Reassign</button>
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
                 ${isAgentJob ? '' : `<button class="task-detail-action" onclick="openMorePicker('${job.id}')">Actions</button>`}
             </div>

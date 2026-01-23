@@ -389,3 +389,107 @@ async function deleteJobDirect(jobId) {
         console.error('Failed to delete job:', error);
     }
 }
+
+// ============== State Picker ==============
+
+function openStatePicker(jobId) {
+    const job = jobsData.find(j => j.id === jobId) || completedJobsData.find(j => j.id === jobId);
+    const currentStatus = job?.status || 'todo';
+
+    const statuses = [
+        { value: 'todo', label: 'To Do', icon: 'queue-list' },
+        { value: 'working', label: 'Working', icon: 'bolt' },
+        { value: 'done', label: 'Done', icon: 'check' },
+        { value: 'error', label: 'Error', icon: 'exclamation-triangle' },
+        { value: 'archived', label: 'Archived', icon: 'archive-box' }
+    ];
+
+    const picker = document.createElement('div');
+    picker.className = 'picker-modal';
+    picker.id = 'state-picker';
+    picker.innerHTML = `
+        <div class="picker-backdrop" onclick="closeStatePicker()"></div>
+        <div class="picker-content">
+            <div class="picker-header">Status</div>
+            ${statuses.map(s => `
+                <div class="picker-option ${s.value === currentStatus ? 'selected' : ''}" onclick="selectJobState('${jobId}', '${s.value}')">
+                    <span class="picker-option-icon">${icon(s.icon)}</span>
+                    <span class="picker-option-label">${s.label}</span>
+                    ${s.value === currentStatus ? `<span class="picker-option-check">${icon('check')}</span>` : ''}
+                </div>
+            `).join('')}
+        </div>
+    `;
+    document.body.appendChild(picker);
+}
+
+function closeStatePicker() {
+    const picker = document.getElementById('state-picker');
+    if (picker) picker.remove();
+}
+
+async function selectJobState(jobId, status) {
+    closeStatePicker();
+    await setJobStatus(jobId, status);
+}
+
+// ============== Reassign Picker ==============
+
+async function openReassignPicker(jobId) {
+    const agents = await loadAgents();
+
+    const picker = document.createElement('div');
+    picker.className = 'picker-modal';
+    picker.id = 'reassign-picker';
+    picker.innerHTML = `
+        <div class="picker-backdrop" onclick="closeReassignPicker()"></div>
+        <div class="picker-content">
+            <div class="picker-header">Reassign To</div>
+            <div class="picker-description">Assigns agent and sets status to "todo"</div>
+            ${agents.map(agent => `
+                <div class="picker-option" onclick="selectReassignAgent('${jobId}', '${agent.id}')">
+                    <span class="picker-option-icon">${icon('bolt')}</span>
+                    <span class="picker-option-label">${escapeHtml(agent.name || agent.id)}</span>
+                </div>
+            `).join('')}
+            ${agents.length === 0 ? '<div class="picker-empty">No agents available</div>' : ''}
+        </div>
+    `;
+    document.body.appendChild(picker);
+}
+
+function closeReassignPicker() {
+    const picker = document.getElementById('reassign-picker');
+    if (picker) picker.remove();
+}
+
+async function selectReassignAgent(jobId, agentId) {
+    closeReassignPicker();
+    await reassignJob(jobId, agentId);
+}
+
+// ============== Job Status Label ==============
+
+function getJobStatusLabel(job) {
+    const status = job?.status || 'todo';
+    const labels = {
+        'todo': 'To Do',
+        'working': 'Working',
+        'done': 'Done',
+        'error': 'Error',
+        'archived': 'Archived'
+    };
+    return labels[status] || status;
+}
+
+function getJobStatusIcon(job) {
+    const status = job?.status || 'todo';
+    const icons = {
+        'todo': 'queue-list',
+        'working': 'bolt',
+        'done': 'check',
+        'error': 'exclamation-triangle',
+        'archived': 'archive-box'
+    };
+    return icon(icons[status] || 'queue-list');
+}

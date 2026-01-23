@@ -17,7 +17,10 @@ async function loadAgentPauseStatus(agentId) {
             const data = await response.json();
             const pauseInfo = data.pause_info || {};
             agentPauseStatus[agentId] = {
+                state: data.state || 'enabled',
                 isPaused: data.state === 'paused',
+                isDisabled: data.state === 'disabled',
+                isEnabled: data.state === 'enabled',
                 reason: pauseInfo.reason || null,
                 timestamp: pauseInfo.timestamp || null
             };
@@ -26,28 +29,51 @@ async function loadAgentPauseStatus(agentId) {
     } catch (error) {
         console.error('Failed to load agent pause status:', error);
     }
-    return { isPaused: false, reason: null, timestamp: null };
+    return { state: 'enabled', isPaused: false, isDisabled: false, isEnabled: true, reason: null, timestamp: null };
 }
 
-async function resumeAgent(agentId) {
+async function setAgentState(agentId, state, reason = null) {
     try {
+        const body = { state };
+        if (reason) body.reason = reason;
+
         const response = await fetch(`/api/agents/${agentId}/state`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'same-origin',
-            body: JSON.stringify({ state: 'enabled' })
+            body: JSON.stringify(body)
         });
         if (response.ok) {
-            // Clear cache entry
+            // Clear cache entry to force reload
             delete agentPauseStatus[agentId];
+            // Clear agent data cache to refresh config
+            delete agentDataCache[agentId];
+            // Clear agents cache to refresh list
+            agentsCache = null;
             // Re-render the view
             renderFocusTab();
             return true;
         }
     } catch (error) {
-        console.error('Failed to resume agent:', error);
+        console.error('Failed to set agent state:', error);
     }
     return false;
+}
+
+async function resumeAgent(agentId) {
+    return setAgentState(agentId, 'enabled');
+}
+
+async function pauseAgent(agentId) {
+    return setAgentState(agentId, 'paused', 'Manual pause');
+}
+
+async function enableAgent(agentId) {
+    return setAgentState(agentId, 'enabled');
+}
+
+async function disableAgent(agentId) {
+    return setAgentState(agentId, 'disabled');
 }
 
 async function loadActiveExecutions(agentId) {
@@ -989,4 +1015,70 @@ async function refreshReflectionSection(agentId) {
             break;
         }
     }
+}
+
+// ============== Job State Functions ==============
+
+async function setJobStatus(jobId, status) {
+    try {
+        const response = await fetch(`/api/jobs/${jobId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ status })
+        });
+        if (response.ok) {
+            await loadJobsData();
+            return true;
+        }
+    } catch (error) {
+        console.error('Failed to set job status:', error);
+    }
+    return false;
+}
+
+async function reassignJob(jobId, agentId) {
+    try {
+        // First unassign all current assignees
+        const job = jobsData.find(j => j.id === jobId) || completedJobsData.find(j => j.id === jobId);
+        if (job && job.assignees) {
+            for (const currentAgent of job.assignees) {
+                await fetch(`/api/jobs/${jobId}/unassign`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ agent_id: currentAgent })
+                });
+            }
+        }
+
+        // Assign the new agent
+        const assignResponse = await fetch(`/api/jobs/${jobId}/assign`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ agent_id: agentId })
+        });
+
+        if (!assignResponse.ok) {
+            console.error('Failed to assign agent');
+            return false;
+        }
+
+        // Set status to todo
+        const statusResponse = await fetch(`/api/jobs/${jobId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ status: 'todo' })
+        });
+
+        if (statusResponse.ok) {
+            await loadJobsData();
+            return true;
+        }
+    } catch (error) {
+        console.error('Failed to reassign job:', error);
+    }
+    return false;
 }

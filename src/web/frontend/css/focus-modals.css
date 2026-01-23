@@ -228,3 +228,59 @@
     font-size: var(--font-size-lg);
     color: var(--color-text-primary);
 }
+
+/* Picker option selected state */
+.picker-option.selected {
+    background: var(--color-bg-subtle);
+}
+
+.picker-option-check {
+    margin-left: auto;
+    color: var(--color-accent);
+}
+
+.picker-option-check img {
+    width: 16px;
+    height: 16px;
+}
+
+/* Picker description */
+.picker-description {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    text-align: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.picker-empty {
+    text-align: center;
+    color: var(--color-text-placeholder);
+    font-style: italic;
+    padding: var(--spacing-xl);
+}
+
+/* Agent Status Badge */
+.agent-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.agent-status-badge.status-enabled {
+    background: var(--color-success-bg, #e6f4ea);
+    color: var(--color-success, #1e8e3e);
+}
+
+.agent-status-badge.status-paused {
+    background: var(--color-warning-bg, #fef7e0);
+    color: var(--color-warning, #f9a825);
+}
+
+.agent-status-badge.status-disabled {
+    background: var(--color-bg-muted);
+    color: var(--color-text-muted);
+}

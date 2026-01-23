@@ -209,7 +209,8 @@ function renderAgentManageView(agentId) {
     }
 
     const displayName = agent?.name || agentData?.config?.name || agentId;
-    const pauseStatus = agentPauseStatus[agentId] || { isPaused: false };
+    const pauseStatus = agentPauseStatus[agentId] || { state: 'enabled', isPaused: false, isDisabled: false, isEnabled: true };
+    const agentState = pauseStatus.state || 'enabled';
 
     // Check if any execution is running for this agent
     const isRunning = activeExecution && activeExecution.agentId === agentId;
@@ -219,10 +220,34 @@ function renderAgentManageView(agentId) {
     const actionButton = (phase, iconName, label, onclick) => {
         const isThisRunning = runningPhase === phase;
         const classes = `task-detail-action${isThisRunning ? ' running' : ''}`;
-        const disabled = isRunning || pauseStatus.isPaused ? 'disabled' : '';
+        const disabled = isRunning || pauseStatus.isPaused || pauseStatus.isDisabled ? 'disabled' : '';
         const displayIcon = isThisRunning ? icon('arrow-path', 'spinning') : icon(iconName);
         const displayLabel = isThisRunning ? `${label}...` : label;
         return `<button class="${classes}" onclick="${onclick}" ${disabled}>${displayIcon} ${displayLabel}</button>`;
+    };
+
+    // Status badge color class
+    const statusBadgeClass = agentState === 'enabled' ? 'status-enabled' :
+                             agentState === 'paused' ? 'status-paused' :
+                             agentState === 'disabled' ? 'status-disabled' : '';
+
+    // Render status controls based on current state
+    const renderStatusControls = () => {
+        if (agentState === 'enabled') {
+            return `
+                <button class="task-detail-action" onclick="pauseAgent('${agentId}')">${icon('pause')} Pause</button>
+                <button class="task-detail-action" onclick="disableAgent('${agentId}')">${icon('x-mark')} Disable</button>
+            `;
+        } else if (agentState === 'paused') {
+            return `
+                <button class="task-detail-action" onclick="enableAgent('${agentId}')">${icon('play')} Resume</button>
+            `;
+        } else if (agentState === 'disabled') {
+            return `
+                <button class="task-detail-action" onclick="enableAgent('${agentId}')">${icon('check')} Enable</button>
+            `;
+        }
+        return '';
     };
 
     return `
@@ -238,6 +263,12 @@ function renderAgentManageView(agentId) {
 
             <!-- Live Execution Progress -->
             ${getActiveExecutionHtml(agentId)}
+
+            <!-- Status Row -->
+            <div class="task-detail-actions">
+                <span class="agent-status-badge ${statusBadgeClass}">${agentState}</span>
+                ${renderStatusControls()}
+            </div>
 
             <!-- Action Menu -->
             <div class="task-detail-actions">
