@@ -2,7 +2,7 @@
 
 Rules for pattern discovery, storage, and integration.
 
-Patterns are behavioral regularities discovered through the Recursive Language Model (RLM) during reflection consolidation. They enable anticipation by tracking temporal rhythms, correlations, and goal/interest trajectories.
+Patterns are behavioral regularities discovered through the Recursive Language Model (RLM) during consolidation. They enable anticipation by tracking temporal rhythms, correlations, and goal/interest trajectories.
 
 ## Pattern Types
 

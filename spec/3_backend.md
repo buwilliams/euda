@@ -39,8 +39,8 @@ Rules for the server, API, and infrastructure.
 - `GET /api/agents/{id}/memory/long-term/dates` — List long-term memory dates
 - `GET /api/agents/{id}/memory/long-term?date={date}` — Get long-term memory for date
 - `GET /api/agents/{id}/monitoring` — Get monitoring stats and recent prompts
-- `GET /api/agents/{id}/logs/reflection?days={n}` — Get reflection logs
-- `POST /api/agents/{id}/reflection/trigger` — Manually trigger reflection, returns execution_id
+- `GET /api/agents/{id}/logs/consolidation?days={n}` — Get consolidation logs
+- `POST /api/agents/{id}/consolidation/trigger` — Manually trigger consolidation, returns execution_id
 
 ## Integrations
 
@@ -96,11 +96,11 @@ Future integrations (email, calendar, social media, etc.) should follow this sam
   - `chat_update` — sent when chat messages are added
   - `agent_message` — sent via notifications tool for agent-to-user messages
   - `tts_audio` — sent when TTS audio is generated, includes base64 audio
-  - `reflection:progress` — sent during reflection execution with step, message, execution_id
-  - `reflection:llm_complete` — sent when reflection LLM call completes, includes token counts
-  - `reflection:complete` — sent when reflection phase finishes (append or consolidate)
-  - `reflection:error` — sent if reflection encounters an error
-- Reflection events include `execution_id` for correlating UI triggers with backend progress
+  - `consolidation:progress` — sent during consolidation execution with step, message, execution_id
+  - `consolidation:llm_complete` — sent when consolidation LLM call completes, includes token counts
+  - `consolidation:complete` — sent when consolidation phase finishes (append or consolidate)
+  - `consolidation:error` — sent if consolidation encounters an error
+- Consolidation events include `execution_id` for correlating UI triggers with backend progress
 - Clients reconnect automatically on disconnect
 - Graceful shutdown closes connections before server stops
 

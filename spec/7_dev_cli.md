@@ -35,13 +35,13 @@ Rules for the developer experience CLI (`python main.py dev`).
 - Creates standalone Agent instance (not managed by AgentManager)
 - Runs `work_cycle_sync()` directly, bypassing polling
 - Flags:
-  - `--no-reflect` — Skip reflection append after execution
+  - `--no-consolidation` — Skip consolidation append after execution
   - `--dry-run` — Show prompt without executing
   - `--max-iterations N` — Override work cycle iteration limit
 
-## Reflection
+## Consolidation
 
-- `dev reflect <agent>` — Run full reflection (append + consolidate)
+- `dev consolidate <agent>` — Run full consolidation (append + consolidate)
 - `--append` — Run only append phase (extract from recent conversation)
 - `--consolidate` — Run only consolidate phase (graduate memories, update identity)
 - Append phase requires recent conversation; reads from session file
@@ -71,7 +71,7 @@ Rules for the developer experience CLI (`python main.py dev`).
 ## Prompt Commands
 
 - `dev prompt <agent> job <job_id>` — Show prompt that would be generated for job
-- `dev prompt <agent> reflect` — Show reflection prompt
+- `dev prompt <agent> consolidation` — Show consolidation prompt
 - `dev prompt <agent> system` — Show system prompt (identity + tools)
 - Read-only inspection, no LLM calls
 
@@ -79,7 +79,7 @@ Rules for the developer experience CLI (`python main.py dev`).
 
 - `dev chat <agent> <message>` — Single LLM turn without work cycle
 - `--no-tools` — Disable tool execution
-- `--no-reflect` — Skip reflection append
+- `--no-consolidation` — Skip consolidation append
 - Useful for testing agent responses in isolation
 
 ## Upload Command
@@ -99,7 +99,7 @@ Rules for the developer experience CLI (`python main.py dev`).
 ## Trace Command
 
 - `dev trace <job_id>` — Show full execution trace of a job
-- Aggregates events from job logs, agent logs, and reflection logs
+- Aggregates events from job logs, agent logs, and consolidation logs
 - Shows chronological sequence of what happened
 
 ## Module Structure

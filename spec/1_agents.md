@@ -74,12 +74,11 @@ Rules for how agents work and coordinate through jobs.
 
 ## Design Philosophy
 
-All agents (users and AI) share the same identity schema and evolve through the same reflection process. The only difference is starting state: AI agents start pre-filled, users start empty.
+All agents (users and AI) share the same identity schema and evolve through the same consolidation process. The only difference is starting state: AI agents start pre-filled, users start empty.
 
 Identities reflect patterns of behavior, not rigid rules:
 - Identity is the pattern of stable attractors over time
-- Both users and AI agents can develop any identity section through reflection
-- Both follow the 90/10 principle: 90% exploit known patterns, 10% explore new possibilities
+- Both users and AI agents can develop any identity section through consolidation
 
 See docs/3_system.md for the cognitive foundations behind this design.
 
@@ -87,7 +86,7 @@ See docs/3_system.md for the cognitive foundations behind this design.
 
 - Each agent has an internal append process after conversations
 - Lightweight extraction that adds noteworthy items to short-term memory
-- Runs automatically when `reflection.enabled` is true
+- Runs automatically when `consolidation.enabled` is true
 - This is automatic and invisible — no job created
 
 ## Behavioral Triggers
@@ -176,7 +175,7 @@ Agent = Identity + Cognition + Memory + Behavior
 | Category | Question | What It Contains |
 |----------|----------|------------------|
 | **Identity** | Who am I? | Purpose, values, voice, attractors, context |
-| **Cognition** | How do I think? | Reasoning (prompts) + Metacognition (self-regulation, reflection) |
+| **Cognition** | How do I think? | Reasoning (prompts) + Metacognition (self-regulation, consolidation) |
 | **Memory** | What do I know? | Short-term (90 days) + Long-term (permanent) |
 | **Behavior** | What can I do? | Tools + Triggers + Modes |
 
@@ -184,7 +183,7 @@ Agent = Identity + Cognition + Memory + Behavior
 
 - Stored in `identity.md` as markdown sections
 - Contains: Purpose, Behavioral Rules, Voice, Wants/Fears, Stable Attractors, Notable Events, Influences, Interests, Biographical Info
-- Evolves through reflection—discovered, not configured
+- Evolves through consolidation—discovered, not configured
 - AI agents start pre-filled; users start empty
 - Historical snapshots: `identity.{yyyy}.md`
 
@@ -215,7 +214,7 @@ Cognition has two aspects:
 
 Metacognition is the self-regulation and self-improvement component of Cognition:
 - **Self-regulation** — Token awareness, progress detection, planning (keeping the agent healthy)
-- **Self-improvement** — Reflection (helping the agent grow)
+- **Self-improvement** — Consolidation (helping the agent grow)
 
 ### Agent States
 
@@ -278,13 +277,13 @@ Configuration in agent `config.json`:
 
 ### Efficiency Optimization
 
-- Batches reflection at end of work cycle instead of per-iteration
+- Batches consolidation at end of work cycle instead of per-iteration
 - Reduces LLM calls during autonomous work
-- Configuration in `metacognition.efficiency.defer_reflection_in_work_cycles`
+- Configuration in `metacognition.efficiency.defer_consolidation_in_work_cycles`
 
-### Reflection (Self-Improvement)
+### Consolidation (Self-Improvement)
 
-Reflection is the metacognitive process of self-analysis and growth:
+Consolidation is the metacognitive process of self-analysis and growth:
 
 - **Append phase** (automatic after conversations)
   - Lightweight extraction of noteworthy items to short-term memory
@@ -292,13 +291,13 @@ Reflection is the metacognitive process of self-analysis and growth:
   - No job created — invisible to user
 
 - **Consolidate phase** (triggered, creates visible jobs)
-  - Heavy analysis triggered by `reflection.trigger` config
-  - Creates `Trigger:reflection:{date}` jobs
+  - Heavy analysis triggered by `consolidation.trigger` config
+  - Creates `Trigger:consolidation:{date}` jobs
   - Reviews short-term memory, graduates items to long-term
   - Updates identity based on patterns
 
-Note: `reflection.trigger` in config.json defines WHEN reflection runs (Behavior).
-The reflection process itself is Metacognition (Cognition).
+Note: `consolidation.trigger` in config.json defines WHEN consolidation runs (Behavior).
+The consolidation process itself is Metacognition (Cognition).
 
 ### Incidents
 
@@ -322,8 +321,8 @@ System-wide defaults in `data/system/config.json`:
     },
     "progress": { "max_tool_calls_per_iteration": 50 },
     "planning": { "enabled_for": ["consolidation"] },
-    "efficiency": { "defer_reflection_in_work_cycles": true },
-    "reflection": {
+    "efficiency": { "defer_consolidation_in_work_cycles": true },
+    "consolidation": {
       "append_max_tokens": 500,
       "append_batch_max_tokens": 1000,
       "consolidate_max_tokens": 2000,
@@ -363,4 +362,4 @@ Behavior defines *when* things activate via triggers. The processes themselves m
 | Trigger Config | Activates | Process Lives In |
 |---------------|-----------|------------------|
 | `triggers[]` | Job assignment | Behavior (tool execution) |
-| `consolidation.trigger` | Self-analysis | Cognition (metacognition) |
+| `consolidation.trigger` | Self-improvement | Cognition (metacognition) |

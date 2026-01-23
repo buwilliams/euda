@@ -53,7 +53,7 @@ The user is agent `user` with the same structure as AI agents:
 
 - One markdown file per day: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md`
 - Chronological archive preserved before interpretation
-- Reflection consolidate phase writes to it; agents read from it for context
+- Consolidate phase writes to it; agents read from it for context
 - Capture lived experience with high fidelity — memory, not meaning
 - Content is freeform markdown with timestamps for entries
 
@@ -69,7 +69,7 @@ Memory moves through two phases:
 
 - **Consolidate phase** (triggered, creates visible jobs)
   - Heavy analysis triggered by `time:evening` or custom trigger
-  - Creates `Trigger:reflection:{date}` jobs that appear in agent's queue
+  - Creates `Trigger:consolidation:{date}` jobs that appear in agent's queue
   - Uses RLM `extract_identity()` to analyze long-term memory for identity updates
   - Discovers and validates behavioral patterns
   - Updates identity with new patterns, interests, and biographical information
@@ -98,7 +98,7 @@ External files are imported to long-term memory through job-based processing:
 
 ### Patterns
 
-Patterns are behavioral regularities discovered during reflection consolidation:
+Patterns are behavioral regularities discovered during consolidation:
 - **Storage:** `data/agents/{id}/patterns/`
   - `temporal.json` — Daily/weekly/seasonal rhythms
   - `correlations.json` — Co-occurrence relationships
@@ -129,7 +129,7 @@ All agents (including user) share the same identity schema stored in `identity.m
 - Interests (current goals, projects, focus areas)
 - Biographical Information (factual details)
 
-AI agents start with Purpose, Behavioral Rules, Voice pre-filled. Users start empty. Both evolve through reflection and can develop any section over time.
+AI agents start with Purpose, Behavioral Rules, Voice pre-filled. Users start empty. Both evolve through consolidation and can develop any section over time.
 
 Historical identities: `data/agents/{id}/identity.{yyyy}.md`
 
@@ -146,8 +146,8 @@ Historical identities: `data/agents/{id}/identity.{yyyy}.md`
 - SQLite database: `data/jobs/db.sqlite`
 - Hierarchical — any job can contain sub-jobs via parent_id
 - All agents can see all jobs — visibility is universal
-- Fields: id, name, parent_id, status, description, due_date, someday, tags, assignees, in_progress_by, created_at, updated_at, completed_at, created_by
-- Status: todo, completed, archived
+- Fields: id, name, parent_id, status, description, due_date, someday, tags, assignees, assignee, created_at, updated_at, completed_at, created_by
+- Status: todo, working, done, error, archived
 - Assets stored as files: `data/jobs/assets/{job-id}/{filename}`
 - Use SQLite because indexing and querying is required
 
@@ -229,13 +229,13 @@ Verifies identity updates from consolidation persist.
 
 ```bash
 python main.py dev identity chat > /tmp/identity-before.md
-python main.py dev reflect chat --consolidate
+python main.py dev consolidate chat --consolidate
 python main.py dev identity chat > /tmp/identity-after.md
 sleep 120  # Wait 2 minutes
 python main.py dev identity chat > /tmp/identity-final.md
 ```
 
-**Pass**: Identity contains "Reflection Update" section that persists (not overwritten).
+**Pass**: Identity contains "Consolidation Update" section that persists (not overwritten).
 
 ### Cross-Agent Memory Search Test
 

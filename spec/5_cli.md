@@ -65,7 +65,7 @@ Processing flow:
   - All agent logs, state, and conversation history
   - All jobs and job assets
   - Cost tracking history
-  - Reflection logs
+  - Consolidation logs
   - System trigger state
   - Password (if set)
   - Non-core agents (anything except chat, user, worker)
