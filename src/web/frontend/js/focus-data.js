@@ -315,6 +315,8 @@ async function loadAgents() {
     } catch (error) {
         console.error('Failed to load agents:', error);
     }
+    // Always set cache to prevent infinite reload loop
+    agentsCache = [];
     return [];
 }
 
@@ -341,6 +343,8 @@ async function loadAgentData(agentId) {
     } catch (error) {
         console.error('Failed to load agent data:', error);
     }
+    // Always set cache to prevent infinite reload loop
+    agentDataCache[agentId] = { agentId };
     return null;
 }
 

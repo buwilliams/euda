@@ -53,6 +53,8 @@ async function loadJobAssets(jobId) {
     } catch (error) {
         console.error('Failed to load assets:', error);
     }
+    // Always set cache to prevent infinite reload loop
+    jobAssetsCache[jobId] = [];
     return [];
 }
 
@@ -110,6 +112,8 @@ async function loadAssetContent(jobId, filename) {
     } catch (error) {
         console.error('Failed to load asset:', error);
     }
+    // Always set currentAssetData to prevent infinite reload loop
+    currentAssetData = { jobId, filename, content: '', error: true };
     return null;
 }
 
