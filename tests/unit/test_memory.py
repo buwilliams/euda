@@ -281,3 +281,201 @@ class TestMemoryDirectoryCreation:
 
         assert memory_dir.exists()
         assert long_term_dir.exists()
+
+
+class TestMemoryExpiration:
+    """Test memory expiration and archival logic.
+
+    Spec: spec/2_data.md - "Entries expire after 90 days from date_mentioned"
+    """
+
+    def test_is_valid_within_90_days(self, patch_data_dir):
+        """Entry within 90 days is valid."""
+        from src.tools.data.memory import _is_valid
+
+        today = datetime.now().strftime('%Y-%m-%d')
+        entry = {"date_mentioned": today, "short_description": "Recent"}
+
+        assert _is_valid(entry) is True
+
+    def test_is_valid_at_89_days(self, patch_data_dir):
+        """Entry at 89 days is still valid (within 90-day window)."""
+        from src.tools.data.memory import _is_valid
+
+        # 89 days ago is safely within the 90-day window
+        recent = (datetime.now() - timedelta(days=89)).strftime('%Y-%m-%d')
+        entry = {"date_mentioned": recent, "short_description": "Edge case"}
+
+        assert _is_valid(entry) is True
+
+    def test_is_valid_expired_at_91_days(self, patch_data_dir):
+        """Entry at 91 days is expired."""
+        from src.tools.data.memory import _is_valid
+
+        expired = (datetime.now() - timedelta(days=91)).strftime('%Y-%m-%d')
+        entry = {"date_mentioned": expired, "short_description": "Old"}
+
+        assert _is_valid(entry) is False
+
+    def test_is_valid_missing_date(self, patch_data_dir):
+        """Entry without date_mentioned is invalid."""
+        from src.tools.data.memory import _is_valid
+
+        entry = {"short_description": "No date"}
+
+        assert _is_valid(entry) is False
+
+    def test_is_valid_malformed_date(self, patch_data_dir):
+        """Entry with malformed date is invalid."""
+        from src.tools.data.memory import _is_valid
+
+        entry = {"date_mentioned": "not-a-date", "short_description": "Bad date"}
+
+        assert _is_valid(entry) is False
+
+
+class TestMemoryArchival:
+    """Test automatic archival of expired memories.
+
+    Spec: spec/2_data.md - "Expired entries archive to long-term memory"
+    """
+
+    def test_archive_expired_memories_writes_to_long_term(self, patch_data_dir):
+        """Expired memories are archived to long-term memory."""
+        from src.tools.data.memory import _archive_expired_memories, _ensure_memory_dirs
+
+        agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        _ensure_memory_dirs("test-agent")
+
+        expired = [
+            {
+                "id": "mem-001",
+                "date_mentioned": "2023-01-15",
+                "type": "goal",
+                "short_description": "Learn Python"
+            },
+            {
+                "id": "mem-002",
+                "date_mentioned": "2023-01-20",
+                "type": "person",
+                "short_description": "Meeting with Alice"
+            }
+        ]
+
+        _archive_expired_memories(expired, agent_id="test-agent")
+
+        # Verify long-term memory file was created
+        today = datetime.now().strftime("%Y-%m-%d")
+        year = datetime.now().strftime("%Y")
+        memory_file = patch_data_dir / "agents" / "test-agent" / "memory" / "long-term" / year / f"{today}.md"
+
+        assert memory_file.exists()
+
+        content = memory_file.read_text()
+        assert "rolled off after 90 days" in content
+        assert "Learn Python" in content
+        assert "Meeting with Alice" in content
+        assert "Goals:" in content or "**Goal" in content
+        assert "Persons:" in content or "**Person" in content
+
+    def test_archive_expired_memories_includes_expected_date(self, patch_data_dir):
+        """Archive includes expected date when present."""
+        from src.tools.data.memory import _archive_expired_memories, _ensure_memory_dirs
+
+        agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        _ensure_memory_dirs("test-agent")
+
+        expired = [
+            {
+                "id": "mem-001",
+                "date_mentioned": "2023-06-01",
+                "date_expected": "2023-12-31",
+                "type": "goal",
+                "short_description": "Complete project"
+            }
+        ]
+
+        _archive_expired_memories(expired, agent_id="test-agent")
+
+        today = datetime.now().strftime("%Y-%m-%d")
+        year = datetime.now().strftime("%Y")
+        memory_file = patch_data_dir / "agents" / "test-agent" / "memory" / "long-term" / year / f"{today}.md"
+
+        content = memory_file.read_text()
+        assert "expected 2023-12-31" in content
+
+    def test_list_memory_archives_expired_entries(self, patch_data_dir):
+        """list_memory automatically archives expired entries."""
+        from src.tools.data.memory import (
+            _save_entries, _ensure_memory_dirs, list_memory
+        )
+
+        agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        _ensure_memory_dirs("test-agent")
+
+        # Create entries: one valid, one expired
+        today = datetime.now().strftime('%Y-%m-%d')
+        expired_date = (datetime.now() - timedelta(days=100)).strftime('%Y-%m-%d')
+
+        entries = [
+            {
+                "id": "mem-valid",
+                "date_mentioned": today,
+                "type": "idea",
+                "short_description": "Fresh idea"
+            },
+            {
+                "id": "mem-expired",
+                "date_mentioned": expired_date,
+                "type": "goal",
+                "short_description": "Old goal"
+            }
+        ]
+
+        _save_entries(entries, agent_id="test-agent")
+
+        # List memory - should filter expired and archive them
+        result = list_memory(agent_id="test-agent")
+
+        # Only valid entry returned
+        assert len(result) == 1
+        assert result[0]["id"] == "mem-valid"
+
+        # Expired entry should be archived
+        year = datetime.now().strftime("%Y")
+        memory_file = patch_data_dir / "agents" / "test-agent" / "memory" / "long-term" / year / f"{today}.md"
+        assert memory_file.exists()
+
+        content = memory_file.read_text()
+        assert "Old goal" in content
+
+    def test_list_memory_prunes_expired_from_file(self, patch_data_dir):
+        """list_memory removes expired entries from short-term file."""
+        from src.tools.data.memory import (
+            _save_entries, _load_entries, _ensure_memory_dirs, list_memory
+        )
+
+        agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        _ensure_memory_dirs("test-agent")
+
+        today = datetime.now().strftime('%Y-%m-%d')
+        expired_date = (datetime.now() - timedelta(days=100)).strftime('%Y-%m-%d')
+
+        entries = [
+            {"id": "mem-valid", "date_mentioned": today, "type": "idea", "short_description": "Keep"},
+            {"id": "mem-expired", "date_mentioned": expired_date, "type": "goal", "short_description": "Remove"}
+        ]
+
+        _save_entries(entries, agent_id="test-agent")
+
+        # Trigger expiration processing
+        list_memory(agent_id="test-agent")
+
+        # Reload and verify expired entry is gone
+        remaining = _load_entries(agent_id="test-agent")
+        assert len(remaining) == 1
+        assert remaining[0]["id"] == "mem-valid"

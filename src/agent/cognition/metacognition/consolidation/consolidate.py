@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
 
-from .....events import emit_ui_event
+from .....web.events import emit_ui_event
 from ....rlm import RLMClient, load_long_term_memory
 
 if TYPE_CHECKING:
