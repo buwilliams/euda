@@ -682,6 +682,9 @@ class Agent:
         # Set job context for cost/rate tracking
         self._current_job_id = job_id
 
+        # Track if job was handled by internal execution (no release needed)
+        job_handled_internally = False
+
         try:
             job_tags = current_job.get("tags", [])
             job_name = current_job.get("name", "")
@@ -689,11 +692,13 @@ class Agent:
             # Check for internal euno:* jobs first - these execute tools directly
             if self._is_internal_job(job_name):
                 self._execute_internal_job(current_job)
+                job_handled_internally = True
                 return
 
             # Legacy handling for old Trigger:consolidation: jobs (backwards compatibility)
             if self._is_reflection_trigger(job_tags, job_name):
                 self._execute_reflection_trigger(current_job)
+                job_handled_internally = True
                 return
 
             # Use standardized job prompt format
@@ -779,9 +784,10 @@ class Agent:
                     self._log("reflection_batch", {"exchange_count": len(exchanges)})
                     self.consolidation.append_batch(exchanges)
         finally:
-            # Always release job claim and clear context
-            release_job(job_id, self.id)
-            self._log("job_released", {"job_id": job_id})
+            # Release job claim unless it was handled internally (already completed)
+            if not job_handled_internally:
+                release_job(job_id, self.id)
+                self._log("job_released", {"job_id": job_id})
             self._current_job_id = None
 
     async def work_cycle(self):
