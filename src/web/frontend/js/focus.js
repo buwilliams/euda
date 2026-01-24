@@ -39,6 +39,9 @@ function renderFocusTab() {
     const container = document.getElementById('focus-content');
     if (!container) return;
 
+    // Remove loading skeleton on first render
+    document.getElementById('skeleton-loading')?.remove();
+
     // Defer render if animation is in progress
     if (isViewAnimating) {
         pendingRender = true;

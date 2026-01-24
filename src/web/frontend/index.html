@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="/web/css/about.css">
     <link rel="stylesheet" href="/web/css/auth.css">
     <link rel="stylesheet" href="/web/css/responsive.css">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
     <style>
         /* API Costs - vertical list */
         .costs-box { display:flex; flex-direction:column; border:1px solid #e0e0e0; overflow:hidden; background:#f8f8f8; }
@@ -44,8 +44,8 @@
     </style>
 </head>
 <body>
-    <!-- Splash Screen -->
-    <div class="splash-screen" id="splash-screen">
+    <!-- Splash Screen (hidden by default for fast load) -->
+    <div class="splash-screen hidden" id="splash-screen">
         <div class="splash-content">
             <h1 class="splash-title" id="splash-title">
                 <span class="splash-letter">E</span><span class="splash-letter">u</span><span class="splash-letter">n</span><span class="splash-letter">o</span>
@@ -76,7 +76,13 @@
                     <!-- Focus Tab -->
                     <div class="tab-pane active" id="tab-focus" data-testid="tab-focus">
                         <div class="focus-content" id="focus-content" data-testid="focus-content">
-                            <!-- Content dynamically rendered by renderFocusTab() -->
+                            <!-- Loading skeleton (removed when content renders) -->
+                            <div class="skeleton-loading" id="skeleton-loading">
+                                <div class="skeleton-line skeleton-title"></div>
+                                <div class="skeleton-line"></div>
+                                <div class="skeleton-line"></div>
+                                <div class="skeleton-line short"></div>
+                            </div>
                         </div>
                     </div>
 
@@ -352,31 +358,31 @@
         </div>
     </div>
 
-    <!-- JavaScript Modules (order matters) -->
-    <script src="/web/js/state.js"></script>
-    <script src="/web/js/utils.js"></script>
-    <script src="/web/js/auth.js"></script>
-    <script src="/web/js/tabs.js"></script>
-    <script src="/web/js/tts.js"></script>
-    <script src="/web/js/chat.js"></script>
-    <script src="/web/js/focus.js"></script>
-    <script src="/web/js/focus-data.js"></script>
-    <script src="/web/js/focus-cards.js"></script>
-    <script src="/web/js/focus-views-ui.js"></script>
-    <script src="/web/js/focus-views-memory.js"></script>
-    <script src="/web/js/focus-views-agent.js"></script>
-    <script src="/web/js/focus-views-job.js"></script>
-    <script src="/web/js/focus-pickers.js"></script>
-    <script src="/web/js/focus-actions.js"></script>
-    <script src="/web/js/focus-editing.js"></script>
-    <script src="/web/js/focus-assets.js"></script>
-    <script src="/web/js/focus-screens.js"></script>
-    <script src="/web/js/swipe.js"></script>
-    <script src="/web/js/history.js"></script>
-    <script src="/web/js/about.js"></script>
-    <script src="/web/js/upload.js"></script>
-    <script src="/web/js/voice.js"></script>
-    <script src="/web/js/splash.js"></script>
-    <script src="/web/js/init.js"></script>
+    <!-- JavaScript Modules (order matters, defer for parallel loading) -->
+    <script src="/web/js/state.js" defer></script>
+    <script src="/web/js/utils.js" defer></script>
+    <script src="/web/js/auth.js" defer></script>
+    <script src="/web/js/tabs.js" defer></script>
+    <script src="/web/js/tts.js" defer></script>
+    <script src="/web/js/chat.js" defer></script>
+    <script src="/web/js/focus.js" defer></script>
+    <script src="/web/js/focus-data.js" defer></script>
+    <script src="/web/js/focus-cards.js" defer></script>
+    <script src="/web/js/focus-views-ui.js" defer></script>
+    <script src="/web/js/focus-views-memory.js" defer></script>
+    <script src="/web/js/focus-views-agent.js" defer></script>
+    <script src="/web/js/focus-views-job.js" defer></script>
+    <script src="/web/js/focus-pickers.js" defer></script>
+    <script src="/web/js/focus-actions.js" defer></script>
+    <script src="/web/js/focus-editing.js" defer></script>
+    <script src="/web/js/focus-assets.js" defer></script>
+    <script src="/web/js/focus-screens.js" defer></script>
+    <script src="/web/js/swipe.js" defer></script>
+    <script src="/web/js/history.js" defer></script>
+    <script src="/web/js/about.js" defer></script>
+    <script src="/web/js/upload.js" defer></script>
+    <script src="/web/js/voice.js" defer></script>
+    <script src="/web/js/splash.js" defer></script>
+    <script src="/web/js/init.js" defer></script>
 </body>
 </html>

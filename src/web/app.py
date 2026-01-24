@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from starlette.middleware.gzip import GZipMiddleware
 
 from .routes import jobs, agents, chat, user, auth, system, upload, transcribe, synthesize
 from .routes.auth import get_session_token
@@ -51,6 +52,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Gzip compression for responses
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 
 # Authentication middleware
