@@ -94,8 +94,10 @@ class AgentManager:
         stop_event = threading.Event()
         self._agent_stop_events[agent_id] = stop_event
 
-        # Subscribe agent to its triggers
-        self.event_bus.subscribe(agent_id, triggers)
+        # Subscribe agent to legacy string triggers only (not new dict-based triggers)
+        # New dict-based triggers are handled by the scheduler directly
+        string_triggers = [t for t in triggers if isinstance(t, str)]
+        self.event_bus.subscribe(agent_id, string_triggers)
 
         # Create thread for agent loop
         thread = threading.Thread(
