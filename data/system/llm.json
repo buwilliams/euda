@@ -4,7 +4,7 @@
   "budget": {
     "limit": 10.0,
     "period": "monthly",
-    "warning_percent": 80,
+    "warning_percent": 90,
     "pause_percent": 100
   },
   "providers": {

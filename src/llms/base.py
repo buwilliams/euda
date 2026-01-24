@@ -216,6 +216,9 @@ def get_model_pricing(provider: str = None, model: str = None) -> dict:
 
     Returns:
         Pricing dict with 'input', 'output', and optionally 'cached_input'.
+
+    Raises:
+        ConfigError: If model pricing is not found in llm.json.
     """
     config = _get_cached_config()
 
@@ -231,13 +234,12 @@ def get_model_pricing(provider: str = None, model: str = None) -> dict:
     # Find the model in the provider's models list
     for m in models:
         if m.get("model") == model:
-            return m.get("pricing", {"input": 3.0, "output": 15.0})
+            pricing = m.get("pricing")
+            if not pricing:
+                raise ConfigError(f"Model '{model}' missing pricing in llm.json")
+            return pricing
 
-    # Fallback: return first model's pricing or default
-    if models:
-        return models[0].get("pricing", {"input": 3.0, "output": 15.0})
-
-    return {"input": 3.0, "output": 15.0}
+    raise ConfigError(f"Model '{model}' not found in provider '{provider}' in llm.json")
 
 
 # ============== Provider Factory ==============
