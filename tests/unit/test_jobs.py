@@ -147,6 +147,16 @@ class TestJobUpdate:
 
         assert "error" in result
 
+    def test_update_job_cannot_set_working_status(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Cannot set status to 'working' via update_job - must use claim_job."""
+        from src.tools.data.jobs import create_job, update_job
+
+        job = create_job(name="Test Job", assignee="agent1", parent_id=None, created_by="test")
+        result = update_job(job["id"], status="working")
+
+        assert "error" in result
+        assert "claim_job" in result["error"]
+
 
 class TestJobCompletion:
     """Test job completion functionality."""

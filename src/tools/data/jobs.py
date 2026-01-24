@@ -378,6 +378,10 @@ def update_job(
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
+    # Prevent setting status to 'working' - only claim_job can do that
+    if status == "working":
+        return {"error": "Cannot set status to 'working' directly. Use claim_job instead."}
+
     # Prevent status changes on system jobs
     system_tags = {"system:agents", "system:projects", "agent-inbox"}
     if status is not None and any(tag in system_tags for tag in job.get("tags", [])):
@@ -781,7 +785,7 @@ def create_jobs_batch(jobs: list, created_by: str = "agent") -> dict:
                         "job_id": {"type": "string", "description": "Job ID to update (required)"},
                         "name": {"type": "string", "description": "New job name"},
                         "description": {"type": "string", "description": "New description"},
-                        "status": {"type": "string", "enum": ["todo", "working", "done", "error", "archived"], "description": "New status"},
+                        "status": {"type": "string", "enum": ["todo", "done", "error", "archived"], "description": "New status (use claim_job for 'working')"},
                         "tags": {"type": "array", "items": {"type": "string"}, "description": "New tags"},
                         "due_date": {"type": "string", "description": "New due date"},
                         "someday": {"type": "boolean", "description": "Someday/maybe flag"}
