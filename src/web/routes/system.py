@@ -154,9 +154,33 @@ def daily_quote():
 
 @router.get("/costs")
 def get_costs():
-    """Get cost summary for session, today, 7 days, and this month."""
+    """Get cost summary for session (today), 7 days, and this month."""
+    from datetime import datetime
     from ...agent.cognition.metacognition import get_cost_summary
-    return get_cost_summary()
+
+    # Get data for different periods
+    today_data = get_cost_summary(days=1)
+    week_data = get_cost_summary(days=7)
+
+    # For month, calculate days since start of month
+    now = datetime.now()
+    days_in_month = now.day
+    month_data = get_cost_summary(days=days_in_month)
+
+    return {
+        "session": {
+            "cost": today_data.get("total_cost", 0),
+            "calls": today_data.get("total_calls", 0),
+        },
+        "seven_days": {
+            "cost": week_data.get("total_cost", 0),
+            "calls": week_data.get("total_calls", 0),
+        },
+        "month": {
+            "cost": month_data.get("total_cost", 0),
+            "calls": month_data.get("total_calls", 0),
+        },
+    }
 
 
 @router.get("/costs/by-agent")
