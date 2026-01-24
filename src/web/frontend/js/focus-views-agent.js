@@ -51,7 +51,8 @@ function renderAgentDetailView(job) {
     }
 
     const config = agentData.config || {};
-    const isEnabled = config.enabled !== false;
+    const pauseStatus = agentPauseStatus[agentId] || { state: 'enabled' };
+    const isEnabled = pauseStatus.state === 'enabled';
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">

@@ -1,7 +1,6 @@
 {
   "id": "user",
   "name": "User",
-  "enabled": true,
   "state": "enabled",
   "token_budget": {
     "frequency": "daily",

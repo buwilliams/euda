@@ -154,8 +154,8 @@ class AgentManager:
         from ..tools.data.jobs import sync_agent_inbox_jobs
         sync_agent_inbox_jobs()
 
-        # Start the agent if enabled
-        if config.get("enabled", True):
+        # Start the agent if enabled (check state field)
+        if config.get("state", "enabled") != "disabled":
             self.start_agent(config)
 
             # Initialize job cache for this agent
@@ -232,8 +232,8 @@ class AgentManager:
             config = json.load(f)
             config["_dir"] = str(AGENTS_DIR / agent_id)
 
-        # Start with new config if enabled
-        if config.get("enabled", True):
+        # Start with new config if enabled (check state field)
+        if config.get("state", "enabled") != "disabled":
             self.start_agent(config)
 
             # Initialize job cache
@@ -369,7 +369,7 @@ class AgentManager:
         print("[startup] Creating system:start trigger jobs")
         for agent_id, agent in self.agents.items():
             config = agent.config
-            if not config.get("enabled", True):
+            if config.get("state", "enabled") == "disabled":
                 continue
 
             triggers = config.get("triggers", [])
@@ -401,7 +401,7 @@ class AgentManager:
 
                 for agent_id, agent in self.agents.items():
                     config = agent.config
-                    if not config.get("enabled", True):
+                    if config.get("state", "enabled") == "disabled":
                         continue
 
                     triggers = config.get("triggers", [])
@@ -464,11 +464,6 @@ class AgentManager:
                         break  # Stop requested
                     continue
 
-                # Legacy check (backward compatibility)
-                if not agent.config.get("enabled", True):
-                    if stop_event.wait(poll_interval):
-                        break  # Stop requested
-                    continue
 
                 # Check cache first (fast) - skip work cycle if no jobs pending
                 if not self.agents_with_jobs.get(agent.id, False):
@@ -539,7 +534,7 @@ class AgentManager:
         today = datetime.now().strftime("%Y-%m-%d")
 
         for agent_id, agent in self.agents.items():
-            if not agent.config.get("enabled", True):
+            if agent.config.get("state", "enabled") == "disabled":
                 continue
 
             # Check if agent has consolidation enabled and if this trigger matches
@@ -609,7 +604,7 @@ class AgentManager:
                         # Create trigger jobs for agents subscribed to this trigger
                         for agent_id, agent in self.agents.items():
                             config = agent.config
-                            if not config.get("enabled", True):
+                            if config.get("state", "enabled") == "disabled":
                                 continue
                             triggers = config.get("triggers", [])
                             if trigger_name in triggers:
@@ -660,10 +655,10 @@ class AgentManager:
         scheduler_thread.start()
         print("Time scheduler started")
 
-        # Load and start all enabled agents
+        # Load and start all enabled agents (check state field)
         configs = self.load_agent_configs()
-        enabled = [c for c in configs if c.get("enabled", True)]
-        disabled = [c for c in configs if not c.get("enabled", True)]
+        enabled = [c for c in configs if c.get("state", "enabled") != "disabled"]
+        disabled = [c for c in configs if c.get("state", "enabled") == "disabled"]
 
         print(f"Found {len(configs)} agents, {len(enabled)} enabled")
 

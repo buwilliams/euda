@@ -178,17 +178,12 @@ class TokenAwareness:
         except (FileNotFoundError, json.JSONDecodeError):
             return AgentState.ENABLED
 
-        # Support both old "enabled" and new "state" fields
-        state_str = agent_config.get("state")
-        if state_str:
-            try:
-                return AgentState(state_str)
-            except ValueError:
-                pass
-
-        # Fallback to old "enabled" field
-        enabled = agent_config.get("enabled", True)
-        return AgentState.ENABLED if enabled else AgentState.DISABLED
+        # Read state field only, default to ENABLED if missing
+        state_str = agent_config.get("state", "enabled")
+        try:
+            return AgentState(state_str)
+        except ValueError:
+            return AgentState.ENABLED
 
     def _save_agent_state(self, agent_id: str, state: AgentState,
                           reason: Optional[str] = None):
@@ -201,16 +196,19 @@ class TokenAwareness:
         except (FileNotFoundError, json.JSONDecodeError):
             agent_config = {"id": agent_id}
 
-        # Update state fields
+        # Update state field only (no dual-write to enabled)
         agent_config["state"] = state.value
-        agent_config["enabled"] = (state == AgentState.ENABLED)
+
+        # Remove legacy enabled field if present
+        agent_config.pop("enabled", None)
 
         if state == AgentState.PAUSED:
             agent_config["pause_reason"] = reason
             agent_config["pause_timestamp"] = datetime.now().isoformat()
         else:
-            agent_config["pause_reason"] = None
-            agent_config["pause_timestamp"] = None
+            # Remove pause fields when not paused
+            agent_config.pop("pause_reason", None)
+            agent_config.pop("pause_timestamp", None)
 
         # Ensure directory exists
         config_path.parent.mkdir(parents=True, exist_ok=True)

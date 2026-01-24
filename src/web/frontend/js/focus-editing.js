@@ -96,7 +96,8 @@ function handleCompletedDescriptionKeypress(event, jobId) {
 // ============== Agent Editing ==============
 
 async function toggleAgentEnabled(agentId, enabled) {
-    const success = await saveAgentConfig(agentId, { enabled });
+    const newState = enabled ? 'enabled' : 'disabled';
+    const success = await setAgentState(agentId, newState);
     if (success) {
         renderFocusTab();
     }

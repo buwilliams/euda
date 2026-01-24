@@ -35,7 +35,7 @@ def load_config(agent_id: str) -> dict:
     return {
         "id": agent_id,
         "name": agent_id.title(),
-        "enabled": True,
+        "state": "enabled",
         "tools": [],
         "triggers": ["job:assigned"]
     }

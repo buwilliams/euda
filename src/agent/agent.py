@@ -93,7 +93,7 @@ class Agent:
         return {
             "id": self.id,
             "name": self.id.title(),
-            "enabled": True,
+            "state": "enabled",
             "tools": [],
             "triggers": ["job:assigned"]
         }

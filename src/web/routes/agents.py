@@ -33,7 +33,6 @@ class UpdateIdentityRequest(BaseModel):
 
 class UpdateConfigRequest(BaseModel):
     name: Optional[str] = None
-    enabled: Optional[bool] = None
     tools: Optional[List[str]] = None
     triggers: Optional[List[str]] = None
     consolidation: Optional[Dict[str, Any]] = None  # {enabled, trigger}
@@ -113,8 +112,6 @@ def api_update_config(agent_id: str, request: UpdateConfigRequest):
     # Apply partial updates
     if request.name is not None:
         current_config["name"] = request.name
-    if request.enabled is not None:
-        current_config["enabled"] = request.enabled
     if request.tools is not None:
         current_config["tools"] = request.tools
     if request.triggers is not None:

@@ -31,7 +31,7 @@ class TestAgentInitialization:
         config = {
             "id": "test-agent",
             "name": "Test Agent",
-            "enabled": True,
+            "state": "enabled",
             "tools": ["list_jobs", "create_job"]
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
@@ -50,7 +50,7 @@ class TestAgentInitialization:
 
         agent_dir = tmp_path / "agents" / "test-agent"
         agent_dir.mkdir(parents=True)
-        config = {"id": "test-agent", "name": "Test", "enabled": True, "tools": []}
+        config = {"id": "test-agent", "name": "Test", "state": "enabled", "tools": []}
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test Agent\n\nI help with testing.")
 
@@ -71,7 +71,7 @@ class TestAgentInitialization:
         custom_config = {
             "id": "test-agent",
             "name": "Custom Name",
-            "enabled": True,
+            "state": "enabled",
             "tools": ["custom_tool"]
         }
 
@@ -86,7 +86,7 @@ class TestAgentInitialization:
 
         agent_dir = tmp_path / "agents" / "test-agent"
         agent_dir.mkdir(parents=True)
-        (agent_dir / "config.json").write_text('{"id": "test-agent", "enabled": true, "tools": []}')
+        (agent_dir / "config.json").write_text('{"id": "test-agent", "state": "enabled", "tools": []}')
         (agent_dir / "identity.md").write_text("# Test\n")
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
@@ -102,7 +102,7 @@ class TestAgentInitialization:
         agent_dir.mkdir(parents=True)
         config = {
             "id": "test-agent",
-            "enabled": True,
+            "state": "enabled",
             "tools": [],
             "consolidation": {"enabled": True}
         }
@@ -122,7 +122,7 @@ class TestAgentInitialization:
         agent_dir.mkdir(parents=True)
         config = {
             "id": "test-agent",
-            "enabled": True,
+            "state": "enabled",
             "tools": [],
             "consolidation": {"enabled": False}
         }
@@ -147,7 +147,7 @@ class TestAgentChat:
         config = {
             "id": "test-agent",
             "name": "Test Agent",
-            "enabled": True,
+            "state": "enabled",
             "tools": tools or [],
             "consolidation": {"enabled": False}  # Disable to simplify tests
         }
@@ -233,7 +233,7 @@ class TestAgentToolExecution:
         agent_dir.mkdir(parents=True)
         config = {
             "id": "test-agent",
-            "enabled": True,
+            "state": "enabled",
             "tools": tools or [],
             "consolidation": {"enabled": False}
         }
@@ -290,7 +290,7 @@ class TestAgentConversationHistory:
 
         agent_dir = tmp_path / "agents" / "test-agent"
         agent_dir.mkdir(parents=True)
-        config = {"id": "test-agent", "enabled": True, "tools": [], "consolidation": {"enabled": False}}
+        config = {"id": "test-agent", "state": "enabled", "tools": [], "consolidation": {"enabled": False}}
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
 
@@ -339,7 +339,7 @@ class TestAgentLogging:
 
         agent_dir = tmp_path / "agents" / "test-agent"
         agent_dir.mkdir(parents=True)
-        config = {"id": "test-agent", "enabled": True, "tools": [], "consolidation": {"enabled": False}}
+        config = {"id": "test-agent", "state": "enabled", "tools": [], "consolidation": {"enabled": False}}
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
 
@@ -401,7 +401,6 @@ class TestAgentState:
         agent_dir.mkdir(parents=True)
         config = {
             "id": "test-agent",
-            "enabled": state == "enabled",
             "state": state,
             "tools": [],
             "consolidation": {"enabled": False}
@@ -483,7 +482,7 @@ class TestUserIdentityContext:
         # Create test agent
         agent_dir = tmp_path / "agents" / "test-agent"
         agent_dir.mkdir(parents=True)
-        (agent_dir / "config.json").write_text('{"id": "test-agent", "enabled": true, "tools": []}')
+        (agent_dir / "config.json").write_text('{"id": "test-agent", "state": "enabled", "tools": []}')
         (agent_dir / "identity.md").write_text("# Test\n")
 
         # Create user identity
@@ -507,7 +506,7 @@ class TestUserIdentityContext:
 
         agent_dir = tmp_path / "agents" / "test-agent"
         agent_dir.mkdir(parents=True)
-        (agent_dir / "config.json").write_text('{"id": "test-agent", "enabled": true, "tools": []}')
+        (agent_dir / "config.json").write_text('{"id": "test-agent", "state": "enabled", "tools": []}')
         (agent_dir / "identity.md").write_text("# Test\n")
 
         # Don't create user directory
@@ -527,7 +526,7 @@ class TestUserIdentityContext:
 
         user_dir = tmp_path / "agents" / "user"
         user_dir.mkdir(parents=True)
-        (user_dir / "config.json").write_text('{"id": "user", "enabled": true, "tools": []}')
+        (user_dir / "config.json").write_text('{"id": "user", "state": "enabled", "tools": []}')
         (user_dir / "identity.md").write_text("# User\n")
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
@@ -556,7 +555,7 @@ class TestReflectionTrigger:
         agent_dir.mkdir(parents=True)
         config = {
             "id": "test-agent",
-            "enabled": True,
+            "state": "enabled",
             "tools": [],
             "consolidation": {"enabled": True}
         }
@@ -656,7 +655,7 @@ class TestWorkCycle:
         agent_dir.mkdir(parents=True)
         config = {
             "id": "test-agent",
-            "enabled": True,
+            "state": "enabled",
             "tools": tools or ["done_working"],
             "consolidation": {"enabled": False}
         }
@@ -842,7 +841,7 @@ class TestWorkCyclePlanning:
         agent_dir.mkdir(parents=True)
         config = {
             "id": "test-agent",
-            "enabled": True,
+            "state": "enabled",
             "tools": ["done_working"],
             "consolidation": {"enabled": False}
         }
@@ -938,7 +937,7 @@ class TestWorkCycleStuckDetection:
         agent_dir.mkdir(parents=True)
         config = {
             "id": "test-agent",
-            "enabled": True,
+            "state": "enabled",
             "tools": ["done_working"],
             "consolidation": {"enabled": False}
         }
@@ -1029,7 +1028,7 @@ class TestWorkCycleDeferredConsolidation:
         agent_dir.mkdir(parents=True)
         config = {
             "id": "test-agent",
-            "enabled": True,
+            "state": "enabled",
             "tools": ["done_working"],
             "consolidation": {"enabled": True}
         }
