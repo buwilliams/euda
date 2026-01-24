@@ -277,12 +277,21 @@ class TokenAwareness:
 
         # Check if we're in a new period
         if agent_data.get("period_key") != period_key:
+            # New period - reset usage counters
             agent_data = {
                 "period_key": period_key,
                 "input": 0,
                 "output": 0
             }
             self._agent_usage[agent_id] = agent_data
+
+            # Auto-resume agents that were paused due to threshold
+            # (not manually paused via config)
+            if agent_id in self._paused_agents:
+                reason = self._pause_reasons.get(agent_id, "")
+                # Check if paused due to threshold (not manual pause)
+                if "threshold exceeded" in reason:
+                    self._resume_agent(agent_id, "budget period reset")
 
         return agent_data
 
@@ -695,6 +704,33 @@ class TokenAwareness:
             "reason": reason,
             **details
         })
+
+    def _resume_agent(self, agent_id: str, reason: str):
+        """Resume a paused agent (internal helper for auto-resume on period reset).
+
+        Args:
+            agent_id: ID of the agent to resume
+            reason: Reason for resuming
+        """
+        # Remove from paused state
+        self._paused_agents.discard(agent_id)
+        self._pause_reasons.pop(agent_id, None)
+        self._pause_timestamps.pop(agent_id, None)
+
+        # Update config to enabled state
+        self._save_agent_state(agent_id, AgentState.ENABLED)
+        self._save_usage_data()
+
+        self._logger.info({
+            "event": "agent_auto_resumed",
+            "agent_id": agent_id,
+            "reason": reason
+        })
+
+        # Emit SSE event
+        emit_ui_event("agent:resumed", {"agent_id": agent_id})
+
+        print(f"[TOKEN-AWARENESS] Agent '{agent_id}' auto-resumed: {reason}")
 
     def get_agent_state(self, agent_id: str) -> AgentState:
         """Get the current state of an agent.
