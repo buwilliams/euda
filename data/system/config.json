@@ -7,8 +7,7 @@
       "thresholds": {
         "warning_percent": 80,
         "pause_percent": 100
-      },
-      "frequencies": ["monthly", "weekly", "daily", "hourly"]
+      }
     },
     "progress": {
       "max_tool_calls_per_iteration": 50,
