@@ -12,6 +12,7 @@ function toggleSection(sectionId) {
     const isOpen = isSectionOpen(sectionId);
     sessionStorage.setItem(`focus-section-${sectionId}`, isOpen ? 'closed' : 'open');
     renderFocusTab();
+    if (focusView === 'menu') loadDailyQuote();
 }
 
 function togglePersonaSection(header, event) {
