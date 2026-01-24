@@ -251,6 +251,63 @@ function renderAgentManageView(agentId) {
         return '';
     };
 
+    // Token budget info
+    const tokenUsage = pauseStatus.tokenUsage;
+    const budgetReset = pauseStatus.budgetReset;
+
+    // Render token budget section
+    const renderTokenBudgetSection = () => {
+        if (!tokenUsage) return '';
+
+        const inputPercent = tokenUsage.input_percent || 0;
+        const outputPercent = tokenUsage.output_percent || 0;
+        const frequency = tokenUsage.frequency || 'daily';
+        const resetTime = budgetReset?.time_until || '';
+
+        // Determine bar color based on percentage
+        const getBarColor = (percent) => {
+            if (percent >= 100) return 'var(--color-danger)';
+            if (percent >= 80) return 'var(--color-warning)';
+            return 'var(--color-success)';
+        };
+
+        return `
+            <div class="job-section">
+                <div class="job-section-header">Token Budget (${frequency})</div>
+                <div class="token-budget-content">
+                    <div class="token-budget-row">
+                        <span class="token-budget-label">Input</span>
+                        <div class="token-budget-bar-container">
+                            <div class="token-budget-bar" style="width: ${Math.min(inputPercent, 100)}%; background: ${getBarColor(inputPercent)};"></div>
+                        </div>
+                        <span class="token-budget-value">${inputPercent.toFixed(1)}%</span>
+                    </div>
+                    <div class="token-budget-detail">
+                        ${formatTokenCount(tokenUsage.input_tokens || 0)} / ${formatTokenCount(tokenUsage.input_budget || 0)} tokens
+                    </div>
+                    <div class="token-budget-row">
+                        <span class="token-budget-label">Output</span>
+                        <div class="token-budget-bar-container">
+                            <div class="token-budget-bar" style="width: ${Math.min(outputPercent, 100)}%; background: ${getBarColor(outputPercent)};"></div>
+                        </div>
+                        <span class="token-budget-value">${outputPercent.toFixed(1)}%</span>
+                    </div>
+                    <div class="token-budget-detail">
+                        ${formatTokenCount(tokenUsage.output_tokens || 0)} / ${formatTokenCount(tokenUsage.output_budget || 0)} tokens
+                    </div>
+                    ${resetTime ? `
+                        <div class="token-budget-reset">
+                            Resets in ${resetTime}
+                        </div>
+                    ` : ''}
+                    <button class="task-detail-action token-reset-btn" onclick="resetAgentTokenUsage('${agentId}')">
+                        ${icon('arrow-path')} Reset Usage
+                    </button>
+                </div>
+            </div>
+        `;
+    };
+
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
@@ -270,6 +327,9 @@ function renderAgentManageView(agentId) {
                 <span class="agent-status-badge ${statusBadgeClass}">${agentState}</span>
                 ${renderStatusControls()}
             </div>
+
+            <!-- Token Budget Section -->
+            ${renderTokenBudgetSection()}
 
             <!-- Action Menu -->
             <div class="task-detail-actions">

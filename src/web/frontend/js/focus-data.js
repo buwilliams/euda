@@ -6,11 +6,20 @@ let activeExecution = null;
 
 // ============== Agent Pause Status ==============
 
-let agentPauseStatus = {};  // Cache: { agentId: { isPaused, reason, timestamp } }
+let agentPauseStatus = {};  // Cache: { agentId: { isPaused, reason, timestamp, tokenUsage, budgetReset } }
 
 async function loadAgentPauseStatus(agentId) {
     // Default state - also used as fallback on error
-    const defaultState = { state: 'enabled', isPaused: false, isDisabled: false, isEnabled: true, reason: null, timestamp: null };
+    const defaultState = {
+        state: 'enabled',
+        isPaused: false,
+        isDisabled: false,
+        isEnabled: true,
+        reason: null,
+        timestamp: null,
+        tokenUsage: null,
+        budgetReset: null
+    };
 
     try {
         const response = await fetch(`/api/agents/${agentId}/state`, {
@@ -25,7 +34,9 @@ async function loadAgentPauseStatus(agentId) {
                 isDisabled: data.state === 'disabled',
                 isEnabled: data.state === 'enabled',
                 reason: pauseInfo.reason || null,
-                timestamp: pauseInfo.timestamp || null
+                timestamp: pauseInfo.timestamp || null,
+                tokenUsage: data.token_usage || null,
+                budgetReset: data.budget_reset || null
             };
             return agentPauseStatus[agentId];
         }
@@ -79,6 +90,26 @@ async function enableAgent(agentId) {
 
 async function disableAgent(agentId) {
     return setAgentState(agentId, 'disabled');
+}
+
+async function resetAgentTokenUsage(agentId) {
+    try {
+        const response = await fetch(`/api/agents/${agentId}/reset-usage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            // Clear cache entry to force reload
+            delete agentPauseStatus[agentId];
+            // Re-render the view
+            renderFocusTab();
+            return true;
+        }
+    } catch (error) {
+        console.error('Failed to reset agent token usage:', error);
+    }
+    return false;
 }
 
 async function loadActiveExecutions(agentId) {

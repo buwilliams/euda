@@ -822,6 +822,95 @@ class TokenAwareness:
                 }
             return {"is_paused": False}
 
+    def reset_agent_usage(self, agent_id: str):
+        """Reset token usage for an agent to zero.
+
+        This clears the current period's usage, allowing the agent to
+        continue working if it was paused due to budget limits.
+
+        Args:
+            agent_id: ID of the agent to reset
+        """
+        with self._lock:
+            budget_config = self._get_agent_budget_config(agent_id)
+            period_key = self._get_period_key(budget_config.frequency)
+
+            # Reset usage to zero
+            self._agent_usage[agent_id] = {
+                "period_key": period_key,
+                "input": 0,
+                "output": 0
+            }
+
+            # Save to disk
+            self._save_usage_data()
+
+            # Log the reset
+            self._logger.info({
+                "event": "token_usage_reset",
+                "agent_id": agent_id,
+                "period": period_key
+            })
+
+            print(f"[TOKEN-AWARENESS] Reset token usage for agent '{agent_id}'")
+
+    def get_time_until_reset(self, agent_id: str) -> dict:
+        """Get the time until the budget resets for an agent.
+
+        Args:
+            agent_id: ID of the agent
+
+        Returns:
+            Dict with reset_time (ISO string) and human-readable time_until
+        """
+        budget_config = self._get_agent_budget_config(agent_id)
+        frequency = budget_config.frequency
+        now = datetime.now()
+
+        if frequency == "hourly":
+            # Reset at the start of the next hour
+            reset_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        elif frequency == "daily":
+            # Reset at midnight
+            reset_time = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+        elif frequency == "weekly":
+            # Reset at midnight on Monday
+            days_until_monday = (7 - now.weekday()) % 7
+            if days_until_monday == 0:
+                days_until_monday = 7
+            reset_time = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=days_until_monday)
+        elif frequency == "monthly":
+            # Reset at midnight on the 1st
+            if now.month == 12:
+                reset_time = now.replace(year=now.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            else:
+                reset_time = now.replace(month=now.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            # Default to daily
+            reset_time = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+
+        # Calculate human-readable time until reset
+        diff = reset_time - now
+        total_seconds = int(diff.total_seconds())
+
+        if total_seconds < 3600:
+            minutes = total_seconds // 60
+            time_until = f"{minutes}m"
+        elif total_seconds < 86400:
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            time_until = f"{hours}h {minutes}m" if minutes > 0 else f"{hours}h"
+        else:
+            days = total_seconds // 86400
+            hours = (total_seconds % 86400) // 3600
+            time_until = f"{days}d {hours}h" if hours > 0 else f"{days}d"
+
+        return {
+            "reset_time": reset_time.isoformat(),
+            "time_until": time_until,
+            "frequency": frequency
+        }
+
     def invalidate_config(self):
         """Invalidate cached configuration."""
         with self._lock:

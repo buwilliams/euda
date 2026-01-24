@@ -207,3 +207,69 @@
     justify-content: flex-end;
     margin-top: 0.25rem;
 }
+
+/* ============== Token Budget Section ============== */
+
+.token-budget-content {
+    padding: var(--spacing-md);
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-xl);
+}
+
+.token-budget-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+}
+
+.token-budget-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    min-width: 50px;
+}
+
+.token-budget-bar-container {
+    flex: 1;
+    height: 8px;
+    background: var(--color-bg-subtle);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.token-budget-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.token-budget-value {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    min-width: 50px;
+    text-align: right;
+}
+
+.token-budget-detail {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    margin-bottom: var(--spacing-md);
+    padding-left: calc(50px + var(--spacing-sm));
+}
+
+.token-budget-reset {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-top: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background: var(--color-bg-subtle);
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+.token-reset-btn {
+    width: 100%;
+    margin-top: var(--spacing-sm);
+}
