@@ -133,15 +133,31 @@ def consolidate_phase(runner: "ConsolidationRunner", execution_id: str = None) -
     return {"identity_updated": identity_updated}
 
 
-def _parse_identity_updates(findings: str) -> Optional[dict]:
+def _parse_identity_updates(findings) -> Optional[dict]:
     """Parse identity updates from RLM extract_identity() findings.
 
     Args:
-        findings: JSON string from RLM
+        findings: JSON string from RLM (or list/dict if already parsed)
 
     Returns:
         Parsed dict with "sections" and "reasoning" keys, or None
     """
+    # Handle case where findings is already a dict
+    if isinstance(findings, dict):
+        return findings
+
+    # Handle case where findings is a list (shouldn't happen but defensive)
+    if isinstance(findings, list):
+        # Try to find a dict in the list
+        for item in findings:
+            if isinstance(item, dict):
+                return item
+        return None
+
+    # Handle non-string types
+    if not isinstance(findings, str):
+        return None
+
     findings = findings.strip()
 
     # Handle markdown code blocks

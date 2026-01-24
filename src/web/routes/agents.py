@@ -320,8 +320,8 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
     parent_id = inbox["id"] if inbox else None
 
     job = create_job(
-        name=f"Trigger:consolidation:{phase}:{today}",
-        description=f"Manual reflection trigger (execution_id: {execution_id})",
+        name="euno:consolidate",
+        description=f"Manual consolidation trigger - phase: {phase} (execution_id: {execution_id})",
         parent_id=parent_id,
         assignee=agent_id,
         tags=["ui:manual", f"execution:{execution_id}"],
@@ -360,19 +360,28 @@ def api_get_active_executions(agent_id: str):
     jobs = list_jobs(status="todo", assignee=agent_id)
 
     # Filter for consolidation jobs and extract execution info
-    # Consolidation jobs are identified by name pattern: Trigger:consolidation:{phase}:{date}
+    # Consolidation jobs: euno:consolidate (new) or Trigger:consolidation:{phase}:{date} (legacy)
     executions = []
     for job in jobs:
         job_name = job.get("name", "")
         tags = job.get("tags", [])
 
-        # Check for consolidation job name pattern
-        if not job_name.startswith("Trigger:consolidation:"):
+        # Check for consolidation job name patterns
+        if job_name == "euno:consolidate":
+            # New format - extract phase from description if available
+            description = job.get("description", "")
+            if "phase: append" in description:
+                phase = "append"
+            elif "phase: consolidate" in description:
+                phase = "consolidate"
+            else:
+                phase = "both"
+        elif job_name.startswith("Trigger:consolidation:"):
+            # Legacy format: Trigger:consolidation:{phase}:{date}
+            parts = job_name.split(":")
+            phase = parts[2] if len(parts) >= 3 else "both"
+        else:
             continue
-
-        # Extract phase from job name: Trigger:consolidation:{phase}:{date}
-        parts = job_name.split(":")
-        phase = parts[2] if len(parts) >= 3 else "both"
 
         # Extract execution_id from tags
         execution_id = None

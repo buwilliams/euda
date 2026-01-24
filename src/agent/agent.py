@@ -383,6 +383,17 @@ class Agent:
             # Build tool inputs based on job
             inputs = {"agent_id": self.id, "job_id": job_id}
 
+            # For euno:consolidate, extract phase from job description
+            if tool_name == "euno_consolidate":
+                description = job.get("description", "")
+                if "phase: append" in description:
+                    inputs["phase"] = "append"
+                elif "phase: consolidate" in description:
+                    inputs["phase"] = "consolidate"
+                elif "phase: both" in description:
+                    inputs["phase"] = "both"
+                # Default to "consolidate" if not specified
+
             # Execute tool directly
             result = execute_tool(tool_name, inputs)
 
