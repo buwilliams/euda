@@ -5,35 +5,19 @@ Configuration test fixtures and factories.
 from typing import Optional
 
 
-def create_system_config(
-    warning_percent: int = 80,
-    pause_percent: int = 100,
-    token_awareness_enabled: bool = True,
-    **overrides
-) -> dict:
+def create_system_config(**overrides) -> dict:
     """Create a system configuration for testing.
 
-    Note: LLM settings are now in llm.json, not config.json.
+    Note: LLM settings (including budget thresholds) are now in llm.json, not config.json.
 
     Args:
-        warning_percent: Threshold for warning
-        pause_percent: Threshold for pause
-        token_awareness_enabled: Whether token awareness is active
         **overrides: Additional config overrides
 
     Returns:
         System configuration dictionary
     """
     config = {
-        "metacognition": {
-            "token_awareness": {
-                "enabled": token_awareness_enabled,
-                "thresholds": {
-                    "warning_percent": warning_percent,
-                    "pause_percent": pause_percent
-                }
-            }
-        }
+        "metacognition": {}
     }
 
     # Deep merge overrides
@@ -50,6 +34,8 @@ def create_llm_config(
     provider: str = "openai",
     model: str = "gpt-4.1",
     budget_limit: float = 10.0,
+    warning_percent: int = 80,
+    pause_percent: int = 100,
     input_pricing: float = 3.0,
     output_pricing: float = 15.0,
     **overrides
@@ -60,6 +46,8 @@ def create_llm_config(
         provider: LLM provider (openai, anthropic, xai)
         model: Model name
         budget_limit: Monthly budget in dollars
+        warning_percent: Threshold for warning (default 80%)
+        pause_percent: Threshold for pause (default 100%)
         input_pricing: Price per million input tokens
         output_pricing: Price per million output tokens
         **overrides: Additional config overrides
@@ -70,7 +58,7 @@ def create_llm_config(
     config = {
         "provider": provider,
         "model": model,
-        "budget": {"limit": budget_limit, "period": "monthly"},
+        "budget": {"limit": budget_limit, "period": "monthly", "warning_percent": warning_percent, "pause_percent": pause_percent},
         "providers": {
             "openai": {
                 "display_name": "ChatGPT",

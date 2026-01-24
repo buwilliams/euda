@@ -36,27 +36,6 @@ class TestTokenAwarenessAcquire:
         usage = ta.get_agent_usage("test-agent")
         assert usage["agent_id"] == "test-agent"
 
-    def test_acquire_with_token_awareness_disabled(self, create_test_agent, patch_data_dir):
-        """acquire() should always succeed when token awareness is disabled."""
-        from src.agent.cognition.metacognition.regulation import tokens
-
-        # Disable token awareness in config
-        config_path = patch_data_dir / "system" / "config.json"
-        config = json.loads(config_path.read_text())
-        config["metacognition"]["token_awareness"]["enabled"] = False
-        config_path.write_text(json.dumps(config))
-
-        # Reset singleton to pick up new config
-        tokens._token_awareness = None
-        ta = tokens.get_token_awareness()
-
-        create_test_agent("test-agent")
-
-        # Even huge request should succeed
-        result = ta.acquire("test-agent", estimated_input_tokens=999999999)
-        assert result is True
-
-
 class TestTokenAwarenessRecord:
     """Test record() method for post-call token recording."""
 

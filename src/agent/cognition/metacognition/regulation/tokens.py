@@ -131,10 +131,18 @@ class TokenAwareness:
         except (FileNotFoundError, json.JSONDecodeError, OSError):
             return {}
 
-    def _get_token_awareness_config(self) -> dict:
-        """Get token awareness configuration."""
-        config = self._load_config()
-        return config.get("metacognition", {}).get("token_awareness", {})
+    def _get_budget_thresholds(self) -> tuple:
+        """Get budget warning and pause thresholds from llm.json.
+
+        Returns:
+            Tuple of (warning_percent, pause_percent)
+        """
+        llm_config = self._load_llm_config()
+        budget = llm_config.get("budget", {})
+        return (
+            budget.get("warning_percent", 80),
+            budget.get("pause_percent", 100)
+        )
 
     def _get_global_budget_tokens(self) -> int:
         """Get global monthly token budget from config.
@@ -554,10 +562,6 @@ class TokenAwareness:
         Raises:
             AgentPausedError: If agent is paused or threshold exceeded
         """
-        ta_config = self._get_token_awareness_config()
-        if not ta_config.get("enabled", True):
-            return True
-
         with self._lock:
             # Check if agent is already paused
             if agent_id in self._paused_agents:
@@ -588,9 +592,7 @@ class TokenAwareness:
             usage = self._get_agent_usage(agent_id, budget_config.frequency)
 
             # Check if adding these tokens would exceed threshold
-            thresholds = ta_config.get("thresholds", {})
-            warning_percent = thresholds.get("warning_percent", 80)
-            pause_percent = thresholds.get("pause_percent", 100)
+            warning_percent, pause_percent = self._get_budget_thresholds()
 
             projected_input = usage["input"] + estimated_input_tokens
             input_percent = (projected_input / input_budget * 100) if input_budget > 0 else 0
@@ -650,10 +652,6 @@ class TokenAwareness:
             duration_ms: Duration of the API call
             timestamp: ISO timestamp for correlation
         """
-        ta_config = self._get_token_awareness_config()
-        if not ta_config.get("enabled", True):
-            return
-
         # Calculate cost
         cost = self._calculate_cost(provider, input_tokens, output_tokens, cached_input_tokens)
 
@@ -730,9 +728,7 @@ class TokenAwareness:
             })
 
             # Check output threshold
-            thresholds = ta_config.get("thresholds", {})
-            warning_percent = thresholds.get("warning_percent", 80)
-            pause_percent = thresholds.get("pause_percent", 100)
+            warning_percent, pause_percent = self._get_budget_thresholds()
 
             output_percent = (usage["output"] / output_budget * 100) if output_budget > 0 else 0
 

@@ -34,12 +34,7 @@ def temp_data_dir(tmp_path):
 
     # Create default system config (without LLM settings)
     config = {
-        "metacognition": {
-            "token_awareness": {
-                "enabled": True,
-                "thresholds": {"warning_percent": 80, "pause_percent": 100}
-            }
-        }
+        "metacognition": {}
     }
     (data_dir / "system" / "config.json").write_text(json.dumps(config, indent=2))
 
@@ -47,7 +42,7 @@ def temp_data_dir(tmp_path):
     llm_config = {
         "provider": "openai",
         "model": "gpt-4.1",
-        "budget": {"limit": 10.0, "period": "monthly"},
+        "budget": {"limit": 10.0, "period": "monthly", "warning_percent": 80, "pause_percent": 100},
         "providers": {
             "openai": {
                 "display_name": "ChatGPT",

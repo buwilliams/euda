@@ -3,7 +3,9 @@
   "model": "grok-4-1-fast-reasoning",
   "budget": {
     "limit": 10.0,
-    "period": "monthly"
+    "period": "monthly",
+    "warning_percent": 80,
+    "pause_percent": 100
   },
   "providers": {
     "xai": {
