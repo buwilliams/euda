@@ -35,15 +35,13 @@ class ChatResponse(BaseModel):
     audio_base64: Optional[str] = None
 
 
-# Cache agent instances
-_agents = {}
-
-
 def get_agent_instance(agent_id: str) -> Agent:
-    """Get or create an agent instance."""
-    if agent_id not in _agents:
-        _agents[agent_id] = Agent(agent_id)
-    return _agents[agent_id]
+    """Get an agent instance.
+
+    Creates a fresh instance each time to ensure config changes
+    are reflected immediately without needing cache invalidation.
+    """
+    return Agent(agent_id)
 
 
 @router.post("")
