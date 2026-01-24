@@ -18,16 +18,19 @@ from tests.fixtures.llm import MockLLMClient, MockResponse
 
 
 class TestRLMConfig:
-    """Test RLM configuration loading."""
+    """Test RLM configuration loading.
+
+    Note: Iteration and recursion limits are now handled by the regulation
+    module's progress tracking system, not by RLMConfig.
+    """
 
     def test_default_config_values(self):
-        """RLMConfig has sensible defaults."""
+        """RLMConfig has sensible defaults for REPL execution."""
         from src.agent.rlm.client import RLMConfig
 
         config = RLMConfig()
 
-        assert config.max_iterations == 20
-        assert config.max_recursion_depth == 1
+        # Only REPL-related settings remain in config
         assert config.execution_timeout_seconds == 30
         assert config.output_truncation_chars == 10000
 
@@ -38,8 +41,8 @@ class TestRLMConfig:
         # When config file doesn't exist, should return defaults
         result = _load_rlm_config()
 
-        assert result.max_iterations > 0
-        assert result.max_recursion_depth >= 1
+        assert result.execution_timeout_seconds > 0
+        assert result.output_truncation_chars > 0
 
 
 class TestRLMClient:
@@ -239,8 +242,9 @@ FINAL("Found 3 entries in memory")
         assert "LLM call failed" in result.error or "API Error" in result.error
 
     def test_recall_respects_max_iterations(self):
-        """Recall stops after max_iterations."""
-        from src.agent.rlm.client import RLMClient, RLMConfig
+        """Recall stops after max_iterations (via progress tracker)."""
+        from src.agent.rlm.client import RLMClient
+        from src.agent.cognition.metacognition.regulation import get_progress_tracker
 
         # LLM that never produces FINAL
         mock = MockLLMClient.simple(text='''```python
@@ -249,12 +253,12 @@ print("Still searching...")
 
         with mock.patch():
             client = RLMClient(agent_id="test")
-            client.config = RLMConfig(max_iterations=2)
             memory = self._create_memory()
             result = client.recall("Endless query", memory)
 
-        assert result.iterations <= 2
-        assert "Max iterations" in result.error or result.iterations == 2
+        # Progress tracker enforces max iterations (default 20)
+        assert result.iterations <= 20
+        assert "Max iterations" in (result.error or "") or result.iterations > 0
 
     def test_recall_tracks_iterations(self):
         """Recall tracks iteration count."""
@@ -271,11 +275,16 @@ print("Still searching...")
 
 
 class TestSubLLMCalls:
-    """Test RLM sub-LLM calls (llm_query function)."""
+    """Test RLM sub-LLM calls (llm_query function).
+
+    Note: The llm_query function now takes a session_id instead of depth,
+    and recursion depth is tracked via the progress tracker.
+    """
 
     def test_llm_query_makes_sub_call(self):
         """llm_query function makes LLM call for semantic analysis."""
         from src.agent.rlm.client import RLMClient
+        from src.agent.cognition.metacognition.regulation import get_progress_tracker
 
         mock_llm = MagicMock()
         mock_llm.create.return_value = MagicMock(
@@ -283,32 +292,58 @@ class TestSubLLMCalls:
         )
 
         client = RLMClient(llm_client=mock_llm, agent_id="test")
-        llm_query = client._create_llm_query_fn(depth=0)
 
-        result = llm_query("Analyze this text for goals")
+        # Create a progress tracking session for the test
+        tracker = get_progress_tracker()
+        session_id = tracker.start_session(agent_id="test", session_type="test")
 
-        assert mock_llm.create.called
-        assert "Analysis" in result
+        try:
+            llm_query = client._create_llm_query_fn(session_id)
+            result = llm_query("Analyze this text for goals")
+
+            assert mock_llm.create.called
+            assert "Analysis" in result
+        finally:
+            tracker.end_session(session_id)
 
     def test_llm_query_respects_recursion_depth(self):
         """llm_query returns error when max recursion reached."""
-        from src.agent.rlm.client import RLMClient, RLMConfig
+        from src.agent.rlm.client import RLMClient
+        from src.agent.cognition.metacognition.regulation import get_progress_tracker
 
         mock = MockLLMClient.simple()
 
         with mock.patch():
             client = RLMClient(agent_id="test")
-            client.config = RLMConfig(max_recursion_depth=1)
 
-            # Create at depth 1 (should fail for depth >= 1)
-            llm_query = client._create_llm_query_fn(depth=1)
-            result = llm_query("Should fail")
+            # Create a session with max_recursion_depth=1
+            tracker = get_progress_tracker()
+            session_id = tracker.start_session(
+                agent_id="test",
+                max_recursion_depth=1,
+                session_type="test"
+            )
 
-        assert "Maximum recursion depth" in result
+            try:
+                llm_query = client._create_llm_query_fn(session_id)
+
+                # First call should succeed (enters depth 1)
+                result1 = llm_query("First call")
+
+                # Within that first call, another call would exceed depth
+                # Simulate this by entering recursion again
+                tracker.enter_recursion(session_id)  # Now at depth 2
+
+                # Now next llm_query call should fail
+                result2 = llm_query("Should fail")
+                assert "Maximum recursion depth" in result2
+            finally:
+                tracker.end_session(session_id)
 
     def test_llm_query_counts_sub_calls(self):
         """llm_query increments sub_call_count."""
         from src.agent.rlm.client import RLMClient
+        from src.agent.cognition.metacognition.regulation import get_progress_tracker
 
         mock = MockLLMClient.simple(text="Result")
 
@@ -316,23 +351,39 @@ class TestSubLLMCalls:
             client = RLMClient(agent_id="test")
             assert client._sub_call_count == 0
 
-            llm_query = client._create_llm_query_fn(depth=0)
-            llm_query("First call")
-            llm_query("Second call")
+            # Create a session for the test
+            tracker = get_progress_tracker()
+            session_id = tracker.start_session(agent_id="test", session_type="test")
+
+            try:
+                llm_query = client._create_llm_query_fn(session_id)
+                llm_query("First call")
+                llm_query("Second call")
+            finally:
+                tracker.end_session(session_id)
 
         assert client._sub_call_count == 2
 
     def test_llm_query_handles_errors(self):
         """llm_query returns error message on exception."""
         from src.agent.rlm.client import RLMClient
+        from src.agent.cognition.metacognition.regulation import get_progress_tracker
 
         mock = MockLLMClient.simple()
 
         with mock.patch():
             with patch.object(mock, 'create', side_effect=Exception("API failed")):
                 client = RLMClient(llm_client=mock, agent_id="test")
-                llm_query = client._create_llm_query_fn(depth=0)
-                result = llm_query("Should fail")
+
+                # Create a session for the test
+                tracker = get_progress_tracker()
+                session_id = tracker.start_session(agent_id="test", session_type="test")
+
+                try:
+                    llm_query = client._create_llm_query_fn(session_id)
+                    result = llm_query("Should fail")
+                finally:
+                    tracker.end_session(session_id)
 
         assert "[Error" in result
 

@@ -91,7 +91,7 @@ During conversation, I proactively route opportunities to specialized agents.
 2. Decide which agent is best suited based on their stated purpose
 3. Create a job describing what to investigate or act on
 4. Assign the job to that agent with `tags=["user:request"]`:
-   `create_job(name="...", assignees=[agent_id], tags=["user:request"])`
+   `create_job(name="...", assignee=agent_id, tags=["user:request"])`
 
 The `user:request` tag tells the agent to return the job to the user when done (with results as assets).
 

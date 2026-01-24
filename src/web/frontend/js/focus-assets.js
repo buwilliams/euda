@@ -177,13 +177,9 @@ function handleNewAssetKeypress(event, jobId) {
 // ============== Asset Views ==============
 
 function renderAssetView(jobId, filename) {
-    // Get job name for header (check both active and completed)
-    let job = jobsData.find(j => j.id === jobId);
-    let isCompleted = false;
-    if (!job) {
-        job = completedJobsData.find(j => j.id === jobId);
-        isCompleted = true;
-    }
+    // Get job name for header (use allJobsData to find any job regardless of status)
+    const job = allJobsData.find(j => j.id === jobId);
+    const isCompleted = job?.status === 'done';
     const jobName = job ? job.name : 'Job';
 
     // Load asset if not already loaded
@@ -255,13 +251,9 @@ function renderAssetView(jobId, filename) {
 }
 
 function renderAssetsListView(jobId) {
-    // Check both active and completed jobs
-    let job = jobsData.find(j => j.id === jobId);
-    let isCompleted = false;
-    if (!job) {
-        job = completedJobsData.find(j => j.id === jobId);
-        isCompleted = true;
-    }
+    // Use allJobsData to find any job regardless of status
+    const job = allJobsData.find(j => j.id === jobId);
+    const isCompleted = job?.status === 'done';
     const jobName = job ? job.name : 'Job';
     const assets = jobAssetsCache[jobId] || [];
 

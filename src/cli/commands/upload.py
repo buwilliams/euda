@@ -90,17 +90,18 @@ def _upload_to_agent(agent_id: str, file_path: Path, json_mode: bool):
         print_error("Only text files are supported for upload", json_mode)
         sys.exit(1)
 
-    from ...tools.data.jobs import create_job, get_system_container
+    from ...tools.data.jobs import create_job, get_agent_inbox_job
     from ...tools.data.assets import write_asset
 
-    # Create job
-    system_container = get_system_container()
+    # Create job under agent's inbox
+    inbox = get_agent_inbox_job(agent_id)
+    parent_id = inbox["id"] if inbox else None
 
     job = create_job(
         name=f"Process file: {file_path.name}",
         description=f"File uploaded via dev CLI: {file_path.name}",
-        parent_id=system_container["id"],
-        assignees=[agent_id],
+        parent_id=parent_id,
+        assignee=agent_id,
         tags=["dev:upload"],
         created_by="dev-cli"
     )

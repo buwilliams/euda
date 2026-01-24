@@ -66,16 +66,17 @@ def cmd_job(args: List[str], json_mode: bool = False):
         print_error(f"Agent not found: {agent_id}", json_mode)
         sys.exit(1)
 
-    # Create the job
-    from ...tools.data.jobs import create_job, get_system_container
+    # Create the job under agent's inbox
+    from ...tools.data.jobs import create_job, get_agent_inbox_job
 
-    system_container = get_system_container()
+    inbox = get_agent_inbox_job(agent_id)
+    parent_id = inbox["id"] if inbox else None
 
     job = create_job(
         name=task[:100],  # Truncate name
         description=task if len(task) > 100 else None,
-        parent_id=system_container["id"],
-        assignees=[agent_id],
+        parent_id=parent_id,
+        assignee=agent_id,
         tags=["dev:manual"],
         created_by="dev-cli"
     )
@@ -161,10 +162,9 @@ def _run_job(agent_id: str, job: dict, no_reflect: bool, max_iterations: int, js
         # Format prompt
         prompt = agent._format_job_prompt(job)
 
-        # Get max iterations from config or override
+        # Use override or default (for dev CLI only - normal work cycles have no limit)
         if max_iterations is None:
-            config = agent._get_system_config()
-            max_iterations = config.get("agents", {}).get("max_work_iterations", 20)
+            max_iterations = 100  # High default for dev testing
 
         # Run work cycle
         from ...prompts import load_template

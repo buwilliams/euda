@@ -11,6 +11,12 @@ from typing import Optional, Callable
 
 from .repl import REPLEnvironment, ExecutionResult
 from ...llms.base import get_client, UnifiedClient
+from ..cognition.metacognition.regulation import (
+    get_progress_tracker,
+    ProgressLimitExceeded,
+    DEFAULT_MAX_ITERATIONS,
+    DEFAULT_MAX_RECURSION_DEPTH,
+)
 
 
 @dataclass
@@ -26,9 +32,11 @@ class RLMResult:
 
 @dataclass
 class RLMConfig:
-    """Configuration for RLM sessions."""
-    max_iterations: int = 20
-    max_recursion_depth: int = 1
+    """Configuration for RLM REPL execution.
+
+    Note: Iteration and recursion limits are handled by the regulation
+    module's progress tracking system, not by this config.
+    """
     execution_timeout_seconds: int = 30
     output_truncation_chars: int = 10000
 
@@ -47,8 +55,6 @@ def _load_rlm_config() -> RLMConfig:
             config = json.load(f)
         rlm_config = config.get("rlm", {})
         return RLMConfig(
-            max_iterations=rlm_config.get("max_iterations", 20),
-            max_recursion_depth=rlm_config.get("max_recursion_depth", 1),
             execution_timeout_seconds=rlm_config.get("execution_timeout_seconds", 30),
             output_truncation_chars=rlm_config.get("output_truncation_chars", 10000)
         )
@@ -61,6 +67,9 @@ class RLMClient:
 
     This client mediates all long-term memory access through a REPL environment
     where the LLM can write code to search, filter, and analyze memory entries.
+
+    All LLM calls are attributed to the originating agent and tracked through
+    the regulation module's token awareness and progress tracking systems.
     """
 
     def __init__(self, llm_client: UnifiedClient = None, agent_id: str = "user"):
@@ -69,28 +78,33 @@ class RLMClient:
 
         Args:
             llm_client: LLM client for making calls (uses default if not provided)
-            agent_id: ID of the agent using this client
+            agent_id: ID of the agent using this client (calls attributed to this agent)
         """
         self.client = llm_client or get_client()
         self.agent_id = agent_id
         self.config = _load_rlm_config()
+        self._progress_tracker = get_progress_tracker()
 
         # Track session state
         self._sub_call_count = 0
         self._iteration_count = 0
+        self._session_id: Optional[str] = None
 
-    def _create_llm_query_fn(self, depth: int = 0) -> Callable[[str], str]:
+    def _create_llm_query_fn(self, session_id: str) -> Callable[[str], str]:
         """Create the llm_query function for the REPL.
 
         Args:
-            depth: Current recursion depth
+            session_id: Progress tracking session ID
 
         Returns:
             Function that makes sub-LLM calls
         """
         def llm_query(prompt: str) -> str:
             """Query the LLM for semantic analysis."""
-            if depth >= self.config.max_recursion_depth:
+            # Check recursion depth via progress tracker
+            try:
+                self._progress_tracker.enter_recursion(session_id)
+            except ProgressLimitExceeded:
                 return "[Error: Maximum recursion depth reached]"
 
             self._sub_call_count += 1
@@ -101,7 +115,7 @@ class RLMClient:
                     system="You are a helpful assistant analyzing memory content. "
                            "Provide concise, factual analysis. Be direct and brief.",
                     messages=[{"role": "user", "content": prompt}],
-                    agent_id=f"rlm-{self.agent_id}",
+                    agent_id=self.agent_id,
                     track_cost=True
                 )
 
@@ -114,6 +128,8 @@ class RLMClient:
 
             except Exception as e:
                 return f"[Error in llm_query: {str(e)}]"
+            finally:
+                self._progress_tracker.exit_recursion(session_id)
 
         return llm_query
 
@@ -199,8 +215,36 @@ When you have enough information, use FINAL() to provide your answer."""
         self._sub_call_count = 0
         self._iteration_count = 0
 
+        # Start progress tracking session
+        session_id = self._progress_tracker.start_session(
+            agent_id=self.agent_id,
+            max_iterations=DEFAULT_MAX_ITERATIONS,
+            max_recursion_depth=DEFAULT_MAX_RECURSION_DEPTH,
+            session_type="rlm"
+        )
+        self._session_id = session_id
+
+        try:
+            return self._run_session_loop(query, memory, task_type, session_id)
+        finally:
+            self._progress_tracker.end_session(session_id)
+            self._session_id = None
+
+    def _run_session_loop(self, query: str, memory: dict, task_type: str,
+                          session_id: str) -> RLMResult:
+        """Internal session loop with progress tracking.
+
+        Args:
+            query: The user's query
+            memory: Memory data structure
+            task_type: Description of the task for the system prompt
+            session_id: Progress tracking session ID
+
+        Returns:
+            RLMResult with findings
+        """
         # Create REPL environment
-        llm_query_fn = self._create_llm_query_fn(depth=0)
+        llm_query_fn = self._create_llm_query_fn(session_id)
         repl = REPLEnvironment(memory, llm_query_fn)
 
         # Build conversation
@@ -210,9 +254,20 @@ When you have enough information, use FINAL() to provide your answer."""
         # Track sources for attribution
         sources = []
 
-        # Iteration loop
-        while self._iteration_count < self.config.max_iterations:
-            self._iteration_count += 1
+        # Iteration loop - controlled by progress tracker
+        while True:
+            # Increment and check iteration limit
+            try:
+                self._iteration_count = self._progress_tracker.increment(session_id)
+            except ProgressLimitExceeded:
+                return RLMResult(
+                    query=query,
+                    findings="Maximum iterations reached without finding an answer.",
+                    sources=sources,
+                    iterations=self._iteration_count,
+                    sub_calls=self._sub_call_count,
+                    error="Max iterations reached"
+                )
 
             # Get LLM response
             try:
@@ -220,7 +275,7 @@ When you have enough information, use FINAL() to provide your answer."""
                     max_tokens=4000,
                     system=system_prompt,
                     messages=messages,
-                    agent_id=f"rlm-{self.agent_id}",
+                    agent_id=self.agent_id,
                     track_cost=True
                 )
             except Exception as e:
@@ -304,16 +359,6 @@ When you have enough information, use FINAL() to provide your answer."""
                 "content": f"Output:\n```\n{combined_output}\n```\n\n"
                           "Continue exploring or call FINAL() with your answer."
             })
-
-        # Max iterations reached
-        return RLMResult(
-            query=query,
-            findings="Maximum iterations reached without finding an answer.",
-            sources=sources,
-            iterations=self._iteration_count,
-            sub_calls=self._sub_call_count,
-            error="Max iterations reached"
-        )
 
     def recall(self, query: str, memory: dict, time_range_days: int = 365) -> RLMResult:
         """

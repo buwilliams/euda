@@ -1,125 +1,11 @@
 {
-  "version": "3.0.0",
-  "initialized": true,
-  "llm": {
-    "provider": "openai",
-    "budget": {
-      "limit": 10.0,
-      "period": "monthly"
-    },
-    "default_pricing": {
-      "input": 3.0,
-      "cached_input": 0.3,
-      "output": 15.0
-    },
-    "providers": {
-      "anthropic": {
-        "display_name": "Claude",
-        "model": "claude-opus-4-5",
-        "description": "Anthropic's Claude models",
-        "max_input_tokens": 200000,
-        "max_output_tokens": 16000,
-        "pricing": {
-          "input": 3.0,
-          "cached_input": 0.3,
-          "output": 15.0
-        }
-      },
-      "openai": {
-        "display_name": "ChatGPT",
-        "model": "gpt-5.2",
-        "description": "OpenAI's GPT models",
-        "max_input_tokens": 128000,
-        "max_output_tokens": 16000,
-        "pricing": {
-          "input": 1.75,
-          "cached_input": 0.175,
-          "output": 14.0
-        }
-      },
-      "grok": {
-        "display_name": "Grok",
-        "model": "grok-4-1-fast",
-        "description": "xAI's Grok models",
-        "max_input_tokens": 131072,
-        "max_output_tokens": 16000,
-        "pricing": {
-          "input": 0.2,
-          "cached_input": 0.05,
-          "output": 0.5
-        }
-      }
-    },
-    "rate_limiting": {
-      "enabled": true,
-      "rolling_window": {
-        "max_calls": 30,
-        "window_seconds": 60
-      },
-      "throttle": {
-        "enabled": false,
-        "calls_per_minute": 10,
-        "queue_max_size": 100
-      },
-      "runaway_detection": {
-        "enabled": true,
-        "baseline_window_minutes": 60,
-        "spike_multiplier": 5.0,
-        "min_baseline_calls": 5,
-        "min_spike_rate": 5
-      }
-    }
-  },
-  "metacognition": {
-    "token_awareness": {
-      "enabled": true,
-      "thresholds": {
-        "warning_percent": 80,
-        "pause_percent": 100
-      },
-      "frequencies": ["monthly", "weekly", "daily", "hourly"]
-    },
-    "progress": {
-      "max_tool_calls_per_iteration": 50,
-      "max_repeated_tool_calls": 3,
-      "max_no_progress_iterations": 5
-    },
-    "planning": {
-      "enabled": true,
-      "excluded_for": []
-    },
-    "efficiency": {
-      "defer_consolidation_in_work_cycles": true
-    },
-    "consolidation": {
-      "append_max_tokens": 500,
-      "append_batch_max_tokens": 1000,
-      "consolidate_max_tokens": 2000,
-      "upload_analysis_max_tokens": 1000
-    },
-    "patterns": {
-      "enabled": true,
-      "discovery_passes": ["temporal", "correlation", "trajectory"],
-      "min_evidence_for_pattern": 3,
-      "hypothesis_expiry_days": 30,
-      "confidence_decay_rate": 0.1,
-      "confidence_boost_on_validation": 0.15
-    }
-  },
   "rlm": {
-    "enabled": true,
-    "max_iterations": 20,
-    "max_recursion_depth": 1,
     "execution_timeout_seconds": 30,
     "output_truncation_chars": 10000
   },
   "logging": {
     "level": "info",
     "retention_days": 31
-  },
-  "agents": {
-    "max_work_iterations": 20,
-    "poll_interval": 0.1
   },
   "schedules": {
     "morning": "08:00",
@@ -130,15 +16,5 @@
     "hour_06": "06:00",
     "hour_12": "12:00",
     "hour_18": "18:00"
-  },
-  "nextcloud": {
-    "instances": {
-      "personal": {
-        "display_name": "Personal Nextcloud instance",
-        "url": "https://example.nextcloud.url",
-        "username": ""
-      }
-    },
-    "default_instance": "personal"
   }
 }

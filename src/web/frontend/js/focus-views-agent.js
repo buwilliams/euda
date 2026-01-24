@@ -17,14 +17,8 @@ let rateLimitViewCache = {};
 function renderAgentDetailView(job) {
     const agentId = job.agent_id;
     const displayName = job.name || 'Untitled';
-    const childJobs = jobsData.filter(j => j.parent_id === job.id);
-    const completedChildJobs = completedJobsData.filter(j => j.parent_id === job.id);
-    // Merge and sort: open jobs first, then completed
-    const allChildJobs = [...childJobs, ...completedChildJobs].sort((a, b) => {
-        const aCompleted = a.status === 'done' ? 1 : 0;
-        const bCompleted = b.status === 'done' ? 1 : 0;
-        return aCompleted - bCompleted;
-    });
+    // Get ALL child jobs sorted by status priority (working > todo > error > done > archived)
+    const allChildJobs = getAllChildJobsSorted(job.id);
     const assets = jobAssetsCache[job.id] || [];
 
     // Load agent data if not cached
@@ -55,34 +49,19 @@ function renderAgentDetailView(job) {
         loadAgentPauseStatus(agentId).then(() => renderFocusTab());
     }
 
-    // Check active executions on initial load
-    if (!activeExecution || activeExecution.agentId !== agentId) {
-        if (!agentDataCache[agentId]?._activeExecutionsLoaded) {
-            loadActiveExecutions(agentId).then(() => {
-                if (agentDataCache[agentId]) {
-                    agentDataCache[agentId]._activeExecutionsLoaded = true;
-                }
-                renderFocusTab();
-            });
-        }
-    }
-
     const config = agentData.config || {};
     const pauseStatus = agentPauseStatus[agentId] || { state: 'enabled', isPaused: false, isDisabled: false, isEnabled: true };
     const agentState = pauseStatus.state || 'enabled';
 
-    // Check if any execution is running for this agent
-    const isRunning = activeExecution && activeExecution.agentId === agentId;
-    const runningPhase = isRunning ? activeExecution.phase : null;
+    // Check if there's an active consolidation job for this agent
+    const hasActiveConsolidateJob = allChildJobs.some(j =>
+        j.name === 'euno:consolidate' && (j.status === 'todo' || j.status === 'working')
+    );
 
-    // Helper to render action button with running state
+    // Helper to render action button - disabled when consolidation job is active
     const actionButton = (phase, iconName, label, onclick) => {
-        const isThisRunning = runningPhase === phase;
-        const classes = `task-detail-action${isThisRunning ? ' running' : ''}`;
-        const disabled = isRunning || pauseStatus.isPaused || pauseStatus.isDisabled ? 'disabled' : '';
-        const displayIcon = isThisRunning ? icon('arrow-path', 'spinning') : icon(iconName);
-        const displayLabel = isThisRunning ? `${label}...` : label;
-        return `<button class="${classes}" onclick="${onclick}" ${disabled}>${displayIcon} ${displayLabel}</button>`;
+        const disabled = hasActiveConsolidateJob || pauseStatus.isPaused || pauseStatus.isDisabled ? 'disabled' : '';
+        return `<button class="task-detail-action" onclick="${onclick}" ${disabled}>${icon(iconName)} ${label}</button>`;
     };
 
     // Status badge color class
@@ -315,23 +294,20 @@ function renderAgentDetailView(job) {
                 <span class="focus-view-title">${icon('bolt')}${escapeHtml(displayName)}</span>
                 ${renderBreadcrumbs()}
             </div>
+            <span class="agent-status-badge ${statusBadgeClass}">${agentState}</span>
         </div>
         <div class="focus-view-content" data-testid="agent-detail">
-            <!-- Live Execution Progress -->
-            ${getActiveExecutionHtml(agentId)}
-
             <!-- Pause Notice (if paused) -->
             ${renderPauseNotice()}
 
             <!-- Action Menu - all controls in one row -->
             <div class="task-detail-actions">
-                <span class="agent-status-badge ${statusBadgeClass}">${agentState}</span>
                 ${renderStatusControls()}
                 ${actionButton('consolidate', 'archive-box', 'Consolidate', `triggerReflection('${agentId}', 'consolidate')`)}
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
             </div>
 
-            <!-- Jobs Section (merged pending + completed child jobs, open first) -->
+            <!-- Jobs Section (all jobs sorted by status: working > todo > error > done > archived) -->
             <div class="job-section">
                 <div class="job-section-header collapsible ${allChildJobs.length > 0 ? 'open' : ''}" onclick="togglePersonaSection(this, event)">
                     <span>Jobs${allChildJobs.length > 0 ? ` (${allChildJobs.length})` : ''}</span>
@@ -339,15 +315,7 @@ function renderAgentDetailView(job) {
                 </div>
                 <div class="collapsible-content ${allChildJobs.length > 0 ? 'open' : ''}">
                     ${allChildJobs.length === 0 ? '<div class="focus-empty">No jobs assigned to this agent.</div>' :
-                      allChildJobs.map(child => {
-                          const isCompleted = child.status === 'done';
-                          if (isCompleted) {
-                              const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                              return renderCompletedJobCard(child, grandchildCount, true);
-                          } else {
-                              return renderJobCard(child, true);
-                          }
-                      }).join('')
+                      allChildJobs.map(child => renderJobCard(child, true)).join('')
                     }
                 </div>
             </div>
@@ -776,9 +744,6 @@ function renderMonitoringView(agentId) {
     const promptsList = prompts || recent_prompts || [];
     const paginationInfo = pagination || { offset: 0, limit: 20, total: promptsList.length, has_more: false };
 
-    // Get active execution progress HTML if any
-    const progressHtml = getActiveExecutionHtml(agentId);
-
     // Calculate pagination display info
     const currentPage = Math.floor(paginationInfo.offset / paginationInfo.limit) + 1;
     const totalPages = Math.ceil(paginationInfo.total / paginationInfo.limit);
@@ -794,9 +759,6 @@ function renderMonitoringView(agentId) {
             </div>
         </div>
         <div class="focus-view-content">
-            <!-- Live Progress (if running) -->
-            ${progressHtml}
-
             <!-- Stats -->
             <div class="monitoring-stats">
                 <div class="monitoring-stat">

@@ -2,8 +2,8 @@
 Metacognition Module - Second-order thinking (self-awareness and self-regulation).
 
 This module provides:
-- Self-regulation (via regulation/): Token awareness, progress tracking, config, incidents
-- Self-improvement (via consolidation/): Memory and identity consolidation (formerly Reflection)
+- Self-regulation (via regulation/): Token awareness, config, incidents
+- Self-improvement (via consolidation/): Memory and identity consolidation
 
 The main Metacognition class orchestrates these capabilities for each agent.
 """
@@ -13,6 +13,7 @@ from .regulation import (
     TokenAwareness,
     AgentState,
     AgentPausedError,
+    ProgressLimitExceeded,
     get_token_awareness,
     get_calls_by_job,
     get_job_call_count,
@@ -20,7 +21,6 @@ from .regulation import (
     get_cost_summary,
     get_resource_tracker,
     MetacognitionConfig,
-    ProgressTracker,
     count_tokens,
     estimate_request_tokens,
     IncidentTracker,
@@ -29,7 +29,8 @@ from .regulation import (
     IncidentSeverity,
     get_incident_tracker,
 )
-from .consolidation import Consolidation
+# Consolidation is now in tools/system/consolidation
+from ....tools.system.consolidation import Consolidation
 
 __all__ = [
     # Main class
@@ -38,6 +39,7 @@ __all__ = [
     "TokenAwareness",
     "AgentState",
     "AgentPausedError",
+    "ProgressLimitExceeded",
     "get_token_awareness",
     "get_calls_by_job",
     "get_job_call_count",
@@ -45,7 +47,6 @@ __all__ = [
     "get_cost_summary",
     "get_resource_tracker",
     "MetacognitionConfig",
-    "ProgressTracker",
     "count_tokens",
     "estimate_request_tokens",
     "IncidentTracker",
@@ -53,6 +54,6 @@ __all__ = [
     "IncidentType",
     "IncidentSeverity",
     "get_incident_tracker",
-    # Consolidation (formerly Reflection)
+    # Consolidation
     "Consolidation",
 ]

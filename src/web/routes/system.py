@@ -11,10 +11,9 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client
-from ...llms.base import _load_config, CONFIG_PATH, VALID_PROVIDERS
+from ...llms import get_model, get_provider, get_providers_config, invalidate_client
+from ...llms.base import _load_config, LLM_CONFIG_PATH, VALID_PROVIDERS
 from ...tools.data.jobs import list_jobs
-from ...tools.data.identity import get_identity
 from ...tools.system.fresh_start import (
     perform_fresh_start,
     list_backups as _list_backups,
@@ -28,7 +27,6 @@ router = APIRouter()
 
 DOCS_DIR = Path(__file__).parent.parent.parent.parent / "docs"
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
-QUOTES_FILE = DATA_DIR / "system" / "quotes.json"
 
 
 class FreshStartRequest(BaseModel):
@@ -57,106 +55,78 @@ def get_about():
 
 # ============== Daily Quote ==============
 
-def _load_quotes_state() -> dict:
-    """Load quotes state from disk."""
-    if QUOTES_FILE.exists():
+def _get_latest_quote_from_jobs() -> dict:
+    """Get the most recent completed euno:quote job's quote asset.
+
+    Returns:
+        Dict with 'quote' and 'author' keys, or None if no quote found
+    """
+    from ...tools.data.assets import read_asset
+
+    # Get completed jobs and filter for quote jobs
+    all_jobs = list_jobs(status="done")
+    quote_jobs = [j for j in all_jobs if j.get("name", "").startswith("euno:quote")]
+
+    for job in quote_jobs:
         try:
-            with open(QUOTES_FILE) as f:
-                return json.load(f)
-        except (json.JSONDecodeError, IOError):
-            pass
-    return {"current": None, "date": None, "history": []}
+            asset = read_asset(job["id"], "quote.json")
+            if asset and asset.get("content"):
+                quote_data = json.loads(asset["content"])
+                if quote_data.get("quote") and quote_data.get("author"):
+                    return quote_data
+        except (json.JSONDecodeError, KeyError):
+            continue
 
-
-def _save_quotes_state(state: dict):
-    """Save quotes state to disk."""
-    QUOTES_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(QUOTES_FILE, "w") as f:
-        json.dump(state, f, indent=2)
-
-
-def _generate_quote(identity_content: str, history: list) -> dict:
-    """Generate a personalized quote using the configured LLM."""
-    client = get_client()
-
-    # Build context about recently used quotes to avoid
-    history_context = ""
-    if history:
-        recent = history[-50:]  # Show last 50 to avoid repetition
-        history_context = "\n\nQuotes to AVOID (recently used):\n"
-        for q in recent:
-            history_context += f"- \"{q['quote']}\" — {q['author']}\n"
-
-    prompt = f"""Based on this user's identity, select or compose an inspiring quote that would resonate with them today.
-
-User Identity:
-{identity_content if identity_content else "No identity available - provide a generally inspiring quote."}
-{history_context}
-
-Respond with ONLY a JSON object in this exact format (no markdown, no explanation):
-{{"quote": "The quote text here", "author": "Author Name"}}
-
-The quote can be from a famous person, philosopher, writer, or you can compose an original one attributed to "Unknown" or "Ancient Wisdom". Make it meaningful and relevant to the user's interests, goals, concerns, or values."""
-
-    response = client.create(
-        max_tokens=256,
-        system="You are a helpful assistant that provides inspiring quotes.",
-        messages=[{"role": "user", "content": prompt}],
-        agent_id="system"
-    )
-
-    text = response.content[0].text.strip()
-
-    # Parse JSON response
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        # Fallback if parsing fails
-        return {
-            "quote": "The journey of a thousand miles begins with a single step.",
-            "author": "Lao Tzu"
-        }
+    return None
 
 
 @router.get("/daily-quote")
 def daily_quote():
-    """Get a personalized daily quote."""
-    today = datetime.now().strftime("%Y-%m-%d")
-    state = _load_quotes_state()
+    """Get a personalized daily quote.
 
-    # Return cached quote if already generated today
-    if state.get("date") == today and state.get("current"):
-        return state["current"]
+    Returns quote from completed euno:quote jobs. If none exists yet,
+    returns empty. Quote generation happens via the euno:quote job
+    (scheduled for morning).
+    """
+    quote = _get_latest_quote_from_jobs()
+    if quote:
+        return quote
 
-    # Get user identity for personalization
-    identity = get_identity("user")
-    identity_content = identity.get("content", "") if identity.get("exists") else ""
-
-    # Get history (last 365 quotes)
-    history = state.get("history", [])[-365:]
-
-    # Generate new quote
-    quote = _generate_quote(identity_content, history)
-
-    # Update state
-    history.append(quote)
-    state = {
-        "current": quote,
-        "date": today,
-        "history": history[-365:]  # Keep only last 365
-    }
-    _save_quotes_state(state)
-
-    return quote
+    # No quote yet - return empty (UI should handle this gracefully)
+    return {}
 
 
 # ============== Costs ==============
 
 @router.get("/costs")
 def get_costs():
-    """Get cost summary for session, today, 7 days, and this month."""
+    """Get cost summary for session (today), 7 days, and this month."""
+    from datetime import datetime
     from ...agent.cognition.metacognition import get_cost_summary
-    return get_cost_summary()
+
+    # Get data for different periods
+    today_data = get_cost_summary(days=1)
+    week_data = get_cost_summary(days=7)
+
+    # For month, calculate days since start of month
+    now = datetime.now()
+    days_in_month = now.day
+    month_data = get_cost_summary(days=days_in_month)
+
+    return {
+        "session": {
+            "cost": today_data.get("total_cost", 0),
+            "calls": today_data.get("total_calls", 0),
+        },
+        "seven_days": {
+            "cost": week_data.get("total_cost", 0),
+            "calls": week_data.get("total_calls", 0),
+        },
+        "month": {
+            "cost": month_data.get("total_cost", 0),
+            "calls": month_data.get("total_calls", 0),
+        },
+    }
 
 
 @router.get("/costs/by-agent")
@@ -172,10 +142,21 @@ def get_costs_by_agent(days: int = 30):
 def get_settings():
     """Get current LLM settings with all providers and speech capabilities."""
     from ...tools.speech import supports_stt, supports_tts
+    import json
 
-    config = _load_config()
+    # Load LLM config
+    llm_config = _load_config()
     current_provider = get_provider()
-    budget_config = config.get("llm", {}).get("budget", {})
+    budget_config = llm_config.get("budget", {})
+
+    # Load system config for schedules
+    system_config_path = DATA_DIR / "system" / "config.json"
+    try:
+        with open(system_config_path) as f:
+            system_config = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        system_config = {}
+
     return {
         "llm": {
             "provider": current_provider,
@@ -190,14 +171,14 @@ def get_settings():
             "stt_available": supports_stt(current_provider),
             "tts_available": supports_tts(current_provider),
         },
-        "schedules": config.get("schedules", {})
+        "schedules": system_config.get("schedules", {})
     }
 
 
 @router.put("/settings/llm")
 def update_llm_settings(data: dict):
-    """Update LLM settings (provider, models, budget)."""
-    from ...agent.cognition.metacognition import get_resource_tracker
+    """Update LLM settings (provider, model, budget)."""
+    from ...agent.cognition.metacognition import get_token_awareness
 
     config = _load_config()
 
@@ -205,25 +186,23 @@ def update_llm_settings(data: dict):
     if "default_provider" in data:
         provider = data["default_provider"]
         if provider in VALID_PROVIDERS:
-            config["llm"]["provider"] = provider
+            config["provider"] = provider
 
-    # Update models if specified
-    if "providers" in data:
-        for provider_id, settings in data["providers"].items():
-            if provider_id in VALID_PROVIDERS and "model" in settings:
-                config["llm"]["providers"][provider_id]["model"] = settings["model"]
+    # Update model if specified (new structure: single model at root level)
+    if "model" in data:
+        config["model"] = data["model"]
 
     # Update budget if specified (nested structure: budget.limit, budget.period)
     if "budget" in data:
-        if "budget" not in config["llm"]:
-            config["llm"]["budget"] = {}
+        if "budget" not in config:
+            config["budget"] = {}
         if "limit" in data["budget"]:
-            config["llm"]["budget"]["limit"] = data["budget"]["limit"]
+            config["budget"]["limit"] = data["budget"]["limit"]
         if "period" in data["budget"]:
-            config["llm"]["budget"]["period"] = data["budget"]["period"]
+            config["budget"]["period"] = data["budget"]["period"]
 
-    # Save config
-    with open(CONFIG_PATH, "w") as f:
+    # Save config to llm.json
+    with open(LLM_CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
 
     # Invalidate cached clients so next request uses new provider
@@ -233,16 +212,26 @@ def update_llm_settings(data: dict):
     from ...tools.speech import invalidate_speech_client
     invalidate_speech_client()
 
-    # Invalidate resource tracker cache so budget changes take effect
-    get_resource_tracker().invalidate_config()
+    # Invalidate token awareness cache so budget changes take effect
+    get_token_awareness().invalidate_config()
 
-    return {"success": True, "llm": config["llm"]}
+    return {"success": True, "llm": {
+        "provider": config["provider"],
+        "model": config["model"],
+        "budget": config.get("budget", {})
+    }}
 
 
 @router.put("/settings/schedules")
 def update_schedules(data: dict):
     """Update schedule times."""
-    config = _load_config()
+    # Load system config (not LLM config)
+    system_config_path = DATA_DIR / "system" / "config.json"
+    try:
+        with open(system_config_path) as f:
+            config = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        config = {}
 
     # Ensure schedules exists
     if "schedules" not in config:
@@ -254,7 +243,7 @@ def update_schedules(data: dict):
             config["schedules"][name] = time
 
     # Save config
-    with open(CONFIG_PATH, "w") as f:
+    with open(system_config_path, "w") as f:
         json.dump(config, f, indent=2)
 
     return {"success": True, "schedules": config["schedules"]}

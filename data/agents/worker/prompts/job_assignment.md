@@ -58,7 +58,7 @@ After completing a job, I consider if the outcome creates opportunities for othe
 **How to route:**
 1. Use `list_agents_for_routing()` to discover available agents
 2. Create a descriptive job for the appropriate agent
-3. Assign using `create_job(..., assignees=[agent_id])`
+3. Assign using `create_job(..., assignee=agent_id)`
 
 **I don't route:**
 - Simple task completions with no follow-up value

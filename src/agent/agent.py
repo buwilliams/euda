@@ -15,7 +15,7 @@ from typing import Callable, Optional
 
 from ..llms import get_client
 from .logger import get_logger
-from .cognition.metacognition import Metacognition, AgentState, Consolidation
+from .cognition.metacognition import Metacognition, AgentState, AgentPausedError, ProgressLimitExceeded, Consolidation
 
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
@@ -106,11 +106,10 @@ class Agent:
         All agents serve the user, so they need to know who the user is.
         This returns the user's identity.md content, which contains their
         purpose, values, interests, biographical info, etc.
-        """
-        # Don't include user identity for the user agent itself
-        if self.id == "user":
-            return "(You are the user.)"
 
+        The User agent IS Euno - it uses its own identity directly through
+        the standard _build_system_prompt flow, so no special handling needed here.
+        """
         user_identity_path = AGENTS_DIR / "user" / "identity.md"
         if user_identity_path.exists():
             return user_identity_path.read_text()
@@ -327,18 +326,117 @@ class Agent:
         from ..tools import get_tools_for_agent
         return get_tools_for_agent(self.config.get("tools", []))
 
+    # Map of euno:* job names to tool names for direct execution
+    INTERNAL_JOB_TOOLS = {
+        "euno:consolidate": "euno_consolidate",
+        "euno:quote": "euno_quote",
+    }
+
+    def _is_internal_job(self, job_name: str) -> bool:
+        """Check if job is an internal euno:* job that should be executed directly.
+
+        Internal jobs bypass the LLM chat loop and execute their mapped tool directly.
+        """
+        for prefix in self.INTERNAL_JOB_TOOLS:
+            if job_name.startswith(prefix):
+                return True
+        return False
+
     def _is_reflection_trigger(self, job_tags: list, job_name: str) -> bool:
         """Check if a job is a reflection trigger that should be handled directly.
 
-        Consolidation jobs are identified by name pattern: Trigger:consolidation:{phase}:{date}
+        DEPRECATED: Use _is_internal_job() instead. Kept for backwards compatibility
+        with old Trigger:consolidation: jobs that may still exist.
         """
         return job_name.startswith("Trigger:consolidation:")
+
+    def _is_job_cancelled(self, job_id: str) -> bool:
+        """Check if a job has been cancelled (archived or deleted) by the user.
+
+        Called during work iterations to detect if the user has archived or deleted
+        the job while the agent was working on it.
+
+        Returns:
+            True if job no longer exists or is no longer in 'working' status
+        """
+        from ..tools.data.jobs import get_job
+
+        job = get_job(job_id)
+        if job is None:
+            return True  # Job was deleted
+        if job.get("status") != "working":
+            return True  # Job was archived or otherwise changed
+        return False
+
+    def _execute_internal_job(self, job: dict):
+        """Execute an internal euno:* job by calling its mapped tool directly.
+
+        Internal jobs bypass the LLM chat loop entirely for efficiency.
+        The tool is executed directly and the job is completed.
+        """
+        from ..tools import execute_tool
+        from ..tools.data.jobs import complete_job
+
+        job_id = job.get("id")
+        job_name = job.get("name", "")
+
+        # Find matching tool
+        tool_name = None
+        for prefix, tool in self.INTERNAL_JOB_TOOLS.items():
+            if job_name.startswith(prefix):
+                tool_name = tool
+                break
+
+        if not tool_name:
+            self._log("internal_job_unknown", {"job_id": job_id, "job_name": job_name})
+            return
+
+        self._log("internal_job_start", {
+            "job_id": job_id,
+            "job_name": job_name,
+            "tool": tool_name
+        })
+
+        try:
+            # Build tool inputs based on job
+            inputs = {"agent_id": self.id, "job_id": job_id}
+
+            # For euno:consolidate, extract phase from job description
+            if tool_name == "euno_consolidate":
+                description = job.get("description", "")
+                if "phase: append" in description:
+                    inputs["phase"] = "append"
+                elif "phase: consolidate" in description:
+                    inputs["phase"] = "consolidate"
+                elif "phase: both" in description:
+                    inputs["phase"] = "both"
+                # Default to "consolidate" if not specified
+
+            # Execute tool directly
+            result = execute_tool(tool_name, inputs)
+
+            # Complete job
+            complete_job(job_id)
+
+            self._log("internal_job_complete", {
+                "job_id": job_id,
+                "tool": tool_name,
+                "result": result
+            })
+
+        except Exception as e:
+            self._log("internal_job_error", {
+                "job_id": job_id,
+                "tool": tool_name,
+                "error": str(e)
+            })
+            # Don't re-raise - job stays in todo for retry
 
     def _execute_reflection_trigger(self, job: dict):
         """Execute a reflection trigger directly (not through chat loop).
 
-        This is more efficient than letting the agent chat loop handle reflection,
-        as it makes a single LLM call instead of many.
+        DEPRECATED: This handles legacy Trigger:consolidation: jobs.
+        New code should use euno:consolidate jobs instead.
         """
         from ..tools.data.jobs import complete_job
 
@@ -491,19 +589,10 @@ class Agent:
             "usage": {"input": response.usage.input_tokens, "output": response.usage.output_tokens}
         })
 
-        # Handle tool use in a loop with action awareness
+        # Handle tool use in a loop
         self.metacognition.reset_iteration()
-        max_tool_calls = self.metacognition.get_max_tool_calls_per_iteration()
 
         while response.stop_reason == "tool_use":
-            # Check if tool call limit reached
-            if self.metacognition.check_tool_call_limit():
-                self._log("tool_limit_break", {
-                    "count": self.metacognition.get_tool_call_count(),
-                    "limit": max_tool_calls
-                })
-                break
-
             tool_results = self._execute_tools(response)
             messages.append({"role": "assistant", "content": response.content})
             messages.append({"role": "user", "content": tool_results})
@@ -532,9 +621,9 @@ class Agent:
             self._save_conversation_turn("assistant", text_response)
         self._log("chat_end", {"response_length": len(text_response)})
 
-        # Log user conversations to long-term memory for the chat agent
+        # Log user conversations to long-term memory for the user agent
         # Only log actual user conversations, not autonomous work cycles
-        if self.id == "chat" and log_to_memory:
+        if self.id == "user" and log_to_memory:
             self._append_to_long_term_memory(message, text_response)
 
         # Run reflection append phase to extract noteworthy items
@@ -591,7 +680,7 @@ class Agent:
         Args:
             trigger_context: Optional event data that triggered this cycle
         """
-        from ..tools.data.jobs import list_jobs, claim_job, release_job
+        from ..tools.data.jobs import list_jobs, claim_job, release_job, error_job
 
         self._log("work_cycle_start", {"trigger": trigger_context})
         self._work_done = False
@@ -622,10 +711,15 @@ class Agent:
         self._current_job_id = job_id
 
         try:
-            # Special handling for reflection triggers - call reflection directly instead of chat loop
-            # This is much more efficient (single LLM call vs many)
             job_tags = current_job.get("tags", [])
             job_name = current_job.get("name", "")
+
+            # Check for internal euno:* jobs first - these execute tools directly
+            if self._is_internal_job(job_name):
+                self._execute_internal_job(current_job)
+                return
+
+            # Legacy handling for old Trigger:consolidation: jobs (backwards compatibility)
             if self._is_reflection_trigger(job_tags, job_name):
                 self._execute_reflection_trigger(current_job)
                 return
@@ -644,25 +738,30 @@ class Agent:
                     self._log("planning_injected", {"job_id": current_job.get("id"), "plan_length": len(plan)})
 
             # Autonomous loop - keep working until agent calls done_working
-            max_iterations = self._get_system_config().get("agents", {}).get("max_work_iterations", 20)
             iteration = 0
 
             # Check if deferred reflection is enabled (efficiency optimization)
             defer_consolidation = self.metacognition.should_defer_consolidation()
             exchanges = []  # Collect for batched reflection if deferred
 
+            # Start progress tracking session for stuck detection
+            session_id = self.metacognition.start_work_session(session_type="work_cycle")
+            self._log("work_session_started", {"session_id": session_id})
+
             try:
-                while not self._work_done and iteration < max_iterations:
+                while not self._work_done:
                     iteration += 1
                     self._log("work_iteration", {"iteration": iteration})
 
-                    # Check for stuck patterns before proceeding
-                    stuck_reason = self.metacognition.check_stuck()
-                    if stuck_reason:
-                        self._log("stuck_detected", {"reason": stuck_reason, "iteration": iteration})
-                        print(f"[{self.id}] Stuck detected: {stuck_reason}")
-                        # Don't break immediately - let the agent know it's stuck via the continue prompt
+                    # Check if job was cancelled (archived/deleted) by user
+                    if iteration > 1 and self._is_job_cancelled(job_id):
+                        self._log("job_cancelled", {"job_id": job_id, "iteration": iteration})
+                        print(f"[{self.id}] Job {job_id} was cancelled by user")
                         break
+
+                    # Stuck detection happens automatically during tool execution
+                    # via record_tool_call -> ProgressTracker.record_tool_call
+                    # which raises ProgressLimitExceeded if stuck pattern detected
 
                     # Log to memory for memory creation, but don't save to conversation history
                     # Defer reflection if enabled (will batch process at end)
@@ -681,34 +780,40 @@ class Agent:
                     # Continue prompt for subsequent iterations with progress context
                     progress_ctx = self.metacognition.get_progress_context()
 
-                    # Add max_iterations to context
-                    progress_ctx["max_iterations"] = max_iterations
-
-                    # Format stuck warning if approaching limits
+                    # Format stuck warning if detected (safeguard check)
                     stuck_warning = ""
                     if progress_ctx.get("stuck_warning"):
                         stuck_warning = f"**Warning:** {progress_ctx['stuck_warning']}"
-                    elif progress_ctx.get("approaching_limit"):
-                        stuck_warning = f"**Note:** Approaching tool call limit ({progress_ctx['tool_calls_this_cycle']}/{progress_ctx['max_tool_calls']})"
 
                     prompt = load_template("agent/continue_with_context").format(
                         iteration=progress_ctx.get("iteration", iteration),
-                        max_iterations=max_iterations,
                         tool_calls_this_cycle=progress_ctx.get("tool_calls_this_cycle", 0),
                         stuck_warning=stuck_warning
                     )
 
-                if iteration >= max_iterations:
-                    self._log("work_cycle_end", {"reason": "max_iterations", "iterations": iteration})
-                else:
-                    self._log("work_cycle_end", {"reason": "done_working", "iterations": iteration})
+                self._log("work_cycle_end", {"reason": "done_working", "iterations": iteration})
+
+            except ProgressLimitExceeded as e:
+                # Stuck pattern detected during tool execution
+                self._log("stuck_detected", {"reason": e.reason, "iteration": iteration})
+                print(f"[{self.id}] Stuck detected: {e.reason}")
+                # Mark job as error (prevents release_job from resetting to todo)
+                error_job(job_id, f"Stuck: {e.reason}", self.id)
+                # Pause agent to require manual intervention
+                raise AgentPausedError(self.id, f"Stuck: {e.reason}")
+
             finally:
+                # End progress tracking session
+                session_stats = self.metacognition.end_work_session()
+                if session_stats:
+                    self._log("work_session_ended", session_stats)
+
                 # Batch reflection at end of work cycle (if deferred)
                 if defer_consolidation and self.consolidation and exchanges:
                     self._log("reflection_batch", {"exchange_count": len(exchanges)})
                     self.consolidation.append_batch(exchanges)
         finally:
-            # Always release job claim and clear context
+            # Release job claim (no-op if already completed, since in_progress_by is cleared)
             release_job(job_id, self.id)
             self._log("job_released", {"job_id": job_id})
             self._current_job_id = None

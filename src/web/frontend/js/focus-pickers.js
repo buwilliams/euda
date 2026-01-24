@@ -216,25 +216,22 @@ async function setWhen(type, id, whenType, date = null) {
 // ============== Assignees Picker ==============
 
 function getAssigneesLabel(job) {
-    const assignees = job.assignees || [];
-    if (job.in_progress_by) {
-        return `${icon('bolt')} ${job.in_progress_by}`;
+    const assignee = job.assignee;
+    if (job.status === 'working') {
+        return `${icon('bolt')} ${assignee || 'Working'}`;
     }
-    if (assignees.length === 0) {
+    if (!assignee) {
         return `${icon('user')} Assign`;
     }
-    if (assignees.length === 1) {
-        return `${icon('user')} ${assignees[0]}`;
-    }
-    return `${icon('user')} ${assignees.length} assigned`;
+    return `${icon('user')} ${assignee}`;
 }
 
 async function openAssigneesPicker(jobId) {
-    const job = jobsData.find(j => j.id === jobId) || completedJobsData.find(j => j.id === jobId);
+    const job = allJobsData.find(j => j.id === jobId);
     if (!job) return;
 
     const agents = await loadAgents();
-    const currentAssignees = job.assignees || [];
+    const currentAssignee = job.assignee;
 
     const picker = document.createElement('div');
     picker.className = 'assignees-picker';
@@ -242,15 +239,15 @@ async function openAssigneesPicker(jobId) {
     picker.innerHTML = `
         <div class="assignees-picker-backdrop" onclick="closeAssigneesPicker()"></div>
         <div class="assignees-picker-content">
-            <div class="assignees-picker-header">Assign Agents</div>
-            ${job.in_progress_by ? `
+            <div class="assignees-picker-header">Assign Agent</div>
+            ${job.status === 'working' ? `
                 <div class="assignees-picker-working">
                     <span class="assignees-picker-working-icon">${icon('bolt')}</span>
-                    <span>Currently working: <strong>${escapeHtml(job.in_progress_by)}</strong></span>
+                    <span>Currently working: <strong>${escapeHtml(currentAssignee || 'unknown')}</strong></span>
                 </div>
             ` : ''}
             ${agents.map(agent => {
-                const isAssigned = currentAssignees.includes(agent.id);
+                const isAssigned = currentAssignee === agent.id;
                 return `
                     <div class="assignees-option ${isAssigned ? 'assigned' : ''}" onclick="toggleAgentAssignment('${jobId}', '${agent.id}', ${isAssigned})">
                         <span class="assignees-option-check">${isAssigned ? icon('check') : ''}</span>
@@ -393,7 +390,7 @@ async function deleteJobDirect(jobId) {
 // ============== State Picker ==============
 
 function openStatePicker(jobId) {
-    const job = jobsData.find(j => j.id === jobId) || completedJobsData.find(j => j.id === jobId);
+    const job = allJobsData.find(j => j.id === jobId);
     const currentStatus = job?.status || 'todo';
 
     const statuses = [

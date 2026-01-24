@@ -32,20 +32,28 @@ def temp_data_dir(tmp_path):
     (data_dir / "system").mkdir(parents=True)
     (data_dir / "system" / "token_usage").mkdir(parents=True)
 
-    # Create default system config
+    # Create default system config (without LLM settings)
     config = {
-        "llm": {
-            "budget": {"limit": 10.0},
-            "default_pricing": {"input": 3.0, "cached_input": 0.3, "output": 15.0}
-        },
-        "metacognition": {
-            "token_awareness": {
-                "enabled": True,
-                "thresholds": {"warning_percent": 80, "pause_percent": 100}
+        "metacognition": {}
+    }
+    (data_dir / "system" / "config.json").write_text(json.dumps(config, indent=2))
+
+    # Create default LLM config
+    llm_config = {
+        "provider": "openai",
+        "model": "gpt-4.1",
+        "budget": {"limit": 10.0, "period": "monthly", "warning_percent": 80, "pause_percent": 100},
+        "providers": {
+            "openai": {
+                "display_name": "ChatGPT",
+                "description": "OpenAI's GPT models",
+                "models": [
+                    {"model": "gpt-4.1", "display_name": "GPT-4.1", "pricing": {"input": 3.0, "cached_input": 0.3, "output": 15.0}}
+                ]
             }
         }
     }
-    (data_dir / "system" / "config.json").write_text(json.dumps(config, indent=2))
+    (data_dir / "system" / "llm.json").write_text(json.dumps(llm_config, indent=2))
 
     return data_dir
 
@@ -91,8 +99,16 @@ def patch_data_dir(temp_data_dir):
         p3.start()
         patches.append(p3)
         patch.object(tokens, 'CONFIG_PATH', temp_data_dir / "system" / "config.json").start()
+        patch.object(tokens, 'LLM_CONFIG_PATH', temp_data_dir / "system" / "llm.json").start()
         patch.object(tokens, 'AGENTS_DIR', temp_data_dir / "agents").start()
         patch.object(tokens, 'USAGE_DIR', temp_data_dir / "system" / "token_usage").start()
+    except ImportError:
+        pass
+
+    # Patch llms.base module
+    try:
+        from src.llms import base
+        patch.object(base, 'LLM_CONFIG_PATH', temp_data_dir / "system" / "llm.json").start()
     except ImportError:
         pass
 

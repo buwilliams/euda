@@ -14,7 +14,7 @@ from ...tools.agents.agents import (
     get_agent_config, update_agent_config
 )
 from ...tools.agents.monitoring import get_agent_monitoring
-from ...tools.data.jobs import get_jobs_completed_by_agent, create_job, get_system_container
+from ...tools.data.jobs import get_jobs_completed_by_agent, create_job, get_agent_inbox_job
 from ...tools.data.identity import get_identity, update_identity
 from ...tools.data.memory import (
     list_memory, add_memory, remove_memory, write_long_term_memory
@@ -316,13 +316,14 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
     execution_id = f"exec-{uuid.uuid4().hex[:8]}"
 
     today = datetime.now().strftime("%Y-%m-%d")
-    system_container = get_system_container()
+    inbox = get_agent_inbox_job(agent_id)
+    parent_id = inbox["id"] if inbox else None
 
     job = create_job(
-        name=f"Trigger:consolidation:{phase}:{today}",
-        description=f"Manual reflection trigger (execution_id: {execution_id})",
-        parent_id=system_container["id"],
-        assignees=[agent_id],
+        name="euno:consolidate",
+        description=f"Manual consolidation trigger - phase: {phase} (execution_id: {execution_id})",
+        parent_id=parent_id,
+        assignee=agent_id,
         tags=["ui:manual", f"execution:{execution_id}"],
         created_by="web-ui"
     )
@@ -359,19 +360,28 @@ def api_get_active_executions(agent_id: str):
     jobs = list_jobs(status="todo", assignee=agent_id)
 
     # Filter for consolidation jobs and extract execution info
-    # Consolidation jobs are identified by name pattern: Trigger:consolidation:{phase}:{date}
+    # Consolidation jobs: euno:consolidate (new) or Trigger:consolidation:{phase}:{date} (legacy)
     executions = []
     for job in jobs:
         job_name = job.get("name", "")
         tags = job.get("tags", [])
 
-        # Check for consolidation job name pattern
-        if not job_name.startswith("Trigger:consolidation:"):
+        # Check for consolidation job name patterns
+        if job_name == "euno:consolidate":
+            # New format - extract phase from description if available
+            description = job.get("description", "")
+            if "phase: append" in description:
+                phase = "append"
+            elif "phase: consolidate" in description:
+                phase = "consolidate"
+            else:
+                phase = "both"
+        elif job_name.startswith("Trigger:consolidation:"):
+            # Legacy format: Trigger:consolidation:{phase}:{date}
+            parts = job_name.split(":")
+            phase = parts[2] if len(parts) >= 3 else "both"
+        else:
             continue
-
-        # Extract phase from job name: Trigger:consolidation:{phase}:{date}
-        parts = job_name.split(":")
-        phase = parts[2] if len(parts) >= 3 else "both"
 
         # Extract execution_id from tags
         execution_id = None

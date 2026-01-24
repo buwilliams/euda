@@ -2,20 +2,83 @@
   "id": "user",
   "name": "User",
   "state": "enabled",
+  "order": 1,
   "token_budget": {
-    "consumes_tokens": false
+    "frequency": "daily",
+    "input_ratio": 0.8,
+    "output_ratio": 0.2
   },
   "tools": [
+    "list_jobs",
+    "get_job",
+    "create_job",
+    "update_job",
+    "complete_job",
+    "add_job_log",
     "done_working",
-    "list_memory",
+    "get_child_jobs",
+    "assign_agent",
+    "list_available_agents",
+    "list_assets",
+    "read_asset",
+    "write_asset",
+    "get_identity",
     "read_long_term_memory",
+    "write_long_term_memory",
     "list_long_term_memory_dates",
-    "update_user_identity",
-    "graduate_memory"
+    "parse_date",
+    "get_current_date",
+    "add_memory",
+    "list_memory",
+    "remove_memory",
+    "list_agents",
+    "get_agent",
+    "create_agent",
+    "enable_agent",
+    "disable_agent",
+    "update_agent_triggers",
+    "update_agent_identity",
+    "delete_agent",
+    "list_available_tools",
+    "list_euno_docs",
+    "read_euno_doc",
+    "read_agent_logs",
+    "get_mastodon_posts",
+    "speak_aloud",
+    "graduate_memory",
+    "list_patterns",
+    "get_pattern_context",
+    "validate_pattern_hypothesis",
+    "update_own_identity",
+    "nc_list_instances",
+    "nc_list_files",
+    "nc_read_file",
+    "nc_write_file",
+    "nc_delete_file",
+    "nc_create_folder",
+    "nc_move_file",
+    "nc_list_calendars",
+    "nc_list_events",
+    "nc_create_event",
+    "nc_delete_event",
+    "nc_list_boards",
+    "nc_get_board",
+    "nc_list_cards",
+    "nc_create_card",
+    "nc_update_card",
+    "nc_move_card",
+    "nc_delete_card"
   ],
-  "triggers": [],
-  "consolidation": {
-    "enabled": true,
-    "trigger": "time:evening"
-  }
+  "triggers": [
+    {
+      "job_name": "euno:consolidate",
+      "job_description": "Review memories, evolve identity, graduate learnings",
+      "schedule": "evening"
+    },
+    {
+      "job_name": "euno:quote",
+      "job_description": "Generate personalized daily quote based on user identity",
+      "schedule": "morning"
+    }
+  ]
 }

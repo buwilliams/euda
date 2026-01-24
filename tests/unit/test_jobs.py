@@ -32,7 +32,7 @@ class TestJobCreation:
             description="A complete job",
             parent_id=None,
             tags=["important", "urgent"],
-            assignees=["agent1", "agent2"],
+            assignee="agent1",
             due_date="2024-12-31",
             someday=False,
             created_by="test"
@@ -41,7 +41,7 @@ class TestJobCreation:
         assert job["name"] == "Full Job"
         assert job["description"] == "A complete job"
         assert job["tags"] == ["important", "urgent"]
-        assert job["assignees"] == ["agent1", "agent2"]
+        assert job["assignee"] == "agent1"
         assert job["due_date"] == "2024-12-31"
         assert job["someday"] is False
 
@@ -147,6 +147,16 @@ class TestJobUpdate:
 
         assert "error" in result
 
+    def test_update_job_cannot_set_working_status(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Cannot set status to 'working' via update_job - must use claim_job."""
+        from src.tools.data.jobs import create_job, update_job
+
+        job = create_job(name="Test Job", assignee="agent1", parent_id=None, created_by="test")
+        result = update_job(job["id"], status="working")
+
+        assert "error" in result
+        assert "claim_job" in result["error"]
+
 
 class TestJobCompletion:
     """Test job completion functionality."""
@@ -183,6 +193,31 @@ class TestJobCompletion:
         assert restored["status"] == "todo"
         assert "completed_at" not in restored or restored["completed_at"] is None
 
+    def test_complete_sets_done_status(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Completing a job sets status to done."""
+        from src.tools.data.jobs import create_job, claim_job, complete_job, get_job
+
+        job = create_job(name="Complete Me", assignee="agent1", parent_id=None, created_by="test")
+        claim_job(job["id"], "agent1")
+        complete_job(job["id"], agent="agent1")
+
+        updated = get_job(job["id"])
+        assert updated["status"] == "done"
+
+    def test_release_noop_for_completed_job(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Release is a no-op for already completed jobs - status stays done."""
+        from src.tools.data.jobs import create_job, claim_job, complete_job, release_job, get_job
+
+        job = create_job(name="Complete Then Release", assignee="agent1", parent_id=None, created_by="test")
+        claim_job(job["id"], "agent1")
+        complete_job(job["id"], agent="agent1")
+
+        # Release should be a no-op since status is not 'working'
+        release_job(job["id"], "agent1")
+
+        updated = get_job(job["id"])
+        assert updated["status"] == "done"  # Still done, not reset to todo
+
 
 class TestJobClaiming:
     """Test job claim/release functionality."""
@@ -191,40 +226,34 @@ class TestJobClaiming:
         """Claim a job for exclusive work."""
         from src.tools.data.jobs import create_job, claim_job, get_job
 
-        job = create_job(name="Claim Me", assignees=["agent1"], parent_id=None, created_by="test")
+        job = create_job(name="Claim Me", assignee="agent1", parent_id=None, created_by="test")
         result = claim_job(job["id"], "agent1")
 
         assert result["claimed"] is True
 
         updated = get_job(job["id"])
-        assert updated["in_progress_by"] == "agent1"
         assert updated["status"] == "working"  # Per spec: claim sets status to 'working'
 
-    def test_claim_already_claimed_fails(self, test_db, mock_emit_event, mock_emit_ui_event):
-        """Cannot claim job already claimed by another agent."""
+    def test_claim_unassigned_fails(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Cannot claim job not assigned to the agent."""
         from src.tools.data.jobs import create_job, claim_job
 
-        job = create_job(name="Contested", assignees=["agent1", "agent2"], parent_id=None, created_by="test")
+        job = create_job(name="Not Yours", assignee="agent1", parent_id=None, created_by="test")
 
-        # First claim succeeds
-        result1 = claim_job(job["id"], "agent1")
-        assert result1["claimed"] is True
-
-        # Second claim fails
-        result2 = claim_job(job["id"], "agent2")
-        assert "error" in result2
-        assert "claimed by" in result2["error"].lower()
+        # Claim by different agent fails
+        result = claim_job(job["id"], "agent2")
+        assert "error" in result
+        assert "not assigned" in result["error"].lower()
 
     def test_release_job(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Release a claimed job."""
         from src.tools.data.jobs import create_job, claim_job, release_job, get_job
 
-        job = create_job(name="Release Me", assignees=["agent1"], parent_id=None, created_by="test")
+        job = create_job(name="Release Me", assignee="agent1", parent_id=None, created_by="test")
         claim_job(job["id"], "agent1")
         release_job(job["id"], "agent1")
 
         updated = get_job(job["id"])
-        assert updated["in_progress_by"] is None
         assert updated["status"] == "todo"  # Per spec: release resets status to 'todo'
 
 
@@ -239,7 +268,6 @@ class TestJobError:
         result = error_job(job["id"], "Something went wrong", agent="test-agent")
 
         assert result["status"] == "error"
-        assert result["in_progress_by"] is None
 
     def test_error_job_adds_log(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Error job should add log entry with error message."""
@@ -290,17 +318,17 @@ class TestJobHandoff:
         """Hand off a job to another agent."""
         from src.tools.data.jobs import create_job, handoff_job
 
-        job = create_job(name="Hand Me Off", assignees=["agent1"], parent_id=None, created_by="test")
+        job = create_job(name="Hand Me Off", assignee="agent1", parent_id=None, created_by="test")
         result = handoff_job(job["id"], to="agent2", note="Please review", agent="agent1")
 
-        assert result["assignees"] == ["agent2"]
+        assert result["assignee"] == "agent2"
         assert result["pending_from"] == "agent1"
 
     def test_handoff_adds_log(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Handoff should add log entry with note."""
         from src.tools.data.jobs import create_job, handoff_job
 
-        job = create_job(name="Log Handoff", assignees=["agent1"], parent_id=None, created_by="test")
+        job = create_job(name="Log Handoff", assignee="agent1", parent_id=None, created_by="test")
         result = handoff_job(job["id"], to="agent2", note="Check this", agent="agent1")
 
         handoff_logs = [l for l in result["log"] if "Handed off" in l.get("action", "")]
@@ -344,8 +372,8 @@ class TestSystemJobProtection:
         from src.tools.data.jobs import create_job, claim_job
 
         job = create_job(
-            name="System Container",
-            tags=["system:system"],
+            name="Agents Container",
+            tags=["system:agents"],
             parent_id=None,
             created_by="system"
         )

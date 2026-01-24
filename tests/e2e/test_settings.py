@@ -64,6 +64,29 @@ class TestProviderSelect:
         expect(page.locator('[data-testid="default-provider"]')).to_be_visible(timeout=5000)
 
 
+class TestModelSelect:
+    """Tests for LLM model selection."""
+
+    def test_model_select_visible(self, authenticated_page: Page):
+        """Model select should be visible in LLMs section."""
+        page = authenticated_page
+
+        # Navigate to settings
+        page.locator('[data-testid="overflow-btn"]').click()
+        page.locator('[data-testid="overflow-settings"]').click()
+
+        # Wait for settings content
+        expect(page.locator('[data-testid="settings-content"]')).to_be_visible(timeout=5000)
+
+        # Expand LLMs section if collapsed
+        section = page.locator('[data-testid="section-llms"]')
+        if "open" not in (section.get_attribute("class") or ""):
+            section.click()
+
+        # Check for model select
+        expect(page.locator('[data-testid="default-model"]')).to_be_visible(timeout=5000)
+
+
 class TestBudgetInput:
     """Tests for budget input fields."""
 

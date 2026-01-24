@@ -17,13 +17,13 @@ from ...agent.cognition.metacognition import AgentPausedError, get_token_awarene
 
 router = APIRouter()
 
-# Conversation directory for the chat agent (used by web UI)
-CONV_DIR = AGENTS_DIR / "chat" / "state" / "conversation"
+# Conversation directory for the user agent (used by web UI)
+CONV_DIR = AGENTS_DIR / "user" / "state" / "conversation"
 
 
 class ChatRequest(BaseModel):
     message: str
-    agent_id: str = "chat"
+    agent_id: str = "user"
     session_id: Optional[str] = None
     voice_input: bool = False
 
@@ -35,15 +35,13 @@ class ChatResponse(BaseModel):
     audio_base64: Optional[str] = None
 
 
-# Cache agent instances
-_agents = {}
-
-
 def get_agent_instance(agent_id: str) -> Agent:
-    """Get or create an agent instance."""
-    if agent_id not in _agents:
-        _agents[agent_id] = Agent(agent_id)
-    return _agents[agent_id]
+    """Get an agent instance.
+
+    Creates a fresh instance each time to ensure config changes
+    are reflected immediately without needing cache invalidation.
+    """
+    return Agent(agent_id)
 
 
 @router.post("")
@@ -106,7 +104,7 @@ def api_chat(request: ChatRequest) -> ChatResponse:
 
 
 @router.get("/history")
-def api_get_history(agent_id: str = "chat", date: Optional[str] = None):
+def api_get_history(agent_id: str = "user", date: Optional[str] = None):
     """Get conversation history."""
     agent = get_agent_instance(agent_id)
 

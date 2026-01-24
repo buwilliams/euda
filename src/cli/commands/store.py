@@ -4,7 +4,7 @@ Store command - Import files into long-term memory via job-based processing.
 Architecture:
 - Files are loaded and checked for duplicates via job tags
 - A Store:ingest job is created with files as assets
-- The chat agent processes the job using RLM
+- The user agent processes the job using RLM
 - Job completion marks the content as processed (no manifest file needed)
 """
 
@@ -149,7 +149,7 @@ def cmd_store(args: List[str], json_mode: bool = False):
         for item, _ in to_process:
             print(f"  - {item.name}")
         print()
-        print("The chat agent will process this job and import files to long-term memory.")
+        print("The user agent will process this job and import files to long-term memory.")
         print("Run `uv run euno start` to trigger processing.")
 
 
@@ -179,7 +179,7 @@ def _create_store_job(items_with_hashes: List[tuple]) -> dict:
     Returns:
         Created job dict
     """
-    from ...tools.data.jobs import create_job, get_system_container
+    from ...tools.data.jobs import create_job, get_agent_inbox_job
     from ...tools.data.assets import write_asset
 
     timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -187,8 +187,10 @@ def _create_store_job(items_with_hashes: List[tuple]) -> dict:
     # Collect hash tags for deduplication
     hash_tags = [f"store:hash:{content_hash}" for _, content_hash in items_with_hashes]
 
-    # Create the job
-    system_container = get_system_container()
+    # Create the job under user agent's inbox
+    inbox = get_agent_inbox_job("user")
+    parent_id = inbox["id"] if inbox else None
+
     job = create_job(
         name=f"Store:ingest:{timestamp}",
         description=f"Import {len(items_with_hashes)} file(s) into long-term memory.\n\n"
@@ -196,8 +198,8 @@ def _create_store_job(items_with_hashes: List[tuple]) -> dict:
                     f"1. Extract date from content or filename\n"
                     f"2. Write content to long-term memory at that date\n"
                     f"3. Complete job when done",
-        parent_id=system_container["id"] if system_container else None,
-        assignees=["chat"],
+        parent_id=parent_id,
+        assignee="user",
         tags=["store:ingest"] + hash_tags,
         created_by="user"
     )
@@ -236,7 +238,7 @@ Supported file types:
 How it works:
   1. Files are loaded and checked for duplicates (via job tags)
   2. A Store:ingest job is created with files as assets
-  3. The chat agent processes the job, extracting dates and writing to memory
+  3. The user agent processes the job, extracting dates and writing to memory
   4. Job completion marks files as processed (no separate manifest)
 
 Deduplication:

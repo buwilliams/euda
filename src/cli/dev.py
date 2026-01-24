@@ -138,9 +138,9 @@ OBSERVABILITY
   trace <job_id>            Show execution trace of a job
 
 Examples:
-  python main.py dev memory chat
-  python main.py dev job chat "List my current jobs"
-  python main.py dev reflect chat --consolidate
+  python main.py dev memory user
+  python main.py dev job user "List my current jobs"
+  python main.py dev reflect user --consolidate
   python main.py dev tool list_jobs '{"status": "todo"}'
-  python main.py dev watch --agent chat
+  python main.py dev watch --agent user
 """)

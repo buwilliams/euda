@@ -1,7 +1,7 @@
 """
 Unit tests for Consolidation class.
 
-Tests for src/agent/cognition/metacognition/consolidation/consolidation.py including:
+Tests for src.tools.system.consolidation/consolidation.py including:
 - Initialization
 - Append phase delegation
 - Consolidate phase delegation
@@ -24,7 +24,7 @@ class TestConsolidationInitialization:
 
     def test_consolidation_initializes_with_agent(self):
         """Consolidation initializes with agent reference."""
-        from src.agent.cognition.metacognition.consolidation import Consolidation
+        from src.tools.system.consolidation import Consolidation
 
         mock_agent = MagicMock()
         mock_agent.id = "test-agent"
@@ -36,7 +36,7 @@ class TestConsolidationInitialization:
 
     def test_consolidation_creates_logger(self):
         """Consolidation creates a logger for consolidation events."""
-        from src.agent.cognition.metacognition.consolidation import Consolidation
+        from src.tools.system.consolidation import Consolidation
 
         mock_agent = MagicMock()
         mock_agent.id = "test-agent"
@@ -48,7 +48,7 @@ class TestConsolidationInitialization:
 
     def test_consolidation_inherits_event_sink(self):
         """Consolidation inherits event sink from agent."""
-        from src.agent.cognition.metacognition.consolidation import Consolidation
+        from src.tools.system.consolidation import Consolidation
 
         mock_agent = MagicMock()
         mock_agent.id = "test-agent"
@@ -66,7 +66,7 @@ class TestConsolidationPaths:
 
     def _create_consolidation(self):
         """Create a Consolidation instance for testing."""
-        from src.agent.cognition.metacognition.consolidation import Consolidation
+        from src.tools.system.consolidation import Consolidation
 
         mock_agent = MagicMock()
         mock_agent.id = "test-agent"
@@ -127,7 +127,7 @@ class TestConsolidationAppend:
 
     def _create_consolidation(self, tmp_path):
         """Create a Consolidation with mocked paths."""
-        from src.agent.cognition.metacognition.consolidation import Consolidation
+        from src.tools.system.consolidation import Consolidation
 
         mock_agent = MagicMock()
         mock_agent.id = "test-agent"
@@ -141,7 +141,7 @@ class TestConsolidationAppend:
         """append() calls append_phase function."""
         consolidation = self._create_consolidation(tmp_path)
 
-        with patch("src.agent.cognition.metacognition.consolidation.append.append_phase") as mock_phase:
+        with patch("src.tools.system.consolidation.append.append_phase") as mock_phase:
             mock_phase.return_value = 2
 
             consolidation.append("Hello", "Hi there!")
@@ -162,7 +162,7 @@ class TestConsolidationAppend:
 
         consolidation._event_sink = capture_event
 
-        with patch("src.agent.cognition.metacognition.consolidation.append.append_phase", return_value=1):
+        with patch("src.tools.system.consolidation.append.append_phase", return_value=1):
             consolidation.append("Test", "Response")
 
         assert "append_start" in events
@@ -172,7 +172,7 @@ class TestConsolidationAppend:
         """append() logs errors but doesn't raise."""
         consolidation = self._create_consolidation(tmp_path)
 
-        with patch("src.agent.cognition.metacognition.consolidation.append.append_phase",
+        with patch("src.tools.system.consolidation.append.append_phase",
                    side_effect=Exception("LLM failed")):
             # Should not raise
             consolidation.append("Test", "Response")
@@ -182,7 +182,7 @@ class TestConsolidationAppend:
         consolidation = self._create_consolidation(tmp_path)
         consolidation.logger = MagicMock()
 
-        with patch("src.agent.cognition.metacognition.consolidation.append.append_phase",
+        with patch("src.tools.system.consolidation.append.append_phase",
                    side_effect=Exception("Test error")):
             consolidation.append("Test", "Response")
 
@@ -194,7 +194,7 @@ class TestConsolidationConsolidate:
 
     def _create_consolidation(self):
         """Create a Consolidation for testing."""
-        from src.agent.cognition.metacognition.consolidation import Consolidation
+        from src.tools.system.consolidation import Consolidation
 
         mock_agent = MagicMock()
         mock_agent.id = "test-agent"
@@ -207,7 +207,7 @@ class TestConsolidationConsolidate:
         """consolidate() calls consolidate_phase function."""
         consolidation = self._create_consolidation()
 
-        with patch("src.agent.cognition.metacognition.consolidation.consolidate.consolidate_phase") as mock_phase:
+        with patch("src.tools.system.consolidation.consolidate.consolidate_phase") as mock_phase:
             mock_phase.return_value = {"identity_updated": True}
 
             consolidation.consolidate()
@@ -224,7 +224,7 @@ class TestConsolidationConsolidate:
 
         consolidation._event_sink = capture_event
 
-        with patch("src.agent.cognition.metacognition.consolidation.consolidate.consolidate_phase",
+        with patch("src.tools.system.consolidation.consolidate.consolidate_phase",
                    return_value={"identity_updated": False}):
             consolidation.consolidate()
 
@@ -235,7 +235,7 @@ class TestConsolidationConsolidate:
         """consolidate() re-raises errors for manager to handle."""
         consolidation = self._create_consolidation()
 
-        with patch("src.agent.cognition.metacognition.consolidation.consolidate.consolidate_phase",
+        with patch("src.tools.system.consolidation.consolidate.consolidate_phase",
                    side_effect=Exception("Critical error")):
             with pytest.raises(Exception) as exc_info:
                 consolidation.consolidate()
@@ -247,7 +247,7 @@ class TestConsolidationConsolidate:
         consolidation = self._create_consolidation()
         consolidation.logger = MagicMock()
 
-        with patch("src.agent.cognition.metacognition.consolidation.consolidate.consolidate_phase",
+        with patch("src.tools.system.consolidation.consolidate.consolidate_phase",
                    side_effect=Exception("Test error")):
             try:
                 consolidation.consolidate()
@@ -262,7 +262,7 @@ class TestConsolidationBatchAppend:
 
     def _create_consolidation(self):
         """Create a Consolidation for testing."""
-        from src.agent.cognition.metacognition.consolidation import Consolidation
+        from src.tools.system.consolidation import Consolidation
 
         mock_agent = MagicMock()
         mock_agent.id = "test-agent"
@@ -283,7 +283,7 @@ class TestConsolidationBatchAppend:
         """append_batch() calls append_batch_phase function."""
         consolidation = self._create_consolidation()
 
-        with patch("src.agent.cognition.metacognition.consolidation.append.append_batch_phase") as mock_phase:
+        with patch("src.tools.system.consolidation.append.append_batch_phase") as mock_phase:
             mock_phase.return_value = 3
 
             exchanges = [
@@ -305,7 +305,7 @@ class TestConsolidationBatchAppend:
 
         consolidation._event_sink = capture_event
 
-        with patch("src.agent.cognition.metacognition.consolidation.append.append_batch_phase", return_value=1):
+        with patch("src.tools.system.consolidation.append.append_batch_phase", return_value=1):
             consolidation.append_batch([("Test", "Response")])
 
         event_names = [e[0] for e in events]
@@ -323,7 +323,7 @@ class TestConsolidationBatchAppend:
         consolidation._event_sink = capture_event
 
         exchanges = [("M1", "R1"), ("M2", "R2"), ("M3", "R3")]
-        with patch("src.agent.cognition.metacognition.consolidation.append.append_batch_phase", return_value=2):
+        with patch("src.tools.system.consolidation.append.append_batch_phase", return_value=2):
             consolidation.append_batch(exchanges)
 
         start_event = next(e for e in events if e[0] == "append_batch_start")
@@ -333,7 +333,7 @@ class TestConsolidationBatchAppend:
         """append_batch() handles errors gracefully and returns 0."""
         consolidation = self._create_consolidation()
 
-        with patch("src.agent.cognition.metacognition.consolidation.append.append_batch_phase",
+        with patch("src.tools.system.consolidation.append.append_batch_phase",
                    side_effect=Exception("Batch failed")):
             result = consolidation.append_batch([("Test", "Response")])
 
@@ -344,7 +344,7 @@ class TestConsolidationBatchAppend:
         consolidation = self._create_consolidation()
         consolidation.logger = MagicMock()
 
-        with patch("src.agent.cognition.metacognition.consolidation.append.append_batch_phase",
+        with patch("src.tools.system.consolidation.append.append_batch_phase",
                    side_effect=Exception("Test error")):
             consolidation.append_batch([("Test", "Response")])
 
@@ -356,7 +356,7 @@ class TestConsolidationConfig:
 
     def test_get_config_from_agent(self):
         """_get_config returns consolidation section from agent config."""
-        from src.agent.cognition.metacognition.consolidation import Consolidation
+        from src.tools.system.consolidation import Consolidation
 
         mock_agent = MagicMock()
         mock_agent.id = "test-agent"
@@ -375,7 +375,7 @@ class TestConsolidationConfig:
 
     def test_get_config_returns_empty_if_missing(self):
         """_get_config returns empty dict if consolidation not in config."""
-        from src.agent.cognition.metacognition.consolidation import Consolidation
+        from src.tools.system.consolidation import Consolidation
 
         mock_agent = MagicMock()
         mock_agent.id = "test-agent"
@@ -392,7 +392,7 @@ class TestEventSinkEmission:
 
     def test_emit_to_sink_when_configured(self):
         """_emit_to_sink calls sink with agent_id."""
-        from src.agent.cognition.metacognition.consolidation import Consolidation
+        from src.tools.system.consolidation import Consolidation
 
         mock_agent = MagicMock()
         mock_agent.id = "test-agent"
@@ -411,7 +411,7 @@ class TestEventSinkEmission:
 
     def test_emit_to_sink_does_nothing_without_sink(self):
         """_emit_to_sink is no-op when sink not configured."""
-        from src.agent.cognition.metacognition.consolidation import Consolidation
+        from src.tools.system.consolidation import Consolidation
 
         mock_agent = MagicMock()
         mock_agent.id = "test-agent"

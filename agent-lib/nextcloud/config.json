@@ -1,0 +1,37 @@
+{
+  "id": "nextcloud",
+  "name": "Nextcloud",
+  "state": "disabled",
+  "description": "Nextcloud integration agent for file sync, calendars, and Deck boards",
+  "integration": {
+    "instances": {
+      "personal": {
+        "display_name": "Personal Nextcloud instance",
+        "url": "https://example.nextcloud.url",
+        "username": ""
+      }
+    },
+    "default_instance": "personal"
+  },
+  "tools": [
+    "nc_list_instances",
+    "nc_list_files",
+    "nc_read_file",
+    "nc_write_file",
+    "nc_delete_file",
+    "nc_create_folder",
+    "nc_move_file",
+    "nc_list_calendars",
+    "nc_list_events",
+    "nc_create_event",
+    "nc_delete_event",
+    "nc_list_boards",
+    "nc_get_board",
+    "nc_list_cards",
+    "nc_create_card",
+    "nc_update_card",
+    "nc_move_card",
+    "nc_delete_card"
+  ],
+  "triggers": []
+}

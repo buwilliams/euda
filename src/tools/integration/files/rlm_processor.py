@@ -8,6 +8,12 @@ from typing import List, Optional
 
 from ....agent.rlm.repl import REPLEnvironment, ExecutionResult
 from ....llms.base import get_client, UnifiedClient
+from ....agent.cognition.metacognition.regulation import (
+    get_progress_tracker,
+    ProgressLimitExceeded,
+    DEFAULT_MAX_ITERATIONS,
+    DEFAULT_MAX_RECURSION_DEPTH,
+)
 
 
 @dataclass
@@ -145,17 +151,38 @@ When done, call FINAL() with the JSON results.'''
 
 
 class StoreRLMClient:
-    """RLM client for file storage processing."""
+    """RLM client for file storage processing.
 
-    def __init__(self, llm_client: UnifiedClient = None):
+    All LLM calls are attributed to the originating agent.
+    """
+
+    def __init__(self, llm_client: UnifiedClient = None, agent_id: str = "user"):
+        """Initialize the store RLM client.
+
+        Args:
+            llm_client: LLM client for making calls (uses default if not provided)
+            agent_id: ID of the agent using this client (calls attributed to this agent)
+        """
         self.client = llm_client or get_client()
-        self.max_iterations = 15
+        self.agent_id = agent_id
+        self._progress_tracker = get_progress_tracker()
         self._sub_call_count = 0
         self._iteration_count = 0
+        self._session_id: Optional[str] = None
 
-    def _create_llm_query_fn(self) -> callable:
-        """Create the llm_query function for the REPL."""
+    def _create_llm_query_fn(self, session_id: str) -> callable:
+        """Create the llm_query function for the REPL.
+
+        Args:
+            session_id: Progress tracking session ID
+        """
         def llm_query(prompt: str) -> str:
+            # Check recursion depth
+            try:
+                self._progress_tracker.enter_recursion(session_id)
+            except ProgressLimitExceeded:
+                return "[Error: Maximum recursion depth reached]"
+
             self._sub_call_count += 1
             try:
                 response = self.client.create(
@@ -163,7 +190,7 @@ class StoreRLMClient:
                     system="You are extracting information from text. Be concise and direct. "
                            "Return only the requested information, no explanations.",
                     messages=[{"role": "user", "content": prompt}],
-                    agent_id="rlm-store",
+                    agent_id=self.agent_id,
                     track_cost=True
                 )
                 for block in response.content:
@@ -172,6 +199,8 @@ class StoreRLMClient:
                 return "[No response]"
             except Exception as e:
                 return f"[Error: {str(e)}]"
+            finally:
+                self._progress_tracker.exit_recursion(session_id)
 
         return llm_query
 
@@ -208,21 +237,51 @@ class StoreRLMClient:
             )]
 
 
-def process_with_rlm(files_data: dict) -> ProcessingResult:
+def process_with_rlm(files_data: dict, agent_id: str = "user") -> ProcessingResult:
     """Process files using RLM.
 
     Args:
         files_data: Dict from files_to_rlm_format() with items and metadata
+        agent_id: ID of the agent initiating this processing
 
     Returns:
         ProcessingResult with extracted data for each file
     """
-    client = StoreRLMClient()
+    client = StoreRLMClient(agent_id=agent_id)
     client._sub_call_count = 0
     client._iteration_count = 0
 
+    # Start progress tracking session
+    progress_tracker = get_progress_tracker()
+    session_id = progress_tracker.start_session(
+        agent_id=agent_id,
+        max_iterations=DEFAULT_MAX_ITERATIONS,
+        max_recursion_depth=DEFAULT_MAX_RECURSION_DEPTH,
+        session_type="rlm-store"
+    )
+    client._session_id = session_id
+
+    try:
+        return _process_with_rlm_loop(client, files_data, session_id, progress_tracker)
+    finally:
+        progress_tracker.end_session(session_id)
+
+
+def _process_with_rlm_loop(client: StoreRLMClient, files_data: dict,
+                           session_id: str, progress_tracker) -> ProcessingResult:
+    """Internal processing loop with progress tracking.
+
+    Args:
+        client: The StoreRLMClient instance
+        files_data: Dict from files_to_rlm_format() with items and metadata
+        session_id: Progress tracking session ID
+        progress_tracker: The progress tracker instance
+
+    Returns:
+        ProcessingResult with extracted data for each file
+    """
     # Create REPL with files instead of memory
-    llm_query_fn = client._create_llm_query_fn()
+    llm_query_fn = client._create_llm_query_fn(session_id)
 
     # Custom REPL environment that uses 'files' instead of 'memory'
     repl = REPLEnvironment({}, llm_query_fn)
@@ -232,16 +291,24 @@ def process_with_rlm(files_data: dict) -> ProcessingResult:
     system_prompt = _build_store_system_prompt()
     messages = [{"role": "user", "content": f"Process {files_data['metadata']['total_files']} files."}]
 
-    # Iteration loop
-    while client._iteration_count < client.max_iterations:
-        client._iteration_count += 1
+    # Iteration loop - controlled by progress tracker
+    while True:
+        # Increment and check iteration limit
+        try:
+            client._iteration_count = progress_tracker.increment(session_id)
+        except ProgressLimitExceeded:
+            return ProcessingResult(
+                error="Max iterations reached",
+                iterations=client._iteration_count,
+                sub_calls=client._sub_call_count
+            )
 
         try:
             response = client.client.create(
                 max_tokens=4000,
                 system=system_prompt,
                 messages=messages,
-                agent_id="rlm-store",
+                agent_id=client.agent_id,
                 track_cost=True
             )
         except Exception as e:
@@ -314,10 +381,3 @@ def process_with_rlm(files_data: dict) -> ProcessingResult:
             "content": f"Output:\n```\n{combined_output}\n```\n\n"
                       "Continue processing or call FINAL() with your JSON results."
         })
-
-    # Max iterations reached
-    return ProcessingResult(
-        error="Max iterations reached",
-        iterations=client._iteration_count,
-        sub_calls=client._sub_call_count
-    )

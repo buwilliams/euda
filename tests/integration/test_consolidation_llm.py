@@ -23,7 +23,7 @@ class TestAppendPhaseWithMockLLM:
 
     def _create_consolidation(self, tmp_path):
         """Create a Consolidation instance with mock agent."""
-        from src.agent.cognition.metacognition.consolidation import Consolidation
+        from src.tools.system.consolidation import Consolidation
 
         mock_agent = MagicMock()
         mock_agent.id = "test-agent"
@@ -40,7 +40,7 @@ class TestAppendPhaseWithMockLLM:
 
     def test_parse_items_extracts_valid_json(self):
         """_parse_items correctly extracts items from JSON response."""
-        from src.agent.cognition.metacognition.consolidation.append import _parse_items
+        from src.tools.system.consolidation.append import _parse_items
 
         response = '''[
           {"type": "person", "short_description": "John Doe - colleague"},
@@ -56,7 +56,7 @@ class TestAppendPhaseWithMockLLM:
 
     def test_parse_items_handles_markdown_code_block(self):
         """_parse_items handles JSON wrapped in markdown code blocks."""
-        from src.agent.cognition.metacognition.consolidation.append import _parse_items
+        from src.tools.system.consolidation.append import _parse_items
 
         response = '''```json
 [
@@ -71,7 +71,7 @@ class TestAppendPhaseWithMockLLM:
 
     def test_parse_items_validates_types(self):
         """_parse_items filters out invalid memory types."""
-        from src.agent.cognition.metacognition.consolidation.append import _parse_items
+        from src.tools.system.consolidation.append import _parse_items
 
         response = '''[
           {"type": "person", "short_description": "Valid person"},
@@ -87,7 +87,7 @@ class TestAppendPhaseWithMockLLM:
 
     def test_parse_items_validates_date_format(self):
         """_parse_items validates date_expected format."""
-        from src.agent.cognition.metacognition.consolidation.append import _parse_items
+        from src.tools.system.consolidation.append import _parse_items
 
         response = '''[
           {"type": "goal", "short_description": "Valid date", "date_expected": "2025-01-31"},
@@ -101,21 +101,21 @@ class TestAppendPhaseWithMockLLM:
 
     def test_parse_items_handles_empty_response(self):
         """_parse_items returns empty list for empty array."""
-        from src.agent.cognition.metacognition.consolidation.append import _parse_items
+        from src.tools.system.consolidation.append import _parse_items
 
         items = _parse_items("[]")
         assert items == []
 
     def test_parse_items_handles_malformed_json(self):
         """_parse_items returns empty list for invalid JSON."""
-        from src.agent.cognition.metacognition.consolidation.append import _parse_items
+        from src.tools.system.consolidation.append import _parse_items
 
         items = _parse_items("This is not JSON")
         assert items == []
 
     def test_parse_items_truncates_long_descriptions(self):
         """_parse_items truncates descriptions over 500 chars."""
-        from src.agent.cognition.metacognition.consolidation.append import _parse_items
+        from src.tools.system.consolidation.append import _parse_items
 
         long_desc = "x" * 600
         response = f'[{{"type": "idea", "short_description": "{long_desc}"}}]'
@@ -130,7 +130,7 @@ class TestAppendPhaseWithFixtures:
 
     def test_append_fixture_returns_memory_items(self, tmp_path):
         """Append fixture returns properly formatted memory items."""
-        from src.agent.cognition.metacognition.consolidation.append import _parse_items
+        from src.tools.system.consolidation.append import _parse_items
 
         mock = MockLLMClient.from_fixture("append")
 
@@ -149,7 +149,7 @@ class TestAppendPhaseWithFixtures:
 
     def test_append_fixture_empty_scenario(self):
         """Append fixture returns empty list for trivial conversations."""
-        from src.agent.cognition.metacognition.consolidation.append import _parse_items
+        from src.tools.system.consolidation.append import _parse_items
 
         mock = MockLLMClient.from_fixture("append")
 
@@ -177,7 +177,7 @@ class TestAddItemsToMemory:
 
     def test_add_items_avoids_duplicates(self, tmp_path):
         """_add_items_to_memory avoids adding duplicate descriptions."""
-        from src.agent.cognition.metacognition.consolidation.append import _add_items_to_memory
+        from src.tools.system.consolidation.append import _add_items_to_memory
 
         patches = self._patch_memory_dirs(tmp_path)
         for p in patches:
@@ -206,7 +206,7 @@ class TestAddItemsToMemory:
 
     def test_add_items_generates_ids(self, tmp_path):
         """_add_items_to_memory generates unique IDs for new items."""
-        from src.agent.cognition.metacognition.consolidation.append import _add_items_to_memory
+        from src.tools.system.consolidation.append import _add_items_to_memory
 
         patches = self._patch_memory_dirs(tmp_path)
         for p in patches:
@@ -243,7 +243,7 @@ class TestCrossPollination:
 
     def test_cross_pollinate_copies_user_relevant_types(self, tmp_path):
         """_cross_pollinate_to_user copies person, place, goal, concern, idea types."""
-        from src.agent.cognition.metacognition.consolidation.append import _cross_pollinate_to_user
+        from src.tools.system.consolidation.append import _cross_pollinate_to_user
         from datetime import datetime
 
         patches = self._patch_memory_dirs(tmp_path)
@@ -271,7 +271,7 @@ class TestCrossPollination:
 
     def test_cross_pollinate_avoids_duplicates(self, tmp_path):
         """_cross_pollinate_to_user doesn't duplicate existing items."""
-        from src.agent.cognition.metacognition.consolidation.append import _cross_pollinate_to_user
+        from src.tools.system.consolidation.append import _cross_pollinate_to_user
         from src.tools.data.memory import _save_entries
         from datetime import datetime
 

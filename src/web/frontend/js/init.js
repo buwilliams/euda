@@ -13,14 +13,17 @@ function connectSSE() {
     eventSource.addEventListener('init', (e) => {
         const data = JSON.parse(e.data);
         const allJobs = data.jobs || [];
-        // Split jobs into active and completed (filter out archived)
-        jobsData = allJobs.filter(j => j.status !== 'done' && j.status !== 'archived');
+        // Store all jobs for detail views (including archived)
+        allJobsData = allJobs;
+        // Split jobs into active (todo, working) - exclude done, archived, error
+        jobsData = allJobs.filter(j => j.status === 'todo' || j.status === 'working');
         completedJobsData = allJobs.filter(j => j.status === 'done')
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
             .slice(0, 20);
         updateTasksBadge();
         if (activeTab === 'focus') {
             renderFocusTab();
+            if (focusView === 'menu') loadDailyQuote();
         }
         reconnectAttempts = 0;
     });
@@ -28,13 +31,16 @@ function connectSSE() {
     eventSource.addEventListener('jobs_update', (e) => {
         const data = JSON.parse(e.data);
         const allJobs = data.jobs || [];
-        // Split jobs into active and completed (filter out archived)
-        jobsData = allJobs.filter(j => j.status !== 'done' && j.status !== 'archived');
+        // Store all jobs for detail views (including archived)
+        allJobsData = allJobs;
+        // Split jobs into active (todo, working) - exclude done, archived, error
+        jobsData = allJobs.filter(j => j.status === 'todo' || j.status === 'working');
         completedJobsData = allJobs.filter(j => j.status === 'done')
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
             .slice(0, 20);
         if (activeTab === 'focus') {
             renderFocusTab();
+            if (focusView === 'menu') loadDailyQuote();
         }
         updateTasksBadge();
     });
@@ -239,40 +245,20 @@ appEl.addEventListener('drop', (e) => {
 // ============== Initialize ==============
 
 async function init() {
-    // Run splash animation and auth check in parallel
-    const [_, auth] = await Promise.all([
-        runSplashAnimation(),
-        checkAuth()
-    ]);
-
-    const splashScreen = document.getElementById('splash-screen');
-    const loginOverlay = document.getElementById('login-overlay');
     const appContainer = document.getElementById('app-container');
+    const loginOverlay = document.getElementById('login-overlay');
+
+    // Show app shell immediately (skeleton/loading state)
+    appContainer.classList.add('visible');
+
+    // Check auth
+    const auth = await checkAuth();
 
     if (auth.password_required && !auth.authenticated) {
-        // Crossfade: splash out, login in
         loginOverlay.classList.remove('hidden');
-        // Trigger reflow to ensure transition works
-        loginOverlay.offsetHeight;
-
-        splashScreen.classList.add('fade-out');
         loginOverlay.classList.add('visible');
-
-        // Clean up splash after fade
-        setTimeout(() => {
-            splashScreen.classList.add('hidden');
-            document.getElementById('login-password').focus();
-        }, 400);
+        document.getElementById('login-password').focus();
     } else {
-        // Crossfade: splash out, app in
-        splashScreen.classList.add('fade-out');
-        appContainer.classList.add('visible');
-
-        // Clean up splash after fade and init app
-        setTimeout(() => {
-            splashScreen.classList.add('hidden');
-        }, 400);
-
         initApp();
     }
 }

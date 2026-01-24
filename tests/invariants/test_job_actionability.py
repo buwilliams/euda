@@ -32,7 +32,7 @@ def setup_jobs(test_db, mock_emit_event, mock_emit_ui_event):
     # Normal actionable job
     jobs["normal"] = create_job(
         name="Normal Job",
-        assignees=["test-agent"],
+        assignee="test-agent",
         parent_id=None,
         created_by="test"
     )
@@ -40,7 +40,7 @@ def setup_jobs(test_db, mock_emit_event, mock_emit_ui_event):
     # Job with waiting tag
     jobs["waiting"] = create_job(
         name="Waiting Job",
-        assignees=["test-agent"],
+        assignee="test-agent",
         tags=["waiting:user-response"],
         parent_id=None,
         created_by="test"
@@ -49,7 +49,7 @@ def setup_jobs(test_db, mock_emit_event, mock_emit_ui_event):
     # Job with blocked tag
     jobs["blocked"] = create_job(
         name="Blocked Job",
-        assignees=["test-agent"],
+        assignee="test-agent",
         tags=["blocked:dependency"],
         parent_id=None,
         created_by="test"
@@ -58,7 +58,7 @@ def setup_jobs(test_db, mock_emit_event, mock_emit_ui_event):
     # Someday job
     jobs["someday"] = create_job(
         name="Someday Job",
-        assignees=["test-agent"],
+        assignee="test-agent",
         someday=True,
         parent_id=None,
         created_by="test"
@@ -68,7 +68,7 @@ def setup_jobs(test_db, mock_emit_event, mock_emit_ui_event):
     future_date = (date.today() + timedelta(days=7)).isoformat()
     jobs["future"] = create_job(
         name="Future Job",
-        assignees=["test-agent"],
+        assignee="test-agent",
         due_date=future_date,
         parent_id=None,
         created_by="test"
@@ -77,22 +77,22 @@ def setup_jobs(test_db, mock_emit_event, mock_emit_ui_event):
     # Unassigned job
     jobs["unassigned"] = create_job(
         name="Unassigned Job",
-        assignees=[],
+        assignee=None,
         parent_id=None,
         created_by="test"
     )
 
-    # Job claimed by another agent
-    jobs["claimed"] = create_job(
-        name="Claimed Job",
-        assignees=["test-agent"],
+    # Job with status 'working' (another agent is processing it)
+    jobs["working"] = create_job(
+        name="Working Job",
+        assignee="test-agent",
         parent_id=None,
         created_by="test"
     )
-    # Manually set in_progress_by
+    # Set status to 'working'
     conn.execute(
-        "UPDATE jobs SET in_progress_by = ? WHERE id = ?",
-        ("other-agent", jobs["claimed"]["id"])
+        "UPDATE jobs SET status = 'working' WHERE id = ?",
+        (jobs["working"]["id"],)
     )
     conn.commit()
 
@@ -168,18 +168,18 @@ class TestJobActionabilityInvariants:
         assert setup_jobs["unassigned"]["id"] not in job_ids, \
             "Unassigned jobs must not appear in assignee-filtered results"
 
-    def test_actionable_excludes_other_claimed(self, setup_jobs):
-        """Jobs claimed by other agents should be excluded when actionable.
+    def test_actionable_excludes_working_status(self, setup_jobs):
+        """Jobs with status='working' should be excluded when actionable.
 
-        Spec: in_progress_by != agent_id means another agent is working on it.
+        Spec: Jobs with 'working' status are currently being processed.
         """
         from src.tools.data.jobs import list_jobs
 
         actionable = list_jobs(assignee="test-agent", actionable=True)
         job_ids = [j["id"] for j in actionable]
 
-        assert setup_jobs["claimed"]["id"] not in job_ids, \
-            "Jobs claimed by other agents must not be actionable"
+        assert setup_jobs["working"]["id"] not in job_ids, \
+            "Jobs with 'working' status must not be actionable"
 
     def test_normal_job_is_actionable(self, setup_jobs):
         """Normal job without blocking conditions should be actionable.
@@ -205,7 +205,7 @@ class TestUnblockBehavior:
 
         job = create_job(
             name="Waiting Job",
-            assignees=["test-agent"],
+            assignee="test-agent",
             tags=["waiting:user-response", "important"],
             parent_id=None,
             created_by="test"
@@ -224,7 +224,7 @@ class TestUnblockBehavior:
 
         job = create_job(
             name="Blocked Job",
-            assignees=["test-agent"],
+            assignee="test-agent",
             tags=["blocked:dependency"],
             parent_id=None,
             created_by="test"
@@ -242,7 +242,7 @@ class TestUnblockBehavior:
 
         job = create_job(
             name="Normal Job",
-            assignees=["test-agent"],
+            assignee="test-agent",
             parent_id=None,
             created_by="test"
         )

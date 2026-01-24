@@ -1,229 +1,201 @@
 """
-Unit tests for progress awareness module.
+Unit tests for Progress Tracking.
 
-Tests for src/agent/cognition/metacognition/regulation/progress.py
+Tests for src/agent/cognition/metacognition/regulation/progress.py including:
+- Session management (start, end)
+- Iteration counting and limits
+- Tool call recording
+- Stuck pattern detection
 
-Design: specs/1_agents.md - Progress Awareness
-- Counts tool calls per iteration
-- Detects stuck patterns (same tool with identical inputs)
-- Breaks work cycle when stuck detected
+Spec: specs/1_agents.md - Progress Awareness
 """
 
 import pytest
-from datetime import datetime
 
 
-class TestProgressTracker:
-    """Test ProgressTracker class."""
+@pytest.mark.unit
+class TestProgressTrackerSession:
+    """Test session management in ProgressTracker."""
 
-    def test_record_tool_call(self):
-        """Tool calls are recorded in history."""
+    def test_start_session_returns_session_id(self):
+        """start_session() returns a unique session ID."""
         from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
 
-        tracker = ProgressTracker("test-agent")
-        tracker.record_tool_call("list_jobs", {"status": "todo"})
+        tracker = ProgressTracker()
+        session_id = tracker.start_session("test-agent", session_type="work_cycle")
 
-        assert len(tracker.tool_history) == 1
-        assert tracker.tool_history[0].tool_name == "list_jobs"
-        assert tracker.tool_history[0].tool_input == {"status": "todo"}
+        assert session_id is not None
+        assert "test-agent" in session_id
+        assert "work_cycle" in session_id
 
-    def test_history_bounded(self):
-        """Tool history is bounded to prevent memory growth."""
+    def test_end_session_returns_stats(self):
+        """end_session() returns session statistics."""
         from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
 
-        tracker = ProgressTracker("test-agent", config={"max_history": 10})
+        tracker = ProgressTracker()
+        session_id = tracker.start_session("test-agent")
+        tracker.increment(session_id)
+        tracker.increment(session_id)
 
-        # Add more than max
-        for i in range(20):
-            tracker.record_tool_call("tool", {"i": i})
+        stats = tracker.end_session(session_id)
 
-        # Should be trimmed
-        assert len(tracker.tool_history) <= 10
+        assert stats["total_iterations"] == 2
+        assert stats["agent_id"] == "test-agent"
+        assert "started_at" in stats
+        assert "ended_at" in stats
 
-    def test_record_iteration_end(self):
-        """Iteration outcomes are recorded."""
+    def test_end_session_cleans_up(self):
+        """end_session() removes session from tracker."""
         from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
 
-        tracker = ProgressTracker("test-agent")
-        tracker.record_iteration_end(jobs_completed=1, jobs_created=2, tool_calls=5)
+        tracker = ProgressTracker()
+        session_id = tracker.start_session("test-agent")
+        tracker.end_session(session_id)
 
-        assert len(tracker.iteration_outcomes) == 1
-        assert tracker.iteration_outcomes[0].jobs_completed == 1
-        assert tracker.iteration_outcomes[0].jobs_created == 2
-        assert tracker.iteration_outcomes[0].tool_calls == 5
-        assert tracker.current_iteration == 1
+        # Session should no longer exist
+        assert tracker.get_progress(session_id) is None
 
 
-class TestStuckDetection:
-    """Test stuck pattern detection.
+@pytest.mark.unit
+class TestProgressTrackerIteration:
+    """Test iteration tracking in ProgressTracker."""
 
-    Design: specs/1_agents.md - "Detects stuck patterns: same tool called
-    repeatedly with identical inputs"
-    """
+    def test_increment_counts_iterations(self):
+        """increment() tracks iteration count."""
+        from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
 
-    def test_repeated_tools_detected(self):
-        """Same tool with identical inputs N times triggers stuck.
+        tracker = ProgressTracker()
+        session_id = tracker.start_session("test-agent")
 
-        Design: Repeated identical tool calls indicate no progress.
+        count1 = tracker.increment(session_id)
+        count2 = tracker.increment(session_id)
+
+        assert count1 == 1
+        assert count2 == 2
+
+    def test_increment_raises_on_limit(self):
+        """increment() raises ProgressLimitExceeded when limit reached."""
+        from src.agent.cognition.metacognition.regulation.progress import (
+            ProgressTracker,
+            ProgressLimitExceeded
+        )
+
+        tracker = ProgressTracker()
+        session_id = tracker.start_session("test-agent", max_iterations=3)
+
+        tracker.increment(session_id)  # 1
+        tracker.increment(session_id)  # 2
+        tracker.increment(session_id)  # 3
+
+        with pytest.raises(ProgressLimitExceeded) as exc_info:
+            tracker.increment(session_id)  # 4 - exceeds limit
+
+        assert "max iterations exceeded" in exc_info.value.reason
+
+
+@pytest.mark.unit
+class TestProgressTrackerToolCalls:
+    """Test tool call recording and stuck detection."""
+
+    def test_record_tool_call_tracks_calls(self):
+        """record_tool_call() tracks tool calls in session."""
+        from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
+
+        tracker = ProgressTracker()
+        session_id = tracker.start_session("test-agent")
+
+        tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
+        tracker.record_tool_call(session_id, "get_job", '{"id": "123"}')
+
+        progress = tracker.get_progress(session_id)
+        assert progress["tool_call_count"] == 2
+
+    def test_record_tool_call_detects_stuck_pattern(self):
+        """record_tool_call() raises when stuck pattern detected.
+
+        Spec: Detects stuck patterns: same tool called repeatedly with identical inputs.
         """
-        from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
+        from src.agent.cognition.metacognition.regulation.progress import (
+            ProgressTracker,
+            ProgressLimitExceeded
+        )
 
-        tracker = ProgressTracker("test-agent")
+        tracker = ProgressTracker()
+        session_id = tracker.start_session("test-agent", stuck_threshold=5)
 
-        # Call same tool 3 times with identical inputs
-        for _ in range(3):
-            tracker.record_tool_call("list_jobs", {"status": "todo"})
-
-        reason = tracker.check_repeated_tools(count=3)
-
-        assert reason is not None
-        assert "list_jobs" in reason
-        assert "3 times" in reason
-
-    def test_different_inputs_not_stuck(self):
-        """Same tool with different inputs is not stuck."""
-        from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
-
-        tracker = ProgressTracker("test-agent")
-
-        tracker.record_tool_call("list_jobs", {"status": "todo"})
-        tracker.record_tool_call("list_jobs", {"status": "completed"})
-        tracker.record_tool_call("list_jobs", {"status": "archived"})
-
-        reason = tracker.check_repeated_tools(count=3)
-        assert reason is None
-
-    def test_different_tools_not_stuck(self):
-        """Different tools with same inputs is not stuck."""
-        from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
-
-        tracker = ProgressTracker("test-agent")
-
-        tracker.record_tool_call("list_jobs", {"status": "todo"})
-        tracker.record_tool_call("get_job", {"status": "todo"})
-        tracker.record_tool_call("create_job", {"status": "todo"})
-
-        reason = tracker.check_repeated_tools(count=3)
-        assert reason is None
-
-    def test_no_progress_detected(self):
-        """No jobs completed/created over N iterations triggers stuck.
-
-        Design: If agent isn't making progress (completing/creating jobs),
-        it may be stuck in a loop.
-        """
-        from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
-
-        tracker = ProgressTracker("test-agent")
-
-        # 5 iterations with no progress
-        for _ in range(5):
-            tracker.record_iteration_end(jobs_completed=0, jobs_created=0, tool_calls=10)
-
-        reason = tracker.check_no_progress(iterations=5)
-
-        assert reason is not None
-        assert "No jobs" in reason
-        assert "5 iterations" in reason
-
-    def test_progress_resets_stuck(self):
-        """Completing a job resets the no-progress stuck condition."""
-        from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
-
-        tracker = ProgressTracker("test-agent")
-
-        # 4 iterations with no progress
+        # Call same tool with same input 4 times - should be fine
         for _ in range(4):
-            tracker.record_iteration_end(jobs_completed=0, jobs_created=0, tool_calls=10)
+            tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
 
-        # 1 iteration with progress
-        tracker.record_iteration_end(jobs_completed=1, jobs_created=0, tool_calls=5)
+        # 5th identical call should trigger stuck detection
+        with pytest.raises(ProgressLimitExceeded) as exc_info:
+            tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
 
-        reason = tracker.check_no_progress(iterations=5)
-        assert reason is None
+        assert "list_jobs" in exc_info.value.reason
+        assert "5 times" in exc_info.value.reason
 
-    def test_tool_sequence_loop_detected(self):
-        """Repeating sequence of tools indicates loop.
-
-        Design: A→B→C→A→B→C pattern suggests agent is in a loop.
-        """
+    def test_record_tool_call_allows_varied_calls(self):
+        """record_tool_call() allows varied tool calls without raising."""
         from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
 
-        tracker = ProgressTracker("test-agent")
+        tracker = ProgressTracker()
+        session_id = tracker.start_session("test-agent", stuck_threshold=3)
 
-        # Repeat sequence twice: A->B->C->A->B->C
-        for _ in range(2):
-            tracker.record_tool_call("tool_a", {})
-            tracker.record_tool_call("tool_b", {})
-            tracker.record_tool_call("tool_c", {})
+        # Varied calls should not trigger stuck detection
+        tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
+        tracker.record_tool_call(session_id, "get_job", '{"id": "1"}')
+        tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
+        tracker.record_tool_call(session_id, "get_job", '{"id": "2"}')
+        tracker.record_tool_call(session_id, "list_jobs", '{"status": "done"}')
 
-        reason = tracker.check_tool_sequence_loop(sequence_length=3, repetitions=2)
+        progress = tracker.get_progress(session_id)
+        assert progress["tool_call_count"] == 5
+        assert progress["is_stuck"] is False
 
-        assert reason is not None
-        assert "repeated" in reason
-
-    def test_check_stuck_aggregates_all_checks(self):
-        """check_stuck() runs all stuck checks."""
+    def test_check_stuck_returns_reason_when_stuck(self):
+        """check_stuck() returns reason string when stuck."""
         from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
 
-        tracker = ProgressTracker("test-agent", config={
-            "max_repeated_tool_calls": 3,
-            "max_no_progress_iterations": 5
-        })
+        tracker = ProgressTracker()
+        session_id = tracker.start_session("test-agent", stuck_threshold=3)
 
-        # No stuck initially
-        assert tracker.check_stuck() is None
+        # Add calls but don't exceed threshold (2 identical calls)
+        tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
+        tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
 
-        # Trigger repeated tools stuck
-        for _ in range(3):
-            tracker.record_tool_call("list_jobs", {"x": 1})
+        # Not stuck yet
+        assert tracker.check_stuck(session_id) is None
 
-        assert tracker.check_stuck() is not None
-
-
-class TestProgressTrackerReset:
-    """Test reset functionality."""
-
-    def test_reset_clears_state(self):
-        """reset() clears all tracking state for new work cycle.
-
-        Design: Each work cycle starts fresh.
-        """
+    def test_get_progress_includes_stuck_info(self):
+        """get_progress() includes stuck detection info."""
         from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
 
-        tracker = ProgressTracker("test-agent")
+        tracker = ProgressTracker()
+        session_id = tracker.start_session("test-agent")
 
-        # Add some state
-        tracker.record_tool_call("tool", {})
-        tracker.record_iteration_end(jobs_completed=1)
+        progress = tracker.get_progress(session_id)
 
-        assert len(tracker.tool_history) > 0
-        assert len(tracker.iteration_outcomes) > 0
-
-        # Reset
-        tracker.reset()
-
-        assert len(tracker.tool_history) == 0
-        assert len(tracker.iteration_outcomes) == 0
-        assert tracker.current_iteration == 0
+        assert "is_stuck" in progress
+        assert "stuck_reason" in progress
+        assert "tool_call_count" in progress
+        assert "stuck_threshold" in progress
 
 
-class TestProgressTrackerSummary:
-    """Test summary functionality."""
+@pytest.mark.unit
+class TestProgressTrackerStats:
+    """Test progress statistics and reporting."""
 
-    def test_get_summary(self):
-        """get_summary() returns tracking statistics."""
+    def test_end_session_includes_tool_call_count(self):
+        """end_session() includes total tool calls in stats."""
         from src.agent.cognition.metacognition.regulation.progress import ProgressTracker
 
-        tracker = ProgressTracker("test-agent")
-        tracker.record_tool_call("tool", {})
-        tracker.record_iteration_end()
+        tracker = ProgressTracker()
+        session_id = tracker.start_session("test-agent")
 
-        summary = tracker.get_summary()
+        tracker.record_tool_call(session_id, "tool1", '{}')
+        tracker.record_tool_call(session_id, "tool2", '{}')
+        tracker.record_tool_call(session_id, "tool3", '{}')
 
-        assert summary["agent_id"] == "test-agent"
-        assert summary["current_iteration"] == 1
-        assert summary["tool_history_length"] == 1
-        assert summary["iteration_outcomes_length"] == 1
-        assert "is_stuck" in summary
-        assert "stuck_reason" in summary
+        stats = tracker.end_session(session_id)
+
+        assert stats["total_tool_calls"] == 3

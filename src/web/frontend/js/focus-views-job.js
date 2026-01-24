@@ -116,12 +116,10 @@ function renderFocusMenu() {
     // Find system containers
     const agentsContainer = jobsData.find(j => j.tags && j.tags.includes('system:agents') && !j.parent_id);
     const projectsContainer = jobsData.find(j => j.tags && j.tags.includes('system:projects') && !j.parent_id);
-    const systemContainer = jobsData.find(j => j.tags && j.tags.includes('system:system') && !j.parent_id);
 
     // Count children of each container
     const agentsCount = agentsContainer ? jobsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
     const projectsCount = projectsContainer ? jobsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
-    const systemCount = systemContainer ? jobsData.filter(j => j.parent_id === systemContainer.id).length : 0;
 
     // Check collapsed states
     const timelinesOpen = isSectionOpen('timelines');
@@ -149,8 +147,8 @@ function renderFocusMenu() {
         `;
     }
 
-    // Build system section (Agents + Projects + System) if any exist
-    const hasSystemSection = agentsContainer || projectsContainer || systemContainer;
+    // Build system section (Agents + Projects) if any exist
+    const hasSystemSection = agentsContainer || projectsContainer;
     const systemSection = hasSystemSection ? `
         <div class="focus-menu-section">
             <div class="focus-menu-section-label collapsible ${collectionsOpen ? 'open' : ''}" onclick="toggleSection('collections')">
@@ -171,14 +169,6 @@ function renderFocusMenu() {
                     <span class="focus-menu-icon">${icon('folder')}</span>
                     <span class="focus-menu-label">Projects</span>
                     <span class="focus-menu-count">${projectsCount}</span>
-                    <span class="focus-menu-arrow">›</span>
-                </div>
-                ` : ''}
-                ${systemContainer ? `
-                <div class="focus-menu-item" onclick="navigateFocus('job-${systemContainer.id}')">
-                    <span class="focus-menu-icon">${icon('cog-6-tooth')}</span>
-                    <span class="focus-menu-label">System</span>
-                    <span class="focus-menu-count">${systemCount}</span>
                     <span class="focus-menu-arrow">›</span>
                 </div>
                 ` : ''}
@@ -294,7 +284,7 @@ function renderCompletedJobsView() {
 
 // ============== System Container Views ==============
 
-function renderSystemContainerView(job, isAgentsContainer, isSystemJobsContainer = false) {
+function renderSystemContainerView(job, isAgentsContainer) {
     const childJobs = jobsData.filter(j => j.parent_id === job.id);
 
     // Determine container type and styling
@@ -303,17 +293,13 @@ function renderSystemContainerView(job, isAgentsContainer, isSystemJobsContainer
         titleIcon = icon('bolt');
         containerName = 'Agents';
         emptyMessage = 'No agent inboxes yet.';
-    } else if (isSystemJobsContainer) {
-        titleIcon = icon('cog-6-tooth');
-        containerName = 'System';
-        emptyMessage = 'No system jobs.';
     } else {
         titleIcon = icon('folder');
         containerName = 'Projects';
         emptyMessage = 'No projects yet.';
     }
 
-    // For Projects and System containers, render children as swipeable job cards
+    // For Projects containers, render children as swipeable job cards
     // For Agents container, render children as non-swipeable agent cards
     const renderChildJobs = () => {
         if (childJobs.length === 0) {
@@ -339,7 +325,7 @@ function renderSystemContainerView(job, isAgentsContainer, isSystemJobsContainer
                 </div>
             `;
         } else {
-            // Projects and System - swipeable job cards
+            // Projects - swipeable job cards
             return `
                 <div class="child-jobs-list">
                     ${childJobs.map(child => renderJobCard(child, true)).join('')}
@@ -368,7 +354,8 @@ function renderSystemContainerView(job, isAgentsContainer, isSystemJobsContainer
 // ============== Job Detail View ==============
 
 function renderJobDetailView(jobId) {
-    const job = jobsData.find(j => j.id === jobId);
+    // Use allJobsData to find jobs regardless of status
+    const job = allJobsData.find(j => j.id === jobId);
     if (!job) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -385,12 +372,11 @@ function renderJobDetailView(jobId) {
     // Check if this is a system container
     const isAgentsContainer = job.tags && job.tags.includes('system:agents');
     const isProjectsContainer = job.tags && job.tags.includes('system:projects');
-    const isSystemJobsContainer = job.tags && job.tags.includes('system:system');
-    const isSystemContainer = isAgentsContainer || isProjectsContainer || isSystemJobsContainer;
+    const isSystemContainer = isAgentsContainer || isProjectsContainer;
 
     // For system containers, render a simplified view
     if (isSystemContainer) {
-        return renderSystemContainerView(job, isAgentsContainer, isSystemJobsContainer);
+        return renderSystemContainerView(job, isAgentsContainer);
     }
 
     // For agent inbox jobs, render the agent detail view
@@ -402,18 +388,8 @@ function renderJobDetailView(jobId) {
     const isArchiving = archivingTaskId === job.id;
     const displayName = job.name || 'Untitled';
     const hasDescription = job.description && job.description.length > 0;
-    // Use context-aware filtering for child jobs (respects timeline context)
-    const childJobs = getChildJobsForContext(job.id);
-    // Get completed children - filter by timeline context if we're in one
-    const timelineContext = getTimelineContext();
-    const completedChildJobs = completedJobsData.filter(j => {
-        if (j.parent_id !== job.id) return false;
-        // If in timeline context, only show completed jobs that matched that context
-        if (timelineContext) {
-            return getJobCategory({ ...j, status: 'todo' }) === timelineContext;
-        }
-        return true;
-    });
+    // Get ALL child jobs sorted by status priority (working > todo > error > done > archived)
+    const allChildJobs = getAllChildJobsSorted(job.id);
     const assets = jobAssetsCache[jobId] || [];
     const isAgentJob = !!job.agent_id;
     const titleIcon = isAgentJob ? icon('bolt') : '';
@@ -425,7 +401,7 @@ function renderJobDetailView(jobId) {
     // Get parent job name for context
     let parentName = null;
     if (job.parent_id) {
-        const parent = jobsData.find(j => j.id === job.parent_id);
+        const parent = allJobsData.find(j => j.id === job.parent_id);
         parentName = parent ? parent.name : null;
     }
 
@@ -482,31 +458,15 @@ function renderJobDetailView(jobId) {
                 `}
             </div>
 
-            <!-- Child Jobs Section - open by default -->
-            ${childJobs.length > 0 ? `
+            <!-- Child Jobs Section - shows all jobs sorted by status -->
+            ${allChildJobs.length > 0 ? `
             <div class="job-section">
                 <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
-                    <span>Child Jobs (${childJobs.length})</span>
+                    <span>Jobs (${allChildJobs.length})</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
                 <div class="collapsible-content open">
-                    ${childJobs.map(child => renderJobCard(child, true)).join('')}
-                </div>
-            </div>
-            ` : ''}
-
-            <!-- Completed Child Jobs Section - collapsed by default -->
-            ${completedChildJobs.length > 0 ? `
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
-                    <span>Completed (${completedChildJobs.length})</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-                <div class="collapsible-content">
-                    ${completedChildJobs.map(child => {
-                        const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                        return renderCompletedJobCard(child, grandchildCount, true);
-                    }).join('')}
+                    ${allChildJobs.map(child => renderJobCard(child, true)).join('')}
                 </div>
             </div>
             ` : ''}

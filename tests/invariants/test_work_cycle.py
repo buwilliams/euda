@@ -30,9 +30,9 @@ class TestOneJobPerWorkCycle:
         from src.tools.data.jobs import create_job, list_jobs
 
         # Create multiple jobs
-        job1 = create_job(name="First", assignees=["agent"], parent_id=None, created_by="test")
-        job2 = create_job(name="Second", assignees=["agent"], parent_id=None, created_by="test")
-        job3 = create_job(name="Third", assignees=["agent"], parent_id=None, created_by="test")
+        job1 = create_job(name="First", assignee="agent", parent_id=None, created_by="test")
+        job2 = create_job(name="Second", assignee="agent", parent_id=None, created_by="test")
+        job3 = create_job(name="Third", assignee="agent", parent_id=None, created_by="test")
 
         # Verify list_jobs returns all 3
         jobs = list_jobs(assignee="agent", actionable=True)
@@ -56,7 +56,7 @@ class TestOneJobPerWorkCycle:
 
         # Create 5 jobs
         for i in range(5):
-            create_job(name=f"Job {i+1}", assignees=["agent"], parent_id=None, created_by="test")
+            create_job(name=f"Job {i+1}", assignee="agent", parent_id=None, created_by="test")
 
         jobs = list_jobs(assignee="agent", actionable=True)
         remaining = len(jobs) - 1
@@ -95,12 +95,12 @@ class TestJobSelectionOrder:
         from src.tools.data.jobs import create_job, list_jobs
 
         # Create actionable job
-        actionable = create_job(name="Actionable", assignees=["agent"], parent_id=None, created_by="test")
+        actionable = create_job(name="Actionable", assignee="agent", parent_id=None, created_by="test")
 
         # Create blocked job
         blocked = create_job(
             name="Blocked",
-            assignees=["agent"],
+            assignee="agent",
             tags=["blocked:dependency"],
             parent_id=None,
             created_by="test"

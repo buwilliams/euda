@@ -1,7 +1,7 @@
 """
 Consolidate Phase - Identity evolution from long-term memory.
 
-This phase runs on daily trigger to:
+This phase runs on scheduled trigger to:
 1. Use RLM extract_identity() to analyze long-term memory for identity updates
 2. Update the agent's identity based on observed patterns
 3. Create historical identity snapshots at year boundaries
@@ -12,39 +12,36 @@ memory via RLM, eliminating the need to "graduate" short-term items.
 """
 
 import json
-from datetime import datetime, timedelta
+import re
+from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
-from .....web.events import emit_ui_event
-from ....rlm import RLMClient, load_long_term_memory
+from ....web.events import emit_ui_event
+from ....agent.rlm import RLMClient, load_long_term_memory
 
 if TYPE_CHECKING:
-    from .consolidation import Consolidation
+    from . import ConsolidationRunner
 
 
 # How many days of long-term memory to analyze via RLM
 RLM_MEMORY_DAYS = 30
 
 
-def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) -> Optional[dict]:
+def consolidate_phase(runner: "ConsolidationRunner", execution_id: str = None) -> Optional[dict]:
     """Run the consolidate phase for an agent.
 
     Performs heavy analysis to update identity based on long-term memory.
     Uses RLM extract_identity() for intelligent identity evolution.
 
-    Architecture note: With long-term memory as the primary store,
-    we no longer need to "graduate" short-term items. Identity is
-    derived directly from long-term memory via RLM.
-
     Args:
-        consolidation: The Consolidation instance
+        runner: The ConsolidationRunner instance
         execution_id: Optional execution ID for SSE progress tracking
 
     Returns:
         Dict with identity_updated flag
     """
-    agent_id = consolidation.agent.id
+    agent_id = runner.agent_id
 
     def emit_progress(step: str, message: str):
         """Emit SSE progress event."""
@@ -56,7 +53,7 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
             "message": message
         })
 
-    consolidation.logger.info({
+    runner.logger.info({
         "event": "consolidate_start",
         "agent_id": agent_id,
         "execution_id": execution_id
@@ -70,7 +67,7 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
 
     # Skip if no memory to analyze
     if memory["metadata"]["total_entries"] == 0:
-        consolidation.logger.info({
+        runner.logger.info({
             "event": "consolidate_skip",
             "agent_id": agent_id,
             "reason": "no_memory"
@@ -84,7 +81,7 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
         return {"identity_updated": False}
 
     # Load current identity
-    current_identity = consolidation.agent.identity
+    current_identity = runner.identity
 
     emit_progress("identity_analysis", "Analyzing memory for identity updates via RLM...")
 
@@ -97,7 +94,7 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
         # Parse the structured identity updates
         identity_updates = _parse_identity_updates(identity_result.findings)
 
-    consolidation.logger.info({
+    runner.logger.info({
         "event": "rlm_identity_analysis",
         "agent_id": agent_id,
         "execution_id": execution_id,
@@ -112,13 +109,13 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
     # Apply identity updates from RLM
     identity_updated = False
     if identity_updates and identity_updates.get("sections"):
-        _update_identity(consolidation, identity_updates["sections"])
+        _update_identity(runner, identity_updates["sections"])
         identity_updated = True
 
     # Check for year boundary and create historical snapshot
-    _maybe_snapshot_identity(consolidation)
+    _maybe_snapshot_identity(runner)
 
-    consolidation.logger.info({
+    runner.logger.info({
         "event": "consolidate_complete",
         "agent_id": agent_id,
         "execution_id": execution_id,
@@ -136,16 +133,30 @@ def consolidate_phase(consolidation: "Consolidation", execution_id: str = None) 
     return {"identity_updated": identity_updated}
 
 
-def _parse_identity_updates(findings: str) -> Optional[dict]:
+def _parse_identity_updates(findings) -> Optional[dict]:
     """Parse identity updates from RLM extract_identity() findings.
 
     Args:
-        findings: JSON string from RLM
+        findings: JSON string from RLM (or list/dict if already parsed)
 
     Returns:
         Parsed dict with "sections" and "reasoning" keys, or None
     """
-    import json as json_module
+    # Handle case where findings is already a dict
+    if isinstance(findings, dict):
+        return findings
+
+    # Handle case where findings is a list (shouldn't happen but defensive)
+    if isinstance(findings, list):
+        # Try to find a dict in the list
+        for item in findings:
+            if isinstance(item, dict):
+                return item
+        return None
+
+    # Handle non-string types
+    if not isinstance(findings, str):
+        return None
 
     findings = findings.strip()
 
@@ -158,17 +169,16 @@ def _parse_identity_updates(findings: str) -> Optional[dict]:
     # If it starts with { and ends with }, try direct parse
     if findings.startswith("{") and findings.endswith("}"):
         try:
-            return json_module.loads(findings)
-        except json_module.JSONDecodeError:
+            return json.loads(findings)
+        except json.JSONDecodeError:
             pass
 
     # Try to find JSON object in the text
-    import re
     match = re.search(r'\{[\s\S]*\}', findings)
     if match:
         try:
-            return json_module.loads(match.group(0))
-        except json_module.JSONDecodeError:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
             pass
 
     return None
@@ -216,8 +226,6 @@ def _parse_identity_sections(content: str) -> tuple[str, dict]:
         Tuple of (title_line, sections_dict) where sections_dict maps
         section keys to their content
     """
-    import re
-
     lines = content.split("\n")
     title = ""
     sections = {}
@@ -372,18 +380,18 @@ def _merge_section_content(existing: str, new_content: str) -> str:
         return existing + "\n\n" + new_content
 
 
-def _update_identity(consolidation: "Consolidation", updates):
+def _update_identity(runner: "ConsolidationRunner", updates):
     """Update the agent's identity with new information.
 
     Handles both structured updates (dict mapping section keys to content)
     and legacy string updates (for backwards compatibility).
 
     Args:
-        consolidation: The Consolidation instance
+        runner: The ConsolidationRunner instance
         updates: Either a dict of section updates or a string description
     """
-    identity_path = consolidation._get_identity_path()
-    agent_id = consolidation.agent.id
+    identity_path = runner._get_identity_path()
+    agent_id = runner.agent_id
 
     # Load current identity
     if identity_path.exists():
@@ -417,13 +425,13 @@ def _update_identity(consolidation: "Consolidation", updates):
     identity_path.write_text(new_identity)
 
 
-def _maybe_snapshot_identity(consolidation: "Consolidation"):
+def _maybe_snapshot_identity(runner: "ConsolidationRunner"):
     """Create historical identity snapshot if at year boundary.
 
     Checks if we're in a new year and the previous year's snapshot doesn't exist.
 
     Args:
-        consolidation: The Consolidation instance
+        runner: The ConsolidationRunner instance
     """
     today = datetime.now()
     current_year = today.strftime("%Y")
@@ -431,16 +439,16 @@ def _maybe_snapshot_identity(consolidation: "Consolidation"):
 
     # Check if we're in first week of year and previous year snapshot doesn't exist
     if today.month == 1 and today.day <= 7:
-        historical_path = consolidation._get_historical_identity_path(previous_year)
-        current_path = consolidation._get_identity_path()
+        historical_path = runner._get_historical_identity_path(previous_year)
+        current_path = runner._get_identity_path()
 
         if not historical_path.exists() and current_path.exists():
             # Create snapshot of current identity as previous year's historical
             current_identity = current_path.read_text()
             historical_path.write_text(current_identity)
 
-            consolidation.logger.info({
+            runner.logger.info({
                 "event": "identity_snapshot_created",
-                "agent_id": consolidation.agent.id,
+                "agent_id": runner.agent_id,
                 "year": previous_year
             })

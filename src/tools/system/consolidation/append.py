@@ -10,15 +10,14 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List
 import uuid
 
-from .....llms import get_client
-from .....web.events import emit_ui_event
-from .....tools.data.memory import _load_entries, _save_entries, VALID_TYPES
-from ..regulation.config import get_global_config
+from ....llms import get_client
+from ....web.events import emit_ui_event
+from ...data.memory import _load_entries, _save_entries, VALID_TYPES
 
 from .prompts import get_append_system_prompt, build_append_prompt, build_append_batch_prompt
 
 if TYPE_CHECKING:
-    from .consolidation import Consolidation
+    from . import Consolidation
 
 
 def append_phase(consolidation: "Consolidation", user_message: str, assistant_response: str, execution_id: str = None) -> int:
@@ -27,7 +26,7 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
     Calls LLM to extract noteworthy items and adds them to short-term memory.
 
     Args:
-        reflection: The Reflection instance
+        consolidation: The Consolidation instance
         user_message: The user's message
         assistant_response: The assistant's response
         execution_id: Optional execution ID for SSE progress tracking
@@ -35,7 +34,8 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
     Returns:
         Number of items added to memory
     """
-    agent_id = consolidation.agent.id
+    agent_id = consolidation.agent_id
+    agent_identity = consolidation.identity
 
     def emit_progress(step: str, message: str):
         """Emit SSE progress event."""
@@ -62,7 +62,7 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
 
     # Build prompt
     prompt = build_append_prompt(
-        agent_identity=consolidation.agent.identity,
+        agent_identity=agent_identity,
         existing_memory=existing_memory,
         user_message=user_message,
         assistant_response=assistant_response
@@ -72,9 +72,7 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
 
     # Call LLM
     client = get_client()
-    reflection_config = get_global_config().get_reflection_config()
     response = client.create(
-        max_tokens=reflection_config.get("append_max_tokens", 500),
         system=get_append_system_prompt(),
         messages=[{"role": "user", "content": prompt}],
         agent_id=f"{agent_id}/reflection"
@@ -240,61 +238,7 @@ def _add_items_to_memory(new_items: List[dict], existing_memory: List[dict], age
     if added:
         _save_entries(existing_memory, agent_id)
 
-        # Cross-pollinate user-relevant items to user's memory
-        # Chat conversations are about the user, so user's identity should learn from them
-        if agent_id == "chat":
-            _cross_pollinate_to_user(added, today)
-
     return len(added)
-
-
-def _cross_pollinate_to_user(items: List[dict], today: str) -> int:
-    """Copy user-relevant memory items from chat to user's short-term memory.
-
-    This enables the user's identity to evolve based on conversations with chat.
-    Only user-focused types are copied (not learning/behavior which are agent-specific).
-
-    Args:
-        items: Items that were added to chat's memory
-        today: Today's date string
-
-    Returns:
-        Number of items added to user's memory
-    """
-    # Types that describe the user (not how the agent should behave)
-    USER_RELEVANT_TYPES = {"person", "place", "goal", "concern", "idea"}
-
-    user_items = [i for i in items if i.get("type") in USER_RELEVANT_TYPES]
-    if not user_items:
-        return 0
-
-    # Load user's current memory
-    user_memory = _load_entries("user")
-    user_existing = {e.get("short_description", "").lower() for e in user_memory}
-
-    added = 0
-    for item in user_items:
-        # Skip duplicates
-        if item["short_description"].lower() in user_existing:
-            continue
-
-        # Create a new entry for user's memory (new ID, track source)
-        user_entry = {
-            "id": f"mem-{uuid.uuid4().hex[:8]}",
-            "date_mentioned": today,
-            "date_expected": item.get("date_expected"),
-            "type": item["type"],
-            "short_description": item["short_description"],
-            "source": "chat"  # Track where this came from
-        }
-        user_memory.append(user_entry)
-        user_existing.add(item["short_description"].lower())
-        added += 1
-
-    if added:
-        _save_entries(user_memory, "user")
-
-    return added
 
 
 def append_batch_phase(consolidation: "Consolidation", exchanges: list, execution_id: str = None) -> int:
@@ -304,7 +248,7 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
     single LLM call instead of one call per exchange.
 
     Args:
-        reflection: The Reflection instance
+        consolidation: The Consolidation instance
         exchanges: List of (user_message, assistant_response) tuples
         execution_id: Optional execution ID for SSE progress tracking
 
@@ -314,7 +258,8 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
     if not exchanges:
         return 0
 
-    agent_id = consolidation.agent.id
+    agent_id = consolidation.agent_id
+    agent_identity = consolidation.identity
 
     def emit_progress(step: str, message: str):
         """Emit SSE progress event."""
@@ -342,7 +287,7 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
 
     # Build batch prompt
     prompt = build_append_batch_prompt(
-        agent_identity=consolidation.agent.identity,
+        agent_identity=agent_identity,
         existing_memory=existing_memory,
         exchanges=exchanges
     )
@@ -351,9 +296,7 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
 
     # Call LLM
     client = get_client()
-    reflection_config = get_global_config().get_reflection_config()
     response = client.create(
-        max_tokens=reflection_config.get("append_batch_max_tokens", 1000),
         system=get_append_system_prompt(),
         messages=[{"role": "user", "content": prompt}],
         agent_id=f"{agent_id}/reflection"

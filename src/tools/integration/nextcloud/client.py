@@ -3,7 +3,7 @@ Nextcloud Client - Multi-instance client factory.
 
 Handles authentication and HTTP for multiple Nextcloud instances.
 Credentials loaded from environment variables.
-Configuration loaded from data/system/config.json.
+Configuration loaded from agent-lib/nextcloud/config.json.
 """
 
 import os
@@ -15,8 +15,10 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 
-DATA_DIR = Path(__file__).parent.parent.parent.parent.parent / "data"
-CONFIG_PATH = DATA_DIR / "system" / "config.json"
+# Look for config in agent-lib first, then data/agents
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent.parent
+AGENT_LIB_CONFIG = PROJECT_ROOT / "agent-lib" / "nextcloud" / "config.json"
+AGENTS_CONFIG = PROJECT_ROOT / "data" / "agents" / "nextcloud" / "config.json"
 
 
 class NextcloudConfigError(Exception):
@@ -39,20 +41,35 @@ _instances_cache: Dict[str, NextcloudInstance] = {}
 
 
 def _load_config() -> dict:
-    """Load Nextcloud configuration from config.json."""
-    if not CONFIG_PATH.exists():
-        raise NextcloudConfigError(f"Config file not found: {CONFIG_PATH}")
+    """Load Nextcloud configuration from agent config.
 
-    with open(CONFIG_PATH) as f:
-        config = json.load(f)
+    Looks for config in:
+    1. data/agents/nextcloud/config.json (user's instance)
+    2. agent-lib/nextcloud/config.json (template)
+    """
+    config_path = None
 
-    if "nextcloud" not in config:
+    # Prefer user's agents directory
+    if AGENTS_CONFIG.exists():
+        config_path = AGENTS_CONFIG
+    elif AGENT_LIB_CONFIG.exists():
+        config_path = AGENT_LIB_CONFIG
+    else:
         raise NextcloudConfigError(
-            "No 'nextcloud' section in config.json. "
-            "Add a nextcloud configuration with instances."
+            "Nextcloud agent not found. "
+            "Copy agent-lib/nextcloud to data/agents/nextcloud and configure."
         )
 
-    return config["nextcloud"]
+    with open(config_path) as f:
+        config = json.load(f)
+
+    if "integration" not in config:
+        raise NextcloudConfigError(
+            "No 'integration' section in nextcloud agent config. "
+            "Add integration.instances configuration."
+        )
+
+    return config["integration"]
 
 
 def _get_password(instance_id: str) -> str:

@@ -15,6 +15,7 @@ function getLocalDateString(date = null) {
 
 let jobsData = [];           // All active jobs
 let completedJobsData = [];  // Recently completed jobs
+let allJobsData = [];        // All jobs including archived (for detail views)
 let jobAssetsCache = {};     // Cache of assets per job
 let editingJobField = null;  // Which field is being edited: {jobId, field}
 let currentAssetData = null; // Currently viewed asset
@@ -38,6 +39,9 @@ let focusSlideDirection = null;
 function renderFocusTab() {
     const container = document.getElementById('focus-content');
     if (!container) return;
+
+    // Remove loading skeleton on first render
+    document.getElementById('skeleton-loading')?.remove();
 
     // Defer render if animation is in progress
     if (isViewAnimating) {
@@ -246,7 +250,7 @@ function getViewDisplayName(view) {
     // Job views - get job name from cache
     if (view.startsWith('job-')) {
         const jobId = view.substring(4);
-        const job = jobsData.find(j => j.id === jobId) || completedJobsData.find(j => j.id === jobId);
+        const job = allJobsData.find(j => j.id === jobId);
         if (job) {
             // Truncate long names for breadcrumbs
             const name = job.name || 'Job';
@@ -396,7 +400,7 @@ function getQuickAddContext() {
     // Job detail view - create child job
     if (focusView.startsWith('job-')) {
         const jobId = focusView.substring(4);
-        const job = jobsData.find(j => j.id === jobId);
+        const job = allJobsData.find(j => j.id === jobId);
         if (job) {
             return { parent_id: jobId, label: job.name };
         }

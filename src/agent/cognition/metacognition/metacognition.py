@@ -2,10 +2,10 @@
 Metacognition - The agent's self-regulation system.
 
 Metacognition is inherent to all agents and provides:
-- Token awareness (PRE-call token tracking, per-agent budgets)
-- Action awareness (tool call tracking)
-- Progress awareness (stuck detection)
-- Strategic planning
+- Token awareness (budget tracking via llm.json)
+- Action tracking (tool call telemetry)
+- Progress awareness (stuck detection via ProgressTracker)
+- Strategic planning (always enabled)
 
 This is the Cognition subsystem of the agent ontology:
 Agent = Identity + Cognition + Memory + Behavior
@@ -13,10 +13,12 @@ Agent = Identity + Cognition + Memory + Behavior
 Where Cognition = Reasoning (prompts) + Metacognition (self-regulation)
 """
 
+import json
 from typing import Optional, TYPE_CHECKING
 
 from .regulation.config import MetacognitionConfig
 from .regulation.tokens import get_token_awareness, TokenAwareness, AgentState
+from .regulation.progress import get_progress_tracker, ProgressTracker
 from ..reasoning.planning import Planner
 from ...logger import get_logger
 
@@ -31,10 +33,10 @@ class Metacognition:
     Just like every agent has an identity and memory.
 
     Metacognition provides:
-    - Token awareness: Track tokens PRE-call, enforce per-agent budgets
-    - Action awareness: Monitor tool calls per iteration
-    - Progress awareness: Detect stuck patterns
-    - Strategic planning: Plan approach before execution
+    - Token awareness: Track tokens, enforce budgets (via llm.json)
+    - Action tracking: Monitor tool calls for telemetry
+    - Progress awareness: Detect stuck patterns (via ProgressTracker)
+    - Strategic planning: Plan approach before execution (always enabled)
     """
 
     def __init__(self, agent: "Agent"):
@@ -46,16 +48,19 @@ class Metacognition:
         self.agent = agent
         self.agent_id = agent.id
 
-        # Config (merges system defaults with agent overrides)
+        # Config
         self.config = MetacognitionConfig(agent.id)
 
         # Token awareness
         self._tokens: TokenAwareness = get_token_awareness()
 
-        # Per-agent tracking state (for action/progress awareness)
+        # Progress tracking (centralized in regulation/progress.py)
+        self._progress: ProgressTracker = get_progress_tracker()
+        self._current_session_id: Optional[str] = None
+
+        # Per-agent tracking state (for telemetry display only)
         self._tool_call_count: int = 0
         self._iteration_count: int = 0
-        self._tool_history: list = []
 
         # Strategic planning
         self.planner = Planner(agent)
@@ -105,45 +110,29 @@ class Metacognition:
         """Get pause information for this agent."""
         return self._tokens.get_pause_info(self.agent_id)
 
-    # ============== Action Awareness ==============
-
-    def get_max_tool_calls_per_iteration(self) -> int:
-        """Get the maximum tool calls allowed per iteration."""
-        progress_config = self.config.get_progress_config()
-        return progress_config.get("max_tool_calls_per_iteration", 50)
+    # ============== Action Tracking ==============
 
     def record_tool_call(self, tool_name: str, tool_input: dict):
-        """Record a tool call for action/progress tracking.
+        """Record a tool call for telemetry and stuck detection.
 
         Args:
             tool_name: Name of the tool called
             tool_input: Input parameters to the tool
+
+        Note: If a work session is active, this records to ProgressTracker
+        which may raise ProgressLimitExceeded if stuck pattern detected.
         """
         self._tool_call_count += 1
-        self._tool_history.append({
-            "tool": tool_name,
-            "input": tool_input
-        })
 
-        # Keep history bounded
-        if len(self._tool_history) > 200:
-            self._tool_history = self._tool_history[-100:]
+        # Record to progress tracker session if active
+        if self._current_session_id:
+            # Serialize input for comparison
+            input_str = json.dumps(tool_input, sort_keys=True) if tool_input else ""
+            self._progress.record_tool_call(self._current_session_id, tool_name, input_str)
 
     def get_tool_call_count(self) -> int:
         """Get the current tool call count for this iteration."""
         return self._tool_call_count
-
-    def check_tool_call_limit(self) -> bool:
-        """Check if tool call limit has been reached.
-
-        Returns:
-            True if limit reached, False otherwise
-        """
-        max_calls = self.get_max_tool_calls_per_iteration()
-        if self._tool_call_count >= max_calls:
-            self.log("tool_limit_reached", {"count": self._tool_call_count, "limit": max_calls})
-            return True
-        return False
 
     def reset_iteration(self):
         """Reset per-iteration tracking state."""
@@ -151,74 +140,71 @@ class Metacognition:
         self._iteration_count += 1
 
     def reset_work_cycle(self):
-        """Reset tracking state for a new work cycle."""
+        """Reset tracking state for a new work cycle.
+
+        Note: This is kept for backwards compatibility but session management
+        is now handled by start_work_session/end_work_session.
+        """
         self._tool_call_count = 0
         self._iteration_count = 0
-        self._tool_history = []
 
-    # ============== Progress Awareness ==============
+    # ============== Progress Awareness (delegated to ProgressTracker) ==============
 
-    def get_max_repeated_tool_calls(self) -> int:
-        """Get the maximum repeated tool calls before stuck detection."""
-        progress_config = self.config.get_progress_config()
-        return progress_config.get("max_repeated_tool_calls", 3)
+    def start_work_session(self, session_type: str = "work_cycle") -> str:
+        """Start a progress tracking session for this work cycle.
+
+        Args:
+            session_type: Type of session for logging
+
+        Returns:
+            Session ID for tracking
+        """
+        self._current_session_id = self._progress.start_session(
+            agent_id=self.agent_id,
+            session_type=session_type
+        )
+        return self._current_session_id
+
+    def end_work_session(self) -> Optional[dict]:
+        """End the current progress tracking session.
+
+        Returns:
+            Final session stats, or None if no session active
+        """
+        if not self._current_session_id:
+            return None
+
+        stats = self._progress.end_session(self._current_session_id)
+        self._current_session_id = None
+        return stats
 
     def check_stuck(self) -> Optional[str]:
         """Check if the agent appears stuck.
 
+        Delegates to ProgressTracker if a session is active.
+
         Returns:
             Reason string if stuck, None if making progress
         """
-        if len(self._tool_history) < 3:
+        if not self._current_session_id:
             return None
+        return self._progress.check_stuck(self._current_session_id)
 
-        max_repeated = self.get_max_repeated_tool_calls()
-
-        # Check for same tool called repeatedly with identical inputs
-        recent = self._tool_history[-max_repeated:]
-        if len(recent) >= max_repeated:
-            first = recent[0]
-            if all(t["tool"] == first["tool"] and t["input"] == first["input"] for t in recent):
-                return f"Same tool '{first['tool']}' called {max_repeated} times with identical inputs"
-
-        return None
+    def get_current_session_id(self) -> Optional[str]:
+        """Get the current progress tracking session ID."""
+        return self._current_session_id
 
     # ============== Planning ==============
 
     def should_plan(self, job: dict) -> bool:
-        """Check if planning is enabled for this job.
-
-        Per docs/3_system.md: "when an agent begins work on a job, it first
-        creates a brief plan". Planning is enabled by default for all jobs.
-
-        Args:
-            job: The job dict to check
-
-        Returns:
-            True if planning should be done for this job
-        """
-        planning_config = self.config.get_planning_config()
-
-        # Planning is enabled by default per spec
-        if not planning_config.get("enabled", True):
-            return False
-
-        # Check if job matches any exclusion patterns
-        excluded_for = planning_config.get("excluded_for", [])
-        job_tags = job.get("tags", [])
-
-        for exclusion in excluded_for:
-            if exclusion in job_tags:
-                return False
-
+        """Planning is always enabled for efficiency."""
         return True
 
     # ============== Efficiency ==============
 
     def should_defer_consolidation(self) -> bool:
-        """Check if consolidation should be deferred until end of work cycle."""
-        efficiency_config = self.config.get_efficiency_config()
-        return efficiency_config.get("defer_consolidation_in_work_cycles", True)
+        """Consolidation append is deferred until end of work cycle."""
+        return True
 
     # ============== Combined Status ==============
 
@@ -228,20 +214,34 @@ class Metacognition:
         Returns:
             Dict with all metacognition state
         """
+        # Get progress info from session if active
+        progress_info = {}
+        if self._current_session_id:
+            session_progress = self._progress.get_progress(self._current_session_id)
+            if session_progress:
+                progress_info = {
+                    "session_id": session_progress["session_id"],
+                    "tool_call_count": session_progress["tool_call_count"],
+                    "is_stuck": session_progress["is_stuck"],
+                    "stuck_reason": session_progress["stuck_reason"]
+                }
+        else:
+            progress_info = {
+                "session_id": None,
+                "tool_call_count": self._tool_call_count,
+                "is_stuck": False,
+                "stuck_reason": None
+            }
+
         return {
             "agent_id": self.agent_id,
             "state": self.get_agent_state().value,
             "token_usage": self.get_token_usage(),
             "action": {
                 "tool_call_count": self._tool_call_count,
-                "max_tool_calls": self.get_max_tool_calls_per_iteration(),
                 "iteration_count": self._iteration_count
             },
-            "progress": {
-                "tool_history_length": len(self._tool_history),
-                "is_stuck": self.check_stuck() is not None,
-                "stuck_reason": self.check_stuck()
-            },
+            "progress": progress_info,
             "paused": self.is_paused(),
             "pause_info": self.get_pause_info()
         }
@@ -256,8 +256,6 @@ class Metacognition:
         return {
             "iteration": self._iteration_count,
             "tool_calls_this_cycle": self._tool_call_count,
-            "max_tool_calls": self.get_max_tool_calls_per_iteration(),
-            "approaching_limit": self._tool_call_count > (self.get_max_tool_calls_per_iteration() * 0.8),
             "is_stuck": stuck_reason is not None,
             "stuck_warning": stuck_reason
         }

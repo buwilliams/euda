@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from ...tools.data.jobs import (
     list_jobs, get_job, create_job, update_job,
     complete_job, restore_job, archive_job, add_job_log, get_child_jobs, delete_job,
-    assign_agent, unassign_agent, list_assignees, handoff_job, unblock_job
+    assign_agent, unassign_agent, get_assignee, handoff_job, unblock_job
 )
 from ...tools.data.assets import list_assets, read_asset, write_asset, delete_asset
 
@@ -22,7 +22,7 @@ class CreateJobRequest(BaseModel):
     description: Optional[str] = None
     parent_id: Optional[str] = None
     tags: Optional[List[str]] = None
-    assignees: Optional[List[str]] = None
+    assignee: Optional[str] = None
     due_date: Optional[str] = None
     someday: bool = False
 
@@ -32,7 +32,7 @@ class UpdateJobRequest(BaseModel):
     description: Optional[str] = None
     status: Optional[str] = None
     tags: Optional[List[str]] = None
-    assignees: Optional[List[str]] = None
+    assignee: Optional[str] = None
     due_date: Optional[str] = None
     someday: Optional[bool] = None
 
@@ -77,7 +77,7 @@ def api_create_job(request: CreateJobRequest):
         description=request.description,
         parent_id=request.parent_id,
         tags=request.tags,
-        assignees=request.assignees,
+        assignee=request.assignee,
         due_date=request.due_date,
         someday=request.someday
     )
@@ -92,7 +92,7 @@ def api_update_job(job_id: str, request: UpdateJobRequest):
         description=request.description,
         status=request.status,
         tags=request.tags,
-        assignees=request.assignees,
+        assignee=request.assignee,
         due_date=request.due_date,
         someday=request.someday
     )
@@ -180,15 +180,13 @@ def api_job_feedback(job_id: str, request: JobFeedbackRequest):
     if job.get("pending_from") and job["pending_from"] != "user":
         target_agent = job["pending_from"]
 
-    # Otherwise check current assignees for an agent
-    if not target_agent and job.get("assignees"):
-        agents = [a for a in job["assignees"] if a != "user"]
-        if agents:
-            target_agent = agents[0]
+    # Otherwise check current assignee
+    if not target_agent and job.get("assignee") and job["assignee"] != "user":
+        target_agent = job["assignee"]
 
-    # Fallback to chat for routing
+    # Fallback to user agent for routing
     if not target_agent:
-        target_agent = "chat"
+        target_agent = "user"
 
     # Append feedback to job description
     current_desc = job.get("description") or ""
@@ -234,10 +232,10 @@ def api_get_job_api_calls(job_id: str, days: int = 7):
 
 # Assignment endpoints
 
-@router.get("/{job_id}/assignees")
-def api_list_assignees(job_id: str):
-    """List agents assigned to a job."""
-    result = list_assignees(job_id)
+@router.get("/{job_id}/assignee")
+def api_get_assignee(job_id: str):
+    """Get the agent assigned to a job."""
+    result = get_assignee(job_id)
     if isinstance(result, dict) and "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
