@@ -85,10 +85,10 @@ class TestAgentManagement:
     """Tests for agent management (pause/resume)."""
 
     def test_pause_button_visible(self, authenticated_page: Page):
-        """Pause button should be visible in agent manage view."""
+        """Pause button should be visible in agent detail view."""
         page = authenticated_page
 
-        # Navigate to an agent and then to manage view
+        # Navigate to an agent detail view
         collections_section = page.get_by_text("Collections")
         if collections_section.is_visible():
             collections_section.click()
@@ -108,14 +108,9 @@ class TestAgentManagement:
                     # Wait for agent detail
                     expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
 
-                    # Click Manage to go to manage view
-                    manage_link = page.get_by_text("Manage")
-                    if manage_link.is_visible():
-                        manage_link.click()
-
-                        # Pause button should be visible (or resume if already paused)
-                        pause_or_resume = page.locator('[data-testid="pause-btn"], [data-testid="resume-btn"]')
-                        expect(pause_or_resume.first).to_be_visible(timeout=5000)
+                    # Pause button should be visible in detail view (or resume if already paused)
+                    pause_or_resume = page.locator('[data-testid="pause-btn"], [data-testid="resume-btn"]')
+                    expect(pause_or_resume.first).to_be_visible(timeout=5000)
 
 
 class TestAgentIdentity:
@@ -145,11 +140,7 @@ class TestAgentIdentity:
                     # Wait for agent detail
                     expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
 
-                    # Click Manage
-                    page.get_by_text("Manage").click()
-
-                    # Wait for manage view, then click Identity
-                    page.wait_for_timeout(500)  # Brief wait for animation
+                    # Click Identity section (now directly in agent detail view)
                     identity_link = page.get_by_text("Identity")
                     if identity_link.is_visible():
                         identity_link.click()
@@ -185,11 +176,7 @@ class TestAgentMemory:
                     # Wait for agent detail
                     expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
 
-                    # Click Manage
-                    page.get_by_text("Manage").click()
-
-                    # Wait for manage view, then click Short-term Memory
-                    page.wait_for_timeout(500)  # Brief wait for animation
+                    # Click Short-term Memory section (now directly in agent detail view)
                     memory_link = page.get_by_text("Short-term Memory")
                     if memory_link.is_visible():
                         memory_link.click()

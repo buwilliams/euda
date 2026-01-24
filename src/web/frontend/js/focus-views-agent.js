@@ -101,7 +101,7 @@ function renderAgentDetailView(job) {
             `;
         } else if (agentState === 'paused') {
             return `
-                <button class="task-detail-action" onclick="enableAgent('${agentId}')">${icon('play')} Resume</button>
+                <button class="task-detail-action" data-testid="resume-btn" onclick="enableAgent('${agentId}')">${icon('play')} Resume</button>
                 ${resetButton}
             `;
         } else if (agentState === 'disabled') {
