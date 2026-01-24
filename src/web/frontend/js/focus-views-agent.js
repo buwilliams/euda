@@ -166,11 +166,11 @@ function renderAgentDetailView(job) {
     // Render pause reason notice if paused
     const renderPauseNotice = () => {
         if (!pauseStatus.isPaused) return '';
-        const reason = pauseStatus.reason || 'Agent paused';
+        // Show simple message - the detailed reason may contain stale percentage data
         const timeAgo = pauseStatus.timestamp ? formatPauseTimestamp(pauseStatus.timestamp) : '';
         return `
             <div class="pause-notice">
-                ${icon('exclamation-triangle')} ${escapeHtml(reason)}${timeAgo ? ` (${timeAgo})` : ''}
+                ${icon('exclamation-triangle')} Agent paused due to token budget${timeAgo ? ` (${timeAgo})` : ''}
             </div>
         `;
     };
