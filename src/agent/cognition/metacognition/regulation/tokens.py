@@ -861,8 +861,8 @@ class TokenAwareness:
     def reset_agent_usage(self, agent_id: str):
         """Reset token usage for an agent to zero.
 
-        This clears the current period's usage, allowing the agent to
-        continue working if it was paused due to budget limits.
+        This clears the current period's usage and auto-resumes the agent
+        if it was paused due to budget limits.
 
         Args:
             agent_id: ID of the agent to reset
@@ -877,6 +877,12 @@ class TokenAwareness:
                 "input": 0,
                 "output": 0
             }
+
+            # Auto-resume if paused due to threshold
+            if agent_id in self._paused_agents:
+                reason = self._pause_reasons.get(agent_id, "")
+                if "threshold exceeded" in reason:
+                    self._resume_agent(agent_id, "usage reset")
 
             # Save to disk
             self._save_usage_data()
