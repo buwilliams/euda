@@ -91,19 +91,23 @@ function renderAgentDetailView(job) {
                              agentState === 'disabled' ? 'status-disabled' : '';
 
     // Render status controls based on current state
+    const resetButton = `<button class="task-detail-action" onclick="resetAgentTokenUsage('${agentId}')">${icon('arrow-path')} Reset</button>`;
     const renderStatusControls = () => {
         if (agentState === 'enabled') {
             return `
                 <button class="task-detail-action" data-testid="pause-btn" onclick="pauseAgent('${agentId}')">${icon('pause')} Pause</button>
                 <button class="task-detail-action" onclick="disableAgent('${agentId}')">${icon('x-mark')} Disable</button>
+                ${resetButton}
             `;
         } else if (agentState === 'paused') {
             return `
                 <button class="task-detail-action" onclick="enableAgent('${agentId}')">${icon('play')} Resume</button>
+                ${resetButton}
             `;
         } else if (agentState === 'disabled') {
             return `
                 <button class="task-detail-action" onclick="enableAgent('${agentId}')">${icon('check')} Enable</button>
+                ${resetButton}
             `;
         }
         return '';
@@ -196,7 +200,6 @@ function renderAgentDetailView(job) {
                 ${renderStatusControls()}
                 ${actionButton('append', 'arrow-path', 'Append', `triggerReflection('${agentId}', 'append')`)}
                 ${actionButton('consolidate', 'archive-box', 'Consolidate', `triggerReflection('${agentId}', 'consolidate')`)}
-                <button class="task-detail-action" onclick="resetAgentTokenUsage('${agentId}')">${icon('arrow-path')} Reset</button>
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
             </div>
 
