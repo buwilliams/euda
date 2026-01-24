@@ -635,7 +635,6 @@ class Agent:
                     self._log("planning_injected", {"job_id": current_job.get("id"), "plan_length": len(plan)})
 
             # Autonomous loop - keep working until agent calls done_working
-            max_iterations = self._get_system_config().get("agents", {}).get("max_work_iterations", 20)
             iteration = 0
 
             # Check if deferred reflection is enabled (efficiency optimization)
@@ -643,7 +642,7 @@ class Agent:
             exchanges = []  # Collect for batched reflection if deferred
 
             try:
-                while not self._work_done and iteration < max_iterations:
+                while not self._work_done:
                     iteration += 1
                     self._log("work_iteration", {"iteration": iteration})
 
@@ -672,27 +671,18 @@ class Agent:
                     # Continue prompt for subsequent iterations with progress context
                     progress_ctx = self.metacognition.get_progress_context()
 
-                    # Add max_iterations to context
-                    progress_ctx["max_iterations"] = max_iterations
-
-                    # Format stuck warning if approaching limits
+                    # Format stuck warning if detected
                     stuck_warning = ""
                     if progress_ctx.get("stuck_warning"):
                         stuck_warning = f"**Warning:** {progress_ctx['stuck_warning']}"
-                    elif progress_ctx.get("approaching_limit"):
-                        stuck_warning = f"**Note:** Approaching tool call limit ({progress_ctx['tool_calls_this_cycle']}/{progress_ctx['max_tool_calls']})"
 
                     prompt = load_template("agent/continue_with_context").format(
                         iteration=progress_ctx.get("iteration", iteration),
-                        max_iterations=max_iterations,
                         tool_calls_this_cycle=progress_ctx.get("tool_calls_this_cycle", 0),
                         stuck_warning=stuck_warning
                     )
 
-                if iteration >= max_iterations:
-                    self._log("work_cycle_end", {"reason": "max_iterations", "iterations": iteration})
-                else:
-                    self._log("work_cycle_end", {"reason": "done_working", "iterations": iteration})
+                self._log("work_cycle_end", {"reason": "done_working", "iterations": iteration})
             finally:
                 # Batch reflection at end of work cycle (if deferred)
                 if defer_consolidation and self.consolidation and exchanges:

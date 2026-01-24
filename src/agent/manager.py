@@ -429,7 +429,7 @@ class AgentManager:
         """
         from ..tools.data.jobs import list_jobs
 
-        poll_interval = self._get_system_config().get("agents", {}).get("poll_interval", 0.1)
+        poll_interval = 0.1  # seconds between job polls
         token_awareness = get_token_awareness()
 
         while self.running and not stop_event.is_set():

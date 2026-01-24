@@ -1,6 +1,6 @@
 ## Your Progress
 
-Iteration: {iteration} of {max_iterations}
+Iteration: {iteration}
 Tool calls this cycle: {tool_calls_this_cycle}
 
 {stuck_warning}

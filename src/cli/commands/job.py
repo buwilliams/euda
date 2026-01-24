@@ -161,10 +161,9 @@ def _run_job(agent_id: str, job: dict, no_reflect: bool, max_iterations: int, js
         # Format prompt
         prompt = agent._format_job_prompt(job)
 
-        # Get max iterations from config or override
+        # Use override or default (for dev CLI only - normal work cycles have no limit)
         if max_iterations is None:
-            config = agent._get_system_config()
-            max_iterations = config.get("agents", {}).get("max_work_iterations", 20)
+            max_iterations = 100  # High default for dev testing
 
         # Run work cycle
         from ...prompts import load_template
