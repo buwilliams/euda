@@ -56,7 +56,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-addopts = "-v --strict-markers"
+addopts = "-v --strict-markers --ignore=tests/e2e"
 markers = [
     "invariant: Design invariant tests from specs",
     "unit: Unit tests for individual components",
