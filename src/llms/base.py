@@ -22,6 +22,7 @@ from ..agent.logger import get_logger
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
+LLM_CONFIG_PATH = DATA_DIR / "system" / "llm.json"
 
 # Prompt logger instance (lazy loaded)
 _prompt_logger = None
@@ -68,7 +69,7 @@ def _log_prompt(agent_id: str, model: str, system: str, messages: list, tools: l
     _get_prompt_logger().write_raw(entry)
 
 # Valid provider IDs (must have corresponding provider class)
-VALID_PROVIDERS = {"anthropic", "openai", "grok"}
+VALID_PROVIDERS = {"anthropic", "openai", "xai"}
 
 
 # ============== Unified Response Classes ==============
@@ -143,29 +144,27 @@ class ConfigError(Exception):
 
 
 def _load_config() -> dict:
-    """Load and validate system configuration."""
-    if not CONFIG_PATH.exists():
-        raise ConfigError(f"Config file not found: {CONFIG_PATH}")
+    """Load and validate LLM configuration from llm.json."""
+    if not LLM_CONFIG_PATH.exists():
+        raise ConfigError(f"LLM config file not found: {LLM_CONFIG_PATH}")
 
     try:
-        with open(CONFIG_PATH) as f:
+        with open(LLM_CONFIG_PATH) as f:
             config = json.load(f)
     except json.JSONDecodeError as e:
-        raise ConfigError(f"Invalid JSON in config file: {e}")
+        raise ConfigError(f"Invalid JSON in LLM config file: {e}")
 
-    # Validate required structure
-    if "llm" not in config:
-        raise ConfigError("Config missing 'llm' section")
-    if "provider" not in config["llm"]:
-        raise ConfigError("Config missing 'llm.provider'")
-    if "providers" not in config["llm"]:
-        raise ConfigError("Config missing 'llm.providers'")
+    # Validate required structure (now at root level, not nested under 'llm')
+    if "provider" not in config:
+        raise ConfigError("LLM config missing 'provider'")
+    if "providers" not in config:
+        raise ConfigError("LLM config missing 'providers'")
 
-    provider = config["llm"]["provider"]
+    provider = config["provider"]
     if provider not in VALID_PROVIDERS:
         raise ConfigError(f"Unknown provider '{provider}'. Valid: {VALID_PROVIDERS}")
-    if provider not in config["llm"]["providers"]:
-        raise ConfigError(f"Provider '{provider}' not configured in llm.providers")
+    if provider not in config["providers"]:
+        raise ConfigError(f"Provider '{provider}' not configured in providers")
 
     return config
 
@@ -181,20 +180,20 @@ def _get_cached_config() -> dict:
 def get_provider() -> str:
     """Get the configured LLM provider."""
     config = _get_cached_config()
-    return config["llm"]["provider"]
+    return config["provider"]
 
 
 def get_model() -> str:
-    """Get the configured model for the current provider."""
+    """Get the configured model."""
     config = _get_cached_config()
-    provider = config["llm"]["provider"]
-    return config["llm"]["providers"][provider]["model"]
+    return config["model"]
 
 
 def get_providers_config() -> Dict[str, dict]:
     """Get full provider configuration for API/UI."""
     config = _get_cached_config()
-    providers = config["llm"]["providers"]
+    providers = config["providers"]
+    current_model = config["model"]
 
     result = {}
     for provider_id, provider_info in providers.items():
@@ -202,9 +201,43 @@ def get_providers_config() -> Dict[str, dict]:
             "id": provider_id,
             "display_name": provider_info["display_name"],
             "description": provider_info["description"],
-            "model": provider_info["model"]
+            "models": provider_info.get("models", []),
+            "model": current_model  # Current active model
         }
     return result
+
+
+def get_model_pricing(provider: str = None, model: str = None) -> dict:
+    """Get pricing for a specific model.
+
+    Args:
+        provider: Provider ID. If None, uses current provider.
+        model: Model name. If None, uses current model.
+
+    Returns:
+        Pricing dict with 'input', 'output', and optionally 'cached_input'.
+    """
+    config = _get_cached_config()
+
+    if provider is None:
+        provider = config["provider"]
+    if model is None:
+        model = config["model"]
+
+    providers = config.get("providers", {})
+    provider_config = providers.get(provider, {})
+    models = provider_config.get("models", [])
+
+    # Find the model in the provider's models list
+    for m in models:
+        if m.get("model") == model:
+            return m.get("pricing", {"input": 3.0, "output": 15.0})
+
+    # Fallback: return first model's pricing or default
+    if models:
+        return models[0].get("pricing", {"input": 3.0, "output": 15.0})
+
+    return {"input": 3.0, "output": 15.0}
 
 
 # ============== Provider Factory ==============
@@ -263,7 +296,7 @@ class UnifiedClient:
         elif provider == "openai":
             from .chatgpt import ChatGPTProvider
             return ChatGPTProvider()
-        elif provider == "grok":
+        elif provider == "xai":
             try:
                 from .grok import GrokProvider
                 return GrokProvider()

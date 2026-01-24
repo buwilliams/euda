@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client
-from ...llms.base import _load_config, CONFIG_PATH, VALID_PROVIDERS
+from ...llms.base import _load_config, LLM_CONFIG_PATH, VALID_PROVIDERS
 from ...tools.data.jobs import list_jobs
 from ...tools.data.identity import get_identity
 from ...tools.system.fresh_start import (
@@ -172,10 +172,21 @@ def get_costs_by_agent(days: int = 30):
 def get_settings():
     """Get current LLM settings with all providers and speech capabilities."""
     from ...tools.speech import supports_stt, supports_tts
+    import json
 
-    config = _load_config()
+    # Load LLM config
+    llm_config = _load_config()
     current_provider = get_provider()
-    budget_config = config.get("llm", {}).get("budget", {})
+    budget_config = llm_config.get("budget", {})
+
+    # Load system config for schedules
+    system_config_path = DATA_DIR / "system" / "config.json"
+    try:
+        with open(system_config_path) as f:
+            system_config = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        system_config = {}
+
     return {
         "llm": {
             "provider": current_provider,
@@ -190,14 +201,14 @@ def get_settings():
             "stt_available": supports_stt(current_provider),
             "tts_available": supports_tts(current_provider),
         },
-        "schedules": config.get("schedules", {})
+        "schedules": system_config.get("schedules", {})
     }
 
 
 @router.put("/settings/llm")
 def update_llm_settings(data: dict):
-    """Update LLM settings (provider, models, budget)."""
-    from ...agent.cognition.metacognition import get_resource_tracker
+    """Update LLM settings (provider, model, budget)."""
+    from ...agent.cognition.metacognition import get_token_awareness
 
     config = _load_config()
 
@@ -205,25 +216,23 @@ def update_llm_settings(data: dict):
     if "default_provider" in data:
         provider = data["default_provider"]
         if provider in VALID_PROVIDERS:
-            config["llm"]["provider"] = provider
+            config["provider"] = provider
 
-    # Update models if specified
-    if "providers" in data:
-        for provider_id, settings in data["providers"].items():
-            if provider_id in VALID_PROVIDERS and "model" in settings:
-                config["llm"]["providers"][provider_id]["model"] = settings["model"]
+    # Update model if specified (new structure: single model at root level)
+    if "model" in data:
+        config["model"] = data["model"]
 
     # Update budget if specified (nested structure: budget.limit, budget.period)
     if "budget" in data:
-        if "budget" not in config["llm"]:
-            config["llm"]["budget"] = {}
+        if "budget" not in config:
+            config["budget"] = {}
         if "limit" in data["budget"]:
-            config["llm"]["budget"]["limit"] = data["budget"]["limit"]
+            config["budget"]["limit"] = data["budget"]["limit"]
         if "period" in data["budget"]:
-            config["llm"]["budget"]["period"] = data["budget"]["period"]
+            config["budget"]["period"] = data["budget"]["period"]
 
-    # Save config
-    with open(CONFIG_PATH, "w") as f:
+    # Save config to llm.json
+    with open(LLM_CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
 
     # Invalidate cached clients so next request uses new provider
@@ -233,16 +242,26 @@ def update_llm_settings(data: dict):
     from ...tools.speech import invalidate_speech_client
     invalidate_speech_client()
 
-    # Invalidate resource tracker cache so budget changes take effect
-    get_resource_tracker().invalidate_config()
+    # Invalidate token awareness cache so budget changes take effect
+    get_token_awareness().invalidate_config()
 
-    return {"success": True, "llm": config["llm"]}
+    return {"success": True, "llm": {
+        "provider": config["provider"],
+        "model": config["model"],
+        "budget": config.get("budget", {})
+    }}
 
 
 @router.put("/settings/schedules")
 def update_schedules(data: dict):
     """Update schedule times."""
-    config = _load_config()
+    # Load system config (not LLM config)
+    system_config_path = DATA_DIR / "system" / "config.json"
+    try:
+        with open(system_config_path) as f:
+            config = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        config = {}
 
     # Ensure schedules exists
     if "schedules" not in config:
@@ -254,7 +273,7 @@ def update_schedules(data: dict):
             config["schedules"][name] = time
 
     # Save config
-    with open(CONFIG_PATH, "w") as f:
+    with open(system_config_path, "w") as f:
         json.dump(config, f, indent=2)
 
     return {"success": True, "schedules": config["schedules"]}

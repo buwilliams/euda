@@ -1,0 +1,51 @@
+{
+  "provider": "xai",
+  "model": "grok-4-1-fast-reasoning",
+  "budget": {
+    "limit": 10.0,
+    "period": "monthly"
+  },
+  "rate_limiting": {
+    "enabled": true,
+    "rolling_window": { "max_calls": 30, "window_seconds": 60 },
+    "throttle": { "enabled": false, "calls_per_minute": 10, "queue_max_size": 100 },
+    "runaway_detection": { "enabled": true, "baseline_window_minutes": 60, "spike_multiplier": 5.0, "min_baseline_calls": 5, "min_spike_rate": 5 }
+  },
+  "providers": {
+    "xai": {
+      "display_name": "Grok",
+      "description": "xAI's Grok models",
+      "models": [
+        { "model": "grok-4-1-fast-reasoning", "display_name": "Grok 4.1 Fast Reasoning", "context_window": 2000000, "pricing": { "input": 0.20, "output": 0.50 } },
+        { "model": "grok-4-1-fast-non-reasoning", "display_name": "Grok 4.1 Fast", "context_window": 2000000, "pricing": { "input": 0.20, "output": 0.50 } },
+        { "model": "grok-code-fast-1", "display_name": "Grok Code Fast", "context_window": 256000, "pricing": { "input": 0.20, "output": 1.50 } },
+        { "model": "grok-4-fast-reasoning", "display_name": "Grok 4 Fast Reasoning", "context_window": 2000000, "pricing": { "input": 0.20, "output": 0.50 } },
+        { "model": "grok-4-0709", "display_name": "Grok 4", "context_window": 256000, "pricing": { "input": 3.00, "output": 15.00 } },
+        { "model": "grok-3", "display_name": "Grok 3", "context_window": 131072, "pricing": { "input": 3.00, "output": 15.00 } },
+        { "model": "grok-3-mini", "display_name": "Grok 3 Mini", "context_window": 131072, "pricing": { "input": 0.30, "output": 0.50 } }
+      ]
+    },
+    "openai": {
+      "display_name": "ChatGPT",
+      "description": "OpenAI's GPT models",
+      "models": [
+        { "model": "gpt-4.1", "display_name": "GPT-4.1", "pricing": { "input": 3.00, "cached_input": 0.75, "output": 12.00 } },
+        { "model": "gpt-4.1-mini", "display_name": "GPT-4.1 Mini", "pricing": { "input": 0.80, "cached_input": 0.20, "output": 3.20 } },
+        { "model": "gpt-4.1-nano", "display_name": "GPT-4.1 Nano", "pricing": { "input": 0.20, "cached_input": 0.05, "output": 0.80 } },
+        { "model": "o4-mini", "display_name": "o4-mini", "pricing": { "input": 4.00, "cached_input": 1.00, "output": 16.00 } }
+      ]
+    },
+    "anthropic": {
+      "display_name": "Claude",
+      "description": "Anthropic's Claude models",
+      "models": [
+        { "model": "claude-opus-4-5", "display_name": "Claude Opus 4.5", "pricing": { "input": 5.00, "cached_input": 0.50, "output": 25.00 } },
+        { "model": "claude-opus-4-1", "display_name": "Claude Opus 4.1", "pricing": { "input": 15.00, "cached_input": 1.50, "output": 75.00 } },
+        { "model": "claude-sonnet-4-5", "display_name": "Claude Sonnet 4.5", "pricing": { "input": 3.00, "cached_input": 0.30, "output": 15.00 } },
+        { "model": "claude-sonnet-4", "display_name": "Claude Sonnet 4", "pricing": { "input": 3.00, "cached_input": 0.30, "output": 15.00 } },
+        { "model": "claude-haiku-4-5", "display_name": "Claude Haiku 4.5", "pricing": { "input": 1.00, "cached_input": 0.10, "output": 5.00 } },
+        { "model": "claude-haiku-3-5", "display_name": "Claude Haiku 3.5", "pricing": { "input": 0.80, "cached_input": 0.08, "output": 4.00 } }
+      ]
+    }
+  }
+}

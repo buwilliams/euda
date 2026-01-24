@@ -30,6 +30,7 @@ from .incidents import (
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent.parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
+LLM_CONFIG_PATH = DATA_DIR / "system" / "llm.json"
 AGENTS_DIR = DATA_DIR / "agents"
 USAGE_DIR = DATA_DIR / "system" / "token_usage"
 
@@ -91,9 +92,13 @@ class TokenAwareness:
         self._pause_reasons: Dict[str, str] = {}
         self._pause_timestamps: Dict[str, str] = {}
 
-        # Cached config
+        # Cached config (system config)
         self._config_cache: dict = None
         self._config_mtime: float = 0
+
+        # Cached LLM config
+        self._llm_config_cache: dict = None
+        self._llm_config_mtime: float = 0
 
         # Load persisted usage data
         self._load_usage_data()
@@ -112,6 +117,20 @@ class TokenAwareness:
         except (FileNotFoundError, json.JSONDecodeError, OSError):
             return {}
 
+    def _load_llm_config(self) -> dict:
+        """Load LLM config with caching."""
+        try:
+            current_mtime = LLM_CONFIG_PATH.stat().st_mtime
+            if self._llm_config_cache is not None and current_mtime == self._llm_config_mtime:
+                return self._llm_config_cache
+
+            with open(LLM_CONFIG_PATH) as f:
+                self._llm_config_cache = json.load(f)
+            self._llm_config_mtime = current_mtime
+            return self._llm_config_cache
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            return {}
+
     def _get_token_awareness_config(self) -> dict:
         """Get token awareness configuration."""
         config = self._load_config()
@@ -120,21 +139,17 @@ class TokenAwareness:
     def _get_global_budget_tokens(self) -> int:
         """Get global monthly token budget from config.
 
-        Converts the dollar budget to tokens using average pricing.
+        Converts the dollar budget to tokens using current model pricing.
         Default: 10M tokens if no budget configured.
         """
-        config = self._load_config()
-        llm_config = config.get("llm", {})
+        llm_config = self._load_llm_config()
         budget = llm_config.get("budget", {})
         budget_dollars = budget.get("limit", 10.0)
 
-        # Get average pricing from default or first provider
-        pricing = llm_config.get("default_pricing", {})
-        if not pricing:
-            providers = llm_config.get("providers", {})
-            if providers:
-                first_provider = next(iter(providers.values()), {})
-                pricing = first_provider.get("pricing", {})
+        # Get pricing for the current model
+        provider = llm_config.get("provider")
+        model = llm_config.get("model")
+        pricing = self._get_model_pricing(provider, model)
 
         # Average input/output rate (per million tokens)
         input_rate = pricing.get("input", 3.0)
@@ -150,6 +165,32 @@ class TokenAwareness:
 
         # Default fallback
         return 10_000_000  # 10M tokens
+
+    def _get_model_pricing(self, provider: str, model: str) -> dict:
+        """Get pricing for a specific model from LLM config.
+
+        Args:
+            provider: Provider ID (e.g., 'xai', 'openai', 'anthropic')
+            model: Model name
+
+        Returns:
+            Pricing dict with 'input', 'output', and optionally 'cached_input'.
+        """
+        llm_config = self._load_llm_config()
+        providers = llm_config.get("providers", {})
+        provider_config = providers.get(provider, {})
+        models = provider_config.get("models", [])
+
+        # Find the model in the provider's models list
+        for m in models:
+            if m.get("model") == model:
+                return m.get("pricing", {"input": 3.0, "output": 15.0})
+
+        # Fallback: return first model's pricing or default
+        if models:
+            return models[0].get("pricing", {"input": 3.0, "output": 15.0})
+
+        return {"input": 3.0, "output": 15.0}
 
     def _get_agent_budget_config(self, agent_id: str) -> TokenBudget:
         """Get token budget configuration for an agent."""
@@ -396,23 +437,10 @@ class TokenAwareness:
             json.dump(data, f, indent=2)
 
     def _get_pricing(self, provider: str) -> dict:
-        """Get pricing for a provider from config."""
-        config = self._load_config()
-        llm_config = config.get("llm", {})
-        providers = llm_config.get("providers", {})
-
-        # Get pricing from provider config
-        if provider in providers:
-            pricing = providers[provider].get("pricing")
-            if pricing:
-                return pricing
-
-        # Fall back to default pricing
-        return llm_config.get("default_pricing", {
-            "input": 3.00,
-            "cached_input": 0.30,
-            "output": 15.00,
-        })
+        """Get pricing for the current model from LLM config."""
+        llm_config = self._load_llm_config()
+        model = llm_config.get("model")
+        return self._get_model_pricing(provider, model)
 
     def _calculate_cost(self, provider: str, input_tokens: int, output_tokens: int,
                         cached_input_tokens: int = 0) -> float:
@@ -1046,6 +1074,8 @@ class TokenAwareness:
         with self._lock:
             self._config_cache = None
             self._config_mtime = 0
+            self._llm_config_cache = None
+            self._llm_config_mtime = 0
 
 
 # Singleton instance
