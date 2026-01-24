@@ -13,7 +13,6 @@ import uuid
 from .....llms import get_client
 from .....web.events import emit_ui_event
 from .....tools.data.memory import _load_entries, _save_entries, VALID_TYPES
-from ..regulation.config import get_global_config
 
 from .prompts import get_append_system_prompt, build_append_prompt, build_append_batch_prompt
 
@@ -72,9 +71,7 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
 
     # Call LLM
     client = get_client()
-    reflection_config = get_global_config().get_reflection_config()
     response = client.create(
-        max_tokens=reflection_config.get("append_max_tokens", 500),
         system=get_append_system_prompt(),
         messages=[{"role": "user", "content": prompt}],
         agent_id=f"{agent_id}/reflection"
@@ -351,9 +348,7 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
 
     # Call LLM
     client = get_client()
-    reflection_config = get_global_config().get_reflection_config()
     response = client.create(
-        max_tokens=reflection_config.get("append_batch_max_tokens", 1000),
         system=get_append_system_prompt(),
         messages=[{"role": "user", "content": prompt}],
         agent_id=f"{agent_id}/reflection"

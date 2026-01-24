@@ -337,9 +337,9 @@ class UnifiedClient:
 
     def create(
         self,
-        max_tokens: int,
         system: str,
         messages: list,
+        max_tokens: int = 16384,
         tools: Optional[list] = None,
         agent_id: str = "unknown",
         job_id: Optional[str] = None,
@@ -348,7 +348,6 @@ class UnifiedClient:
         """Create a message with automatic cost tracking and rate limiting.
 
         Args:
-            max_tokens: Maximum tokens in response
             system: System prompt
             messages: Conversation messages
             tools: Optional tool definitions

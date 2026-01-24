@@ -15,7 +15,7 @@ CONFIG_PATH = DATA_DIR / "system" / "config.json"
 AGENTS_DIR = DATA_DIR / "agents"
 
 # Default metacognition settings (fallback if config is missing)
-# Note: velocity (rate limiting) and resources (budget) are now in llm.* config
+# Note: LLM budget settings are now in llm.json
 DEFAULT_CONFIG = {
     "progress": {
         "max_tool_calls_per_iteration": 50,
@@ -28,12 +28,6 @@ DEFAULT_CONFIG = {
     },
     "efficiency": {
         "defer_consolidation_in_work_cycles": True
-    },
-    "consolidation": {
-        "append_max_tokens": 500,
-        "append_batch_max_tokens": 1000,
-        "consolidate_max_tokens": 2000,
-        "upload_analysis_max_tokens": 1000
     }
 }
 
@@ -128,11 +122,6 @@ class MetacognitionConfig:
         """Get efficiency optimization configuration."""
         full = self.get_full_config()
         return full.get("efficiency", DEFAULT_CONFIG["efficiency"])
-
-    def get_consolidation_config(self) -> dict:
-        """Get consolidation (memory processing) configuration."""
-        full = self.get_full_config()
-        return full.get("consolidation", DEFAULT_CONFIG["consolidation"])
 
     def invalidate(self):
         """Invalidate cached config. Call when settings change."""
