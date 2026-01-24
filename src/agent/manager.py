@@ -58,19 +58,6 @@ class AgentManager:
         self._agent_stop_events: Dict[str, threading.Event] = {}  # Signal agents to stop
         self._config_watch_thread: Optional[threading.Thread] = None
 
-    def get_budget_agent_count(self) -> int:
-        """Get the number of agents sharing the budget.
-
-        Delegates to token awareness which counts all agents on disk
-        (enabled + paused, not disabled). This ensures consistent counting
-        between threshold checking and display.
-
-        Returns:
-            Count of agents in ENABLED or PAUSED state
-        """
-        token_awareness = get_token_awareness()
-        return token_awareness._count_budget_agents()
-
     def load_agent_configs(self) -> List[dict]:
         """Load all agent configurations from data/agents/*/config.json."""
         configs = []

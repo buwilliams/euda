@@ -19,7 +19,7 @@ class TestTokenAwarenessAcquire:
         ta = fresh_token_awareness
 
         # Small request should succeed
-        result = ta.acquire("test-agent", estimated_input_tokens=100, enabled_agent_count=1)
+        result = ta.acquire("test-agent", estimated_input_tokens=100)
         assert result is True
 
     def test_acquire_tracks_cumulative_usage(self, create_test_agent, fresh_token_awareness):
@@ -29,7 +29,7 @@ class TestTokenAwarenessAcquire:
 
         # Make multiple small acquisitions
         for _ in range(5):
-            ta.acquire("test-agent", estimated_input_tokens=100, enabled_agent_count=1)
+            ta.acquire("test-agent", estimated_input_tokens=100)
 
         # Usage should be tracked (though acquire doesn't actually record)
         # This just verifies no errors on repeated calls
@@ -53,7 +53,7 @@ class TestTokenAwarenessAcquire:
         create_test_agent("test-agent")
 
         # Even huge request should succeed
-        result = ta.acquire("test-agent", estimated_input_tokens=999999999, enabled_agent_count=1)
+        result = ta.acquire("test-agent", estimated_input_tokens=999999999)
         assert result is True
 
 
@@ -68,8 +68,7 @@ class TestTokenAwarenessRecord:
         ta.record(
             "test-agent",
             input_tokens=1000,
-            output_tokens=500,
-            enabled_agent_count=1
+            output_tokens=500
         )
 
         usage = ta.get_agent_usage("test-agent")
@@ -81,8 +80,8 @@ class TestTokenAwarenessRecord:
         create_test_agent("test-agent")
         ta = fresh_token_awareness
 
-        ta.record("test-agent", input_tokens=100, output_tokens=50, enabled_agent_count=1)
-        ta.record("test-agent", input_tokens=200, output_tokens=100, enabled_agent_count=1)
+        ta.record("test-agent", input_tokens=100, output_tokens=50)
+        ta.record("test-agent", input_tokens=200, output_tokens=100)
 
         usage = ta.get_agent_usage("test-agent")
         assert usage["input_tokens"] == 300
@@ -96,8 +95,7 @@ class TestTokenAwarenessRecord:
         ta.record(
             "test-agent",
             input_tokens=1000,
-            output_tokens=500,
-            enabled_agent_count=1
+            output_tokens=500
         )
 
         # Check usage file exists
@@ -121,7 +119,7 @@ class TestTokenAwarenessUsageTracking:
 
         # Record usage "yesterday"
         with freeze_time(datetime.now() - timedelta(days=1)):
-            ta.record("test-agent", input_tokens=1000, output_tokens=500, enabled_agent_count=1)
+            ta.record("test-agent", input_tokens=1000, output_tokens=500)
 
         # Get usage "today" - should be fresh period
         usage = ta._get_agent_usage("test-agent", "daily")
@@ -137,8 +135,8 @@ class TestTokenAwarenessUsageTracking:
         create_test_agent("agent1")
         create_test_agent("agent2")
 
-        ta.record("agent1", input_tokens=100, output_tokens=50, enabled_agent_count=2)
-        ta.record("agent2", input_tokens=200, output_tokens=100, enabled_agent_count=2)
+        ta.record("agent1", input_tokens=100, output_tokens=50)
+        ta.record("agent2", input_tokens=200, output_tokens=100)
 
         all_usage = ta.get_all_agent_usage()
 
@@ -228,7 +226,7 @@ class TestCostCalculation:
         ta = fresh_token_awareness
 
         # Record some usage
-        ta.record("test-agent", input_tokens=1000, output_tokens=500, enabled_agent_count=1)
+        ta.record("test-agent", input_tokens=1000, output_tokens=500)
 
         summary = ta.get_cost_summary(days=30)
 
@@ -252,7 +250,7 @@ class TestThreadSafety:
         def record_usage():
             try:
                 for _ in range(10):
-                    ta.record("test-agent", input_tokens=100, output_tokens=50, enabled_agent_count=1)
+                    ta.record("test-agent", input_tokens=100, output_tokens=50)
             except Exception as e:
                 errors.append(e)
 

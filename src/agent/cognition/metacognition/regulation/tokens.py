@@ -503,8 +503,7 @@ class TokenAwareness:
             "total_calls": sum(a["calls"] for a in agents.values()),
         }
 
-    def acquire(self, agent_id: str, estimated_input_tokens: int,
-                enabled_agent_count: int = 1) -> bool:
+    def acquire(self, agent_id: str, estimated_input_tokens: int) -> bool:
         """Acquire permission for an LLM call (pre-call check).
 
         This should be called BEFORE making an LLM API call with
@@ -513,7 +512,6 @@ class TokenAwareness:
         Args:
             agent_id: ID of the calling agent
             estimated_input_tokens: Estimated input tokens for this call
-            enabled_agent_count: Number of enabled agents for budget splitting
 
         Returns:
             True if call can proceed
@@ -541,10 +539,11 @@ class TokenAwareness:
                 self._paused_agents.add(agent_id)
                 raise AgentPausedError(agent_id, "agent is paused")
 
-            # Get budget configuration
+            # Get budget configuration - count determined internally for consistency
             budget_config = self._get_agent_budget_config(agent_id)
+            agent_count = self._count_budget_agents()
             total_budget, period_name = self._calculate_period_budget(
-                enabled_agent_count, budget_config.frequency
+                agent_count, budget_config.frequency
             )
 
             # Calculate separate input/output budgets
@@ -596,9 +595,9 @@ class TokenAwareness:
 
     def record(self, agent_id: str, input_tokens: int, output_tokens: int,
                provider: str = "openai", model: str = "unknown",
-               enabled_agent_count: int = 1, job_id: Optional[str] = None,
-               cached_input_tokens: int = 0, stop_reason: str = None,
-               duration_ms: int = None, timestamp: str = None):
+               job_id: Optional[str] = None, cached_input_tokens: int = 0,
+               stop_reason: str = None, duration_ms: int = None,
+               timestamp: str = None):
         """Record actual token usage after an API call.
 
         This should be called AFTER a successful LLM API call with
@@ -610,7 +609,6 @@ class TokenAwareness:
             output_tokens: Actual output tokens used
             provider: LLM provider name
             model: Model name
-            enabled_agent_count: Number of enabled agents
             job_id: Optional job ID for per-job tracking
             cached_input_tokens: Cached input tokens (subset of input_tokens)
             stop_reason: Reason the model stopped
@@ -652,10 +650,11 @@ class TokenAwareness:
         })
 
         with self._lock:
-            # Get budget configuration
+            # Get budget configuration - count determined internally for consistency
             budget_config = self._get_agent_budget_config(agent_id)
+            agent_count = self._count_budget_agents()
             total_budget, period_name = self._calculate_period_budget(
-                enabled_agent_count, budget_config.frequency
+                agent_count, budget_config.frequency
             )
 
             # Calculate output budget
