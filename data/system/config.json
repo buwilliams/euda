@@ -1,20 +1,6 @@
 {
   "version": "3.0.0",
   "initialized": true,
-  "metacognition": {
-    "progress": {
-      "max_tool_calls_per_iteration": 50,
-      "max_repeated_tool_calls": 3,
-      "max_no_progress_iterations": 5
-    },
-    "planning": {
-      "enabled": true,
-      "excluded_for": []
-    },
-    "efficiency": {
-      "defer_consolidation_in_work_cycles": true
-    }
-  },
   "rlm": {
     "enabled": true,
     "max_iterations": 20,

@@ -2,8 +2,8 @@
 Metacognition Module - Second-order thinking (self-awareness and self-regulation).
 
 This module provides:
-- Self-regulation (via regulation/): Token awareness, progress tracking, config, incidents
-- Self-improvement (via consolidation/): Memory and identity consolidation (formerly Reflection)
+- Self-regulation (via regulation/): Token awareness, config, incidents
+- Self-improvement (via consolidation/): Memory and identity consolidation
 
 The main Metacognition class orchestrates these capabilities for each agent.
 """
@@ -20,7 +20,6 @@ from .regulation import (
     get_cost_summary,
     get_resource_tracker,
     MetacognitionConfig,
-    ProgressTracker,
     count_tokens,
     estimate_request_tokens,
     IncidentTracker,
@@ -45,7 +44,6 @@ __all__ = [
     "get_cost_summary",
     "get_resource_tracker",
     "MetacognitionConfig",
-    "ProgressTracker",
     "count_tokens",
     "estimate_request_tokens",
     "IncidentTracker",
@@ -53,6 +51,6 @@ __all__ = [
     "IncidentType",
     "IncidentSeverity",
     "get_incident_tracker",
-    # Consolidation (formerly Reflection)
+    # Consolidation
     "Consolidation",
 ]

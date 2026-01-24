@@ -2,8 +2,7 @@
 Regulation Module - Self-regulation capabilities for agents.
 
 Provides:
-- Token awareness: Track tokens PRE-call, enforce per-agent budgets
-- Progress awareness: Detect stuck/thrashing patterns
+- Token awareness: Track tokens, enforce per-agent budgets
 - Incident tracking: Log threshold breaches
 
 This is the self-regulation aspect of metacognition.
@@ -21,7 +20,6 @@ from .tokens import (
     get_resource_tracker,
 )
 from .config import MetacognitionConfig
-from .progress import ProgressTracker
 from .tokenizer import count_tokens, estimate_request_tokens
 from .incidents import (
     IncidentTracker,
@@ -42,7 +40,6 @@ __all__ = [
     "get_cost_summary",
     "get_resource_tracker",
     "MetacognitionConfig",
-    "ProgressTracker",
     "count_tokens",
     "estimate_request_tokens",
     "IncidentTracker",

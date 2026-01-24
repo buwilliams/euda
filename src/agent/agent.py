@@ -491,19 +491,10 @@ class Agent:
             "usage": {"input": response.usage.input_tokens, "output": response.usage.output_tokens}
         })
 
-        # Handle tool use in a loop with action awareness
+        # Handle tool use in a loop
         self.metacognition.reset_iteration()
-        max_tool_calls = self.metacognition.get_max_tool_calls_per_iteration()
 
         while response.stop_reason == "tool_use":
-            # Check if tool call limit reached
-            if self.metacognition.check_tool_call_limit():
-                self._log("tool_limit_break", {
-                    "count": self.metacognition.get_tool_call_count(),
-                    "limit": max_tool_calls
-                })
-                break
-
             tool_results = self._execute_tools(response)
             messages.append({"role": "assistant", "content": response.content})
             messages.append({"role": "user", "content": tool_results})

@@ -2,10 +2,10 @@
 Metacognition - The agent's self-regulation system.
 
 Metacognition is inherent to all agents and provides:
-- Token awareness (PRE-call token tracking, per-agent budgets)
-- Action awareness (tool call tracking)
+- Token awareness (budget tracking via llm.json)
+- Action tracking (tool call telemetry)
 - Progress awareness (stuck detection)
-- Strategic planning
+- Strategic planning (always enabled)
 
 This is the Cognition subsystem of the agent ontology:
 Agent = Identity + Cognition + Memory + Behavior
@@ -31,10 +31,10 @@ class Metacognition:
     Just like every agent has an identity and memory.
 
     Metacognition provides:
-    - Token awareness: Track tokens PRE-call, enforce per-agent budgets
-    - Action awareness: Monitor tool calls per iteration
+    - Token awareness: Track tokens, enforce budgets (via llm.json)
+    - Action tracking: Monitor tool calls for telemetry
     - Progress awareness: Detect stuck patterns
-    - Strategic planning: Plan approach before execution
+    - Strategic planning: Plan approach before execution (always enabled)
     """
 
     def __init__(self, agent: "Agent"):
@@ -46,13 +46,13 @@ class Metacognition:
         self.agent = agent
         self.agent_id = agent.id
 
-        # Config (merges system defaults with agent overrides)
+        # Config
         self.config = MetacognitionConfig(agent.id)
 
         # Token awareness
         self._tokens: TokenAwareness = get_token_awareness()
 
-        # Per-agent tracking state (for action/progress awareness)
+        # Per-agent tracking state (for telemetry)
         self._tool_call_count: int = 0
         self._iteration_count: int = 0
         self._tool_history: list = []
@@ -105,15 +105,10 @@ class Metacognition:
         """Get pause information for this agent."""
         return self._tokens.get_pause_info(self.agent_id)
 
-    # ============== Action Awareness ==============
-
-    def get_max_tool_calls_per_iteration(self) -> int:
-        """Get the maximum tool calls allowed per iteration."""
-        progress_config = self.config.get_progress_config()
-        return progress_config.get("max_tool_calls_per_iteration", 50)
+    # ============== Action Tracking ==============
 
     def record_tool_call(self, tool_name: str, tool_input: dict):
-        """Record a tool call for action/progress tracking.
+        """Record a tool call for telemetry and stuck detection.
 
         Args:
             tool_name: Name of the tool called
@@ -133,18 +128,6 @@ class Metacognition:
         """Get the current tool call count for this iteration."""
         return self._tool_call_count
 
-    def check_tool_call_limit(self) -> bool:
-        """Check if tool call limit has been reached.
-
-        Returns:
-            True if limit reached, False otherwise
-        """
-        max_calls = self.get_max_tool_calls_per_iteration()
-        if self._tool_call_count >= max_calls:
-            self.log("tool_limit_reached", {"count": self._tool_call_count, "limit": max_calls})
-            return True
-        return False
-
     def reset_iteration(self):
         """Reset per-iteration tracking state."""
         self._tool_call_count = 0
@@ -158,67 +141,34 @@ class Metacognition:
 
     # ============== Progress Awareness ==============
 
-    def get_max_repeated_tool_calls(self) -> int:
-        """Get the maximum repeated tool calls before stuck detection."""
-        progress_config = self.config.get_progress_config()
-        return progress_config.get("max_repeated_tool_calls", 3)
-
     def check_stuck(self) -> Optional[str]:
         """Check if the agent appears stuck.
 
         Returns:
             Reason string if stuck, None if making progress
         """
-        if len(self._tool_history) < 3:
+        if len(self._tool_history) < 5:
             return None
 
-        max_repeated = self.get_max_repeated_tool_calls()
-
-        # Check for same tool called repeatedly with identical inputs
-        recent = self._tool_history[-max_repeated:]
-        if len(recent) >= max_repeated:
-            first = recent[0]
-            if all(t["tool"] == first["tool"] and t["input"] == first["input"] for t in recent):
-                return f"Same tool '{first['tool']}' called {max_repeated} times with identical inputs"
+        # Check for same tool called 5+ times with identical inputs
+        recent = self._tool_history[-5:]
+        first = recent[0]
+        if all(t["tool"] == first["tool"] and t["input"] == first["input"] for t in recent):
+            return f"Same tool '{first['tool']}' called 5 times with identical inputs"
 
         return None
 
     # ============== Planning ==============
 
     def should_plan(self, job: dict) -> bool:
-        """Check if planning is enabled for this job.
-
-        Per docs/3_system.md: "when an agent begins work on a job, it first
-        creates a brief plan". Planning is enabled by default for all jobs.
-
-        Args:
-            job: The job dict to check
-
-        Returns:
-            True if planning should be done for this job
-        """
-        planning_config = self.config.get_planning_config()
-
-        # Planning is enabled by default per spec
-        if not planning_config.get("enabled", True):
-            return False
-
-        # Check if job matches any exclusion patterns
-        excluded_for = planning_config.get("excluded_for", [])
-        job_tags = job.get("tags", [])
-
-        for exclusion in excluded_for:
-            if exclusion in job_tags:
-                return False
-
+        """Planning is always enabled for efficiency."""
         return True
 
     # ============== Efficiency ==============
 
     def should_defer_consolidation(self) -> bool:
-        """Check if consolidation should be deferred until end of work cycle."""
-        efficiency_config = self.config.get_efficiency_config()
-        return efficiency_config.get("defer_consolidation_in_work_cycles", True)
+        """Consolidation append is deferred until end of work cycle."""
+        return True
 
     # ============== Combined Status ==============
 
@@ -234,7 +184,6 @@ class Metacognition:
             "token_usage": self.get_token_usage(),
             "action": {
                 "tool_call_count": self._tool_call_count,
-                "max_tool_calls": self.get_max_tool_calls_per_iteration(),
                 "iteration_count": self._iteration_count
             },
             "progress": {
@@ -256,8 +205,6 @@ class Metacognition:
         return {
             "iteration": self._iteration_count,
             "tool_calls_this_cycle": self._tool_call_count,
-            "max_tool_calls": self.get_max_tool_calls_per_iteration(),
-            "approaching_limit": self._tool_call_count > (self.get_max_tool_calls_per_iteration() * 0.8),
             "is_stuck": stuck_reason is not None,
             "stuck_warning": stuck_reason
         }
