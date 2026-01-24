@@ -311,7 +311,8 @@ function renderSystemContainerView(job, isAgentsContainer) {
             return `
                 <div class="child-jobs-list">
                     ${childJobs.map(child => {
-                        const grandchildCount = jobsData.filter(j => j.parent_id === child.id).length;
+                        // Use allJobsData to count all jobs regardless of status
+                        const grandchildCount = allJobsData.filter(j => j.parent_id === child.id).length;
                         const childIcon = icon('bolt');
                         return `
                             <div class="child-job-card" data-testid="agent-card" onclick="navigateFocus('job-${child.id}')">
