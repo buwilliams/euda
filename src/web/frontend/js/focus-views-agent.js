@@ -125,6 +125,8 @@ function renderAgentDetailView(job) {
         const outputPercent = tokenUsage.output_percent || 0;
         const frequency = tokenUsage.frequency || 'daily';
         const resetTime = budgetReset?.time_until || '';
+        const periodStart = tokenUsage.period_start;
+        const hourlyData = tokenUsage.hourly || {};
 
         // Determine bar color based on percentage
         const getBarColor = (percent) => {
@@ -132,6 +134,94 @@ function renderAgentDetailView(job) {
             if (percent >= 80) return 'var(--color-warning)';
             return 'var(--color-success)';
         };
+
+        // Format period start time
+        const formatPeriodStart = (isoString) => {
+            if (!isoString) return null;
+            const date = new Date(isoString);
+            const now = new Date();
+            const isToday = date.toDateString() === now.toDateString();
+            const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            if (isToday) {
+                return `today at ${time}`;
+            }
+            return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ` at ${time}`;
+        };
+
+        // Render usage breakdown based on frequency
+        const renderUsageBreakdown = () => {
+            const buckets = Object.keys(hourlyData);
+            if (buckets.length === 0) return '';
+
+            // For hourly frequency, no breakdown needed
+            if (frequency === 'hourly') return '';
+
+            const getOrdinalSuffix = (n) => {
+                const s = ['th', 'st', 'nd', 'rd'];
+                const v = n % 100;
+                return s[(v - 20) % 10] || s[v] || s[0];
+            };
+
+            // For daily frequency: show by hour
+            // For weekly/monthly: aggregate by day and show by day
+            if (frequency === 'daily') {
+                // Show hourly breakdown
+                const hours = buckets.sort();
+                const rows = hours.map(hour => {
+                    const data = hourlyData[hour];
+                    return `<div class="hourly-row">
+                        <span class="hourly-label">${hour}:00</span>
+                        <span class="hourly-value">${formatTokenCount(data.input)} in / ${formatTokenCount(data.output)} out</span>
+                    </div>`;
+                }).join('');
+
+                return `
+                    <div class="hourly-breakdown">
+                        <div class="hourly-header">Usage by hour</div>
+                        ${rows}
+                    </div>
+                `;
+            } else {
+                // Weekly or monthly: aggregate by day
+                // Bucket keys are like "23T14" (day 23, hour 14)
+                const dailyTotals = {};
+                buckets.forEach(key => {
+                    const data = hourlyData[key];
+                    let dayKey;
+                    if (key.includes('T')) {
+                        dayKey = key.split('T')[0]; // Extract day part
+                    } else {
+                        // Fallback for unexpected format
+                        dayKey = key;
+                    }
+                    if (!dailyTotals[dayKey]) {
+                        dailyTotals[dayKey] = { input: 0, output: 0 };
+                    }
+                    dailyTotals[dayKey].input += data.input || 0;
+                    dailyTotals[dayKey].output += data.output || 0;
+                });
+
+                const days = Object.keys(dailyTotals).sort();
+                const rows = days.map(day => {
+                    const data = dailyTotals[day];
+                    const dayNum = parseInt(day);
+                    const label = `${dayNum}${getOrdinalSuffix(dayNum)}`;
+                    return `<div class="hourly-row">
+                        <span class="hourly-label">${label}</span>
+                        <span class="hourly-value">${formatTokenCount(data.input)} in / ${formatTokenCount(data.output)} out</span>
+                    </div>`;
+                }).join('');
+
+                return `
+                    <div class="hourly-breakdown">
+                        <div class="hourly-header">Usage by day</div>
+                        ${rows}
+                    </div>
+                `;
+            }
+        };
+
+        const periodStartFormatted = formatPeriodStart(periodStart);
 
         return `
             <div class="job-section">
@@ -141,6 +231,11 @@ function renderAgentDetailView(job) {
                 </div>
                 <div class="collapsible-content">
                     <div class="token-budget-content">
+                        ${periodStartFormatted ? `
+                            <div class="token-budget-period-start">
+                                Active since ${periodStartFormatted}
+                            </div>
+                        ` : ''}
                         <div class="token-budget-row">
                             <span class="token-budget-label">Input</span>
                             <div class="token-budget-bar-container">
@@ -166,6 +261,7 @@ function renderAgentDetailView(job) {
                                 Resets in ${resetTime}
                             </div>
                         ` : ''}
+                        ${renderUsageBreakdown()}
                     </div>
                 </div>
             </div>
