@@ -387,18 +387,8 @@ function renderJobDetailView(jobId) {
     const isArchiving = archivingTaskId === job.id;
     const displayName = job.name || 'Untitled';
     const hasDescription = job.description && job.description.length > 0;
-    // Use context-aware filtering for child jobs (respects timeline context)
-    const childJobs = getChildJobsForContext(job.id);
-    // Get completed children - filter by timeline context if we're in one
-    const timelineContext = getTimelineContext();
-    const completedChildJobs = completedJobsData.filter(j => {
-        if (j.parent_id !== job.id) return false;
-        // If in timeline context, only show completed jobs that matched that context
-        if (timelineContext) {
-            return getJobCategory({ ...j, status: 'todo' }) === timelineContext;
-        }
-        return true;
-    });
+    // Get ALL child jobs sorted by status priority (working > todo > error > done > archived)
+    const allChildJobs = getAllChildJobsSorted(job.id);
     const assets = jobAssetsCache[jobId] || [];
     const isAgentJob = !!job.agent_id;
     const titleIcon = isAgentJob ? icon('bolt') : '';
@@ -467,31 +457,15 @@ function renderJobDetailView(jobId) {
                 `}
             </div>
 
-            <!-- Child Jobs Section - open by default -->
-            ${childJobs.length > 0 ? `
+            <!-- Child Jobs Section - shows all jobs sorted by status -->
+            ${allChildJobs.length > 0 ? `
             <div class="job-section">
                 <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
-                    <span>Child Jobs (${childJobs.length})</span>
+                    <span>Jobs (${allChildJobs.length})</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
                 <div class="collapsible-content open">
-                    ${childJobs.map(child => renderJobCard(child, true)).join('')}
-                </div>
-            </div>
-            ` : ''}
-
-            <!-- Completed Child Jobs Section - collapsed by default -->
-            ${completedChildJobs.length > 0 ? `
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
-                    <span>Completed (${completedChildJobs.length})</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-                <div class="collapsible-content">
-                    ${completedChildJobs.map(child => {
-                        const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                        return renderCompletedJobCard(child, grandchildCount, true);
-                    }).join('')}
+                    ${allChildJobs.map(child => renderJobCard(child, true)).join('')}
                 </div>
             </div>
             ` : ''}

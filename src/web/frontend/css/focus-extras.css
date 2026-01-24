@@ -1,16 +1,14 @@
 /* Euno - Focus Extras (Indicators, Child Jobs, Quote, Agent Config) */
 
-/* Card Assignment Indicators */
-.card-working-indicator,
-.card-assigned-indicator {
+/* Card Status Indicators */
+.card-status-indicator {
     flex-shrink: 0;
     margin-right: var(--spacing-xs);
     display: inline-flex;
     align-items: center;
 }
 
-.card-working-indicator img,
-.card-assigned-indicator img {
+.card-status-indicator img {
     width: 16px;
     height: 16px;
 }
@@ -19,8 +17,35 @@
     color: #f59e0b;
 }
 
+.card-error-indicator {
+    color: #ef4444;
+}
+
+.card-archived-indicator {
+    color: #6b7280;
+    opacity: 0.7;
+}
+
+.card-done-indicator {
+    color: #10b981;
+    opacity: 0.7;
+}
+
 .card-assigned-indicator {
     opacity: 0.5;
+}
+
+/* Card styling for different states */
+.card-completed {
+    opacity: 0.7;
+}
+
+.card-archived {
+    opacity: 0.5;
+}
+
+.card-error {
+    border-left: 3px solid #ef4444;
 }
 
 /* Menu Assignment Badges */

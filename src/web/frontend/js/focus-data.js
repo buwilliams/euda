@@ -572,6 +572,30 @@ function getChildJobsForContext(parentId) {
     });
 }
 
+function getAllChildJobsSorted(parentId) {
+    // Get ALL child jobs (including archived, error, etc.) from allJobsData
+    // Sort by status priority: working > todo > error > done > archived, then by created_at desc
+    const statusPriority = {
+        'working': 0,
+        'todo': 1,
+        'error': 2,
+        'done': 3,
+        'archived': 4
+    };
+
+    return allJobsData
+        .filter(j => j.parent_id === parentId)
+        .sort((a, b) => {
+            const aPriority = statusPriority[a.status] ?? 5;
+            const bPriority = statusPriority[b.status] ?? 5;
+            if (aPriority !== bPriority) {
+                return aPriority - bPriority;
+            }
+            // Same status - sort by created_at descending
+            return (b.created_at || '').localeCompare(a.created_at || '');
+        });
+}
+
 function getDescendantCountForContext(jobId) {
     // Count ALL descendants (not just direct children) that match the timeline context
     const context = getTimelineContext();

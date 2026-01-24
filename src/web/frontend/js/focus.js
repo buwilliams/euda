@@ -15,6 +15,7 @@ function getLocalDateString(date = null) {
 
 let jobsData = [];           // All active jobs
 let completedJobsData = [];  // Recently completed jobs
+let allJobsData = [];        // All jobs including archived (for detail views)
 let jobAssetsCache = {};     // Cache of assets per job
 let editingJobField = null;  // Which field is being edited: {jobId, field}
 let currentAssetData = null; // Currently viewed asset

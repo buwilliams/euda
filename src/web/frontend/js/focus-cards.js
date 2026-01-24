@@ -38,12 +38,24 @@ function renderMinimalJobCard(job) {
     const childCount = getDescendantCountForContext(job.id);
     const childBadge = childCount > 0 ? `<span class="card-badge">${childCount}</span>` : '';
     const assignee = job.assignee;
-    const workingIndicator = job.status === 'working' ? '<span class="card-working-indicator" title="Agent working">' + icon('bolt') + '</span>' : '';
-    const assignedIndicator = job.status !== 'working' && assignee ? '<span class="card-assigned-indicator" title="Assigned to ' + escapeHtml(assignee) + '">' + icon('user') + '</span>' : '';
+
+    // Status indicator based on job state
+    let statusIndicator = '';
+    if (job.status === 'working') {
+        statusIndicator = '<span class="card-status-indicator card-working-indicator" title="Agent working">' + icon('bolt') + '</span>';
+    } else if (job.status === 'error') {
+        statusIndicator = '<span class="card-status-indicator card-error-indicator" title="Error">' + icon('exclamation-triangle') + '</span>';
+    } else if (job.status === 'archived') {
+        statusIndicator = '<span class="card-status-indicator card-archived-indicator" title="Archived">' + icon('archive-box') + '</span>';
+    } else if (job.status === 'done') {
+        statusIndicator = '<span class="card-status-indicator card-done-indicator" title="Completed">' + icon('check') + '</span>';
+    } else if (assignee) {
+        statusIndicator = '<span class="card-status-indicator card-assigned-indicator" title="Assigned to ' + escapeHtml(assignee) + '">' + icon('user') + '</span>';
+    }
 
     return `
-        <div class="card card-minimal" data-job-id="${job.id}" data-testid="job-card" onclick="navigateFocus('job-${job.id}')">
-            ${workingIndicator}${assignedIndicator}
+        <div class="card card-minimal${job.status === 'done' ? ' card-completed' : ''}${job.status === 'archived' ? ' card-archived' : ''}${job.status === 'error' ? ' card-error' : ''}" data-job-id="${job.id}" data-testid="job-card" onclick="navigateFocus('job-${job.id}')">
+            ${statusIndicator}
             <span class="card-title">${escapeHtml(displayName)}</span>
             ${childBadge}
             ${dueDateLabel}

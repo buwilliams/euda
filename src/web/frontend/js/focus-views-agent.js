@@ -17,14 +17,8 @@ let rateLimitViewCache = {};
 function renderAgentDetailView(job) {
     const agentId = job.agent_id;
     const displayName = job.name || 'Untitled';
-    const childJobs = jobsData.filter(j => j.parent_id === job.id);
-    const completedChildJobs = completedJobsData.filter(j => j.parent_id === job.id);
-    // Merge and sort: open jobs first, then completed
-    const allChildJobs = [...childJobs, ...completedChildJobs].sort((a, b) => {
-        const aCompleted = a.status === 'done' ? 1 : 0;
-        const bCompleted = b.status === 'done' ? 1 : 0;
-        return aCompleted - bCompleted;
-    });
+    // Get ALL child jobs sorted by status priority (working > todo > error > done > archived)
+    const allChildJobs = getAllChildJobsSorted(job.id);
     const assets = jobAssetsCache[job.id] || [];
 
     // Load agent data if not cached
@@ -331,7 +325,7 @@ function renderAgentDetailView(job) {
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
             </div>
 
-            <!-- Jobs Section (merged pending + completed child jobs, open first) -->
+            <!-- Jobs Section (all jobs sorted by status: working > todo > error > done > archived) -->
             <div class="job-section">
                 <div class="job-section-header collapsible ${allChildJobs.length > 0 ? 'open' : ''}" onclick="togglePersonaSection(this, event)">
                     <span>Jobs${allChildJobs.length > 0 ? ` (${allChildJobs.length})` : ''}</span>
@@ -339,15 +333,7 @@ function renderAgentDetailView(job) {
                 </div>
                 <div class="collapsible-content ${allChildJobs.length > 0 ? 'open' : ''}">
                     ${allChildJobs.length === 0 ? '<div class="focus-empty">No jobs assigned to this agent.</div>' :
-                      allChildJobs.map(child => {
-                          const isCompleted = child.status === 'done';
-                          if (isCompleted) {
-                              const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                              return renderCompletedJobCard(child, grandchildCount, true);
-                          } else {
-                              return renderJobCard(child, true);
-                          }
-                      }).join('')
+                      allChildJobs.map(child => renderJobCard(child, true)).join('')
                     }
                 </div>
             </div>
