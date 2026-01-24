@@ -10,14 +10,14 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List
 import uuid
 
-from .....llms import get_client
-from .....web.events import emit_ui_event
-from .....tools.data.memory import _load_entries, _save_entries, VALID_TYPES
+from ....llms import get_client
+from ....web.events import emit_ui_event
+from ...data.memory import _load_entries, _save_entries, VALID_TYPES
 
 from .prompts import get_append_system_prompt, build_append_prompt, build_append_batch_prompt
 
 if TYPE_CHECKING:
-    from .consolidation import Consolidation
+    from . import Consolidation
 
 
 def append_phase(consolidation: "Consolidation", user_message: str, assistant_response: str, execution_id: str = None) -> int:
@@ -26,7 +26,7 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
     Calls LLM to extract noteworthy items and adds them to short-term memory.
 
     Args:
-        reflection: The Reflection instance
+        consolidation: The Consolidation instance
         user_message: The user's message
         assistant_response: The assistant's response
         execution_id: Optional execution ID for SSE progress tracking
@@ -34,7 +34,8 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
     Returns:
         Number of items added to memory
     """
-    agent_id = consolidation.agent.id
+    agent_id = consolidation.agent_id
+    agent_identity = consolidation.identity
 
     def emit_progress(step: str, message: str):
         """Emit SSE progress event."""
@@ -61,7 +62,7 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
 
     # Build prompt
     prompt = build_append_prompt(
-        agent_identity=consolidation.agent.identity,
+        agent_identity=agent_identity,
         existing_memory=existing_memory,
         user_message=user_message,
         assistant_response=assistant_response
@@ -301,7 +302,7 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
     single LLM call instead of one call per exchange.
 
     Args:
-        reflection: The Reflection instance
+        consolidation: The Consolidation instance
         exchanges: List of (user_message, assistant_response) tuples
         execution_id: Optional execution ID for SSE progress tracking
 
@@ -311,7 +312,8 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
     if not exchanges:
         return 0
 
-    agent_id = consolidation.agent.id
+    agent_id = consolidation.agent_id
+    agent_identity = consolidation.identity
 
     def emit_progress(step: str, message: str):
         """Emit SSE progress event."""
@@ -339,7 +341,7 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
 
     # Build batch prompt
     prompt = build_append_batch_prompt(
-        agent_identity=consolidation.agent.identity,
+        agent_identity=agent_identity,
         existing_memory=existing_memory,
         exchanges=exchanges
     )

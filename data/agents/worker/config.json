@@ -53,10 +53,10 @@
     "nc_delete_card"
   ],
   "triggers": [
-    "time:morning"
-  ],
-  "consolidation": {
-    "enabled": true,
-    "trigger": "time:evening"
-  }
+    {
+      "job_name": "euno:consolidate",
+      "job_description": "Review memories, evolve identity, graduate learnings",
+      "schedule": "evening"
+    }
+  ]
 }

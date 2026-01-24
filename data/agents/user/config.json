@@ -13,9 +13,11 @@
     "update_user_identity",
     "graduate_memory"
   ],
-  "triggers": [],
-  "consolidation": {
-    "enabled": true,
-    "trigger": "time:evening"
-  }
+  "triggers": [
+    {
+      "job_name": "euno:consolidate",
+      "job_description": "Review memories, evolve identity, graduate learnings",
+      "schedule": "evening"
+    }
+  ]
 }

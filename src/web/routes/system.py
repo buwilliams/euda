@@ -28,7 +28,6 @@ router = APIRouter()
 
 DOCS_DIR = Path(__file__).parent.parent.parent.parent / "docs"
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
-QUOTES_FILE = DATA_DIR / "system" / "quotes.json"
 
 
 class FreshStartRequest(BaseModel):
@@ -57,41 +56,46 @@ def get_about():
 
 # ============== Daily Quote ==============
 
-def _load_quotes_state() -> dict:
-    """Load quotes state from disk."""
-    if QUOTES_FILE.exists():
+def _get_latest_quote_from_jobs() -> dict:
+    """Get the most recent completed euno:quote job's quote asset.
+
+    Returns:
+        Dict with 'quote' and 'author' keys, or None if no quote found
+    """
+    from ...tools.data.assets import read_asset
+
+    # Get completed jobs and filter for quote jobs
+    all_jobs = list_jobs(status="done")
+    quote_jobs = [j for j in all_jobs if j.get("name", "").startswith("euno:quote")]
+
+    for job in quote_jobs:
         try:
-            with open(QUOTES_FILE) as f:
-                return json.load(f)
-        except (json.JSONDecodeError, IOError):
-            pass
-    return {"current": None, "date": None, "history": []}
+            asset = read_asset(job["id"], "quote.json")
+            if asset and asset.get("content"):
+                quote_data = json.loads(asset["content"])
+                if quote_data.get("quote") and quote_data.get("author"):
+                    return quote_data
+        except (json.JSONDecodeError, KeyError):
+            continue
+
+    return None
 
 
-def _save_quotes_state(state: dict):
-    """Save quotes state to disk."""
-    QUOTES_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(QUOTES_FILE, "w") as f:
-        json.dump(state, f, indent=2)
+def _generate_quote_fallback() -> dict:
+    """Generate a fallback quote for first startup or missed trigger.
 
-
-def _generate_quote(identity_content: str, history: list) -> dict:
-    """Generate a personalized quote using the configured LLM."""
+    This is synchronous and happens on first request if no quote job has completed yet.
+    """
     client = get_client()
 
-    # Build context about recently used quotes to avoid
-    history_context = ""
-    if history:
-        recent = history[-50:]  # Show last 50 to avoid repetition
-        history_context = "\n\nQuotes to AVOID (recently used):\n"
-        for q in recent:
-            history_context += f"- \"{q['quote']}\" — {q['author']}\n"
+    # Get user identity for personalization
+    identity = get_identity("user")
+    identity_content = identity.get("content", "") if identity.get("exists") else ""
 
     prompt = f"""Based on this user's identity, select or compose an inspiring quote that would resonate with them today.
 
 User Identity:
 {identity_content if identity_content else "No identity available - provide a generally inspiring quote."}
-{history_context}
 
 Respond with ONLY a JSON object in this exact format (no markdown, no explanation):
 {{"quote": "The quote text here", "author": "Author Name"}}
@@ -120,34 +124,19 @@ The quote can be from a famous person, philosopher, writer, or you can compose a
 
 @router.get("/daily-quote")
 def daily_quote():
-    """Get a personalized daily quote."""
-    today = datetime.now().strftime("%Y-%m-%d")
-    state = _load_quotes_state()
+    """Get a personalized daily quote.
 
-    # Return cached quote if already generated today
-    if state.get("date") == today and state.get("current"):
-        return state["current"]
+    First checks for completed euno:quote jobs. If none found, generates
+    a fallback quote synchronously (for first startup or missed triggers).
+    """
+    # Check for quote from completed euno:quote job
+    quote = _get_latest_quote_from_jobs()
+    if quote:
+        return quote
 
-    # Get user identity for personalization
-    identity = get_identity("user")
-    identity_content = identity.get("content", "") if identity.get("exists") else ""
-
-    # Get history (last 365 quotes)
-    history = state.get("history", [])[-365:]
-
-    # Generate new quote
-    quote = _generate_quote(identity_content, history)
-
-    # Update state
-    history.append(quote)
-    state = {
-        "current": quote,
-        "date": today,
-        "history": history[-365:]  # Keep only last 365
-    }
-    _save_quotes_state(state)
-
-    return quote
+    # Fallback: generate synchronously if no job-based quote exists yet
+    # This handles first startup before any quote job has completed
+    return _generate_quote_fallback()
 
 
 # ============== Costs ==============

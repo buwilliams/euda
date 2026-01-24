@@ -29,10 +29,59 @@ Rules for how agents work and coordinate through jobs.
 
 - Triggers are configured per-agent in `config.json` under `triggers[]`
 - Triggers create jobs, they do not wake agents directly
-- Trigger job naming: `Trigger:{name}:{yyyy-mm-dd}`
-- Trigger types:
-  - `system:start` — fires once at system startup
-  - `time:{name}` — fires at scheduled times (morning, evening, hourly)
+
+### New Trigger Format (Recommended)
+
+Triggers are objects that specify a job to create on a schedule:
+
+```json
+{
+  "triggers": [
+    {
+      "job_name": "euno:consolidate",
+      "job_description": "Review memories, evolve identity, graduate learnings",
+      "schedule": "evening"
+    },
+    {
+      "job_name": "euno:quote",
+      "job_description": "Generate personalized daily quote",
+      "schedule": "morning"
+    }
+  ]
+}
+```
+
+- `job_name`: The name of the job to create (e.g., `euno:consolidate`, `euno:quote`)
+- `job_description`: Description for the created job (optional)
+- `schedule`: Schedule name from system config (e.g., `morning`, `evening`)
+
+### Internal Jobs (`euno:*`)
+
+Jobs with names starting with `euno:` are internal system jobs that execute tools directly without LLM involvement:
+
+| Job Name | Tool | Purpose |
+|----------|------|---------|
+| `euno:consolidate` | `euno_consolidate` | Run consolidation (memory analysis, identity updates) |
+| `euno:quote` | `euno_quote` | Generate personalized daily quote |
+
+These jobs:
+- Bypass the LLM chat loop entirely (efficient, single tool call)
+- Are prevented from duplicating (only one pending per agent at a time)
+- Complete automatically after tool execution
+
+### Legacy Trigger Format
+
+String-based triggers are still supported for backwards compatibility:
+
+```json
+{
+  "triggers": ["time:morning", "system:start"]
+}
+```
+
+- `system:start` — fires once at system startup
+- `time:{name}` — fires at scheduled times (morning, evening, hourly)
+- Legacy job naming: `Trigger:{name}:{yyyy-mm-dd}`
 
 ## Manager
 
@@ -92,7 +141,7 @@ See docs/3_system.md for the cognitive foundations behind this design.
 
 ## Behavioral Triggers
 
-Agents respond to two types of behavioral triggers, each with its own prompt template:
+Agents respond to different types of jobs:
 
 - **Job Assignment** (`agent/job_assignment.md`): Regular job execution
   - Triggered when an agent receives a job to complete
@@ -100,20 +149,21 @@ Agents respond to two types of behavioral triggers, each with its own prompt tem
   - Agent decides when work is complete
   - Jobs with `user:request` tag: write findings as asset, hand back to user
 
-- **Consolidation** (`agent/consolidation.md`): Scheduled self-analysis
-  - Triggered by consolidation trigger (e.g., `time:evening`)
-  - Creates visible `Trigger:consolidation:{phase}:{date}` jobs
-  - Agent reviews memories, identifies patterns, evolves identity
-  - Uses tools: list_memory, read_long_term_memory, graduate_memory, update_own_identity
-  - Consolidate includes recent completed jobs (last 20) for context on work patterns
+- **Internal Jobs** (`euno:*`): Direct tool execution
+  - Bypass the LLM chat loop entirely for efficiency
+  - Execute their mapped tool directly and complete
+  - Examples:
+    - `euno:consolidate` → `euno_consolidate` tool (identity analysis)
+    - `euno:quote` → `euno_quote` tool (quote generation)
 
 ## Prompt Templates
 
 - Base templates in `data/system/prompts/agent/`
 - Agent-specific overrides in `data/agents/{agent}/prompts/`
 - System checks agent-specific first, falls back to base
-- Template selection based on job name:
-  - `Trigger:consolidation:*` jobs → consolidation.md
+- Template selection based on job type:
+  - `euno:*` jobs → bypassed (direct tool execution)
+  - `Trigger:consolidation:*` jobs → consolidation.md (legacy)
   - All other jobs → job_assignment.md
 
 ## Job Coordination
@@ -284,13 +334,22 @@ Consolidation is the metacognitive process of self-analysis and growth:
   - No job created — invisible to user
 
 - **Consolidate phase** (triggered, creates visible jobs)
-  - Heavy analysis triggered by `consolidation.trigger` config
-  - Creates `Trigger:consolidation:{phase}:{date}` jobs
-  - Reviews short-term memory, graduates items to long-term
-  - Updates identity based on patterns
+  - Triggered by `euno:consolidate` trigger in agent config
+  - Creates `euno:consolidate` job that executes directly (no LLM loop)
+  - Reviews long-term memory via RLM, updates identity
+  - Implemented as `euno_consolidate` tool in `src/tools/system/consolidation/`
 
-Note: `consolidation.trigger` in config.json defines WHEN consolidation runs (Behavior).
-The consolidation process itself is Metacognition (Cognition).
+Consolidation is scheduled via the trigger system (see Triggers section):
+```json
+{
+  "triggers": [
+    {
+      "job_name": "euno:consolidate",
+      "schedule": "evening"
+    }
+  ]
+}
+```
 
 ### Incidents
 
@@ -340,18 +399,19 @@ Behavior defines what agents can do and when they activate.
 
 ### Triggers
 
-- Configured per-agent in `config.json` under `triggers[]`
+See the main Triggers section above for full documentation.
+
+- Triggers are configured per-agent in `config.json` under `triggers[]`
 - Triggers create jobs, they do not wake agents directly
-- Trigger job naming: `Trigger:{name}:{yyyy-mm-dd}`
-- Trigger types:
-  - `system:start` — fires once at system startup
-  - `time:{name}` — fires at scheduled times (morning, evening, hourly)
+- New format: objects with `job_name`, `job_description`, `schedule`
+- Legacy format: strings like `"time:morning"`, `"system:start"`
 
 ### Triggers vs Processes
 
 Behavior defines *when* things activate via triggers. The processes themselves may belong to other categories:
 
-| Trigger Config | Activates | Process Lives In |
-|---------------|-----------|------------------|
-| `triggers[]` | Job assignment | Behavior (tool execution) |
-| `consolidation.trigger` | Self-improvement | Cognition (metacognition) |
+| Trigger Job Name | Activates | Process Lives In |
+|------------------|-----------|------------------|
+| Regular job | Job assignment | Behavior (tool execution via LLM) |
+| `euno:consolidate` | Self-improvement | Cognition (metacognition via tool) |
+| `euno:quote` | Quote generation | System (direct tool execution) |

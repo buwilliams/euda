@@ -327,18 +327,88 @@ class Agent:
         from ..tools import get_tools_for_agent
         return get_tools_for_agent(self.config.get("tools", []))
 
+    # Map of euno:* job names to tool names for direct execution
+    INTERNAL_JOB_TOOLS = {
+        "euno:consolidate": "euno_consolidate",
+        "euno:quote": "euno_quote",
+    }
+
+    def _is_internal_job(self, job_name: str) -> bool:
+        """Check if job is an internal euno:* job that should be executed directly.
+
+        Internal jobs bypass the LLM chat loop and execute their mapped tool directly.
+        """
+        for prefix in self.INTERNAL_JOB_TOOLS:
+            if job_name.startswith(prefix):
+                return True
+        return False
+
     def _is_reflection_trigger(self, job_tags: list, job_name: str) -> bool:
         """Check if a job is a reflection trigger that should be handled directly.
 
-        Consolidation jobs are identified by name pattern: Trigger:consolidation:{phase}:{date}
+        DEPRECATED: Use _is_internal_job() instead. Kept for backwards compatibility
+        with old Trigger:consolidation: jobs that may still exist.
         """
         return job_name.startswith("Trigger:consolidation:")
+
+    def _execute_internal_job(self, job: dict):
+        """Execute an internal euno:* job by calling its mapped tool directly.
+
+        Internal jobs bypass the LLM chat loop entirely for efficiency.
+        The tool is executed directly and the job is completed.
+        """
+        from ..tools import execute_tool
+        from ..tools.data.jobs import complete_job
+
+        job_id = job.get("id")
+        job_name = job.get("name", "")
+
+        # Find matching tool
+        tool_name = None
+        for prefix, tool in self.INTERNAL_JOB_TOOLS.items():
+            if job_name.startswith(prefix):
+                tool_name = tool
+                break
+
+        if not tool_name:
+            self._log("internal_job_unknown", {"job_id": job_id, "job_name": job_name})
+            return
+
+        self._log("internal_job_start", {
+            "job_id": job_id,
+            "job_name": job_name,
+            "tool": tool_name
+        })
+
+        try:
+            # Build tool inputs based on job
+            inputs = {"agent_id": self.id, "job_id": job_id}
+
+            # Execute tool directly
+            result = execute_tool(tool_name, inputs)
+
+            # Complete job
+            complete_job(job_id)
+
+            self._log("internal_job_complete", {
+                "job_id": job_id,
+                "tool": tool_name,
+                "result": result
+            })
+
+        except Exception as e:
+            self._log("internal_job_error", {
+                "job_id": job_id,
+                "tool": tool_name,
+                "error": str(e)
+            })
+            # Don't re-raise - job stays in todo for retry
 
     def _execute_reflection_trigger(self, job: dict):
         """Execute a reflection trigger directly (not through chat loop).
 
-        This is more efficient than letting the agent chat loop handle reflection,
-        as it makes a single LLM call instead of many.
+        DEPRECATED: This handles legacy Trigger:consolidation: jobs.
+        New code should use euno:consolidate jobs instead.
         """
         from ..tools.data.jobs import complete_job
 
@@ -613,10 +683,15 @@ class Agent:
         self._current_job_id = job_id
 
         try:
-            # Special handling for reflection triggers - call reflection directly instead of chat loop
-            # This is much more efficient (single LLM call vs many)
             job_tags = current_job.get("tags", [])
             job_name = current_job.get("name", "")
+
+            # Check for internal euno:* jobs first - these execute tools directly
+            if self._is_internal_job(job_name):
+                self._execute_internal_job(current_job)
+                return
+
+            # Legacy handling for old Trigger:consolidation: jobs (backwards compatibility)
             if self._is_reflection_trigger(job_tags, job_name):
                 self._execute_reflection_trigger(current_job)
                 return

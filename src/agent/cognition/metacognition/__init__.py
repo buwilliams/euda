@@ -29,7 +29,8 @@ from .regulation import (
     IncidentSeverity,
     get_incident_tracker,
 )
-from .consolidation import Consolidation
+# Consolidation is now in tools/system/consolidation
+from ....tools.system.consolidation import Consolidation
 
 __all__ = [
     # Main class

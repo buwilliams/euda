@@ -209,7 +209,7 @@ def record_planning_scenarios(recorder: LLMResponseRecorder):
 
 def record_append_scenarios(recorder: LLMResponseRecorder):
     """Record consolidation append phase responses."""
-    from src.agent.cognition.metacognition.consolidation.prompts import (
+    from src.tools.system.consolidation.prompts import (
         get_append_system_prompt, build_append_prompt
     )
 
