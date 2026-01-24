@@ -1,6 +1,6 @@
 {
   "id": "user",
-  "name": "Euno",
+  "name": "User",
   "state": "enabled",
   "order": 1,
   "token_budget": {
