@@ -117,7 +117,7 @@ function renderAgentDetailView(job) {
     const tokenUsage = pauseStatus.tokenUsage;
     const budgetReset = pauseStatus.budgetReset;
 
-    // Render token budget section
+    // Render token budget section (collapsible, collapsed by default)
     const renderTokenBudgetSection = () => {
         if (!tokenUsage) return '';
 
@@ -135,33 +135,38 @@ function renderAgentDetailView(job) {
 
         return `
             <div class="job-section">
-                <div class="job-section-header">Token Budget (${frequency})</div>
-                <div class="token-budget-content">
-                    <div class="token-budget-row">
-                        <span class="token-budget-label">Input</span>
-                        <div class="token-budget-bar-container">
-                            <div class="token-budget-bar" style="width: ${Math.min(inputPercent, 100)}%; background: ${getBarColor(inputPercent)};"></div>
+                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>Token Budget (${frequency})</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="token-budget-content">
+                        <div class="token-budget-row">
+                            <span class="token-budget-label">Input</span>
+                            <div class="token-budget-bar-container">
+                                <div class="token-budget-bar" style="width: ${Math.min(inputPercent, 100)}%; background: ${getBarColor(inputPercent)};"></div>
+                            </div>
+                            <span class="token-budget-value">${inputPercent.toFixed(1)}%</span>
                         </div>
-                        <span class="token-budget-value">${inputPercent.toFixed(1)}%</span>
-                    </div>
-                    <div class="token-budget-detail">
-                        ${formatTokenCount(tokenUsage.input_tokens || 0)} / ${formatTokenCount(tokenUsage.input_budget || 0)} tokens
-                    </div>
-                    <div class="token-budget-row">
-                        <span class="token-budget-label">Output</span>
-                        <div class="token-budget-bar-container">
-                            <div class="token-budget-bar" style="width: ${Math.min(outputPercent, 100)}%; background: ${getBarColor(outputPercent)};"></div>
+                        <div class="token-budget-detail">
+                            ${formatTokenCount(tokenUsage.input_tokens || 0)} / ${formatTokenCount(tokenUsage.input_budget || 0)} tokens
                         </div>
-                        <span class="token-budget-value">${outputPercent.toFixed(1)}%</span>
-                    </div>
-                    <div class="token-budget-detail">
-                        ${formatTokenCount(tokenUsage.output_tokens || 0)} / ${formatTokenCount(tokenUsage.output_budget || 0)} tokens
-                    </div>
-                    ${resetTime ? `
-                        <div class="token-budget-reset">
-                            Resets in ${resetTime}
+                        <div class="token-budget-row">
+                            <span class="token-budget-label">Output</span>
+                            <div class="token-budget-bar-container">
+                                <div class="token-budget-bar" style="width: ${Math.min(outputPercent, 100)}%; background: ${getBarColor(outputPercent)};"></div>
+                            </div>
+                            <span class="token-budget-value">${outputPercent.toFixed(1)}%</span>
                         </div>
-                    ` : ''}
+                        <div class="token-budget-detail">
+                            ${formatTokenCount(tokenUsage.output_tokens || 0)} / ${formatTokenCount(tokenUsage.output_budget || 0)} tokens
+                        </div>
+                        ${resetTime ? `
+                            <div class="token-budget-reset">
+                                Resets in ${resetTime}
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
             </div>
         `;
@@ -203,9 +208,6 @@ function renderAgentDetailView(job) {
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
             </div>
 
-            <!-- Token Budget Section -->
-            ${renderTokenBudgetSection()}
-
             <!-- Jobs Section (merged pending + completed child jobs, open first) -->
             <div class="job-section">
                 <div class="job-section-header collapsible ${allChildJobs.length > 0 ? 'open' : ''}" onclick="togglePersonaSection(this, event)">
@@ -226,6 +228,9 @@ function renderAgentDetailView(job) {
                     }
                 </div>
             </div>
+
+            <!-- Token Budget Section (collapsible, collapsed by default) -->
+            ${renderTokenBudgetSection()}
 
             <!-- Identity Section -->
             <div class="job-section">
