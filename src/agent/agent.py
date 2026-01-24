@@ -15,7 +15,7 @@ from typing import Callable, Optional
 
 from ..llms import get_client
 from .logger import get_logger
-from .cognition.metacognition import Metacognition, AgentState, Consolidation
+from .cognition.metacognition import Metacognition, AgentState, AgentPausedError, ProgressLimitExceeded, Consolidation
 
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
@@ -582,7 +582,7 @@ class Agent:
         Args:
             trigger_context: Optional event data that triggered this cycle
         """
-        from ..tools.data.jobs import list_jobs, claim_job, release_job
+        from ..tools.data.jobs import list_jobs, claim_job, release_job, error_job
 
         self._log("work_cycle_start", {"trigger": trigger_context})
         self._work_done = False
@@ -641,18 +641,18 @@ class Agent:
             defer_consolidation = self.metacognition.should_defer_consolidation()
             exchanges = []  # Collect for batched reflection if deferred
 
+            # Start progress tracking session for stuck detection
+            session_id = self.metacognition.start_work_session(session_type="work_cycle")
+            self._log("work_session_started", {"session_id": session_id})
+
             try:
                 while not self._work_done:
                     iteration += 1
                     self._log("work_iteration", {"iteration": iteration})
 
-                    # Check for stuck patterns before proceeding
-                    stuck_reason = self.metacognition.check_stuck()
-                    if stuck_reason:
-                        self._log("stuck_detected", {"reason": stuck_reason, "iteration": iteration})
-                        print(f"[{self.id}] Stuck detected: {stuck_reason}")
-                        # Don't break immediately - let the agent know it's stuck via the continue prompt
-                        break
+                    # Stuck detection happens automatically during tool execution
+                    # via record_tool_call -> ProgressTracker.record_tool_call
+                    # which raises ProgressLimitExceeded if stuck pattern detected
 
                     # Log to memory for memory creation, but don't save to conversation history
                     # Defer reflection if enabled (will batch process at end)
@@ -671,7 +671,7 @@ class Agent:
                     # Continue prompt for subsequent iterations with progress context
                     progress_ctx = self.metacognition.get_progress_context()
 
-                    # Format stuck warning if detected
+                    # Format stuck warning if detected (safeguard check)
                     stuck_warning = ""
                     if progress_ctx.get("stuck_warning"):
                         stuck_warning = f"**Warning:** {progress_ctx['stuck_warning']}"
@@ -683,7 +683,22 @@ class Agent:
                     )
 
                 self._log("work_cycle_end", {"reason": "done_working", "iterations": iteration})
+
+            except ProgressLimitExceeded as e:
+                # Stuck pattern detected during tool execution
+                self._log("stuck_detected", {"reason": e.reason, "iteration": iteration})
+                print(f"[{self.id}] Stuck detected: {e.reason}")
+                # Mark job as error (prevents release_job from resetting to todo)
+                error_job(job_id, f"Stuck: {e.reason}", self.id)
+                # Pause agent to require manual intervention
+                raise AgentPausedError(self.id, f"Stuck: {e.reason}")
+
             finally:
+                # End progress tracking session
+                session_stats = self.metacognition.end_work_session()
+                if session_stats:
+                    self._log("work_session_ended", session_stats)
+
                 # Batch reflection at end of work cycle (if deferred)
                 if defer_consolidation and self.consolidation and exchanges:
                     self._log("reflection_batch", {"exchange_count": len(exchanges)})

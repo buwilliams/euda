@@ -952,61 +952,73 @@ class TestWorkCycleStuckDetection:
             with patch("src.agent.agent.DATA_DIR", tmp_path):
                 return Agent("test-agent")
 
-    def test_work_cycle_checks_stuck_each_iteration(self, tmp_path):
-        """work_cycle_sync() checks for stuck patterns each iteration.
+    def test_work_cycle_starts_progress_session(self, tmp_path):
+        """work_cycle_sync() starts a progress tracking session.
 
-        Spec: Detects stuck patterns: same tool called repeatedly with identical inputs.
+        Spec: All loop detection is centralized in progress.py.
         """
         agent = self._create_agent(tmp_path)
 
         mock_job = {"id": "job-1", "name": "Job", "tags": [], "description": "Test"}
-        iteration_count = [0]
 
-        def track_chat(*args, **kwargs):
-            iteration_count[0] += 1
-            if iteration_count[0] >= 2:
-                agent._work_done = True
+        def finish_work(*args, **kwargs):
+            agent._work_done = True
             return "Response"
 
         with patch("src.tools.data.jobs.list_jobs", return_value=[mock_job]):
             with patch("src.tools.data.jobs.claim_job", return_value={"claimed": True}):
                 with patch("src.tools.data.jobs.release_job"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
-                        with patch.object(agent.metacognition, 'check_stuck', return_value=None) as mock_check:
-                            with patch.object(agent, 'chat', side_effect=track_chat):
-                                with patch.object(agent, '_log'):
-                                    agent.work_cycle_sync()
+                        with patch.object(agent.metacognition, 'start_work_session', return_value="test-session") as mock_start:
+                            with patch.object(agent.metacognition, 'end_work_session', return_value={}) as mock_end:
+                                with patch.object(agent, 'chat', side_effect=finish_work):
+                                    with patch.object(agent, '_log'):
+                                        agent.work_cycle_sync()
 
-                            # check_stuck should be called each iteration
-                            assert mock_check.call_count >= 1
+                            # Session should be started and ended
+                            mock_start.assert_called_once_with(session_type="work_cycle")
+                            mock_end.assert_called_once()
 
     def test_work_cycle_breaks_when_stuck(self, tmp_path):
-        """work_cycle_sync() breaks loop when stuck is detected.
+        """work_cycle_sync() raises AgentPausedError when stuck is detected.
 
-        Spec: Breaks work cycle when stuck detected.
+        Spec: Pauses agent and marks job as error when stuck detected.
         """
+        from src.agent.cognition.metacognition import AgentPausedError, ProgressLimitExceeded
+
         agent = self._create_agent(tmp_path)
 
         mock_job = {"id": "job-1", "name": "Job", "tags": [], "description": "Test"}
         chat_calls = [0]
 
-        def count_chat(*args, **kwargs):
+        def raise_stuck(*args, **kwargs):
             chat_calls[0] += 1
-            return "Response"
+            # Simulate stuck detection during tool execution in chat()
+            raise ProgressLimitExceeded("test-agent", "test-session", "Same tool 'test' called 5 times with identical inputs")
 
         with patch("src.tools.data.jobs.list_jobs", return_value=[mock_job]):
             with patch("src.tools.data.jobs.claim_job", return_value={"claimed": True}):
                 with patch("src.tools.data.jobs.release_job"):
-                    with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
-                        # Return "stuck" on first check
-                        with patch.object(agent.metacognition, 'check_stuck', return_value="Repeated tool calls"):
-                            with patch.object(agent, 'chat', side_effect=count_chat):
-                                with patch.object(agent, '_log'):
-                                    agent.work_cycle_sync()
+                    with patch("src.tools.data.jobs.error_job") as mock_error_job:
+                        with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
+                            with patch.object(agent.metacognition, 'start_work_session', return_value="test-session"):
+                                with patch.object(agent.metacognition, 'end_work_session', return_value={}):
+                                    # Raise ProgressLimitExceeded during chat (simulating stuck during tool execution)
+                                    with patch.object(agent, 'chat', side_effect=raise_stuck):
+                                        with patch.object(agent, '_log'):
+                                            with pytest.raises(AgentPausedError) as exc_info:
+                                                agent.work_cycle_sync()
 
-                        # Should have minimal chat calls (stuck detected immediately)
-                        # The loop breaks before second iteration
-                        assert chat_calls[0] <= 1
+                            # Should pause with stuck reason
+                            assert "Stuck" in str(exc_info.value)
+                            # Should have one chat call (stuck detected during first chat)
+                            assert chat_calls[0] == 1
+                            # Should mark job as error
+                            mock_error_job.assert_called_once()
+                            call_args = mock_error_job.call_args[0]
+                            assert call_args[0] == "job-1"
+                            assert "Stuck" in call_args[1]
+                            assert call_args[2] == "test-agent"
 
 
 # =============================================================================
