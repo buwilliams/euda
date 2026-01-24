@@ -1,9 +1,5 @@
 // Euno - Focus Data Loading & Utilities
 
-// ============== Live Execution State ==============
-
-let activeExecution = null;
-
 // ============== Agent Pause Status ==============
 
 let agentPauseStatus = {};  // Cache: { agentId: { isPaused, reason, timestamp, tokenUsage, budgetReset } }
@@ -112,59 +108,12 @@ async function resetAgentTokenUsage(agentId) {
     return false;
 }
 
-async function loadActiveExecutions(agentId) {
-    try {
-        const response = await fetch(`/api/agents/${agentId}/active-executions`, {
-            credentials: 'same-origin'
-        });
-        if (response.ok) {
-            const executions = await response.json();
-            // Restore activeExecution if there's an active trigger job
-            if (executions.length > 0) {
-                const exec = executions[0];  // Take the first (most recent)
-                activeExecution = {
-                    executionId: exec.execution_id,
-                    agentId: agentId,
-                    phase: exec.phase,
-                    step: 'running',
-                    message: 'In progress...'
-                };
-            }
-            return executions;
-        }
-    } catch (error) {
-        console.error('Failed to load active executions:', error);
-    }
-    return [];
-}
-
 function handleReflectionProgress(data) {
-    // Match by execution_id if we have one, otherwise match by agent_id
-    if (activeExecution &&
-        (activeExecution.executionId === data.execution_id ||
-         (!activeExecution.executionId && activeExecution.agentId === data.agent_id))) {
-        activeExecution.executionId = data.execution_id; // Update if we didn't have it
-        activeExecution.step = data.step;
-        activeExecution.message = data.message;
-        if (data.input_tokens) {
-            activeExecution.tokens = {
-                input: data.input_tokens,
-                output: data.output_tokens
-            };
-        }
-        updateExecutionUI();
-    }
+    // Progress tracking removed - consolidation job in jobs list serves as indicator
 }
 
 function handleReflectionComplete(data) {
-    if (activeExecution &&
-        (activeExecution.executionId === data.execution_id ||
-         activeExecution.agentId === data.agent_id)) {
-        activeExecution = null;
-        updateExecutionUI();
-    }
-
-    // Always invalidate caches when reflection completes for any agent
+    // Invalidate caches when consolidation completes
     if (data.agent_id) {
         // Clear agent data cache (identity, config) to force reload
         delete agentDataCache[data.agent_id];
@@ -215,92 +164,8 @@ function handleReflectionComplete(data) {
 }
 
 function handleReflectionError(data) {
-    if (activeExecution &&
-        (activeExecution.executionId === data.execution_id ||
-         activeExecution.agentId === data.agent_id)) {
-        activeExecution.error = data.error;
-        activeExecution.step = 'error';
-        activeExecution.message = `Error: ${data.error}`;
-        updateExecutionUI();
-        // Clear after showing error
-        setTimeout(() => {
-            if (activeExecution?.executionId === data.execution_id) {
-                activeExecution = null;
-                updateExecutionUI();
-            }
-        }, 5000);
-    }
-}
-
-function updateExecutionUI() {
-    // Try to update just the progress banner instead of re-rendering the entire view
-    const progressBanner = document.querySelector('.reflection-progress');
-
-    if (progressBanner && activeExecution) {
-        // Update message without recreating the spinner
-        const messageEl = progressBanner.querySelector('.progress-message');
-        if (messageEl) {
-            messageEl.textContent = activeExecution.message || 'Processing...';
-        }
-
-        // Update tokens if they exist
-        const tokensEl = progressBanner.querySelector('.progress-tokens');
-        if (activeExecution.tokens) {
-            if (tokensEl) {
-                tokensEl.textContent = `${activeExecution.tokens.input} in / ${activeExecution.tokens.output} out`;
-            } else {
-                // Add tokens display if it doesn't exist
-                const bodyEl = progressBanner.querySelector('.reflection-progress-body');
-                if (bodyEl) {
-                    bodyEl.insertAdjacentHTML('beforeend', `
-                        <div class="progress-tokens">
-                            ${activeExecution.tokens.input} in / ${activeExecution.tokens.output} out
-                        </div>
-                    `);
-                }
-            }
-        }
-    } else {
-        // Full re-render if progress banner doesn't exist or execution cleared
-        if (focusView && focusView.startsWith('monitoring-')) {
-            renderFocusTab();
-        } else if (focusView && focusView.startsWith('job-') && activeExecution) {
-            // Check if viewing the agent's job detail page
-            const agentJob = jobsData.find(j => j.agent_id === activeExecution.agentId);
-            if (agentJob && focusView === `job-${agentJob.id}`) {
-                renderFocusTab();
-            }
-        }
-    }
-}
-
-function getActiveExecutionHtml(agentId) {
-    if (!activeExecution || activeExecution.agentId !== agentId) {
-        return '';
-    }
-
-    const phaseLabel = activeExecution.phase === 'append' ? 'Append' :
-                       activeExecution.phase === 'consolidate' ? 'Consolidate' : activeExecution.phase;
-
-    const isError = activeExecution.step === 'error';
-    const statusClass = isError ? 'reflection-progress error' : 'reflection-progress';
-
-    return `
-        <div class="${statusClass}">
-            <div class="reflection-progress-header">
-                ${isError ? icon('exclamation-triangle') : icon('arrow-path', 'spinning')}
-                <span>${isError ? 'Error' : 'Running'} ${phaseLabel}...</span>
-            </div>
-            <div class="reflection-progress-body">
-                <div class="progress-message">${escapeHtml(activeExecution.message || 'Processing...')}</div>
-                ${activeExecution.tokens ? `
-                    <div class="progress-tokens">
-                        ${activeExecution.tokens.input} in / ${activeExecution.tokens.output} out
-                    </div>
-                ` : ''}
-            </div>
-        </div>
-    `;
+    // Error handling via job status - job will show error status in jobs list
+    console.error('Consolidation error:', data.error);
 }
 
 // ============== Data Loading ==============
@@ -1047,20 +912,10 @@ async function triggerReflection(agentId, phase) {
         });
 
         if (response.ok) {
-            const result = await response.json();
-
-            // Set up active execution for SSE tracking
-            activeExecution = {
-                executionId: result.execution_id,
-                agentId: agentId,
-                phase: phase,
-                step: 'triggered',
-                message: 'Starting...'
-            };
-            updateExecutionUI();
-
+            // Job created - SSE will update the jobs list which will show the job
+            // and disable the button via the job-based check
             button.textContent = originalText;
-            button.disabled = false;
+            button.disabled = true; // Keep disabled until jobs update via SSE
         } else {
             button.textContent = 'Failed';
             setTimeout(() => {
@@ -1069,7 +924,7 @@ async function triggerReflection(agentId, phase) {
             }, 2000);
         }
     } catch (error) {
-        console.error('Failed to trigger reflection:', error);
+        console.error('Failed to trigger consolidation:', error);
         button.textContent = originalText;
         button.disabled = false;
     }

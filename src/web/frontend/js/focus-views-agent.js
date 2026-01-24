@@ -49,34 +49,19 @@ function renderAgentDetailView(job) {
         loadAgentPauseStatus(agentId).then(() => renderFocusTab());
     }
 
-    // Check active executions on initial load
-    if (!activeExecution || activeExecution.agentId !== agentId) {
-        if (!agentDataCache[agentId]?._activeExecutionsLoaded) {
-            loadActiveExecutions(agentId).then(() => {
-                if (agentDataCache[agentId]) {
-                    agentDataCache[agentId]._activeExecutionsLoaded = true;
-                }
-                renderFocusTab();
-            });
-        }
-    }
-
     const config = agentData.config || {};
     const pauseStatus = agentPauseStatus[agentId] || { state: 'enabled', isPaused: false, isDisabled: false, isEnabled: true };
     const agentState = pauseStatus.state || 'enabled';
 
-    // Check if any execution is running for this agent
-    const isRunning = activeExecution && activeExecution.agentId === agentId;
-    const runningPhase = isRunning ? activeExecution.phase : null;
+    // Check if there's an active consolidation job for this agent
+    const hasActiveConsolidateJob = allChildJobs.some(j =>
+        j.name === 'euno:consolidate' && (j.status === 'todo' || j.status === 'working')
+    );
 
-    // Helper to render action button with running state
+    // Helper to render action button - disabled when consolidation job is active
     const actionButton = (phase, iconName, label, onclick) => {
-        const isThisRunning = runningPhase === phase;
-        const classes = `task-detail-action${isThisRunning ? ' running' : ''}`;
-        const disabled = isRunning || pauseStatus.isPaused || pauseStatus.isDisabled ? 'disabled' : '';
-        const displayIcon = isThisRunning ? icon('arrow-path', 'spinning') : icon(iconName);
-        const displayLabel = isThisRunning ? `${label}...` : label;
-        return `<button class="${classes}" onclick="${onclick}" ${disabled}>${displayIcon} ${displayLabel}</button>`;
+        const disabled = hasActiveConsolidateJob || pauseStatus.isPaused || pauseStatus.isDisabled ? 'disabled' : '';
+        return `<button class="task-detail-action" onclick="${onclick}" ${disabled}>${icon(iconName)} ${label}</button>`;
     };
 
     // Status badge color class
@@ -312,9 +297,6 @@ function renderAgentDetailView(job) {
             <span class="agent-status-badge ${statusBadgeClass}">${agentState}</span>
         </div>
         <div class="focus-view-content" data-testid="agent-detail">
-            <!-- Live Execution Progress -->
-            ${getActiveExecutionHtml(agentId)}
-
             <!-- Pause Notice (if paused) -->
             ${renderPauseNotice()}
 
@@ -762,9 +744,6 @@ function renderMonitoringView(agentId) {
     const promptsList = prompts || recent_prompts || [];
     const paginationInfo = pagination || { offset: 0, limit: 20, total: promptsList.length, has_more: false };
 
-    // Get active execution progress HTML if any
-    const progressHtml = getActiveExecutionHtml(agentId);
-
     // Calculate pagination display info
     const currentPage = Math.floor(paginationInfo.offset / paginationInfo.limit) + 1;
     const totalPages = Math.ceil(paginationInfo.total / paginationInfo.limit);
@@ -780,9 +759,6 @@ function renderMonitoringView(agentId) {
             </div>
         </div>
         <div class="focus-view-content">
-            <!-- Live Progress (if running) -->
-            ${progressHtml}
-
             <!-- Stats -->
             <div class="monitoring-stats">
                 <div class="monitoring-stat">
