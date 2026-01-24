@@ -23,32 +23,25 @@ async function loadDailyQuote(retries = 3) {
         return;
     }
 
-    // Show loading state
-    container.innerHTML = `<div id="daily-quote" class="quote-container"><div class="quote-loading">Loading today's reflection...</div></div>`;
-
     try {
         const response = await fetch('/api/daily-quote', {
             credentials: 'same-origin'
         });
         if (!response.ok) {
-            console.error('Daily quote API error:', response.status, response.statusText);
-            throw new Error(`HTTP ${response.status}`);
+            container.innerHTML = '';
+            return;
         }
         const data = await response.json();
         if (data.quote) {
             focusQuoteData = data;
             renderQuote(data);
         } else {
-            throw new Error('No quote in response');
+            // No quote available yet - don't show anything
+            container.innerHTML = '';
         }
     } catch (error) {
         console.error('Failed to load daily quote:', error);
-        // Fallback
-        focusQuoteData = {
-            quote: "The only way to do great work is to love what you do.",
-            author: "Steve Jobs"
-        };
-        renderQuote(focusQuoteData);
+        container.innerHTML = '';
     }
 }
 
@@ -322,12 +315,13 @@ function showChatEmptyState() {
     );
     if (hasMessages) return;
 
+    // Only show quote section if we have a quote
     const quoteHtml = cachedChatQuote
         ? `<div class="chat-empty-quote">
                <div class="quote-text">"${escapeHtml(cachedChatQuote.quote)}"</div>
                <div class="quote-author">— ${escapeHtml(cachedChatQuote.author)}</div>
            </div>`
-        : '<div class="chat-empty-quote"><div class="quote-text" style="color: #999;">Loading...</div></div>';
+        : '';
 
     inlineMessages.innerHTML = `
         <div class="chat-empty-state" id="chat-empty-state" data-testid="chat-empty-state">

@@ -11,10 +11,9 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from ...llms import get_client, get_model, get_provider, get_providers_config, invalidate_client
+from ...llms import get_model, get_provider, get_providers_config, invalidate_client
 from ...llms.base import _load_config, LLM_CONFIG_PATH, VALID_PROVIDERS
 from ...tools.data.jobs import list_jobs
-from ...tools.data.identity import get_identity
 from ...tools.system.fresh_start import (
     perform_fresh_start,
     list_backups as _list_backups,
@@ -81,62 +80,20 @@ def _get_latest_quote_from_jobs() -> dict:
     return None
 
 
-def _generate_quote_fallback() -> dict:
-    """Generate a fallback quote for first startup or missed trigger.
-
-    This is synchronous and happens on first request if no quote job has completed yet.
-    """
-    client = get_client()
-
-    # Get user identity for personalization
-    identity = get_identity("user")
-    identity_content = identity.get("content", "") if identity.get("exists") else ""
-
-    prompt = f"""Based on this user's identity, select or compose an inspiring quote that would resonate with them today.
-
-User Identity:
-{identity_content if identity_content else "No identity available - provide a generally inspiring quote."}
-
-Respond with ONLY a JSON object in this exact format (no markdown, no explanation):
-{{"quote": "The quote text here", "author": "Author Name"}}
-
-The quote can be from a famous person, philosopher, writer, or you can compose an original one attributed to "Unknown" or "Ancient Wisdom". Make it meaningful and relevant to the user's interests, goals, concerns, or values."""
-
-    response = client.create(
-        max_tokens=256,
-        system="You are a helpful assistant that provides inspiring quotes.",
-        messages=[{"role": "user", "content": prompt}],
-        agent_id="chat"
-    )
-
-    text = response.content[0].text.strip()
-
-    # Parse JSON response
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        # Fallback if parsing fails
-        return {
-            "quote": "The journey of a thousand miles begins with a single step.",
-            "author": "Lao Tzu"
-        }
-
-
 @router.get("/daily-quote")
 def daily_quote():
     """Get a personalized daily quote.
 
-    First checks for completed euno:quote jobs. If none found, generates
-    a fallback quote synchronously (for first startup or missed triggers).
+    Returns quote from completed euno:quote jobs. If none exists yet,
+    returns empty. Quote generation happens via the euno:quote job
+    (scheduled for morning).
     """
-    # Check for quote from completed euno:quote job
     quote = _get_latest_quote_from_jobs()
     if quote:
         return quote
 
-    # Fallback: generate synchronously if no job-based quote exists yet
-    # This handles first startup before any quote job has completed
-    return _generate_quote_fallback()
+    # No quote yet - return empty (UI should handle this gracefully)
+    return {}
 
 
 # ============== Costs ==============

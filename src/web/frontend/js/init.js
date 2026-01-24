@@ -21,6 +21,7 @@ function connectSSE() {
         updateTasksBadge();
         if (activeTab === 'focus') {
             renderFocusTab();
+            if (focusView === 'menu') loadDailyQuote();
         }
         reconnectAttempts = 0;
     });
@@ -35,6 +36,7 @@ function connectSSE() {
             .slice(0, 20);
         if (activeTab === 'focus') {
             renderFocusTab();
+            if (focusView === 'menu') loadDailyQuote();
         }
         updateTasksBadge();
     });
