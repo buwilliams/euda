@@ -57,15 +57,16 @@ class Agent:
         """Check if this agent is enabled and can run."""
         return self.state == AgentState.ENABLED
 
-    def _get_enabled_agent_count(self) -> int:
-        """Get the number of enabled agents for budget splitting.
+    def _get_budget_agent_count(self) -> int:
+        """Get the number of agents sharing the budget.
 
         This is used when making LLM calls to split the budget fairly.
+        Counts enabled + paused agents so each agent's share stays constant.
         """
         from .manager import get_manager
         manager = get_manager()
         if manager:
-            return manager.get_enabled_agent_count()
+            return manager.get_budget_agent_count()
         return 1  # Fallback for standalone usage
 
     def wait_for_trigger(self, timeout: float = None) -> Optional[dict]:
@@ -495,7 +496,7 @@ class Agent:
             tools=tools if tools else None,
             agent_id=self.id,
             job_id=self._current_job_id,
-            enabled_agent_count=self._get_enabled_agent_count()
+            enabled_agent_count=self._get_budget_agent_count()
         )
 
         self._log("llm_response", {
@@ -527,7 +528,7 @@ class Agent:
                 tools=tools if tools else None,
                 agent_id=self.id,
                 job_id=self._current_job_id,
-                enabled_agent_count=self._get_enabled_agent_count()
+                enabled_agent_count=self._get_budget_agent_count()
             )
 
             self._log("llm_response", {

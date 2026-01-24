@@ -58,17 +58,20 @@ class AgentManager:
         self._agent_stop_events: Dict[str, threading.Event] = {}  # Signal agents to stop
         self._config_watch_thread: Optional[threading.Thread] = None
 
-    def get_enabled_agent_count(self) -> int:
-        """Get the number of enabled agents for budget splitting.
+    def get_budget_agent_count(self) -> int:
+        """Get the number of agents sharing the budget.
+
+        Counts enabled + paused agents (not disabled). This ensures each
+        agent's budget share stays constant regardless of pause state.
 
         Returns:
-            Count of agents in ENABLED state
+            Count of agents in ENABLED or PAUSED state
         """
         token_awareness = get_token_awareness()
         count = 0
         for agent_id in self.agents:
             state = token_awareness.get_agent_state(agent_id)
-            if state == AgentState.ENABLED:
+            if state in (AgentState.ENABLED, AgentState.PAUSED):
                 count += 1
         return max(1, count)  # At least 1 to avoid division by zero
 

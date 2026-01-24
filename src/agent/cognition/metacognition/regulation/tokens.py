@@ -185,12 +185,15 @@ class TokenAwareness:
         except ValueError:
             return AgentState.ENABLED
 
-    def _count_enabled_agents(self) -> int:
-        """Count enabled agents that share the budget.
+    def _count_budget_agents(self) -> int:
+        """Count agents that share the budget (enabled + paused, not disabled).
 
-        Only counts agents in ENABLED state. This matches the manager's
-        get_enabled_agent_count() which is used during threshold checking,
-        ensuring consistent budget calculations for both checking and display.
+        Both enabled and paused agents are counted because:
+        - They all share the same budget pool
+        - Each agent's "100%" should represent its fixed share
+        - Pausing an agent shouldn't change other agents' budget shares
+
+        Disabled agents are excluded as they're fully opted out.
         """
         count = 0
         if not AGENTS_DIR.exists():
@@ -204,8 +207,8 @@ class TokenAwareness:
                         with open(config_path) as f:
                             config = json.load(f)
                         state = config.get("state", "enabled")
-                        # Only count enabled agents (matches manager behavior)
-                        if state == "enabled":
+                        # Count enabled and paused agents (not disabled)
+                        if state in ("enabled", "paused"):
                             count += 1
                     except (json.JSONDecodeError, IOError):
                         pass
@@ -886,9 +889,9 @@ class TokenAwareness:
             budget_config = self._get_agent_budget_config(agent_id)
             usage = self._get_agent_usage(agent_id, budget_config.frequency)
 
-            # Calculate budgets using enabled agent count (matches threshold check)
-            enabled_count = self._count_enabled_agents()
-            total_budget, period_name = self._calculate_period_budget(enabled_count, budget_config.frequency)
+            # Calculate budgets using all budget-sharing agents (enabled + paused)
+            agent_count = self._count_budget_agents()
+            total_budget, period_name = self._calculate_period_budget(agent_count, budget_config.frequency)
             input_budget = int(total_budget * budget_config.input_ratio)
             output_budget = int(total_budget * budget_config.output_ratio)
 
