@@ -585,14 +585,14 @@ class TestDictBasedTriggers:
         # Create a job and claim it (changes status to 'working')
         job = create_job(
             name="euno:quote",
-            assignee="chat",
+            assignee="user",
             parent_id=None,
             created_by="system"
         )
-        claim_job(job["id"], "chat")
+        claim_job(job["id"], "user")
 
         # Should detect the working job as "open"
-        assert manager._has_open_internal_job("euno:quote", "chat") is True
+        assert manager._has_open_internal_job("euno:quote", "user") is True
 
     def test_has_open_internal_job_detects_todo_status(
         self, manager_data_dir, test_db, mock_emit_event, mock_emit_ui_event
@@ -609,13 +609,13 @@ class TestDictBasedTriggers:
         # Create a job (status='todo')
         create_job(
             name="euno:consolidate",
-            assignee="chat",
+            assignee="user",
             parent_id=None,
             created_by="system"
         )
 
         # Should detect the todo job as "open"
-        assert manager._has_open_internal_job("euno:consolidate", "chat") is True
+        assert manager._has_open_internal_job("euno:consolidate", "user") is True
 
     def test_has_open_internal_job_false_when_done(
         self, manager_data_dir, test_db, mock_emit_event, mock_emit_ui_event
@@ -632,14 +632,14 @@ class TestDictBasedTriggers:
         # Create and complete a job
         job = create_job(
             name="euno:quote",
-            assignee="chat",
+            assignee="user",
             parent_id=None,
             created_by="system"
         )
-        complete_job(job["id"], agent="chat")
+        complete_job(job["id"], agent="user")
 
         # Should NOT detect the done job as "open"
-        assert manager._has_open_internal_job("euno:quote", "chat") is False
+        assert manager._has_open_internal_job("euno:quote", "user") is False
 
 
 # =============================================================================

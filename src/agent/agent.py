@@ -106,11 +106,10 @@ class Agent:
         All agents serve the user, so they need to know who the user is.
         This returns the user's identity.md content, which contains their
         purpose, values, interests, biographical info, etc.
-        """
-        # Don't include user identity for the user agent itself
-        if self.id == "user":
-            return "(You are the user.)"
 
+        The User agent IS Euno - it uses its own identity directly through
+        the standard _build_system_prompt flow, so no special handling needed here.
+        """
         user_identity_path = AGENTS_DIR / "user" / "identity.md"
         if user_identity_path.exists():
             return user_identity_path.read_text()
@@ -593,9 +592,9 @@ class Agent:
             self._save_conversation_turn("assistant", text_response)
         self._log("chat_end", {"response_length": len(text_response)})
 
-        # Log user conversations to long-term memory for the chat agent
+        # Log user conversations to long-term memory for the user agent
         # Only log actual user conversations, not autonomous work cycles
-        if self.id == "chat" and log_to_memory:
+        if self.id == "user" and log_to_memory:
             self._append_to_long_term_memory(message, text_response)
 
         # Run reflection append phase to extract noteworthy items

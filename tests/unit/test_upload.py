@@ -20,8 +20,8 @@ class TestUploadRoute:
         # Create required directories
         user_dir = patch_data_dir / "agents" / "user" / "memory"
         user_dir.mkdir(parents=True, exist_ok=True)
-        chat_dir = patch_data_dir / "agents" / "chat"
-        chat_dir.mkdir(parents=True, exist_ok=True)
+        user_agent_dir = patch_data_dir / "agents" / "user"
+        user_agent_dir.mkdir(parents=True, exist_ok=True)
 
         # Create prompts directory with template
         prompts_dir = patch_data_dir / "system" / "prompts" / "upload"
@@ -60,15 +60,15 @@ class TestUploadRoute:
         assert call_args.kwargs["source"] == "Upload"
 
     def test_text_file_creates_job_for_memory_extraction(self, patch_data_dir):
-        """Uploading text file creates job assigned to chat agent."""
+        """Uploading text file creates job assigned to user agent."""
         from fastapi.testclient import TestClient
         from src.web.app import app
 
         # Create required directories
         user_dir = patch_data_dir / "agents" / "user" / "memory"
         user_dir.mkdir(parents=True, exist_ok=True)
-        chat_dir = patch_data_dir / "agents" / "chat"
-        chat_dir.mkdir(parents=True, exist_ok=True)
+        user_agent_dir = patch_data_dir / "agents" / "user"
+        user_agent_dir.mkdir(parents=True, exist_ok=True)
 
         # Create prompts directory with template
         prompts_dir = patch_data_dir / "system" / "prompts" / "upload"
@@ -98,7 +98,7 @@ class TestUploadRoute:
         mock_create_job.assert_called_once()
         call_args = mock_create_job.call_args
         assert call_args.kwargs["name"] == "euno:extract-memories:notes.md"
-        assert call_args.kwargs["assignee"] == "chat"
+        assert call_args.kwargs["assignee"] == "user"
         assert call_args.kwargs["tags"] == ["euno:internal"]
         assert call_args.kwargs["parent_id"] == "job-inbox"
         assert call_args.kwargs["created_by"] == "system"
@@ -162,8 +162,8 @@ class TestUploadRoute:
         # Create required directories
         user_dir = patch_data_dir / "agents" / "user" / "memory"
         user_dir.mkdir(parents=True, exist_ok=True)
-        chat_dir = patch_data_dir / "agents" / "chat"
-        chat_dir.mkdir(parents=True, exist_ok=True)
+        user_agent_dir = patch_data_dir / "agents" / "user"
+        user_agent_dir.mkdir(parents=True, exist_ok=True)
 
         # Create prompts directory with template that includes content
         prompts_dir = patch_data_dir / "system" / "prompts" / "upload"
@@ -223,7 +223,7 @@ class TestUploadRoute:
                 assert "KB" in response.json()["size"]
 
     def test_no_parent_when_inbox_not_found(self, patch_data_dir):
-        """Job created without parent when chat inbox doesn't exist."""
+        """Job created without parent when user inbox doesn't exist."""
         from fastapi.testclient import TestClient
         from src.web.app import app
 

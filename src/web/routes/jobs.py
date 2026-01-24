@@ -184,9 +184,9 @@ def api_job_feedback(job_id: str, request: JobFeedbackRequest):
     if not target_agent and job.get("assignee") and job["assignee"] != "user":
         target_agent = job["assignee"]
 
-    # Fallback to chat for routing
+    # Fallback to user agent for routing
     if not target_agent:
-        target_agent = "chat"
+        target_agent = "user"
 
     # Append feedback to job description
     current_desc = job.get("description") or ""

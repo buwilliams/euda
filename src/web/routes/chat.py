@@ -17,13 +17,13 @@ from ...agent.cognition.metacognition import AgentPausedError, get_token_awarene
 
 router = APIRouter()
 
-# Conversation directory for the chat agent (used by web UI)
-CONV_DIR = AGENTS_DIR / "chat" / "state" / "conversation"
+# Conversation directory for the user agent (used by web UI)
+CONV_DIR = AGENTS_DIR / "user" / "state" / "conversation"
 
 
 class ChatRequest(BaseModel):
     message: str
-    agent_id: str = "chat"
+    agent_id: str = "user"
     session_id: Optional[str] = None
     voice_input: bool = False
 
@@ -106,7 +106,7 @@ def api_chat(request: ChatRequest) -> ChatResponse:
 
 
 @router.get("/history")
-def api_get_history(agent_id: str = "chat", date: Optional[str] = None):
+def api_get_history(agent_id: str = "user", date: Optional[str] = None):
     """Get conversation history."""
     agent = get_agent_instance(agent_id)
 

@@ -398,7 +398,7 @@ async function processMessageQueue() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message,
-                    agent_id: 'chat',
+                    agent_id: 'user',
                     session_id: sessionId,
                     voice_input: voiceInput
                 })

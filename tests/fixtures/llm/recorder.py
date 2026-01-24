@@ -227,7 +227,7 @@ def record_append_scenarios(recorder: LLMResponseRecorder):
                 assistant_response="I'll help you remember that. Your meeting with Sarah is scheduled for tomorrow at 3pm to discuss the project deadline."
             )
         }],
-        agent_id="chat/reflection"
+        agent_id="user/reflection"
     )
 
     # Conversation with existing memory
@@ -247,7 +247,7 @@ def record_append_scenarios(recorder: LLMResponseRecorder):
                 assistant_response="I've noted that the quarterly report deadline is next Friday. Regarding your budget concerns, would you like to discuss specific areas?"
             )
         }],
-        agent_id="chat/reflection"
+        agent_id="user/reflection"
     )
 
     # No new memories needed
@@ -264,7 +264,7 @@ def record_append_scenarios(recorder: LLMResponseRecorder):
                 assistant_response="Hello! How can I help you today?"
             )
         }],
-        agent_id="chat/reflection"
+        agent_id="user/reflection"
     )
 
 
@@ -277,7 +277,7 @@ def record_chat_scenarios(recorder: LLMResponseRecorder):
         description="Simple greeting response",
         system="You are a helpful assistant named Chat. Be concise and friendly.",
         messages=[{"role": "user", "content": "Hello, how are you?"}],
-        agent_id="chat"
+        agent_id="user"
     )
 
     # Question requiring thought
@@ -286,7 +286,7 @@ def record_chat_scenarios(recorder: LLMResponseRecorder):
         description="Response to a general question",
         system="You are a helpful assistant named Chat. Be concise and friendly.",
         messages=[{"role": "user", "content": "What are three good habits for productivity?"}],
-        agent_id="chat"
+        agent_id="user"
     )
 
 

@@ -67,8 +67,8 @@ async def upload_file(file: UploadFile = File(...)):
         )
 
         # Create job to extract short-term memories
-        chat_inbox = get_agent_inbox_job("chat")
-        parent_id = chat_inbox["id"] if chat_inbox else None
+        user_inbox = get_agent_inbox_job("user")
+        parent_id = user_inbox["id"] if user_inbox else None
 
         # Truncate content for job description
         truncated_content = content[:8000] + ("..." if len(content) > 8000 else "")
@@ -81,7 +81,7 @@ async def upload_file(file: UploadFile = File(...)):
                 content=truncated_content
             ),
             tags=["euno:internal"],
-            assignee="chat",
+            assignee="user",
             parent_id=parent_id,
             created_by="system"
         )

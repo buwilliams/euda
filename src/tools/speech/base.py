@@ -258,7 +258,7 @@ class UnifiedSpeechClient:
             estimated_output_tokens = max(1, len(result.text) // 4)
 
             get_token_awareness().record(
-                agent_id="chat",
+                agent_id="user",
                 input_tokens=estimated_input_tokens,
                 output_tokens=estimated_output_tokens,
                 provider=self.provider_name,
@@ -317,7 +317,7 @@ class UnifiedSpeechClient:
             estimated_input_tokens = max(1, len(text) // 15)
 
             get_token_awareness().record(
-                agent_id="chat",
+                agent_id="user",
                 input_tokens=estimated_input_tokens,
                 output_tokens=0,
                 provider=self.provider_name,
