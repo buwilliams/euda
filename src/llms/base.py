@@ -311,7 +311,6 @@ class UnifiedClient:
         agent_id: str = "unknown",
         job_id: Optional[str] = None,
         track_cost: bool = True,
-        enabled_agent_count: int = 1,
     ) -> UnifiedResponse:
         """Create a message with automatic cost tracking and rate limiting.
 
@@ -323,7 +322,6 @@ class UnifiedClient:
             agent_id: ID of calling agent (required for cost attribution)
             job_id: ID of job being worked on (for per-job tracking)
             track_cost: Whether to track costs (default True)
-            enabled_agent_count: Number of enabled agents for budget splitting
 
         Returns:
             UnifiedResponse with content, stop_reason, and usage
@@ -343,7 +341,7 @@ class UnifiedClient:
         estimated_input = estimate_request_tokens(system, messages, tools)
 
         # 2. Pre-call: check token awareness thresholds (may raise AgentPausedError)
-        token_awareness.acquire(agent_id, estimated_input, enabled_agent_count)
+        token_awareness.acquire(agent_id, estimated_input)
 
         # 5. Pre-call: wait for any active backoff
         self._wait_for_backoff()
@@ -378,7 +376,6 @@ class UnifiedClient:
             output_tokens=response.usage.output_tokens,
             provider=self.provider_name,
             model=self.model_name,
-            enabled_agent_count=enabled_agent_count,
             job_id=job_id,
             cached_input_tokens=response.usage.cached_input_tokens,
             stop_reason=response.stop_reason,

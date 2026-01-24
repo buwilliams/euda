@@ -29,8 +29,7 @@ playwright install chromium  # for e2e tests
 uv run euno start
 
 # Run tests
-uv run pytest tests/unit/          # unit tests
-uv run pytest tests/invariants/    # design invariant tests
+uv run pytest                      # unit + integration tests (default)
 uv run pytest tests/e2e/           # e2e UI tests (requires running server)
 
 # CLI commands

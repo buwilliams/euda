@@ -260,7 +260,7 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
         system_container = get_system_container()
 
         for agent_config in list_agents():
-            if not agent_config.get("enabled", True):
+            if agent_config.get("state", "enabled") == "disabled":
                 continue
             if "memory:long-term" in agent_config.get("triggers", []):
                 job_name = f"Trigger:memory-long-term:{date}"

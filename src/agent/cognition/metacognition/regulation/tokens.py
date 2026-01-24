@@ -47,6 +47,7 @@ class TokenBudget:
     frequency: str  # "monthly", "weekly", "daily", "hourly"
     input_ratio: float  # Fraction of budget for input tokens (e.g., 0.8)
     output_ratio: float  # Fraction of budget for output tokens (e.g., 0.2)
+    consumes_tokens: bool  # Whether this agent consumes API tokens
 
 
 class AgentPausedError(Exception):
@@ -165,7 +166,8 @@ class TokenAwareness:
         return TokenBudget(
             frequency=token_budget.get("frequency", self.DEFAULT_FREQUENCY),
             input_ratio=token_budget.get("input_ratio", self.DEFAULT_INPUT_RATIO),
-            output_ratio=token_budget.get("output_ratio", self.DEFAULT_OUTPUT_RATIO)
+            output_ratio=token_budget.get("output_ratio", self.DEFAULT_OUTPUT_RATIO),
+            consumes_tokens=token_budget.get("consumes_tokens", True)
         )
 
     def _get_agent_state_from_config(self, agent_id: str) -> AgentState:
@@ -178,17 +180,47 @@ class TokenAwareness:
         except (FileNotFoundError, json.JSONDecodeError):
             return AgentState.ENABLED
 
-        # Support both old "enabled" and new "state" fields
-        state_str = agent_config.get("state")
-        if state_str:
-            try:
-                return AgentState(state_str)
-            except ValueError:
-                pass
+        # Read state field only, default to ENABLED if missing
+        state_str = agent_config.get("state", "enabled")
+        try:
+            return AgentState(state_str)
+        except ValueError:
+            return AgentState.ENABLED
 
-        # Fallback to old "enabled" field
-        enabled = agent_config.get("enabled", True)
-        return AgentState.ENABLED if enabled else AgentState.DISABLED
+    def _count_budget_agents(self) -> int:
+        """Count agents that share the budget (enabled + paused, not disabled).
+
+        Both enabled and paused agents are counted because:
+        - They all share the same budget pool
+        - Each agent's "100%" should represent its fixed share
+        - Pausing an agent shouldn't change other agents' budget shares
+
+        Disabled agents are excluded as they're fully opted out.
+        Agents with token_budget.consumes_tokens=false are excluded (e.g., user agent).
+        """
+        count = 0
+        if not AGENTS_DIR.exists():
+            return 1  # Default to 1 if no agents dir
+
+        for agent_dir in AGENTS_DIR.iterdir():
+            if agent_dir.is_dir():
+                config_path = agent_dir / "config.json"
+                if config_path.exists():
+                    try:
+                        with open(config_path) as f:
+                            config = json.load(f)
+                        state = config.get("state", "enabled")
+                        # Skip agents that don't consume tokens (e.g., user agent)
+                        token_budget = config.get("token_budget", {})
+                        if not token_budget.get("consumes_tokens", True):
+                            continue
+                        # Count enabled and paused agents (not disabled)
+                        if state in ("enabled", "paused"):
+                            count += 1
+                    except (json.JSONDecodeError, IOError):
+                        pass
+
+        return max(1, count)  # At least 1 to avoid division by zero
 
     def _save_agent_state(self, agent_id: str, state: AgentState,
                           reason: Optional[str] = None):
@@ -201,16 +233,19 @@ class TokenAwareness:
         except (FileNotFoundError, json.JSONDecodeError):
             agent_config = {"id": agent_id}
 
-        # Update state fields
+        # Update state field only (no dual-write to enabled)
         agent_config["state"] = state.value
-        agent_config["enabled"] = (state == AgentState.ENABLED)
+
+        # Remove legacy enabled field if present
+        agent_config.pop("enabled", None)
 
         if state == AgentState.PAUSED:
             agent_config["pause_reason"] = reason
             agent_config["pause_timestamp"] = datetime.now().isoformat()
         else:
-            agent_config["pause_reason"] = None
-            agent_config["pause_timestamp"] = None
+            # Remove pause fields when not paused
+            agent_config.pop("pause_reason", None)
+            agent_config.pop("pause_timestamp", None)
 
         # Ensure directory exists
         config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -268,8 +303,35 @@ class TokenAwareness:
         else:
             return now.strftime("%Y-%m-%d")
 
+    def _get_hour_bucket_key(self, frequency: str) -> str:
+        """Get the hour bucket key for temporal tracking.
+
+        For daily frequency: just the hour (00-23)
+        For weekly/monthly: day and hour (e.g., "23T14" for 23rd at 14:00)
+        For hourly: not used (the whole period is one hour)
+        """
+        now = datetime.now()
+
+        if frequency == "hourly":
+            # For hourly frequency, no sub-bucketing needed
+            return "00"
+        elif frequency == "daily":
+            # Just the hour
+            return now.strftime("%H")
+        else:
+            # Day and hour for weekly/monthly
+            return now.strftime("%dT%H")
+
     def _get_agent_usage(self, agent_id: str, frequency: str) -> dict:
-        """Get current period usage for an agent."""
+        """Get current period usage for an agent.
+
+        Returns a dict with:
+        - period_key: Current period identifier
+        - period_start: ISO timestamp when first usage was recorded
+        - input: Total input tokens for period
+        - output: Total output tokens for period
+        - hourly: Dict of hour buckets with {input, output} each
+        """
         period_key = self._get_period_key(frequency)
 
         if agent_id not in self._agent_usage:
@@ -279,12 +341,27 @@ class TokenAwareness:
 
         # Check if we're in a new period
         if agent_data.get("period_key") != period_key:
+            # New period - reset usage counters
             agent_data = {
                 "period_key": period_key,
+                "period_start": None,  # Set on first usage
                 "input": 0,
-                "output": 0
+                "output": 0,
+                "hourly": {}  # Hour buckets for temporal tracking
             }
             self._agent_usage[agent_id] = agent_data
+
+            # Auto-resume agents that were paused due to threshold
+            # (not manually paused via config)
+            if agent_id in self._paused_agents:
+                reason = self._pause_reasons.get(agent_id, "")
+                # Check if paused due to threshold (not manual pause)
+                if "threshold exceeded" in reason:
+                    self._resume_agent(agent_id, "budget period reset")
+
+        # Ensure hourly dict exists (for data migrated from old format)
+        if "hourly" not in agent_data:
+            agent_data["hourly"] = {}
 
         return agent_data
 
@@ -433,8 +510,7 @@ class TokenAwareness:
             "total_calls": sum(a["calls"] for a in agents.values()),
         }
 
-    def acquire(self, agent_id: str, estimated_input_tokens: int,
-                enabled_agent_count: int = 1) -> bool:
+    def acquire(self, agent_id: str, estimated_input_tokens: int) -> bool:
         """Acquire permission for an LLM call (pre-call check).
 
         This should be called BEFORE making an LLM API call with
@@ -443,7 +519,6 @@ class TokenAwareness:
         Args:
             agent_id: ID of the calling agent
             estimated_input_tokens: Estimated input tokens for this call
-            enabled_agent_count: Number of enabled agents for budget splitting
 
         Returns:
             True if call can proceed
@@ -471,10 +546,11 @@ class TokenAwareness:
                 self._paused_agents.add(agent_id)
                 raise AgentPausedError(agent_id, "agent is paused")
 
-            # Get budget configuration
+            # Get budget configuration - count determined internally for consistency
             budget_config = self._get_agent_budget_config(agent_id)
+            agent_count = self._count_budget_agents()
             total_budget, period_name = self._calculate_period_budget(
-                enabled_agent_count, budget_config.frequency
+                agent_count, budget_config.frequency
             )
 
             # Calculate separate input/output budgets
@@ -526,9 +602,9 @@ class TokenAwareness:
 
     def record(self, agent_id: str, input_tokens: int, output_tokens: int,
                provider: str = "openai", model: str = "unknown",
-               enabled_agent_count: int = 1, job_id: Optional[str] = None,
-               cached_input_tokens: int = 0, stop_reason: str = None,
-               duration_ms: int = None, timestamp: str = None):
+               job_id: Optional[str] = None, cached_input_tokens: int = 0,
+               stop_reason: str = None, duration_ms: int = None,
+               timestamp: str = None):
         """Record actual token usage after an API call.
 
         This should be called AFTER a successful LLM API call with
@@ -540,7 +616,6 @@ class TokenAwareness:
             output_tokens: Actual output tokens used
             provider: LLM provider name
             model: Model name
-            enabled_agent_count: Number of enabled agents
             job_id: Optional job ID for per-job tracking
             cached_input_tokens: Cached input tokens (subset of input_tokens)
             stop_reason: Reason the model stopped
@@ -582,10 +657,11 @@ class TokenAwareness:
         })
 
         with self._lock:
-            # Get budget configuration
+            # Get budget configuration - count determined internally for consistency
             budget_config = self._get_agent_budget_config(agent_id)
+            agent_count = self._count_budget_agents()
             total_budget, period_name = self._calculate_period_budget(
-                enabled_agent_count, budget_config.frequency
+                agent_count, budget_config.frequency
             )
 
             # Calculate output budget
@@ -593,8 +669,21 @@ class TokenAwareness:
 
             # Get and update usage
             usage = self._get_agent_usage(agent_id, budget_config.frequency)
+
+            # Set period_start on first usage
+            if usage.get("period_start") is None:
+                usage["period_start"] = datetime.now().isoformat()
+
+            # Update totals
             usage["input"] += input_tokens
             usage["output"] += output_tokens
+
+            # Update hourly bucket
+            hour_key = self._get_hour_bucket_key(budget_config.frequency)
+            if hour_key not in usage["hourly"]:
+                usage["hourly"][hour_key] = {"input": 0, "output": 0}
+            usage["hourly"][hour_key]["input"] += input_tokens
+            usage["hourly"][hour_key]["output"] += output_tokens
 
             # Persist usage
             self._save_usage_data()
@@ -698,6 +787,33 @@ class TokenAwareness:
             **details
         })
 
+    def _resume_agent(self, agent_id: str, reason: str):
+        """Resume a paused agent (internal helper for auto-resume on period reset).
+
+        Args:
+            agent_id: ID of the agent to resume
+            reason: Reason for resuming
+        """
+        # Remove from paused state
+        self._paused_agents.discard(agent_id)
+        self._pause_reasons.pop(agent_id, None)
+        self._pause_timestamps.pop(agent_id, None)
+
+        # Update config to enabled state
+        self._save_agent_state(agent_id, AgentState.ENABLED)
+        self._save_usage_data()
+
+        self._logger.info({
+            "event": "agent_auto_resumed",
+            "agent_id": agent_id,
+            "reason": reason
+        })
+
+        # Emit SSE event
+        emit_ui_event("agent:resumed", {"agent_id": agent_id})
+
+        print(f"[TOKEN-AWARENESS] Agent '{agent_id}' auto-resumed: {reason}")
+
     def get_agent_state(self, agent_id: str) -> AgentState:
         """Get the current state of an agent.
 
@@ -779,8 +895,9 @@ class TokenAwareness:
             budget_config = self._get_agent_budget_config(agent_id)
             usage = self._get_agent_usage(agent_id, budget_config.frequency)
 
-            # Calculate budgets (assume 1 agent for now, will be updated)
-            total_budget, period_name = self._calculate_period_budget(1, budget_config.frequency)
+            # Calculate budgets using all budget-sharing agents (enabled + paused)
+            agent_count = self._count_budget_agents()
+            total_budget, period_name = self._calculate_period_budget(agent_count, budget_config.frequency)
             input_budget = int(total_budget * budget_config.input_ratio)
             output_budget = int(total_budget * budget_config.output_ratio)
 
@@ -788,13 +905,16 @@ class TokenAwareness:
                 "agent_id": agent_id,
                 "state": self.get_agent_state(agent_id).value,
                 "frequency": budget_config.frequency,
+                "consumes_tokens": budget_config.consumes_tokens,
                 "period": usage.get("period_key"),
+                "period_start": usage.get("period_start"),
                 "input_tokens": usage.get("input", 0),
                 "output_tokens": usage.get("output", 0),
                 "input_budget": input_budget,
                 "output_budget": output_budget,
                 "input_percent": round(usage.get("input", 0) / input_budget * 100, 1) if input_budget > 0 else 0,
                 "output_percent": round(usage.get("output", 0) / output_budget * 100, 1) if output_budget > 0 else 0,
+                "hourly": usage.get("hourly", {}),
             }
 
     def get_all_agent_usage(self) -> dict:
@@ -823,6 +943,103 @@ class TokenAwareness:
                     "timestamp": self._pause_timestamps.get(agent_id)
                 }
             return {"is_paused": False}
+
+    def reset_agent_usage(self, agent_id: str):
+        """Reset token usage for an agent to zero.
+
+        This clears the current period's usage and auto-resumes the agent
+        if it was paused due to budget limits.
+
+        Args:
+            agent_id: ID of the agent to reset
+        """
+        with self._lock:
+            budget_config = self._get_agent_budget_config(agent_id)
+            period_key = self._get_period_key(budget_config.frequency)
+
+            # Reset usage to zero
+            self._agent_usage[agent_id] = {
+                "period_key": period_key,
+                "period_start": None,  # Will be set on first usage
+                "input": 0,
+                "output": 0,
+                "hourly": {}  # Clear hourly buckets
+            }
+
+            # Auto-resume if paused due to threshold
+            if agent_id in self._paused_agents:
+                reason = self._pause_reasons.get(agent_id, "")
+                if "threshold exceeded" in reason:
+                    self._resume_agent(agent_id, "usage reset")
+
+            # Save to disk
+            self._save_usage_data()
+
+            # Log the reset
+            self._logger.info({
+                "event": "token_usage_reset",
+                "agent_id": agent_id,
+                "period": period_key
+            })
+
+            print(f"[TOKEN-AWARENESS] Reset token usage for agent '{agent_id}'")
+
+    def get_time_until_reset(self, agent_id: str) -> dict:
+        """Get the time until the budget resets for an agent.
+
+        Args:
+            agent_id: ID of the agent
+
+        Returns:
+            Dict with reset_time (ISO string) and human-readable time_until
+        """
+        budget_config = self._get_agent_budget_config(agent_id)
+        frequency = budget_config.frequency
+        now = datetime.now()
+
+        if frequency == "hourly":
+            # Reset at the start of the next hour
+            reset_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        elif frequency == "daily":
+            # Reset at midnight
+            reset_time = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+        elif frequency == "weekly":
+            # Reset at midnight on Monday
+            days_until_monday = (7 - now.weekday()) % 7
+            if days_until_monday == 0:
+                days_until_monday = 7
+            reset_time = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=days_until_monday)
+        elif frequency == "monthly":
+            # Reset at midnight on the 1st
+            if now.month == 12:
+                reset_time = now.replace(year=now.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            else:
+                reset_time = now.replace(month=now.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            # Default to daily
+            reset_time = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+
+        # Calculate human-readable time until reset
+        diff = reset_time - now
+        total_seconds = int(diff.total_seconds())
+
+        if total_seconds < 3600:
+            minutes = total_seconds // 60
+            time_until = f"{minutes}m"
+        elif total_seconds < 86400:
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            time_until = f"{hours}h {minutes}m" if minutes > 0 else f"{hours}h"
+        else:
+            days = total_seconds // 86400
+            hours = (total_seconds % 86400) // 3600
+            time_until = f"{days}d {hours}h" if hours > 0 else f"{days}d"
+
+        return {
+            "reset_time": reset_time.isoformat(),
+            "time_until": time_until,
+            "frequency": frequency
+        }
 
     def invalidate_config(self):
         """Invalidate cached configuration."""

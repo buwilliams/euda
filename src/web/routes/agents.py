@@ -33,7 +33,6 @@ class UpdateIdentityRequest(BaseModel):
 
 class UpdateConfigRequest(BaseModel):
     name: Optional[str] = None
-    enabled: Optional[bool] = None
     tools: Optional[List[str]] = None
     triggers: Optional[List[str]] = None
     consolidation: Optional[Dict[str, Any]] = None  # {enabled, trigger}
@@ -113,8 +112,6 @@ def api_update_config(agent_id: str, request: UpdateConfigRequest):
     # Apply partial updates
     if request.name is not None:
         current_config["name"] = request.name
-    if request.enabled is not None:
-        current_config["enabled"] = request.enabled
     if request.tools is not None:
         current_config["tools"] = request.tools
     if request.triggers is not None:
@@ -137,7 +134,7 @@ def api_get_state(agent_id: str):
     """Get agent's current operational state.
 
     Returns the agent state (enabled, disabled, paused) and related information
-    including token usage statistics.
+    including token usage statistics and time until budget reset.
     """
     config = get_agent_config(agent_id)
     if config is None:
@@ -147,12 +144,14 @@ def api_get_state(agent_id: str):
     state = token_awareness.get_agent_state(agent_id)
     pause_info = token_awareness.get_pause_info(agent_id)
     usage = token_awareness.get_agent_usage(agent_id)
+    reset_info = token_awareness.get_time_until_reset(agent_id)
 
     return {
         "agent_id": agent_id,
         "state": state.value,
         "pause_info": pause_info if pause_info.get("is_paused") else None,
-        "token_usage": usage
+        "token_usage": usage,
+        "budget_reset": reset_info
     }
 
 
@@ -191,6 +190,32 @@ def api_update_state(agent_id: str, request: UpdateStateRequest):
         "state": new_state.value,
         "reason": request.reason,
         "message": f"Agent state changed to {new_state.value}"
+    }
+
+
+@router.post("/{agent_id}/reset-usage")
+def api_reset_usage(agent_id: str):
+    """Reset token usage for an agent to zero.
+
+    This clears the current period's token usage, allowing the agent to
+    continue working if it was paused due to budget limits.
+    """
+    config = get_agent_config(agent_id)
+    if config is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    token_awareness = get_token_awareness()
+    token_awareness.reset_agent_usage(agent_id)
+
+    # Return updated usage stats
+    usage = token_awareness.get_agent_usage(agent_id)
+    reset_info = token_awareness.get_time_until_reset(agent_id)
+
+    return {
+        "agent_id": agent_id,
+        "message": "Token usage reset to zero",
+        "token_usage": usage,
+        "budget_reset": reset_info
     }
 
 

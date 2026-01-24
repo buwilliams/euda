@@ -137,6 +137,26 @@ def perform_fresh_start(create_backup_first: bool = True) -> dict:
                         # No template, just remove the identity
                         identity_file.unlink()
                         deleted.append(f"agents/{agent_id}/identity.md")
+
+                    # Reset agent state to enabled and clear pause info
+                    config_file = agent_dir / "config.json"
+                    if config_file.exists():
+                        try:
+                            import json
+                            with open(config_file) as f:
+                                config = json.load(f)
+                            # Reset state to enabled
+                            if config.get("state") != "enabled":
+                                config["state"] = "enabled"
+                                # Remove pause-related fields
+                                config.pop("pause_reason", None)
+                                config.pop("pause_timestamp", None)
+                                with open(config_file, "w") as f:
+                                    json.dump(config, f, indent=2)
+                                    f.write("\n")
+                                reset.append(f"agents/{agent_id}/config.json (state)")
+                        except (json.JSONDecodeError, IOError):
+                            pass
                 else:
                     # Non-core agent: remove entirely
                     shutil.rmtree(agent_dir)
@@ -160,6 +180,11 @@ def perform_fresh_start(create_backup_first: bool = True) -> dict:
         if quotes_file.exists():
             quotes_file.unlink()
             deleted.append("system/quotes.json")
+        # Remove token usage data (usage tracking and call logs)
+        token_usage_dir = system_dir / "token_usage"
+        if token_usage_dir.exists():
+            shutil.rmtree(token_usage_dir)
+            deleted.append("system/token_usage/")
         # Remove consolidation logs
         consolidation_logs = system_dir / "logs" / "consolidation"
         if consolidation_logs.exists():
@@ -261,7 +286,7 @@ def delete_backup(backup_name: str) -> dict:
 
 
 def _clear_logger_caches():
-    """Clear all logger caches to prevent stale file handles."""
+    """Clear all logger caches and in-memory state to prevent stale data."""
     # Clear general loggers
     try:
         from ...agent.logger import _loggers
@@ -276,4 +301,11 @@ def _clear_logger_caches():
     except Exception:
         pass
 
-    # Clear cost logger cache (removed - metacognition.resources no longer exists)
+    # Reset token awareness singleton to clear in-memory usage data
+    try:
+        import src.agent.cognition.metacognition.regulation.tokens as tokens_module
+        if tokens_module._token_awareness is not None:
+            # Clear in-memory state by resetting the singleton
+            tokens_module._token_awareness = None
+    except Exception:
+        pass

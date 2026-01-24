@@ -50,8 +50,263 @@ function renderAgentDetailView(job) {
         loadJobAssets(job.id).then(() => renderFocusTab());
     }
 
+    // Load pause status if not cached or missing token usage data
+    if (!(agentId in agentPauseStatus) || !agentPauseStatus[agentId]?.tokenUsage) {
+        loadAgentPauseStatus(agentId).then(() => renderFocusTab());
+    }
+
+    // Check active executions on initial load
+    if (!activeExecution || activeExecution.agentId !== agentId) {
+        if (!agentDataCache[agentId]?._activeExecutionsLoaded) {
+            loadActiveExecutions(agentId).then(() => {
+                if (agentDataCache[agentId]) {
+                    agentDataCache[agentId]._activeExecutionsLoaded = true;
+                }
+                renderFocusTab();
+            });
+        }
+    }
+
     const config = agentData.config || {};
-    const isEnabled = config.enabled !== false;
+    const pauseStatus = agentPauseStatus[agentId] || { state: 'enabled', isPaused: false, isDisabled: false, isEnabled: true };
+    const agentState = pauseStatus.state || 'enabled';
+
+    // Check if any execution is running for this agent
+    const isRunning = activeExecution && activeExecution.agentId === agentId;
+    const runningPhase = isRunning ? activeExecution.phase : null;
+
+    // Helper to render action button with running state
+    const actionButton = (phase, iconName, label, onclick) => {
+        const isThisRunning = runningPhase === phase;
+        const classes = `task-detail-action${isThisRunning ? ' running' : ''}`;
+        const disabled = isRunning || pauseStatus.isPaused || pauseStatus.isDisabled ? 'disabled' : '';
+        const displayIcon = isThisRunning ? icon('arrow-path', 'spinning') : icon(iconName);
+        const displayLabel = isThisRunning ? `${label}...` : label;
+        return `<button class="${classes}" onclick="${onclick}" ${disabled}>${displayIcon} ${displayLabel}</button>`;
+    };
+
+    // Status badge color class
+    const statusBadgeClass = agentState === 'enabled' ? 'status-enabled' :
+                             agentState === 'paused' ? 'status-paused' :
+                             agentState === 'disabled' ? 'status-disabled' : '';
+
+    // Render status controls based on current state
+    const resetButton = `<button class="task-detail-action" onclick="resetAgentTokenUsage('${agentId}')">${icon('arrow-path')} Reset</button>`;
+    const renderStatusControls = () => {
+        if (agentState === 'enabled') {
+            return `
+                <button class="task-detail-action" data-testid="pause-btn" onclick="pauseAgent('${agentId}')">${icon('pause')} Pause</button>
+                <button class="task-detail-action" onclick="disableAgent('${agentId}')">${icon('x-mark')} Disable</button>
+                ${resetButton}
+            `;
+        } else if (agentState === 'paused') {
+            return `
+                <button class="task-detail-action" data-testid="resume-btn" onclick="enableAgent('${agentId}')">${icon('play')} Resume</button>
+                ${resetButton}
+            `;
+        } else if (agentState === 'disabled') {
+            return `
+                <button class="task-detail-action" onclick="enableAgent('${agentId}')">${icon('check')} Enable</button>
+                ${resetButton}
+            `;
+        }
+        return '';
+    };
+
+    // Token budget info
+    const tokenUsage = pauseStatus.tokenUsage;
+    const budgetReset = pauseStatus.budgetReset;
+
+    // Render token budget section (collapsible, collapsed by default)
+    const renderTokenBudgetSection = () => {
+        if (!tokenUsage) return '';
+
+        const inputPercent = tokenUsage.input_percent || 0;
+        const outputPercent = tokenUsage.output_percent || 0;
+        const frequency = tokenUsage.frequency || 'daily';
+        const resetTime = budgetReset?.time_until || '';
+        const periodStart = tokenUsage.period_start;
+        const hourlyData = tokenUsage.hourly || {};
+
+        // Extract projected percentage from pause reason if threshold exceeded
+        let projectedInputPercent = null;
+        let projectedOutputPercent = null;
+        if (pauseStatus.isPaused && pauseStatus.reason) {
+            const inputMatch = pauseStatus.reason.match(/input token threshold exceeded \((\d+)%\)/);
+            const outputMatch = pauseStatus.reason.match(/output token threshold exceeded \((\d+)%\)/);
+            if (inputMatch) projectedInputPercent = parseInt(inputMatch[1]);
+            if (outputMatch) projectedOutputPercent = parseInt(outputMatch[1]);
+        }
+
+        // Determine bar color based on percentage
+        const getBarColor = (percent) => {
+            if (percent >= 100) return 'var(--color-danger)';
+            if (percent >= 80) return 'var(--color-warning)';
+            return 'var(--color-success)';
+        };
+
+        // Format period start time
+        const formatPeriodStart = (isoString) => {
+            if (!isoString) return null;
+            const date = new Date(isoString);
+            const now = new Date();
+            const isToday = date.toDateString() === now.toDateString();
+            const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            if (isToday) {
+                return `today at ${time}`;
+            }
+            return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ` at ${time}`;
+        };
+
+        // Render usage breakdown based on frequency
+        const renderUsageBreakdown = () => {
+            const buckets = Object.keys(hourlyData);
+            if (buckets.length === 0) return '';
+
+            // For hourly frequency, no breakdown needed
+            if (frequency === 'hourly') return '';
+
+            const getOrdinalSuffix = (n) => {
+                const s = ['th', 'st', 'nd', 'rd'];
+                const v = n % 100;
+                return s[(v - 20) % 10] || s[v] || s[0];
+            };
+
+            // For daily frequency: show by hour
+            // For weekly/monthly: aggregate by day and show by day
+            if (frequency === 'daily') {
+                // Show hourly breakdown
+                const hours = buckets.sort();
+                const rows = hours.map(hour => {
+                    const data = hourlyData[hour];
+                    return `<div class="hourly-row">
+                        <span class="hourly-label">${hour}:00</span>
+                        <span class="hourly-value">${formatTokenCount(data.input)} in / ${formatTokenCount(data.output)} out</span>
+                    </div>`;
+                }).join('');
+
+                return `
+                    <div class="hourly-breakdown">
+                        <div class="hourly-header">Usage by hour</div>
+                        ${rows}
+                    </div>
+                `;
+            } else {
+                // Weekly or monthly: aggregate by day
+                // Bucket keys are like "23T14" (day 23, hour 14)
+                const dailyTotals = {};
+                buckets.forEach(key => {
+                    const data = hourlyData[key];
+                    let dayKey;
+                    if (key.includes('T')) {
+                        dayKey = key.split('T')[0]; // Extract day part
+                    } else {
+                        // Fallback for unexpected format
+                        dayKey = key;
+                    }
+                    if (!dailyTotals[dayKey]) {
+                        dailyTotals[dayKey] = { input: 0, output: 0 };
+                    }
+                    dailyTotals[dayKey].input += data.input || 0;
+                    dailyTotals[dayKey].output += data.output || 0;
+                });
+
+                const days = Object.keys(dailyTotals).sort();
+                const rows = days.map(day => {
+                    const data = dailyTotals[day];
+                    const dayNum = parseInt(day);
+                    const label = `${dayNum}${getOrdinalSuffix(dayNum)}`;
+                    return `<div class="hourly-row">
+                        <span class="hourly-label">${label}</span>
+                        <span class="hourly-value">${formatTokenCount(data.input)} in / ${formatTokenCount(data.output)} out</span>
+                    </div>`;
+                }).join('');
+
+                return `
+                    <div class="hourly-breakdown">
+                        <div class="hourly-header">Usage by day</div>
+                        ${rows}
+                    </div>
+                `;
+            }
+        };
+
+        const periodStartFormatted = formatPeriodStart(periodStart);
+        const consumesTokens = tokenUsage.consumes_tokens !== false;
+
+        // Show different content for agents that don't consume tokens
+        const renderBudgetContent = () => {
+            if (!consumesTokens) {
+                return `
+                    <div class="token-budget-no-consume">
+                        This agent doesn't consume API tokens.
+                    </div>
+                `;
+            }
+
+            return `
+                ${periodStartFormatted ? `
+                    <div class="token-budget-period-start">
+                        Active since ${periodStartFormatted}
+                    </div>
+                ` : ''}
+                <div class="token-budget-row">
+                    <span class="token-budget-label">Input</span>
+                    <div class="token-budget-bar-container">
+                        <div class="token-budget-bar" style="width: ${Math.min(inputPercent, 100)}%; background: ${getBarColor(projectedInputPercent || inputPercent)};"></div>
+                        ${projectedInputPercent ? `<div class="token-budget-projected-marker" style="left: ${Math.min(projectedInputPercent, 100)}%;"></div>` : ''}
+                    </div>
+                    <span class="token-budget-value">${inputPercent.toFixed(1)}%${projectedInputPercent ? ` <span class="projected-percent">(${projectedInputPercent}% projected)</span>` : ''}</span>
+                </div>
+                <div class="token-budget-detail">
+                    ${formatTokenCount(tokenUsage.input_tokens || 0)} / ${formatTokenCount(tokenUsage.input_budget || 0)} tokens
+                </div>
+                <div class="token-budget-row">
+                    <span class="token-budget-label">Output</span>
+                    <div class="token-budget-bar-container">
+                        <div class="token-budget-bar" style="width: ${Math.min(outputPercent, 100)}%; background: ${getBarColor(projectedOutputPercent || outputPercent)};"></div>
+                        ${projectedOutputPercent ? `<div class="token-budget-projected-marker" style="left: ${Math.min(projectedOutputPercent, 100)}%;"></div>` : ''}
+                    </div>
+                    <span class="token-budget-value">${outputPercent.toFixed(1)}%${projectedOutputPercent ? ` <span class="projected-percent">(${projectedOutputPercent}% projected)</span>` : ''}</span>
+                </div>
+                <div class="token-budget-detail">
+                    ${formatTokenCount(tokenUsage.output_tokens || 0)} / ${formatTokenCount(tokenUsage.output_budget || 0)} tokens
+                </div>
+                ${resetTime ? `
+                    <div class="token-budget-reset">
+                        Resets in ${resetTime}
+                    </div>
+                ` : ''}
+                ${renderUsageBreakdown()}
+            `;
+        };
+
+        return `
+            <div class="job-section">
+                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>Token Budget${consumesTokens ? ` (${frequency})` : ''}</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="token-budget-content">
+                        ${renderBudgetContent()}
+                    </div>
+                </div>
+            </div>
+        `;
+    };
+
+    // Render pause reason notice if paused
+    const renderPauseNotice = () => {
+        if (!pauseStatus.isPaused) return '';
+        // Show simple message - the detailed reason may contain stale percentage data
+        const timeAgo = pauseStatus.timestamp ? formatPauseTimestamp(pauseStatus.timestamp) : '';
+        return `
+            <div class="pause-notice">
+                ${icon('exclamation-triangle')} Agent paused due to token budget${timeAgo ? ` (${timeAgo})` : ''}
+            </div>
+        `;
+    };
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -62,9 +317,17 @@ function renderAgentDetailView(job) {
             </div>
         </div>
         <div class="focus-view-content" data-testid="agent-detail">
-            <!-- Actions Row -->
+            <!-- Live Execution Progress -->
+            ${getActiveExecutionHtml(agentId)}
+
+            <!-- Pause Notice (if paused) -->
+            ${renderPauseNotice()}
+
+            <!-- Action Menu - all controls in one row -->
             <div class="task-detail-actions">
-                <button class="task-detail-action" onclick="toggleAgentEnabled('${agentId}', ${!isEnabled})">${isEnabled ? icon('x-mark') + ' Disable' : icon('check') + ' Enable'}</button>
+                <span class="agent-status-badge ${statusBadgeClass}">${agentState}</span>
+                ${renderStatusControls()}
+                ${actionButton('consolidate', 'archive-box', 'Consolidate', `triggerReflection('${agentId}', 'consolidate')`)}
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
             </div>
 
@@ -89,10 +352,53 @@ function renderAgentDetailView(job) {
                 </div>
             </div>
 
-            <!-- Manage Navigation -->
+            <!-- Token Budget Section (collapsible, collapsed by default) -->
+            ${renderTokenBudgetSection()}
+
+            <!-- Identity Section -->
             <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('manage-agent-${agentId}')">
-                    <span>Manage</span>
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('identity-${agentId}')">
+                    <span>Identity</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+            </div>
+
+            <!-- Configuration Section -->
+            <div class="job-section">
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('config-${agentId}')">
+                    <span>Configuration</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+            </div>
+
+            <!-- Short-term Memory Section -->
+            <div class="job-section">
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('memory-list-${agentId}')">
+                    <span>Short-term Memory</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+            </div>
+
+            <!-- Long-term Memory Section -->
+            <div class="job-section">
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('long-term-memory-${agentId}')">
+                    <span>Long-term Memory</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+            </div>
+
+            <!-- Monitoring Section -->
+            <div class="job-section">
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('monitoring-${agentId}')">
+                    <span>Monitoring</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+            </div>
+
+            <!-- Incidents Section -->
+            <div class="job-section">
+                <div class="job-section-header collapsible clickable" onclick="navigateFocus('rate-limits-${agentId}')">
+                    <span>Incidents</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
             </div>
@@ -127,29 +433,7 @@ function renderAgentDetailView(job) {
     `;
 }
 
-// ============== Agent Pause Banner ==============
-
-function renderPauseBanner(agentId, pauseStatus) {
-    const reason = pauseStatus.reason || 'Agent paused due to threshold breach';
-    const timestamp = pauseStatus.timestamp;
-    const timeAgo = timestamp ? formatPauseTimestamp(timestamp) : '';
-
-    return `
-        <div class="agent-paused-banner">
-            <div class="pause-banner-content">
-                ${icon('exclamation-triangle')}
-                <div class="pause-banner-text">
-                    <strong>Agent Paused</strong>
-                    <span class="pause-reason">${escapeHtml(reason)}</span>
-                    ${timeAgo ? `<span class="pause-time">${timeAgo}</span>` : ''}
-                </div>
-            </div>
-            <button class="pause-resume-btn" data-testid="resume-btn" onclick="resumeAgent('${agentId}')">
-                ${icon('play')} Resume
-            </button>
-        </div>
-    `;
-}
+// ============== Agent Pause Helpers ==============
 
 function formatPauseTimestamp(timestamp) {
     if (!timestamp) return '';
@@ -163,168 +447,6 @@ function formatPauseTimestamp(timestamp) {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-// ============== Agent Manage View ==============
-
-function renderAgentManageView(agentId) {
-    const agent = agentsCache?.find(a => a.id === agentId);
-    // Also try agentDataCache
-    const agentData = agentDataCache[agentId];
-
-    // Load agent data if not cached
-    if (!agentData) {
-        loadAgentData(agentId).then(() => renderFocusTab());
-        return `
-            <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
-                <div class="focus-view-header-content">
-                    <span class="focus-view-title">Manage</span>
-                    ${renderBreadcrumbs()}
-                </div>
-            </div>
-            <div class="focus-view-content">
-                <div class="focus-empty">Loading agent data...</div>
-            </div>
-        `;
-    }
-
-    // Load pause status if not cached
-    if (!(agentId in agentPauseStatus)) {
-        loadAgentPauseStatus(agentId).then(() => renderFocusTab());
-    }
-
-    // Check active executions on initial load to restore button state after page refresh
-    // Only check if we don't already have an active execution for this agent
-    if (!activeExecution || activeExecution.agentId !== agentId) {
-        // Check if we've already loaded active executions for this agent
-        if (!agentDataCache[agentId]?._activeExecutionsLoaded) {
-            loadActiveExecutions(agentId).then(() => {
-                if (agentDataCache[agentId]) {
-                    agentDataCache[agentId]._activeExecutionsLoaded = true;
-                }
-                renderFocusTab();
-            });
-        }
-    }
-
-    const displayName = agent?.name || agentData?.config?.name || agentId;
-    const pauseStatus = agentPauseStatus[agentId] || { state: 'enabled', isPaused: false, isDisabled: false, isEnabled: true };
-    const agentState = pauseStatus.state || 'enabled';
-
-    // Check if any execution is running for this agent
-    const isRunning = activeExecution && activeExecution.agentId === agentId;
-    const runningPhase = isRunning ? activeExecution.phase : null;
-
-    // Helper to render action button with running state
-    const actionButton = (phase, iconName, label, onclick) => {
-        const isThisRunning = runningPhase === phase;
-        const classes = `task-detail-action${isThisRunning ? ' running' : ''}`;
-        const disabled = isRunning || pauseStatus.isPaused || pauseStatus.isDisabled ? 'disabled' : '';
-        const displayIcon = isThisRunning ? icon('arrow-path', 'spinning') : icon(iconName);
-        const displayLabel = isThisRunning ? `${label}...` : label;
-        return `<button class="${classes}" onclick="${onclick}" ${disabled}>${displayIcon} ${displayLabel}</button>`;
-    };
-
-    // Status badge color class
-    const statusBadgeClass = agentState === 'enabled' ? 'status-enabled' :
-                             agentState === 'paused' ? 'status-paused' :
-                             agentState === 'disabled' ? 'status-disabled' : '';
-
-    // Render status controls based on current state
-    const renderStatusControls = () => {
-        if (agentState === 'enabled') {
-            return `
-                <button class="task-detail-action" data-testid="pause-btn" onclick="pauseAgent('${agentId}')">${icon('pause')} Pause</button>
-                <button class="task-detail-action" onclick="disableAgent('${agentId}')">${icon('x-mark')} Disable</button>
-            `;
-        } else if (agentState === 'paused') {
-            return `
-                <button class="task-detail-action" onclick="enableAgent('${agentId}')">${icon('play')} Resume</button>
-            `;
-        } else if (agentState === 'disabled') {
-            return `
-                <button class="task-detail-action" onclick="enableAgent('${agentId}')">${icon('check')} Enable</button>
-            `;
-        }
-        return '';
-    };
-
-    return `
-        <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
-            <div class="focus-view-header-content">
-                <span class="focus-view-title">Manage</span>
-                ${renderBreadcrumbs()}
-            </div>
-        </div>
-        <div class="focus-view-content">
-            ${pauseStatus.isPaused ? renderPauseBanner(agentId, pauseStatus) : ''}
-
-            <!-- Live Execution Progress -->
-            ${getActiveExecutionHtml(agentId)}
-
-            <!-- Status Row -->
-            <div class="task-detail-actions">
-                <span class="agent-status-badge ${statusBadgeClass}">${agentState}</span>
-                ${renderStatusControls()}
-            </div>
-
-            <!-- Action Menu -->
-            <div class="task-detail-actions">
-                ${actionButton('append', 'arrow-path', 'Append', `triggerReflection('${agentId}', 'append')`)}
-                ${actionButton('consolidate', 'archive-box', 'Consolidate', `triggerReflection('${agentId}', 'consolidate')`)}
-            </div>
-
-            <!-- Identity Section - navigates to identity view -->
-            <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('identity-${agentId}')">
-                    <span>Identity</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-            </div>
-
-            <!-- Configuration Section - navigates to config view -->
-            <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('config-${agentId}')">
-                    <span>Configuration</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-            </div>
-
-            <!-- Short-term Memory Section - navigates to memory list view -->
-            <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('memory-list-${agentId}')">
-                    <span>Short-term Memory</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-            </div>
-
-            <!-- Long-term Memory Section - navigates to memory dates view -->
-            <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('long-term-memory-${agentId}')">
-                    <span>Long-term Memory</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-            </div>
-
-            <!-- Monitoring Section - navigates to prompts list view -->
-            <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('monitoring-${agentId}')">
-                    <span>Monitoring</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-            </div>
-
-            <!-- Incidents Section - navigates to incidents view -->
-            <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('rate-limits-${agentId}')">
-                    <span>Incidents</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-            </div>
-        </div>
-    `;
 }
 
 // ============== Memory List View ==============

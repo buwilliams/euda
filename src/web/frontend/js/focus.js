@@ -86,9 +86,6 @@ function renderFocusTab() {
     } else if (focusView.startsWith('trace-')) {
         const jobId = focusView.substring(6);
         content = renderJobTraceView(jobId);
-    } else if (focusView.startsWith('manage-agent-')) {
-        const agentId = focusView.substring(13);
-        content = renderAgentManageView(agentId);
     } else if (focusView.startsWith('memory-list-')) {
         const agentId = focusView.substring(12);
         content = renderMemoryListView(agentId);
@@ -270,9 +267,6 @@ function getViewDisplayName(view) {
     }
 
     // Agent-related views
-    if (view.startsWith('manage-agent-')) {
-        return 'Manage';
-    }
     if (view.startsWith('identity-')) {
         return 'Identity';
     }

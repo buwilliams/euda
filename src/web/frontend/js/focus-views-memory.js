@@ -84,9 +84,7 @@ function renderReflectionContent(data, agentId) {
     return `
         <div class="reflection-section">
             <div class="reflection-actions">
-                <button class="btn-secondary" onclick="triggerReflection('${agentId}', 'append')">Run Append</button>
-                <button class="btn-secondary" onclick="triggerReflection('${agentId}', 'consolidate')">Run Consolidate</button>
-                <button class="btn-primary" onclick="triggerReflection('${agentId}', 'both')">Run Both</button>
+                <button class="btn-primary" onclick="triggerReflection('${agentId}', 'consolidate')">Run Consolidate</button>
             </div>
             <div class="reflection-logs">
                 <div class="monitoring-section-title">Recent Activity (7 days)</div>

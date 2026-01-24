@@ -1,12 +1,9 @@
 {
   "id": "user",
   "name": "User",
-  "enabled": true,
   "state": "enabled",
   "token_budget": {
-    "frequency": "daily",
-    "input_ratio": 0.8,
-    "output_ratio": 0.2
+    "consumes_tokens": false
   },
   "tools": [
     "done_working",

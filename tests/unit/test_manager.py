@@ -58,7 +58,6 @@ def create_manager_agent(manager_data_dir):
         config = {
             "id": agent_id,
             "name": agent_id.title(),
-            "enabled": enabled,
             "state": "enabled" if enabled else "disabled",
             "tools": ["list_jobs"],
             "triggers": triggers or ["job:assigned"]
@@ -76,7 +75,7 @@ def mock_agent():
     """Create a mock Agent instance."""
     agent = MagicMock()
     agent.id = "test-agent"
-    agent.config = {"id": "test-agent", "enabled": True, "triggers": ["system:start"]}
+    agent.config = {"id": "test-agent", "state": "enabled", "triggers": ["system:start"]}
     return agent
 
 

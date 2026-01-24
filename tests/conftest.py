@@ -138,7 +138,6 @@ def test_agent_config():
     return {
         "id": "test-agent",
         "name": "Test Agent",
-        "enabled": True,
         "state": "enabled",
         "tools": ["list_jobs", "get_job", "create_job", "complete_job"],
         "triggers": ["job:assigned"],
@@ -157,7 +156,6 @@ def create_test_agent(patch_data_dir):
         config = {
             "id": agent_id,
             "name": agent_id.title().replace("-", " "),
-            "enabled": True,
             "state": "enabled",
             "tools": ["list_jobs", "get_job", "create_job", "complete_job"],
             "triggers": ["job:assigned"],

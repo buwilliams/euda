@@ -1,7 +1,6 @@
 {
   "id": "worker",
   "name": "Worker",
-  "enabled": false,
   "state": "paused",
   "order": 10,
   "token_budget": {

@@ -82,7 +82,7 @@ def list_agents_for_routing() -> List[dict]:
                     "id": config.get("id"),
                     "name": config.get("name"),
                     "purpose": purpose,
-                    "enabled": config.get("enabled", True)
+                    "enabled": config.get("state", "enabled") == "enabled"
                 })
 
     return agents
@@ -227,7 +227,6 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
     config = {
         "id": agent_id,
         "name": name,
-        "enabled": True,
         "state": "enabled",
         "order": max_order + 1,
         "token_budget": {
@@ -383,12 +382,15 @@ def enable_agent(agent_id: str) -> dict:
     Args:
         agent_id: The agent to enable
     """
+    from ...agent.cognition.metacognition.regulation.tokens import get_token_awareness, AgentState
+
     config = get_agent_config(agent_id)
     if not config:
         return {"error": f"Agent not found: {agent_id}"}
 
-    config["enabled"] = True
-    return update_agent_config(agent_id, config)
+    token_awareness = get_token_awareness()
+    token_awareness.set_agent_state(agent_id, AgentState.ENABLED)
+    return {"agent_id": agent_id, "state": "enabled"}
 
 
 @tool("disable_agent", "Disable an agent so it stops processing jobs. Use when: pausing an agent temporarily.", tool_type="agents")
@@ -398,12 +400,15 @@ def disable_agent(agent_id: str) -> dict:
     Args:
         agent_id: The agent to disable
     """
+    from ...agent.cognition.metacognition.regulation.tokens import get_token_awareness, AgentState
+
     config = get_agent_config(agent_id)
     if not config:
         return {"error": f"Agent not found: {agent_id}"}
 
-    config["enabled"] = False
-    return update_agent_config(agent_id, config)
+    token_awareness = get_token_awareness()
+    token_awareness.set_agent_state(agent_id, AgentState.DISABLED)
+    return {"agent_id": agent_id, "state": "disabled"}
 
 
 @tool("update_agent_triggers", "Update an agent's trigger configuration. Use when: changing when an agent wakes up (requires restart).", tool_type="agents")

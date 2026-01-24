@@ -14,7 +14,7 @@ from typing import Optional
 
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
-COSTS_DIR = DATA_DIR / "agents" / "user" / "costs"
+TOKEN_USAGE_DIR = DATA_DIR / "system" / "token_usage"
 PROMPTS_DIR = DATA_DIR / "system" / "logs" / "prompts"
 
 
@@ -61,13 +61,17 @@ def get_agent_monitoring(agent_id: str, offset: int = 0, limit: int = 20) -> dic
     one_hour_ago = now - timedelta(hours=1)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     today_str = now.strftime("%Y-%m-%d")
+    week_ago = now - timedelta(days=7)
 
-    # Load cost entries for last 7 days
+    # Load cost entries from monthly token usage files
+    # We need to check current month and possibly previous month for 7-day window
     entries = []
-    for i in range(7):
-        date = now - timedelta(days=i)
-        date_str = date.strftime("%Y-%m-%d")
-        path = COSTS_DIR / f"{date_str}.jsonl"
+    months_to_check = {now.strftime("%Y-%m")}
+    if week_ago.month != now.month:
+        months_to_check.add(week_ago.strftime("%Y-%m"))
+
+    for month_str in months_to_check:
+        path = TOKEN_USAGE_DIR / f"{month_str}.jsonl"
 
         if path.exists():
             try:
@@ -81,8 +85,16 @@ def get_agent_monitoring(agent_id: str, offset: int = 0, limit: int = 20) -> dic
                             # Filter by agent (exact match or sub-agent prefix match)
                             entry_agent = entry.get("agent", "")
                             if entry_agent == agent_id or entry_agent.startswith(f"{agent_id}/"):
-                                entry["_date"] = date_str  # Add date for filtering
-                                entries.append(entry)
+                                # Parse timestamp to check if within last 7 days
+                                ts_str = entry.get("timestamp", "")
+                                if ts_str:
+                                    try:
+                                        ts = datetime.fromisoformat(ts_str.replace("Z", ""))
+                                        if ts >= week_ago:
+                                            entry["_date"] = ts.strftime("%Y-%m-%d")
+                                            entries.append(entry)
+                                    except ValueError:
+                                        continue
                         except json.JSONDecodeError:
                             continue
             except IOError:
