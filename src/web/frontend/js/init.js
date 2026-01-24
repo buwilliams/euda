@@ -103,9 +103,12 @@ function connectSSE() {
                 reason: data.reason || 'Agent paused',
                 timestamp: data.timestamp
             };
-            // Re-render if viewing this agent's manage page
-            if (typeof focusView !== 'undefined' && focusView === `manage-agent-${data.agent_id}`) {
-                renderFocusTab();
+            // Re-render if viewing this agent's detail page
+            if (typeof focusView !== 'undefined' && typeof jobsData !== 'undefined') {
+                const agentJob = jobsData.find(j => j.agent_id === data.agent_id);
+                if (agentJob && focusView === `job-${agentJob.id}`) {
+                    renderFocusTab();
+                }
             }
         }
     });
@@ -122,9 +125,12 @@ function connectSSE() {
                 reason: null,
                 timestamp: null
             };
-            // Re-render if viewing this agent's manage page
-            if (typeof focusView !== 'undefined' && focusView === `manage-agent-${data.agent_id}`) {
-                renderFocusTab();
+            // Re-render if viewing this agent's detail page
+            if (typeof focusView !== 'undefined' && typeof jobsData !== 'undefined') {
+                const agentJob = jobsData.find(j => j.agent_id === data.agent_id);
+                if (agentJob && focusView === `job-${agentJob.id}`) {
+                    renderFocusTab();
+                }
             }
         }
     });

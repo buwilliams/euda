@@ -198,7 +198,9 @@ function handleReflectionComplete(data) {
         // Re-render if viewing any view related to this agent
         if (focusView) {
             const agentId = data.agent_id;
-            if (focusView === `manage-agent-${agentId}` ||
+            // Check if viewing agent's job detail page
+            const agentJob = jobsData.find(j => j.agent_id === agentId);
+            if ((agentJob && focusView === `job-${agentJob.id}`) ||
                 focusView === `identity-${agentId}` ||
                 focusView === `config-${agentId}` ||
                 focusView === `monitoring-${agentId}` ||
@@ -260,8 +262,14 @@ function updateExecutionUI() {
         }
     } else {
         // Full re-render if progress banner doesn't exist or execution cleared
-        if (focusView && (focusView.startsWith('monitoring-') || focusView.startsWith('manage-agent-'))) {
+        if (focusView && focusView.startsWith('monitoring-')) {
             renderFocusTab();
+        } else if (focusView && focusView.startsWith('job-') && activeExecution) {
+            // Check if viewing the agent's job detail page
+            const agentJob = jobsData.find(j => j.agent_id === activeExecution.agentId);
+            if (agentJob && focusView === `job-${agentJob.id}`) {
+                renderFocusTab();
+            }
         }
     }
 }

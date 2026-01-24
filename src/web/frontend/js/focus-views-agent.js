@@ -50,155 +50,13 @@ function renderAgentDetailView(job) {
         loadJobAssets(job.id).then(() => renderFocusTab());
     }
 
-    const config = agentData.config || {};
-    const pauseStatus = agentPauseStatus[agentId] || { state: 'enabled' };
-    const isEnabled = pauseStatus.state === 'enabled';
-
-    return `
-        <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
-            <div class="focus-view-header-content">
-                <span class="focus-view-title">${icon('bolt')}${escapeHtml(displayName)}</span>
-                ${renderBreadcrumbs()}
-            </div>
-        </div>
-        <div class="focus-view-content" data-testid="agent-detail">
-            <!-- Actions Row -->
-            <div class="task-detail-actions">
-                <button class="task-detail-action" onclick="toggleAgentEnabled('${agentId}', ${!isEnabled})">${isEnabled ? icon('x-mark') + ' Disable' : icon('check') + ' Enable'}</button>
-                <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
-            </div>
-
-            <!-- Jobs Section (merged pending + completed child jobs, open first) -->
-            <div class="job-section">
-                <div class="job-section-header collapsible ${allChildJobs.length > 0 ? 'open' : ''}" onclick="togglePersonaSection(this, event)">
-                    <span>Jobs${allChildJobs.length > 0 ? ` (${allChildJobs.length})` : ''}</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-                <div class="collapsible-content ${allChildJobs.length > 0 ? 'open' : ''}">
-                    ${allChildJobs.length === 0 ? '<div class="focus-empty">No jobs assigned to this agent.</div>' :
-                      allChildJobs.map(child => {
-                          const isCompleted = child.status === 'done';
-                          if (isCompleted) {
-                              const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                              return renderCompletedJobCard(child, grandchildCount, true);
-                          } else {
-                              return renderJobCard(child, true);
-                          }
-                      }).join('')
-                    }
-                </div>
-            </div>
-
-            <!-- Manage Navigation -->
-            <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('manage-agent-${agentId}')">
-                    <span>Manage</span>
-                    <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-            </div>
-
-            <!-- Assets Section -->
-            ${assets.length > 0 ? `
-            <div class="job-section">
-                <div class="job-section-header">Assets (${assets.length})</div>
-                <div class="asset-list">
-                    ${assets.map(asset => {
-                        const isText = isTextAsset(asset);
-                        const assetIcon = asset.filename.endsWith('.md') ? icon('pencil') : icon('document');
-                        return isText ? `
-                            <div class="asset-item clickable" onclick="navigateFocus('asset-${job.id}-${asset.filename}')" style="cursor: pointer;">
-                                <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
-                                <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
-                                <span class="asset-item-arrow">${icon('chevron-right')}</span>
-                            </div>
-                        ` : `
-                            <div class="asset-item">
-                                <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
-                                <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                <button class="asset-item-delete" onclick="deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            </div>
-            ` : ''}
-        </div>
-    `;
-}
-
-// ============== Agent Pause Banner ==============
-
-function renderPauseBanner(agentId, pauseStatus) {
-    const reason = pauseStatus.reason || 'Agent paused due to threshold breach';
-    const timestamp = pauseStatus.timestamp;
-    const timeAgo = timestamp ? formatPauseTimestamp(timestamp) : '';
-
-    return `
-        <div class="agent-paused-banner">
-            <div class="pause-banner-content">
-                ${icon('exclamation-triangle')}
-                <div class="pause-banner-text">
-                    <strong>Agent Paused</strong>
-                    <span class="pause-reason">${escapeHtml(reason)}</span>
-                    ${timeAgo ? `<span class="pause-time">${timeAgo}</span>` : ''}
-                </div>
-            </div>
-            <button class="pause-resume-btn" data-testid="resume-btn" onclick="resumeAgent('${agentId}')">
-                ${icon('play')} Resume
-            </button>
-        </div>
-    `;
-}
-
-function formatPauseTimestamp(timestamp) {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-// ============== Agent Manage View ==============
-
-function renderAgentManageView(agentId) {
-    const agent = agentsCache?.find(a => a.id === agentId);
-    // Also try agentDataCache
-    const agentData = agentDataCache[agentId];
-
-    // Load agent data if not cached
-    if (!agentData) {
-        loadAgentData(agentId).then(() => renderFocusTab());
-        return `
-            <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
-                <div class="focus-view-header-content">
-                    <span class="focus-view-title">Manage</span>
-                    ${renderBreadcrumbs()}
-                </div>
-            </div>
-            <div class="focus-view-content">
-                <div class="focus-empty">Loading agent data...</div>
-            </div>
-        `;
-    }
-
     // Load pause status if not cached
     if (!(agentId in agentPauseStatus)) {
         loadAgentPauseStatus(agentId).then(() => renderFocusTab());
     }
 
-    // Check active executions on initial load to restore button state after page refresh
-    // Only check if we don't already have an active execution for this agent
+    // Check active executions on initial load
     if (!activeExecution || activeExecution.agentId !== agentId) {
-        // Check if we've already loaded active executions for this agent
         if (!agentDataCache[agentId]?._activeExecutionsLoaded) {
             loadActiveExecutions(agentId).then(() => {
                 if (agentDataCache[agentId]) {
@@ -209,7 +67,7 @@ function renderAgentManageView(agentId) {
         }
     }
 
-    const displayName = agent?.name || agentData?.config?.name || agentId;
+    const config = agentData.config || {};
     const pauseStatus = agentPauseStatus[agentId] || { state: 'enabled', isPaused: false, isDisabled: false, isEnabled: true };
     const agentState = pauseStatus.state || 'enabled';
 
@@ -312,11 +170,11 @@ function renderAgentManageView(agentId) {
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
-                <span class="focus-view-title">Manage</span>
+                <span class="focus-view-title">${icon('bolt')}${escapeHtml(displayName)}</span>
                 ${renderBreadcrumbs()}
             </div>
         </div>
-        <div class="focus-view-content">
+        <div class="focus-view-content" data-testid="agent-detail">
             ${pauseStatus.isPaused ? renderPauseBanner(agentId, pauseStatus) : ''}
 
             <!-- Live Execution Progress -->
@@ -335,9 +193,31 @@ function renderAgentManageView(agentId) {
             <div class="task-detail-actions">
                 ${actionButton('append', 'arrow-path', 'Append', `triggerReflection('${agentId}', 'append')`)}
                 ${actionButton('consolidate', 'archive-box', 'Consolidate', `triggerReflection('${agentId}', 'consolidate')`)}
+                <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
             </div>
 
-            <!-- Identity Section - navigates to identity view -->
+            <!-- Jobs Section (merged pending + completed child jobs, open first) -->
+            <div class="job-section">
+                <div class="job-section-header collapsible ${allChildJobs.length > 0 ? 'open' : ''}" onclick="togglePersonaSection(this, event)">
+                    <span>Jobs${allChildJobs.length > 0 ? ` (${allChildJobs.length})` : ''}</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content ${allChildJobs.length > 0 ? 'open' : ''}">
+                    ${allChildJobs.length === 0 ? '<div class="focus-empty">No jobs assigned to this agent.</div>' :
+                      allChildJobs.map(child => {
+                          const isCompleted = child.status === 'done';
+                          if (isCompleted) {
+                              const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
+                              return renderCompletedJobCard(child, grandchildCount, true);
+                          } else {
+                              return renderJobCard(child, true);
+                          }
+                      }).join('')
+                    }
+                </div>
+            </div>
+
+            <!-- Identity Section -->
             <div class="job-section">
                 <div class="job-section-header collapsible clickable" onclick="navigateFocus('identity-${agentId}')">
                     <span>Identity</span>
@@ -345,7 +225,7 @@ function renderAgentManageView(agentId) {
                 </div>
             </div>
 
-            <!-- Configuration Section - navigates to config view -->
+            <!-- Configuration Section -->
             <div class="job-section">
                 <div class="job-section-header collapsible clickable" onclick="navigateFocus('config-${agentId}')">
                     <span>Configuration</span>
@@ -353,7 +233,7 @@ function renderAgentManageView(agentId) {
                 </div>
             </div>
 
-            <!-- Short-term Memory Section - navigates to memory list view -->
+            <!-- Short-term Memory Section -->
             <div class="job-section">
                 <div class="job-section-header collapsible clickable" onclick="navigateFocus('memory-list-${agentId}')">
                     <span>Short-term Memory</span>
@@ -361,7 +241,7 @@ function renderAgentManageView(agentId) {
                 </div>
             </div>
 
-            <!-- Long-term Memory Section - navigates to memory dates view -->
+            <!-- Long-term Memory Section -->
             <div class="job-section">
                 <div class="job-section-header collapsible clickable" onclick="navigateFocus('long-term-memory-${agentId}')">
                     <span>Long-term Memory</span>
@@ -369,7 +249,7 @@ function renderAgentManageView(agentId) {
                 </div>
             </div>
 
-            <!-- Monitoring Section - navigates to prompts list view -->
+            <!-- Monitoring Section -->
             <div class="job-section">
                 <div class="job-section-header collapsible clickable" onclick="navigateFocus('monitoring-${agentId}')">
                     <span>Monitoring</span>
@@ -377,15 +257,80 @@ function renderAgentManageView(agentId) {
                 </div>
             </div>
 
-            <!-- Incidents Section - navigates to incidents view -->
+            <!-- Incidents Section -->
             <div class="job-section">
                 <div class="job-section-header collapsible clickable" onclick="navigateFocus('rate-limits-${agentId}')">
                     <span>Incidents</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
             </div>
+
+            <!-- Assets Section -->
+            ${assets.length > 0 ? `
+            <div class="job-section">
+                <div class="job-section-header">Assets (${assets.length})</div>
+                <div class="asset-list">
+                    ${assets.map(asset => {
+                        const isText = isTextAsset(asset);
+                        const assetIcon = asset.filename.endsWith('.md') ? icon('pencil') : icon('document');
+                        return isText ? `
+                            <div class="asset-item clickable" onclick="navigateFocus('asset-${job.id}-${asset.filename}')" style="cursor: pointer;">
+                                <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-size">${formatFileSize(asset.size)}</span>
+                                <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                                <span class="asset-item-arrow">${icon('chevron-right')}</span>
+                            </div>
+                        ` : `
+                            <div class="asset-item">
+                                <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
+                                <span class="asset-item-size">${formatFileSize(asset.size)}</span>
+                                <button class="asset-item-delete" onclick="deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+            ` : ''}
         </div>
     `;
+}
+
+// ============== Agent Pause Banner ==============
+
+function renderPauseBanner(agentId, pauseStatus) {
+    const reason = pauseStatus.reason || 'Agent paused due to threshold breach';
+    const timestamp = pauseStatus.timestamp;
+    const timeAgo = timestamp ? formatPauseTimestamp(timestamp) : '';
+
+    return `
+        <div class="agent-paused-banner">
+            <div class="pause-banner-content">
+                ${icon('exclamation-triangle')}
+                <div class="pause-banner-text">
+                    <strong>Agent Paused</strong>
+                    <span class="pause-reason">${escapeHtml(reason)}</span>
+                    ${timeAgo ? `<span class="pause-time">${timeAgo}</span>` : ''}
+                </div>
+            </div>
+            <button class="pause-resume-btn" data-testid="resume-btn" onclick="resumeAgent('${agentId}')">
+                ${icon('play')} Resume
+            </button>
+        </div>
+    `;
+}
+
+function formatPauseTimestamp(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 // ============== Memory List View ==============
