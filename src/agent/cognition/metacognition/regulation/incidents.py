@@ -35,6 +35,8 @@ class IncidentType(Enum):
     OUTPUT_THRESHOLD_EXCEEDED = "output_threshold_exceeded"
     BUDGET_WARNING = "budget_warning"
     BUDGET_EXCEEDED = "budget_exceeded"
+    ITERATION_LIMIT_EXCEEDED = "iteration_limit_exceeded"
+    RECURSION_LIMIT_EXCEEDED = "recursion_limit_exceeded"
 
 
 @dataclass
