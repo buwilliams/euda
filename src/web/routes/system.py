@@ -102,7 +102,7 @@ The quote can be from a famous person, philosopher, writer, or you can compose a
         max_tokens=256,
         system="You are a helpful assistant that provides inspiring quotes.",
         messages=[{"role": "user", "content": prompt}],
-        agent_id="system"
+        agent_id="chat"
     )
 
     text = response.content[0].text.strip()
