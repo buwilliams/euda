@@ -75,7 +75,11 @@ function initApp() {
     // Initialize with default tab (focus)
     switchTab(activeTab);
 
-    // Show empty state for Chat tab (quote loaded after jobs data)
+    // Load daily quote for Focus tab
+    loadDailyQuote();
+
+    // Load quote and show empty state for Chat tab
+    loadChatQuote();
     showChatEmptyState();
 
     // Initialize swipe gesture handlers
@@ -84,7 +88,7 @@ function initApp() {
     // Connect SSE
     connectSSE();
 
-    // Load tasks data for badge (also loads daily quote for focus menu)
+    // Load tasks data for badge
     loadTasksData();
 
     // Load settings data (needed for voice button visibility)
