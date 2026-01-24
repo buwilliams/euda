@@ -350,6 +350,24 @@ class Agent:
         """
         return job_name.startswith("Trigger:consolidation:")
 
+    def _is_job_cancelled(self, job_id: str) -> bool:
+        """Check if a job has been cancelled (archived or deleted) by the user.
+
+        Called during work iterations to detect if the user has archived or deleted
+        the job while the agent was working on it.
+
+        Returns:
+            True if job no longer exists or is no longer in 'working' status
+        """
+        from ..tools.data.jobs import get_job
+
+        job = get_job(job_id)
+        if job is None:
+            return True  # Job was deleted
+        if job.get("status") != "working":
+            return True  # Job was archived or otherwise changed
+        return False
+
     def _execute_internal_job(self, job: dict):
         """Execute an internal euno:* job by calling its mapped tool directly.
 
@@ -734,6 +752,12 @@ class Agent:
                 while not self._work_done:
                     iteration += 1
                     self._log("work_iteration", {"iteration": iteration})
+
+                    # Check if job was cancelled (archived/deleted) by user
+                    if iteration > 1 and self._is_job_cancelled(job_id):
+                        self._log("job_cancelled", {"job_id": job_id, "iteration": iteration})
+                        print(f"[{self.id}] Job {job_id} was cancelled by user")
+                        break
 
                     # Stuck detection happens automatically during tool execution
                     # via record_tool_call -> ProgressTracker.record_tool_call
