@@ -299,7 +299,6 @@ function renderAgentDetailView(job) {
             <div class="task-detail-actions">
                 <span class="agent-status-badge ${statusBadgeClass}">${agentState}</span>
                 ${renderStatusControls()}
-                ${actionButton('append', 'arrow-path', 'Append', `triggerReflection('${agentId}', 'append')`)}
                 ${actionButton('consolidate', 'archive-box', 'Consolidate', `triggerReflection('${agentId}', 'consolidate')`)}
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
             </div>
