@@ -263,11 +263,14 @@
 .agent-status-badge {
     display: inline-flex;
     align-items: center;
-    padding: var(--spacing-xs) var(--spacing-md);
-    border-radius: var(--radius-full);
-    font-size: var(--font-size-sm);
+    padding: 3px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
     font-weight: 500;
-    text-transform: capitalize;
+    text-transform: uppercase;
+    margin-left: auto;
+    margin-right: var(--spacing-md);
+    flex-shrink: 0;
 }
 
 .agent-status-badge.status-enabled {

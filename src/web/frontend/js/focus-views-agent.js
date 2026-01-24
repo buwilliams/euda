@@ -315,6 +315,7 @@ function renderAgentDetailView(job) {
                 <span class="focus-view-title">${icon('bolt')}${escapeHtml(displayName)}</span>
                 ${renderBreadcrumbs()}
             </div>
+            <span class="agent-status-badge ${statusBadgeClass}">${agentState}</span>
         </div>
         <div class="focus-view-content" data-testid="agent-detail">
             <!-- Live Execution Progress -->
@@ -325,7 +326,6 @@ function renderAgentDetailView(job) {
 
             <!-- Action Menu - all controls in one row -->
             <div class="task-detail-actions">
-                <span class="agent-status-badge ${statusBadgeClass}">${agentState}</span>
                 ${renderStatusControls()}
                 ${actionButton('consolidate', 'archive-box', 'Consolidate', `triggerReflection('${agentId}', 'consolidate')`)}
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
