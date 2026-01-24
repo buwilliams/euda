@@ -2,18 +2,18 @@
 Upload API Route
 
 Handles file uploads by:
-1. Creating a job for the Chat agent to analyze the file
-2. Saving the file as a job asset
-3. Chat agent processes the job asynchronously using existing asset tools
+1. Storing text content in user's long-term memory
+2. Creating a job for Chat to extract short-term memories
+3. Consolidation will extract identity-relevant information later
 """
 
 from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File
 
+from ...agent.cognition.reasoning.prompts import render_template
 from ...tools.data.jobs import create_job, get_agent_inbox_job
-from ...tools.data.assets import write_asset_bytes
-from ...tools.data.memory import add_memory
+from ...tools.data.memory import write_long_term_memory
 
 
 router = APIRouter()
@@ -39,11 +39,10 @@ def is_text_file(filename: str) -> bool:
 
 @router.post("")
 async def upload_file(file: UploadFile = File(...)):
-    """Upload a file for processing.
+    """Upload a file.
 
-    Creates a job with the file as an asset for Chat agent to analyze:
-    - Text files: Chat will analyze for identity extraction
-    - All files: stored as job assets
+    Text files are stored in user's long-term memory.
+    A job is created for Chat to extract short-term memories.
     """
     filename = file.filename
     content_bytes = await file.read()
@@ -53,41 +52,52 @@ async def upload_file(file: UploadFile = File(...)):
     file_size_str = f"{file_size / 1024:.1f}KB" if file_size >= 1024 else f"{file_size}B"
     is_text = is_text_file(filename)
 
-    # Create job in Chat's inbox for processing
-    chat_inbox = get_agent_inbox_job("chat")
-    parent_id = chat_inbox["id"] if chat_inbox else None
+    # For text files, store content in user's long-term memory
+    if is_text:
+        try:
+            content = content_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            content = content_bytes.decode("latin-1")
 
-    job = create_job(
-        name=f"Analyze upload: {filename}",
-        description=f"""A file has been uploaded for analysis.
+        # Write to long-term memory
+        write_long_term_memory(
+            content=f"**File: {filename}**\n\n{content}",
+            agent_id="user",
+            source="Upload"
+        )
 
-Filename: {filename}
-Size: {file_size_str}
-Type: {"text" if is_text else "binary"}
+        # Create job to extract short-term memories
+        chat_inbox = get_agent_inbox_job("chat")
+        parent_id = chat_inbox["id"] if chat_inbox else None
 
-{"Use `read_asset` to read the file content, then extract identity-relevant information (interests, goals, concerns, biographical facts) and create appropriate memories using `add_memory`. Store analysis insights in long-term memory using `write_long_term_memory`." if is_text else "This is a binary file. Note its existence in the user's memory."}
+        # Truncate content for job description
+        truncated_content = content[:8000] + ("..." if len(content) > 8000 else "")
 
-After processing, complete this job with `complete_job`.""",
-        tags=["upload", "analysis", "background"],
-        assignee="chat",
-        parent_id=parent_id,
-        created_by="user"
-    )
+        job = create_job(
+            name=f"euno:extract-memories:{filename}",
+            description=render_template(
+                "upload/extract_memories",
+                filename=filename,
+                content=truncated_content
+            ),
+            tags=["euno:internal"],
+            assignee="chat",
+            parent_id=parent_id,
+            created_by="system"
+        )
 
-    # Save file as job asset
-    write_asset_bytes(job["id"], filename, content_bytes)
+        return {
+            "status": "uploaded",
+            "filename": filename,
+            "size": file_size_str,
+            "job_id": job["id"],
+            "message": "File stored in long-term memory. Extracting short-term memories."
+        }
 
-    # Add to user's short-term memory
-    add_memory(
-        short_description=f"Uploaded {filename}",
-        type="thing",
-        agent_id="user"
-    )
-
+    # Binary files - just note the upload
     return {
         "status": "uploaded",
         "filename": filename,
-        "job_id": job["id"],
         "size": file_size_str,
-        "message": "File uploaded. Analysis job created."
+        "message": "Binary file uploaded (not stored in memory)."
     }
