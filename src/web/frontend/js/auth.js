@@ -187,6 +187,13 @@ function renderSettings() {
         }
         // Set current value
         providerSelect.value = settingsData.llm.provider || 'anthropic';
+
+        // Populate model dropdown for current provider
+        populateModelDropdown(settingsData.llm.provider || 'anthropic');
+        const modelSelect = document.getElementById('default-model');
+        if (modelSelect && settingsData.llm.model) {
+            modelSelect.value = settingsData.llm.model;
+        }
     }
 
     // Set budget limit and period
@@ -231,6 +238,26 @@ function renderSchedules() {
     // Show message if all schedules were filtered out
     if (container.children.length === 0) {
         container.innerHTML = '<div class="schedule-row"><span class="schedule-name" style="color: var(--color-text-muted);">No editable schedules</span></div>';
+    }
+}
+
+function populateModelDropdown(providerId) {
+    const modelSelect = document.getElementById('default-model');
+    if (!modelSelect || !settingsData?.llm?.providers?.[providerId]) return;
+
+    // Clear existing options
+    while (modelSelect.firstChild) {
+        modelSelect.removeChild(modelSelect.firstChild);
+    }
+
+    const provider = settingsData.llm.providers[providerId];
+    if (provider.models) {
+        for (const model of provider.models) {
+            const option = document.createElement('option');
+            option.value = model.model;
+            option.textContent = model.display_name || model.model;
+            modelSelect.appendChild(option);
+        }
     }
 }
 
@@ -322,14 +349,19 @@ async function handleScheduleChange(name, value) {
 
 async function handleProviderChange() {
     const providerSelect = document.getElementById('default-provider');
+    const modelSelect = document.getElementById('default-model');
     const messageEl = document.getElementById('ai-message');
     const newProvider = providerSelect.value;
+
+    // Update model dropdown for new provider
+    populateModelDropdown(newProvider);
+    const firstModel = modelSelect.options[0]?.value || '';
 
     try {
         const response = await fetch('/api/settings/llm', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ default_provider: newProvider })
+            body: JSON.stringify({ default_provider: newProvider, model: firstModel })
         });
 
         if (response.ok) {
@@ -338,6 +370,34 @@ async function handleProviderChange() {
 
             // Reload settings to get updated speech capabilities
             await loadSettingsData();
+        } else {
+            const data = await response.json();
+            messageEl.textContent = data.detail || 'Failed to save';
+            messageEl.className = 'settings-message error';
+        }
+    } catch (error) {
+        messageEl.textContent = 'Connection error';
+        messageEl.className = 'settings-message error';
+    }
+
+    setTimeout(() => { messageEl.textContent = ''; }, 2000);
+}
+
+async function handleModelChange() {
+    const modelSelect = document.getElementById('default-model');
+    const messageEl = document.getElementById('ai-message');
+    const newModel = modelSelect.value;
+
+    try {
+        const response = await fetch('/api/settings/llm', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: newModel })
+        });
+
+        if (response.ok) {
+            messageEl.textContent = 'Model changed';
+            messageEl.className = 'settings-message success';
         } else {
             const data = await response.json();
             messageEl.textContent = data.detail || 'Failed to save';
