@@ -95,13 +95,17 @@ function connectSSE() {
     eventSource.addEventListener('agent:paused', (e) => {
         const data = JSON.parse(e.data);
         if (typeof agentPauseStatus !== 'undefined') {
+            // Preserve existing tokenUsage/budgetReset data
+            const existing = agentPauseStatus[data.agent_id] || {};
             agentPauseStatus[data.agent_id] = {
                 state: 'paused',
                 isPaused: true,
                 isDisabled: false,
                 isEnabled: false,
                 reason: data.reason || 'Agent paused',
-                timestamp: data.timestamp
+                timestamp: data.timestamp,
+                tokenUsage: existing.tokenUsage,
+                budgetReset: existing.budgetReset
             };
             // Re-render if viewing this agent's detail page
             if (typeof focusView !== 'undefined' && typeof jobsData !== 'undefined') {
@@ -116,14 +120,17 @@ function connectSSE() {
     eventSource.addEventListener('agent:resumed', (e) => {
         const data = JSON.parse(e.data);
         if (typeof agentPauseStatus !== 'undefined') {
-            // Set to enabled state instead of deleting (avoids refetch)
+            // Preserve existing tokenUsage/budgetReset data
+            const existing = agentPauseStatus[data.agent_id] || {};
             agentPauseStatus[data.agent_id] = {
                 state: 'enabled',
                 isPaused: false,
                 isDisabled: false,
                 isEnabled: true,
                 reason: null,
-                timestamp: null
+                timestamp: null,
+                tokenUsage: existing.tokenUsage,
+                budgetReset: existing.budgetReset
             };
             // Re-render if viewing this agent's detail page
             if (typeof focusView !== 'undefined' && typeof jobsData !== 'undefined') {

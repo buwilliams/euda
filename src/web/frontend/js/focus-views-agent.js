@@ -50,8 +50,8 @@ function renderAgentDetailView(job) {
         loadJobAssets(job.id).then(() => renderFocusTab());
     }
 
-    // Load pause status if not cached
-    if (!(agentId in agentPauseStatus)) {
+    // Load pause status if not cached or missing token usage data
+    if (!(agentId in agentPauseStatus) || !agentPauseStatus[agentId]?.tokenUsage) {
         loadAgentPauseStatus(agentId).then(() => renderFocusTab());
     }
 
