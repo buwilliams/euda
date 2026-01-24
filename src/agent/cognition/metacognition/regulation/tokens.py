@@ -47,6 +47,7 @@ class TokenBudget:
     frequency: str  # "monthly", "weekly", "daily", "hourly"
     input_ratio: float  # Fraction of budget for input tokens (e.g., 0.8)
     output_ratio: float  # Fraction of budget for output tokens (e.g., 0.2)
+    consumes_tokens: bool  # Whether this agent consumes API tokens
 
 
 class AgentPausedError(Exception):
@@ -165,7 +166,8 @@ class TokenAwareness:
         return TokenBudget(
             frequency=token_budget.get("frequency", self.DEFAULT_FREQUENCY),
             input_ratio=token_budget.get("input_ratio", self.DEFAULT_INPUT_RATIO),
-            output_ratio=token_budget.get("output_ratio", self.DEFAULT_OUTPUT_RATIO)
+            output_ratio=token_budget.get("output_ratio", self.DEFAULT_OUTPUT_RATIO),
+            consumes_tokens=token_budget.get("consumes_tokens", True)
         )
 
     def _get_agent_state_from_config(self, agent_id: str) -> AgentState:
@@ -194,6 +196,7 @@ class TokenAwareness:
         - Pausing an agent shouldn't change other agents' budget shares
 
         Disabled agents are excluded as they're fully opted out.
+        Agents with token_budget.consumes_tokens=false are excluded (e.g., user agent).
         """
         count = 0
         if not AGENTS_DIR.exists():
@@ -207,6 +210,10 @@ class TokenAwareness:
                         with open(config_path) as f:
                             config = json.load(f)
                         state = config.get("state", "enabled")
+                        # Skip agents that don't consume tokens (e.g., user agent)
+                        token_budget = config.get("token_budget", {})
+                        if not token_budget.get("consumes_tokens", True):
+                            continue
                         # Count enabled and paused agents (not disabled)
                         if state in ("enabled", "paused"):
                             count += 1
@@ -898,6 +905,7 @@ class TokenAwareness:
                 "agent_id": agent_id,
                 "state": self.get_agent_state(agent_id).value,
                 "frequency": budget_config.frequency,
+                "consumes_tokens": budget_config.consumes_tokens,
                 "period": usage.get("period_key"),
                 "period_start": usage.get("period_start"),
                 "input_tokens": usage.get("input", 0),

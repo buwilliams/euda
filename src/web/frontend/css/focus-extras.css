@@ -235,7 +235,7 @@
     height: 8px;
     background: var(--color-bg-subtle);
     border-radius: 4px;
-    overflow: hidden;
+    position: relative;
 }
 
 .token-budget-bar {
@@ -244,11 +244,27 @@
     transition: width 0.3s ease;
 }
 
+.token-budget-projected-marker {
+    position: absolute;
+    top: -2px;
+    width: 2px;
+    height: 12px;
+    background: var(--color-danger);
+    border-radius: 1px;
+    transform: translateX(-1px);
+}
+
 .token-budget-value {
     font-size: var(--font-size-sm);
     font-weight: 500;
     min-width: 50px;
     text-align: right;
+}
+
+.token-budget-value .projected-percent {
+    font-size: var(--font-size-xs);
+    color: var(--color-danger);
+    font-weight: 400;
 }
 
 .token-budget-detail {
@@ -274,6 +290,14 @@
     color: var(--color-text-secondary);
     margin-bottom: var(--spacing-md);
     font-style: italic;
+}
+
+.token-budget-no-consume {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-style: italic;
+    text-align: center;
+    padding: var(--spacing-sm) 0;
 }
 
 /* Hourly breakdown */

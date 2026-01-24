@@ -128,6 +128,16 @@ function renderAgentDetailView(job) {
         const periodStart = tokenUsage.period_start;
         const hourlyData = tokenUsage.hourly || {};
 
+        // Extract projected percentage from pause reason if threshold exceeded
+        let projectedInputPercent = null;
+        let projectedOutputPercent = null;
+        if (pauseStatus.isPaused && pauseStatus.reason) {
+            const inputMatch = pauseStatus.reason.match(/input token threshold exceeded \((\d+)%\)/);
+            const outputMatch = pauseStatus.reason.match(/output token threshold exceeded \((\d+)%\)/);
+            if (inputMatch) projectedInputPercent = parseInt(inputMatch[1]);
+            if (outputMatch) projectedOutputPercent = parseInt(outputMatch[1]);
+        }
+
         // Determine bar color based on percentage
         const getBarColor = (percent) => {
             if (percent >= 100) return 'var(--color-danger)';
@@ -222,46 +232,64 @@ function renderAgentDetailView(job) {
         };
 
         const periodStartFormatted = formatPeriodStart(periodStart);
+        const consumesTokens = tokenUsage.consumes_tokens !== false;
+
+        // Show different content for agents that don't consume tokens
+        const renderBudgetContent = () => {
+            if (!consumesTokens) {
+                return `
+                    <div class="token-budget-no-consume">
+                        This agent doesn't consume API tokens.
+                    </div>
+                `;
+            }
+
+            return `
+                ${periodStartFormatted ? `
+                    <div class="token-budget-period-start">
+                        Active since ${periodStartFormatted}
+                    </div>
+                ` : ''}
+                <div class="token-budget-row">
+                    <span class="token-budget-label">Input</span>
+                    <div class="token-budget-bar-container">
+                        <div class="token-budget-bar" style="width: ${Math.min(inputPercent, 100)}%; background: ${getBarColor(projectedInputPercent || inputPercent)};"></div>
+                        ${projectedInputPercent ? `<div class="token-budget-projected-marker" style="left: ${Math.min(projectedInputPercent, 100)}%;"></div>` : ''}
+                    </div>
+                    <span class="token-budget-value">${inputPercent.toFixed(1)}%${projectedInputPercent ? ` <span class="projected-percent">(${projectedInputPercent}% projected)</span>` : ''}</span>
+                </div>
+                <div class="token-budget-detail">
+                    ${formatTokenCount(tokenUsage.input_tokens || 0)} / ${formatTokenCount(tokenUsage.input_budget || 0)} tokens
+                </div>
+                <div class="token-budget-row">
+                    <span class="token-budget-label">Output</span>
+                    <div class="token-budget-bar-container">
+                        <div class="token-budget-bar" style="width: ${Math.min(outputPercent, 100)}%; background: ${getBarColor(projectedOutputPercent || outputPercent)};"></div>
+                        ${projectedOutputPercent ? `<div class="token-budget-projected-marker" style="left: ${Math.min(projectedOutputPercent, 100)}%;"></div>` : ''}
+                    </div>
+                    <span class="token-budget-value">${outputPercent.toFixed(1)}%${projectedOutputPercent ? ` <span class="projected-percent">(${projectedOutputPercent}% projected)</span>` : ''}</span>
+                </div>
+                <div class="token-budget-detail">
+                    ${formatTokenCount(tokenUsage.output_tokens || 0)} / ${formatTokenCount(tokenUsage.output_budget || 0)} tokens
+                </div>
+                ${resetTime ? `
+                    <div class="token-budget-reset">
+                        Resets in ${resetTime}
+                    </div>
+                ` : ''}
+                ${renderUsageBreakdown()}
+            `;
+        };
 
         return `
             <div class="job-section">
                 <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
-                    <span>Token Budget (${frequency})</span>
+                    <span>Token Budget${consumesTokens ? ` (${frequency})` : ''}</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
                 <div class="collapsible-content">
                     <div class="token-budget-content">
-                        ${periodStartFormatted ? `
-                            <div class="token-budget-period-start">
-                                Active since ${periodStartFormatted}
-                            </div>
-                        ` : ''}
-                        <div class="token-budget-row">
-                            <span class="token-budget-label">Input</span>
-                            <div class="token-budget-bar-container">
-                                <div class="token-budget-bar" style="width: ${Math.min(inputPercent, 100)}%; background: ${getBarColor(inputPercent)};"></div>
-                            </div>
-                            <span class="token-budget-value">${inputPercent.toFixed(1)}%</span>
-                        </div>
-                        <div class="token-budget-detail">
-                            ${formatTokenCount(tokenUsage.input_tokens || 0)} / ${formatTokenCount(tokenUsage.input_budget || 0)} tokens
-                        </div>
-                        <div class="token-budget-row">
-                            <span class="token-budget-label">Output</span>
-                            <div class="token-budget-bar-container">
-                                <div class="token-budget-bar" style="width: ${Math.min(outputPercent, 100)}%; background: ${getBarColor(outputPercent)};"></div>
-                            </div>
-                            <span class="token-budget-value">${outputPercent.toFixed(1)}%</span>
-                        </div>
-                        <div class="token-budget-detail">
-                            ${formatTokenCount(tokenUsage.output_tokens || 0)} / ${formatTokenCount(tokenUsage.output_budget || 0)} tokens
-                        </div>
-                        ${resetTime ? `
-                            <div class="token-budget-reset">
-                                Resets in ${resetTime}
-                            </div>
-                        ` : ''}
-                        ${renderUsageBreakdown()}
+                        ${renderBudgetContent()}
                     </div>
                 </div>
             </div>

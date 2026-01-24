@@ -33,13 +33,15 @@ class TestTokenBudgetEnforcement:
         ta = fresh_token_awareness
 
         # Get the calculated budget to know how much to request
+        # Agent count is determined internally by _count_budget_agents()
+        agent_count = ta._count_budget_agents()
         budget_config = ta._get_agent_budget_config("budget-agent")
-        total_budget, _ = ta._calculate_period_budget(1, budget_config.frequency)
+        total_budget, _ = ta._calculate_period_budget(agent_count, budget_config.frequency)
         input_budget = int(total_budget * budget_config.input_ratio)
 
         # Request exactly the budget - should raise at 100%
         with pytest.raises(AgentPausedError) as exc_info:
-            ta.acquire("budget-agent", estimated_input_tokens=input_budget, enabled_agent_count=1)
+            ta.acquire("budget-agent", estimated_input_tokens=input_budget)
 
         assert "threshold exceeded" in str(exc_info.value).lower()
 
@@ -54,16 +56,17 @@ class TestTokenBudgetEnforcement:
         ta = fresh_token_awareness
 
         # Get the calculated budget
+        # Agent count is determined internally by _count_budget_agents()
+        agent_count = ta._count_budget_agents()
         budget_config = ta._get_agent_budget_config("output-agent")
-        total_budget, _ = ta._calculate_period_budget(1, budget_config.frequency)
+        total_budget, _ = ta._calculate_period_budget(agent_count, budget_config.frequency)
         output_budget = int(total_budget * budget_config.output_ratio)
 
         # Record output that exceeds budget
         ta.record(
             "output-agent",
             input_tokens=100,
-            output_tokens=output_budget + 1,  # Exceed output budget
-            enabled_agent_count=1
+            output_tokens=output_budget + 1  # Exceed output budget
         )
 
         state = ta.get_agent_state("output-agent")
@@ -96,13 +99,15 @@ class TestTokenBudgetEnforcement:
         ta = fresh_token_awareness
 
         # Get budget and calculate 80%
+        # Agent count is determined internally by _count_budget_agents()
+        agent_count = ta._count_budget_agents()
         budget_config = ta._get_agent_budget_config("warning-agent")
-        total_budget, _ = ta._calculate_period_budget(1, budget_config.frequency)
+        total_budget, _ = ta._calculate_period_budget(agent_count, budget_config.frequency)
         input_budget = int(total_budget * budget_config.input_ratio)
         warning_amount = int(input_budget * 0.80)
 
         # Acquire 80% - should succeed without pause
-        result = ta.acquire("warning-agent", estimated_input_tokens=warning_amount - 1, enabled_agent_count=1)
+        result = ta.acquire("warning-agent", estimated_input_tokens=warning_amount - 1)
         assert result is True
 
         state = ta.get_agent_state("warning-agent")
@@ -181,7 +186,8 @@ class TestBudgetConfiguration:
         custom_budget = {
             "frequency": "hourly",
             "input_ratio": 0.7,
-            "output_ratio": 0.3
+            "output_ratio": 0.3,
+            "consumes_tokens": True
         }
         create_test_agent("custom-agent", token_budget=custom_budget)
         ta = fresh_token_awareness
@@ -191,6 +197,7 @@ class TestBudgetConfiguration:
         assert budget_config.frequency == "hourly"
         assert budget_config.input_ratio == 0.7
         assert budget_config.output_ratio == 0.3
+        assert budget_config.consumes_tokens is True
 
 
 @pytest.mark.invariant
@@ -237,3 +244,91 @@ class TestPeriodKeyGeneration:
         now = datetime.now()
 
         assert key == now.strftime("%Y-%m-%d-%H")
+
+
+@pytest.mark.invariant
+class TestConsumesTokensExclusion:
+    """Test that agents with consumes_tokens=false are excluded from budget calculations."""
+
+    def test_non_consuming_agent_excluded_from_count(self, create_test_agent, fresh_token_awareness):
+        """Agents with consumes_tokens=false should not be counted in budget sharing.
+
+        Spec: User agent doesn't consume tokens, shouldn't affect other agents' budgets.
+        """
+        ta = fresh_token_awareness
+
+        # Create two normal agents
+        create_test_agent("agent1")
+        create_test_agent("agent2")
+
+        count_before = ta._count_budget_agents()
+
+        # Create a non-consuming agent (like user agent)
+        create_test_agent("non-consumer", token_budget={"consumes_tokens": False})
+
+        count_after = ta._count_budget_agents()
+
+        # Count should not change when adding non-consuming agent
+        assert count_after == count_before
+
+    def test_consuming_agent_included_in_count(self, create_test_agent, fresh_token_awareness):
+        """Agents with consumes_tokens=true (default) should be counted."""
+        ta = fresh_token_awareness
+
+        # Create a baseline agent first (to avoid the max(1, 0) = 1 edge case)
+        create_test_agent("baseline")
+        count_before = ta._count_budget_agents()
+
+        # Create another normal consuming agent
+        create_test_agent("consumer", token_budget={"consumes_tokens": True})
+
+        count_after = ta._count_budget_agents()
+
+        # Count should increase by 1
+        assert count_after == count_before + 1
+
+    def test_default_consumes_tokens_is_true(self, create_test_agent, fresh_token_awareness):
+        """Agents without explicit consumes_tokens should default to True."""
+        ta = fresh_token_awareness
+
+        # Create agent without consumes_tokens field
+        create_test_agent("default-agent", token_budget={"frequency": "daily"})
+
+        budget_config = ta._get_agent_budget_config("default-agent")
+
+        assert budget_config.consumes_tokens is True
+
+    def test_get_agent_usage_includes_consumes_tokens(self, create_test_agent, fresh_token_awareness):
+        """get_agent_usage should return consumes_tokens in the response."""
+        ta = fresh_token_awareness
+
+        # Create non-consuming agent
+        create_test_agent("non-consumer", token_budget={"consumes_tokens": False})
+
+        usage = ta.get_agent_usage("non-consumer")
+
+        assert "consumes_tokens" in usage
+        assert usage["consumes_tokens"] is False
+
+    def test_budget_increases_when_non_consumer_excluded(self, create_test_agent, fresh_token_awareness):
+        """Budget per agent should increase when non-consuming agents are excluded.
+
+        With fewer agents sharing the budget, each consuming agent gets more.
+        """
+        ta = fresh_token_awareness
+
+        # Create one consuming agent
+        create_test_agent("consumer1")
+        budget_with_one, _ = ta._calculate_period_budget(ta._count_budget_agents(), "daily")
+
+        # Create another consuming agent - budget should decrease
+        create_test_agent("consumer2")
+        budget_with_two, _ = ta._calculate_period_budget(ta._count_budget_agents(), "daily")
+
+        assert budget_with_two < budget_with_one
+
+        # Add non-consuming agent - budget should NOT change
+        create_test_agent("non-consumer", token_budget={"consumes_tokens": False})
+        budget_with_non_consumer, _ = ta._calculate_period_budget(ta._count_budget_agents(), "daily")
+
+        assert budget_with_non_consumer == budget_with_two
