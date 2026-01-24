@@ -56,10 +56,6 @@ def get_about():
 
 # ============== Daily Quote ==============
 
-# Cache for generated fallback quote (cleared on new day)
-_quote_cache = {"date": None, "quote": None}
-
-
 def _get_latest_quote_from_jobs() -> dict:
     """Get the most recent completed euno:quote job's quote asset.
 
@@ -132,23 +128,15 @@ def daily_quote():
 
     First checks for completed euno:quote jobs. If none found, generates
     a fallback quote synchronously (for first startup or missed triggers).
-    The fallback is cached per day to avoid multiple LLM calls.
     """
     # Check for quote from completed euno:quote job
     quote = _get_latest_quote_from_jobs()
     if quote:
         return quote
 
-    # Check cache for today's fallback quote
-    today = datetime.now().strftime("%Y-%m-%d")
-    if _quote_cache["date"] == today and _quote_cache["quote"]:
-        return _quote_cache["quote"]
-
-    # Generate and cache fallback quote
-    fallback = _generate_quote_fallback()
-    _quote_cache["date"] = today
-    _quote_cache["quote"] = fallback
-    return fallback
+    # Fallback: generate synchronously if no job-based quote exists yet
+    # This handles first startup before any quote job has completed
+    return _generate_quote_fallback()
 
 
 # ============== Costs ==============
