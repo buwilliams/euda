@@ -570,6 +570,77 @@ class TestDictBasedTriggers:
 
         assert "only-dict-triggers" in manager.agents
 
+    def test_has_open_internal_job_detects_working_status(
+        self, manager_data_dir, test_db, mock_emit_event, mock_emit_ui_event
+    ):
+        """_has_open_internal_job detects jobs with 'working' status.
+
+        Spec: Prevent duplicate jobs while a job is being executed (status=working).
+        """
+        from src.agent.manager import AgentManager
+        from src.tools.data.jobs import create_job, claim_job
+
+        manager = AgentManager()
+
+        # Create a job and claim it (changes status to 'working')
+        job = create_job(
+            name="euno:quote",
+            assignees=["chat"],
+            parent_id=None,
+            created_by="system"
+        )
+        claim_job(job["id"], "chat")
+
+        # Should detect the working job as "open"
+        assert manager._has_open_internal_job("euno:quote", "chat") is True
+
+    def test_has_open_internal_job_detects_todo_status(
+        self, manager_data_dir, test_db, mock_emit_event, mock_emit_ui_event
+    ):
+        """_has_open_internal_job detects jobs with 'todo' status.
+
+        Spec: Prevent duplicate jobs when a job is pending.
+        """
+        from src.agent.manager import AgentManager
+        from src.tools.data.jobs import create_job
+
+        manager = AgentManager()
+
+        # Create a job (status='todo')
+        create_job(
+            name="euno:consolidate",
+            assignees=["chat"],
+            parent_id=None,
+            created_by="system"
+        )
+
+        # Should detect the todo job as "open"
+        assert manager._has_open_internal_job("euno:consolidate", "chat") is True
+
+    def test_has_open_internal_job_false_when_done(
+        self, manager_data_dir, test_db, mock_emit_event, mock_emit_ui_event
+    ):
+        """_has_open_internal_job returns False for completed jobs.
+
+        Spec: Completed jobs should not block creating new ones.
+        """
+        from src.agent.manager import AgentManager
+        from src.tools.data.jobs import create_job, complete_job
+
+        manager = AgentManager()
+
+        # Create and complete a job
+        job = create_job(
+            name="euno:quote",
+            assignees=["chat"],
+            parent_id=None,
+            created_by="system"
+        )
+        complete_job(job["id"], agent="chat")
+
+        # Should NOT detect the done job as "open"
+        assert manager._has_open_internal_job("euno:quote", "chat") is False
+
 
 # =============================================================================
 # Job Cache Notification Tests

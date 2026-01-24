@@ -378,10 +378,10 @@ class AgentManager:
         return normalized
 
     def _has_open_internal_job(self, job_name: str, agent_id: str) -> bool:
-        """Check if there's already an open (todo) job for this internal action.
+        """Check if there's already an open (todo or working) job for this internal action.
 
         Prevents duplicate jobs - only one euno:consolidate or euno:quote
-        can be pending at a time per agent.
+        can be pending or in-progress at a time per agent.
 
         Args:
             job_name: The job name to check (e.g., "euno:consolidate")
@@ -392,11 +392,13 @@ class AgentManager:
         """
         from ..tools.data.jobs import list_jobs
 
-        # Check for any todo jobs with this exact name assigned to this agent
-        todo_jobs = list_jobs(status="todo", assignee=agent_id)
-        for job in todo_jobs:
-            if job.get("name") == job_name:
-                return True
+        # Check for any todo OR working jobs with this exact name assigned to this agent
+        # Must check both statuses to prevent creating duplicates while job is being executed
+        for status in ["todo", "working"]:
+            jobs = list_jobs(status=status, assignee=agent_id)
+            for job in jobs:
+                if job.get("name") == job_name:
+                    return True
         return False
 
     def _emit_startup_triggers(self):
