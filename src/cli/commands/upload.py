@@ -101,7 +101,7 @@ def _upload_to_agent(agent_id: str, file_path: Path, json_mode: bool):
         name=f"Process file: {file_path.name}",
         description=f"File uploaded via dev CLI: {file_path.name}",
         parent_id=parent_id,
-        assignees=[agent_id],
+        assignee=agent_id,
         tags=["dev:upload"],
         created_by="dev-cli"
     )

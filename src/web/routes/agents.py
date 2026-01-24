@@ -323,7 +323,7 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
         name=f"Trigger:consolidation:{phase}:{today}",
         description=f"Manual reflection trigger (execution_id: {execution_id})",
         parent_id=parent_id,
-        assignees=[agent_id],
+        assignee=agent_id,
         tags=["ui:manual", f"execution:{execution_id}"],
         created_by="web-ui"
     )

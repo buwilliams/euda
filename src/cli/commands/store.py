@@ -199,7 +199,7 @@ def _create_store_job(items_with_hashes: List[tuple]) -> dict:
                     f"2. Write content to long-term memory at that date\n"
                     f"3. Complete job when done",
         parent_id=parent_id,
-        assignees=["chat"],
+        assignee="chat",
         tags=["store:ingest"] + hash_tags,
         created_by="user"
     )

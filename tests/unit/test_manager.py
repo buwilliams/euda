@@ -585,7 +585,7 @@ class TestDictBasedTriggers:
         # Create a job and claim it (changes status to 'working')
         job = create_job(
             name="euno:quote",
-            assignees=["chat"],
+            assignee="chat",
             parent_id=None,
             created_by="system"
         )
@@ -609,7 +609,7 @@ class TestDictBasedTriggers:
         # Create a job (status='todo')
         create_job(
             name="euno:consolidate",
-            assignees=["chat"],
+            assignee="chat",
             parent_id=None,
             created_by="system"
         )
@@ -632,7 +632,7 @@ class TestDictBasedTriggers:
         # Create and complete a job
         job = create_job(
             name="euno:quote",
-            assignees=["chat"],
+            assignee="chat",
             parent_id=None,
             created_by="system"
         )
@@ -673,7 +673,7 @@ class TestJobCacheNotification:
     def test_create_job_notifies_cache(
         self, manager_data_dir, test_db, mock_emit_event
     ):
-        """create_job calls _notify_agent_has_jobs for assignees.
+        """create_job calls _notify_agent_has_jobs for assignee.
 
         Spec: When agent A assigns to agent B, cache is notified immediately.
         """
@@ -688,7 +688,7 @@ class TestJobCacheNotification:
             with patch('src.tools.data.jobs._emit_jobs_update'):
                 create_job(
                     name="Test Job",
-                    assignees=["worker-agent"],
+                    assignee="worker-agent",
                     parent_id=None,
                     created_by="test"
                 )
@@ -714,7 +714,7 @@ class TestJobCacheNotification:
             with patch('src.tools.data.jobs._emit_jobs_update'):
                 job = create_job(
                     name="Unassigned Job",
-                    assignees=[],
+                    assignee=None,
                     parent_id=None,
                     created_by="test"
                 )
@@ -745,7 +745,7 @@ class TestJobCacheNotification:
             with patch('src.tools.data.jobs._emit_jobs_update'):
                 job = create_job(
                     name="Handoff Job",
-                    assignees=["agent-a"],
+                    assignee="agent-a",
                     parent_id=None,
                     created_by="test"
                 )

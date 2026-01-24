@@ -22,7 +22,7 @@ class CreateJobRequest(BaseModel):
     description: Optional[str] = None
     parent_id: Optional[str] = None
     tags: Optional[List[str]] = None
-    assignees: Optional[List[str]] = None
+    assignee: Optional[str] = None
     due_date: Optional[str] = None
     someday: bool = False
 
@@ -32,7 +32,7 @@ class UpdateJobRequest(BaseModel):
     description: Optional[str] = None
     status: Optional[str] = None
     tags: Optional[List[str]] = None
-    assignees: Optional[List[str]] = None
+    assignee: Optional[str] = None
     due_date: Optional[str] = None
     someday: Optional[bool] = None
 
@@ -77,7 +77,7 @@ def api_create_job(request: CreateJobRequest):
         description=request.description,
         parent_id=request.parent_id,
         tags=request.tags,
-        assignees=request.assignees,
+        assignee=request.assignee,
         due_date=request.due_date,
         someday=request.someday
     )
@@ -92,7 +92,7 @@ def api_update_job(job_id: str, request: UpdateJobRequest):
         description=request.description,
         status=request.status,
         tags=request.tags,
-        assignees=request.assignees,
+        assignee=request.assignee,
         due_date=request.due_date,
         someday=request.someday
     )
@@ -180,11 +180,9 @@ def api_job_feedback(job_id: str, request: JobFeedbackRequest):
     if job.get("pending_from") and job["pending_from"] != "user":
         target_agent = job["pending_from"]
 
-    # Otherwise check current assignees for an agent
-    if not target_agent and job.get("assignees"):
-        agents = [a for a in job["assignees"] if a != "user"]
-        if agents:
-            target_agent = agents[0]
+    # Otherwise check current assignee
+    if not target_agent and job.get("assignee") and job["assignee"] != "user":
+        target_agent = job["assignee"]
 
     # Fallback to chat for routing
     if not target_agent:

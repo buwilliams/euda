@@ -76,7 +76,7 @@ def cmd_job(args: List[str], json_mode: bool = False):
         name=task[:100],  # Truncate name
         description=task if len(task) > 100 else None,
         parent_id=parent_id,
-        assignees=[agent_id],
+        assignee=agent_id,
         tags=["dev:manual"],
         created_by="dev-cli"
     )

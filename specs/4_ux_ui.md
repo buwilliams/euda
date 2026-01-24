@@ -44,7 +44,7 @@ Main tabs (bottom of screen):
 - Inline completion actions (complete, archive, delete)
 - Job detail view with:
   - Description editing
-  - Tags and assignees
+  - Tags and assignee
   - Assets panel (files attached to job)
   - Execution trace (logs + API calls)
   - Child jobs

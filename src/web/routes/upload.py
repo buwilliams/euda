@@ -69,7 +69,7 @@ Type: {"text" if is_text else "binary"}
 
 After processing, complete this job with `complete_job`.""",
         tags=["upload", "analysis", "background"],
-        assignees=["chat"],
+        assignee="chat",
         parent_id=parent_id,
         created_by="user"
     )

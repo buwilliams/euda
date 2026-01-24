@@ -432,7 +432,7 @@ class AgentManager:
                         name=job_name,
                         description="System startup trigger",
                         parent_id=parent_id,
-                        assignees=[agent_id],
+                        assignee=agent_id,
                         due_date=None,
                         created_by="system"
                     )
@@ -467,7 +467,7 @@ class AgentManager:
                                     name=job_name,
                                     description=job_desc,
                                     parent_id=parent_id,
-                                    assignees=[agent_id],
+                                    assignee=agent_id,
                                     tags=[job_name],  # Tag for querying
                                     due_date=None,
                                     created_by="system"
@@ -488,7 +488,7 @@ class AgentManager:
                                 name=job_name,
                                 description=f"Missed {trigger} trigger",
                                 parent_id=parent_id,
-                                assignees=[agent_id],
+                                assignee=agent_id,
                                 due_date=None,
                                 created_by="system"
                             )
@@ -632,7 +632,7 @@ class AgentManager:
                         name=f"Trigger:consolidation:both:{today}",
                         description="Scheduled consolidation: review memories, evolve identity, graduate learnings",
                         parent_id=parent_id,
-                        assignees=[agent_id],
+                        assignee=agent_id,
                         due_date=None,
                         created_by="system"
                     )
@@ -697,7 +697,7 @@ class AgentManager:
                                             name=job_name,
                                             description=job_desc,
                                             parent_id=parent_id,
-                                            assignees=[agent_id],
+                                            assignee=agent_id,
                                             tags=[job_name],  # Tag for querying
                                             due_date=None,
                                             created_by="system"
@@ -718,7 +718,7 @@ class AgentManager:
                                         name=job_name,
                                         description=f"Scheduled trigger for {trigger_name}",
                                         parent_id=parent_id,
-                                        assignees=[agent_id],
+                                        assignee=agent_id,
                                         due_date=None,
                                         created_by="system"
                                     )

@@ -137,7 +137,7 @@ This preserves how an agent's identity has evolved over time, enabling:
 - SQLite database: `data/jobs/db.sqlite`
 - Hierarchical — any job can contain sub-jobs via parent_id
 - All agents can see all jobs — visibility is universal
-- Fields: id, name, parent_id, status, description, due_date, someday, tags, assignees, assignee, created_at, updated_at, completed_at, created_by
+- Fields: id, name, parent_id, status, description, due_date, someday, tags, assignee, created_at, updated_at, completed_at, created_by
 - Status: todo, working, done, error, archived
 - Assets stored as files: `data/jobs/assets/{job-id}/{filename}`
 - Use SQLite because indexing and querying is required

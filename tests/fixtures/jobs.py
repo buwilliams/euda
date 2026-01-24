@@ -11,7 +11,7 @@ def create_test_job(
     description: str = None,
     status: str = "todo",
     tags: List[str] = None,
-    assignees: List[str] = None,
+    assignee: str = None,
     due_date: str = None,
     someday: bool = False,
     parent_id: str = None,
@@ -27,7 +27,7 @@ def create_test_job(
         description: Job description
         status: Job status (todo, working, done, error, archived)
         tags: List of tags
-        assignees: List of agent IDs assigned to this job
+        assignee: Agent ID assigned to this job
         due_date: Due date (YYYY-MM-DD)
         someday: Whether this is a someday/maybe job
         parent_id: Parent job ID
@@ -45,14 +45,13 @@ def create_test_job(
         "description": description,
         "status": status,
         "tags": tags or [],
-        "assignees": assignees or [],
+        "assignee": assignee,
         "due_date": due_date,
         "someday": someday,
         "parent_id": parent_id,
         "created_by": created_by,
         "created_at": now,
         "updated_at": now,
-        "in_progress_by": None,
         "agent_id": None,
         "pending_from": None,
         "log": []
@@ -90,4 +89,4 @@ def create_future_job(days_ahead: int = 7, **kwargs) -> dict:
 
 def create_assigned_job(agent_id: str = "test-agent", **kwargs) -> dict:
     """Create a job assigned to a specific agent."""
-    return create_test_job(assignees=[agent_id], **kwargs)
+    return create_test_job(assignee=agent_id, **kwargs)

@@ -94,18 +94,11 @@ def _ensure_schema():
     ''')
     conn.commit()
 
-    # Migration: add assignees column if it doesn't exist
+    # Migration: add assignee column if it doesn't exist
     try:
-        conn.execute("SELECT assignees FROM jobs LIMIT 1")
+        conn.execute("SELECT assignee FROM jobs LIMIT 1")
     except sqlite3.OperationalError:
-        conn.execute("ALTER TABLE jobs ADD COLUMN assignees TEXT")
-        conn.commit()
-
-    # Migration: add in_progress_by column if it doesn't exist
-    try:
-        conn.execute("SELECT in_progress_by FROM jobs LIMIT 1")
-    except sqlite3.OperationalError:
-        conn.execute("ALTER TABLE jobs ADD COLUMN in_progress_by TEXT")
+        conn.execute("ALTER TABLE jobs ADD COLUMN assignee TEXT")
         conn.commit()
 
     # Migration: add agent_id column if it doesn't exist (for agent inbox jobs)
@@ -163,8 +156,7 @@ def _notify_agent_has_jobs(agent_id: str):
 def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
     """Convert a database row to a job dictionary."""
     # Handle columns that may not exist in older schemas
-    assignees_raw = row["assignees"] if "assignees" in row.keys() else None
-    in_progress_by = row["in_progress_by"] if "in_progress_by" in row.keys() else None
+    assignee = row["assignee"] if "assignee" in row.keys() else None
     agent_id = row["agent_id"] if "agent_id" in row.keys() else None
     pending_from = row["pending_from"] if "pending_from" in row.keys() else None
 
@@ -180,8 +172,7 @@ def _row_to_job(row: sqlite3.Row, logs: List[dict] = None) -> dict:
         "due_date": row["due_date"],
         "someday": bool(row["someday"]),
         "tags": json.loads(row["tags"]) if row["tags"] else [],
-        "assignees": json.loads(assignees_raw) if assignees_raw else [],
-        "in_progress_by": in_progress_by,
+        "assignee": assignee,
         "agent_id": agent_id,
         "pending_from": pending_from,
         "log": logs if logs is not None else []
@@ -247,8 +238,8 @@ def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assign
         params.append(tag)
 
     if assignee:
-        # Filter jobs that have the specified agent in their assignees JSON array
-        query += " AND EXISTS (SELECT 1 FROM json_each(assignees) WHERE json_each.value = ?)"
+        # Filter jobs assigned to this agent (simple string comparison)
+        query += " AND assignee = ?"
         params.append(assignee)
         # Exclude system jobs - only their descendants should be processed by agents
         query += " AND NOT EXISTS (SELECT 1 FROM json_each(tags) WHERE json_each.value IN ('system:agents', 'system:projects', 'agent-inbox'))"
@@ -261,12 +252,8 @@ def list_jobs(status: str = None, parent_id: str = None, tag: str = None, assign
         query += " AND someday = 0"
         # Exclude jobs with blocking tags (waiting:* or blocked:*)
         query += " AND NOT EXISTS (SELECT 1 FROM json_each(tags) WHERE json_each.value LIKE 'waiting:%' OR json_each.value LIKE 'blocked:%')"
-        # Exclude jobs already claimed by another agent
-        if assignee:
-            query += " AND (in_progress_by IS NULL OR in_progress_by = ?)"
-            params.append(assignee)
-        else:
-            query += " AND in_progress_by IS NULL"
+        # Only include todo jobs (working jobs are already being processed)
+        query += " AND status = 'todo'"
 
     query += " ORDER BY updated_at DESC"
 
@@ -321,13 +308,13 @@ def _get_default_parent_for_creator(created_by: str) -> Optional[str]:
     return projects["id"] if projects else None
 
 
-@tool("create_job", "Create a new job with optional parent, tags, assignees, and due date. Use when: breaking down work, creating tasks for yourself or other agents.", tool_type="data")
+@tool("create_job", "Create a new job with optional parent, tags, assignee, and due date. Use when: breaking down work, creating tasks for yourself or other agents.", tool_type="data")
 def create_job(
     name: str,
     description: str = None,
     parent_id: str = None,
     tags: list = None,
-    assignees: list = None,
+    assignee: str = None,
     due_date: str = None,
     someday: bool = False,
     created_by: str = "user"
@@ -349,12 +336,12 @@ def create_job(
     with _transaction() as conn:
         conn.execute('''
             INSERT INTO jobs (id, name, parent_id, status, created_at, updated_at,
-                            created_by, description, due_date, someday, tags, assignees)
+                            created_by, description, due_date, someday, tags, assignee)
             VALUES (?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             job_id, name, effective_parent_id, now, now, created_by,
             description, due_date, int(someday), json.dumps(tags or []),
-            json.dumps(assignees or [])
+            assignee
         ))
 
         conn.execute('''
@@ -365,9 +352,9 @@ def create_job(
     # Emit job:created (broadcast) and job:assigned (scoped) events
     job = _load_job(job_id)
     _emit_event("job:created", data={"job_id": job_id, "name": name})
-    for agent_id in (assignees or []):
-        _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": name})
-        _notify_agent_has_jobs(agent_id)
+    if assignee:
+        _emit_event("job:assigned", scope=assignee, data={"job_id": job_id, "name": name})
+        _notify_agent_has_jobs(assignee)
 
     # Notify UI clients
     _emit_jobs_update()
@@ -375,14 +362,14 @@ def create_job(
     return job
 
 
-@tool("update_job", "Update a job's fields (name, description, status, tags, assignees, due date). Use when: modifying job details, changing assignments, rescheduling.", tool_type="data")
+@tool("update_job", "Update a job's fields (name, description, status, tags, assignee, due date). Use when: modifying job details, changing assignments, rescheduling.", tool_type="data")
 def update_job(
     job_id: str,
     name: str = None,
     description: str = None,
     status: str = None,
     tags: list = None,
-    assignees: list = None,
+    assignee: str = None,
     due_date: str = None,
     someday: bool = None
 ) -> Optional[dict]:
@@ -413,9 +400,9 @@ def update_job(
     if tags is not None:
         updates.append("tags = ?")
         params.append(json.dumps(tags))
-    if assignees is not None:
-        updates.append("assignees = ?")
-        params.append(json.dumps(assignees))
+    if assignee is not None:
+        updates.append("assignee = ?")
+        params.append(assignee if assignee else None)  # Empty string means clear
     if due_date is not None:
         updates.append("due_date = ?")
         params.append(due_date if due_date else None)  # Empty string means clear
@@ -428,13 +415,12 @@ def update_job(
     with _transaction() as conn:
         conn.execute(f"UPDATE jobs SET {', '.join(updates)} WHERE id = ?", params)
 
-    # Emit job:assigned events for newly assigned agents
-    if assignees is not None:
-        old_assignees = set(job.get("assignees", []))
-        new_assignees = set(assignees) - old_assignees
-        for agent_id in new_assignees:
-            _emit_event("job:assigned", scope=agent_id, data={"job_id": job_id, "name": job["name"]})
-            _notify_agent_has_jobs(agent_id)
+    # Emit job:assigned event if assignee changed
+    if assignee is not None:
+        old_assignee = job.get("assignee")
+        if assignee != old_assignee and assignee:
+            _emit_event("job:assigned", scope=assignee, data={"job_id": job_id, "name": job["name"]})
+            _notify_agent_has_jobs(assignee)
 
     # Notify UI clients
     _emit_jobs_update()
@@ -447,8 +433,8 @@ def handoff_job(job_id: str, to: str, note: str = None, agent: str = "user") -> 
     """Hand off a job to another agent or user.
 
     This is the primary mechanism for job coordination between agents.
-    It sets the assignee to the target and records who sent it so the
-    job can be returned to them.
+    It sets the assignee to the target, resets status to 'todo', and records
+    who sent it so the job can be returned to them.
 
     Args:
         job_id: The job to hand off
@@ -465,12 +451,12 @@ def handoff_job(job_id: str, to: str, note: str = None, agent: str = "user") -> 
 
     now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
-    # Update assignees and pending_from
+    # Update assignee, reset status to todo, and set pending_from
     with _transaction() as conn:
         conn.execute('''
-            UPDATE jobs SET assignees = ?, pending_from = ?, updated_at = ?
+            UPDATE jobs SET assignee = ?, status = 'todo', pending_from = ?, updated_at = ?
             WHERE id = ?
-        ''', (json.dumps([to]), agent, now, job_id))
+        ''', (to, agent, now, job_id))
 
         # Add log entry
         action = f"Handed off to {to}"
@@ -500,9 +486,9 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
         return {"error": f"Job not found: {job_id}"}
 
     # Prevent completing system jobs (containers and agent inboxes)
-    # Exception: Allow completing trigger jobs even if they have system tags
-    is_trigger = job.get("name", "").startswith("Trigger:")
-    if not is_trigger:
+    # Exception: Allow completing trigger/internal jobs even if they have system tags
+    is_internal = job.get("name", "").startswith(("Trigger:", "euno:"))
+    if not is_internal:
         system_tags = {"system:agents", "system:projects", "agent-inbox"}
         if any(tag in system_tags for tag in job.get("tags", [])):
             return {"error": "Cannot complete system jobs"}
@@ -520,8 +506,9 @@ def complete_job(job_id: str, agent: str = "user") -> Optional[dict]:
             VALUES (?, ?, ?, 'completed')
         ''', (job_id, now, agent))
 
-    # Emit job:completed to each assignee
-    for assignee in job.get("assignees", []):
+    # Emit job:completed to assignee
+    assignee = job.get("assignee")
+    if assignee:
         _emit_event("job:completed", scope=assignee, data={"job_id": job_id, "name": job["name"]})
 
     # Notify UI clients
@@ -594,8 +581,9 @@ def unblock_job(job_id: str) -> bool:
             VALUES (?, ?, ?, ?)
         ''', (job_id, now, "user", f"unblocked: {', '.join(blocking_tags)}"))
 
-    # Notify assignees that job is actionable again
-    for assignee in job.get("assignees", []):
+    # Notify assignee that job is actionable again
+    assignee = job.get("assignee")
+    if assignee:
         _emit_event("job:assigned", scope=assignee, data={"job_id": job_id, "name": job["name"]})
         _notify_agent_has_jobs(assignee)
 
@@ -630,8 +618,9 @@ def archive_job(job_id: str, agent: str = "user") -> Optional[dict]:
             VALUES (?, ?, ?, 'archived')
         ''', (job_id, now, agent))
 
-    # Emit job:archived to each assignee
-    for assignee in job.get("assignees", []):
+    # Emit job:archived to assignee
+    assignee = job.get("assignee")
+    if assignee:
         _emit_event("job:archived", scope=assignee, data={"job_id": job_id, "name": job["name"]})
 
     # Notify UI clients
@@ -954,17 +943,16 @@ def assign_agent(job_id: str, agent_id: str) -> Optional[dict]:
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    assignees = job.get("assignees", [])
-    if agent_id in assignees:
+    current_assignee = job.get("assignee")
+    if current_assignee == agent_id:
         return {"error": f"Agent {agent_id} already assigned"}
 
-    assignees.append(agent_id)
     now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute(
-            "UPDATE jobs SET assignees = ?, updated_at = ? WHERE id = ?",
-            (json.dumps(assignees), now, job_id)
+            "UPDATE jobs SET assignee = ?, updated_at = ? WHERE id = ?",
+            (agent_id, now, job_id)
         )
         conn.execute(
             "INSERT INTO job_logs (job_id, timestamp, agent, action) VALUES (?, ?, ?, ?)",
@@ -993,17 +981,16 @@ def unassign_agent(job_id: str, agent_id: str) -> Optional[dict]:
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    assignees = job.get("assignees", [])
-    if agent_id not in assignees:
+    current_assignee = job.get("assignee")
+    if current_assignee != agent_id:
         return {"error": f"Agent {agent_id} not assigned to this job"}
 
-    assignees.remove(agent_id)
     now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
         conn.execute(
-            "UPDATE jobs SET assignees = ?, updated_at = ? WHERE id = ?",
-            (json.dumps(assignees), now, job_id)
+            "UPDATE jobs SET assignee = NULL, updated_at = ? WHERE id = ?",
+            (now, job_id)
         )
         conn.execute(
             "INSERT INTO job_logs (job_id, timestamp, agent, action) VALUES (?, ?, ?, ?)",
@@ -1019,9 +1006,9 @@ def unassign_agent(job_id: str, agent_id: str) -> Optional[dict]:
     return _load_job(job_id)
 
 
-@tool("list_assignees", "List agents assigned to a job. Use when: checking who is working on a job.", tool_type="data")
+@tool("list_assignees", "Get the agent assigned to a job. Use when: checking who is working on a job.", tool_type="data")
 def list_assignees(job_id: str) -> list:
-    """Get list of agent IDs assigned to a job.
+    """Get the agent ID assigned to a job (returns single-element list for backwards compatibility).
 
     Args:
         job_id: The job to check
@@ -1030,7 +1017,8 @@ def list_assignees(job_id: str) -> list:
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    return job.get("assignees", [])
+    assignee = job.get("assignee")
+    return [assignee] if assignee else []
 
 
 @tool("list_available_agents", "List all agent IDs that can be assigned to jobs. Use when: finding agents to assign work to.", tool_type="data")
@@ -1043,12 +1031,10 @@ def list_available_agents() -> list:
 
 @tool("claim_job", "Claim a job for exclusive work. Use when: starting work to prevent conflicts.", tool_type="data")
 def claim_job(job_id: str, agent_id: str) -> dict:
-    """Atomically claim a job to work on it exclusively.
+    """Claim a job by setting status to 'working'.
 
-    Uses atomic SQL to prevent TOCTOU race conditions where multiple threads
-    could all read "unclaimed" and then all write their claim.
-
-    Returns error if already claimed by another agent.
+    Only the assigned agent can claim a job. This is a simple state transition
+    since jobs have a single assignee.
 
     Args:
         job_id: The job to claim
@@ -1064,27 +1050,23 @@ def claim_job(job_id: str, agent_id: str) -> dict:
     if any(tag in system_tags for tag in job.get("tags", [])):
         return {"error": "Cannot claim system jobs - only their descendants can be processed"}
 
+    # Verify agent is the assignee
+    if job.get("assignee") != agent_id:
+        return {"error": f"Job not assigned to {agent_id}"}
+
     now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     with _transaction() as conn:
-        # ATOMIC: Update only if unclaimed OR already claimed by us
-        # This prevents TOCTOU race where multiple threads read NULL and all claim
-        # Also set status to 'working' per spec (docs/3_system.md)
+        # Set status to 'working' - only if currently 'todo'
         result = conn.execute(
-            """UPDATE jobs SET in_progress_by = ?, status = 'working', updated_at = ?
-               WHERE id = ? AND status = 'todo' AND (in_progress_by IS NULL OR in_progress_by = ?)""",
-            (agent_id, now, job_id, agent_id)
+            """UPDATE jobs SET status = 'working', updated_at = ?
+               WHERE id = ? AND status = 'todo'""",
+            (now, job_id)
         )
 
         if result.rowcount == 0:
-            # Failed to claim - either job doesn't exist or someone else has it
-            current = conn.execute(
-                "SELECT in_progress_by FROM jobs WHERE id = ?", (job_id,)
-            ).fetchone()
-            if current:
-                holder = current[0] if current[0] else "unknown"
-                return {"error": f"Job already claimed by {holder}"}
-            return {"error": f"Job not found: {job_id}"}
+            # Job is not in 'todo' status
+            return {"error": f"Job {job_id} is not in 'todo' status (current: {job.get('status')})"}
 
     # Notify UI clients
     _emit_jobs_update()
@@ -1298,7 +1280,8 @@ def sync_agent_inbox_jobs():
 def release_job(job_id: str, agent_id: str) -> dict:
     """Release a job after working on it.
 
-    Resets status from 'working' back to 'todo' so another agent can claim it.
+    Resets status from 'working' back to 'todo' so the agent can work on it again later.
+    Only jobs with 'working' status and matching assignee are affected.
 
     Args:
         job_id: The job to release
@@ -1306,9 +1289,9 @@ def release_job(job_id: str, agent_id: str) -> dict:
     """
     now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     with _transaction() as conn:
-        # Reset status to 'todo' and clear in_progress_by
+        # Reset status to 'todo' only if currently 'working' and assigned to this agent
         conn.execute(
-            "UPDATE jobs SET in_progress_by = NULL, status = 'todo', updated_at = ? WHERE id = ? AND in_progress_by = ?",
+            "UPDATE jobs SET status = 'todo', updated_at = ? WHERE id = ? AND status = 'working' AND assignee = ?",
             (now, job_id, agent_id)
         )
 
@@ -1335,7 +1318,7 @@ def error_job(job_id: str, error_message: str, agent: str = "user") -> Optional[
 
     with _transaction() as conn:
         conn.execute('''
-            UPDATE jobs SET status = 'error', in_progress_by = NULL, updated_at = ?
+            UPDATE jobs SET status = 'error', updated_at = ?
             WHERE id = ?
         ''', (now, job_id))
 
@@ -1344,8 +1327,9 @@ def error_job(job_id: str, error_message: str, agent: str = "user") -> Optional[
             VALUES (?, ?, ?, ?)
         ''', (job_id, now, agent, f"error: {error_message}"))
 
-    # Emit job:error to each assignee
-    for assignee in job.get("assignees", []):
+    # Emit job:error to assignee
+    assignee = job.get("assignee")
+    if assignee:
         _emit_event("job:error", scope=assignee, data={"job_id": job_id, "name": job["name"], "error": error_message})
 
     # Notify UI clients

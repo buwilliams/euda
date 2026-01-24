@@ -1087,17 +1087,15 @@ async function setJobStatus(jobId, status) {
 
 async function reassignJob(jobId, agentId) {
     try {
-        // First unassign all current assignees
+        // Unassign current assignee if different
         const job = jobsData.find(j => j.id === jobId) || completedJobsData.find(j => j.id === jobId);
-        if (job && job.assignees) {
-            for (const currentAgent of job.assignees) {
-                await fetch(`/api/jobs/${jobId}/unassign`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ agent_id: currentAgent })
-                });
-            }
+        if (job && job.assignee && job.assignee !== agentId) {
+            await fetch(`/api/jobs/${jobId}/unassign`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ agent_id: job.assignee })
+            });
         }
 
         // Assign the new agent

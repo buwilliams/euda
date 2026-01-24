@@ -81,7 +81,7 @@ Rules for the server, API, and infrastructure.
 - `DELETE /api/jobs/{id}/assets/{filename}` — Delete asset
 - `GET /api/jobs/{id}/trace?days={n}` — Full execution trace
 - `GET /api/jobs/{id}/api-calls?days={n}` — API calls for job
-- `GET /api/jobs/{id}/assignees` — List assigned agents
+- `GET /api/jobs/{id}/assignees` — Get assigned agent
 - `POST /api/jobs/{id}/assign` — Assign agent to job
 - `POST /api/jobs/{id}/unassign` — Remove agent from job
 

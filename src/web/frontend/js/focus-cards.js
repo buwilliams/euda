@@ -37,9 +37,9 @@ function renderMinimalJobCard(job) {
     // Use context-aware descendant count (all descendants matching timeline)
     const childCount = getDescendantCountForContext(job.id);
     const childBadge = childCount > 0 ? `<span class="card-badge">${childCount}</span>` : '';
-    const assignees = job.assignees || [];
-    const workingIndicator = job.in_progress_by ? '<span class="card-working-indicator" title="Agent working">' + icon('bolt') + '</span>' : '';
-    const assignedIndicator = !job.in_progress_by && assignees.length > 0 ? '<span class="card-assigned-indicator" title="Assigned to ' + assignees.join(', ') + '">' + icon('user') + '</span>' : '';
+    const assignee = job.assignee;
+    const workingIndicator = job.status === 'working' ? '<span class="card-working-indicator" title="Agent working">' + icon('bolt') + '</span>' : '';
+    const assignedIndicator = job.status !== 'working' && assignee ? '<span class="card-assigned-indicator" title="Assigned to ' + escapeHtml(assignee) + '">' + icon('user') + '</span>' : '';
 
     return `
         <div class="card card-minimal" data-job-id="${job.id}" data-testid="job-card" onclick="navigateFocus('job-${job.id}')">
