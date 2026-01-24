@@ -1006,19 +1006,21 @@ def unassign_agent(job_id: str, agent_id: str) -> Optional[dict]:
     return _load_job(job_id)
 
 
-@tool("list_assignees", "Get the agent assigned to a job. Use when: checking who is working on a job.", tool_type="data")
-def list_assignees(job_id: str) -> list:
-    """Get the agent ID assigned to a job (returns single-element list for backwards compatibility).
+@tool("get_assignee", "Get the agent assigned to a job. Use when: checking who is working on a job.", tool_type="data")
+def get_assignee(job_id: str) -> dict:
+    """Get the agent ID assigned to a job.
 
     Args:
         job_id: The job to check
+
+    Returns:
+        Dict with assignee field (null if unassigned)
     """
     job = _load_job(job_id)
     if not job:
         return {"error": f"Job not found: {job_id}"}
 
-    assignee = job.get("assignee")
-    return [assignee] if assignee else []
+    return {"assignee": job.get("assignee")}
 
 
 @tool("list_available_agents", "List all agent IDs that can be assigned to jobs. Use when: finding agents to assign work to.", tool_type="data")

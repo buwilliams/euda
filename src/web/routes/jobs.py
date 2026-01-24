@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from ...tools.data.jobs import (
     list_jobs, get_job, create_job, update_job,
     complete_job, restore_job, archive_job, add_job_log, get_child_jobs, delete_job,
-    assign_agent, unassign_agent, list_assignees, handoff_job, unblock_job
+    assign_agent, unassign_agent, get_assignee, handoff_job, unblock_job
 )
 from ...tools.data.assets import list_assets, read_asset, write_asset, delete_asset
 
@@ -232,10 +232,10 @@ def api_get_job_api_calls(job_id: str, days: int = 7):
 
 # Assignment endpoints
 
-@router.get("/{job_id}/assignees")
-def api_list_assignees(job_id: str):
-    """List agents assigned to a job."""
-    result = list_assignees(job_id)
+@router.get("/{job_id}/assignee")
+def api_get_assignee(job_id: str):
+    """Get the agent assigned to a job."""
+    result = get_assignee(job_id)
     if isinstance(result, dict) and "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
