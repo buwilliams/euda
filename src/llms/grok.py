@@ -100,8 +100,13 @@ class GrokProvider(LLMProvider):
                 ))
 
         # Map finish reason
+        # Note: Grok may return tool calls with finish_reason other than TOOL_CALLS
+        # So we check for actual tool calls first, then fall back to finish_reason
         stop_reason = "end_turn"
-        if response.finish_reason == "FINISH_REASON_TOOL_CALLS":
+        if response.tool_calls:
+            # If there are tool calls, always set stop_reason to tool_use
+            stop_reason = "tool_use"
+        elif response.finish_reason == "FINISH_REASON_TOOL_CALLS":
             stop_reason = "tool_use"
         elif response.finish_reason in ("FINISH_REASON_STOP", "FINISH_REASON_EOS_TOKEN"):
             stop_reason = "end_turn"
