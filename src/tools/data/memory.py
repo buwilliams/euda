@@ -254,10 +254,8 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
 
     # Create trigger jobs for agents subscribed to long-term memory updates
     if agent_id == "user":
-        from .jobs import create_job, list_jobs, get_system_container
+        from .jobs import create_job, list_jobs, get_agent_inbox_job
         from ..agents.agents import list_agents
-
-        system_container = get_system_container()
 
         for agent_config in list_agents():
             if agent_config.get("state", "enabled") == "disabled":
@@ -270,10 +268,14 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
                 already_exists = any(j["name"] == job_name for j in existing)
 
                 if not already_exists:
+                    # Create job under agent's inbox
+                    inbox = get_agent_inbox_job(agent_config["id"])
+                    parent_id = inbox["id"] if inbox else None
+
                     create_job(
                         name=job_name,
                         description="New long-term memory entry to process",
-                        parent_id=system_container["id"],
+                        parent_id=parent_id,
                         assignees=[agent_config["id"]],
                         due_date=None,
                         created_by="system"

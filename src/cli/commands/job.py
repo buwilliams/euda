@@ -66,15 +66,16 @@ def cmd_job(args: List[str], json_mode: bool = False):
         print_error(f"Agent not found: {agent_id}", json_mode)
         sys.exit(1)
 
-    # Create the job
-    from ...tools.data.jobs import create_job, get_system_container
+    # Create the job under agent's inbox
+    from ...tools.data.jobs import create_job, get_agent_inbox_job
 
-    system_container = get_system_container()
+    inbox = get_agent_inbox_job(agent_id)
+    parent_id = inbox["id"] if inbox else None
 
     job = create_job(
         name=task[:100],  # Truncate name
         description=task if len(task) > 100 else None,
-        parent_id=system_container["id"],
+        parent_id=parent_id,
         assignees=[agent_id],
         tags=["dev:manual"],
         created_by="dev-cli"

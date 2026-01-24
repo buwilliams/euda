@@ -473,17 +473,17 @@ async function loadAgentMonitoring(agentId, offset = 0, limit = 20) {
 function isContainerJob(job) {
     // Agent inbox jobs have agent_id set
     if (job.agent_id) return true;
-    // System containers have system:agents, system:projects, or system:system tags
+    // System containers have system:agents or system:projects tags
     const tags = job.tags || [];
-    if (tags.includes('system:agents') || tags.includes('system:projects') || tags.includes('system:system')) return true;
+    if (tags.includes('system:agents') || tags.includes('system:projects')) return true;
     return false;
 }
 
 function isAgentOrSystemJob(job) {
-    // Check if job itself is an agent inbox or has system:agents/system:system tags
+    // Check if job itself is an agent inbox or has system:agents tags
     if (job.agent_id) return true;
     const tags = job.tags || [];
-    if (tags.includes('system:agents') || tags.includes('system:system')) return true;
+    if (tags.includes('system:agents')) return true;
     if (tags.includes('agent-inbox')) return true;
     return false;
 }

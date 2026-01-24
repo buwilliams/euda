@@ -179,7 +179,7 @@ def _create_store_job(items_with_hashes: List[tuple]) -> dict:
     Returns:
         Created job dict
     """
-    from ...tools.data.jobs import create_job, get_system_container
+    from ...tools.data.jobs import create_job, get_agent_inbox_job
     from ...tools.data.assets import write_asset
 
     timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -187,8 +187,10 @@ def _create_store_job(items_with_hashes: List[tuple]) -> dict:
     # Collect hash tags for deduplication
     hash_tags = [f"store:hash:{content_hash}" for _, content_hash in items_with_hashes]
 
-    # Create the job
-    system_container = get_system_container()
+    # Create the job under chat agent's inbox
+    inbox = get_agent_inbox_job("chat")
+    parent_id = inbox["id"] if inbox else None
+
     job = create_job(
         name=f"Store:ingest:{timestamp}",
         description=f"Import {len(items_with_hashes)} file(s) into long-term memory.\n\n"
@@ -196,7 +198,7 @@ def _create_store_job(items_with_hashes: List[tuple]) -> dict:
                     f"1. Extract date from content or filename\n"
                     f"2. Write content to long-term memory at that date\n"
                     f"3. Complete job when done",
-        parent_id=system_container["id"] if system_container else None,
+        parent_id=parent_id,
         assignees=["chat"],
         tags=["store:ingest"] + hash_tags,
         created_by="user"

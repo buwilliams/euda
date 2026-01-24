@@ -4,7 +4,7 @@
 
 function isSwipeable(job) {
     // System containers are not swipeable
-    if (job.tags && (job.tags.includes('system:agents') || job.tags.includes('system:projects') || job.tags.includes('system:system'))) {
+    if (job.tags && (job.tags.includes('system:agents') || job.tags.includes('system:projects'))) {
         return false;
     }
     // Agent inbox jobs are not swipeable

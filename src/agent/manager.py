@@ -401,10 +401,9 @@ class AgentManager:
 
     def _emit_startup_triggers(self):
         """Create trigger jobs for system:start and any missed time triggers at startup."""
-        from ..tools.data.jobs import create_job, list_jobs, get_system_container
+        from ..tools.data.jobs import create_job, list_jobs, get_agent_inbox_job
 
         today = datetime.now().strftime("%Y-%m-%d")
-        system_container = get_system_container()
 
         # Create system:start trigger jobs for subscribed agents (legacy format only)
         print("[startup] Creating system:start trigger jobs")
@@ -422,11 +421,15 @@ class AgentManager:
                 already_exists = any(j["name"] == job_name for j in existing)
 
                 if not already_exists:
+                    # Get agent's inbox job as parent
+                    inbox = get_agent_inbox_job(agent_id)
+                    parent_id = inbox["id"] if inbox else None
+
                     print(f"[startup] Creating trigger job: {job_name} for {agent_id}")
                     create_job(
                         name=job_name,
                         description="System startup trigger",
-                        parent_id=system_container["id"],
+                        parent_id=parent_id,
                         assignees=[agent_id],
                         due_date=None,
                         created_by="system"
@@ -444,6 +447,10 @@ class AgentManager:
                     if config.get("state", "enabled") == "disabled":
                         continue
 
+                    # Get agent's inbox job as parent for all trigger jobs
+                    inbox = get_agent_inbox_job(agent_id)
+                    parent_id = inbox["id"] if inbox else None
+
                     # Handle new-format object triggers (euno:* jobs)
                     new_triggers = self._get_agent_triggers(config)
                     for t in new_triggers:
@@ -457,7 +464,7 @@ class AgentManager:
                                 create_job(
                                     name=job_name,
                                     description=job_desc,
-                                    parent_id=system_container["id"],
+                                    parent_id=parent_id,
                                     assignees=[agent_id],
                                     tags=[job_name],  # Tag for querying
                                     due_date=None,
@@ -478,7 +485,7 @@ class AgentManager:
                             create_job(
                                 name=job_name,
                                 description=f"Missed {trigger} trigger",
-                                parent_id=system_container["id"],
+                                parent_id=parent_id,
                                 assignees=[agent_id],
                                 due_date=None,
                                 created_by="system"
@@ -588,10 +595,9 @@ class AgentManager:
         Args:
             trigger_name: The trigger that fired (e.g., "time:evening")
         """
-        from ..tools.data.jobs import create_job, list_jobs, get_system_container
+        from ..tools.data.jobs import create_job, list_jobs, get_agent_inbox_job
         from datetime import datetime
 
-        system_container = get_system_container()
         today = datetime.now().strftime("%Y-%m-%d")
 
         for agent_id, agent in self.agents.items():
@@ -615,11 +621,15 @@ class AgentManager:
                 )
 
                 if not already_exists:
+                    # Get agent's inbox job as parent
+                    inbox = get_agent_inbox_job(agent_id)
+                    parent_id = inbox["id"] if inbox else None
+
                     print(f"[scheduler] Creating consolidation job for {agent_id}")
                     create_job(
                         name=f"Trigger:consolidation:both:{today}",
                         description="Scheduled consolidation: review memories, evolve identity, graduate learnings",
-                        parent_id=system_container["id"],
+                        parent_id=parent_id,
                         assignees=[agent_id],
                         due_date=None,
                         created_by="system"
@@ -627,10 +637,9 @@ class AgentManager:
 
     def _run_time_scheduler(self):
         """Background thread that creates trigger jobs based on schedules."""
-        from ..tools.data.jobs import create_job, list_jobs, get_system_container
+        from ..tools.data.jobs import create_job, list_jobs, get_agent_inbox_job
 
         last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
-        system_container = get_system_container()
 
         while self.running:
             try:
@@ -668,6 +677,10 @@ class AgentManager:
                             if config.get("state", "enabled") == "disabled":
                                 continue
 
+                            # Get agent's inbox job as parent for all trigger jobs
+                            inbox = get_agent_inbox_job(agent_id)
+                            parent_id = inbox["id"] if inbox else None
+
                             # Handle new-format object triggers (euno:* jobs)
                             new_triggers = self._get_agent_triggers(config)
                             for trigger in new_triggers:
@@ -681,7 +694,7 @@ class AgentManager:
                                         create_job(
                                             name=job_name,
                                             description=job_desc,
-                                            parent_id=system_container["id"],
+                                            parent_id=parent_id,
                                             assignees=[agent_id],
                                             tags=[job_name],  # Tag for querying
                                             due_date=None,
@@ -702,7 +715,7 @@ class AgentManager:
                                     create_job(
                                         name=job_name,
                                         description=f"Scheduled trigger for {trigger_name}",
-                                        parent_id=system_container["id"],
+                                        parent_id=parent_id,
                                         assignees=[agent_id],
                                         due_date=None,
                                         created_by="system"

@@ -344,8 +344,8 @@ class TestSystemJobProtection:
         from src.tools.data.jobs import create_job, claim_job
 
         job = create_job(
-            name="System Container",
-            tags=["system:system"],
+            name="Agents Container",
+            tags=["system:agents"],
             parent_id=None,
             created_by="system"
         )

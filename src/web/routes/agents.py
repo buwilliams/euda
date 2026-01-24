@@ -14,7 +14,7 @@ from ...tools.agents.agents import (
     get_agent_config, update_agent_config
 )
 from ...tools.agents.monitoring import get_agent_monitoring
-from ...tools.data.jobs import get_jobs_completed_by_agent, create_job, get_system_container
+from ...tools.data.jobs import get_jobs_completed_by_agent, create_job, get_agent_inbox_job
 from ...tools.data.identity import get_identity, update_identity
 from ...tools.data.memory import (
     list_memory, add_memory, remove_memory, write_long_term_memory
@@ -316,12 +316,13 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
     execution_id = f"exec-{uuid.uuid4().hex[:8]}"
 
     today = datetime.now().strftime("%Y-%m-%d")
-    system_container = get_system_container()
+    inbox = get_agent_inbox_job(agent_id)
+    parent_id = inbox["id"] if inbox else None
 
     job = create_job(
         name=f"Trigger:consolidation:{phase}:{today}",
         description=f"Manual reflection trigger (execution_id: {execution_id})",
-        parent_id=system_container["id"],
+        parent_id=parent_id,
         assignees=[agent_id],
         tags=["ui:manual", f"execution:{execution_id}"],
         created_by="web-ui"

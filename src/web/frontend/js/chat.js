@@ -227,8 +227,7 @@ function setJobContext(jobId) {
         const tags = job.tags || [];
         // Only exclude the container jobs themselves, not their descendants
         const isSystemContainer = tags.includes('system:agents') ||
-                                  tags.includes('system:projects') ||
-                                  tags.includes('system:system');
+                                  tags.includes('system:projects');
         // Agent inbox jobs are the root jobs for each agent (have agent_id or agent-inbox tag)
         const isAgentInbox = tags.includes('agent-inbox') || job.agent_id;
 
