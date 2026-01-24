@@ -2,8 +2,37 @@
 
 // ============== Daily Quote ==============
 
-// Cache the quote data for reuse
-let focusQuoteData = null;
+// Cache the quote data for reuse (shared between focus and chat)
+let quoteData = null;
+let quotePromise = null;
+
+// Fetch quote data once, return cached promise for subsequent calls
+async function fetchQuoteData() {
+    if (quoteData) return quoteData;
+    if (quotePromise) return quotePromise;
+
+    quotePromise = (async () => {
+        try {
+            const response = await fetch('/api/daily-quote', { credentials: 'same-origin' });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            if (data.quote) {
+                quoteData = data;
+                return data;
+            }
+            throw new Error('No quote in response');
+        } catch (error) {
+            console.error('Failed to load quote:', error);
+            quoteData = {
+                quote: "The only way to do great work is to love what you do.",
+                author: "Steve Jobs"
+            };
+            return quoteData;
+        }
+    })();
+
+    return quotePromise;
+}
 
 async function loadDailyQuote(retries = 3) {
     // Check if quote was dismissed this session
@@ -23,33 +52,17 @@ async function loadDailyQuote(retries = 3) {
         return;
     }
 
+    // Use cached data if available
+    if (quoteData) {
+        renderQuote(quoteData);
+        return;
+    }
+
     // Show loading state
     container.innerHTML = `<div id="daily-quote" class="quote-container"><div class="quote-loading">Loading today's reflection...</div></div>`;
 
-    try {
-        const response = await fetch('/api/daily-quote', {
-            credentials: 'same-origin'
-        });
-        if (!response.ok) {
-            console.error('Daily quote API error:', response.status, response.statusText);
-            throw new Error(`HTTP ${response.status}`);
-        }
-        const data = await response.json();
-        if (data.quote) {
-            focusQuoteData = data;
-            renderQuote(data);
-        } else {
-            throw new Error('No quote in response');
-        }
-    } catch (error) {
-        console.error('Failed to load daily quote:', error);
-        // Fallback
-        focusQuoteData = {
-            quote: "The only way to do great work is to love what you do.",
-            author: "Steve Jobs"
-        };
-        renderQuote(focusQuoteData);
-    }
+    const data = await fetchQuoteData();
+    renderQuote(data);
 }
 
 function renderQuote(data) {
@@ -337,23 +350,14 @@ function showChatEmptyState() {
     `;
 }
 
-// Load quote for chat empty state
+// Load quote for chat empty state (uses shared quote cache)
 async function loadChatQuote() {
-    try {
-        const response = await fetch('/api/daily-quote', { credentials: 'same-origin' });
-        if (response.ok) {
-            const data = await response.json();
-            if (data.quote) {
-                cachedChatQuote = data;
-                // Re-render empty state if it's showing
-                const emptyState = document.getElementById('chat-empty-state');
-                if (emptyState) {
-                    showChatEmptyState();
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Failed to load chat quote:', error);
+    const data = await fetchQuoteData();
+    cachedChatQuote = data;
+    // Re-render empty state if it's showing
+    const emptyState = document.getElementById('chat-empty-state');
+    if (emptyState) {
+        showChatEmptyState();
     }
 }
 

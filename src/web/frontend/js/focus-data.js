@@ -329,9 +329,10 @@ async function loadJobsData() {
 
         renderFocusTab();
         updateTasksBadge();
-        // Load daily quote when showing the focus menu
+        // Load daily quote when showing the focus menu (also populates chat quote cache)
         if (focusView === 'menu') {
             loadDailyQuote();
+            loadChatQuote();
         }
     } catch (error) {
         console.error('Failed to load jobs data:', error);
