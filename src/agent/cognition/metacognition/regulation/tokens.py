@@ -185,8 +185,12 @@ class TokenAwareness:
         except ValueError:
             return AgentState.ENABLED
 
-    def _count_enabled_agents(self) -> int:
-        """Count the number of enabled agents (not disabled or paused)."""
+    def _count_active_agents(self) -> int:
+        """Count agents that share the budget (enabled or paused, not disabled).
+
+        Paused agents are included because they were using budget when paused
+        and will resume using it. Only disabled agents are excluded.
+        """
         count = 0
         if not AGENTS_DIR.exists():
             return 1  # Default to 1 if no agents dir
@@ -199,7 +203,8 @@ class TokenAwareness:
                         with open(config_path) as f:
                             config = json.load(f)
                         state = config.get("state", "enabled")
-                        if state == "enabled":
+                        # Count enabled and paused agents (not disabled)
+                        if state in ("enabled", "paused"):
                             count += 1
                     except (json.JSONDecodeError, IOError):
                         pass
@@ -834,8 +839,8 @@ class TokenAwareness:
             budget_config = self._get_agent_budget_config(agent_id)
             usage = self._get_agent_usage(agent_id, budget_config.frequency)
 
-            # Calculate budgets using actual enabled agent count
-            enabled_count = self._count_enabled_agents()
+            # Calculate budgets using active agent count (enabled + paused)
+            enabled_count = self._count_active_agents()
             total_budget, period_name = self._calculate_period_budget(enabled_count, budget_config.frequency)
             input_budget = int(total_budget * budget_config.input_ratio)
             output_budget = int(total_budget * budget_config.output_ratio)
