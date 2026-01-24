@@ -430,6 +430,148 @@ class TestConfigHotReload:
 
 
 # =============================================================================
+# Dict-Based Trigger Format Tests
+# =============================================================================
+
+@pytest.mark.unit
+class TestDictBasedTriggers:
+    """Test handling of new dict-based trigger format.
+
+    Spec: New trigger format uses objects with job_name, job_description, schedule.
+    Dict triggers should not be passed to event bus (only string triggers).
+    """
+
+    def test_start_agent_with_dict_triggers(
+        self, manager_data_dir, create_manager_agent
+    ):
+        """start_agent handles dict-based triggers without error.
+
+        Spec: Dict triggers are for scheduled jobs, not event bus subscriptions.
+        """
+        from src.agent.manager import AgentManager
+
+        # Create agent with both string and dict triggers
+        config = {
+            "id": "dict-trigger-agent",
+            "name": "Dict Trigger Agent",
+            "state": "enabled",
+            "tools": ["list_jobs"],
+            "triggers": [
+                "job:assigned",  # String trigger (legacy)
+                {  # Dict trigger (new format)
+                    "job_name": "euno:consolidate",
+                    "job_description": "Run consolidation",
+                    "schedule": "evening"
+                }
+            ]
+        }
+        agent_dir = manager_data_dir / "agents" / "dict-trigger-agent"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
+        (agent_dir / "identity.md").write_text("# Dict Trigger Agent\n\nTest agent.")
+
+        manager = AgentManager()
+
+        # This should not raise TypeError: unhashable type: 'dict'
+        with patch.object(manager, '_run_agent_loop'):
+            manager.start_agent(config)
+
+        assert "dict-trigger-agent" in manager.agents
+
+    def test_event_bus_only_receives_string_triggers(
+        self, manager_data_dir, create_manager_agent
+    ):
+        """Event bus subscription only receives string triggers, not dicts.
+
+        Spec: Dict triggers are handled by scheduler, not event bus.
+        """
+        from src.agent.manager import AgentManager
+
+        # Create agent with mixed triggers
+        config = {
+            "id": "mixed-trigger-agent",
+            "name": "Mixed Trigger Agent",
+            "state": "enabled",
+            "tools": ["list_jobs"],
+            "triggers": [
+                "job:assigned",
+                "system:start",
+                {
+                    "job_name": "euno:consolidate",
+                    "schedule": "evening"
+                },
+                {
+                    "job_name": "euno:quote",
+                    "schedule": "morning"
+                }
+            ]
+        }
+        agent_dir = manager_data_dir / "agents" / "mixed-trigger-agent"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
+        (agent_dir / "identity.md").write_text("# Mixed Trigger Agent\n\nTest agent.")
+
+        manager = AgentManager()
+
+        # Track what gets passed to event_bus.subscribe
+        subscribed_triggers = []
+        original_subscribe = manager.event_bus.subscribe
+
+        def capture_subscribe(agent_id, triggers):
+            subscribed_triggers.extend(triggers)
+            return original_subscribe(agent_id, triggers)
+
+        manager.event_bus.subscribe = capture_subscribe
+
+        with patch.object(manager, '_run_agent_loop'):
+            manager.start_agent(config)
+
+        # Only string triggers should be subscribed
+        assert "job:assigned" in subscribed_triggers
+        assert "system:start" in subscribed_triggers
+        assert len(subscribed_triggers) == 2  # No dict triggers
+
+        # Verify no dicts in subscribed triggers
+        for trigger in subscribed_triggers:
+            assert isinstance(trigger, str), f"Dict trigger leaked to event bus: {trigger}"
+
+    def test_start_agent_with_only_dict_triggers(
+        self, manager_data_dir
+    ):
+        """start_agent works when agent has only dict-based triggers.
+
+        Spec: Agents can have only scheduled triggers (no event bus subscriptions).
+        """
+        from src.agent.manager import AgentManager
+
+        # Create agent with only dict triggers
+        config = {
+            "id": "only-dict-triggers",
+            "name": "Only Dict Triggers",
+            "state": "enabled",
+            "tools": ["list_jobs"],
+            "triggers": [
+                {
+                    "job_name": "euno:consolidate",
+                    "schedule": "evening"
+                }
+            ]
+        }
+        agent_dir = manager_data_dir / "agents" / "only-dict-triggers"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
+        (agent_dir / "identity.md").write_text("# Only Dict Triggers\n\nTest agent.")
+
+        manager = AgentManager()
+
+        # Should not raise, should subscribe to empty list
+        with patch.object(manager, '_run_agent_loop'):
+            manager.start_agent(config)
+
+        assert "only-dict-triggers" in manager.agents
+
+
+# =============================================================================
 # Job Cache Notification Tests
 # =============================================================================
 
