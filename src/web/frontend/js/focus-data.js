@@ -527,7 +527,8 @@ function getJobCategory(job) {
 // ============== Job Hierarchy Helpers ==============
 
 function getJobById(id) {
-    return jobsData.find(j => j.id === id);
+    // Use allJobsData to find jobs regardless of status
+    return allJobsData.find(j => j.id === id);
 }
 
 function getTimelineContext() {

@@ -76,7 +76,7 @@ function renderFullJobCard(job) {
     // Get parent job name for context
     let parentName = null;
     if (job.parent_id) {
-        const parent = jobsData.find(j => j.id === job.parent_id);
+        const parent = allJobsData.find(j => j.id === job.parent_id);
         parentName = parent ? parent.name : null;
     }
 

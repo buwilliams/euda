@@ -250,7 +250,7 @@ function getViewDisplayName(view) {
     // Job views - get job name from cache
     if (view.startsWith('job-')) {
         const jobId = view.substring(4);
-        const job = jobsData.find(j => j.id === jobId) || completedJobsData.find(j => j.id === jobId);
+        const job = allJobsData.find(j => j.id === jobId);
         if (job) {
             // Truncate long names for breadcrumbs
             const name = job.name || 'Job';
@@ -400,7 +400,7 @@ function getQuickAddContext() {
     // Job detail view - create child job
     if (focusView.startsWith('job-')) {
         const jobId = focusView.substring(4);
-        const job = jobsData.find(j => j.id === jobId);
+        const job = allJobsData.find(j => j.id === jobId);
         if (job) {
             return { parent_id: jobId, label: job.name };
         }

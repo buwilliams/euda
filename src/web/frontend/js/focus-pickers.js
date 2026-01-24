@@ -227,7 +227,7 @@ function getAssigneesLabel(job) {
 }
 
 async function openAssigneesPicker(jobId) {
-    const job = jobsData.find(j => j.id === jobId) || completedJobsData.find(j => j.id === jobId);
+    const job = allJobsData.find(j => j.id === jobId);
     if (!job) return;
 
     const agents = await loadAgents();
@@ -390,7 +390,7 @@ async function deleteJobDirect(jobId) {
 // ============== State Picker ==============
 
 function openStatePicker(jobId) {
-    const job = jobsData.find(j => j.id === jobId) || completedJobsData.find(j => j.id === jobId);
+    const job = allJobsData.find(j => j.id === jobId);
     const currentStatus = job?.status || 'todo';
 
     const statuses = [

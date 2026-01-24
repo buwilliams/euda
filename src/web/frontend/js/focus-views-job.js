@@ -354,7 +354,8 @@ function renderSystemContainerView(job, isAgentsContainer) {
 // ============== Job Detail View ==============
 
 function renderJobDetailView(jobId) {
-    const job = jobsData.find(j => j.id === jobId);
+    // Use allJobsData to find jobs regardless of status
+    const job = allJobsData.find(j => j.id === jobId);
     if (!job) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -400,7 +401,7 @@ function renderJobDetailView(jobId) {
     // Get parent job name for context
     let parentName = null;
     if (job.parent_id) {
-        const parent = jobsData.find(j => j.id === job.parent_id);
+        const parent = allJobsData.find(j => j.id === job.parent_id);
         parentName = parent ? parent.name : null;
     }
 

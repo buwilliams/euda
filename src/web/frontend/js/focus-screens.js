@@ -3,9 +3,9 @@
 // ============== New Child Job Screen ==============
 
 function renderNewJobScreen(parentJobId) {
-    const parentJob = jobsData.find(j => j.id === parentJobId);
+    const parentJob = allJobsData.find(j => j.id === parentJobId);
     const parentName = parentJob ? parentJob.name : 'Job';
-    const childJobs = jobsData.filter(j => j.parent_id === parentJobId);
+    const childJobs = allJobsData.filter(j => j.parent_id === parentJobId);
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -70,7 +70,7 @@ async function quickAddChildJob(parentJobId) {
 // ============== Attach Screen ==============
 
 function renderAttachScreen(jobId) {
-    const job = jobsData.find(j => j.id === jobId);
+    const job = allJobsData.find(j => j.id === jobId);
     const jobName = job ? job.name : 'Job';
 
     return `
