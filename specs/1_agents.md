@@ -237,6 +237,10 @@ Agents have three possible states:
 
 Unified token tracking and budget enforcement:
 
+- **Real agent_id required**: All LLM calls must use a real agent_id defined in `data/agents/*/config.json`
+  - Never use made-up agent_ids like "system", "transcribe", "tts", etc.
+  - Sub-agent patterns are allowed: `{agent_id}/planning`, `{agent_id}/reflection`
+  - This ensures all token usage is tracked against real agent budgets
 - **Pre-call estimation**: Estimates input tokens using tiktoken before API calls
 - **Post-call recording**: Records actual input/output tokens after API calls
 - **Per-agent budgets**: Global budget split equally among enabled agents
