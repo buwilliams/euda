@@ -158,9 +158,6 @@ function renderAgentDetailView(job) {
                             Resets in ${resetTime}
                         </div>
                     ` : ''}
-                    <button class="task-detail-action token-reset-btn" onclick="resetAgentTokenUsage('${agentId}')">
-                        ${icon('arrow-path')} Reset Usage
-                    </button>
                 </div>
             </div>
         `;
@@ -199,6 +196,7 @@ function renderAgentDetailView(job) {
                 ${renderStatusControls()}
                 ${actionButton('append', 'arrow-path', 'Append', `triggerReflection('${agentId}', 'append')`)}
                 ${actionButton('consolidate', 'archive-box', 'Consolidate', `triggerReflection('${agentId}', 'consolidate')`)}
+                <button class="task-detail-action" onclick="resetAgentTokenUsage('${agentId}')">${icon('arrow-path')} Reset</button>
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
             </div>
 
