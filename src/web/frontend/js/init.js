@@ -15,8 +15,8 @@ function connectSSE() {
         const allJobs = data.jobs || [];
         // Store all jobs for detail views (including archived)
         allJobsData = allJobs;
-        // Split jobs into active and completed (filter out archived for main views)
-        jobsData = allJobs.filter(j => j.status !== 'done' && j.status !== 'archived');
+        // Split jobs into active (todo, working) - exclude done, archived, error
+        jobsData = allJobs.filter(j => j.status === 'todo' || j.status === 'working');
         completedJobsData = allJobs.filter(j => j.status === 'done')
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
             .slice(0, 20);
@@ -33,8 +33,8 @@ function connectSSE() {
         const allJobs = data.jobs || [];
         // Store all jobs for detail views (including archived)
         allJobsData = allJobs;
-        // Split jobs into active and completed (filter out archived for main views)
-        jobsData = allJobs.filter(j => j.status !== 'done' && j.status !== 'archived');
+        // Split jobs into active (todo, working) - exclude done, archived, error
+        jobsData = allJobs.filter(j => j.status === 'todo' || j.status === 'working');
         completedJobsData = allJobs.filter(j => j.status === 'done')
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
             .slice(0, 20);
