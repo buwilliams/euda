@@ -137,6 +137,26 @@ def perform_fresh_start(create_backup_first: bool = True) -> dict:
                         # No template, just remove the identity
                         identity_file.unlink()
                         deleted.append(f"agents/{agent_id}/identity.md")
+
+                    # Reset agent state to enabled and clear pause info
+                    config_file = agent_dir / "config.json"
+                    if config_file.exists():
+                        try:
+                            import json
+                            with open(config_file) as f:
+                                config = json.load(f)
+                            # Reset state to enabled
+                            if config.get("state") != "enabled":
+                                config["state"] = "enabled"
+                                # Remove pause-related fields
+                                config.pop("pause_reason", None)
+                                config.pop("pause_timestamp", None)
+                                with open(config_file, "w") as f:
+                                    json.dump(config, f, indent=2)
+                                    f.write("\n")
+                                reset.append(f"agents/{agent_id}/config.json (state)")
+                        except (json.JSONDecodeError, IOError):
+                            pass
                 else:
                     # Non-core agent: remove entirely
                     shutil.rmtree(agent_dir)
