@@ -166,6 +166,18 @@ function renderAgentDetailView(job) {
         `;
     };
 
+    // Render pause reason notice if paused
+    const renderPauseNotice = () => {
+        if (!pauseStatus.isPaused) return '';
+        const reason = pauseStatus.reason || 'Agent paused';
+        const timeAgo = pauseStatus.timestamp ? formatPauseTimestamp(pauseStatus.timestamp) : '';
+        return `
+            <div class="pause-notice">
+                ${icon('exclamation-triangle')} ${escapeHtml(reason)}${timeAgo ? ` (${timeAgo})` : ''}
+            </div>
+        `;
+    };
+
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
@@ -175,26 +187,23 @@ function renderAgentDetailView(job) {
             </div>
         </div>
         <div class="focus-view-content" data-testid="agent-detail">
-            ${pauseStatus.isPaused ? renderPauseBanner(agentId, pauseStatus) : ''}
-
             <!-- Live Execution Progress -->
             ${getActiveExecutionHtml(agentId)}
 
-            <!-- Status Row -->
+            <!-- Pause Notice (if paused) -->
+            ${renderPauseNotice()}
+
+            <!-- Action Menu - all controls in one row -->
             <div class="task-detail-actions">
                 <span class="agent-status-badge ${statusBadgeClass}">${agentState}</span>
                 ${renderStatusControls()}
-            </div>
-
-            <!-- Token Budget Section -->
-            ${renderTokenBudgetSection()}
-
-            <!-- Action Menu -->
-            <div class="task-detail-actions">
                 ${actionButton('append', 'arrow-path', 'Append', `triggerReflection('${agentId}', 'append')`)}
                 ${actionButton('consolidate', 'archive-box', 'Consolidate', `triggerReflection('${agentId}', 'consolidate')`)}
                 <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
             </div>
+
+            <!-- Token Budget Section -->
+            ${renderTokenBudgetSection()}
 
             <!-- Jobs Section (merged pending + completed child jobs, open first) -->
             <div class="job-section">
@@ -295,29 +304,7 @@ function renderAgentDetailView(job) {
     `;
 }
 
-// ============== Agent Pause Banner ==============
-
-function renderPauseBanner(agentId, pauseStatus) {
-    const reason = pauseStatus.reason || 'Agent paused due to threshold breach';
-    const timestamp = pauseStatus.timestamp;
-    const timeAgo = timestamp ? formatPauseTimestamp(timestamp) : '';
-
-    return `
-        <div class="agent-paused-banner">
-            <div class="pause-banner-content">
-                ${icon('exclamation-triangle')}
-                <div class="pause-banner-text">
-                    <strong>Agent Paused</strong>
-                    <span class="pause-reason">${escapeHtml(reason)}</span>
-                    ${timeAgo ? `<span class="pause-time">${timeAgo}</span>` : ''}
-                </div>
-            </div>
-            <button class="pause-resume-btn" data-testid="resume-btn" onclick="resumeAgent('${agentId}')">
-                ${icon('play')} Resume
-            </button>
-        </div>
-    `;
-}
+// ============== Agent Pause Helpers ==============
 
 function formatPauseTimestamp(timestamp) {
     if (!timestamp) return '';
