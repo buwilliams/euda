@@ -137,6 +137,10 @@ function switchTab(tabName) {
     if (tabName === 'chat') {
         // Clear notification when switching to chat
         clearChatNotification();
+        // Scroll to bottom to show latest messages
+        if (typeof scrollChatToBottom === 'function') {
+            scrollChatToBottom();
+        }
     }
     if (tabName === 'focus') {
         // Reset focus view to menu when clicking tab
