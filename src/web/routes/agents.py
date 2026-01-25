@@ -360,28 +360,23 @@ def api_get_active_executions(agent_id: str):
     topics = list_topics(status="todo", assignee=agent_id)
 
     # Filter for consolidation topics and extract execution info
-    # Consolidation topics: euno:consolidate (new) or Trigger:consolidation:{phase}:{date} (legacy)
     executions = []
     for topic in topics:
         topic_name = topic.get("name", "")
         tags = topic.get("tags", [])
 
-        # Check for consolidation topic name patterns
-        if topic_name == "euno:consolidate":
-            # New format - extract phase from description if available
-            description = topic.get("description", "")
-            if "phase: append" in description:
-                phase = "append"
-            elif "phase: consolidate" in description:
-                phase = "consolidate"
-            else:
-                phase = "both"
-        elif topic_name.startswith("Trigger:consolidation:"):
-            # Legacy format: Trigger:consolidation:{phase}:{date}
-            parts = topic_name.split(":")
-            phase = parts[2] if len(parts) >= 3 else "both"
-        else:
+        # Check for consolidation topic
+        if topic_name != "euno:consolidate":
             continue
+
+        # Extract phase from description if available
+        description = topic.get("description", "")
+        if "phase: append" in description:
+            phase = "append"
+        elif "phase: consolidate" in description:
+            phase = "consolidate"
+        else:
+            phase = "both"
 
         # Extract execution_id from tags
         execution_id = None

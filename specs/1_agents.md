@@ -69,27 +69,12 @@ These topics:
 - Are prevented from duplicating (only one pending per agent at a time)
 - Complete automatically after tool execution
 
-### Legacy Trigger Format
-
-String-based triggers are still supported for backwards compatibility:
-
-```json
-{
-  "triggers": ["time:morning", "system:start"]
-}
-```
-
-- `system:start` — fires once at system startup
-- `time:{name}` — fires at scheduled times (morning, evening, hourly)
-- Legacy topic naming: `Trigger:{name}:{yyyy-mm-dd}`
-
 ## Manager
 
 - Loads agent configs from `data/agents/*/config.json`
 - Starts each enabled agent in its own thread
 - Maintains topic cache per agent — cache is set when topics are assigned
 - Runs time scheduler that creates trigger topics based on `schedules` in system config
-- Creates startup trigger topics for agents with `system:start`
 - Detects missed `time:morning` and `time:evening` triggers at startup
 
 ## Work Cycle

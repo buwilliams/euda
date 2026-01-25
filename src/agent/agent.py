@@ -342,14 +342,6 @@ class Agent:
                 return True
         return False
 
-    def _is_reflection_trigger(self, topic_tags: list, topic_name: str) -> bool:
-        """Check if a topic is a reflection trigger that should be handled directly.
-
-        DEPRECATED: Use _is_internal_topic() instead. Kept for backwards compatibility
-        with old Trigger:consolidation: topics that may still exist.
-        """
-        return topic_name.startswith("Trigger:consolidation:")
-
     def _is_topic_cancelled(self, topic_id: str) -> bool:
         """Check if a topic has been cancelled (archived or deleted) by the user.
 
@@ -432,79 +424,13 @@ class Agent:
             })
             # Don't re-raise - topic stays in todo for retry
 
-    def _execute_reflection_trigger(self, topic: dict):
-        """Execute a reflection trigger directly (not through chat loop).
-
-        DEPRECATED: This handles legacy Trigger:consolidation: topics.
-        New code should use euno:consolidate topics instead.
-        """
-        from ..tools.data.topics import complete_topic
-
-        topic_id = topic.get("id")
-        topic_tags = topic.get("tags", [])
-
-        # Extract execution_id from tags if present
-        execution_id = None
-        for tag in topic_tags:
-            if tag.startswith("execution:"):
-                execution_id = tag.split(":", 1)[1]
-                break
-
-        # Determine phase from topic name: Trigger:consolidation:{phase}:{date}
-        topic_name = topic.get("name", "")
-        phase = "both"  # default
-        if topic_name.startswith("Trigger:consolidation:"):
-            parts = topic_name.split(":")
-            if len(parts) >= 3:
-                phase = parts[2]  # Trigger:consolidation:{phase}:{date}
-
-        self._log("reflection_trigger_start", {
-            "topic_id": topic_id,
-            "phase": phase,
-            "execution_id": execution_id
-        })
-
-        try:
-            if self.consolidation:
-                if phase in ("append", "both"):
-                    # Append is usually done automatically after chat, skip for manual triggers
-                    pass
-                if phase in ("consolidate", "both"):
-                    self.consolidation.consolidate(execution_id=execution_id)
-
-            # Complete the trigger topic
-            complete_topic(topic_id)
-
-            self._log("reflection_trigger_complete", {
-                "topic_id": topic_id,
-                "phase": phase,
-                "execution_id": execution_id
-            })
-
-        except Exception as e:
-            self._log("reflection_trigger_error", {
-                "topic_id": topic_id,
-                "phase": phase,
-                "error": str(e)
-            })
-            # Don't re-raise - let manager handle retries if needed
-
     def _get_topic_prompt_type(self, topic: dict) -> str:
         """Determine which prompt template to use based on topic type.
 
         Returns:
-            Template name: 'agent/consolidation' or 'agent/topic_assignment'
+            Template name for the topic assignment prompt
         """
-        topic_name = topic.get("name", "")
-
-        # Consolidation topics identified by name pattern: Trigger:consolidation:{phase}:{date}
-        # Note: these are now handled directly in _execute_reflection_trigger
-        # This path is kept for backwards compatibility with any code that calls this directly
-        if topic_name.startswith("Trigger:consolidation:"):
-            return "agent/consolidation"
-        # Regular topic assignment (includes user:request)
-        else:
-            return "agent/topic_assignment"
+        return "agent/topic_assignment"
 
     def _format_topic_prompt(self, topic: dict, remaining: int = 0) -> str:
         """Format a topic as a standardized prompt for the agent."""
@@ -717,11 +643,6 @@ class Agent:
             # Check for internal euno:* topics first - these execute tools directly
             if self._is_internal_topic(topic_name):
                 self._execute_internal_topic(current_topic)
-                return
-
-            # Legacy handling for old Trigger:consolidation: topics (backwards compatibility)
-            if self._is_reflection_trigger(topic_tags, topic_name):
-                self._execute_reflection_trigger(current_topic)
                 return
 
             # Use standardized topic prompt format

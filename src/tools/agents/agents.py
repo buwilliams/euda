@@ -168,20 +168,15 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
         "name": {"type": "string", "description": "Display name (e.g., 'Researcher')"},
         "purpose": {"type": "string", "description": "Description of what the agent does"},
         "tools": {"type": "array", "items": {"type": "string"}, "description": "List of tool names to assign"},
-        "triggers": {"type": "array", "items": {"type": "string"}, "description": "Wake-up triggers (e.g., ['time:morning'])"},
-        "consolidation": {
-            "type": "object",
-            "description": "Enable memory consolidation behavior",
-            "properties": {
-                "enabled": {"type": "boolean", "description": "Whether consolidation is active"},
-                "trigger": {"type": "string", "description": "When to run (e.g., 'time:evening')"}
-            },
-            "required": ["enabled", "trigger"]
+        "triggers": {
+            "type": "array",
+            "items": {"type": "object"},
+            "description": "Scheduled triggers as objects with topic_name, topic_description, schedule"
         }
     },
     "required": ["agent_id", "name", "purpose"]
 })
-def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None, consolidation: dict = None) -> dict:
+def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None) -> dict:
     """Create a new agent with the specified configuration.
 
     Args:
@@ -190,9 +185,10 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         purpose: Description of what the agent does
         tools: List of tool names to assign (use list_available_tools to see options).
                If not provided, uses minimal base tools.
-        triggers: Optional list of triggers (e.g., ['time:morning', 'system:start'])
-        consolidation: Optional dict to enable consolidation (memory consolidation and identity updates).
-                       Example: {"enabled": True, "trigger": "time:evening"}
+        triggers: Optional list of trigger objects. Each trigger should have:
+                  - topic_name: Name of topic to create (e.g., 'euno:consolidate')
+                  - topic_description: Description for the topic
+                  - schedule: When to fire ('morning', 'evening')
 
     Returns:
         Success status and agent details
@@ -237,10 +233,6 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         "tools": agent_tools,
         "triggers": triggers or []
     }
-
-    # Add consolidation if provided
-    if consolidation:
-        config["consolidation"] = consolidation
 
     config_path = agent_dir / "config.json"
     with open(config_path, "w") as f:
@@ -417,7 +409,10 @@ def update_agent_triggers(agent_id: str, triggers: list) -> dict:
 
     Args:
         agent_id: The agent to update
-        triggers: List of triggers (e.g., ['time:morning', 'system:start', 'memory:long-term'])
+        triggers: List of trigger objects. Each trigger should have:
+                  - topic_name: Name of topic to create (e.g., 'euno:consolidate')
+                  - topic_description: Description for the topic
+                  - schedule: When to fire ('morning', 'evening')
 
     Note: Changes require a restart to take effect.
     """

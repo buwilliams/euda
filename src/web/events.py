@@ -1,13 +1,11 @@
 """
-Event System - Central event bus for agent triggers and UI updates.
-
-Events follow the format: {type}:{event}
-Examples: topic:assigned, memory:long-term, time:morning
-
-Scoped events only wake the specific agent they're scoped to.
-Unscoped events wake all agents subscribed to that event type.
+Event System - Central event bus for UI updates.
 
 UI events are broadcast to all connected SSE clients.
+Dev events are broadcast to CLI watchers.
+
+Note: Agent triggers are now configured as objects in config.json,
+not through the event bus subscription system.
 """
 
 import asyncio

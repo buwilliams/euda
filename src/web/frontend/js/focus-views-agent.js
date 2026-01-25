@@ -1146,7 +1146,7 @@ function renderConfigurationView(agentId) {
                         <span>Triggers (comma-separated)</span>
                         <input type="text" class="agent-config-input" id="edit-triggers-${topicId}"
                             value="${escapeHtml(triggers.join(', '))}"
-                            placeholder="e.g., topic:assigned, time:morning">
+                            placeholder="Object triggers (edit config.json directly)">
                     </label>
                     <label class="agent-config-label">
                         <span>Tools (comma-separated)</span>

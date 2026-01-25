@@ -94,11 +94,6 @@ class AgentManager:
         stop_event = threading.Event()
         self._agent_stop_events[agent_id] = stop_event
 
-        # Subscribe agent to legacy string triggers only (not new dict-based triggers)
-        # New dict-based triggers are handled by the scheduler directly
-        string_triggers = [t for t in triggers if isinstance(t, str)]
-        self.event_bus.subscribe(agent_id, string_triggers)
-
         # Create thread for agent loop
         thread = threading.Thread(
             target=self._run_agent_loop,
@@ -347,35 +342,21 @@ class AgentManager:
         return missed
 
     def _get_agent_triggers(self, config: dict) -> list:
-        """Get triggers from agent config using the new object-based format.
+        """Get triggers from agent config.
 
-        New format triggers are objects with:
+        Triggers are objects with:
         - topic_name: e.g., "euno:consolidate", "euno:quote"
         - topic_description: description for the topic (optional)
         - schedule: schedule name from system config (e.g., "morning", "evening")
-
-        Also supports legacy string-based triggers for backwards compatibility.
 
         Args:
             config: Agent configuration dict
 
         Returns:
-            List of trigger dicts (normalized to new format)
+            List of trigger dicts
         """
         triggers = config.get("triggers", [])
-        normalized = []
-
-        for trigger in triggers:
-            if isinstance(trigger, dict):
-                # New format - already structured
-                normalized.append(trigger)
-            elif isinstance(trigger, str):
-                # Legacy format - string like "time:morning"
-                # Keep for backwards compatibility but don't convert
-                # These are handled by the old topic creation logic
-                pass
-
-        return normalized
+        return [t for t in triggers if isinstance(t, dict)]
 
     def _has_open_internal_topic(self, topic_name: str, agent_id: str) -> bool:
         """Check if there's already an open (todo or working) topic for this internal action.
@@ -402,40 +383,10 @@ class AgentManager:
         return False
 
     def _emit_startup_triggers(self):
-        """Create trigger topics for system:start and any missed time triggers at startup."""
-        from ..tools.data.topics import create_topic, list_topics, get_agent_inbox_topic
+        """Create topics for any missed time triggers at startup."""
+        from ..tools.data.topics import create_topic, get_agent_inbox_topic
 
         today = datetime.now().strftime("%Y-%m-%d")
-
-        # Create system:start trigger topics for subscribed agents (legacy format only)
-        print("[startup] Creating system:start trigger topics")
-        for agent_id, agent in self.agents.items():
-            config = agent.config
-            if config.get("state", "enabled") == "disabled":
-                continue
-
-            triggers = config.get("triggers", [])
-            if "system:start" in triggers:
-                topic_name = f"Trigger:start:{today}"
-
-                # Check if trigger topic already exists for this agent today
-                existing = list_topics(status="todo", assignee=agent_id)
-                already_exists = any(t["name"] == topic_name for t in existing)
-
-                if not already_exists:
-                    # Get agent's inbox topic as parent
-                    inbox = get_agent_inbox_topic(agent_id)
-                    parent_id = inbox["id"] if inbox else None
-
-                    print(f"[startup] Creating trigger topic: {topic_name} for {agent_id}")
-                    create_topic(
-                        name=topic_name,
-                        description="System startup trigger",
-                        parent_id=parent_id,
-                        assignee=agent_id,
-                        due_date=None,
-                        created_by="system"
-                    )
 
         # Check for missed morning/evening triggers
         missed = self._check_missed_triggers()
@@ -453,9 +404,9 @@ class AgentManager:
                     inbox = get_agent_inbox_topic(agent_id)
                     parent_id = inbox["id"] if inbox else None
 
-                    # Handle new-format object triggers (euno:* topics)
-                    new_triggers = self._get_agent_triggers(config)
-                    for t in new_triggers:
+                    # Handle object triggers
+                    triggers = self._get_agent_triggers(config)
+                    for t in triggers:
                         if t.get("schedule") == trigger_type:
                             topic_name = t.get("topic_name")
                             topic_desc = t.get("topic_description", f"Missed scheduled {topic_name}")
@@ -472,26 +423,6 @@ class AgentManager:
                                     due_date=None,
                                     created_by="system"
                                 )
-
-                    # Legacy handling: string-based triggers
-                    legacy_triggers = config.get("triggers", [])
-                    if trigger in legacy_triggers:
-                        topic_name = f"Trigger:{trigger_type}:{today}"
-
-                        # Check if trigger topic already exists for this agent today
-                        existing = list_topics(status="todo", assignee=agent_id)
-                        already_exists = any(t["name"] == topic_name for t in existing)
-
-                        if not already_exists:
-                            print(f"[startup] Creating missed legacy trigger topic: {topic_name} for {agent_id}")
-                            create_topic(
-                                name=topic_name,
-                                description=f"Missed {trigger} trigger",
-                                parent_id=parent_id,
-                                assignee=agent_id,
-                                due_date=None,
-                                created_by="system"
-                            )
 
             # Update state to mark these as "handled" by setting them to today
             state = self._get_system_state()
@@ -587,59 +518,9 @@ class AgentManager:
         # Log that agent loop has ended
         agent._log("agent_loop_stopped", {"reason": "stop_requested" if stop_event.is_set() else "shutdown"})
 
-    def _create_consolidation_topics(self, trigger_name: str):
-        """Create consolidation topics for agents with matching consolidation trigger.
-
-        Consolidation is a first-class behavioral trigger. Instead of running
-        consolidation directly, we create a consolidation topic that the agent
-        processes using the consolidation prompt and memory tools.
-
-        Args:
-            trigger_name: The trigger that fired (e.g., "time:evening")
-        """
-        from ..tools.data.topics import create_topic, list_topics, get_agent_inbox_topic
-        from datetime import datetime
-
-        today = datetime.now().strftime("%Y-%m-%d")
-
-        for agent_id, agent in self.agents.items():
-            if agent.config.get("state", "enabled") == "disabled":
-                continue
-
-            # Check if agent has consolidation enabled and if this trigger matches
-            consolidation_config = agent.config.get("consolidation", {})
-            if not consolidation_config.get("enabled", True):
-                continue
-
-            consolidation_trigger = consolidation_config.get("trigger", "time:evening")
-
-            if trigger_name == consolidation_trigger:
-                # Check if consolidation topic already exists for this agent today
-                # Name pattern: Trigger:consolidation:{phase}:{date}
-                existing = list_topics(status="todo", assignee=agent_id)
-                already_exists = any(
-                    t["name"].startswith(f"Trigger:consolidation:") and t["name"].endswith(f":{today}")
-                    for t in existing
-                )
-
-                if not already_exists:
-                    # Get agent's inbox topic as parent
-                    inbox = get_agent_inbox_topic(agent_id)
-                    parent_id = inbox["id"] if inbox else None
-
-                    print(f"[scheduler] Creating consolidation topic for {agent_id}")
-                    create_topic(
-                        name=f"Trigger:consolidation:both:{today}",
-                        description="Scheduled consolidation: review memories, evolve identity, graduate learnings",
-                        parent_id=parent_id,
-                        assignee=agent_id,
-                        due_date=None,
-                        created_by="system"
-                    )
-
     def _run_time_scheduler(self):
         """Background thread that creates trigger topics based on schedules."""
-        from ..tools.data.topics import create_topic, list_topics, get_agent_inbox_topic
+        from ..tools.data.topics import create_topic, get_agent_inbox_topic
 
         last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
 
@@ -683,9 +564,9 @@ class AgentManager:
                             inbox = get_agent_inbox_topic(agent_id)
                             parent_id = inbox["id"] if inbox else None
 
-                            # Handle new-format object triggers (euno:* topics)
-                            new_triggers = self._get_agent_triggers(config)
-                            for trigger in new_triggers:
+                            # Handle object triggers
+                            triggers = self._get_agent_triggers(config)
+                            for trigger in triggers:
                                 if trigger.get("schedule") == name:
                                     topic_name = trigger.get("topic_name")
                                     topic_desc = trigger.get("topic_description", f"Scheduled {topic_name}")
@@ -703,34 +584,11 @@ class AgentManager:
                                             created_by="system"
                                         )
 
-                            # Legacy handling: string-based triggers (e.g., "time:morning")
-                            legacy_triggers = config.get("triggers", [])
-                            if trigger_name in legacy_triggers:
-                                topic_name = f"Trigger:{name}:{today}"
-
-                                # Check if trigger topic already exists for this agent today
-                                existing = list_topics(status="todo", assignee=agent_id)
-                                already_exists = any(t["name"] == topic_name for t in existing)
-
-                                if not already_exists:
-                                    print(f"[scheduler] Creating legacy trigger topic: {topic_name} for {agent_id}")
-                                    create_topic(
-                                        name=topic_name,
-                                        description=f"Scheduled trigger for {trigger_name}",
-                                        parent_id=parent_id,
-                                        assignee=agent_id,
-                                        due_date=None,
-                                        created_by="system"
-                                    )
-
                         # Save state for morning/evening triggers
                         if name in ["morning", "evening"]:
                             state = self._get_system_state()
                             state[f"last_{name}"] = today
                             self._save_system_state(state)
-
-                        # Legacy: Create consolidation topics for agents with old consolidation config
-                        self._create_consolidation_topics(trigger_name)
 
             except Exception as e:
                 print(f"Scheduler error: {e}")
