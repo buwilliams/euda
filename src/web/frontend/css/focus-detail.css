@@ -830,6 +830,30 @@
     cursor: pointer;
 }
 
+.topic-icon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.topic-icon img {
+    width: 1em;
+    height: 1em;
+}
+
+.topic-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.topic-completed-date {
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-sm);
+    flex-shrink: 0;
+}
+
 .trace-btn {
     display: flex;
     align-items: center;

@@ -15,8 +15,8 @@ function getLocalDateString(date = null) {
 
 let topicsData = [];           // All active topics
 let completedTopicsData = [];  // Recently completed topics
-let allTopicsData = [];        // All jobs including archived (for detail views)
-let topicAssetsCache = {};     // Cache of assets per job
+let allTopicsData = [];        // All topics including archived (for detail views)
+let topicAssetsCache = {};     // Cache of assets per topic
 let editingTopicField = null;  // Which field is being edited: {topicId, field}
 let currentAssetData = null; // Currently viewed asset
 let editingAssetFilename = null; // Track if we're editing an asset
@@ -61,24 +61,24 @@ function renderFocusTab() {
     } else if (focusView === 'someday') {
         content = renderTimelineView('someday', 'Someday');
     } else if (focusView === 'completed') {
-        content = renderCompletedJobsView();
+        content = renderCompletedTopicsView();
     } else if (focusView.startsWith('assets-')) {
-        // assets-{topicId} - list of assets for a job
+        // assets-{topicId} - list of assets for a topic
         const topicId = focusView.substring(7);
         content = renderAssetsListView(topicId);
     } else if (focusView.startsWith('asset-')) {
-        // asset-{topicId}-{filename} where topicId is like "job-xxxxxxxx"
+        // asset-{topicId}-{filename} where topicId is like "topic-xxxxxxxx"
         const rest = focusView.substring(6); // remove "asset-"
-        // Job IDs are "job-" + 8 hex chars, so extract first 12 chars
+        // Topic IDs are "topic-" + 8 hex chars, so extract first 14 chars
         const topicId = rest.substring(0, 12);
         const filename = rest.substring(13); // skip topicId + "-"
         content = renderAssetView(topicId, filename);
-    } else if (focusView.startsWith('newjob-')) {
-        // newjob-{topicId} - create new child topics
-        const topicId = focusView.substring(7);
-        content = renderNewJobScreen(topicId);
+    } else if (focusView.startsWith('newtopic-')) {
+        // newtopic-{topicId} - create new child topics
+        const topicId = focusView.substring(9);
+        content = renderNewTopicScreen(topicId);
     } else if (focusView.startsWith('attach-')) {
-        // attach-{topicId} - attach assets to a job
+        // attach-{topicId} - attach assets to a topic
         const topicId = focusView.substring(7);
         content = renderAttachScreen(topicId);
     } else if (focusView.startsWith('topic-')) {
@@ -189,15 +189,15 @@ function navigateFocus(view) {
     focusView = view;
     focusSlideDirection = 'forward';
 
-    // Set job context for chat input (context-aware routing)
-    if (view.startsWith('job-')) {
+    // Set topic context for chat input (context-aware routing)
+    if (view.startsWith('topic-')) {
         const topicId = view.substring(4);
-        if (typeof setJobContext === 'function') {
-            setJobContext(topicId);
+        if (typeof setTopicContext === 'function') {
+            setTopicContext(topicId);
         }
     } else {
-        if (typeof clearJobContext === 'function') {
-            clearJobContext();
+        if (typeof clearTopicContext === 'function') {
+            clearTopicContext();
         }
     }
 
@@ -212,15 +212,15 @@ function navigateFocusBack() {
     }
     focusSlideDirection = 'back';
 
-    // Update job context for chat input
+    // Update topic context for chat input
     if (focusView.startsWith('topic-')) {
         const topicId = focusView.substring(4);
-        if (typeof setJobContext === 'function') {
-            setJobContext(topicId);
+        if (typeof setTopicContext === 'function') {
+            setTopicContext(topicId);
         }
     } else {
-        if (typeof clearJobContext === 'function') {
-            clearJobContext();
+        if (typeof clearTopicContext === 'function') {
+            clearTopicContext();
         }
     }
 
@@ -247,24 +247,24 @@ function getViewDisplayName(view) {
     if (view === 'someday') return 'Someday';
     if (view === 'completed') return 'Completed';
 
-    // Job views - get job name from cache
-    if (view.startsWith('job-')) {
+    // Topic views - get topic name from cache
+    if (view.startsWith('topic-')) {
         const topicId = view.substring(4);
         const topic = allTopicsData.find(j => j.id === topicId);
         if (topic) {
             // Truncate long names for breadcrumbs
-            const name = topic.name || 'Job';
+            const name = topic.name || 'Topic';
             return name.length > 20 ? name.substring(0, 18) + '...' : name;
         }
-        return 'Job';
+        return 'Topic';
     }
 
-    // Completed job views
+    // Completed topic views
     if (view.startsWith('completed-')) {
         const topicId = view.substring(10);
         const topic = completedTopicsData.find(j => j.id === topicId);
         if (topic) {
-            const name = topic.name || 'Job';
+            const name = topic.name || 'Topic';
             return name.length > 20 ? name.substring(0, 18) + '...' : name;
         }
         return 'Completed';
@@ -312,9 +312,9 @@ function getViewDisplayName(view) {
         return filename.length > 15 ? filename.substring(0, 13) + '...' : filename;
     }
 
-    // Child job creation
-    if (view.startsWith('newjob-')) {
-        return 'Add Jobs';
+    // Child topic creation
+    if (view.startsWith('newtopic-')) {
+        return 'Add Topics';
     }
     if (view.startsWith('attach-')) {
         return 'Add Assets';
@@ -375,12 +375,12 @@ function getQuickAddContext() {
         return { due_date: today, label: 'Today' };
     }
 
-    // Menu or Today view - create job for today
+    // Menu or Today view - create topic for today
     if (focusView === 'menu' || focusView === 'today') {
         return { due_date: today, label: 'Today' };
     }
 
-    // Upcoming view - create job for tomorrow
+    // Upcoming view - create topic for tomorrow
     if (focusView === 'upcoming') {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -397,7 +397,7 @@ function getQuickAddContext() {
         return { due_date: '2099-12-31', label: 'Someday' };
     }
 
-    // Job detail view - create child job
+    // Topic detail view - create child topic
     if (focusView.startsWith('topic-')) {
         const topicId = focusView.substring(4);
         const topic = allTopicsData.find(j => j.id === topicId);
@@ -410,7 +410,7 @@ function getQuickAddContext() {
     return { due_date: today, label: 'Today' };
 }
 
-// Quick add job from chat input (called from plus button)
+// Quick add topic from chat input (called from plus button)
 function quickAddFromInput() {
     const input = document.getElementById('context-input');
     if (!input) return;
@@ -423,23 +423,23 @@ function quickAddFromInput() {
     }
 
     const context = getQuickAddContext();
-    const jobData = { name };
+    const topicData = { name };
 
     if (context.parent_id) {
-        jobData.parent_id = context.parent_id;
+        topicData.parent_id = context.parent_id;
     }
     if (context.due_date) {
-        jobData.due_date = context.due_date;
+        topicData.due_date = context.due_date;
     }
 
     // Clear input immediately for snappy UX
     input.value = '';
 
-    // Create job in background (don't await)
+    // Create topic in background (don't await)
     fetch('/api/topics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(jobData)
+        body: JSON.stringify(topicData)
     }).then(response => {
         if (response.ok) {
             loadTopicsData().then(() => {
@@ -450,7 +450,7 @@ function quickAddFromInput() {
             });
         }
     }).catch(error => {
-        console.error('Failed to create job:', error);
+        console.error('Failed to create topic:', error);
     });
 
     // Switch to Focus tab immediately

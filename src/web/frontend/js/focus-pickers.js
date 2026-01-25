@@ -301,9 +301,9 @@ function openAddPicker(topicId) {
         <div class="picker-backdrop" onclick="closeAddPicker()"></div>
         <div class="picker-content">
             <div class="picker-header">Add</div>
-            <div class="picker-option" onclick="closeAddPicker(); navigateFocus('newjob-${topicId}')">
+            <div class="picker-option" onclick="closeAddPicker(); navigateFocus('newtopic-${topicId}')">
                 <span class="picker-option-icon">${icon('queue-list')}</span>
-                <span class="picker-option-label">Jobs</span>
+                <span class="picker-option-label">Topics</span>
             </div>
             <div class="picker-option" onclick="closeAddPicker(); navigateFocus('attach-${topicId}')">
                 <span class="picker-option-icon">${icon('link')}</span>
@@ -329,11 +329,11 @@ function openMorePicker(topicId) {
         <div class="picker-backdrop" onclick="closeMorePicker()"></div>
         <div class="picker-content">
             <div class="picker-header">Actions</div>
-            <div class="picker-option" onclick="closeMorePicker(); completeJobDirect('${topicId}')">
+            <div class="picker-option" onclick="closeMorePicker(); completeTopicDirect('${topicId}')">
                 <span class="picker-option-icon">${icon('check')}</span>
                 <span class="picker-option-label">Complete</span>
             </div>
-            <div class="picker-option" onclick="closeMorePicker(); archiveJobDirect('${topicId}')">
+            <div class="picker-option" onclick="closeMorePicker(); archiveTopicDirect('${topicId}')">
                 <span class="picker-option-icon">${icon('archive-box')}</span>
                 <span class="picker-option-label">Archive</span>
             </div>
@@ -351,7 +351,7 @@ function closeMorePicker() {
     if (picker) picker.remove();
 }
 
-async function completeJobDirect(topicId) {
+async function completeTopicDirect(topicId) {
     try {
         const response = await fetch(`/api/topics/${topicId}/complete`, { method: 'POST' });
         if (response.ok) {
@@ -359,11 +359,11 @@ async function completeJobDirect(topicId) {
             navigateFocusBack();
         }
     } catch (error) {
-        console.error('Failed to complete job:', error);
+        console.error('Failed to complete topic:', error);
     }
 }
 
-async function archiveJobDirect(topicId) {
+async function archiveTopicDirect(topicId) {
     try {
         const response = await fetch(`/api/topics/${topicId}/archive`, { method: 'POST' });
         if (response.ok) {
@@ -371,7 +371,7 @@ async function archiveJobDirect(topicId) {
             navigateFocusBack();
         }
     } catch (error) {
-        console.error('Failed to archive job:', error);
+        console.error('Failed to archive topic:', error);
     }
 }
 
@@ -383,7 +383,7 @@ async function deleteTopicDirect(topicId) {
             navigateFocusBack();
         }
     } catch (error) {
-        console.error('Failed to delete job:', error);
+        console.error('Failed to delete topic:', error);
     }
 }
 
@@ -391,7 +391,7 @@ async function deleteTopicDirect(topicId) {
 
 function openStatePicker(topicId) {
     const topic = allTopicsData.find(j => j.id === topicId);
-    const currentStatus = job?.status || 'todo';
+    const currentStatus = topic?.status || 'todo';
 
     const statuses = [
         { value: 'todo', label: 'To Do', icon: 'queue-list' },
@@ -409,7 +409,7 @@ function openStatePicker(topicId) {
         <div class="picker-content">
             <div class="picker-header">Status</div>
             ${statuses.map(s => `
-                <div class="picker-option ${s.value === currentStatus ? 'selected' : ''}" onclick="selectJobState('${topicId}', '${s.value}')">
+                <div class="picker-option ${s.value === currentStatus ? 'selected' : ''}" onclick="selectTopicState('${topicId}', '${s.value}')">
                     <span class="picker-option-icon">${icon(s.icon)}</span>
                     <span class="picker-option-label">${s.label}</span>
                     ${s.value === currentStatus ? `<span class="picker-option-check">${icon('check')}</span>` : ''}
@@ -425,7 +425,7 @@ function closeStatePicker() {
     if (picker) picker.remove();
 }
 
-async function selectJobState(topicId, status) {
+async function selectTopicState(topicId, status) {
     closeStatePicker();
     await setTopicStatus(topicId, status);
 }
@@ -465,10 +465,10 @@ async function selectReassignAgent(topicId, agentId) {
     await reassignTopic(topicId, agentId);
 }
 
-// ============== Job Status Label ==============
+// ============== Topic Status Label ==============
 
 function getTopicStatusLabel(topic) {
-    const status = job?.status || 'todo';
+    const status = topic?.status || 'todo';
     const labels = {
         'todo': 'To Do',
         'working': 'Working',
@@ -480,7 +480,7 @@ function getTopicStatusLabel(topic) {
 }
 
 function getTopicStatusIcon(topic) {
-    const status = job?.status || 'todo';
+    const status = topic?.status || 'todo';
     const icons = {
         'todo': 'queue-list',
         'working': 'bolt',

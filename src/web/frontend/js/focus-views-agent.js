@@ -53,14 +53,14 @@ function renderAgentDetailView(topic) {
     const pauseStatus = agentPauseStatus[agentId] || { state: 'enabled', isPaused: false, isDisabled: false, isEnabled: true };
     const agentState = pauseStatus.state || 'enabled';
 
-    // Check if there's an active consolidation job for this agent
-    const hasActiveConsolidateJob = allChildTopics.some(j =>
+    // Check if there's an active consolidation task for this agent
+    const hasActiveConsolidateTask = allChildTopics.some(j =>
         j.name === 'euno:consolidate' && (j.status === 'todo' || j.status === 'working')
     );
 
-    // Helper to render action button - disabled when consolidation job is active
+    // Helper to render action button - disabled when consolidation task is active
     const actionButton = (phase, iconName, label, onclick) => {
-        const disabled = hasActiveConsolidateJob || pauseStatus.isPaused || pauseStatus.isDisabled ? 'disabled' : '';
+        const disabled = hasActiveConsolidateTask || pauseStatus.isPaused || pauseStatus.isDisabled ? 'disabled' : '';
         return `<button class="task-detail-action" onclick="${onclick}" ${disabled}>${icon(iconName)} ${label}</button>`;
     };
 
@@ -307,10 +307,10 @@ function renderAgentDetailView(topic) {
                 <button class="task-detail-action" onclick="openAddPicker('${topic.id}')">+ Add</button>
             </div>
 
-            <!-- Jobs Section (all jobs sorted by status: working > todo > error > done > archived) -->
+            <!-- Topics Section (all topics sorted by status: working > todo > error > done > archived) -->
             <div class="topic-section">
                 <div class="topic-section-header collapsible ${allChildTopics.length > 0 ? 'open' : ''}" onclick="togglePersonaSection(this, event)">
-                    <span>Jobs${allChildTopics.length > 0 ? ` (${allChildTopics.length})` : ''}</span>
+                    <span>Topics${allChildTopics.length > 0 ? ` (${allChildTopics.length})` : ''}</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
                 <div class="collapsible-content ${allChildTopics.length > 0 ? 'open' : ''}">
@@ -1043,7 +1043,7 @@ function renderIdentityView(agentId) {
     const identity = agentData.identity || '';
     const hasIdentity = identity.length > 0;
 
-    // Find the job for this agent (for editing state)
+    // Find the topic for this agent (for editing state)
     const agentTopic = topicsData.find(j => j.agent_id === agentId);
     const topicId = agentTopic?.id || agentId;
 
@@ -1115,7 +1115,7 @@ function renderConfigurationView(agentId) {
     const triggers = config.triggers || [];
     const tools = config.tools || [];
 
-    // Find the job for this agent (for editing state)
+    // Find the topic for this agent (for editing state)
     const agentTopic = topicsData.find(j => j.agent_id === agentId);
     const topicId = agentTopic?.id || agentId;
 
@@ -1146,13 +1146,13 @@ function renderConfigurationView(agentId) {
                         <span>Triggers (comma-separated)</span>
                         <input type="text" class="agent-config-input" id="edit-triggers-${topicId}"
                             value="${escapeHtml(triggers.join(', '))}"
-                            placeholder="e.g., job:assigned, time:morning">
+                            placeholder="e.g., topic:assigned, time:morning">
                     </label>
                     <label class="agent-config-label">
                         <span>Tools (comma-separated)</span>
                         <input type="text" class="agent-config-input" id="edit-tools-${topicId}"
                             value="${escapeHtml(tools.join(', '))}"
-                            placeholder="e.g., list_jobs, create_job">
+                            placeholder="e.g., list_topics, create_topic">
                     </label>
                     <div class="agent-config-group">
                         <div class="agent-config-group-title">Consolidation</div>

@@ -205,12 +205,12 @@ function retryLastMessage() {
     }
 }
 
-// ============== Job Context (for context-aware chat routing) ==============
+// ============== Topic Context (for context-aware chat routing) ==============
 
-let currentJobContext = null;
-let currentJobName = null;
+let currentTopicContext = null;
+let currentTopicName = null;
 
-function setJobContext(topicId) {
+function setTopicContext(topicId) {
     // Get topic to check if it's a system container
     const topic = typeof topicsData !== 'undefined' ? topicsData.find(j => j.id === topicId) : null;
 
@@ -225,19 +225,19 @@ function setJobContext(topicId) {
         const isAgentInbox = tags.includes('agent-inbox') || topic.agent_id;
 
         if (isSystemContainer || isAgentInbox) {
-            clearJobContext();
+            clearTopicContext();
             return;
         }
     }
 
-    currentJobContext = topicId;
+    currentTopicContext = topicId;
     currentTopicName = topic ? topic.name : 'this topic';
     updateInputContext();
 }
 
-function clearJobContext() {
-    currentJobContext = null;
-    currentJobName = null;
+function clearTopicContext() {
+    currentTopicContext = null;
+    currentTopicName = null;
     updateInputContext();
 
     // Also directly hide the label in case updateInputContext returns early
@@ -252,12 +252,12 @@ function updateInputContext() {
     if (!contextInput) return;
     const label = document.getElementById('topic-context-label');
 
-    if (currentJobContext && label) {
+    if (currentTopicContext && label) {
         contextInput.placeholder = "Send feedback about this topic...";
         label.textContent = '@topic';
         label.classList.add('active');
-        label.onclick = clearJobContext;
-        label.title = `Replying to: ${currentJobName || 'Job'} (click to clear)`;
+        label.onclick = clearTopicContext;
+        label.title = `Replying to: ${currentTopicName || 'Topic'} (click to clear)`;
     } else if (label) {
         contextInput.placeholder = "What's on your mind?";
         label.classList.remove('active');
@@ -267,7 +267,7 @@ function updateInputContext() {
     }
 }
 
-async function sendJobFeedback(topicId, message) {
+async function sendTopicFeedback(topicId, message) {
     // Show user message with topic context indicator
     const topicName = currentTopicName || 'topic';
     addInlineMessage(message, 'you', `Re: ${topicName}`);
@@ -295,7 +295,7 @@ async function sendJobFeedback(topicId, message) {
 
         // Refresh topic data if loadAllTopics exists
         if (typeof loadAllTopics === 'function') {
-            await loadAllJobs();
+            await loadAllTopics();
         }
         if (typeof renderFocusTab === 'function') {
             renderFocusTab();
@@ -364,8 +364,8 @@ function sendContextMessage() {
     if (!message) return;
 
     // If viewing a topic, route to topic feedback endpoint
-    if (currentJobContext) {
-        sendJobFeedback(currentJobContext, message);
+    if (currentTopicContext) {
+        sendTopicFeedback(currentTopicContext, message);
         return;
     }
 
@@ -502,7 +502,7 @@ function addInlineMessage(content, role, context = null) {
     div.setAttribute('data-testid', role === 'you' ? 'message-user' : 'message-agent');
     const html = role === 'friend' ? marked.parse(content) : escapeHtml(content);
 
-    // Add context label if provided (e.g., "Re: Job Name")
+    // Add context label if provided (e.g., "Re: Topic Name")
     const contextHtml = context ? `<div class="message-context">${escapeHtml(context)}</div>` : '';
 
     div.innerHTML = `${contextHtml}<div class="message-content">${html}</div>`;

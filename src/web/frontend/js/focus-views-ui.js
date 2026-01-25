@@ -42,14 +42,14 @@ async function toggleAgentSection(header, event, sectionType, agentId) {
                 content.innerHTML = '<div class="section-loading">Loading...</div>';
 
                 if (sectionType === 'completed-by-agent') {
-                    const jobs = await loadAgentCompletedTopics(agentId);
-                    content.innerHTML = renderAgentCompletedJobsContent(jobs);
+                    const topics = await loadAgentCompletedTopics(agentId);
+                    content.innerHTML = renderAgentCompletedTopicsContent(topics);
                 } else if (sectionType === 'monitoring') {
                     const data = await loadAgentMonitoring(agentId);
                     content.innerHTML = renderMonitoringContent(data);
-                } else if (sectionType === 'job-api-calls') {
-                    const data = await loadJobApiCalls(agentId);  // agentId is actually topicId here
-                    content.innerHTML = renderJobApiCallsContent(data);
+                } else if (sectionType === 'topic-api-calls') {
+                    const data = await loadTopicApiCalls(agentId);  // agentId is actually topicId here
+                    content.innerHTML = renderTopicApiCallsContent(data);
                 } else if (sectionType === 'rate-limit-events') {
                     const data = await loadRateLimitEvents(agentId);
                     content.innerHTML = renderRateLimitEventsContent(data, agentId);
@@ -74,23 +74,23 @@ async function toggleAgentSection(header, event, sectionType, agentId) {
     }
 }
 
-function renderAgentCompletedJobsContent(jobs) {
-    if (!jobs || jobs.length === 0) {
+function renderAgentCompletedTopicsContent(topics) {
+    if (!topics || topics.length === 0) {
         return '<div class="focus-empty">No topics completed by this agent yet.</div>';
     }
-    return jobs.map(topic => renderCompletedTopicCardWithTrace(topic)).join('');
+    return topics.map(topic => renderCompletedTopicCardWithTrace(topic)).join('');
 }
 
 function renderCompletedTopicCardWithTrace(topic) {
     const name = topic.name || 'Untitled';
-    const completedDate = job.completed_at ? formatFriendlyPastDate(job.completed_at.split('T')[0]) : '';
+    const completedDate = topic.completed_at ? formatFriendlyPastDate(topic.completed_at.split('T')[0]) : '';
 
     return `
-        <div class="job-card completed-topic-card">
-            <div class="job-card-content" onclick="navigateToTrace('${topic.id}')">
-                <span class="job-icon">${icon('check-circle')}</span>
-                <span class="job-name">${escapeHtml(name)}</span>
-                ${completedDate ? `<span class="job-completed-date">${completedDate}</span>` : ''}
+        <div class="topic-card completed-topic-card">
+            <div class="topic-card-content" onclick="navigateToTrace('${topic.id}')">
+                <span class="topic-icon">${icon('check-circle')}</span>
+                <span class="topic-name">${escapeHtml(name)}</span>
+                ${completedDate ? `<span class="topic-completed-date">${completedDate}</span>` : ''}
             </div>
             <button class="trace-btn" onclick="event.stopPropagation(); navigateToTrace('${topic.id}')" title="View Trace">
                 ${icon('chart-bar')}
@@ -141,20 +141,20 @@ function renderMonitoringContent(data) {
     `;
 }
 
-async function loadJobApiCalls(topicId) {
+async function loadTopicApiCalls(topicId) {
     try {
         const response = await fetch(`/api/topics/${topicId}/api-calls`);
         if (!response.ok) return null;
         return await response.json();
     } catch (error) {
-        console.error('Failed to load job API calls:', error);
+        console.error('Failed to load topic API calls:', error);
         return null;
     }
 }
 
-function renderJobApiCallsContent(data) {
+function renderTopicApiCallsContent(data) {
     if (!data || data.calls === 0) {
-        return '<div class="focus-empty">No API calls recorded for this job.</div>';
+        return '<div class="focus-empty">No API calls recorded for this topic.</div>';
     }
 
     const { calls, cost, input_tokens, output_tokens } = data;

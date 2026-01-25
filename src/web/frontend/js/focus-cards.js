@@ -17,11 +17,11 @@ function isSwipeable(topic) {
     return true;
 }
 
-// ============== Job Cards ==============
+// ============== Topic Cards ==============
 
 function renderTopicCard(topic, swipeable = false) {
     const isExpanded = expandedCards.has(`topic-${topic.id}`);
-    const cardHtml = isExpanded ? renderFullJobCard(topic) : renderMinimalJobCard(topic);
+    const cardHtml = isExpanded ? renderFullTopicCard(topic) : renderMinimalTopicCard(topic);
 
     // Wrap in swipe container if enabled
     if (swipeable && !isExpanded) {
@@ -30,7 +30,7 @@ function renderTopicCard(topic, swipeable = false) {
     return cardHtml;
 }
 
-function renderMinimalJobCard(topic) {
+function renderMinimalTopicCard(topic) {
     const displayName = topic.name || 'Untitled';
     const dueDate = topic.due_date;
     const dueDateLabel = dueDate ? `<span class="card-due-date">${formatFriendlyDueDate(dueDate)}</span>` : '';
@@ -65,7 +65,7 @@ function renderMinimalJobCard(topic) {
     `;
 }
 
-function renderFullJobCard(topic) {
+function renderFullTopicCard(topic) {
     const whenLabel = getWhenLabel(topic);
     const isArchiving = archivingTopicId === topic.id;
     const displayName = topic.name || 'Untitled';
@@ -83,8 +83,8 @@ function renderFullJobCard(topic) {
     return `
         <div class="card card-full" data-topic-id="${topic.id}" data-testid="topic-card">
             <div class="card-header">
-                <span class="card-title" onclick="toggleJobCard('${topic.id}')">${escapeHtml(displayName)}</span>
-                <button class="card-collapse" onclick="event.stopPropagation(); toggleJobCard('${topic.id}')">−</button>
+                <span class="card-title" onclick="toggleTopicCard('${topic.id}')">${escapeHtml(displayName)}</span>
+                <button class="card-collapse" onclick="event.stopPropagation(); toggleTopicCard('${topic.id}')">−</button>
             </div>
             <div class="card-body">
                 ${hasDescription ? `<div class="card-description">${marked.parse(topic.description)}</div>` : ''}
@@ -93,14 +93,14 @@ function renderFullJobCard(topic) {
             </div>
             <div class="card-actions">
                 <button class="card-action" onclick="event.stopPropagation(); openWhenPicker('topic', '${topic.id}')">${icon('calendar')} ${escapeHtml(whenLabel)}</button>
-                <button class="card-action" data-testid="action-complete" onclick="completeJob(event, '${topic.id}')">Complete</button>
+                <button class="card-action" data-testid="action-complete" onclick="completeTopic(event, '${topic.id}')">Complete</button>
                 <button class="card-action" data-testid="action-archive" onclick="showArchiveInput(event, '${topic.id}')">${isArchiving ? 'Cancel' : 'Archive'}</button>
                 <button class="card-action danger" onclick="deleteTopic(event, '${topic.id}')">Delete</button>
             </div>
             ${isArchiving ? `
             <div class="card-archive-form">
-                <input type="text" class="card-archive-input" id="archive-reason-${topic.id}" placeholder="Reason (optional)..." onkeypress="if(event.key==='Enter')confirmArchiveJob('${topic.id}')">
-                <button class="card-archive-btn confirm" onclick="confirmArchiveJob('${topic.id}')">Archive</button>
+                <input type="text" class="card-archive-input" id="archive-reason-${topic.id}" placeholder="Reason (optional)..." onkeypress="if(event.key==='Enter')confirmArchiveTopic('${topic.id}')">
+                <button class="card-archive-btn confirm" onclick="confirmArchiveTopic('${topic.id}')">Archive</button>
             </div>
             ` : ''}
         </div>
@@ -118,7 +118,7 @@ function getWhenLabel(topic) {
     return 'Anytime';
 }
 
-function toggleJobCard(topicId) {
+function toggleTopicCard(topicId) {
     const key = `topic-${topicId}`;
     if (expandedCards.has(key)) {
         expandedCards.delete(key);
@@ -130,7 +130,7 @@ function toggleJobCard(topicId) {
 
 function renderCompletedTopicCard(topic, childCount = 0, swipeable = false) {
     const displayName = topic.name || 'Untitled';
-    const completedDateLabel = topic.completed_at ? `<span class="card-due-date">${formatFriendlyPastDate(job.completed_at)}</span>` : '';
+    const completedDateLabel = topic.completed_at ? `<span class="card-due-date">${formatFriendlyPastDate(topic.completed_at)}</span>` : '';
     const childBadge = childCount > 0 ? `<span class="card-badge">${childCount}</span>` : '';
 
     const cardHtml = `

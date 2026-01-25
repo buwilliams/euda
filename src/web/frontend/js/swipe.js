@@ -1,4 +1,4 @@
-// Euno - Swipe Gesture Handling for Job Cards
+// Euno - Swipe Gesture Handling for Topic Cards
 
 // ============== Swipe State ==============
 
@@ -261,11 +261,11 @@ function triggerSwipeLeftAction() {
     if (!swipeTopicId) return;
 
     if (swipeIsCompleted) {
-        // Delete completed job
+        // Delete completed topic
         deleteTopic(null, swipeTopicId);
     } else {
-        // Complete active job
-        completeJob(null, swipeTopicId);
+        // Complete active topic
+        completeTopic(null, swipeTopicId);
     }
 }
 
@@ -273,10 +273,10 @@ function triggerSwipeRightAction() {
     if (!swipeTopicId) return;
 
     if (swipeIsCompleted) {
-        // Restore completed job
+        // Restore completed topic
         restoreTopic(null, swipeTopicId);
     } else {
-        // Open when picker for active job
+        // Open when picker for active topic
         openWhenPicker('topic', swipeTopicId);
     }
 }

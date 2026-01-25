@@ -136,7 +136,7 @@ async function addTaskToProject(projectId, inputEl) {
 
 function updateTopicsBadge() {
     const badge = document.getElementById('tasks-badge');
-    // Count jobs due today
+    // Count topics due today
     const count = topicsData.filter(j => getTopicCategory(j) === 'today').length;
     badge.textContent = count;
     badge.style.display = count > 0 ? 'inline' : 'none';

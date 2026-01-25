@@ -453,7 +453,7 @@ function updateVoiceButtonVisibility() {
     // Check browser support first
     if (!isVoiceInputSupported()) {
         voiceBtn.classList.add('hidden');
-        // Adjust @job label position when mic is hidden (JS fallback for :has())
+        // Adjust @topic label position when mic is hidden (JS fallback for :has())
         if (topicLabel) topicLabel.style.right = '12px';
         return;
     }
@@ -461,11 +461,11 @@ function updateVoiceButtonVisibility() {
     // Check if current provider supports STT (from settingsData)
     if (typeof settingsData !== 'undefined' && settingsData?.speech?.stt_available) {
         voiceBtn.classList.remove('hidden');
-        // Reset @job label position when mic is visible
+        // Reset @topic label position when mic is visible
         if (topicLabel) topicLabel.style.right = '';
     } else {
         voiceBtn.classList.add('hidden');
-        // Adjust @job label position when mic is hidden (JS fallback for :has())
+        // Adjust @topic label position when mic is hidden (JS fallback for :has())
         if (topicLabel) topicLabel.style.right = '12px';
     }
 }

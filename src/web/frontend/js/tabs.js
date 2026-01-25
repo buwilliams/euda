@@ -47,9 +47,9 @@ function openMoreMenuScreen(tabName) {
     // Remember which tab to return to
     moreMenuReturnTab = activeTab;
 
-    // Clear job context when navigating to More menu screens
-    if (typeof clearJobContext === 'function') {
-        clearJobContext();
+    // Clear topic context when navigating to More menu screens
+    if (typeof clearTopicContext === 'function') {
+        clearTopicContext();
     }
 
     // Show the target tab pane but keep More button active
@@ -128,9 +128,9 @@ function switchTab(tabName) {
     previousTab = tabName;
     activeTab = tabName;
 
-    // Clear job context when leaving focus tab or when resetting focus view
-    if (tabName !== 'focus' && typeof clearJobContext === 'function') {
-        clearJobContext();
+    // Clear topic context when leaving focus tab or when resetting focus view
+    if (tabName !== 'focus' && typeof clearTopicContext === 'function') {
+        clearTopicContext();
     }
 
     // Load data for tab
@@ -143,9 +143,9 @@ function switchTab(tabName) {
         focusView = 'menu';
         focusViewHistory = [];
         loadTopicsData();
-        // Clear job context when returning to menu
-        if (typeof clearJobContext === 'function') {
-            clearJobContext();
+        // Clear topic context when returning to menu
+        if (typeof clearTopicContext === 'function') {
+            clearTopicContext();
         }
     }
     if (tabName === 'history') {

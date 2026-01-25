@@ -16,7 +16,7 @@ function showArchiveInput(event, topicId) {
     }, 50);
 }
 
-async function confirmArchiveJob(topicId) {
+async function confirmArchiveTopic(topicId) {
     try {
         const response = await fetch(`/api/topics/${topicId}/archive`, {
             method: 'POST',
@@ -35,7 +35,7 @@ async function confirmArchiveJob(topicId) {
     }
 }
 
-async function completeJob(event, topicId) {
+async function completeTopic(event, topicId) {
     if (event) event.stopPropagation();
 
     try {
@@ -78,7 +78,7 @@ async function restoreTopic(event, topicId) {
 async function deleteTopic(event, topicId) {
     if (event) event.stopPropagation();
 
-    const wasViewingJob = focusView === `topic-${topicId}` || focusView === `completed-${topicId}`;
+    const wasViewingTopic = focusView === `topic-${topicId}` || focusView === `completed-${topicId}`;
 
     try {
         const response = await fetch(`/api/topics/${topicId}?delete_children=true`, {
@@ -87,7 +87,7 @@ async function deleteTopic(event, topicId) {
 
         if (response.ok) {
             await loadTopicsData();
-            if (wasViewingJob) {
+            if (wasViewingTopic) {
                 navigateFocusBack();
             }
         }
@@ -96,7 +96,7 @@ async function deleteTopic(event, topicId) {
     }
 }
 
-async function quickAddJob(inputId, parentId = null) {
+async function quickAddTopic(inputId, parentId = null) {
     const input = document.getElementById(inputId);
     if (!input) return;
 
@@ -131,11 +131,11 @@ async function quickAddJob(inputId, parentId = null) {
 
 function handleQuickAddKeypress(event, inputId, parentId = null) {
     if (event.key === 'Enter') {
-        quickAddJob(inputId, parentId);
+        quickAddTopic(inputId, parentId);
     }
 }
 
-async function quickDeleteJob(event, topicId) {
+async function quickDeleteTopic(event, topicId) {
     event.stopPropagation();
 
     try {
