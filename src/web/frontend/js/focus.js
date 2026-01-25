@@ -69,9 +69,9 @@ function renderFocusTab() {
     } else if (focusView.startsWith('asset-')) {
         // asset-{topicId}-{filename} where topicId is like "topic-xxxxxxxx"
         const rest = focusView.substring(6); // remove "asset-"
-        // Topic IDs are "topic-" + 8 hex chars, so extract first 14 chars
-        const topicId = rest.substring(0, 12);
-        const filename = rest.substring(13); // skip topicId + "-"
+        // Topic IDs are "topic-" + 8 hex chars = 14 chars total
+        const topicId = rest.substring(0, 14);
+        const filename = rest.substring(15); // skip topicId + "-"
         content = renderAssetView(topicId, filename);
     } else if (focusView.startsWith('newtopic-')) {
         // newtopic-{topicId} - create new child topics
@@ -325,7 +325,7 @@ function getViewDisplayName(view) {
     }
     if (view.startsWith('asset-')) {
         const rest = view.substring(6);
-        const filename = rest.substring(13); // skip topicId + "-"
+        const filename = rest.substring(15); // skip topicId (14 chars) + "-"
         return filename.length > 15 ? filename.substring(0, 13) + '...' : filename;
     }
 
