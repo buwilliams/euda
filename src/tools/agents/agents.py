@@ -15,11 +15,11 @@ AGENTS_DIR = DATA_DIR / "agents"
 
 # Minimal tools every agent needs to function
 BASE_TOOLS = [
-    "list_jobs",
-    "get_job",
-    "create_job",
-    "complete_job",
-    "add_job_log",
+    "list_topics",
+    "get_topic",
+    "create_topic",
+    "complete_topic",
+    "add_topic_log",
     "done_working"
 ]
 
@@ -377,7 +377,7 @@ def append_to_agent_identity(agent_id: str, section_title: str, content: str) ->
 
 @tool("enable_agent", "Enable a disabled agent. Use when: reactivating an agent that was paused.", tool_type="agents")
 def enable_agent(agent_id: str) -> dict:
-    """Enable an agent so it can process jobs.
+    """Enable an agent so it can process topics.
 
     Args:
         agent_id: The agent to enable
@@ -393,9 +393,9 @@ def enable_agent(agent_id: str) -> dict:
     return {"agent_id": agent_id, "state": "enabled"}
 
 
-@tool("disable_agent", "Disable an agent so it stops processing jobs. Use when: pausing an agent temporarily.", tool_type="agents")
+@tool("disable_agent", "Disable an agent so it stops processing topics. Use when: pausing an agent temporarily.", tool_type="agents")
 def disable_agent(agent_id: str) -> dict:
-    """Disable an agent so it stops processing jobs.
+    """Disable an agent so it stops processing topics.
 
     Args:
         agent_id: The agent to disable

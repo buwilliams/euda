@@ -18,7 +18,7 @@ class MetacognitionConfig:
     def __init__(self, agent_id: Optional[str] = None):
         self.agent_id = agent_id
 
-    def is_planning_enabled(self, job_tags: list = None) -> bool:
+    def is_planning_enabled(self, topic_tags: list = None) -> bool:
         """Planning is always enabled."""
         return True
 

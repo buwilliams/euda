@@ -153,7 +153,7 @@ def get_tools_grouped_by_type(tool_names: List[str]) -> Dict[str, List[dict]]:
 
     Returns dict like:
     {
-        "data": [{"name": "list_jobs", "description": "..."}],
+        "data": [{"name": "list_topics", "description": "..."}],
         "agents": [...],
         "system": [...],
         "integration": [...]

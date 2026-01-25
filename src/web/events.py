@@ -195,7 +195,7 @@ def emit_ui_event(event_type: str, data: dict = None):
     """Emit an event to all SSE clients.
 
     Args:
-        event_type: Type of event (e.g., "jobs_update")
+        event_type: Type of event (e.g., "topics_update")
         data: Event data to send
     """
     with _ui_lock:

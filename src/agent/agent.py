@@ -581,7 +581,7 @@ class Agent:
             messages=messages,
             tools=tools if tools else None,
             agent_id=self.id,
-            job_id=self._current_topic_id
+            topic_id=self._current_topic_id
         )
 
         self._log("llm_response", {
@@ -603,7 +603,7 @@ class Agent:
                 messages=messages,
                 tools=tools if tools else None,
                 agent_id=self.id,
-                job_id=self._current_topic_id
+                topic_id=self._current_topic_id
             )
 
             self._log("llm_response", {

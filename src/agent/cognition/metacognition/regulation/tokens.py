@@ -632,7 +632,7 @@ class TokenAwareness:
 
     def record(self, agent_id: str, input_tokens: int, output_tokens: int,
                provider: str = "openai", model: str = "unknown",
-               job_id: Optional[str] = None, cached_input_tokens: int = 0,
+               topic_id: Optional[str] = None, cached_input_tokens: int = 0,
                stop_reason: str = None, duration_ms: int = None,
                timestamp: str = None):
         """Record actual token usage after an API call.
@@ -660,7 +660,7 @@ class TokenAwareness:
         self._log_cost_entry({
             "timestamp": call_timestamp,
             "agent": agent_id,
-            "job_id": job_id,
+            "topic_id": topic_id,
             "provider": provider,
             "model": model,
             "input_tokens": input_tokens,

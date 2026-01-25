@@ -401,8 +401,8 @@ async def event_generator():
     from ..events import subscribe_ui, unsubscribe_ui
 
     # Send initial state
-    all_jobs = list_jobs()
-    yield f"event: init\ndata: {json.dumps({'jobs': all_jobs})}\n\n"
+    all_topics = list_topics()
+    yield f"event: init\ndata: {json.dumps({'topics': all_topics})}\n\n"
 
     # Subscribe to UI events (returns queue and shutdown event)
     event_queue, shutdown_event = subscribe_ui()

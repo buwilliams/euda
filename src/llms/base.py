@@ -344,7 +344,7 @@ class UnifiedClient:
         max_tokens: int = 16384,
         tools: Optional[list] = None,
         agent_id: str = "unknown",
-        job_id: Optional[str] = None,
+        topic_id: Optional[str] = None,
         track_cost: bool = True,
     ) -> UnifiedResponse:
         """Create a message with automatic cost tracking and rate limiting.
@@ -410,7 +410,7 @@ class UnifiedClient:
             output_tokens=response.usage.output_tokens,
             provider=self.provider_name,
             model=self.model_name,
-            job_id=job_id,
+            topic_id=topic_id,
             cached_input_tokens=response.usage.cached_input_tokens,
             stop_reason=response.stop_reason,
             duration_ms=duration_ms,
