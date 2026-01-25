@@ -191,7 +191,7 @@ function navigateFocus(view) {
 
     // Set topic context for chat input (context-aware routing)
     if (view.startsWith('topic-')) {
-        const topicId = view.substring(4);
+        const topicId = view.substring(6);
         if (typeof setTopicContext === 'function') {
             setTopicContext(topicId);
         }
@@ -214,7 +214,7 @@ function navigateFocusBack() {
 
     // Update topic context for chat input
     if (focusView.startsWith('topic-')) {
-        const topicId = focusView.substring(4);
+        const topicId = focusView.substring(6);
         if (typeof setTopicContext === 'function') {
             setTopicContext(topicId);
         }
@@ -249,7 +249,7 @@ function getViewDisplayName(view) {
 
     // Topic views - get topic name from cache
     if (view.startsWith('topic-')) {
-        const topicId = view.substring(4);
+        const topicId = view.substring(6);
         const topic = allTopicsData.find(j => j.id === topicId);
         if (topic) {
             // Truncate long names for breadcrumbs
@@ -399,7 +399,7 @@ function getQuickAddContext() {
 
     // Topic detail view - create child topic
     if (focusView.startsWith('topic-')) {
-        const topicId = focusView.substring(4);
+        const topicId = focusView.substring(6);
         const topic = allTopicsData.find(j => j.id === topicId);
         if (topic) {
             return { parent_id: topicId, label: topic.name };
