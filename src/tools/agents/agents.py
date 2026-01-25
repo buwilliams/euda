@@ -43,7 +43,7 @@ def list_agents() -> List[dict]:
     return agents
 
 
-@tool("list_agents_for_routing", "List agents with minimal details for job routing decisions. Shows id, name, purpose, and enabled status.", tool_type="agents")
+@tool("list_agents_for_routing", "List agents with minimal details for topic routing decisions. Shows id, name, purpose, and enabled status.", tool_type="agents")
 def list_agents_for_routing() -> List[dict]:
     """List agents with just enough info for routing decisions.
 
@@ -258,16 +258,16 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
 ## Behavioral Rules
 
 I must:
-- Complete assigned jobs thoroughly
+- Complete assigned topics thoroughly
 - Use available tools appropriately
 - Call done_working when finished with a work cycle
 
 ## How I Work
 
-1. Check my assigned jobs
-2. Work on the highest priority job
+1. Check my assigned topics
+2. Work on the highest priority topic
 3. Use my tools to accomplish the task
-4. Mark jobs as complete when done
+4. Mark topics as complete when done
 5. Call done_working to signal I'm finished
 """
 

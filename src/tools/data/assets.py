@@ -1,5 +1,5 @@
 """
-Asset Tools - Manage files and assets attached to jobs.
+Asset Tools - Manage files and assets attached to topics.
 """
 
 import base64
@@ -14,15 +14,15 @@ DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 ASSETS_DIR = DATA_DIR / "topics" / "assets"
 
 
-def _get_job_assets_dir(job_id: str) -> Path:
-    """Get the assets directory for a job."""
-    return ASSETS_DIR / job_id
+def _get_topic_assets_dir(topic_id: str) -> Path:
+    """Get the assets directory for a topic."""
+    return ASSETS_DIR / topic_id
 
 
-@tool("list_assets", "List all assets attached to a job. Use when: checking what files are attached to a job.", tool_type="data")
-def list_assets(job_id: str) -> List[dict]:
-    """List assets attached to a job."""
-    assets_dir = _get_job_assets_dir(job_id)
+@tool("list_assets", "List all assets attached to a topic. Use when: checking what files are attached to a topic.", tool_type="data")
+def list_assets(topic_id: str) -> List[dict]:
+    """List assets attached to a topic."""
+    assets_dir = _get_topic_assets_dir(topic_id)
 
     if not assets_dir.exists():
         return []
@@ -40,10 +40,10 @@ def list_assets(job_id: str) -> List[dict]:
     return assets
 
 
-@tool("read_asset", "Read an asset's content (text files only). Use when: viewing job attachments or context files.", tool_type="data")
-def read_asset(job_id: str, filename: str) -> Optional[dict]:
+@tool("read_asset", "Read an asset's content (text files only). Use when: viewing topic attachments or context files.", tool_type="data")
+def read_asset(topic_id: str, filename: str) -> Optional[dict]:
     """Read an asset's content."""
-    path = _get_job_assets_dir(job_id) / filename
+    path = _get_topic_assets_dir(topic_id) / filename
 
     if not path.exists():
         return {"error": f"Asset not found: {filename}"}
@@ -71,10 +71,10 @@ def read_asset(job_id: str, filename: str) -> Optional[dict]:
         }
 
 
-@tool("write_asset", "Write content to an asset file. Use when: storing files, notes, or data related to a job.", tool_type="data")
-def write_asset(job_id: str, filename: str, content: str) -> dict:
+@tool("write_asset", "Write content to an asset file. Use when: storing files, notes, or data related to a topic.", tool_type="data")
+def write_asset(topic_id: str, filename: str, content: str) -> dict:
     """Write content to an asset file."""
-    assets_dir = _get_job_assets_dir(job_id)
+    assets_dir = _get_topic_assets_dir(topic_id)
     assets_dir.mkdir(parents=True, exist_ok=True)
 
     path = assets_dir / filename
@@ -87,10 +87,10 @@ def write_asset(job_id: str, filename: str, content: str) -> dict:
     }
 
 
-@tool("delete_asset", "Delete an asset from a job. Use when: removing outdated or unwanted attachments.", tool_type="data")
-def delete_asset(job_id: str, filename: str) -> dict:
+@tool("delete_asset", "Delete an asset from a topic. Use when: removing outdated or unwanted attachments.", tool_type="data")
+def delete_asset(topic_id: str, filename: str) -> dict:
     """Delete an asset."""
-    path = _get_job_assets_dir(job_id) / filename
+    path = _get_topic_assets_dir(topic_id) / filename
 
     if not path.exists():
         return {"error": f"Asset not found: {filename}"}
@@ -99,12 +99,12 @@ def delete_asset(job_id: str, filename: str) -> dict:
     return {"filename": filename, "status": "deleted"}
 
 
-def write_asset_bytes(job_id: str, filename: str, content: bytes) -> dict:
+def write_asset_bytes(topic_id: str, filename: str, content: bytes) -> dict:
     """Write binary content to an asset file (internal use).
 
     This is not a tool - it's used by the upload endpoint to save uploaded files.
     """
-    assets_dir = _get_job_assets_dir(job_id)
+    assets_dir = _get_topic_assets_dir(topic_id)
     assets_dir.mkdir(parents=True, exist_ok=True)
 
     path = assets_dir / filename
