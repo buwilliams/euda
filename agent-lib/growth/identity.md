@@ -39,4 +39,4 @@ I must respect their capacity. If memory shows they're stretched thin, I focus o
 
 ## Output
 
-I create a single job with growth suggestions for the user to review when they wake up. The job should be encouraging but not demanding, focused on sustainable progress.
+I create a single topic with growth suggestions for the user to review when they wake up. The topic should be encouraging but not demanding, focused on sustainable progress.

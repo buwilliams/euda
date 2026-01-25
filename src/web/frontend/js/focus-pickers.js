@@ -196,7 +196,7 @@ async function setWhen(type, id, whenType, date = null) {
     }
 
     try {
-        const response = await fetch(`/api/jobs/${id}`, {
+        const response = await fetch(`/api/topics/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -204,7 +204,7 @@ async function setWhen(type, id, whenType, date = null) {
 
         if (response.ok) {
             closeWhenPicker();
-            await loadJobsData();
+            await loadTopicsData();
         } else {
             console.error('Failed to update when:', await response.text());
         }
@@ -215,9 +215,9 @@ async function setWhen(type, id, whenType, date = null) {
 
 // ============== Assignees Picker ==============
 
-function getAssigneesLabel(job) {
-    const assignee = job.assignee;
-    if (job.status === 'working') {
+function getAssigneesLabel(topic) {
+    const assignee = topic.assignee;
+    if (topic.status === 'working') {
         return `${icon('bolt')} ${assignee || 'Working'}`;
     }
     if (!assignee) {
@@ -226,12 +226,12 @@ function getAssigneesLabel(job) {
     return `${icon('user')} ${assignee}`;
 }
 
-async function openAssigneesPicker(jobId) {
-    const job = allJobsData.find(j => j.id === jobId);
-    if (!job) return;
+async function openAssigneesPicker(topicId) {
+    const topic = allTopicsData.find(j => j.id === topicId);
+    if (!topic) return;
 
     const agents = await loadAgents();
-    const currentAssignee = job.assignee;
+    const currentAssignee = topic.assignee;
 
     const picker = document.createElement('div');
     picker.className = 'assignees-picker';
@@ -240,7 +240,7 @@ async function openAssigneesPicker(jobId) {
         <div class="assignees-picker-backdrop" onclick="closeAssigneesPicker()"></div>
         <div class="assignees-picker-content">
             <div class="assignees-picker-header">Assign Agent</div>
-            ${job.status === 'working' ? `
+            ${topic.status === 'working' ? `
                 <div class="assignees-picker-working">
                     <span class="assignees-picker-working-icon">${icon('bolt')}</span>
                     <span>Currently working: <strong>${escapeHtml(currentAssignee || 'unknown')}</strong></span>
@@ -249,7 +249,7 @@ async function openAssigneesPicker(jobId) {
             ${agents.map(agent => {
                 const isAssigned = currentAssignee === agent.id;
                 return `
-                    <div class="assignees-option ${isAssigned ? 'assigned' : ''}" onclick="toggleAgentAssignment('${jobId}', '${agent.id}', ${isAssigned})">
+                    <div class="assignees-option ${isAssigned ? 'assigned' : ''}" onclick="toggleAgentAssignment('${topicId}', '${agent.id}', ${isAssigned})">
                         <span class="assignees-option-check">${isAssigned ? icon('check') : ''}</span>
                         <span class="assignees-option-label">${escapeHtml(agent.name || agent.id)}</span>
                     </div>
@@ -268,20 +268,21 @@ function closeAssigneesPicker() {
     }
 }
 
-async function toggleAgentAssignment(jobId, agentId, isCurrentlyAssigned) {
+async function toggleAgentAssignment(topicId, agentId, isCurrentlyAssigned) {
     try {
         const endpoint = isCurrentlyAssigned ? 'unassign' : 'assign';
-        const response = await fetch(`/api/jobs/${jobId}/${endpoint}`, {
+        const response = await fetch(`/api/topics/${topicId}/${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ agent_id: agentId })
         });
 
         if (response.ok) {
-            await loadJobsData();
+            // Backend handles resetting status to 'todo' if topic was 'working'
+            await loadTopicsData();
             closeAssigneesPicker();
             // Reopen picker to show updated state
-            openAssigneesPicker(jobId);
+            openAssigneesPicker(topicId);
         } else {
             const error = await response.json();
             console.error(`Failed to ${endpoint} agent:`, error);
@@ -293,7 +294,7 @@ async function toggleAgentAssignment(jobId, agentId, isCurrentlyAssigned) {
 
 // ============== Add Picker ==============
 
-function openAddPicker(jobId) {
+function openAddPicker(topicId) {
     const picker = document.createElement('div');
     picker.className = 'picker-modal';
     picker.id = 'add-picker';
@@ -301,11 +302,11 @@ function openAddPicker(jobId) {
         <div class="picker-backdrop" onclick="closeAddPicker()"></div>
         <div class="picker-content">
             <div class="picker-header">Add</div>
-            <div class="picker-option" onclick="closeAddPicker(); navigateFocus('newjob-${jobId}')">
+            <div class="picker-option" onclick="closeAddPicker(); navigateFocus('newtopic-${topicId}')">
                 <span class="picker-option-icon">${icon('queue-list')}</span>
-                <span class="picker-option-label">Jobs</span>
+                <span class="picker-option-label">Topics</span>
             </div>
-            <div class="picker-option" onclick="closeAddPicker(); navigateFocus('attach-${jobId}')">
+            <div class="picker-option" onclick="closeAddPicker(); navigateFocus('attach-${topicId}')">
                 <span class="picker-option-icon">${icon('link')}</span>
                 <span class="picker-option-label">Assets</span>
             </div>
@@ -321,7 +322,7 @@ function closeAddPicker() {
 
 // ============== More Picker ==============
 
-function openMorePicker(jobId) {
+function openMorePicker(topicId) {
     const picker = document.createElement('div');
     picker.className = 'picker-modal';
     picker.id = 'more-picker';
@@ -329,15 +330,15 @@ function openMorePicker(jobId) {
         <div class="picker-backdrop" onclick="closeMorePicker()"></div>
         <div class="picker-content">
             <div class="picker-header">Actions</div>
-            <div class="picker-option" onclick="closeMorePicker(); completeJobDirect('${jobId}')">
+            <div class="picker-option" onclick="closeMorePicker(); completeTopicDirect('${topicId}')">
                 <span class="picker-option-icon">${icon('check')}</span>
                 <span class="picker-option-label">Complete</span>
             </div>
-            <div class="picker-option" onclick="closeMorePicker(); archiveJobDirect('${jobId}')">
+            <div class="picker-option" onclick="closeMorePicker(); archiveTopicDirect('${topicId}')">
                 <span class="picker-option-icon">${icon('archive-box')}</span>
                 <span class="picker-option-label">Archive</span>
             </div>
-            <div class="picker-option danger" onclick="closeMorePicker(); deleteJobDirect('${jobId}')">
+            <div class="picker-option danger" onclick="closeMorePicker(); deleteTopicDirect('${topicId}')">
                 <span class="picker-option-icon">${icon('trash')}</span>
                 <span class="picker-option-label">Delete</span>
             </div>
@@ -351,47 +352,47 @@ function closeMorePicker() {
     if (picker) picker.remove();
 }
 
-async function completeJobDirect(jobId) {
+async function completeTopicDirect(topicId) {
     try {
-        const response = await fetch(`/api/jobs/${jobId}/complete`, { method: 'POST' });
+        const response = await fetch(`/api/topics/${topicId}/complete`, { method: 'POST' });
         if (response.ok) {
-            await loadJobsData();
+            await loadTopicsData();
             navigateFocusBack();
         }
     } catch (error) {
-        console.error('Failed to complete job:', error);
+        console.error('Failed to complete topic:', error);
     }
 }
 
-async function archiveJobDirect(jobId) {
+async function archiveTopicDirect(topicId) {
     try {
-        const response = await fetch(`/api/jobs/${jobId}/archive`, { method: 'POST' });
+        const response = await fetch(`/api/topics/${topicId}/archive`, { method: 'POST' });
         if (response.ok) {
-            await loadJobsData();
+            await loadTopicsData();
             navigateFocusBack();
         }
     } catch (error) {
-        console.error('Failed to archive job:', error);
+        console.error('Failed to archive topic:', error);
     }
 }
 
-async function deleteJobDirect(jobId) {
+async function deleteTopicDirect(topicId) {
     try {
-        const response = await fetch(`/api/jobs/${jobId}`, { method: 'DELETE' });
+        const response = await fetch(`/api/topics/${topicId}`, { method: 'DELETE' });
         if (response.ok) {
-            await loadJobsData();
+            await loadTopicsData();
             navigateFocusBack();
         }
     } catch (error) {
-        console.error('Failed to delete job:', error);
+        console.error('Failed to delete topic:', error);
     }
 }
 
 // ============== State Picker ==============
 
-function openStatePicker(jobId) {
-    const job = allJobsData.find(j => j.id === jobId);
-    const currentStatus = job?.status || 'todo';
+function openStatePicker(topicId) {
+    const topic = allTopicsData.find(j => j.id === topicId);
+    const currentStatus = topic?.status || 'todo';
 
     const statuses = [
         { value: 'todo', label: 'To Do', icon: 'queue-list' },
@@ -409,7 +410,7 @@ function openStatePicker(jobId) {
         <div class="picker-content">
             <div class="picker-header">Status</div>
             ${statuses.map(s => `
-                <div class="picker-option ${s.value === currentStatus ? 'selected' : ''}" onclick="selectJobState('${jobId}', '${s.value}')">
+                <div class="picker-option ${s.value === currentStatus ? 'selected' : ''}" onclick="selectTopicState('${topicId}', '${s.value}')">
                     <span class="picker-option-icon">${icon(s.icon)}</span>
                     <span class="picker-option-label">${s.label}</span>
                     ${s.value === currentStatus ? `<span class="picker-option-check">${icon('check')}</span>` : ''}
@@ -425,50 +426,16 @@ function closeStatePicker() {
     if (picker) picker.remove();
 }
 
-async function selectJobState(jobId, status) {
+async function selectTopicState(topicId, status) {
     closeStatePicker();
-    await setJobStatus(jobId, status);
+    await setTopicStatus(topicId, status);
 }
 
-// ============== Reassign Picker ==============
 
-async function openReassignPicker(jobId) {
-    const agents = await loadAgents();
+// ============== Topic Status Label ==============
 
-    const picker = document.createElement('div');
-    picker.className = 'picker-modal';
-    picker.id = 'reassign-picker';
-    picker.innerHTML = `
-        <div class="picker-backdrop" onclick="closeReassignPicker()"></div>
-        <div class="picker-content">
-            <div class="picker-header">Reassign To</div>
-            <div class="picker-description">Assigns agent and sets status to "todo"</div>
-            ${agents.map(agent => `
-                <div class="picker-option" onclick="selectReassignAgent('${jobId}', '${agent.id}')">
-                    <span class="picker-option-icon">${icon('bolt')}</span>
-                    <span class="picker-option-label">${escapeHtml(agent.name || agent.id)}</span>
-                </div>
-            `).join('')}
-            ${agents.length === 0 ? '<div class="picker-empty">No agents available</div>' : ''}
-        </div>
-    `;
-    document.body.appendChild(picker);
-}
-
-function closeReassignPicker() {
-    const picker = document.getElementById('reassign-picker');
-    if (picker) picker.remove();
-}
-
-async function selectReassignAgent(jobId, agentId) {
-    closeReassignPicker();
-    await reassignJob(jobId, agentId);
-}
-
-// ============== Job Status Label ==============
-
-function getJobStatusLabel(job) {
-    const status = job?.status || 'todo';
+function getTopicStatusLabel(topic) {
+    const status = topic?.status || 'todo';
     const labels = {
         'todo': 'To Do',
         'working': 'Working',
@@ -479,8 +446,8 @@ function getJobStatusLabel(job) {
     return labels[status] || status;
 }
 
-function getJobStatusIcon(job) {
-    const status = job?.status || 'todo';
+function getTopicStatusIcon(topic) {
+    const status = topic?.status || 'todo';
     const icons = {
         'todo': 'queue-list',
         'working': 'bolt',

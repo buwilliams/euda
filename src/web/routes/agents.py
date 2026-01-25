@@ -14,7 +14,7 @@ from ...tools.agents.agents import (
     get_agent_config, update_agent_config
 )
 from ...tools.agents.monitoring import get_agent_monitoring
-from ...tools.data.jobs import get_jobs_completed_by_agent, create_job, get_agent_inbox_job
+from ...tools.data.topics import get_topics_completed_by_agent, create_topic, get_agent_inbox_topic
 from ...tools.data.identity import get_identity, update_identity
 from ...tools.data.memory import (
     list_memory, add_memory, remove_memory, write_long_term_memory
@@ -273,11 +273,11 @@ def api_list_long_term_memory_dates(agent_id: str):
     return result["dates"]
 
 
-# Completed jobs by agent endpoint
-@router.get("/{agent_id}/completed-jobs")
-def api_get_completed_jobs(agent_id: str, limit: int = 20):
-    """Get jobs completed by this agent."""
-    return get_jobs_completed_by_agent(agent_id, limit)
+# Completed topics by agent endpoint
+@router.get("/{agent_id}/completed-topics")
+def api_get_completed_topics(agent_id: str, limit: int = 20):
+    """Get topics completed by this agent."""
+    return get_topics_completed_by_agent(agent_id, limit)
 
 
 # Monitoring endpoint
@@ -296,9 +296,9 @@ def api_get_monitoring(agent_id: str, offset: int = 0, limit: int = 20):
 # Reflection trigger endpoint
 @router.post("/{agent_id}/reflection/trigger")
 def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = None):
-    """Trigger reflection for an agent by creating a trigger job.
+    """Trigger reflection for an agent by creating a trigger topic.
 
-    Creates a job with tags=["trigger:consolidation:{phase}"] that the agent
+    Creates a topic with tags=["trigger:consolidation:{phase}"] that the agent
     will pick up and process during its work cycle.
 
     Returns an execution_id for SSE progress tracking.
@@ -316,10 +316,10 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
     execution_id = f"exec-{uuid.uuid4().hex[:8]}"
 
     today = datetime.now().strftime("%Y-%m-%d")
-    inbox = get_agent_inbox_job(agent_id)
+    inbox = get_agent_inbox_topic(agent_id)
     parent_id = inbox["id"] if inbox else None
 
-    job = create_job(
+    topic = create_topic(
         name="euno:consolidate",
         description=f"Manual consolidation trigger - phase: {phase} (execution_id: {execution_id})",
         parent_id=parent_id,
@@ -333,7 +333,7 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
         "execution_id": execution_id,
         "agent_id": agent_id,
         "phase": phase,
-        "job_id": job["id"],
+        "topic_id": topic["id"],
         "timestamp": datetime.now().isoformat()
     }
 
@@ -341,47 +341,42 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
 # Active executions endpoint
 @router.get("/{agent_id}/active-executions")
 def api_get_active_executions(agent_id: str):
-    """Get active trigger jobs for an agent to restore UI state after page refresh.
+    """Get active trigger topics for an agent to restore UI state after page refresh.
 
-    Returns active trigger jobs (consolidation) that are assigned to this agent
+    Returns active trigger topics (consolidation) that are assigned to this agent
     and still in todo status. This allows the UI to restore the running state of buttons.
 
     Returns:
-        List of active executions with execution_id, phase, job_id, created_at
+        List of active executions with execution_id, phase, topic_id, created_at
     """
-    from ...tools.data.jobs import list_jobs
+    from ...tools.data.topics import list_topics
 
     # Verify agent exists
     config = get_agent_config(agent_id)
     if config is None:
         raise HTTPException(status_code=404, detail="Agent not found")
 
-    # Get todo jobs assigned to this agent
-    jobs = list_jobs(status="todo", assignee=agent_id)
+    # Get todo topics assigned to this agent
+    topics = list_topics(status="todo", assignee=agent_id)
 
-    # Filter for consolidation jobs and extract execution info
-    # Consolidation jobs: euno:consolidate (new) or Trigger:consolidation:{phase}:{date} (legacy)
+    # Filter for consolidation topics and extract execution info
     executions = []
-    for job in jobs:
-        job_name = job.get("name", "")
-        tags = job.get("tags", [])
+    for topic in topics:
+        topic_name = topic.get("name", "")
+        tags = topic.get("tags", [])
 
-        # Check for consolidation job name patterns
-        if job_name == "euno:consolidate":
-            # New format - extract phase from description if available
-            description = job.get("description", "")
-            if "phase: append" in description:
-                phase = "append"
-            elif "phase: consolidate" in description:
-                phase = "consolidate"
-            else:
-                phase = "both"
-        elif job_name.startswith("Trigger:consolidation:"):
-            # Legacy format: Trigger:consolidation:{phase}:{date}
-            parts = job_name.split(":")
-            phase = parts[2] if len(parts) >= 3 else "both"
-        else:
+        # Check for consolidation topic
+        if topic_name != "euno:consolidate":
             continue
+
+        # Extract phase from description if available
+        description = topic.get("description", "")
+        if "phase: append" in description:
+            phase = "append"
+        elif "phase: consolidate" in description:
+            phase = "consolidate"
+        else:
+            phase = "both"
 
         # Extract execution_id from tags
         execution_id = None
@@ -393,8 +388,8 @@ def api_get_active_executions(agent_id: str):
         executions.append({
             "execution_id": execution_id,
             "phase": phase,
-            "job_id": job["id"],
-            "created_at": job.get("created_at")
+            "topic_id": topic["id"],
+            "created_at": topic.get("created_at")
         })
 
     return executions

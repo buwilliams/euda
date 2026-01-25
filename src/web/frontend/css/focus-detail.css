@@ -1,4 +1,4 @@
-/* Euno - Focus Detail View (Task Detail, Job Sections, Editing) */
+/* Euno - Focus Detail View (Task Detail, Topic Sections, Editing) */
 
 /* Task Detail View */
 .task-detail {
@@ -82,20 +82,20 @@
     color: var(--color-text-secondary);
 }
 
-/* Job Detail Sections */
-.job-section {
+/* Topic Detail Sections */
+.topic-section {
     margin-bottom: var(--spacing-xl);
 }
 
-/* Inline icons in job section content (e.g., completed badge) */
-.job-section > span img {
+/* Inline icons in topic section content (e.g., completed badge) */
+.topic-section > span img {
     width: 1em;
     height: 1em;
     vertical-align: middle;
     margin-right: 0.25em;
 }
 
-.job-section-header {
+.topic-section-header {
     font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--color-text-light);
@@ -107,7 +107,7 @@
     align-items: center;
 }
 
-.job-section-action {
+.topic-section-action {
     font-size: var(--font-size-sm);
     color: var(--color-accent);
     cursor: pointer;
@@ -115,22 +115,22 @@
     font-weight: normal;
 }
 
-.job-section-action:hover {
+.topic-section-action:hover {
     text-decoration: underline;
 }
 
-/* Collapsible Job Section Header */
-.job-section-header.collapsible {
+/* Collapsible Topic Section Header */
+.topic-section-header.collapsible {
     cursor: pointer;
     user-select: none;
     -webkit-user-select: none;
 }
 
-.job-section-header.collapsible:hover {
+.topic-section-header.collapsible:hover {
     color: var(--color-text-primary);
 }
 
-.job-section-header.collapsible .section-toggle {
+.topic-section-header.collapsible .section-toggle {
     display: flex;
     align-items: center;
     transition: transform var(--transition-fast);
@@ -138,27 +138,27 @@
     margin-right: var(--spacing-sm);
 }
 
-.job-section-header.collapsible .section-toggle img {
+.topic-section-header.collapsible .section-toggle img {
     width: 14px;
     height: 14px;
     opacity: 0.5;
 }
 
-.job-section-header.collapsible.open .section-toggle {
+.topic-section-header.collapsible.open .section-toggle {
     transform: rotate(90deg);
 }
 
-.job-section > .collapsible-content {
+.topic-section > .collapsible-content {
     display: none;
     overflow: hidden;
 }
 
-.job-section > .collapsible-content.open {
+.topic-section > .collapsible-content.open {
     display: block;
 }
 
-/* Editable Job Name */
-.job-name-display {
+/* Editable Topic Name */
+.topic-name-display {
     font-size: var(--font-size-xl);
     font-weight: 600;
     color: var(--color-text-primary);
@@ -168,12 +168,12 @@
     cursor: pointer;
 }
 
-.job-name-display:hover {
+.topic-name-display:hover {
     background: var(--color-bg-subtle);
     border-color: var(--color-border-light);
 }
 
-.job-name-input {
+.topic-name-input {
     font-size: var(--font-size-xl);
     font-weight: 600;
     width: 100%;
@@ -184,7 +184,7 @@
 }
 
 /* Editable Description */
-.job-description-display {
+.topic-description-display {
     padding: var(--spacing-md);
     border: 1px solid transparent;
     border-radius: var(--radius-md);
@@ -193,17 +193,17 @@
     color: var(--color-text-muted);
 }
 
-.job-description-display:hover {
+.topic-description-display:hover {
     background: var(--color-bg-subtle);
     border-color: var(--color-border-light);
 }
 
-.job-description-display.empty {
+.topic-description-display.empty {
     font-style: italic;
     color: var(--color-text-placeholder);
 }
 
-.job-description-input {
+.topic-description-input {
     width: 100%;
     min-height: 80px;
     padding: var(--spacing-md);
@@ -815,19 +815,43 @@
     overflow-y: auto;
 }
 
-/* Trace button on completed job cards */
-.completed-job-card {
+/* Trace button on completed topic cards */
+.completed-topic-card {
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
-.completed-job-card .job-card-content {
+.completed-topic-card .topic-card-content {
     flex: 1;
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
     cursor: pointer;
+}
+
+.topic-icon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.topic-icon img {
+    width: 1em;
+    height: 1em;
+}
+
+.topic-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.topic-completed-date {
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-sm);
+    flex-shrink: 0;
 }
 
 .trace-btn {
@@ -904,13 +928,13 @@
 
 /* ============== Clickable Navigation Row ============== */
 
-.job-section-header.clickable {
+.topic-section-header.clickable {
     cursor: pointer;
     user-select: none;
     -webkit-user-select: none;
 }
 
-.job-section-header.clickable:hover {
+.topic-section-header.clickable:hover {
     color: var(--color-text-primary);
 }
 

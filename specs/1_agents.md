@@ -1,113 +1,98 @@
 # Agents
 
-Rules for how agents work and coordinate through jobs.
+Rules for how agents work and coordinate through topics.
 
 ## Core Principle
 
-- Jobs are the only way agents do work — no other mechanism exists
+- Topics are the only way agents do work — no other mechanism exists
 - This creates visibility: users can see what agents are working on and what's queued
 
-## Jobs
+## Topics
 
-- A job is actionable when: assigned to an agent, status is `todo`, and due_date is NULL/today/past
-- Jobs with `someday=true` are never actionable
-- Jobs with future due_date are not actionable until that date
-- Any user action that needs agent attention creates a job assigned to that agent
+- A topic is actionable when: assigned to an agent, status is `todo`, and due_date is NULL/today/past
+- Topics with `someday=true` are never actionable
+- Topics with future due_date are not actionable until that date
+- Any user action that needs agent attention creates a topic assigned to that agent
 
 ## Agents
 
-- Agents poll for actionable jobs every 100ms (configurable via `poll_interval`)
-- Job cache prevents database queries when no jobs are pending
-- Cache is shared across all agent threads — when agent A assigns a job to agent B, the cache is notified immediately
-- Agents work one job at a time — no polling during work cycle
-- Disabled agents never process jobs
+- Agents poll for actionable topics every 100ms (configurable via `poll_interval`)
+- Topic cache prevents database queries when no topics are pending
+- Cache is shared across all agent threads — when agent A assigns a topic to agent B, the cache is notified immediately
+- Agents work one topic at a time — no polling during work cycle
+- Disabled agents never process topics
 - Each agent runs in its own thread — one agent's work cannot block another
-- When actionable jobs exist, the agent runs a work cycle until it calls `done_working`
-- Agents can create jobs for themselves or other agents
+- When actionable topics exist, the agent runs a work cycle until it calls `done_working`
+- Agents can create topics for themselves or other agents
 
 ## Triggers
 
 - Triggers are configured per-agent in `config.json` under `triggers[]`
-- Triggers create jobs, they do not wake agents directly
+- Triggers create topics, they do not wake agents directly
 
 ### New Trigger Format (Recommended)
 
-Triggers are objects that specify a job to create on a schedule:
+Triggers are objects that specify a topic to create on a schedule:
 
 ```json
 {
   "triggers": [
     {
-      "job_name": "euno:consolidate",
-      "job_description": "Review memories, evolve identity, graduate learnings",
+      "topic_name": "euno:consolidate",
+      "topic_description": "Review memories, evolve identity, graduate learnings",
       "schedule": "evening"
     },
     {
-      "job_name": "euno:quote",
-      "job_description": "Generate personalized daily quote",
+      "topic_name": "euno:quote",
+      "topic_description": "Generate personalized daily quote",
       "schedule": "morning"
     }
   ]
 }
 ```
 
-- `job_name`: The name of the job to create (e.g., `euno:consolidate`, `euno:quote`)
-- `job_description`: Description for the created job (optional)
+- `topic_name`: The name of the topic to create (e.g., `euno:consolidate`, `euno:quote`)
+- `topic_description`: Description for the created topic (optional)
 - `schedule`: Schedule name from system config (e.g., `morning`, `evening`)
 
-### Internal Jobs (`euno:*`)
+### Internal Topics (`euno:*`)
 
-Jobs with names starting with `euno:` are internal system jobs that execute tools directly without LLM involvement:
+Topics with names starting with `euno:` are internal system topics that execute tools directly without LLM involvement:
 
-| Job Name | Tool | Purpose |
+| Topic Name | Tool | Purpose |
 |----------|------|---------|
 | `euno:consolidate` | `euno_consolidate` | Run consolidation (memory analysis, identity updates) |
 | `euno:quote` | `euno_quote` | Generate personalized daily quote |
 
-These jobs:
+These topics:
 - Bypass the LLM chat loop entirely (efficient, single tool call)
 - Are prevented from duplicating (only one pending per agent at a time)
 - Complete automatically after tool execution
-
-### Legacy Trigger Format
-
-String-based triggers are still supported for backwards compatibility:
-
-```json
-{
-  "triggers": ["time:morning", "system:start"]
-}
-```
-
-- `system:start` — fires once at system startup
-- `time:{name}` — fires at scheduled times (morning, evening, hourly)
-- Legacy job naming: `Trigger:{name}:{yyyy-mm-dd}`
 
 ## Manager
 
 - Loads agent configs from `data/agents/*/config.json`
 - Starts each enabled agent in its own thread
-- Maintains job cache per agent — cache is set when jobs are assigned
-- Runs time scheduler that creates trigger jobs based on `schedules` in system config
-- Creates startup trigger jobs for agents with `system:start`
+- Maintains topic cache per agent — cache is set when topics are assigned
+- Runs time scheduler that creates trigger topics based on `schedules` in system config
 - Detects missed `time:morning` and `time:evening` triggers at startup
 
 ## Work Cycle
 
-- Agent receives ONE job per work cycle — prevents context overflow
+- Agent receives ONE topic per work cycle — prevents context overflow
 - Work cycle phases: claim → plan → execute → complete
 - Planning creates a brief approach (tool sequence, delegation, strategy) before execution
 - Agent works autonomously until calling `done_working` (max iterations configurable)
-- After `done_working`, manager checks for more jobs and starts another cycle if needed
-- Agent decides when any job is complete — including trigger jobs
-- Jobs must be explicitly completed by the agent via `complete_job`
+- After `done_working`, manager checks for more topics and starts another cycle if needed
+- Agent decides when any topic is complete — including trigger topics
+- Topics must be explicitly completed by the agent via `complete_topic`
 
 ## Agent Creation & Management
 
 - Users create agents through the Chat agent (via chat)
 - Chat uses `list_available_tools` to determine appropriate tools for new agents
 - Core agents are protected: chat, worker, user
-- All agents get base tools: list_jobs, get_job, create_job, complete_job, add_job_log, done_working
+- All agents get base tools: list_topics, get_topic, create_topic, complete_topic, add_topic_log, done_working
 - Changes to triggers require a restart to take effect
 - Agent files: `config.json` (settings) and `identity.md` (identity/instructions)
 
@@ -137,19 +122,19 @@ See docs/3_system.md for the cognitive foundations behind this design.
 - Each agent has an internal append process after conversations
 - Lightweight extraction that adds noteworthy items to short-term memory
 - Runs automatically when `consolidation.enabled` is true
-- This is automatic and invisible — no job created
+- This is automatic and invisible — no topic created
 
 ## Behavioral Triggers
 
-Agents respond to different types of jobs:
+Agents respond to different types of topics:
 
-- **Job Assignment** (`agent/job_assignment.md`): Regular job execution
-  - Triggered when an agent receives a job to complete
+- **Topic Assignment** (`agent/topic_assignment.md`): Regular topic execution
+  - Triggered when an agent receives a topic to complete
   - Focus on executing the assigned work
   - Agent decides when work is complete
-  - Jobs with `user:request` tag: write findings as asset, hand back to user
+  - Topics with `user:request` tag: write findings as asset, hand back to user
 
-- **Internal Jobs** (`euno:*`): Direct tool execution
+- **Internal Topics** (`euno:*`): Direct tool execution
   - Bypass the LLM chat loop entirely for efficiency
   - Execute their mapped tool directly and complete
   - Examples:
@@ -161,51 +146,50 @@ Agents respond to different types of jobs:
 - Base templates in `data/system/prompts/agent/`
 - Agent-specific overrides in `data/agents/{agent}/prompts/`
 - System checks agent-specific first, falls back to base
-- Template selection based on job type:
-  - `euno:*` jobs → bypassed (direct tool execution)
-  - `Trigger:consolidation:*` jobs → consolidation.md (legacy)
-  - All other jobs → job_assignment.md
+- Template selection based on topic type:
+  - `euno:*` topics → bypassed (direct tool execution)
+  - All other topics → topic_assignment.md
 
-## Job Coordination
+## Topic Coordination
 
-Jobs can flow between agents and users via `handoff_job`:
+Topics can flow between agents and users via `handoff_topic`:
 
-- **handoff_job(job_id, to, note)**: Pass a job to another agent or user
+- **handoff_topic(topic_id, to, note)**: Pass a topic to another agent or user
   - Sets `pending_from` to track who handed it off
   - Enables return routing — recipient knows who to send it back to
   - Logs the handoff with optional note
 
 **User → Agent → User (Request-Response)**
 1. User asks Chat for something
-2. Chat creates job with `user:request` tag, assigns to appropriate agent
+2. Chat creates topic with `user:request` tag, assigns to appropriate agent
 3. Agent works, writes findings as asset
-4. Agent calls `handoff_job(job_id, "user", "Ready for review")`
+4. Agent calls `handoff_topic(topic_id, "user", "Ready for review")`
 5. User reviews, provides feedback or completes
 
 **User → Agent → User (Feedback Loop)**
 1. Same as above, but user has feedback
-2. User sends feedback via job context (UI routes to appropriate agent)
+2. User sends feedback via topic context (UI routes to appropriate agent)
 3. Agent revises, hands back to user
 4. Loop continues until user completes
 
 **Agent → Agent → Agent (Collaboration)**
 1. Agent A is working on something
-2. A needs Agent B's expertise: `handoff_job(job_id, "B", "need your input")`
-3. B works, hands back: `handoff_job(job_id, "A", "here's my analysis")`
+2. A needs Agent B's expertise: `handoff_topic(topic_id, "B", "need your input")`
+3. B works, hands back: `handoff_topic(topic_id, "A", "here's my analysis")`
 4. A continues, may involve more agents
 5. Eventually returns to user or completes
 
 **Rules:**
-- Only call `complete_job` when work is truly done
-- Use `handoff_job` for transfers, not `update_job`
+- Only call `complete_topic` when work is truly done
+- Use `handoff_topic` for transfers, not `update_topic`
 - `pending_from` tracks return routing
-- Job logs show full coordination history
+- Topic logs show full coordination history
 
 ## Agent Routing
 
 - `list_agents_for_routing`: Get minimal agent info for routing decisions
   - Returns id, name, purpose (first line of identity), enabled status
-  - Use when deciding which agent should handle a job
+  - Use when deciding which agent should handle a topic
 
 ## Chat Agent Role
 
@@ -226,7 +210,7 @@ Agent = Identity + Cognition + Memory + Behavior
 | Category | Question | What It Contains |
 |----------|----------|------------------|
 | **Identity** | Who am I? | Purpose, values, voice, attractors, context |
-| **Cognition** | How do I think? | Reasoning (job planning, prompts) + Metacognition (self-regulation, consolidation) |
+| **Cognition** | How do I think? | Reasoning (topic planning, prompts) + Metacognition (self-regulation, consolidation) |
 | **Memory** | What do I know? | Short-term (90 days) + Long-term (permanent) |
 | **Behavior** | What can I do? | Tools + Triggers + Modes |
 
@@ -252,10 +236,10 @@ Agent = Identity + Cognition + Memory + Behavior
 Cognition has two aspects:
 
 **Reasoning** — First-order thinking (about the world)
-- Job planning: when work begins, agent creates a brief plan (tool sequence, delegation, approach)
+- Topic planning: when work begins, agent creates a brief plan (tool sequence, delegation, approach)
 - Defined by system prompts in `data/system/prompts/agent/`
 - Agent-specific overrides in `data/agents/{id}/prompts/`
-- Template selection based on job type (job_assignment, consolidation)
+- Template selection based on topic type (topic_assignment, consolidation)
 
 **Metacognition** — Second-order thinking (about thinking)
 - Self-awareness, self-regulation, and self-improvement
@@ -331,11 +315,11 @@ Consolidation is the metacognitive process of self-analysis and growth:
 - **Append phase** (automatic after conversations)
   - Lightweight extraction of noteworthy items to short-term memory
   - Runs automatically after each chat() call
-  - No job created — invisible to user
+  - No topic created — invisible to user
 
-- **Consolidate phase** (triggered, creates visible jobs)
+- **Consolidate phase** (triggered, creates visible topics)
   - Triggered by `euno:consolidate` trigger in agent config
-  - Creates `euno:consolidate` job that executes directly (no LLM loop)
+  - Creates `euno:consolidate` topic that executes directly (no LLM loop)
   - Reviews long-term memory via RLM, updates identity
   - Implemented as `euno_consolidate` tool in `src/tools/system/consolidation/`
 
@@ -344,7 +328,7 @@ Consolidation is scheduled via the trigger system (see Triggers section):
 {
   "triggers": [
     {
-      "job_name": "euno:consolidate",
+      "topic_name": "euno:consolidate",
       "schedule": "evening"
     }
   ]
@@ -393,7 +377,7 @@ Behavior defines what agents can do and when they activate.
 ### Tools
 
 - Capabilities defined by `tools[]` in agent's config.json
-- All agents get base tools: list_jobs, get_job, create_job, complete_job, add_job_log, done_working
+- All agents get base tools: list_topics, get_topic, create_topic, complete_topic, add_topic_log, done_working
 - Additional tools granted per-agent based on role
 - An agent cannot use tools not in its config
 
@@ -402,16 +386,16 @@ Behavior defines what agents can do and when they activate.
 See the main Triggers section above for full documentation.
 
 - Triggers are configured per-agent in `config.json` under `triggers[]`
-- Triggers create jobs, they do not wake agents directly
-- New format: objects with `job_name`, `job_description`, `schedule`
+- Triggers create topics, they do not wake agents directly
+- New format: objects with `topic_name`, `topic_description`, `schedule`
 - Legacy format: strings like `"time:morning"`, `"system:start"`
 
 ### Triggers vs Processes
 
 Behavior defines *when* things activate via triggers. The processes themselves may belong to other categories:
 
-| Trigger Job Name | Activates | Process Lives In |
+| Trigger Topic Name | Activates | Process Lives In |
 |------------------|-----------|------------------|
-| Regular job | Job assignment | Behavior (tool execution via LLM) |
+| Regular topic | Topic assignment | Behavior (tool execution via LLM) |
 | `euno:consolidate` | Self-improvement | Cognition (metacognition via tool) |
 | `euno:quote` | Quote generation | System (direct tool execution) |

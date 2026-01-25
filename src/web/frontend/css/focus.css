@@ -232,7 +232,7 @@
     font-size: var(--font-size-lg);
 }
 
-.focus-today-jobs {
+.focus-today-topics {
     display: flex;
     flex-direction: column;
 }

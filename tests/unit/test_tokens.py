@@ -165,6 +165,103 @@ class TestTokenAwarenessStateManagement:
         assert ta._config_mtime == 0
 
 
+class TestCallsAndCostsByTopic:
+    """Test get_calls_by_topic and get_costs_by_agent functions."""
+
+    def test_get_calls_by_topic_returns_matching_entries(self, patch_data_dir, fresh_token_awareness):
+        """get_calls_by_topic should return entries matching the topic_id."""
+        from src.agent.cognition.metacognition.regulation.tokens import get_calls_by_topic
+
+        # Write test data to the monthly log file
+        usage_dir = patch_data_dir / "system" / "token_usage"
+        usage_dir.mkdir(parents=True, exist_ok=True)
+
+        now = datetime.now()
+        log_file = usage_dir / f"{now.strftime('%Y-%m')}.jsonl"
+
+        entries = [
+            {"timestamp": now.isoformat(), "topic_id": "topic-123", "agent": "worker", "cost": 0.01, "input_tokens": 100, "output_tokens": 50},
+            {"timestamp": now.isoformat(), "topic_id": "topic-456", "agent": "worker", "cost": 0.02, "input_tokens": 200, "output_tokens": 100},
+            {"timestamp": now.isoformat(), "topic_id": "topic-123", "agent": "user", "cost": 0.015, "input_tokens": 150, "output_tokens": 75},
+        ]
+
+        with open(log_file, "w") as f:
+            for entry in entries:
+                f.write(json.dumps(entry) + "\n")
+
+        # Should return only entries for topic-123
+        results = get_calls_by_topic("topic-123", days=30)
+
+        assert len(results) == 2
+        assert all(r["topic_id"] == "topic-123" for r in results)
+
+    def test_get_calls_by_topic_respects_date_cutoff(self, patch_data_dir, fresh_token_awareness):
+        """get_calls_by_topic should filter by date cutoff."""
+        from src.agent.cognition.metacognition.regulation.tokens import get_calls_by_topic
+        from datetime import timedelta
+
+        usage_dir = patch_data_dir / "system" / "token_usage"
+        usage_dir.mkdir(parents=True, exist_ok=True)
+
+        now = datetime.now()
+        old_date = now - timedelta(days=60)
+        log_file = usage_dir / f"{now.strftime('%Y-%m')}.jsonl"
+
+        entries = [
+            {"timestamp": now.isoformat(), "topic_id": "topic-123", "agent": "worker", "cost": 0.01, "input_tokens": 100, "output_tokens": 50},
+            {"timestamp": old_date.isoformat(), "topic_id": "topic-123", "agent": "worker", "cost": 0.02, "input_tokens": 200, "output_tokens": 100},
+        ]
+
+        with open(log_file, "w") as f:
+            for entry in entries:
+                f.write(json.dumps(entry) + "\n")
+
+        # With 30 day cutoff, should only get recent entry
+        results = get_calls_by_topic("topic-123", days=30)
+
+        assert len(results) == 1
+        assert results[0]["cost"] == 0.01
+
+    def test_get_costs_by_agent_aggregates_correctly(self, patch_data_dir, fresh_token_awareness):
+        """get_costs_by_agent should aggregate costs per agent."""
+        from src.agent.cognition.metacognition.regulation.tokens import get_costs_by_agent
+
+        usage_dir = patch_data_dir / "system" / "token_usage"
+        usage_dir.mkdir(parents=True, exist_ok=True)
+
+        now = datetime.now()
+        log_file = usage_dir / f"{now.strftime('%Y-%m')}.jsonl"
+
+        entries = [
+            {"timestamp": now.isoformat(), "agent": "worker", "cost": 0.01, "input_tokens": 100, "output_tokens": 50},
+            {"timestamp": now.isoformat(), "agent": "worker", "cost": 0.02, "input_tokens": 200, "output_tokens": 100},
+            {"timestamp": now.isoformat(), "agent": "user", "cost": 0.05, "input_tokens": 500, "output_tokens": 250},
+        ]
+
+        with open(log_file, "w") as f:
+            for entry in entries:
+                f.write(json.dumps(entry) + "\n")
+
+        results = get_costs_by_agent(days=30)
+
+        assert "worker" in results
+        assert "user" in results
+        assert results["worker"]["calls"] == 2
+        assert results["worker"]["cost"] == 0.03
+        assert results["worker"]["input_tokens"] == 300
+        assert results["worker"]["output_tokens"] == 150
+        assert results["user"]["calls"] == 1
+        assert results["user"]["cost"] == 0.05
+
+    def test_get_costs_by_agent_handles_empty_logs(self, patch_data_dir, fresh_token_awareness):
+        """get_costs_by_agent should return empty dict when no logs exist."""
+        from src.agent.cognition.metacognition.regulation.tokens import get_costs_by_agent
+
+        results = get_costs_by_agent(days=30)
+
+        assert results == {}
+
+
 class TestCostCalculation:
     """Test cost calculation methods."""
 

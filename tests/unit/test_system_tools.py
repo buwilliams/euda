@@ -5,7 +5,7 @@ Tests for src/tools/system/system.py
 
 Design: specs/1_agents.md - Work Cycle
 - Agent calls done_working when work is complete
-- Agent decides when any job is complete
+- Agent decides when any topic is complete
 """
 
 import pytest
@@ -51,9 +51,9 @@ class TestDoneWorking:
 
         set_agent_context(mock_agent)
         try:
-            done_working("Processed 3 jobs")
+            done_working("Processed 3 topics")
 
-            mock_agent._log.assert_called_with("done_working", {"summary": "Processed 3 jobs"})
+            mock_agent._log.assert_called_with("done_working", {"summary": "Processed 3 topics"})
         finally:
             clear_agent_context()
 

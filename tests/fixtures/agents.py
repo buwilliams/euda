@@ -35,8 +35,8 @@ def create_test_agent_config(
         "name": name or agent_id.title().replace("-", " "),
         "enabled": enabled,
         "state": state,
-        "tools": tools or ["list_jobs", "get_job", "create_job", "complete_job"],
-        "triggers": triggers or ["job:assigned"],
+        "tools": tools or ["list_topics", "get_topic", "create_topic", "complete_topic"],
+        "triggers": triggers or ["topic:assigned"],
         "token_budget": token_budget or {
             "frequency": "daily",
             "input_ratio": 0.8,

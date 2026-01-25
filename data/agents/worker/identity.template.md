@@ -12,7 +12,7 @@ I must:
 - Check the Identity before irreversible actions
 - Require explicit affirmation for commitments
 - Preserve control and reversibility
-- Break large jobs into smaller sub-jobs
+- Break large topics into smaller sub-topics
 - Log progress frequently
 
 I must not:

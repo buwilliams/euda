@@ -1,6 +1,6 @@
-"""Data tools - Jobs, assets, identity, memory."""
+"""Data tools - Topics, assets, identity, memory."""
 
-from . import jobs
+from . import topics
 from . import assets
 from . import identity
 from . import memory

@@ -104,8 +104,8 @@ class TestProgressTrackerToolCalls:
         tracker = ProgressTracker()
         session_id = tracker.start_session("test-agent")
 
-        tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
-        tracker.record_tool_call(session_id, "get_job", '{"id": "123"}')
+        tracker.record_tool_call(session_id, "list_topics", '{"status": "todo"}')
+        tracker.record_tool_call(session_id, "get_topic", '{"id": "123"}')
 
         progress = tracker.get_progress(session_id)
         assert progress["tool_call_count"] == 2
@@ -125,13 +125,13 @@ class TestProgressTrackerToolCalls:
 
         # Call same tool with same input 4 times - should be fine
         for _ in range(4):
-            tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
+            tracker.record_tool_call(session_id, "list_topics", '{"status": "todo"}')
 
         # 5th identical call should trigger stuck detection
         with pytest.raises(ProgressLimitExceeded) as exc_info:
-            tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
+            tracker.record_tool_call(session_id, "list_topics", '{"status": "todo"}')
 
-        assert "list_jobs" in exc_info.value.reason
+        assert "list_topics" in exc_info.value.reason
         assert "5 times" in exc_info.value.reason
 
     def test_record_tool_call_allows_varied_calls(self):
@@ -142,11 +142,11 @@ class TestProgressTrackerToolCalls:
         session_id = tracker.start_session("test-agent", stuck_threshold=3)
 
         # Varied calls should not trigger stuck detection
-        tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
-        tracker.record_tool_call(session_id, "get_job", '{"id": "1"}')
-        tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
-        tracker.record_tool_call(session_id, "get_job", '{"id": "2"}')
-        tracker.record_tool_call(session_id, "list_jobs", '{"status": "done"}')
+        tracker.record_tool_call(session_id, "list_topics", '{"status": "todo"}')
+        tracker.record_tool_call(session_id, "get_topic", '{"id": "1"}')
+        tracker.record_tool_call(session_id, "list_topics", '{"status": "todo"}')
+        tracker.record_tool_call(session_id, "get_topic", '{"id": "2"}')
+        tracker.record_tool_call(session_id, "list_topics", '{"status": "done"}')
 
         progress = tracker.get_progress(session_id)
         assert progress["tool_call_count"] == 5
@@ -160,8 +160,8 @@ class TestProgressTrackerToolCalls:
         session_id = tracker.start_session("test-agent", stuck_threshold=3)
 
         # Add calls but don't exceed threshold (2 identical calls)
-        tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
-        tracker.record_tool_call(session_id, "list_jobs", '{"status": "todo"}')
+        tracker.record_tool_call(session_id, "list_topics", '{"status": "todo"}')
+        tracker.record_tool_call(session_id, "list_topics", '{"status": "todo"}')
 
         # Not stuck yet
         assert tracker.check_stuck(session_id) is None

@@ -23,12 +23,12 @@ def temp_data_dir(tmp_path):
 
     Sets up the standard Euno data structure:
     - data/agents/
-    - data/jobs/
+    - data/topics/
     - data/system/
     """
     data_dir = tmp_path / "data"
     (data_dir / "agents").mkdir(parents=True)
-    (data_dir / "jobs").mkdir(parents=True)
+    (data_dir / "topics").mkdir(parents=True)
     (data_dir / "system").mkdir(parents=True)
     (data_dir / "system" / "token_usage").mkdir(parents=True)
 
@@ -66,19 +66,19 @@ def patch_data_dir(temp_data_dir):
     """
     patches = []
 
-    # Patch jobs module
+    # Patch topics module
     try:
-        from src.tools.data import jobs
-        p1 = patch.object(jobs, 'DATA_DIR', temp_data_dir)
+        from src.tools.data import topics
+        p1 = patch.object(topics, 'DATA_DIR', temp_data_dir)
         p1.start()
         patches.append(p1)
 
         # Also patch derived paths
-        patch.object(jobs, 'JOBS_DIR', temp_data_dir / "jobs").start()
-        patch.object(jobs, 'DB_PATH', temp_data_dir / "jobs" / "db.sqlite").start()
+        patch.object(topics, 'TOPICS_DIR', temp_data_dir / "topics").start()
+        patch.object(topics, 'DB_PATH', temp_data_dir / "topics" / "db.sqlite").start()
 
         # Clear and reinitialize the connection
-        jobs._clear_connection()
+        topics._clear_connection()
     except ImportError:
         pass
 
@@ -129,19 +129,19 @@ def test_db(patch_data_dir):
 
     Returns the database path after initializing schema.
     """
-    from src.tools.data import jobs
+    from src.tools.data import topics
 
-    db_path = patch_data_dir / "jobs" / "db.sqlite"
+    db_path = patch_data_dir / "topics" / "db.sqlite"
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Clear existing connection and reinitialize schema
-    jobs._clear_connection()
-    jobs._ensure_schema()
+    topics._clear_connection()
+    topics._ensure_schema()
 
     yield db_path
 
     # Cleanup
-    jobs._clear_connection()
+    topics._clear_connection()
 
 
 # =============================================================================
@@ -155,8 +155,8 @@ def test_agent_config():
         "id": "test-agent",
         "name": "Test Agent",
         "state": "enabled",
-        "tools": ["list_jobs", "get_job", "create_job", "complete_job"],
-        "triggers": ["job:assigned"],
+        "tools": ["list_topics", "get_topic", "create_topic", "complete_topic"],
+        "triggers": ["topic:assigned"],
         "token_budget": {
             "frequency": "daily",
             "input_ratio": 0.8,
@@ -173,8 +173,8 @@ def create_test_agent(patch_data_dir):
             "id": agent_id,
             "name": agent_id.title().replace("-", " "),
             "state": "enabled",
-            "tools": ["list_jobs", "get_job", "create_job", "complete_job"],
-            "triggers": ["job:assigned"],
+            "tools": ["list_topics", "get_topic", "create_topic", "complete_topic"],
+            "triggers": ["topic:assigned"],
             "token_budget": {
                 "frequency": "daily",
                 "input_ratio": 0.8,
@@ -216,15 +216,15 @@ def mock_llm_client():
 @pytest.fixture
 def mock_emit_event():
     """Mock event emission to avoid side effects."""
-    with patch('src.tools.data.jobs._emit_event') as mock:
+    with patch('src.tools.data.topics._emit_event') as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_emit_ui_event():
-    """Mock UI event emission and jobs update notification."""
-    with patch('src.tools.data.jobs._emit_jobs_update') as mock_update:
-        with patch('src.tools.data.jobs._notify_agent_has_jobs') as mock_notify:
+    """Mock UI event emission and topics update notification."""
+    with patch('src.tools.data.topics._emit_topics_update') as mock_update:
+        with patch('src.tools.data.topics._notify_agent_has_topics') as mock_notify:
             yield mock_update, mock_notify
 
 

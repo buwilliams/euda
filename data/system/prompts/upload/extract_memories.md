@@ -9,4 +9,4 @@ The file "{filename}" has been stored in user's long-term memory. Read the conte
 Content:
 {content}
 
-After extracting memories, complete this job.
+After extracting memories, complete this topic.

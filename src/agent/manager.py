@@ -51,7 +51,7 @@ class AgentManager:
         self.agents: Dict[str, Agent] = {}
         self.threads: Dict[str, threading.Thread] = {}
         self.running = False
-        self.agents_with_jobs: Dict[str, bool] = {}  # Cache: agent_id -> has_jobs
+        self.agents_with_topics: Dict[str, bool] = {}  # Cache: agent_id -> has_topics
         self.event_bus = EventBus()
         # Config watching
         self._config_mtimes: Dict[str, float] = {}  # agent_id -> last mtime
@@ -78,7 +78,7 @@ class AgentManager:
     def start_agent(self, config: dict):
         """Start a single agent in its own thread."""
         agent_id = config["id"]
-        triggers = config.get("triggers", ["job:assigned"])
+        triggers = config.get("triggers", ["topic:assigned"])
 
         print(f"Starting agent: {agent_id} (triggers: {triggers})")
 
@@ -93,11 +93,6 @@ class AgentManager:
         # Create stop event for this agent
         stop_event = threading.Event()
         self._agent_stop_events[agent_id] = stop_event
-
-        # Subscribe agent to legacy string triggers only (not new dict-based triggers)
-        # New dict-based triggers are handled by the scheduler directly
-        string_triggers = [t for t in triggers if isinstance(t, str)]
-        self.event_bus.subscribe(agent_id, string_triggers)
 
         # Create thread for agent loop
         thread = threading.Thread(
@@ -138,18 +133,18 @@ class AgentManager:
         # (even if disabled, we don't want to keep re-registering)
         self._config_mtimes[agent_id] = config_path.stat().st_mtime
 
-        # Sync agent inbox jobs to create the inbox for this agent
-        from ..tools.data.jobs import sync_agent_inbox_jobs
-        sync_agent_inbox_jobs()
+        # Sync agent inbox topics to create the inbox for this agent
+        from ..tools.data.topics import sync_agent_inbox_topics
+        sync_agent_inbox_topics()
 
         # Start the agent if enabled (check state field)
         if config.get("state", "enabled") != "disabled":
             self.start_agent(config)
 
-            # Initialize job cache for this agent
-            from ..tools.data.jobs import list_jobs
-            jobs = list_jobs(status="todo", assignee=agent_id, actionable=True)
-            self.agents_with_jobs[agent_id] = bool(jobs)
+            # Initialize topic cache for this agent
+            from ..tools.data.topics import list_topics
+            topics = list_topics(status="todo", assignee=agent_id, actionable=True)
+            self.agents_with_topics[agent_id] = bool(topics)
 
             return {"registered": True, "agent_id": agent_id, "started": True}
 
@@ -190,7 +185,7 @@ class AgentManager:
         self.threads.pop(agent_id, None)
         self._agent_stop_events.pop(agent_id, None)
         self._config_mtimes.pop(agent_id, None)
-        self.agents_with_jobs.pop(agent_id, None)
+        self.agents_with_topics.pop(agent_id, None)
 
         return {"stopped": True, "agent_id": agent_id}
 
@@ -224,10 +219,10 @@ class AgentManager:
         if config.get("state", "enabled") != "disabled":
             self.start_agent(config)
 
-            # Initialize job cache
-            from ..tools.data.jobs import list_jobs
-            jobs = list_jobs(status="todo", assignee=agent_id, actionable=True)
-            self.agents_with_jobs[agent_id] = bool(jobs)
+            # Initialize topic cache
+            from ..tools.data.topics import list_topics
+            topics = list_topics(status="todo", assignee=agent_id, actionable=True)
+            self.agents_with_topics[agent_id] = bool(topics)
 
             return {"reloaded": True, "agent_id": agent_id, "started": True}
 
@@ -347,95 +342,51 @@ class AgentManager:
         return missed
 
     def _get_agent_triggers(self, config: dict) -> list:
-        """Get triggers from agent config using the new object-based format.
+        """Get triggers from agent config.
 
-        New format triggers are objects with:
-        - job_name: e.g., "euno:consolidate", "euno:quote"
-        - job_description: description for the job (optional)
+        Triggers are objects with:
+        - topic_name: e.g., "euno:consolidate", "euno:quote"
+        - topic_description: description for the topic (optional)
         - schedule: schedule name from system config (e.g., "morning", "evening")
-
-        Also supports legacy string-based triggers for backwards compatibility.
 
         Args:
             config: Agent configuration dict
 
         Returns:
-            List of trigger dicts (normalized to new format)
+            List of trigger dicts
         """
         triggers = config.get("triggers", [])
-        normalized = []
+        return [t for t in triggers if isinstance(t, dict)]
 
-        for trigger in triggers:
-            if isinstance(trigger, dict):
-                # New format - already structured
-                normalized.append(trigger)
-            elif isinstance(trigger, str):
-                # Legacy format - string like "time:morning"
-                # Keep for backwards compatibility but don't convert
-                # These are handled by the old job creation logic
-                pass
+    def _has_open_internal_topic(self, topic_name: str, agent_id: str) -> bool:
+        """Check if there's already an open (todo or working) topic for this internal action.
 
-        return normalized
-
-    def _has_open_internal_job(self, job_name: str, agent_id: str) -> bool:
-        """Check if there's already an open (todo or working) job for this internal action.
-
-        Prevents duplicate jobs - only one euno:consolidate or euno:quote
+        Prevents duplicate topics - only one euno:consolidate or euno:quote
         can be pending or in-progress at a time per agent.
 
         Args:
-            job_name: The job name to check (e.g., "euno:consolidate")
+            topic_name: The topic name to check (e.g., "euno:consolidate")
             agent_id: The agent ID
 
         Returns:
-            True if an open job with this name exists for this agent
+            True if an open topic with this name exists for this agent
         """
-        from ..tools.data.jobs import list_jobs
+        from ..tools.data.topics import list_topics
 
-        # Check for any todo OR working jobs with this exact name assigned to this agent
-        # Must check both statuses to prevent creating duplicates while job is being executed
+        # Check for any todo OR working topics with this exact name assigned to this agent
+        # Must check both statuses to prevent creating duplicates while topic is being executed
         for status in ["todo", "working"]:
-            jobs = list_jobs(status=status, assignee=agent_id)
-            for job in jobs:
-                if job.get("name") == job_name:
+            topics = list_topics(status=status, assignee=agent_id)
+            for topic in topics:
+                if topic.get("name") == topic_name:
                     return True
         return False
 
     def _emit_startup_triggers(self):
-        """Create trigger jobs for system:start and any missed time triggers at startup."""
-        from ..tools.data.jobs import create_job, list_jobs, get_agent_inbox_job
+        """Create topics for any missed time triggers at startup."""
+        from ..tools.data.topics import create_topic, get_agent_inbox_topic
 
         today = datetime.now().strftime("%Y-%m-%d")
-
-        # Create system:start trigger jobs for subscribed agents (legacy format only)
-        print("[startup] Creating system:start trigger jobs")
-        for agent_id, agent in self.agents.items():
-            config = agent.config
-            if config.get("state", "enabled") == "disabled":
-                continue
-
-            triggers = config.get("triggers", [])
-            if "system:start" in triggers:
-                job_name = f"Trigger:start:{today}"
-
-                # Check if trigger job already exists for this agent today
-                existing = list_jobs(status="todo", assignee=agent_id)
-                already_exists = any(j["name"] == job_name for j in existing)
-
-                if not already_exists:
-                    # Get agent's inbox job as parent
-                    inbox = get_agent_inbox_job(agent_id)
-                    parent_id = inbox["id"] if inbox else None
-
-                    print(f"[startup] Creating trigger job: {job_name} for {agent_id}")
-                    create_job(
-                        name=job_name,
-                        description="System startup trigger",
-                        parent_id=parent_id,
-                        assignee=agent_id,
-                        due_date=None,
-                        created_by="system"
-                    )
 
         # Check for missed morning/evening triggers
         missed = self._check_missed_triggers()
@@ -449,49 +400,29 @@ class AgentManager:
                     if config.get("state", "enabled") == "disabled":
                         continue
 
-                    # Get agent's inbox job as parent for all trigger jobs
-                    inbox = get_agent_inbox_job(agent_id)
+                    # Get agent's inbox topic as parent for all trigger topics
+                    inbox = get_agent_inbox_topic(agent_id)
                     parent_id = inbox["id"] if inbox else None
 
-                    # Handle new-format object triggers (euno:* jobs)
-                    new_triggers = self._get_agent_triggers(config)
-                    for t in new_triggers:
+                    # Handle object triggers
+                    triggers = self._get_agent_triggers(config)
+                    for t in triggers:
                         if t.get("schedule") == trigger_type:
-                            job_name = t.get("job_name")
-                            job_desc = t.get("job_description", f"Missed scheduled {job_name}")
+                            topic_name = t.get("topic_name")
+                            topic_desc = t.get("topic_description", f"Missed scheduled {topic_name}")
 
                             # Check for duplicate - only one pending at a time
-                            if not self._has_open_internal_job(job_name, agent_id):
-                                print(f"[startup] Creating missed job: {job_name} for {agent_id}")
-                                create_job(
-                                    name=job_name,
-                                    description=job_desc,
+                            if not self._has_open_internal_topic(topic_name, agent_id):
+                                print(f"[startup] Creating missed topic: {topic_name} for {agent_id}")
+                                create_topic(
+                                    name=topic_name,
+                                    description=topic_desc,
                                     parent_id=parent_id,
                                     assignee=agent_id,
-                                    tags=[job_name],  # Tag for querying
+                                    tags=[topic_name],  # Tag for querying
                                     due_date=None,
                                     created_by="system"
                                 )
-
-                    # Legacy handling: string-based triggers
-                    legacy_triggers = config.get("triggers", [])
-                    if trigger in legacy_triggers:
-                        job_name = f"Trigger:{trigger_type}:{today}"
-
-                        # Check if trigger job already exists for this agent today
-                        existing = list_jobs(status="todo", assignee=agent_id)
-                        already_exists = any(j["name"] == job_name for j in existing)
-
-                        if not already_exists:
-                            print(f"[startup] Creating missed legacy trigger job: {job_name} for {agent_id}")
-                            create_job(
-                                name=job_name,
-                                description=f"Missed {trigger} trigger",
-                                parent_id=parent_id,
-                                assignee=agent_id,
-                                due_date=None,
-                                created_by="system"
-                            )
 
             # Update state to mark these as "handled" by setting them to today
             state = self._get_system_state()
@@ -502,18 +433,18 @@ class AgentManager:
             self._save_system_state(state)
 
     def _run_agent_loop(self, agent: Agent, stop_event: threading.Event):
-        """Run an agent's work loop - monitors health while agent polls for jobs.
+        """Run an agent's work loop - monitors health while agent polls for topics.
 
-        The manager doesn't claim or work jobs - that's the agent's responsibility.
+        The manager doesn't claim or work topics - that's the agent's responsibility.
         The manager monitors agent state; regulation handles rate limits and budgets.
 
         Args:
             agent: The agent to run
             stop_event: Event to signal this agent should stop (for reload/shutdown)
         """
-        from ..tools.data.jobs import list_jobs
+        from ..tools.data.topics import list_topics
 
-        poll_interval = 0.1  # seconds between job polls
+        poll_interval = 0.1  # seconds between topic polls
         token_awareness = get_token_awareness()
 
         while self.running and not stop_event.is_set():
@@ -535,30 +466,30 @@ class AgentManager:
                     continue
 
 
-                # Check cache first (fast) - skip work cycle if no jobs pending
-                if not self.agents_with_jobs.get(agent.id, False):
+                # Check cache first (fast) - skip work cycle if no topics pending
+                if not self.agents_with_topics.get(agent.id, False):
                     if stop_event.wait(poll_interval):
                         break  # Stop requested
                     continue
 
-                # Let the agent discover, claim, work, and release jobs autonomously
+                # Let the agent discover, claim, work, and release topics autonomously
                 agent.work_cycle_sync()
 
                 # Update last_ran timestamp
                 self._update_agent_last_ran(agent.id)
 
-                # Re-check for more jobs and update cache
-                jobs = list_jobs(status="todo", assignee=agent.id, actionable=True)
-                self.agents_with_jobs[agent.id] = bool(jobs)
+                # Re-check for more topics and update cache
+                topics = list_topics(status="todo", assignee=agent.id, actionable=True)
+                self.agents_with_topics[agent.id] = bool(topics)
 
                 # Apply pacing between work cycles to prevent runaway spinning
                 MIN_CYCLE_DELAY = 0.5  # 500ms minimum between cycles
-                if jobs:
+                if topics:
                     if stop_event.wait(MIN_CYCLE_DELAY):
                         break  # Stop requested
                 else:
-                    # No more jobs - clear cache
-                    self.agents_with_jobs[agent.id] = False
+                    # No more topics - clear cache
+                    self.agents_with_topics[agent.id] = False
 
             except AgentPausedError as e:
                 # Agent paused due to threshold breach or runaway detection
@@ -587,59 +518,9 @@ class AgentManager:
         # Log that agent loop has ended
         agent._log("agent_loop_stopped", {"reason": "stop_requested" if stop_event.is_set() else "shutdown"})
 
-    def _create_consolidation_jobs(self, trigger_name: str):
-        """Create consolidation jobs for agents with matching consolidation trigger.
-
-        Consolidation is a first-class behavioral trigger. Instead of running
-        consolidation directly, we create a consolidation job that the agent
-        processes using the consolidation prompt and memory tools.
-
-        Args:
-            trigger_name: The trigger that fired (e.g., "time:evening")
-        """
-        from ..tools.data.jobs import create_job, list_jobs, get_agent_inbox_job
-        from datetime import datetime
-
-        today = datetime.now().strftime("%Y-%m-%d")
-
-        for agent_id, agent in self.agents.items():
-            if agent.config.get("state", "enabled") == "disabled":
-                continue
-
-            # Check if agent has consolidation enabled and if this trigger matches
-            consolidation_config = agent.config.get("consolidation", {})
-            if not consolidation_config.get("enabled", True):
-                continue
-
-            consolidation_trigger = consolidation_config.get("trigger", "time:evening")
-
-            if trigger_name == consolidation_trigger:
-                # Check if consolidation job already exists for this agent today
-                # Name pattern: Trigger:consolidation:{phase}:{date}
-                existing = list_jobs(status="todo", assignee=agent_id)
-                already_exists = any(
-                    j["name"].startswith(f"Trigger:consolidation:") and j["name"].endswith(f":{today}")
-                    for j in existing
-                )
-
-                if not already_exists:
-                    # Get agent's inbox job as parent
-                    inbox = get_agent_inbox_job(agent_id)
-                    parent_id = inbox["id"] if inbox else None
-
-                    print(f"[scheduler] Creating consolidation job for {agent_id}")
-                    create_job(
-                        name=f"Trigger:consolidation:both:{today}",
-                        description="Scheduled consolidation: review memories, evolve identity, graduate learnings",
-                        parent_id=parent_id,
-                        assignee=agent_id,
-                        due_date=None,
-                        created_by="system"
-                    )
-
     def _run_time_scheduler(self):
-        """Background thread that creates trigger jobs based on schedules."""
-        from ..tools.data.jobs import create_job, list_jobs, get_agent_inbox_job
+        """Background thread that creates trigger topics based on schedules."""
+        from ..tools.data.topics import create_topic, get_agent_inbox_topic
 
         last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
 
@@ -679,58 +560,35 @@ class AgentManager:
                             if config.get("state", "enabled") == "disabled":
                                 continue
 
-                            # Get agent's inbox job as parent for all trigger jobs
-                            inbox = get_agent_inbox_job(agent_id)
+                            # Get agent's inbox topic as parent for all trigger topics
+                            inbox = get_agent_inbox_topic(agent_id)
                             parent_id = inbox["id"] if inbox else None
 
-                            # Handle new-format object triggers (euno:* jobs)
-                            new_triggers = self._get_agent_triggers(config)
-                            for trigger in new_triggers:
+                            # Handle object triggers
+                            triggers = self._get_agent_triggers(config)
+                            for trigger in triggers:
                                 if trigger.get("schedule") == name:
-                                    job_name = trigger.get("job_name")
-                                    job_desc = trigger.get("job_description", f"Scheduled {job_name}")
+                                    topic_name = trigger.get("topic_name")
+                                    topic_desc = trigger.get("topic_description", f"Scheduled {topic_name}")
 
                                     # Check for duplicate - only one pending at a time
-                                    if not self._has_open_internal_job(job_name, agent_id):
-                                        print(f"[scheduler] Creating job: {job_name} for {agent_id}")
-                                        create_job(
-                                            name=job_name,
-                                            description=job_desc,
+                                    if not self._has_open_internal_topic(topic_name, agent_id):
+                                        print(f"[scheduler] Creating topic: {topic_name} for {agent_id}")
+                                        create_topic(
+                                            name=topic_name,
+                                            description=topic_desc,
                                             parent_id=parent_id,
                                             assignee=agent_id,
-                                            tags=[job_name],  # Tag for querying
+                                            tags=[topic_name],  # Tag for querying
                                             due_date=None,
                                             created_by="system"
                                         )
-
-                            # Legacy handling: string-based triggers (e.g., "time:morning")
-                            legacy_triggers = config.get("triggers", [])
-                            if trigger_name in legacy_triggers:
-                                job_name = f"Trigger:{name}:{today}"
-
-                                # Check if trigger job already exists for this agent today
-                                existing = list_jobs(status="todo", assignee=agent_id)
-                                already_exists = any(j["name"] == job_name for j in existing)
-
-                                if not already_exists:
-                                    print(f"[scheduler] Creating legacy trigger job: {job_name} for {agent_id}")
-                                    create_job(
-                                        name=job_name,
-                                        description=f"Scheduled trigger for {trigger_name}",
-                                        parent_id=parent_id,
-                                        assignee=agent_id,
-                                        due_date=None,
-                                        created_by="system"
-                                    )
 
                         # Save state for morning/evening triggers
                         if name in ["morning", "evening"]:
                             state = self._get_system_state()
                             state[f"last_{name}"] = today
                             self._save_system_state(state)
-
-                        # Legacy: Create consolidation jobs for agents with old consolidation config
-                        self._create_consolidation_jobs(trigger_name)
 
             except Exception as e:
                 print(f"Scheduler error: {e}")
@@ -760,10 +618,10 @@ class AgentManager:
 
         print(f"Found {len(configs)} agents, {len(enabled)} enabled")
 
-        # Sync agent inbox jobs
-        from ..tools.data.jobs import sync_agent_inbox_jobs
-        sync_agent_inbox_jobs()
-        print("Agent inbox jobs synced")
+        # Sync agent inbox topics
+        from ..tools.data.topics import sync_agent_inbox_topics
+        sync_agent_inbox_topics()
+        print("Agent inbox topics synced")
 
         for config in enabled:
             self.start_agent(config)
@@ -782,12 +640,12 @@ class AgentManager:
         if enabled:
             self._emit_startup_triggers()
 
-        # Initialize job cache - check for existing actionable jobs
-        from ..tools.data.jobs import list_jobs
+        # Initialize topic cache - check for existing actionable topics
+        from ..tools.data.topics import list_topics
         for agent_id in self.agents:
-            jobs = list_jobs(status="todo", assignee=agent_id, actionable=True)
-            self.agents_with_jobs[agent_id] = bool(jobs)
-        print("Job cache initialized")
+            topics = list_topics(status="todo", assignee=agent_id, actionable=True)
+            self.agents_with_topics[agent_id] = bool(topics)
+        print("Topic cache initialized")
 
         # Start config watcher for hot reloading
         self._config_watch_thread = threading.Thread(

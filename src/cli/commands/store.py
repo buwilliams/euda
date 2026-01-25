@@ -1,11 +1,11 @@
 """
-Store command - Import files into long-term memory via job-based processing.
+Store command - Import files into long-term memory via topic-based processing.
 
 Architecture:
-- Files are loaded and checked for duplicates via job tags
-- A Store:ingest job is created with files as assets
-- The user agent processes the job using RLM
-- Job completion marks the content as processed (no manifest file needed)
+- Files are loaded and checked for duplicates via topic tags
+- A Store:ingest topic is created with files as assets
+- The user agent processes the topic using RLM
+- Topic completion marks the content as processed (no manifest file needed)
 """
 
 import json
@@ -18,10 +18,10 @@ from ..formatters import print_error, print_success, print_info
 
 
 def cmd_store(args: List[str], json_mode: bool = False):
-    """Import files into long-term memory via job-based processing.
+    """Import files into long-term memory via topic-based processing.
 
     Usage:
-      euno store [path]              Create job to process files with RLM
+      euno store [path]              Create topic to process files with RLM
       euno store                     Show help
       euno store --force             Reprocess duplicates
       euno store --dry-run           Show what would be processed
@@ -79,7 +79,7 @@ def cmd_store(args: List[str], json_mode: bool = False):
                 print(f"  Skipped {len(metadata['skipped']['too_large'])} files (too large)")
         sys.exit(1)
 
-    # Check for duplicates via job tags
+    # Check for duplicates via topic tags
     to_process = []
     duplicates = []
 
@@ -116,7 +116,7 @@ def cmd_store(args: List[str], json_mode: bool = False):
             }))
         else:
             print()
-            print("Would create job to process:")
+            print("Would create topic to process:")
             for item, content_hash in to_process:
                 size_kb = len(item.content) / 1024
                 print(f"  - {item.name} ({size_kb:.1f} KB)")
@@ -124,62 +124,62 @@ def cmd_store(args: List[str], json_mode: bool = False):
             print(f"Total: {len(to_process)} files")
         return
 
-    # Create job with files as assets
+    # Create topic with files as assets
     if not json_mode:
-        print_info("Creating store job...", json_mode)
+        print_info("Creating store topic...", json_mode)
 
-    job = _create_store_job(to_process)
+    topic = _create_store_topic(to_process)
 
     # Output results
     if json_mode:
         print(json.dumps({
-            "status": "job_created",
-            "job_id": job["id"],
-            "job_name": job["name"],
+            "status": "topic_created",
+            "topic_id": topic["id"],
+            "topic_name": topic["name"],
             "files_count": len(to_process),
             "duplicates_skipped": len(duplicates)
         }))
     else:
         print()
-        print_success(f"Created store job: {job['name']}", json_mode)
-        print(f"  Job ID: {job['id']}")
+        print_success(f"Created store topic: {topic['name']}", json_mode)
+        print(f"  Topic ID: {topic['id']}")
         print(f"  Files: {len(to_process)}")
         print()
         print("Files attached:")
         for item, _ in to_process:
             print(f"  - {item.name}")
         print()
-        print("The user agent will process this job and import files to long-term memory.")
+        print("The user agent will process this topic and import files to long-term memory.")
         print("Run `uv run euno start` to trigger processing.")
 
 
 def _is_already_processed(content_hash: str) -> bool:
-    """Check if content has already been processed via job tags.
+    """Check if content has already been processed via topic tags.
 
     Args:
         content_hash: SHA-256 hash of the content
 
     Returns:
-        True if a done job exists with this hash tag
+        True if a done topic exists with this hash tag
     """
-    from ...tools.data.jobs import list_jobs
+    from ...tools.data.topics import list_topics
 
-    # Check for done jobs with this hash tag
+    # Check for done topics with this hash tag
     tag = f"store:hash:{content_hash}"
-    jobs = list_jobs(status="done", tag=tag)
-    return len(jobs) > 0
+    topics = list_topics(status="done", tag=tag)
+    return len(topics) > 0
 
 
-def _create_store_job(items_with_hashes: List[tuple]) -> dict:
-    """Create a store job with files as assets.
+def _create_store_topic(items_with_hashes: List[tuple]) -> dict:
+    """Create a store topic with files as assets.
 
     Args:
         items_with_hashes: List of (FileItem, content_hash) tuples
 
     Returns:
-        Created job dict
+        Created topic dict
     """
-    from ...tools.data.jobs import create_job, get_agent_inbox_job
+    from ...tools.data.topics import create_topic, get_agent_inbox_topic
     from ...tools.data.assets import write_asset
 
     timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -187,17 +187,17 @@ def _create_store_job(items_with_hashes: List[tuple]) -> dict:
     # Collect hash tags for deduplication
     hash_tags = [f"store:hash:{content_hash}" for _, content_hash in items_with_hashes]
 
-    # Create the job under user agent's inbox
-    inbox = get_agent_inbox_job("user")
+    # Create the topic under user agent's inbox
+    inbox = get_agent_inbox_topic("user")
     parent_id = inbox["id"] if inbox else None
 
-    job = create_job(
+    topic = create_topic(
         name=f"Store:ingest:{timestamp}",
         description=f"Import {len(items_with_hashes)} file(s) into long-term memory.\n\n"
                     f"Process each attached file:\n"
                     f"1. Extract date from content or filename\n"
                     f"2. Write content to long-term memory at that date\n"
-                    f"3. Complete job when done",
+                    f"3. Complete topic when done",
         parent_id=parent_id,
         assignee="user",
         tags=["store:ingest"] + hash_tags,
@@ -210,9 +210,9 @@ def _create_store_job(items_with_hashes: List[tuple]) -> dict:
         filename = item.name
 
         # Write the content as an asset
-        write_asset(job["id"], filename, item.content)
+        write_asset(topic["id"], filename, item.content)
 
-    return job
+    return topic
 
 
 def print_store_help():
@@ -221,7 +221,7 @@ def print_store_help():
 Store Command - Import files into long-term memory
 
 Usage:
-  euno store <path>              Create job to process files
+  euno store <path>              Create topic to process files
   euno store <path> --dry-run    Show what would be processed
   euno store <path> --force      Reprocess already-imported files
   euno store --clear-manifest    Clear legacy processing history
@@ -236,13 +236,13 @@ Supported file types:
   .txt, .md, .markdown, .json, .yaml, .yml, .csv, .log, .rst, .org
 
 How it works:
-  1. Files are loaded and checked for duplicates (via job tags)
-  2. A Store:ingest job is created with files as assets
-  3. The user agent processes the job, extracting dates and writing to memory
-  4. Job completion marks files as processed (no separate manifest)
+  1. Files are loaded and checked for duplicates (via topic tags)
+  2. A Store:ingest topic is created with files as assets
+  3. The user agent processes the topic, extracting dates and writing to memory
+  4. Topic completion marks files as processed (no separate manifest)
 
 Deduplication:
   Files are identified by content hash (SHA-256).
-  Completed jobs with matching hash tags prevent reprocessing.
+  Completed topics with matching hash tags prevent reprocessing.
   Use --force to reimport files that were already processed.
 """)

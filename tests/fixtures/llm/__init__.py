@@ -12,7 +12,7 @@ Usage:
     mock_client = MockLLMClient.from_fixture("planning")
     with mock_client.patch():
         # Code that uses get_client() will get the mock
-        result = planner.create_plan(job)
+        result = planner.create_plan(topic)
 
     # For recording (imports real LLM client, run as script):
     # python -m tests.fixtures.llm.recorder --all

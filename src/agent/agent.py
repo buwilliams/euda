@@ -37,7 +37,7 @@ class Agent:
         self.identity = self._load_identity()
         self._work_done = False
         self._session_id = session_id
-        self._current_job_id = None
+        self._current_topic_id = None
         self._event_sink = event_sink
 
         # Initialize consolidation (self-improvement) if enabled
@@ -84,7 +84,7 @@ class Agent:
             "name": self.id.title(),
             "state": "enabled",
             "tools": [],
-            "triggers": ["job:assigned"]
+            "triggers": ["topic:assigned"]
         }
 
     def _load_identity(self) -> str:
@@ -137,37 +137,37 @@ class Agent:
         """Get the current session ID."""
         return self._session_id
 
-    def set_job_context(self, job_id: str):
-        """Set the current job context for the agent."""
-        self._current_job_id = job_id
+    def set_topic_context(self, topic_id: str):
+        """Set the current topic context for the agent."""
+        self._current_topic_id = topic_id
 
-    def clear_job_context(self):
-        """Clear the current job context."""
-        self._current_job_id = None
+    def clear_topic_context(self):
+        """Clear the current topic context."""
+        self._current_topic_id = None
 
-    def _get_job_context_for_prompt(self) -> str:
-        """Build job context string for system prompt."""
-        if not self._current_job_id:
+    def _get_topic_context_for_prompt(self) -> str:
+        """Build topic context string for system prompt."""
+        if not self._current_topic_id:
             return ""
 
-        from ..tools.data.jobs import get_job
+        from ..tools.data.topics import get_topic
         from ..tools.data.assets import list_assets, read_asset
 
-        job = get_job(self._current_job_id)
-        if not job:
+        topic = get_topic(self._current_topic_id)
+        if not topic:
             return ""
 
-        parts = ["## Current Job Context\n"]
-        parts.append(f"**Job:** {job.get('name', 'Untitled')}")
+        parts = ["## Current Topic Context\n"]
+        parts.append(f"**Topic:** {topic.get('name', 'Untitled')}")
 
-        if job.get('description'):
-            parts.append(f"\n**Description:** {job['description']}")
+        if topic.get('description'):
+            parts.append(f"\n**Description:** {topic['description']}")
 
-        if job.get('due_date'):
-            parts.append(f"\n**Due:** {job['due_date']}")
+        if topic.get('due_date'):
+            parts.append(f"\n**Due:** {topic['due_date']}")
 
         # Get text-based assets
-        assets = list_assets(self._current_job_id)
+        assets = list_assets(self._current_topic_id)
         text_assets = []
         for asset in assets:
             mime = asset.get('mime_type', '')
@@ -177,7 +177,7 @@ class Agent:
         if text_assets:
             parts.append("\n\n### Attached Files\n")
             for asset in text_assets:
-                content = read_asset(self._current_job_id, asset['filename'])
+                content = read_asset(self._current_topic_id, asset['filename'])
                 if content and 'content' in content:
                     parts.append(f"\n**{asset['filename']}:**\n```\n{content['content']}\n```")
 
@@ -315,7 +315,7 @@ class Agent:
             prompt += (
                 "The user is speaking to you via voice. Your response will be read aloud. "
                 "Respond in natural, conversational first-person speech with complete sentences. "
-                "Avoid bullet points, lists, job IDs, or formatted text. "
+                "Avoid bullet points, lists, topic IDs, or formatted text."
                 "Speak as if you're talking directly to the user."
             )
 
@@ -326,84 +326,76 @@ class Agent:
         from ..tools import get_tools_for_agent
         return get_tools_for_agent(self.config.get("tools", []))
 
-    # Map of euno:* job names to tool names for direct execution
-    INTERNAL_JOB_TOOLS = {
+    # Map of euno:* topic names to tool names for direct execution
+    INTERNAL_TOPIC_TOOLS = {
         "euno:consolidate": "euno_consolidate",
         "euno:quote": "euno_quote",
     }
 
-    def _is_internal_job(self, job_name: str) -> bool:
-        """Check if job is an internal euno:* job that should be executed directly.
+    def _is_internal_topic(self, topic_name: str) -> bool:
+        """Check if topic is an internal euno:* topic that should be executed directly.
 
-        Internal jobs bypass the LLM chat loop and execute their mapped tool directly.
+        Internal topics bypass the LLM chat loop and execute their mapped tool directly.
         """
-        for prefix in self.INTERNAL_JOB_TOOLS:
-            if job_name.startswith(prefix):
+        for prefix in self.INTERNAL_TOPIC_TOOLS:
+            if topic_name.startswith(prefix):
                 return True
         return False
 
-    def _is_reflection_trigger(self, job_tags: list, job_name: str) -> bool:
-        """Check if a job is a reflection trigger that should be handled directly.
-
-        DEPRECATED: Use _is_internal_job() instead. Kept for backwards compatibility
-        with old Trigger:consolidation: jobs that may still exist.
-        """
-        return job_name.startswith("Trigger:consolidation:")
-
-    def _is_job_cancelled(self, job_id: str) -> bool:
-        """Check if a job has been cancelled (archived or deleted) by the user.
+    def _is_topic_cancelled(self, topic_id: str) -> bool:
+        """Check if a topic has been cancelled (archived or deleted) by the user.
 
         Called during work iterations to detect if the user has archived or deleted
-        the job while the agent was working on it.
+        the topic while the agent was working on it.
 
         Returns:
-            True if job no longer exists or is no longer in 'working' status
+            True if topic no longer exists or is no longer in 'working' status
         """
-        from ..tools.data.jobs import get_job
+        from ..tools.data.topics import get_topic
 
-        job = get_job(job_id)
-        if job is None:
-            return True  # Job was deleted
-        if job.get("status") != "working":
-            return True  # Job was archived or otherwise changed
+        topic = get_topic(topic_id)
+        if topic is None:
+            return True  # Topic was deleted
+        if topic.get("status") != "working":
+            return True  # Topic was archived or otherwise changed
         return False
 
-    def _execute_internal_job(self, job: dict):
-        """Execute an internal euno:* job by calling its mapped tool directly.
+    def _execute_internal_topic(self, topic: dict):
+        """Execute an internal euno:* topic by calling its mapped tool directly.
 
-        Internal jobs bypass the LLM chat loop entirely for efficiency.
-        The tool is executed directly and the job is completed.
+        Internal topics bypass the LLM chat loop entirely for efficiency.
+        The tool is executed directly and the topic is completed.
         """
         from ..tools import execute_tool
-        from ..tools.data.jobs import complete_job
+        from ..tools.data.topics import complete_topic
 
-        job_id = job.get("id")
-        job_name = job.get("name", "")
+        topic_id = topic.get("id")
+        topic_name = topic.get("name", "")
 
         # Find matching tool
         tool_name = None
-        for prefix, tool in self.INTERNAL_JOB_TOOLS.items():
-            if job_name.startswith(prefix):
+        for prefix, tool in self.INTERNAL_TOPIC_TOOLS.items():
+            if topic_name.startswith(prefix):
                 tool_name = tool
                 break
 
         if not tool_name:
-            self._log("internal_job_unknown", {"job_id": job_id, "job_name": job_name})
+            self._log("internal_topic_unknown", {"topic_id": topic_id, "topic_name": topic_name})
             return
 
-        self._log("internal_job_start", {
-            "job_id": job_id,
-            "job_name": job_name,
+        self._log("internal_topic_start", {
+            "topic_id": topic_id,
+            "topic_name": topic_name,
             "tool": tool_name
         })
 
         try:
-            # Build tool inputs based on job
-            inputs = {"agent_id": self.id, "job_id": job_id}
+            # Build tool inputs based on topic
+            inputs = {"agent_id": self.id, "topic_id": topic_id}
 
-            # For euno:consolidate, extract phase from job description
+            # For euno:consolidate, extract phase from topic description
             if tool_name == "euno_consolidate":
-                description = job.get("description", "")
+                description = topic.get("description", "")
                 if "phase: append" in description:
                     inputs["phase"] = "append"
                 elif "phase: consolidate" in description:
@@ -415,128 +407,62 @@ class Agent:
             # Execute tool directly
             result = execute_tool(tool_name, inputs)
 
-            # Complete job
-            complete_job(job_id)
+            # Complete topic
+            complete_topic(topic_id)
 
-            self._log("internal_job_complete", {
-                "job_id": job_id,
+            self._log("internal_topic_complete", {
+                "topic_id": topic_id,
                 "tool": tool_name,
                 "result": result
             })
 
         except Exception as e:
-            self._log("internal_job_error", {
-                "job_id": job_id,
+            self._log("internal_topic_error", {
+                "topic_id": topic_id,
                 "tool": tool_name,
                 "error": str(e)
             })
-            # Don't re-raise - job stays in todo for retry
+            # Don't re-raise - topic stays in todo for retry
 
-    def _execute_reflection_trigger(self, job: dict):
-        """Execute a reflection trigger directly (not through chat loop).
-
-        DEPRECATED: This handles legacy Trigger:consolidation: jobs.
-        New code should use euno:consolidate jobs instead.
-        """
-        from ..tools.data.jobs import complete_job
-
-        job_id = job.get("id")
-        job_tags = job.get("tags", [])
-
-        # Extract execution_id from tags if present
-        execution_id = None
-        for tag in job_tags:
-            if tag.startswith("execution:"):
-                execution_id = tag.split(":", 1)[1]
-                break
-
-        # Determine phase from job name: Trigger:consolidation:{phase}:{date}
-        job_name = job.get("name", "")
-        phase = "both"  # default
-        if job_name.startswith("Trigger:consolidation:"):
-            parts = job_name.split(":")
-            if len(parts) >= 3:
-                phase = parts[2]  # Trigger:consolidation:{phase}:{date}
-
-        self._log("reflection_trigger_start", {
-            "job_id": job_id,
-            "phase": phase,
-            "execution_id": execution_id
-        })
-
-        try:
-            if self.consolidation:
-                if phase in ("append", "both"):
-                    # Append is usually done automatically after chat, skip for manual triggers
-                    pass
-                if phase in ("consolidate", "both"):
-                    self.consolidation.consolidate(execution_id=execution_id)
-
-            # Complete the trigger job
-            complete_job(job_id)
-
-            self._log("reflection_trigger_complete", {
-                "job_id": job_id,
-                "phase": phase,
-                "execution_id": execution_id
-            })
-
-        except Exception as e:
-            self._log("reflection_trigger_error", {
-                "job_id": job_id,
-                "phase": phase,
-                "error": str(e)
-            })
-            # Don't re-raise - let manager handle retries if needed
-
-    def _get_job_prompt_type(self, job: dict) -> str:
-        """Determine which prompt template to use based on job type.
+    def _get_topic_prompt_type(self, topic: dict) -> str:
+        """Determine which prompt template to use based on topic type.
 
         Returns:
-            Template name: 'agent/consolidation' or 'agent/job_assignment'
+            Template name for the topic assignment prompt
         """
-        job_name = job.get("name", "")
+        return "agent/topic_assignment"
 
-        # Consolidation jobs identified by name pattern: Trigger:consolidation:{phase}:{date}
-        # Note: these are now handled directly in _execute_reflection_trigger
-        # This path is kept for backwards compatibility with any code that calls this directly
-        if job_name.startswith("Trigger:consolidation:"):
-            return "agent/consolidation"
-        # Regular job assignment (includes user:request)
-        else:
-            return "agent/job_assignment"
-
-    def _format_job_prompt(self, job: dict, remaining: int = 0) -> str:
-        """Format a job as a standardized prompt for the agent."""
+    def _format_topic_prompt(self, topic: dict, remaining: int = 0) -> str:
+        """Format a topic as a standardized prompt for the agent."""
         from ..tools.data.assets import list_assets
         from ..tools.data.memory import get_memory_for_prompt
         from .cognition.reasoning.prompts import render_template
 
-        assets = list_assets(job['id'])
+        assets = list_assets(topic['id'])
         if assets:
             names = [a['filename'] for a in assets]
             attachments = f"{len(assets)} attachment(s): {', '.join(names)}"
         else:
             attachments = "No attachments"
 
-        remaining_notice = f"({remaining} more jobs waiting)" if remaining > 0 else ""
+        remaining_notice = f"({remaining} more topics waiting)" if remaining > 0 else ""
 
-        tags = job.get('tags', [])
+        tags = topic.get('tags', [])
         tags_str = ', '.join(tags) if tags else 'None'
 
-        # Select prompt template based on job type
-        template_name = self._get_job_prompt_type(job)
+        # Select prompt template based on topic type
+        template_name = self._get_topic_prompt_type(topic)
 
         return render_template(
             template_name,
             agent_id=self.id,  # For agent-specific template lookup
-            job_id=job.get('id'),
-            job_name=job.get('name', 'Untitled'),
-            job_description=job.get('description') or 'None provided',
-            job_due_date=job.get('due_date') or 'No deadline',
-            job_tags=tags_str,
-            job_attachments=attachments,
-            remaining_jobs_notice=remaining_notice
+            topic_id=topic.get('id'),
+            topic_name=topic.get('name', 'Untitled'),
+            topic_description=topic.get('description') or 'None provided',
+            topic_due_date=topic.get('due_date') or 'No deadline',
+            topic_tags=tags_str,
+            topic_attachments=attachments,
+            remaining_topics_notice=remaining_notice
         )
 
     def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True,
@@ -581,7 +507,7 @@ class Agent:
             messages=messages,
             tools=tools if tools else None,
             agent_id=self.id,
-            job_id=self._current_job_id
+            topic_id=self._current_topic_id
         )
 
         self._log("llm_response", {
@@ -603,7 +529,7 @@ class Agent:
                 messages=messages,
                 tools=tools if tools else None,
                 agent_id=self.id,
-                job_id=self._current_job_id
+                topic_id=self._current_topic_id
             )
 
             self._log("llm_response", {
@@ -674,68 +600,63 @@ class Agent:
     def work_cycle_sync(self, trigger_context: dict = None):
         """Perform one cycle of autonomous work (synchronous version for threads).
 
-        The agent discovers, claims, works, and releases jobs autonomously.
+        The agent discovers, claims, works, and releases topics autonomously.
         The manager only starts agents and monitors health.
 
         Args:
             trigger_context: Optional event data that triggered this cycle
         """
-        from ..tools.data.jobs import list_jobs, claim_job, release_job, error_job
+        from ..tools.data.topics import list_topics, claim_topic, release_topic, error_topic
 
         self._log("work_cycle_start", {"trigger": trigger_context})
         self._work_done = False
         self.metacognition.reset_work_cycle()  # Reset tracking for new work cycle
 
-        # Query for actionable todo jobs assigned to this agent
-        jobs = list_jobs(status="todo", assignee=self.id, actionable=True)
-        if not jobs:
-            self._log("work_cycle_end", {"reason": "no_jobs"})
+        # Query for actionable todo topics assigned to this agent
+        topics = list_topics(status="todo", assignee=self.id, actionable=True)
+        if not topics:
+            self._log("work_cycle_end", {"reason": "no_topics"})
             return  # Nothing to do
 
-        self._log("work_cycle_jobs_found", {"count": len(jobs)})
+        self._log("work_cycle_topics_found", {"count": len(topics)})
 
-        # Work the first job - after completion, manager will trigger another cycle if more exist
-        current_job = jobs[0]
-        remaining = len(jobs) - 1
-        job_id = current_job.get("id")
+        # Work the first topic - after completion, manager will trigger another cycle if more exist
+        current_topic = topics[0]
+        remaining = len(topics) - 1
+        topic_id = current_topic.get("id")
 
-        # Claim the job exclusively (sets status to 'working')
-        claim_result = claim_job(job_id, self.id)
+        # Claim the topic exclusively (sets status to 'working')
+        claim_result = claim_topic(topic_id, self.id)
         if "error" in claim_result:
-            self._log("job_claim_failed", {"job_id": job_id, "error": claim_result.get("error")})
-            return  # Job was claimed by another agent
+            self._log("topic_claim_failed", {"topic_id": topic_id, "error": claim_result.get("error")})
+            return  # Topic was claimed by another agent
 
-        self._log("job_claimed", {"job_id": job_id})
+        self._log("topic_claimed", {"topic_id": topic_id})
 
-        # Set job context for cost/rate tracking
-        self._current_job_id = job_id
+        # Set topic context for cost/rate tracking
+        self._current_topic_id = topic_id
 
         try:
-            job_tags = current_job.get("tags", [])
-            job_name = current_job.get("name", "")
+            topic_tags = current_topic.get("tags", [])
+            topic_name = current_topic.get("name", "")
 
-            # Check for internal euno:* jobs first - these execute tools directly
-            if self._is_internal_job(job_name):
-                self._execute_internal_job(current_job)
+            # Check for internal euno:* topics first - these execute tools directly
+            if self._is_internal_topic(topic_name):
+                self._execute_internal_topic(current_topic)
                 return
 
-            # Legacy handling for old Trigger:consolidation: jobs (backwards compatibility)
-            if self._is_reflection_trigger(job_tags, job_name):
-                self._execute_reflection_trigger(current_job)
-                return
-
-            # Use standardized job prompt format
+            # Use standardized topic prompt format
             from .cognition.reasoning.prompts import load_template
-            prompt = self._format_job_prompt(current_job, remaining)
+            prompt = self._format_topic_prompt(current_topic, remaining)
 
-            # Strategic planning phase (if configured for this job type)
+            # Strategic planning phase (if configured for this topic type)
             plan = None
-            if self.metacognition.planner.should_plan(current_job):
-                self._log("planning_start", {"job_id": current_job.get("id")})
-                plan = self.metacognition.planner.create_plan(current_job)
+            if self.metacognition.planner.should_plan(current_topic):
+                self._log("planning_start", {"topic_id": current_topic.get("id")})
+                plan = self.metacognition.planner.create_plan(current_topic)
                 if plan:
                     prompt = self.metacognition.planner.inject_plan(prompt, plan)
-                    self._log("planning_injected", {"job_id": current_job.get("id"), "plan_length": len(plan)})
+                    self._log("planning_injected", {"topic_id": current_topic.get("id"), "plan_length": len(plan)})
 
             # Autonomous loop - keep working until agent calls done_working
             iteration = 0
@@ -753,10 +674,10 @@ class Agent:
                     iteration += 1
                     self._log("work_iteration", {"iteration": iteration})
 
-                    # Check if job was cancelled (archived/deleted) by user
-                    if iteration > 1 and self._is_job_cancelled(job_id):
-                        self._log("job_cancelled", {"job_id": job_id, "iteration": iteration})
-                        print(f"[{self.id}] Job {job_id} was cancelled by user")
+                    # Check if topic was cancelled (archived/deleted) by user
+                    if iteration > 1 and self._is_topic_cancelled(topic_id):
+                        self._log("topic_cancelled", {"topic_id": topic_id, "iteration": iteration})
+                        print(f"[{self.id}] Topic {topic_id} was cancelled by user")
                         break
 
                     # Stuck detection happens automatically during tool execution
@@ -797,8 +718,8 @@ class Agent:
                 # Stuck pattern detected during tool execution
                 self._log("stuck_detected", {"reason": e.reason, "iteration": iteration})
                 print(f"[{self.id}] Stuck detected: {e.reason}")
-                # Mark job as error (prevents release_job from resetting to todo)
-                error_job(job_id, f"Stuck: {e.reason}", self.id)
+                # Mark topic as error (prevents release_topic from resetting to todo)
+                error_topic(topic_id, f"Stuck: {e.reason}", self.id)
                 # Pause agent to require manual intervention
                 raise AgentPausedError(self.id, f"Stuck: {e.reason}")
 
@@ -813,10 +734,10 @@ class Agent:
                     self._log("reflection_batch", {"exchange_count": len(exchanges)})
                     self.consolidation.append_batch(exchanges)
         finally:
-            # Release job claim (no-op if already completed, since in_progress_by is cleared)
-            release_job(job_id, self.id)
-            self._log("job_released", {"job_id": job_id})
-            self._current_job_id = None
+            # Release topic claim (no-op if already completed, since in_progress_by is cleared)
+            release_topic(topic_id, self.id)
+            self._log("topic_released", {"topic_id": topic_id})
+            self._current_topic_id = None
 
     async def work_cycle(self):
         """Perform one cycle of autonomous work (async wrapper)."""

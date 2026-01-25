@@ -24,20 +24,20 @@ Commands:
   start            Start the web server with agents
   chat             Interactive chat with an agent
   agents           List all agents
-  jobs             List all jobs
+  topics           List all topics
   points           Show contribution points summary
   store            Import files into long-term memory using RLM
   dev              Developer tools for debugging agents
   set-password     Set the access password
   remove-password  Remove the password (disable auth)
-  fresh-start      Reset all user data (memory, jobs, logs, password)
+  fresh-start      Reset all user data (memory, topics, logs, password)
 
 Examples:
   euno start             # Run web server + agents
   euno chat              # Chat with default agent (chat)
   euno chat chat         # Chat with specific agent
   euno agents            # List agents
-  euno jobs              # List jobs
+  euno topics            # List topics
   euno points            # Show contribution points
   euno store ~/journal/  # Import journal files to memory
   euno dev help          # Show dev commands
@@ -57,7 +57,7 @@ Examples:
         "start": cmd_start,
         "chat": cmd_chat,
         "agents": cmd_agents,
-        "jobs": cmd_jobs,
+        "topics": cmd_topics,
         "points": cmd_points,
         "store": cmd_store,
         "dev": cmd_dev,
@@ -388,22 +388,22 @@ def _agent_show_logs(agent_id: str):
         print(f"[{ts}] {event}: {details_str}")
 
 
-def cmd_jobs(args):
-    """List all jobs."""
-    from src.tools.data.jobs import list_jobs
+def cmd_topics(args):
+    """List all topics."""
+    from src.tools.data.topics import list_topics
 
     print("=" * 60)
-    print("Euno - Jobs")
+    print("Euno - Topics")
     print("=" * 60)
     print()
 
-    jobs = list_jobs()
-    if not jobs:
-        print("No jobs found.")
+    topics = list_topics()
+    if not topics:
+        print("No topics found.")
         return
 
-    for job in jobs:
-        print(f"  [{job['status']}] {job['name']} ({job['id']})")
+    for topic in topics:
+        print(f"  [{topic['status']}] {topic['name']} ({topic['id']})")
 
 
 def cmd_points(args):
@@ -579,10 +579,9 @@ def cmd_fresh_start(args):
     print("This will DELETE:")
     print("  - All agent memory (short-term and long-term)")
     print("  - All agent logs, state, and conversation history")
-    print("  - All jobs and job assets")
+    print("  - All topics and topic assets")
     print("  - Cost tracking history")
-    print("  - Reflection logs")
-    print("  - Prompt logs (LLM API call history)")
+    print("  - All system logs (prompts, incidents, token usage, progress, etc.)")
     print("  - System trigger state")
     print("  - Password (if set)")
     print("  - Non-core agents (anything except chat, user, worker)")

@@ -39,4 +39,4 @@ I must respect their social energy. If their memory shows they're overwhelmed, I
 
 ## Output
 
-I create a single job with social suggestions for the user to review when they wake up. The job should be warm but concise, actionable but not demanding.
+I create a single topic with social suggestions for the user to review when they wake up. The topic should be warm but concise, actionable but not demanding.

@@ -14,13 +14,13 @@ Rules for how agents interact with language models.
 ## Tools
 
 - Tools organized by type in `src/tools/{type}/`:
-  - `data/` — jobs, assets, identity, memory
+  - `data/` — topics, assets, identity, memory
   - `agents/` — agent management
   - `system/` — config, dates, notifications, done_working
   - `integration/` — docs, specs, logs
 - Every tool description has two parts: what it does, when to use it
 - Format: `"What it does. Use when: specific scenarios."`
-- All agents get base tools: list_jobs, get_job, create_job, complete_job, add_job_log, done_working
+- All agents get base tools: list_topics, get_topic, create_topic, complete_topic, add_topic_log, done_working
 
 ## Context Access
 
@@ -28,7 +28,7 @@ Rules for how agents interact with language models.
 - User identity: included in system prompt (who the agent serves)
 - User short-term memory: `list_memory("user")` tool (what's on their mind)
 - User long-term memory: `read_long_term_memory(date, "user")` tool (their history)
-- Job assets: `list_assets`, `read_asset` tools
+- Topic assets: `list_assets`, `read_asset` tools
 - Conversation history: included in messages array (not system prompt)
 
 ## Prompt Logging

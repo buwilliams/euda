@@ -447,26 +447,26 @@ function updateVoiceUI() {
 // Update voice button visibility based on provider capabilities
 function updateVoiceButtonVisibility() {
     const voiceBtn = document.getElementById('voice-btn');
-    const jobLabel = document.getElementById('job-context-label');
+    const topicLabel = document.getElementById('topic-context-label');
     if (!voiceBtn) return;
 
     // Check browser support first
     if (!isVoiceInputSupported()) {
         voiceBtn.classList.add('hidden');
-        // Adjust @job label position when mic is hidden (JS fallback for :has())
-        if (jobLabel) jobLabel.style.right = '12px';
+        // Adjust @topic label position when mic is hidden (JS fallback for :has())
+        if (topicLabel) topicLabel.style.right = '12px';
         return;
     }
 
     // Check if current provider supports STT (from settingsData)
     if (typeof settingsData !== 'undefined' && settingsData?.speech?.stt_available) {
         voiceBtn.classList.remove('hidden');
-        // Reset @job label position when mic is visible
-        if (jobLabel) jobLabel.style.right = '';
+        // Reset @topic label position when mic is visible
+        if (topicLabel) topicLabel.style.right = '';
     } else {
         voiceBtn.classList.add('hidden');
-        // Adjust @job label position when mic is hidden (JS fallback for :has())
-        if (jobLabel) jobLabel.style.right = '12px';
+        // Adjust @topic label position when mic is hidden (JS fallback for :has())
+        if (topicLabel) topicLabel.style.right = '12px';
     }
 }
 

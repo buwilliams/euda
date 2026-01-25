@@ -47,7 +47,7 @@ def perform_fresh_start(create_backup_first: bool = True) -> dict:
         - deleted: List of deleted items
         - reset: List of reset items
     """
-    from ..data.jobs import _clear_connection, _ensure_schema
+    from ..data.topics import _clear_connection, _ensure_schema
 
     backup_name = None
     if create_backup_first:
@@ -71,25 +71,25 @@ def perform_fresh_start(create_backup_first: bool = True) -> dict:
                 f.unlink()
                 deleted.append(f"agents/user/costs/{f.name}")
 
-    # 2. Clear jobs database and assets
-    jobs_dir = DATA_DIR / "jobs"
-    if jobs_dir.exists():
+    # 2. Clear topics database and assets
+    topics_dir = DATA_DIR / "topics"
+    if topics_dir.exists():
         # Remove SQLite database
-        db_file = jobs_dir / "db.sqlite"
+        db_file = topics_dir / "db.sqlite"
         if db_file.exists():
             db_file.unlink()
-            deleted.append("jobs/db.sqlite")
+            deleted.append("topics/db.sqlite")
         # Remove database journal files
         for pattern in ["db.sqlite-journal", "db.sqlite-wal", "db.sqlite-shm"]:
-            journal = jobs_dir / pattern
+            journal = topics_dir / pattern
             if journal.exists():
                 journal.unlink()
-                deleted.append(f"jobs/{pattern}")
+                deleted.append(f"topics/{pattern}")
         # Remove assets directory
-        assets_dir = jobs_dir / "assets"
+        assets_dir = topics_dir / "assets"
         if assets_dir.exists():
             shutil.rmtree(assets_dir)
-            deleted.append("jobs/assets/")
+            deleted.append("topics/assets/")
 
     # 3. Process agents - clear data for core agents, remove non-core agents entirely
     agents_dir = DATA_DIR / "agents"
@@ -185,19 +185,24 @@ def perform_fresh_start(create_backup_first: bool = True) -> dict:
         if token_usage_dir.exists():
             shutil.rmtree(token_usage_dir)
             deleted.append("system/token_usage/")
-        # Remove consolidation logs
-        consolidation_logs = system_dir / "logs" / "consolidation"
-        if consolidation_logs.exists():
-            shutil.rmtree(consolidation_logs)
-            deleted.append("system/logs/consolidation/")
-        # Remove prompt logs
-        prompt_logs = system_dir / "logs" / "prompts"
-        if prompt_logs.exists():
-            shutil.rmtree(prompt_logs)
-            deleted.append("system/logs/prompts/")
+        # Remove all logs (consolidation, prompts, incidents, token-awareness, progress, etc.)
+        logs_dir = system_dir / "logs"
+        if logs_dir.exists():
+            shutil.rmtree(logs_dir)
+            deleted.append("system/logs/")
+        # Remove unacknowledged incidents
+        incidents_file = system_dir / "incidents" / "unacknowledged.json"
+        if incidents_file.exists():
+            incidents_file.unlink()
+            deleted.append("system/incidents/unacknowledged.json")
 
-    # 5. Reinitialize database schema
+    # 5. Reinitialize database schema and system topics
     _ensure_schema()
+
+    # Create system topics (Agents and Projects containers)
+    from ..data.topics import get_agents_container, get_projects_container
+    get_agents_container()
+    get_projects_container()
 
     return {
         "backup_name": backup_name,
@@ -235,7 +240,7 @@ def restore_backup(backup_name: str) -> dict:
 
     The current data becomes a new backup, and the selected backup becomes data.
     """
-    from ..data.jobs import _clear_connection
+    from ..data.topics import _clear_connection
 
     project_dir = DATA_DIR.parent
     backup_path = project_dir / backup_name

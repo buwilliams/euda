@@ -6,7 +6,7 @@
       "scenario": "planning_simple",
       "system_contains": "planning your approach",
       "agent_id_pattern": ".*/planning$",
-      "text": "## Plan\n\n1. **Gather information**: Review the job details and available context\n2. **Identify required tools**: Determine which tools will be needed\n3. **Execute in order**: Complete each step before moving to the next\n4. **Verify completion**: Ensure all requirements are met",
+      "text": "## Plan\n\n1. **Gather information**: Review the topic details and available context\n2. **Identify required tools**: Determine which tools will be needed\n3. **Execute in order**: Complete each step before moving to the next\n4. **Verify completion**: Ensure all requirements are met",
       "tool_calls": [],
       "stop_reason": "end_turn",
       "input_tokens": 250,

@@ -1,6 +1,6 @@
 # Design
 
-There are two main concepts in Euno: Agents and Jobs. Agents are actors. Jobs are containers of work.
+There are two main concepts in Euno: Agents and Topics. Agents are actors. Topics are containers of work.
 
 ---
 
@@ -9,13 +9,13 @@ There are two main concepts in Euno: Agents and Jobs. Agents are actors. Jobs ar
 The design of Euno anthropomorphizes AI [attributing human characteristics/behavior]. In Euno, we treat people and AI basically the same and call them Agents. Agents, like people, grow and change over time, so we've built a system that supports that type of growth. When a person eats, they grow, AIs grow when fed them with data. Here's what makes up an Agent:
 - Cognition: the ability to reason and have self-awareness (consolidation/regulation)
 - Memory: form new short and long-term memories
-- Behavior: (triggers, events, schedules)
+- Behavior: (triggers, schedules)
 - Identity: purpose based on psychological concepts of a 'cognitive core', these are beliefs about the 'self'
 
 We call what makes up Euno the 'Ontology' or 'the nature of being'. This raises questions: How does the Euno system work? How is it wired together? How do Agents collaborate? We call these category of questions 'Euno Lifecycle', here are the parts of it:
-- Jobs: agents take action when they receive a job, these jobs can be nested and change hands, and an Agent works one job at a time.
-- Manager: in charge of starting agents, assigning them scheduled jobs, and monitoring their health
-- Agent Lifecycle: enabled, disabled, paused—and transitions between them
+- Topics: agents take action when they receive a topic, these topics can be nested and change hands, and an Agent works one topic at a time.
+- Manager: in charge of starting agents, assigning them scheduled topics, and monitoring their health
+- Agent State: enabled, disabled, paused—and transitions between them
 
 ---
 
@@ -40,7 +40,7 @@ Identity is discovered, not configured. It evolves as patterns emerge through co
 
 Cognition is the ability to think. It has two layers:
 
-- Reasoning is first-order thinking about the world—how the agent approaches problems and communicates. This includes job planning: when an agent begins work on a job, it first creates a brief plan (tool sequence, delegation decisions, approach) then executes that plan. Planning reduces wasted effort and enables efficient batching.
+- Reasoning is first-order thinking about the world—how the agent approaches problems and communicates. This includes topic planning: when an agent begins work on a topic, it first creates a brief plan (tool sequence, delegation decisions, approach) then executes that plan. Planning reduces wasted effort and enables efficient batching.
 - Metacognition is second-order thinking, or thinking about thinking. It includes token awareness for budget enforcement, progress awareness for stuck detection, and consolidation for memory processing and identity evolution.
 
 ### Memory
@@ -59,21 +59,21 @@ RLM provides intelligent access to long-term memory through iterative exploratio
 Behavior is what enables action. It has two parts.
 
 - Tools are capabilities that agents use to act in the world. Each tool is a function with a name, description, and parameters. Each agent has access to a configured subset of available tools.
-- Triggers determine when agents act—job assignment, scheduled times, or system events.
+- Triggers determine when agents act—topic assignment, scheduled times, or system events.
 
 ---
 
 ## Euno Lifecycle
 
-### Jobs
+### Topics
 
-Jobs are the unit of work and how agents coordinate. Any agent can create, work on, or route jobs to others. A job has a name, description, hierarchy, assignment, status, and assets. Jobs can be handed off between agents, enabling collaboration patterns like request-response and delegation.
+Topics are the unit of work and how agents coordinate. Any agent can create, work on, or route topics to others. A topic has a name, description, hierarchy, assignment, status, and assets. Topics can be handed off between agents, enabling collaboration patterns like request-response and delegation.
 
-Think of jobs as a filesystem: jobs are directories, assets are files. Jobs can contain child jobs (subdirectories), and any job can be assigned to an agent. Some jobs are permanent containers—"Projects" holds user projects, "Agents" holds agent inboxes. These never close; they organize other jobs.
+Think of topics as a filesystem: topics are directories, assets are files. Topics can contain child topics (subdirectories), and any topic can be assigned to an agent. Some topics are permanent containers—"Projects" holds user projects, "Agents" holds agent inboxes. These never close; they organize other topics.
 
 ### Manager
 
-The Manager orchestrates the system—it starts agents, runs the scheduler, and monitors health. At startup, it loads agent configurations and starts each agent in its own thread. A background scheduler creates trigger jobs at configured times. Agents discover these jobs through polling; the Manager doesn't wake agents directly.
+The Manager orchestrates the system—it starts agents, runs the scheduler to manage triggers, and monitors health. At startup, it loads agent configurations and starts each agent in its own thread. A background scheduler creates trigger topics at configured times. Agents discover these topics through polling; the Manager doesn't wake agents directly.
 
 ### Agent Lifecycle
 
@@ -81,52 +81,52 @@ Here's how agents operate:
 
 1. Manager instantiates agents and monitors their health (handling reloads and shutdown)
 2. Each agent has a state: enabled, disabled, or paused
-3. Enabled agents poll for assigned jobs
-4. When a job is found, the agent runs a work cycle: claim → plan → execute → complete
-5. Jobs progress through states: todo → working → done (or error)
+3. Enabled agents poll for assigned topics
+4. When a topic is found, the agent runs a work cycle: claim → plan → execute → complete
+5. Topics progress through states: todo → working → done (or error)
 6. Metacognition regulates all LLM calls—if a breach is detected (e.g., budget exceeded), the agent is paused
-7. Between jobs, consolidation reviews memory and evolves identity
+7. Between topics, consolidation reviews memory and evolves identity
 
 #### Agent States
 
 Agents transition between three states:
-- Enabled: normal operation, polling for jobs and working on them
+- Enabled: normal operation, polling for topics and working on them
 - Disabled: user explicitly turned it off, no work happens
 - Paused: system auto-paused (usually budget exceeded), requires manual resume
 
 #### Polling
 
-Enabled agents poll for assigned jobs. They're not pushed—this keeps them decoupled and resilient to failures. When an agent finds an actionable job, it begins a work cycle.
+Enabled agents poll for assigned topics. They're not pushed—this keeps them decoupled and resilient to failures. When an agent finds an actionable topic, it begins a work cycle.
 
-#### Job States
+#### Topic States
 
-Jobs progress through states based on assignment and work:
+Topics progress through states based on assignment and work:
 - todo + no assignee: unassigned, waiting to be picked up
 - todo + assignee: queued, assigned but not yet being worked
-- working + assignee: agent is actively working on the job
+- working + assignee: agent is actively working on the topic
 - done: completed successfully
 - error: something went wrong
 - archived: soft-deleted, no longer active
 
-An agent can have multiple jobs assigned (queued), but only works one at a time.
+An agent can have multiple topics assigned (queued), but only works one at a time.
 
-#### Job Routing
+#### Topic Routing
 
-Jobs move between agents (and users) through reassignment. When an agent needs input or wants to delegate, it reassigns the job and sets status back to `todo`. The recipient picks it up when they poll for work.
+Topics move between agents (and users) through reassignment. When an agent needs input or wants to delegate, it reassigns the topic and sets status back to `todo`. The recipient picks it up when they poll for work.
 
-**Handoff**: An agent can hand off a job to another agent or the user. This updates the assignee and records who sent it (`pending_from`), so the job can be returned after review. Example: an agent needs user approval, so it hands off to `user` with a note explaining what's needed.
+**Handoff**: An agent can hand off a topic to another agent or the user. This updates the assignee and records who sent it (`pending_from`), so the topic can be returned after review. Example: an agent needs user approval, so it hands off to `user` with a note explaining what's needed.
 
-**Blocking**: Jobs can be marked as blocked using tags:
+**Blocking**: Topics can be marked as blocked using tags:
 - `waiting:*` — waiting for external input (e.g., `waiting:user-response`)
 - `blocked:*` — blocked by a dependency (e.g., `blocked:api-access`)
 
-Blocked jobs are excluded from actionable queries—agents won't pick them up until unblocked. When a user interacts with a blocked job (views it, adds an asset), the blocking tags are automatically removed and the job returns to the agent's queue.
+Blocked topics are excluded from actionable queries—agents won't pick them up until unblocked. When a user interacts with a blocked topic (views it, adds an asset), the blocking tags are automatically removed and the topic returns to the agent's queue.
 
-**The user as agent**: The user participates in job routing like any other agent. Jobs can be assigned to `user`, handed off to `user`, or created by `user`. The difference is interface—users work through the UI, agents work through polling and tool calls.
+**The user as agent**: The user participates in topic routing like any other agent. Topics can be assigned to `user`, handed off to `user`, or created by `user`. The difference is interface—users work through the UI, agents work through polling and tool calls.
 
 #### Work Cycle
 
-When an agent starts working a job, it sets the status to `working`, creates a brief plan (tool sequence, delegation decisions, approach), then executes that plan until complete. Finally it marks the job `done` and returns to polling.
+When an agent starts working a topic, it sets the status to `working`, creates a brief plan (tool sequence, delegation decisions, approach), then executes that plan until complete. Finally it marks the topic `done` and returns to polling.
 
 Planning is part of Reasoning—it reduces wasted effort and enables efficient batching (e.g., deferring consolidation to end of work cycle). All LLM calls go through metacognition for budget tracking and stuck detection.
 

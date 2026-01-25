@@ -14,12 +14,12 @@ let rateLimitViewCache = {};
 
 // ============== Agent Detail View ==============
 
-function renderAgentDetailView(job) {
-    const agentId = job.agent_id;
-    const displayName = job.name || 'Untitled';
-    // Get ALL child jobs sorted by status priority (working > todo > error > done > archived)
-    const allChildJobs = getAllChildJobsSorted(job.id);
-    const assets = jobAssetsCache[job.id] || [];
+function renderAgentDetailView(topic) {
+    const agentId = topic.agent_id;
+    const displayName = topic.name || 'Untitled';
+    // Get ALL child topics sorted by status priority (working > todo > error > done > archived)
+    const allChildTopics = getAllChildTopicsSorted(topic.id);
+    const assets = topicAssetsCache[topic.id] || [];
 
     // Load agent data if not cached
     const agentData = agentDataCache[agentId];
@@ -40,8 +40,8 @@ function renderAgentDetailView(job) {
     }
 
     // Load assets if not cached
-    if (!jobAssetsCache[job.id]) {
-        loadJobAssets(job.id).then(() => renderFocusTab());
+    if (!topicAssetsCache[topic.id]) {
+        loadTopicAssets(topic.id).then(() => renderFocusTab());
     }
 
     // Load pause status if not cached or missing token usage data
@@ -53,14 +53,14 @@ function renderAgentDetailView(job) {
     const pauseStatus = agentPauseStatus[agentId] || { state: 'enabled', isPaused: false, isDisabled: false, isEnabled: true };
     const agentState = pauseStatus.state || 'enabled';
 
-    // Check if there's an active consolidation job for this agent
-    const hasActiveConsolidateJob = allChildJobs.some(j =>
+    // Check if there's an active consolidation task for this agent
+    const hasActiveConsolidateTask = allChildTopics.some(j =>
         j.name === 'euno:consolidate' && (j.status === 'todo' || j.status === 'working')
     );
 
-    // Helper to render action button - disabled when consolidation job is active
+    // Helper to render action button - disabled when consolidation task is active
     const actionButton = (phase, iconName, label, onclick) => {
-        const disabled = hasActiveConsolidateJob || pauseStatus.isPaused || pauseStatus.isDisabled ? 'disabled' : '';
+        const disabled = hasActiveConsolidateTask || pauseStatus.isPaused || pauseStatus.isDisabled ? 'disabled' : '';
         return `<button class="task-detail-action" onclick="${onclick}" ${disabled}>${icon(iconName)} ${label}</button>`;
     };
 
@@ -261,8 +261,8 @@ function renderAgentDetailView(job) {
         };
 
         return `
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+            <div class="topic-section">
+                <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
                     <span>Token Budget${consumesTokens ? ` (${frequency})` : ''}</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
@@ -304,18 +304,18 @@ function renderAgentDetailView(job) {
             <div class="task-detail-actions">
                 ${renderStatusControls()}
                 ${actionButton('consolidate', 'archive-box', 'Consolidate', `triggerReflection('${agentId}', 'consolidate')`)}
-                <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
+                <button class="task-detail-action" onclick="openAddPicker('${topic.id}')">+ Add</button>
             </div>
 
-            <!-- Jobs Section (all jobs sorted by status: working > todo > error > done > archived) -->
-            <div class="job-section">
-                <div class="job-section-header collapsible ${allChildJobs.length > 0 ? 'open' : ''}" onclick="togglePersonaSection(this, event)">
-                    <span>Jobs${allChildJobs.length > 0 ? ` (${allChildJobs.length})` : ''}</span>
+            <!-- Topics Section (all topics sorted by status: working > todo > error > done > archived) -->
+            <div class="topic-section">
+                <div class="topic-section-header collapsible ${allChildTopics.length > 0 ? 'open' : ''}" onclick="togglePersonaSection(this, event)">
+                    <span>Topics${allChildTopics.length > 0 ? ` (${allChildTopics.length})` : ''}</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
-                <div class="collapsible-content ${allChildJobs.length > 0 ? 'open' : ''}">
-                    ${allChildJobs.length === 0 ? '<div class="focus-empty">No jobs assigned to this agent.</div>' :
-                      allChildJobs.map(child => renderJobCard(child, true)).join('')
+                <div class="collapsible-content ${allChildTopics.length > 0 ? 'open' : ''}">
+                    ${allChildTopics.length === 0 ? '<div class="focus-empty">No topics assigned to this agent.</div>' :
+                      allChildTopics.map(child => renderTopicCard(child, true)).join('')
                     }
                 </div>
             </div>
@@ -324,48 +324,48 @@ function renderAgentDetailView(job) {
             ${renderTokenBudgetSection()}
 
             <!-- Identity Section -->
-            <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('identity-${agentId}')">
+            <div class="topic-section">
+                <div class="topic-section-header collapsible clickable" onclick="navigateFocus('identity-${agentId}')">
                     <span>Identity</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
             </div>
 
             <!-- Configuration Section -->
-            <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('config-${agentId}')">
+            <div class="topic-section">
+                <div class="topic-section-header collapsible clickable" onclick="navigateFocus('config-${agentId}')">
                     <span>Configuration</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
             </div>
 
             <!-- Short-term Memory Section -->
-            <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('memory-list-${agentId}')">
+            <div class="topic-section">
+                <div class="topic-section-header collapsible clickable" onclick="navigateFocus('memory-list-${agentId}')">
                     <span>Short-term Memory</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
             </div>
 
             <!-- Long-term Memory Section -->
-            <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('long-term-memory-${agentId}')">
+            <div class="topic-section">
+                <div class="topic-section-header collapsible clickable" onclick="navigateFocus('long-term-memory-${agentId}')">
                     <span>Long-term Memory</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
             </div>
 
             <!-- Monitoring Section -->
-            <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('monitoring-${agentId}')">
+            <div class="topic-section">
+                <div class="topic-section-header collapsible clickable" onclick="navigateFocus('monitoring-${agentId}')">
                     <span>Monitoring</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
             </div>
 
             <!-- Incidents Section -->
-            <div class="job-section">
-                <div class="job-section-header collapsible clickable" onclick="navigateFocus('rate-limits-${agentId}')">
+            <div class="topic-section">
+                <div class="topic-section-header collapsible clickable" onclick="navigateFocus('rate-limits-${agentId}')">
                     <span>Incidents</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
@@ -373,24 +373,24 @@ function renderAgentDetailView(job) {
 
             <!-- Assets Section -->
             ${assets.length > 0 ? `
-            <div class="job-section">
-                <div class="job-section-header">Assets (${assets.length})</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Assets (${assets.length})</div>
                 <div class="asset-list">
                     ${assets.map(asset => {
                         const isText = isTextAsset(asset);
                         const assetIcon = asset.filename.endsWith('.md') ? icon('pencil') : icon('document');
                         return isText ? `
-                            <div class="asset-item clickable" onclick="navigateFocus('asset-${job.id}-${asset.filename}')" style="cursor: pointer;">
+                            <div class="asset-item clickable" onclick="navigateFocus('asset-${topic.id}-${asset.filename}')" style="cursor: pointer;">
                                 <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                                <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${topic.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
                                 <span class="asset-item-arrow">${icon('chevron-right')}</span>
                             </div>
                         ` : `
                             <div class="asset-item">
                                 <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                <button class="asset-item-delete" onclick="deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                                <button class="asset-item-delete" onclick="deleteAsset('${topic.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
                             </div>
                         `;
                     }).join('')}
@@ -547,37 +547,37 @@ function renderMemoryItemView(agentId, entryId) {
             </div>
 
             <!-- Type Badge -->
-            <div class="job-section">
-                <div class="job-section-header">Type</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Type</div>
                 <div class="memory-type-badge ${typeColors[item.type] || 'type-thing'}" style="display: inline-block; margin: 0.5rem 0;">
                     ${escapeHtml(item.type)}
                 </div>
             </div>
 
             <!-- Content -->
-            <div class="job-section">
-                <div class="job-section-header">Content</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Content</div>
                 <div class="memory-item-full-content">${escapeHtml(item.short_description)}</div>
             </div>
 
             <!-- Details -->
             ${item.details ? `
-            <div class="job-section">
-                <div class="job-section-header">Details</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Details</div>
                 <div class="memory-item-details">${escapeHtml(item.details)}</div>
             </div>
             ` : ''}
 
             <!-- Created -->
-            <div class="job-section">
-                <div class="job-section-header">Created</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Created</div>
                 <div class="memory-item-date">${item.created_at ? formatFriendlyPastDate(item.created_at) : 'Unknown'}</div>
             </div>
 
             <!-- Expires -->
             ${item.expires_at ? `
-            <div class="job-section">
-                <div class="job-section-header">Expires</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Expires</div>
                 <div class="memory-item-date">${formatFriendlyPastDate(item.expires_at)}</div>
             </div>
             ` : ''}
@@ -779,8 +779,8 @@ function renderMonitoringView(agentId) {
             </div>
 
             <!-- Recent Prompts Header -->
-            <div class="job-section">
-                <div class="job-section-header">Recent Prompts${paginationInfo.total > 0 ? ` (${paginationInfo.total} total)` : ''}</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Recent Prompts${paginationInfo.total > 0 ? ` (${paginationInfo.total} total)` : ''}</div>
             </div>
 
             <!-- Prompts List -->
@@ -930,8 +930,8 @@ function renderPromptDetailView(agentId, promptIndex) {
         </div>
         <div class="focus-view-content">
             <!-- Summary -->
-            <div class="job-section">
-                <div class="job-section-header">Summary</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Summary</div>
                 <div class="prompt-summary">
                     <div class="prompt-summary-row">
                         <span class="prompt-summary-label">Time:</span>
@@ -964,8 +964,8 @@ function renderPromptDetailView(agentId, promptIndex) {
 
             <!-- System Prompt (if available) -->
             ${prompt.system ? `
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+            <div class="topic-section">
+                <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
                     <span>System Prompt</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
@@ -977,8 +977,8 @@ function renderPromptDetailView(agentId, promptIndex) {
 
             <!-- Messages (if available) -->
             ${prompt.messages ? `
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+            <div class="topic-section">
+                <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
                     <span>Messages</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
@@ -990,8 +990,8 @@ function renderPromptDetailView(agentId, promptIndex) {
 
             <!-- Response (if available) -->
             ${prompt.response ? `
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+            <div class="topic-section">
+                <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
                     <span>Response</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
@@ -1003,8 +1003,8 @@ function renderPromptDetailView(agentId, promptIndex) {
 
             <!-- Tools (if available) -->
             ${prompt.tools && prompt.tools.length > 0 ? `
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+            <div class="topic-section">
+                <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
                     <span>Tools (${prompt.tools.length})</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
@@ -1043,11 +1043,11 @@ function renderIdentityView(agentId) {
     const identity = agentData.identity || '';
     const hasIdentity = identity.length > 0;
 
-    // Find the job for this agent (for editing state)
-    const agentJob = jobsData.find(j => j.agent_id === agentId);
-    const jobId = agentJob?.id || agentId;
+    // Find the topic for this agent (for editing state)
+    const agentTopic = topicsData.find(j => j.agent_id === agentId);
+    const topicId = agentTopic?.id || agentId;
 
-    const isEditingIdentity = editingJobField?.jobId === jobId && editingJobField?.field === 'identity';
+    const isEditingIdentity = editingTopicField?.topicId === topicId && editingTopicField?.field === 'identity';
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -1061,7 +1061,7 @@ function renderIdentityView(agentId) {
             ${isEditingIdentity ? `
                 <!-- Edit Mode -->
                 <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="saveAgentIdentityField('${agentId}', '${jobId}')">
+                    <button class="task-detail-action" onclick="saveAgentIdentityField('${agentId}', '${topicId}')">
                         ${icon('check')} Save
                     </button>
                     <button class="task-detail-action" onclick="cancelEditing()">
@@ -1070,14 +1070,14 @@ function renderIdentityView(agentId) {
                 </div>
 
                 <div class="identity-edit">
-                    <textarea class="job-description-input" id="edit-identity-${jobId}"
+                    <textarea class="topic-description-input" id="edit-identity-${topicId}"
                         placeholder="Define the agent's identity and behavioral rules..."
                         style="min-height: 300px;">${escapeHtml(identity)}</textarea>
                 </div>
             ` : `
                 <!-- View Mode -->
                 <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="startEditingField('${jobId}', 'identity')">
+                    <button class="task-detail-action" onclick="startEditingField('${topicId}', 'identity')">
                         ${icon('pencil')} Edit
                     </button>
                 </div>
@@ -1115,11 +1115,11 @@ function renderConfigurationView(agentId) {
     const triggers = config.triggers || [];
     const tools = config.tools || [];
 
-    // Find the job for this agent (for editing state)
-    const agentJob = jobsData.find(j => j.agent_id === agentId);
-    const jobId = agentJob?.id || agentId;
+    // Find the topic for this agent (for editing state)
+    const agentTopic = topicsData.find(j => j.agent_id === agentId);
+    const topicId = agentTopic?.id || agentId;
 
-    const isEditingConfig = editingJobField?.jobId === jobId && editingJobField?.field === 'config';
+    const isEditingConfig = editingTopicField?.topicId === topicId && editingTopicField?.field === 'config';
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -1133,7 +1133,7 @@ function renderConfigurationView(agentId) {
             ${isEditingConfig ? `
                 <!-- Edit Mode -->
                 <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="saveAgentConfigField('${agentId}', '${jobId}')">
+                    <button class="task-detail-action" onclick="saveAgentConfigField('${agentId}', '${topicId}')">
                         ${icon('check')} Save
                     </button>
                     <button class="task-detail-action" onclick="cancelEditing()">
@@ -1144,26 +1144,26 @@ function renderConfigurationView(agentId) {
                 <div class="agent-config-edit">
                     <label class="agent-config-label">
                         <span>Triggers (comma-separated)</span>
-                        <input type="text" class="agent-config-input" id="edit-triggers-${jobId}"
+                        <input type="text" class="agent-config-input" id="edit-triggers-${topicId}"
                             value="${escapeHtml(triggers.join(', '))}"
-                            placeholder="e.g., job:assigned, time:morning">
+                            placeholder="Object triggers (edit config.json directly)">
                     </label>
                     <label class="agent-config-label">
                         <span>Tools (comma-separated)</span>
-                        <input type="text" class="agent-config-input" id="edit-tools-${jobId}"
+                        <input type="text" class="agent-config-input" id="edit-tools-${topicId}"
                             value="${escapeHtml(tools.join(', '))}"
-                            placeholder="e.g., list_jobs, create_job">
+                            placeholder="e.g., list_topics, create_topic">
                     </label>
                     <div class="agent-config-group">
                         <div class="agent-config-group-title">Consolidation</div>
                         <label class="agent-config-checkbox">
-                            <input type="checkbox" id="edit-consolidation-enabled-${jobId}"
+                            <input type="checkbox" id="edit-consolidation-enabled-${topicId}"
                                 ${config.consolidation?.enabled !== false ? 'checked' : ''}>
                             <span>Enabled</span>
                         </label>
                         <label class="agent-config-label">
                             <span>Trigger</span>
-                            <input type="text" class="agent-config-input" id="edit-consolidation-trigger-${jobId}"
+                            <input type="text" class="agent-config-input" id="edit-consolidation-trigger-${topicId}"
                                 value="${escapeHtml(config.consolidation?.trigger || 'time:evening')}"
                                 placeholder="e.g., time:evening">
                         </label>
@@ -1172,23 +1172,23 @@ function renderConfigurationView(agentId) {
             ` : `
                 <!-- View Mode -->
                 <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="startEditingField('${jobId}', 'config')">
+                    <button class="task-detail-action" onclick="startEditingField('${topicId}', 'config')">
                         ${icon('pencil')} Edit
                     </button>
                 </div>
 
-                <div class="job-section">
-                    <div class="job-section-header">Triggers</div>
+                <div class="topic-section">
+                    <div class="topic-section-header">Triggers</div>
                     <div class="config-value">${triggers.length > 0 ? escapeHtml(triggers.join(', ')) : '<em class="text-muted">None configured</em>'}</div>
                 </div>
 
-                <div class="job-section">
-                    <div class="job-section-header">Tools</div>
+                <div class="topic-section">
+                    <div class="topic-section-header">Tools</div>
                     <div class="config-value">${tools.length > 0 ? escapeHtml(tools.join(', ')) : '<em class="text-muted">None configured</em>'}</div>
                 </div>
 
-                <div class="job-section">
-                    <div class="job-section-header">Consolidation</div>
+                <div class="topic-section">
+                    <div class="topic-section-header">Consolidation</div>
                     <div class="config-value">
                         <span class="config-status ${config.consolidation?.enabled !== false ? 'enabled' : 'disabled'}">
                             ${config.consolidation?.enabled !== false ? 'Enabled' : 'Disabled'}

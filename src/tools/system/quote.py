@@ -2,7 +2,7 @@
 Quote Tool - System tool for generating personalized daily quotes.
 
 This tool generates quotes personalized to the user's identity and
-saves them as job assets for later retrieval via the API.
+saves them as topic assets for later retrieval via the API.
 """
 
 import json
@@ -11,7 +11,7 @@ from pathlib import Path
 from .. import tool
 from ...llms import get_client
 from ...tools.data.identity import get_identity
-from ...tools.data.jobs import list_jobs
+from ...tools.data.topics import list_topics
 from ...tools.data.assets import write_asset, read_asset
 
 
@@ -19,7 +19,7 @@ DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 
 
 def _get_quote_history(limit: int = 50) -> list:
-    """Get recent quote history from completed euno:quote jobs.
+    """Get recent quote history from completed euno:quote topics.
 
     Args:
         limit: Maximum number of quotes to return
@@ -29,13 +29,13 @@ def _get_quote_history(limit: int = 50) -> list:
     """
     history = []
 
-    # Get completed jobs and filter for quote jobs
-    all_jobs = list_jobs(status="done")
-    quote_jobs = [j for j in all_jobs if j.get("name", "").startswith("euno:quote")]
+    # Get completed topics and filter for quote topics
+    all_topics = list_topics(status="done")
+    quote_topics = [t for t in all_topics if t.get("name", "").startswith("euno:quote")]
 
-    for job in quote_jobs[:limit]:
+    for topic in quote_topics[:limit]:
         try:
-            asset = read_asset(job["id"], "quote.json")
+            asset = read_asset(topic["id"], "quote.json")
             if asset and asset.get("content"):
                 quote_data = json.loads(asset["content"])
                 if quote_data.get("quote") and quote_data.get("author"):
@@ -101,19 +101,19 @@ The quote can be from a famous person, philosopher, writer, or you can compose a
 
 @tool(
     "euno_quote",
-    "Generate a personalized daily quote. Internal system tool for scheduled quote jobs.",
+    "Generate a personalized daily quote. Internal system tool for scheduled quote topics.",
     tool_type="system"
 )
-def euno_quote(agent_id: str, job_id: str) -> dict:
-    """Generate a personalized quote and save as job asset.
+def euno_quote(agent_id: str, topic_id: str) -> dict:
+    """Generate a personalized quote and save as topic asset.
 
-    This tool is called by the system when processing euno:quote jobs.
+    This tool is called by the system when processing euno:quote topics.
     It generates a quote personalized to the user's identity and saves
-    it as an asset on the triggering job.
+    it as an asset on the triggering topic.
 
     Args:
         agent_id: The agent generating the quote (for identity context)
-        job_id: The job to attach the quote asset to
+        topic_id: The topic to attach the quote asset to
 
     Returns:
         Dict with the generated quote
@@ -128,12 +128,12 @@ def euno_quote(agent_id: str, job_id: str) -> dict:
     # Generate quote
     quote_data = _generate_quote(identity_content, history)
 
-    # Save as job asset
-    write_asset(job_id, "quote.json", json.dumps(quote_data, indent=2))
+    # Save as topic asset
+    write_asset(topic_id, "quote.json", json.dumps(quote_data, indent=2))
 
     return {
         "status": "completed",
         "quote": quote_data.get("quote"),
         "author": quote_data.get("author"),
-        "job_id": job_id
+        "topic_id": topic_id
     }

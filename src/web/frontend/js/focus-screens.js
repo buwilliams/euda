@@ -1,77 +1,77 @@
-// Euno - Focus Feature Screens (Child Jobs, Attach)
+// Euno - Focus Feature Screens (Child Topics, Attach)
 
-// ============== New Child Job Screen ==============
+// ============== New Child Topic Screen ==============
 
-function renderNewJobScreen(parentJobId) {
-    const parentJob = allJobsData.find(j => j.id === parentJobId);
-    const parentName = parentJob ? parentJob.name : 'Job';
-    const childJobs = allJobsData.filter(j => j.parent_id === parentJobId);
+function renderNewTopicScreen(parentTopicId) {
+    const parentTopic = allTopicsData.find(j => j.id === parentTopicId);
+    const parentName = parentTopic ? parentTopic.name : 'Topic';
+    const childTopics = allTopicsData.filter(j => j.parent_id === parentTopicId);
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
-                <span class="focus-view-title">Add Jobs</span>
+                <span class="focus-view-title">Add Topics</span>
                 ${renderBreadcrumbs()}
             </div>
         </div>
         <div class="focus-view-content">
-            <div class="job-section">
-                <div class="job-section-header">Add to: ${escapeHtml(parentName)}</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Add to: ${escapeHtml(parentName)}</div>
                 <div class="quick-add-section" style="margin-top: 0; padding-top: 0; border-top: none;">
-                    <input type="text" id="quick-add-child-${parentJobId}" class="quick-add-input" placeholder="New job name..." onkeypress="handleQuickAddChildKeypress(event, '${parentJobId}')">
-                    <button class="quick-add-btn" onclick="quickAddChildJob('${parentJobId}')">${icon('plus')}</button>
+                    <input type="text" id="quick-add-child-${parentTopicId}" class="quick-add-input" placeholder="New topic name..." onkeypress="handleQuickAddChildKeypress(event, '${parentTopicId}')">
+                    <button class="quick-add-btn" onclick="quickAddChildTopic('${parentTopicId}')">${icon('plus')}</button>
                 </div>
             </div>
-            ${childJobs.length > 0 ? `
-            <div class="job-section">
-                <div class="job-section-header">Child Jobs (${childJobs.length})</div>
-                ${childJobs.map(job => renderJobCard(job, true)).join('')}
+            ${childTopics.length > 0 ? `
+            <div class="topic-section">
+                <div class="topic-section-header">Child Topics (${childTopics.length})</div>
+                ${childTopics.map(topic => renderTopicCard(topic, true)).join('')}
             </div>
             ` : ''}
         </div>
     `;
 }
 
-function handleQuickAddChildKeypress(event, parentJobId) {
+function handleQuickAddChildKeypress(event, parentTopicId) {
     if (event.key === 'Enter') {
-        quickAddChildJob(parentJobId);
+        quickAddChildTopic(parentTopicId);
     }
 }
 
-async function quickAddChildJob(parentJobId) {
-    const input = document.getElementById(`quick-add-child-${parentJobId}`);
+async function quickAddChildTopic(parentTopicId) {
+    const input = document.getElementById(`quick-add-child-${parentTopicId}`);
     if (!input) return;
 
     const name = input.value.trim();
     if (!name) return;
 
     try {
-        const response = await fetch('/api/jobs', {
+        const response = await fetch('/api/topics', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, parent_id: parentJobId })
+            body: JSON.stringify({ name, parent_id: parentTopicId })
         });
 
         if (response.ok) {
             input.value = '';
-            await loadJobsData();
+            await loadTopicsData();
             // Re-focus the input for rapid entry
             setTimeout(() => {
-                const newInput = document.getElementById(`quick-add-child-${parentJobId}`);
+                const newInput = document.getElementById(`quick-add-child-${parentTopicId}`);
                 if (newInput) newInput.focus();
             }, 50);
         }
     } catch (error) {
-        console.error('Failed to create job:', error);
+        console.error('Failed to create topic:', error);
     }
 }
 
 // ============== Attach Screen ==============
 
-function renderAttachScreen(jobId) {
-    const job = allJobsData.find(j => j.id === jobId);
-    const jobName = job ? job.name : 'Job';
+function renderAttachScreen(topicId) {
+    const topic = allTopicsData.find(j => j.id === topicId);
+    const topicName = topic ? topic.name : 'Topic';
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -82,10 +82,10 @@ function renderAttachScreen(jobId) {
             </div>
         </div>
         <div class="focus-view-content">
-            <div class="job-section">
-                <div class="job-section-header">Add to: ${escapeHtml(jobName)}</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Add to: ${escapeHtml(topicName)}</div>
 
-                <div class="attach-option" onclick="showNewFileForm('${jobId}')">
+                <div class="attach-option" onclick="showNewFileForm('${topicId}')">
                     <span class="attach-option-icon">${icon('pencil')}</span>
                     <span class="attach-option-label">Create new file</span>
                 </div>
@@ -93,23 +93,23 @@ function renderAttachScreen(jobId) {
                 <label class="attach-option">
                     <span class="attach-option-icon">${icon('folder')}</span>
                     <span class="attach-option-label">Upload files</span>
-                    <input type="file" multiple style="display: none;" onchange="handleMultiFileUpload(event, '${jobId}')">
+                    <input type="file" multiple style="display: none;" onchange="handleMultiFileUpload(event, '${topicId}')">
                 </label>
             </div>
 
-            <div id="new-file-form" class="job-section" style="display: none;">
-                <div class="job-section-header">New File</div>
-                <textarea class="job-description-input" id="new-file-content" placeholder="Start writing..." style="min-height: 150px;"></textarea>
+            <div id="new-file-form" class="topic-section" style="display: none;">
+                <div class="topic-section-header">New File</div>
+                <textarea class="topic-description-input" id="new-file-content" placeholder="Start writing..." style="min-height: 150px;"></textarea>
                 <div class="screen-actions" style="margin-top: 0.5rem;">
                     <button class="screen-action-btn" onclick="hideNewFileForm()">Cancel</button>
-                    <button class="screen-action-btn primary" onclick="createNewFileWithContent('${jobId}')">Save</button>
+                    <button class="screen-action-btn primary" onclick="createNewFileWithContent('${topicId}')">Save</button>
                 </div>
             </div>
         </div>
     `;
 }
 
-function showNewFileForm(jobId) {
+function showNewFileForm(topicId) {
     document.getElementById('new-file-form').style.display = 'block';
     document.getElementById('new-file-content').focus();
 }
@@ -141,7 +141,7 @@ function generateFilenameFromContent(content) {
     return filename + '.md';
 }
 
-async function createNewFileWithContent(jobId) {
+async function createNewFileWithContent(topicId) {
     const content = document.getElementById('new-file-content').value;
 
     if (!content.trim()) {
@@ -151,7 +151,7 @@ async function createNewFileWithContent(jobId) {
     const filename = generateFilenameFromContent(content);
 
     try {
-        const response = await fetch(`/api/jobs/${jobId}/assets/${encodeURIComponent(filename)}`, {
+        const response = await fetch(`/api/topics/${topicId}/assets/${encodeURIComponent(filename)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content })
@@ -159,8 +159,8 @@ async function createNewFileWithContent(jobId) {
 
         if (response.ok) {
             // Clear cache to force reload
-            delete jobAssetsCache[jobId];
-            // Navigate back to job detail (will trigger fresh asset load)
+            delete topicAssetsCache[topicId];
+            // Navigate back to topic detail (will trigger fresh asset load)
             navigateFocusBack();
         }
     } catch (error) {
@@ -168,14 +168,14 @@ async function createNewFileWithContent(jobId) {
     }
 }
 
-async function handleMultiFileUpload(event, jobId) {
+async function handleMultiFileUpload(event, topicId) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
     for (const file of files) {
         try {
             const content = await file.text();
-            await fetch(`/api/jobs/${jobId}/assets/${encodeURIComponent(file.name)}`, {
+            await fetch(`/api/topics/${topicId}/assets/${encodeURIComponent(file.name)}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content })
@@ -186,6 +186,6 @@ async function handleMultiFileUpload(event, jobId) {
     }
 
     // Clear cache to force reload
-    delete jobAssetsCache[jobId];
+    delete topicAssetsCache[topicId];
     navigateFocusBack();
 }

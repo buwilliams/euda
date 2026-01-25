@@ -22,12 +22,12 @@
     },
     {
       "scenario": "chat_with_tool",
-      "message_contains": "create a job",
-      "text": "I'll create that job for you.",
+      "message_contains": "create a topic",
+      "text": "I'll create that topic for you.",
       "tool_calls": [
         {
           "id": "tool_1",
-          "name": "create_job",
+          "name": "create_topic",
           "input": {
             "title": "New Task",
             "description": "Task created via chat"

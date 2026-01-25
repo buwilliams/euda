@@ -12,15 +12,15 @@ function connectSSE() {
 
     eventSource.addEventListener('init', (e) => {
         const data = JSON.parse(e.data);
-        const allJobs = data.jobs || [];
-        // Store all jobs for detail views (including archived)
-        allJobsData = allJobs;
-        // Split jobs into active (todo, working) - exclude done, archived, error
-        jobsData = allJobs.filter(j => j.status === 'todo' || j.status === 'working');
-        completedJobsData = allJobs.filter(j => j.status === 'done')
+        const allTopics = data.topics || [];
+        // Store all topics for detail views (including archived)
+        allTopicsData = allTopics;
+        // Split topics into active (todo, working) - exclude done, archived, error
+        topicsData = allTopics.filter(j => j.status === 'todo' || j.status === 'working');
+        completedTopicsData = allTopics.filter(j => j.status === 'done')
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
             .slice(0, 20);
-        updateTasksBadge();
+        updateTopicsBadge();
         if (activeTab === 'focus') {
             renderFocusTab();
             if (focusView === 'menu') loadDailyQuote();
@@ -28,21 +28,21 @@ function connectSSE() {
         reconnectAttempts = 0;
     });
 
-    eventSource.addEventListener('jobs_update', (e) => {
+    eventSource.addEventListener('topics_update', (e) => {
         const data = JSON.parse(e.data);
-        const allJobs = data.jobs || [];
-        // Store all jobs for detail views (including archived)
-        allJobsData = allJobs;
-        // Split jobs into active (todo, working) - exclude done, archived, error
-        jobsData = allJobs.filter(j => j.status === 'todo' || j.status === 'working');
-        completedJobsData = allJobs.filter(j => j.status === 'done')
+        const allTopics = data.topics || [];
+        // Store all topics for detail views (including archived)
+        allTopicsData = allTopics;
+        // Split topics into active (todo, working) - exclude done, archived, error
+        topicsData = allTopics.filter(j => j.status === 'todo' || j.status === 'working');
+        completedTopicsData = allTopics.filter(j => j.status === 'done')
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
             .slice(0, 20);
         if (activeTab === 'focus') {
             renderFocusTab();
             if (focusView === 'menu') loadDailyQuote();
         }
-        updateTasksBadge();
+        updateTopicsBadge();
     });
 
     eventSource.addEventListener('ping', () => {});
@@ -114,9 +114,9 @@ function connectSSE() {
                 budgetReset: existing.budgetReset
             };
             // Re-render if viewing this agent's detail page
-            if (typeof focusView !== 'undefined' && typeof jobsData !== 'undefined') {
-                const agentJob = jobsData.find(j => j.agent_id === data.agent_id);
-                if (agentJob && focusView === `job-${agentJob.id}`) {
+            if (typeof focusView !== 'undefined' && typeof topicsData !== 'undefined') {
+                const agentTopic = topicsData.find(j => j.agent_id === data.agent_id);
+                if (agentTopic && focusView === `topic-${agentTopic.id}`) {
                     renderFocusTab();
                 }
             }
@@ -139,9 +139,9 @@ function connectSSE() {
                 budgetReset: existing.budgetReset
             };
             // Re-render if viewing this agent's detail page
-            if (typeof focusView !== 'undefined' && typeof jobsData !== 'undefined') {
-                const agentJob = jobsData.find(j => j.agent_id === data.agent_id);
-                if (agentJob && focusView === `job-${agentJob.id}`) {
+            if (typeof focusView !== 'undefined' && typeof topicsData !== 'undefined') {
+                const agentTopic = topicsData.find(j => j.agent_id === data.agent_id);
+                if (agentTopic && focusView === `topic-${agentTopic.id}`) {
                     renderFocusTab();
                 }
             }

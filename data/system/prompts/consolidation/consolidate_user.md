@@ -10,9 +10,9 @@
 
 {recent_long_term}
 
-## Recent Completed Jobs
+## Recent Completed Topics
 
-{completed_jobs}
+{completed_topics}
 
 ---
 

@@ -63,7 +63,7 @@ class RecordedCall:
     messages: list
     tools: Optional[list]
     agent_id: str
-    job_id: Optional[str]
+    topic_id: Optional[str]
     response: UnifiedResponse
 
 
@@ -155,7 +155,7 @@ class MockLLMClient:
         ))
 
         with mock.patch():
-            result = planner.create_plan(job)
+            result = planner.create_plan(topic)
     """
 
     def __init__(self):
@@ -184,7 +184,7 @@ class MockLLMClient:
         messages: list,
         tools: Optional[list] = None,
         agent_id: str = "unknown",
-        job_id: Optional[str] = None,
+        topic_id: Optional[str] = None,
         track_cost: bool = True,
         enabled_agent_count: int = 1,
     ) -> UnifiedResponse:
@@ -219,7 +219,7 @@ class MockLLMClient:
             messages=messages,
             tools=tools,
             agent_id=agent_id,
-            job_id=job_id,
+            topic_id=topic_id,
             response=response
         ))
 

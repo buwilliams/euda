@@ -49,31 +49,31 @@ class Planner:
         """
         self.agent = agent
 
-    def should_plan(self, job: dict) -> bool:
-        """Check if this job type requires planning.
+    def should_plan(self, topic: dict) -> bool:
+        """Check if this topic type requires planning.
 
         Args:
-            job: The job dict to check
+            topic: The topic dict to check
 
         Returns:
-            True if planning should be done for this job
+            True if planning should be done for this topic
         """
         # Delegate to metacognition config
-        return self.agent.metacognition.should_plan(job)
+        return self.agent.metacognition.should_plan(topic)
 
-    def create_plan(self, job: dict) -> Optional[str]:
-        """Generate a plan for the job.
+    def create_plan(self, topic: dict) -> Optional[str]:
+        """Generate a plan for the topic.
 
         Args:
-            job: The job to plan for
+            topic: The topic to plan for
 
         Returns:
             Plan string, or None if planning fails
         """
         from ....llms import get_client
 
-        # Build task description from job
-        task_description = self._format_task_description(job)
+        # Build task description from topic
+        task_description = self._format_task_description(topic)
 
         # Get available tools
         available_tools = self._format_available_tools()
@@ -84,7 +84,7 @@ class Planner:
             available_tools=available_tools
         )
 
-        self.agent._log("planning_start", {"job_id": job.get("id")})
+        self.agent._log("planning_start", {"topic_id": topic.get("id")})
 
         try:
             client = get_client()
@@ -93,7 +93,7 @@ class Planner:
                 system=PLANNING_SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": user_prompt}],
                 agent_id=f"{self.agent.id}/planning",
-                job_id=job.get("id")
+                topic_id=topic.get("id")
             )
 
             # Extract text response
@@ -103,7 +103,7 @@ class Planner:
                     plan += block.text
 
             self.agent._log("planning_complete", {
-                "job_id": job.get("id"),
+                "topic_id": topic.get("id"),
                 "plan_length": len(plan)
             })
 
@@ -111,7 +111,7 @@ class Planner:
 
         except Exception as e:
             self.agent._log("planning_error", {
-                "job_id": job.get("id"),
+                "topic_id": topic.get("id"),
                 "error": str(e)
             })
             return None
@@ -137,18 +137,18 @@ class Planner:
         # Insert plan at the beginning of the prompt
         return plan_section + prompt
 
-    def _format_task_description(self, job: dict) -> str:
-        """Format job details for planning prompt."""
+    def _format_task_description(self, topic: dict) -> str:
+        """Format topic details for planning prompt."""
         parts = []
 
-        name = job.get("name", "Untitled")
+        name = topic.get("name", "Untitled")
         parts.append(f"**Task:** {name}")
 
-        description = job.get("description")
+        description = topic.get("description")
         if description:
             parts.append(f"**Details:** {description}")
 
-        tags = job.get("tags", [])
+        tags = topic.get("tags", [])
         if tags:
             parts.append(f"**Tags:** {', '.join(tags)}")
 

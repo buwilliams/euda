@@ -13,7 +13,7 @@ Rules for the command-line interface.
 - `start` — Run web server (port 8000) with agents in background
 - `chat [agent]` — Interactive chat with an agent (default: chat)
 - `agents [name] [action]` — List agents or perform agent actions
-- `jobs` — List all jobs with status
+- `topics` — List all topics with status
 - `store <path>` — Import files into long-term memory
 - `points [name]` — Show contribution points, optionally filtered by name
 - `set-password` — Set access password for web UI
@@ -46,16 +46,16 @@ Rules for the command-line interface.
 ## store
 
 - `store <path>` — Import files into long-term memory
-- `store <path> --dry-run` — Show what would be processed without creating job
+- `store <path> --dry-run` — Show what would be processed without creating topic
 - `store <path> --force` — Reprocess files even if already imported
 - `store --clear-manifest` — Clear legacy processing history
 
 Processing flow:
 1. Load files from path (supports .txt, .md, .json, .yaml, .csv, .log, .rst, .org)
-2. Check for duplicates via job tags (store:hash:{sha256})
-3. Create `Store:ingest:{timestamp}` job with files as assets
-4. Chat agent processes job, extracts dates, writes to long-term memory
-5. Job completion marks content as processed
+2. Check for duplicates via topic tags (store:hash:{sha256})
+3. Create `Store:ingest:{timestamp}` topic with files as assets
+4. Chat agent processes topic, extracts dates, writes to long-term memory
+5. Topic completion marks content as processed
 
 ## fresh-start
 
@@ -63,7 +63,7 @@ Processing flow:
 - Deletes:
   - All agent memory (short-term and long-term)
   - All agent logs, state, and conversation history
-  - All jobs and job assets
+  - All topics and topic assets
   - Cost tracking history
   - Consolidation logs
   - System trigger state

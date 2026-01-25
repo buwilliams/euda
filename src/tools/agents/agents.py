@@ -15,11 +15,11 @@ AGENTS_DIR = DATA_DIR / "agents"
 
 # Minimal tools every agent needs to function
 BASE_TOOLS = [
-    "list_jobs",
-    "get_job",
-    "create_job",
-    "complete_job",
-    "add_job_log",
+    "list_topics",
+    "get_topic",
+    "create_topic",
+    "complete_topic",
+    "add_topic_log",
     "done_working"
 ]
 
@@ -43,7 +43,7 @@ def list_agents() -> List[dict]:
     return agents
 
 
-@tool("list_agents_for_routing", "List agents with minimal details for job routing decisions. Shows id, name, purpose, and enabled status.", tool_type="agents")
+@tool("list_agents_for_routing", "List agents with minimal details for topic routing decisions. Shows id, name, purpose, and enabled status.", tool_type="agents")
 def list_agents_for_routing() -> List[dict]:
     """List agents with just enough info for routing decisions.
 
@@ -168,20 +168,15 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
         "name": {"type": "string", "description": "Display name (e.g., 'Researcher')"},
         "purpose": {"type": "string", "description": "Description of what the agent does"},
         "tools": {"type": "array", "items": {"type": "string"}, "description": "List of tool names to assign"},
-        "triggers": {"type": "array", "items": {"type": "string"}, "description": "Wake-up triggers (e.g., ['time:morning'])"},
-        "consolidation": {
-            "type": "object",
-            "description": "Enable memory consolidation behavior",
-            "properties": {
-                "enabled": {"type": "boolean", "description": "Whether consolidation is active"},
-                "trigger": {"type": "string", "description": "When to run (e.g., 'time:evening')"}
-            },
-            "required": ["enabled", "trigger"]
+        "triggers": {
+            "type": "array",
+            "items": {"type": "object"},
+            "description": "Scheduled triggers as objects with topic_name, topic_description, schedule"
         }
     },
     "required": ["agent_id", "name", "purpose"]
 })
-def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None, consolidation: dict = None) -> dict:
+def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None) -> dict:
     """Create a new agent with the specified configuration.
 
     Args:
@@ -190,9 +185,10 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         purpose: Description of what the agent does
         tools: List of tool names to assign (use list_available_tools to see options).
                If not provided, uses minimal base tools.
-        triggers: Optional list of triggers (e.g., ['time:morning', 'system:start'])
-        consolidation: Optional dict to enable consolidation (memory consolidation and identity updates).
-                       Example: {"enabled": True, "trigger": "time:evening"}
+        triggers: Optional list of trigger objects. Each trigger should have:
+                  - topic_name: Name of topic to create (e.g., 'euno:consolidate')
+                  - topic_description: Description for the topic
+                  - schedule: When to fire ('morning', 'evening')
 
     Returns:
         Success status and agent details
@@ -238,10 +234,6 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
         "triggers": triggers or []
     }
 
-    # Add consolidation if provided
-    if consolidation:
-        config["consolidation"] = consolidation
-
     config_path = agent_dir / "config.json"
     with open(config_path, "w") as f:
         json.dump(config, f, indent=2)
@@ -258,16 +250,16 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
 ## Behavioral Rules
 
 I must:
-- Complete assigned jobs thoroughly
+- Complete assigned topics thoroughly
 - Use available tools appropriately
 - Call done_working when finished with a work cycle
 
 ## How I Work
 
-1. Check my assigned jobs
-2. Work on the highest priority job
+1. Check my assigned topics
+2. Work on the highest priority topic
 3. Use my tools to accomplish the task
-4. Mark jobs as complete when done
+4. Mark topics as complete when done
 5. Call done_working to signal I'm finished
 """
 
@@ -377,7 +369,7 @@ def append_to_agent_identity(agent_id: str, section_title: str, content: str) ->
 
 @tool("enable_agent", "Enable a disabled agent. Use when: reactivating an agent that was paused.", tool_type="agents")
 def enable_agent(agent_id: str) -> dict:
-    """Enable an agent so it can process jobs.
+    """Enable an agent so it can process topics.
 
     Args:
         agent_id: The agent to enable
@@ -393,9 +385,9 @@ def enable_agent(agent_id: str) -> dict:
     return {"agent_id": agent_id, "state": "enabled"}
 
 
-@tool("disable_agent", "Disable an agent so it stops processing jobs. Use when: pausing an agent temporarily.", tool_type="agents")
+@tool("disable_agent", "Disable an agent so it stops processing topics. Use when: pausing an agent temporarily.", tool_type="agents")
 def disable_agent(agent_id: str) -> dict:
-    """Disable an agent so it stops processing jobs.
+    """Disable an agent so it stops processing topics.
 
     Args:
         agent_id: The agent to disable
@@ -417,7 +409,10 @@ def update_agent_triggers(agent_id: str, triggers: list) -> dict:
 
     Args:
         agent_id: The agent to update
-        triggers: List of triggers (e.g., ['time:morning', 'system:start', 'memory:long-term'])
+        triggers: List of trigger objects. Each trigger should have:
+                  - topic_name: Name of topic to create (e.g., 'euno:consolidate')
+                  - topic_description: Description for the topic
+                  - schedule: When to fire ('morning', 'evening')
 
     Note: Changes require a restart to take effect.
     """

@@ -32,7 +32,7 @@ class TestAgentInitialization:
             "id": "test-agent",
             "name": "Test Agent",
             "state": "enabled",
-            "tools": ["list_jobs", "create_job"]
+            "tools": ["list_topics", "create_topic"]
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test Agent\n\nA test agent.")
@@ -42,7 +42,7 @@ class TestAgentInitialization:
 
         assert agent.id == "test-agent"
         assert agent.config["name"] == "Test Agent"
-        assert "list_jobs" in agent.config["tools"]
+        assert "list_topics" in agent.config["tools"]
 
     def test_agent_loads_identity_from_disk(self, tmp_path):
         """Agent loads identity from agents/{id}/identity.md."""
@@ -427,7 +427,7 @@ class TestAgentState:
     def test_is_enabled_true_when_enabled(self, tmp_path):
         """is_enabled() returns True when state is ENABLED.
 
-        Spec: Enabled agents poll for jobs and work on them.
+        Spec: Enabled agents poll for topics and work on them.
         """
         from src.agent.agent import AgentState
 
@@ -439,7 +439,7 @@ class TestAgentState:
     def test_is_enabled_false_when_disabled(self, tmp_path):
         """is_enabled() returns False when state is DISABLED.
 
-        Spec: Disabled agents never process jobs.
+        Spec: Disabled agents never process topics.
         """
         from src.agent.agent import AgentState
 
@@ -518,37 +518,39 @@ class TestUserIdentityContext:
         assert "not yet established" in user_identity.lower()
 
     def test_get_user_identity_for_user_agent(self, tmp_path):
-        """_get_user_identity() returns special message for user agent itself.
+        """_get_user_identity() returns user identity even for user agent.
 
-        Spec: User agent doesn't need to know about itself.
+        Note: User agent uses its own identity through standard system prompt flow.
         """
         from src.agent.agent import Agent
 
         user_dir = tmp_path / "agents" / "user"
         user_dir.mkdir(parents=True)
         (user_dir / "config.json").write_text('{"id": "user", "state": "enabled", "tools": []}')
-        (user_dir / "identity.md").write_text("# User\n")
+        (user_dir / "identity.md").write_text("# User\n\nI am the user.")
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             agent = Agent("user")
             user_identity = agent._get_user_identity()
 
-        assert "You are the user" in user_identity
+        # User agent reads its own identity file
+        assert "# User" in user_identity
 
 
 # =============================================================================
-# Reflection Trigger Tests
+# Topic Prompt Type Tests
 # =============================================================================
 
 @pytest.mark.unit
-class TestReflectionTrigger:
-    """Test Agent reflection trigger detection and execution.
+class TestTopicPromptType:
+    """Test Agent._get_topic_prompt_type() method.
 
-    Spec: specs/1_agents.md - Consolidation section
+    All topics use the topic_assignment template.
+    Internal euno:* topics bypass the chat loop entirely.
     """
 
     def _create_agent(self, tmp_path):
-        """Create an agent with consolidation enabled."""
+        """Create an agent for testing."""
         from src.agent.agent import Agent
 
         agent_dir = tmp_path / "agents" / "test-agent"
@@ -565,75 +567,26 @@ class TestReflectionTrigger:
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             return Agent("test-agent")
 
-    def test_is_reflection_trigger_detects_consolidation_job(self, tmp_path):
-        """_is_reflection_trigger() returns True for consolidation jobs.
-
-        Spec: Template selection based on job name: Trigger:consolidation:* → consolidation.md
-        """
+    def test_get_topic_prompt_type_regular(self, tmp_path):
+        """_get_topic_prompt_type() returns topic_assignment template for all topics."""
         agent = self._create_agent(tmp_path)
 
-        # Test various consolidation job names
-        assert agent._is_reflection_trigger([], "Trigger:consolidation:both:2025-01-23") is True
-        assert agent._is_reflection_trigger([], "Trigger:consolidation:append:2025-01-23") is True
-        assert agent._is_reflection_trigger([], "Trigger:consolidation:consolidate:2025-01-23") is True
+        topic = {"name": "Write a report", "tags": []}
+        assert agent._get_topic_prompt_type(topic) == "agent/topic_assignment"
 
-    def test_is_reflection_trigger_false_for_regular_jobs(self, tmp_path):
-        """_is_reflection_trigger() returns False for regular jobs.
-
-        Spec: All other jobs → job_assignment.md
-        """
+    def test_get_topic_prompt_type_any_topic(self, tmp_path):
+        """_get_topic_prompt_type() always returns topic_assignment."""
         agent = self._create_agent(tmp_path)
 
-        assert agent._is_reflection_trigger([], "Regular job") is False
-        assert agent._is_reflection_trigger([], "Trigger:start:2025-01-23") is False
-        assert agent._is_reflection_trigger([], "Trigger:morning:2025-01-23") is False
+        # All topics use topic_assignment template
+        topics = [
+            {"name": "Regular topic", "tags": []},
+            {"name": "euno:consolidate", "tags": []},
+            {"name": "Some other topic", "tags": ["important"]},
+        ]
 
-    def test_get_job_prompt_type_consolidation(self, tmp_path):
-        """_get_job_prompt_type() returns consolidation template for consolidation jobs."""
-        agent = self._create_agent(tmp_path)
-
-        job = {"name": "Trigger:consolidation:both:2025-01-23", "tags": []}
-        assert agent._get_job_prompt_type(job) == "agent/consolidation"
-
-    def test_get_job_prompt_type_regular(self, tmp_path):
-        """_get_job_prompt_type() returns job_assignment template for regular jobs."""
-        agent = self._create_agent(tmp_path)
-
-        job = {"name": "Write a report", "tags": []}
-        assert agent._get_job_prompt_type(job) == "agent/job_assignment"
-
-    def test_execute_reflection_trigger_extracts_phase(self, tmp_path):
-        """_execute_reflection_trigger() extracts phase from job name.
-
-        Spec: Job name format is Trigger:consolidation:{phase}:{date}
-        """
-        agent = self._create_agent(tmp_path)
-
-        # Mock consolidation and complete_job
-        agent.consolidation = MagicMock()
-
-        with patch("src.tools.data.jobs.complete_job"):
-            with patch.object(agent, '_log'):
-                # Test 'consolidate' phase
-                job = {"id": "job-1", "name": "Trigger:consolidation:consolidate:2025-01-23", "tags": []}
-                agent._execute_reflection_trigger(job)
-
-                agent.consolidation.consolidate.assert_called_once()
-
-    def test_execute_reflection_trigger_completes_job(self, tmp_path):
-        """_execute_reflection_trigger() completes the trigger job.
-
-        Spec: Jobs must be explicitly completed by the agent.
-        """
-        agent = self._create_agent(tmp_path)
-        agent.consolidation = MagicMock()
-
-        with patch("src.tools.data.jobs.complete_job") as mock_complete:
-            with patch.object(agent, '_log'):
-                job = {"id": "job-123", "name": "Trigger:consolidation:both:2025-01-23", "tags": []}
-                agent._execute_reflection_trigger(job)
-
-                mock_complete.assert_called_once_with("job-123")
+        for topic in topics:
+            assert agent._get_topic_prompt_type(topic) == "agent/topic_assignment"
 
 
 # =============================================================================
@@ -672,56 +625,56 @@ class TestWorkCycle:
             with patch("src.agent.agent.DATA_DIR", tmp_path):
                 return Agent("test-agent")
 
-    def test_work_cycle_claims_job(self, tmp_path):
-        """work_cycle_sync() claims job before working.
+    def test_work_cycle_claims_topic(self, tmp_path):
+        """work_cycle_sync() claims topic before working.
 
         Spec: Work cycle phases: claim → plan → execute → complete
         """
         agent = self._create_agent(tmp_path)
 
-        mock_job = {"id": "job-1", "name": "Test job", "tags": [], "description": "Test"}
+        mock_topic = {"id": "topic-1", "name": "Test topic", "tags": [], "description": "Test"}
 
-        with patch("src.tools.data.jobs.list_jobs", return_value=[mock_job]):
-            with patch("src.tools.data.jobs.claim_job", return_value={"claimed": True}) as mock_claim:
-                with patch("src.tools.data.jobs.release_job"):
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}) as mock_claim:
+                with patch("src.tools.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                         with patch.object(agent, 'chat', side_effect=lambda *a, **k: setattr(agent, '_work_done', True) or "Done"):
                             with patch.object(agent, '_log'):
                                 agent.work_cycle_sync()
 
-                mock_claim.assert_called_once_with("job-1", "test-agent")
+                mock_claim.assert_called_once_with("topic-1", "test-agent")
 
-    def test_work_cycle_releases_job_on_completion(self, tmp_path):
-        """work_cycle_sync() releases job after work completes.
+    def test_work_cycle_releases_topic_on_completion(self, tmp_path):
+        """work_cycle_sync() releases topic after work completes.
 
-        Spec: Agent releases job when work cycle ends.
+        Spec: Agent releases topic when work cycle ends.
         """
         agent = self._create_agent(tmp_path)
 
-        mock_job = {"id": "job-1", "name": "Test job", "tags": [], "description": "Test"}
+        mock_topic = {"id": "topic-1", "name": "Test topic", "tags": [], "description": "Test"}
 
-        with patch("src.tools.data.jobs.list_jobs", return_value=[mock_job]):
-            with patch("src.tools.data.jobs.claim_job", return_value={"claimed": True}):
-                with patch("src.tools.data.jobs.release_job") as mock_release:
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic") as mock_release:
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                         with patch.object(agent, 'chat', side_effect=lambda *a, **k: setattr(agent, '_work_done', True) or "Done"):
                             with patch.object(agent, '_log'):
                                 agent.work_cycle_sync()
 
-                mock_release.assert_called_once_with("job-1", "test-agent")
+                mock_release.assert_called_once_with("topic-1", "test-agent")
 
-    def test_work_cycle_releases_job_on_error(self, tmp_path):
-        """work_cycle_sync() releases job even if chat raises exception.
+    def test_work_cycle_releases_topic_on_error(self, tmp_path):
+        """work_cycle_sync() releases topic even if chat raises exception.
 
-        Spec: Job must be released to avoid blocking the queue.
+        Spec: Topic must be released to avoid blocking the queue.
         """
         agent = self._create_agent(tmp_path)
 
-        mock_job = {"id": "job-1", "name": "Test job", "tags": [], "description": "Test"}
+        mock_topic = {"id": "topic-1", "name": "Test topic", "tags": [], "description": "Test"}
 
-        with patch("src.tools.data.jobs.list_jobs", return_value=[mock_job]):
-            with patch("src.tools.data.jobs.claim_job", return_value={"claimed": True}):
-                with patch("src.tools.data.jobs.release_job") as mock_release:
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic") as mock_release:
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                         with patch.object(agent, 'chat', side_effect=Exception("LLM error")):
                             with patch.object(agent, '_log'):
@@ -730,35 +683,35 @@ class TestWorkCycle:
                                 except:
                                     pass
 
-                # Job should still be released
-                mock_release.assert_called_once_with("job-1", "test-agent")
+                # Topic should still be released
+                mock_release.assert_called_once_with("topic-1", "test-agent")
 
-    def test_work_cycle_skips_when_no_jobs(self, tmp_path):
-        """work_cycle_sync() returns early when no jobs available.
+    def test_work_cycle_skips_when_no_topics(self, tmp_path):
+        """work_cycle_sync() returns early when no topics available.
 
-        Spec: Agent polls for actionable jobs; if none, no work cycle.
+        Spec: Agent polls for actionable topics; if none, no work cycle.
         """
         agent = self._create_agent(tmp_path)
 
-        with patch("src.tools.data.jobs.list_jobs", return_value=[]):
-            with patch("src.tools.data.jobs.claim_job") as mock_claim:
+        with patch("src.tools.data.topics.list_topics", return_value=[]):
+            with patch("src.tools.data.topics.claim_topic") as mock_claim:
                 with patch.object(agent, '_log'):
                     agent.work_cycle_sync()
 
-                # Should not attempt to claim any job
+                # Should not attempt to claim any topic
                 mock_claim.assert_not_called()
 
     def test_work_cycle_aborts_if_claim_fails(self, tmp_path):
-        """work_cycle_sync() aborts if job claim fails.
+        """work_cycle_sync() aborts if topic claim fails.
 
-        Spec: Another agent may have claimed the job first.
+        Spec: Another agent may have claimed the topic first.
         """
         agent = self._create_agent(tmp_path)
 
-        mock_job = {"id": "job-1", "name": "Test job", "tags": [], "description": "Test"}
+        mock_topic = {"id": "topic-1", "name": "Test topic", "tags": [], "description": "Test"}
 
-        with patch("src.tools.data.jobs.list_jobs", return_value=[mock_job]):
-            with patch("src.tools.data.jobs.claim_job", return_value={"error": "Already claimed"}):
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"error": "Already claimed"}):
                 with patch.object(agent, 'chat') as mock_chat:
                     with patch.object(agent, '_log'):
                         agent.work_cycle_sync()
@@ -766,60 +719,34 @@ class TestWorkCycle:
                 # Should not proceed to chat
                 mock_chat.assert_not_called()
 
-    def test_work_cycle_handles_reflection_trigger(self, tmp_path):
-        """work_cycle_sync() routes consolidation jobs to _execute_reflection_trigger.
+    def test_work_cycle_one_topic_at_a_time(self, tmp_path):
+        """work_cycle_sync() only processes first topic from list.
 
-        Spec: Consolidation jobs are handled directly, not through chat loop.
-        """
-        agent = self._create_agent(tmp_path)
-        agent.consolidation = MagicMock()
-
-        consolidation_job = {
-            "id": "job-1",
-            "name": "Trigger:consolidation:both:2025-01-23",
-            "tags": [],
-            "description": "Consolidation"
-        }
-
-        with patch("src.tools.data.jobs.list_jobs", return_value=[consolidation_job]):
-            with patch("src.tools.data.jobs.claim_job", return_value={"claimed": True}):
-                with patch("src.tools.data.jobs.release_job"):
-                    with patch("src.tools.data.jobs.complete_job"):
-                        with patch.object(agent, 'chat') as mock_chat:
-                            with patch.object(agent, '_log'):
-                                agent.work_cycle_sync()
-
-                        # Chat should NOT be called for consolidation jobs
-                        mock_chat.assert_not_called()
-
-    def test_work_cycle_one_job_at_a_time(self, tmp_path):
-        """work_cycle_sync() only processes first job from list.
-
-        Spec: Agent receives ONE job per work cycle.
+        Spec: Agent receives ONE topic per work cycle.
         """
         agent = self._create_agent(tmp_path)
 
-        jobs = [
-            {"id": "job-1", "name": "First job", "tags": [], "description": "First"},
-            {"id": "job-2", "name": "Second job", "tags": [], "description": "Second"},
+        topics = [
+            {"id": "topic-1", "name": "First topic", "tags": [], "description": "First"},
+            {"id": "topic-2", "name": "Second topic", "tags": [], "description": "Second"},
         ]
 
-        claimed_jobs = []
+        claimed_topics = []
 
-        def track_claim(job_id, agent_id):
-            claimed_jobs.append(job_id)
+        def track_claim(topic_id, agent_id):
+            claimed_topics.append(topic_id)
             return {"claimed": True}
 
-        with patch("src.tools.data.jobs.list_jobs", return_value=jobs):
-            with patch("src.tools.data.jobs.claim_job", side_effect=track_claim):
-                with patch("src.tools.data.jobs.release_job"):
+        with patch("src.tools.data.topics.list_topics", return_value=topics):
+            with patch("src.tools.data.topics.claim_topic", side_effect=track_claim):
+                with patch("src.tools.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                         with patch.object(agent, 'chat', side_effect=lambda *a, **k: setattr(agent, '_work_done', True) or "Done"):
                             with patch.object(agent, '_log'):
                                 agent.work_cycle_sync()
 
-        # Only first job should be claimed
-        assert claimed_jobs == ["job-1"]
+        # Only first topic should be claimed
+        assert claimed_topics == ["topic-1"]
 
 
 # =============================================================================
@@ -857,23 +784,23 @@ class TestWorkCyclePlanning:
                 return Agent("test-agent")
 
     def test_work_cycle_calls_planner_should_plan(self, tmp_path):
-        """work_cycle_sync() checks if planning is needed for job.
+        """work_cycle_sync() checks if planning is needed for topic.
 
         Spec: Planning is part of Reasoning - it reduces wasted effort.
         """
         agent = self._create_agent(tmp_path)
 
-        mock_job = {"id": "job-1", "name": "Test job", "tags": [], "description": "Test"}
+        mock_topic = {"id": "topic-1", "name": "Test topic", "tags": [], "description": "Test"}
 
-        with patch("src.tools.data.jobs.list_jobs", return_value=[mock_job]):
-            with patch("src.tools.data.jobs.claim_job", return_value={"claimed": True}):
-                with patch("src.tools.data.jobs.release_job"):
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False) as mock_should:
                         with patch.object(agent, 'chat', side_effect=lambda *a, **k: setattr(agent, '_work_done', True) or "Done"):
                             with patch.object(agent, '_log'):
                                 agent.work_cycle_sync()
 
-                        mock_should.assert_called_once_with(mock_job)
+                        mock_should.assert_called_once_with(mock_topic)
 
     def test_work_cycle_creates_plan_when_needed(self, tmp_path):
         """work_cycle_sync() creates plan when planner says to.
@@ -882,11 +809,11 @@ class TestWorkCyclePlanning:
         """
         agent = self._create_agent(tmp_path)
 
-        mock_job = {"id": "job-1", "name": "Complex job", "tags": [], "description": "Needs planning"}
+        mock_topic = {"id": "topic-1", "name": "Complex topic", "tags": [], "description": "Needs planning"}
 
-        with patch("src.tools.data.jobs.list_jobs", return_value=[mock_job]):
-            with patch("src.tools.data.jobs.claim_job", return_value={"claimed": True}):
-                with patch("src.tools.data.jobs.release_job"):
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=True):
                         with patch.object(agent.metacognition.planner, 'create_plan', return_value="1. Do this\n2. Do that") as mock_create:
                             with patch.object(agent.metacognition.planner, 'inject_plan', return_value="Plan: ..."):
@@ -894,20 +821,20 @@ class TestWorkCyclePlanning:
                                     with patch.object(agent, '_log'):
                                         agent.work_cycle_sync()
 
-                            mock_create.assert_called_once_with(mock_job)
+                            mock_create.assert_called_once_with(mock_topic)
 
     def test_work_cycle_injects_plan_into_prompt(self, tmp_path):
-        """work_cycle_sync() injects plan into job prompt.
+        """work_cycle_sync() injects plan into topic prompt.
 
         Spec: Plan is injected before execution.
         """
         agent = self._create_agent(tmp_path)
 
-        mock_job = {"id": "job-1", "name": "Job", "tags": [], "description": "Test"}
+        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test"}
 
-        with patch("src.tools.data.jobs.list_jobs", return_value=[mock_job]):
-            with patch("src.tools.data.jobs.claim_job", return_value={"claimed": True}):
-                with patch("src.tools.data.jobs.release_job"):
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=True):
                         with patch.object(agent.metacognition.planner, 'create_plan', return_value="The plan"):
                             with patch.object(agent.metacognition.planner, 'inject_plan', return_value="Injected prompt") as mock_inject:
@@ -959,15 +886,15 @@ class TestWorkCycleStuckDetection:
         """
         agent = self._create_agent(tmp_path)
 
-        mock_job = {"id": "job-1", "name": "Job", "tags": [], "description": "Test"}
+        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test"}
 
         def finish_work(*args, **kwargs):
             agent._work_done = True
             return "Response"
 
-        with patch("src.tools.data.jobs.list_jobs", return_value=[mock_job]):
-            with patch("src.tools.data.jobs.claim_job", return_value={"claimed": True}):
-                with patch("src.tools.data.jobs.release_job"):
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                         with patch.object(agent.metacognition, 'start_work_session', return_value="test-session") as mock_start:
                             with patch.object(agent.metacognition, 'end_work_session', return_value={}) as mock_end:
@@ -982,13 +909,13 @@ class TestWorkCycleStuckDetection:
     def test_work_cycle_breaks_when_stuck(self, tmp_path):
         """work_cycle_sync() raises AgentPausedError when stuck is detected.
 
-        Spec: Pauses agent and marks job as error when stuck detected.
+        Spec: Pauses agent and marks topic as error when stuck detected.
         """
         from src.agent.cognition.metacognition import AgentPausedError, ProgressLimitExceeded
 
         agent = self._create_agent(tmp_path)
 
-        mock_job = {"id": "job-1", "name": "Job", "tags": [], "description": "Test"}
+        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test"}
         chat_calls = [0]
 
         def raise_stuck(*args, **kwargs):
@@ -996,10 +923,10 @@ class TestWorkCycleStuckDetection:
             # Simulate stuck detection during tool execution in chat()
             raise ProgressLimitExceeded("test-agent", "test-session", "Same tool 'test' called 5 times with identical inputs")
 
-        with patch("src.tools.data.jobs.list_jobs", return_value=[mock_job]):
-            with patch("src.tools.data.jobs.claim_job", return_value={"claimed": True}):
-                with patch("src.tools.data.jobs.release_job"):
-                    with patch("src.tools.data.jobs.error_job") as mock_error_job:
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
+                    with patch("src.tools.data.topics.error_topic") as mock_error_topic:
                         with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                             with patch.object(agent.metacognition, 'start_work_session', return_value="test-session"):
                                 with patch.object(agent.metacognition, 'end_work_session', return_value={}):
@@ -1013,10 +940,10 @@ class TestWorkCycleStuckDetection:
                             assert "Stuck" in str(exc_info.value)
                             # Should have one chat call (stuck detected during first chat)
                             assert chat_calls[0] == 1
-                            # Should mark job as error
-                            mock_error_job.assert_called_once()
-                            call_args = mock_error_job.call_args[0]
-                            assert call_args[0] == "job-1"
+                            # Should mark topic as error
+                            mock_error_topic.assert_called_once()
+                            call_args = mock_error_topic.call_args[0]
+                            assert call_args[0] == "topic-1"
                             assert "Stuck" in call_args[1]
                             assert call_args[2] == "test-agent"
 
@@ -1062,7 +989,7 @@ class TestWorkCycleDeferredConsolidation:
         """
         agent = self._create_agent(tmp_path)
 
-        mock_job = {"id": "job-1", "name": "Job", "tags": [], "description": "Test"}
+        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test"}
         chat_kwargs = []
 
         def capture_chat(*args, **kwargs):
@@ -1070,9 +997,9 @@ class TestWorkCycleDeferredConsolidation:
             agent._work_done = True
             return "Done"
 
-        with patch("src.tools.data.jobs.list_jobs", return_value=[mock_job]):
-            with patch("src.tools.data.jobs.claim_job", return_value={"claimed": True}):
-                with patch("src.tools.data.jobs.release_job"):
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                         with patch.object(agent.metacognition, 'should_defer_consolidation', return_value=True):
                             with patch.object(agent, 'chat', side_effect=capture_chat):
@@ -1090,7 +1017,7 @@ class TestWorkCycleDeferredConsolidation:
         """
         agent = self._create_agent(tmp_path)
 
-        mock_job = {"id": "job-1", "name": "Job", "tags": [], "description": "Test"}
+        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test", "status": "working"}
         iteration = [0]
 
         def multi_iteration_chat(*args, **kwargs):
@@ -1099,18 +1026,19 @@ class TestWorkCycleDeferredConsolidation:
                 agent._work_done = True
             return f"Response {iteration[0]}"
 
-        with patch("src.tools.data.jobs.list_jobs", return_value=[mock_job]):
-            with patch("src.tools.data.jobs.claim_job", return_value={"claimed": True}):
-                with patch("src.tools.data.jobs.release_job"):
-                    with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
-                        with patch.object(agent.metacognition, 'should_defer_consolidation', return_value=True):
-                            with patch.object(agent.metacognition, 'check_stuck', return_value=None):
-                                with patch.object(agent, 'chat', side_effect=multi_iteration_chat):
-                                    with patch.object(agent, '_log'):
-                                        with patch.object(agent.consolidation, 'append_batch') as mock_batch:
-                                            agent.work_cycle_sync()
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
+                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
+                        with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
+                            with patch.object(agent.metacognition, 'should_defer_consolidation', return_value=True):
+                                with patch.object(agent.metacognition, 'check_stuck', return_value=None):
+                                    with patch.object(agent, 'chat', side_effect=multi_iteration_chat):
+                                        with patch.object(agent, '_log'):
+                                            with patch.object(agent.consolidation, 'append_batch') as mock_batch:
+                                                agent.work_cycle_sync()
 
-                                        # append_batch should be called once at end with collected exchanges
-                                        mock_batch.assert_called_once()
-                                        exchanges = mock_batch.call_args[0][0]
-                                        assert len(exchanges) == 2  # 2 iterations
+                                            # append_batch should be called once at end with collected exchanges
+                                            mock_batch.assert_called_once()
+                                            exchanges = mock_batch.call_args[0][0]
+                                            assert len(exchanges) == 2  # 2 iterations

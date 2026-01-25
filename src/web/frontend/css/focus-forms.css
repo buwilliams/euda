@@ -47,8 +47,8 @@
     filter: invert(1);
 }
 
-/* Job Add Actions */
-.job-add-actions {
+/* Topic Add Actions */
+.topic-add-actions {
     margin-top: var(--spacing-xl);
     border-top: 1px solid var(--color-border-light);
     padding-top: var(--spacing-md);

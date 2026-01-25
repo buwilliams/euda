@@ -5,7 +5,7 @@ Tools are registered with decorators and can be looked up by name.
 Agents are granted access to specific tools via their config.
 
 Tools are organized by type:
-- data: Jobs, assets, user identity, memory
+- data: Topics, assets, user identity, memory
 - agents: Agent management and introspection
 - system: Config, dates, notifications, work control
 - integration: External knowledge and documentation
@@ -153,7 +153,7 @@ def get_tools_grouped_by_type(tool_names: List[str]) -> Dict[str, List[dict]]:
 
     Returns dict like:
     {
-        "data": [{"name": "list_jobs", "description": "..."}],
+        "data": [{"name": "list_topics", "description": "..."}],
         "agents": [...],
         "system": [...],
         "integration": [...]
@@ -184,7 +184,7 @@ def execute_tool(name: str, inputs: dict) -> Any:
 
 
 # Import all tool modules to register them
-from .data import jobs, assets, identity, memory
+from .data import topics, assets, identity, memory
 from .agents import agents
 from .system import system, dates, notifications
 from .integration import knowledge, mastodon, speech, nextcloud

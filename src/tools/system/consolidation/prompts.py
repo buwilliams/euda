@@ -116,7 +116,7 @@ def build_consolidate_prompt(
     agent_identity: str,
     short_term_memory: list,
     recent_long_term: str,
-    completed_jobs: list = None,
+    completed_topics: list = None,
     is_user: bool = False
 ) -> str:
     """Build the user prompt for the consolidate phase.
@@ -126,7 +126,7 @@ def build_consolidate_prompt(
         agent_identity: The agent's current identity
         short_term_memory: All short-term memory items
         recent_long_term: Recent long-term memory content
-        completed_jobs: List of recently completed jobs
+        completed_topics: List of recently completed topics
         is_user: Whether this is the user agent (selects appropriate system prompt)
 
     Returns:
@@ -149,20 +149,20 @@ def build_consolidate_prompt(
     # Format long-term memory
     long_term_text = recent_long_term if recent_long_term else "(no recent entries)"
 
-    # Format completed jobs
-    if completed_jobs:
-        jobs_lines = []
-        for job in completed_jobs:
-            completed_at = job.get('completed_at', '')
+    # Format completed topics
+    if completed_topics:
+        topics_lines = []
+        for topic in completed_topics:
+            completed_at = topic.get('completed_at', '')
             if completed_at:
                 # Extract just the date part
                 completed_date = completed_at[:10] if len(completed_at) >= 10 else completed_at
             else:
                 completed_date = 'recently'
-            jobs_lines.append(f"- {job.get('title', 'Untitled')} (completed {completed_date})")
-        completed_jobs_text = "\n".join(jobs_lines)
+            topics_lines.append(f"- {topic.get('title', 'Untitled')} (completed {completed_date})")
+        completed_topics_text = "\n".join(topics_lines)
     else:
-        completed_jobs_text = "(no recent completed jobs)"
+        completed_topics_text = "(no recent completed topics)"
 
     identity_type = "User" if is_user else "AI Agent"
 
@@ -173,5 +173,5 @@ def build_consolidate_prompt(
         agent_identity=agent_identity,
         short_term_memory=short_term_text,
         recent_long_term=long_term_text,
-        completed_jobs=completed_jobs_text
+        completed_topics=completed_topics_text
     )

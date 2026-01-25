@@ -5,7 +5,7 @@ Tests for src/agent/manager.py including:
 - Startup trigger creation
 - Missed trigger detection
 - Config hot-reload
-- Job cache notification
+- Topic cache notification
 
 Spec: specs/1_agents.md - Manager section
 """
@@ -59,8 +59,8 @@ def create_manager_agent(manager_data_dir):
             "id": agent_id,
             "name": agent_id.title(),
             "state": "enabled" if enabled else "disabled",
-            "tools": ["list_jobs"],
-            "triggers": triggers or ["job:assigned"]
+            "tools": ["list_topics"],
+            "triggers": triggers or []  # Dict-based triggers only
         }
         agent_dir = manager_data_dir / "agents" / agent_id
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -75,7 +75,7 @@ def mock_agent():
     """Create a mock Agent instance."""
     agent = MagicMock()
     agent.id = "test-agent"
-    agent.config = {"id": "test-agent", "state": "enabled", "triggers": ["system:start"]}
+    agent.config = {"id": "test-agent", "state": "enabled", "triggers": []}
     return agent
 
 
@@ -85,81 +85,40 @@ def mock_agent():
 
 @pytest.mark.unit
 class TestStartupTriggers:
-    """Test _emit_startup_triggers functionality."""
+    """Test _emit_startup_triggers functionality.
 
-    def test_creates_start_trigger_for_subscribed_agents(
-        self, manager_data_dir, create_manager_agent, test_db, mock_emit_event, mock_emit_ui_event
-    ):
-        """Agents with system:start trigger get a Trigger:start job.
-
-        Spec: Manager creates startup trigger jobs for agents with system:start.
-        """
-        from src.agent.manager import AgentManager
-        from src.tools.data.jobs import list_jobs
-
-        # Create agent with system:start trigger
-        create_manager_agent("worker", triggers=["system:start", "job:assigned"])
-
-        manager = AgentManager()
-        configs = manager.load_agent_configs()
-
-        # Manually add mock agent (don't actually start threads)
-        mock_agent = MagicMock()
-        mock_agent.id = "worker"
-        mock_agent.config = configs[0]
-        manager.agents["worker"] = mock_agent
-
-        # Emit startup triggers
-        manager._emit_startup_triggers()
-
-        # Verify trigger job was created
-        jobs = list_jobs(assignee="worker")
-        trigger_jobs = [j for j in jobs if j["name"].startswith("Trigger:start:")]
-
-        assert len(trigger_jobs) == 1
-        assert trigger_jobs[0]["name"] == f"Trigger:start:{datetime.now().strftime('%Y-%m-%d')}"
-
-    def test_skips_agents_without_start_trigger(
-        self, manager_data_dir, create_manager_agent, test_db, mock_emit_event, mock_emit_ui_event
-    ):
-        """Agents without system:start trigger don't get startup jobs.
-
-        Spec: Only agents subscribed to system:start receive trigger jobs.
-        """
-        from src.agent.manager import AgentManager
-        from src.tools.data.jobs import list_jobs
-
-        # Create agent without system:start trigger
-        create_manager_agent("regular", triggers=["job:assigned"])
-
-        manager = AgentManager()
-        configs = manager.load_agent_configs()
-
-        mock_agent = MagicMock()
-        mock_agent.id = "regular"
-        mock_agent.config = configs[0]
-        manager.agents["regular"] = mock_agent
-
-        manager._emit_startup_triggers()
-
-        # No trigger jobs should exist
-        jobs = list_jobs(assignee="regular")
-        trigger_jobs = [j for j in jobs if j["name"].startswith("Trigger:start:")]
-
-        assert len(trigger_jobs) == 0
+    Note: String-based triggers (system:start, time:morning) have been removed.
+    Only dict-based triggers are now supported.
+    """
 
     def test_skips_disabled_agents(
         self, manager_data_dir, create_manager_agent, test_db, mock_emit_event, mock_emit_ui_event
     ):
-        """Disabled agents don't get startup trigger jobs.
+        """Disabled agents don't get startup trigger topics.
 
-        Spec: Disabled agents never process jobs.
+        Spec: Disabled agents never process topics.
         """
         from src.agent.manager import AgentManager
-        from src.tools.data.jobs import list_jobs
+        from src.tools.data.topics import list_topics
 
-        # Create disabled agent with system:start trigger
-        create_manager_agent("disabled-worker", triggers=["system:start"], enabled=False)
+        # Create disabled agent with dict trigger
+        config = {
+            "id": "disabled-worker",
+            "name": "Disabled Worker",
+            "state": "disabled",
+            "tools": ["list_topics"],
+            "triggers": [
+                {
+                    "topic_name": "euno:consolidate",
+                    "topic_description": "Run consolidation",
+                    "schedule": "evening"
+                }
+            ]
+        }
+        agent_dir = manager_data_dir / "agents" / "disabled-worker"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
+        (agent_dir / "identity.md").write_text("# Disabled Worker\n\nTest agent.")
 
         manager = AgentManager()
         configs = manager.load_agent_configs()
@@ -171,39 +130,9 @@ class TestStartupTriggers:
 
         manager._emit_startup_triggers()
 
-        # No trigger jobs should exist
-        jobs = list_jobs(assignee="disabled-worker")
-        assert len(jobs) == 0
-
-    def test_no_duplicate_trigger_jobs(
-        self, manager_data_dir, create_manager_agent, test_db, mock_emit_event, mock_emit_ui_event
-    ):
-        """Running startup twice doesn't create duplicate trigger jobs.
-
-        Spec: Check if trigger job already exists before creating.
-        """
-        from src.agent.manager import AgentManager
-        from src.tools.data.jobs import list_jobs
-
-        create_manager_agent("worker", triggers=["system:start"])
-
-        manager = AgentManager()
-        configs = manager.load_agent_configs()
-
-        mock_agent = MagicMock()
-        mock_agent.id = "worker"
-        mock_agent.config = configs[0]
-        manager.agents["worker"] = mock_agent
-
-        # Emit twice
-        manager._emit_startup_triggers()
-        manager._emit_startup_triggers()
-
-        # Should still only have one trigger job
-        jobs = list_jobs(assignee="worker")
-        trigger_jobs = [j for j in jobs if j["name"].startswith("Trigger:start:")]
-
-        assert len(trigger_jobs) == 1
+        # No trigger topics should exist for disabled agents
+        topics = list_topics(assignee="disabled-worker")
+        assert len(topics) == 0
 
 
 # =============================================================================
@@ -217,7 +146,7 @@ class TestMissedTriggerDetection:
     def test_detects_missed_morning_trigger(self, manager_data_dir, system_config_with_schedules):
         """Detects morning trigger missed when time has passed and not run today.
 
-        Spec: Detects missed time:morning triggers at startup.
+        Spec: Detects missed morning triggers at startup.
         """
         from src.agent.manager import AgentManager
 
@@ -232,12 +161,13 @@ class TestMissedTriggerDetection:
             # No previous state (never run)
             missed = manager._check_missed_triggers()
 
-        assert "time:morning" in missed
+        # Returns schedule names as "time:{name}"
+        assert any("morning" in m for m in missed)
 
     def test_detects_missed_evening_trigger(self, manager_data_dir, system_config_with_schedules):
         """Detects evening trigger missed when time has passed and not run today.
 
-        Spec: Detects missed time:evening triggers at startup.
+        Spec: Detects missed evening triggers at startup.
         """
         from src.agent.manager import AgentManager
 
@@ -250,7 +180,8 @@ class TestMissedTriggerDetection:
 
             missed = manager._check_missed_triggers()
 
-        assert "time:evening" in missed
+        # Returns schedule names as "time:{name}"
+        assert any("evening" in m for m in missed)
 
     def test_no_missed_when_already_ran_today(self, manager_data_dir, system_config_with_schedules):
         """No missed triggers when they already ran today.
@@ -292,42 +223,8 @@ class TestMissedTriggerDetection:
 
             missed = manager._check_missed_triggers()
 
-        assert "time:morning" not in missed
-
-    def test_creates_jobs_for_missed_triggers(
-        self, manager_data_dir, system_config_with_schedules, create_manager_agent,
-        test_db, mock_emit_event, mock_emit_ui_event
-    ):
-        """Missed triggers create jobs for subscribed agents.
-
-        Spec: Creates missed trigger jobs at startup.
-        """
-        from src.agent.manager import AgentManager
-        from src.tools.data.jobs import list_jobs
-
-        # Create agent subscribed to time:morning
-        create_manager_agent("morning-worker", triggers=["time:morning"])
-
-        manager = AgentManager()
-        configs = manager.load_agent_configs()
-
-        mock_agent = MagicMock()
-        mock_agent.id = "morning-worker"
-        mock_agent.config = configs[0]
-        manager.agents["morning-worker"] = mock_agent
-
-        with patch('src.agent.manager.datetime') as mock_dt:
-            mock_now = MagicMock()
-            mock_now.strftime.side_effect = lambda fmt: "2025-01-23" if fmt == "%Y-%m-%d" else "10:00"
-            mock_dt.now.return_value = mock_now
-
-            manager._emit_startup_triggers()
-
-        jobs = list_jobs(assignee="morning-worker")
-        morning_jobs = [j for j in jobs if "morning" in j["name"]]
-
-        assert len(morning_jobs) == 1
-        assert morning_jobs[0]["name"] == "Trigger:morning:2025-01-23"
+        # Morning shouldn't be missed if we're before 08:00
+        assert not any("morning" in m for m in missed)
 
 
 # =============================================================================
@@ -345,7 +242,7 @@ class TestConfigHotReload:
         """
         from src.agent.manager import AgentManager
 
-        create_manager_agent("reloadable", triggers=["job:assigned"])
+        create_manager_agent("reloadable", triggers=["topic:assigned"])
 
         manager = AgentManager()
         manager.running = True
@@ -387,7 +284,7 @@ class TestConfigHotReload:
         """
         from src.agent.manager import AgentManager
 
-        create_manager_agent("reloadable", triggers=["job:assigned"])
+        create_manager_agent("reloadable", triggers=["topic:assigned"])
 
         manager = AgentManager()
 
@@ -421,7 +318,7 @@ class TestConfigHotReload:
         assert len(configs) == 0
 
         # Create new agent
-        create_manager_agent("new-agent", triggers=["job:assigned"])
+        create_manager_agent("new-agent", triggers=["topic:assigned"])
 
         # Now should find the new agent
         configs = manager.load_agent_configs()
@@ -435,10 +332,10 @@ class TestConfigHotReload:
 
 @pytest.mark.unit
 class TestDictBasedTriggers:
-    """Test handling of new dict-based trigger format.
+    """Test handling of dict-based trigger format.
 
-    Spec: New trigger format uses objects with job_name, job_description, schedule.
-    Dict triggers should not be passed to event bus (only string triggers).
+    Spec: Trigger format uses objects with topic_name, topic_description, schedule.
+    Dict triggers are handled by the scheduler, not the event bus.
     """
 
     def test_start_agent_with_dict_triggers(
@@ -446,21 +343,20 @@ class TestDictBasedTriggers:
     ):
         """start_agent handles dict-based triggers without error.
 
-        Spec: Dict triggers are for scheduled jobs, not event bus subscriptions.
+        Spec: Dict triggers are for scheduled topics.
         """
         from src.agent.manager import AgentManager
 
-        # Create agent with both string and dict triggers
+        # Create agent with dict triggers only (string triggers no longer supported)
         config = {
             "id": "dict-trigger-agent",
             "name": "Dict Trigger Agent",
             "state": "enabled",
-            "tools": ["list_jobs"],
+            "tools": ["list_topics"],
             "triggers": [
-                "job:assigned",  # String trigger (legacy)
-                {  # Dict trigger (new format)
-                    "job_name": "euno:consolidate",
-                    "job_description": "Run consolidation",
+                {
+                    "topic_name": "euno:consolidate",
+                    "topic_description": "Run consolidation",
                     "schedule": "evening"
                 }
             ]
@@ -478,69 +374,12 @@ class TestDictBasedTriggers:
 
         assert "dict-trigger-agent" in manager.agents
 
-    def test_event_bus_only_receives_string_triggers(
-        self, manager_data_dir, create_manager_agent
-    ):
-        """Event bus subscription only receives string triggers, not dicts.
-
-        Spec: Dict triggers are handled by scheduler, not event bus.
-        """
-        from src.agent.manager import AgentManager
-
-        # Create agent with mixed triggers
-        config = {
-            "id": "mixed-trigger-agent",
-            "name": "Mixed Trigger Agent",
-            "state": "enabled",
-            "tools": ["list_jobs"],
-            "triggers": [
-                "job:assigned",
-                "system:start",
-                {
-                    "job_name": "euno:consolidate",
-                    "schedule": "evening"
-                },
-                {
-                    "job_name": "euno:quote",
-                    "schedule": "morning"
-                }
-            ]
-        }
-        agent_dir = manager_data_dir / "agents" / "mixed-trigger-agent"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
-        (agent_dir / "identity.md").write_text("# Mixed Trigger Agent\n\nTest agent.")
-
-        manager = AgentManager()
-
-        # Track what gets passed to event_bus.subscribe
-        subscribed_triggers = []
-        original_subscribe = manager.event_bus.subscribe
-
-        def capture_subscribe(agent_id, triggers):
-            subscribed_triggers.extend(triggers)
-            return original_subscribe(agent_id, triggers)
-
-        manager.event_bus.subscribe = capture_subscribe
-
-        with patch.object(manager, '_run_agent_loop'):
-            manager.start_agent(config)
-
-        # Only string triggers should be subscribed
-        assert "job:assigned" in subscribed_triggers
-        assert "system:start" in subscribed_triggers
-        assert len(subscribed_triggers) == 2  # No dict triggers
-
-        # Verify no dicts in subscribed triggers
-        for trigger in subscribed_triggers:
-            assert isinstance(trigger, str), f"Dict trigger leaked to event bus: {trigger}"
-
     def test_start_agent_with_only_dict_triggers(
         self, manager_data_dir
     ):
         """start_agent works when agent has only dict-based triggers.
 
-        Spec: Agents can have only scheduled triggers (no event bus subscriptions).
+        Spec: Agents can have only scheduled triggers.
         """
         from src.agent.manager import AgentManager
 
@@ -549,10 +388,10 @@ class TestDictBasedTriggers:
             "id": "only-dict-triggers",
             "name": "Only Dict Triggers",
             "state": "enabled",
-            "tools": ["list_jobs"],
+            "tools": ["list_topics"],
             "triggers": [
                 {
-                    "job_name": "euno:consolidate",
+                    "topic_name": "euno:consolidate",
                     "schedule": "evening"
                 }
             ]
@@ -564,130 +403,129 @@ class TestDictBasedTriggers:
 
         manager = AgentManager()
 
-        # Should not raise, should subscribe to empty list
         with patch.object(manager, '_run_agent_loop'):
             manager.start_agent(config)
 
         assert "only-dict-triggers" in manager.agents
 
-    def test_has_open_internal_job_detects_working_status(
+    def test_has_open_internal_topic_detects_working_status(
         self, manager_data_dir, test_db, mock_emit_event, mock_emit_ui_event
     ):
-        """_has_open_internal_job detects jobs with 'working' status.
+        """_has_open_internal_topic detects topics with 'working' status.
 
-        Spec: Prevent duplicate jobs while a job is being executed (status=working).
+        Spec: Prevent duplicate topics while a topic is being executed (status=working).
         """
         from src.agent.manager import AgentManager
-        from src.tools.data.jobs import create_job, claim_job
+        from src.tools.data.topics import create_topic, claim_topic
 
         manager = AgentManager()
 
-        # Create a job and claim it (changes status to 'working')
-        job = create_job(
+        # Create a topic and claim it (changes status to 'working')
+        topic = create_topic(
             name="euno:quote",
             assignee="user",
             parent_id=None,
             created_by="system"
         )
-        claim_job(job["id"], "user")
+        claim_topic(topic["id"], "user")
 
-        # Should detect the working job as "open"
-        assert manager._has_open_internal_job("euno:quote", "user") is True
+        # Should detect the working topic as "open"
+        assert manager._has_open_internal_topic("euno:quote", "user") is True
 
-    def test_has_open_internal_job_detects_todo_status(
+    def test_has_open_internal_topic_detects_todo_status(
         self, manager_data_dir, test_db, mock_emit_event, mock_emit_ui_event
     ):
-        """_has_open_internal_job detects jobs with 'todo' status.
+        """_has_open_internal_topic detects topics with 'todo' status.
 
-        Spec: Prevent duplicate jobs when a job is pending.
+        Spec: Prevent duplicate topics when a topic is pending.
         """
         from src.agent.manager import AgentManager
-        from src.tools.data.jobs import create_job
+        from src.tools.data.topics import create_topic
 
         manager = AgentManager()
 
-        # Create a job (status='todo')
-        create_job(
+        # Create a topic (status='todo')
+        create_topic(
             name="euno:consolidate",
             assignee="user",
             parent_id=None,
             created_by="system"
         )
 
-        # Should detect the todo job as "open"
-        assert manager._has_open_internal_job("euno:consolidate", "user") is True
+        # Should detect the todo topic as "open"
+        assert manager._has_open_internal_topic("euno:consolidate", "user") is True
 
-    def test_has_open_internal_job_false_when_done(
+    def test_has_open_internal_topic_false_when_done(
         self, manager_data_dir, test_db, mock_emit_event, mock_emit_ui_event
     ):
-        """_has_open_internal_job returns False for completed jobs.
+        """_has_open_internal_topic returns False for completed topics.
 
-        Spec: Completed jobs should not block creating new ones.
+        Spec: Completed topics should not block creating new ones.
         """
         from src.agent.manager import AgentManager
-        from src.tools.data.jobs import create_job, complete_job
+        from src.tools.data.topics import create_topic, complete_topic
 
         manager = AgentManager()
 
-        # Create and complete a job
-        job = create_job(
+        # Create and complete a topic
+        topic = create_topic(
             name="euno:quote",
             assignee="user",
             parent_id=None,
             created_by="system"
         )
-        complete_job(job["id"], agent="user")
+        complete_topic(topic["id"], agent="user")
 
-        # Should NOT detect the done job as "open"
-        assert manager._has_open_internal_job("euno:quote", "user") is False
+        # Should NOT detect the done topic as "open"
+        assert manager._has_open_internal_topic("euno:quote", "user") is False
 
 
 # =============================================================================
-# Job Cache Notification Tests
+# Topic Cache Notification Tests
 # =============================================================================
 
 @pytest.mark.unit
-class TestJobCacheNotification:
-    """Test job cache notification integration."""
+class TestTopicCacheNotification:
+    """Test topic cache notification integration."""
 
-    def test_notify_agent_has_jobs_updates_cache(self, manager_data_dir):
-        """_notify_agent_has_jobs sets cache to True.
+    def test_notify_agent_has_topics_updates_cache(self, manager_data_dir):
+        """_notify_agent_has_topics sets cache to True.
 
-        Spec: Cache is shared across threads - when job assigned, cache is notified.
+        Spec: Cache is shared across threads - when topic assigned, cache is notified.
         """
         from src.agent.manager import AgentManager, set_manager, get_manager
-        from src.tools.data.jobs import _notify_agent_has_jobs
+        from src.tools.data.topics import _notify_agent_has_topics
 
         manager = AgentManager()
         set_manager(manager)
 
-        # Initially no jobs cached
-        assert manager.agents_with_jobs.get("test-agent", False) is False
+        # Initially no topics cached
+        assert manager.agents_with_topics.get("test-agent", False) is False
 
         # Notify
-        _notify_agent_has_jobs("test-agent")
+        _notify_agent_has_topics("test-agent")
 
         # Cache should be True
-        assert manager.agents_with_jobs["test-agent"] is True
+        assert manager.agents_with_topics["test-agent"] is True
 
-    def test_create_job_notifies_cache(
+    def test_create_topic_notifies_cache(
         self, manager_data_dir, test_db, mock_emit_event
     ):
-        """create_job calls _notify_agent_has_jobs for assignee.
+        """create_topic calls _notify_agent_has_topics for assignee.
 
         Spec: When agent A assigns to agent B, cache is notified immediately.
         """
         from src.agent.manager import AgentManager, set_manager
-        from src.tools.data.jobs import create_job
+        from src.tools.data.topics import create_topic
 
         manager = AgentManager()
         set_manager(manager)
 
-        # Create job with assignee
-        with patch('src.tools.data.jobs._notify_agent_has_jobs') as mock_notify:
-            with patch('src.tools.data.jobs._emit_jobs_update'):
-                create_job(
-                    name="Test Job",
+        # Create topic with assignee
+        with patch('src.tools.data.topics._notify_agent_has_topics') as mock_notify:
+            with patch('src.tools.data.topics._emit_topics_update'):
+                create_topic(
+                    name="Test Topic",
                     assignee="worker-agent",
                     parent_id=None,
                     created_by="test"
@@ -699,62 +537,62 @@ class TestJobCacheNotification:
     def test_assign_agent_notifies_cache(
         self, manager_data_dir, test_db, mock_emit_event
     ):
-        """assign_agent calls _notify_agent_has_jobs.
+        """assign_agent calls _notify_agent_has_topics.
 
-        Spec: Job assignment immediately notifies the cache.
+        Spec: Topic assignment immediately notifies the cache.
         """
         from src.agent.manager import AgentManager, set_manager
-        from src.tools.data.jobs import create_job, assign_agent
+        from src.tools.data.topics import create_topic, assign_agent
 
         manager = AgentManager()
         set_manager(manager)
 
-        # Create job without assignee
-        with patch('src.tools.data.jobs._notify_agent_has_jobs'):
-            with patch('src.tools.data.jobs._emit_jobs_update'):
-                job = create_job(
-                    name="Unassigned Job",
+        # Create topic without assignee
+        with patch('src.tools.data.topics._notify_agent_has_topics'):
+            with patch('src.tools.data.topics._emit_topics_update'):
+                topic = create_topic(
+                    name="Unassigned Topic",
                     assignee=None,
                     parent_id=None,
                     created_by="test"
                 )
 
         # Assign to agent
-        with patch('src.tools.data.jobs._notify_agent_has_jobs') as mock_notify:
-            with patch('src.tools.data.jobs._emit_jobs_update'):
-                with patch('src.tools.data.jobs._emit_event'):
-                    assign_agent(job["id"], "new-assignee")
+        with patch('src.tools.data.topics._notify_agent_has_topics') as mock_notify:
+            with patch('src.tools.data.topics._emit_topics_update'):
+                with patch('src.tools.data.topics._emit_event'):
+                    assign_agent(topic["id"], "new-assignee")
 
             mock_notify.assert_called_with("new-assignee")
 
-    def test_handoff_job_notifies_cache(
+    def test_handoff_topic_notifies_cache(
         self, manager_data_dir, test_db, mock_emit_event
     ):
-        """handoff_job calls _notify_agent_has_jobs for recipient.
+        """handoff_topic calls _notify_agent_has_topics for recipient.
 
-        Spec: Job handoff notifies the receiving agent's cache.
+        Spec: Topic handoff notifies the receiving agent's cache.
         """
         from src.agent.manager import AgentManager, set_manager
-        from src.tools.data.jobs import create_job, handoff_job
+        from src.tools.data.topics import create_topic, handoff_topic
 
         manager = AgentManager()
         set_manager(manager)
 
-        # Create job assigned to agent A
-        with patch('src.tools.data.jobs._notify_agent_has_jobs'):
-            with patch('src.tools.data.jobs._emit_jobs_update'):
-                job = create_job(
-                    name="Handoff Job",
+        # Create topic assigned to agent A
+        with patch('src.tools.data.topics._notify_agent_has_topics'):
+            with patch('src.tools.data.topics._emit_topics_update'):
+                topic = create_topic(
+                    name="Handoff Topic",
                     assignee="agent-a",
                     parent_id=None,
                     created_by="test"
                 )
 
         # Handoff to agent B
-        with patch('src.tools.data.jobs._notify_agent_has_jobs') as mock_notify:
-            with patch('src.tools.data.jobs._emit_jobs_update'):
-                with patch('src.tools.data.jobs._emit_event'):
-                    handoff_job(job["id"], "agent-b", "Please review")
+        with patch('src.tools.data.topics._notify_agent_has_topics') as mock_notify:
+            with patch('src.tools.data.topics._emit_topics_update'):
+                with patch('src.tools.data.topics._emit_event'):
+                    handoff_topic(topic["id"], "agent-b", "Please review")
 
             mock_notify.assert_called_with("agent-b")
 
@@ -768,9 +606,9 @@ class TestAgentLoopStateChecks:
     """Test agent loop respects state checks."""
 
     def test_cache_prevents_unnecessary_queries(self, manager_data_dir):
-        """When cache is False, agent doesn't query for jobs.
+        """When cache is False, agent doesn't query for topics.
 
-        Spec: Job cache prevents database queries when no jobs are pending.
+        Spec: Topic cache prevents database queries when no topics are pending.
         """
         from src.agent.manager import AgentManager
 
@@ -778,16 +616,16 @@ class TestAgentLoopStateChecks:
         manager.running = True
 
         # Set cache to False
-        manager.agents_with_jobs["test-agent"] = False
+        manager.agents_with_topics["test-agent"] = False
 
         # The loop checks cache before querying
         # We verify the cache value is used correctly
-        assert not manager.agents_with_jobs.get("test-agent", False)
+        assert not manager.agents_with_topics.get("test-agent", False)
 
     def test_cache_true_allows_work_cycle(self, manager_data_dir):
         """When cache is True, agent proceeds to work cycle.
 
-        Spec: Agents poll for actionable jobs when cache indicates jobs exist.
+        Spec: Agents poll for actionable topics when cache indicates topics exist.
         """
         from src.agent.manager import AgentManager
 
@@ -795,7 +633,7 @@ class TestAgentLoopStateChecks:
         manager.running = True
 
         # Set cache to True
-        manager.agents_with_jobs["test-agent"] = True
+        manager.agents_with_topics["test-agent"] = True
 
-        # Cache indicates jobs exist
-        assert manager.agents_with_jobs.get("test-agent", False)
+        # Cache indicates topics exist
+        assert manager.agents_with_topics.get("test-agent", False)

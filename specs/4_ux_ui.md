@@ -31,23 +31,23 @@ Rules for user experience and user interface. The interface should feel like wal
 ## Navigation Structure
 
 Main tabs (bottom of screen):
-- **Jobs** — Primary work queue and job management
+- **Topics** — Primary work queue and topic management
 - **Chat** — Conversation with agents
 - **Focus** — Agent management and monitoring (formerly "Agents")
 - **User** — User identity and memory
 - **Settings** — LLM provider, budget, schedules, system config
 
-## Jobs Tab
+## Topics Tab
 
-- Hierarchical job list with nested children
+- Hierarchical topic list with nested children
 - Status indicators: todo (default), working (in progress), done, error, archived
 - Inline completion actions (complete, archive, delete)
-- Job detail view with:
+- Topic detail view with:
   - Description editing
   - Tags and assignee
-  - Assets panel (files attached to job)
+  - Assets panel (files attached to topic)
   - Execution trace (logs + API calls)
-  - Child jobs
+  - Child topics
 
 ## Chat Tab
 
@@ -87,7 +87,7 @@ Collapsible sections:
 ## Real-Time Updates
 
 SSE connection provides live updates:
-- Job status changes refresh job list
+- Topic status changes refresh topic list
 - Chat messages stream incrementally
 - Consolidation progress shows in Focus tab
 - Agent pause/resume events update UI immediately
@@ -107,7 +107,7 @@ Naming:
 - **Buttons:** `{action}-btn` (e.g., `send-btn`, `pause-btn`)
 - **Inputs:** `{field-name}` (e.g., `context-input`, `budget-limit`)
 - **Containers:** `{component}-content` or `{component}-container`
-- **Cards:** `{type}-card` (e.g., `job-card`, `agent-card`)
+- **Cards:** `{type}-card` (e.g., `topic-card`, `agent-card`)
 - **Messages:** `message-{role}` (e.g., `message-user`, `message-agent`)
 - **Menu items:** `menu-{name}` or `overflow-{name}`
 

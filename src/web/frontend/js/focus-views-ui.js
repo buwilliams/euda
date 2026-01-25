@@ -17,7 +17,7 @@ function toggleSection(sectionId) {
 
 function togglePersonaSection(header, event) {
     // Don't toggle if clicking on the Save action
-    if (event.target.classList.contains('job-section-action')) return;
+    if (event.target.classList.contains('topic-section-action')) return;
 
     header.classList.toggle('open');
     const content = header.nextElementSibling;
@@ -28,7 +28,7 @@ function togglePersonaSection(header, event) {
 
 async function toggleAgentSection(header, event, sectionType, agentId) {
     // Don't toggle if clicking on actions
-    if (event.target.classList.contains('job-section-action')) return;
+    if (event.target.classList.contains('topic-section-action')) return;
 
     header.classList.toggle('open');
     const content = header.nextElementSibling;
@@ -42,14 +42,14 @@ async function toggleAgentSection(header, event, sectionType, agentId) {
                 content.innerHTML = '<div class="section-loading">Loading...</div>';
 
                 if (sectionType === 'completed-by-agent') {
-                    const jobs = await loadAgentCompletedJobs(agentId);
-                    content.innerHTML = renderAgentCompletedJobsContent(jobs);
+                    const topics = await loadAgentCompletedTopics(agentId);
+                    content.innerHTML = renderAgentCompletedTopicsContent(topics);
                 } else if (sectionType === 'monitoring') {
                     const data = await loadAgentMonitoring(agentId);
                     content.innerHTML = renderMonitoringContent(data);
-                } else if (sectionType === 'job-api-calls') {
-                    const data = await loadJobApiCalls(agentId);  // agentId is actually jobId here
-                    content.innerHTML = renderJobApiCallsContent(data);
+                } else if (sectionType === 'topic-api-calls') {
+                    const data = await loadTopicApiCalls(agentId);  // agentId is actually topicId here
+                    content.innerHTML = renderTopicApiCallsContent(data);
                 } else if (sectionType === 'rate-limit-events') {
                     const data = await loadRateLimitEvents(agentId);
                     content.innerHTML = renderRateLimitEventsContent(data, agentId);
@@ -74,25 +74,25 @@ async function toggleAgentSection(header, event, sectionType, agentId) {
     }
 }
 
-function renderAgentCompletedJobsContent(jobs) {
-    if (!jobs || jobs.length === 0) {
-        return '<div class="focus-empty">No jobs completed by this agent yet.</div>';
+function renderAgentCompletedTopicsContent(topics) {
+    if (!topics || topics.length === 0) {
+        return '<div class="focus-empty">No topics completed by this agent yet.</div>';
     }
-    return jobs.map(job => renderCompletedJobCardWithTrace(job)).join('');
+    return topics.map(topic => renderCompletedTopicCardWithTrace(topic)).join('');
 }
 
-function renderCompletedJobCardWithTrace(job) {
-    const name = job.name || 'Untitled';
-    const completedDate = job.completed_at ? formatFriendlyPastDate(job.completed_at.split('T')[0]) : '';
+function renderCompletedTopicCardWithTrace(topic) {
+    const name = topic.name || 'Untitled';
+    const completedDate = topic.completed_at ? formatFriendlyPastDate(topic.completed_at.split('T')[0]) : '';
 
     return `
-        <div class="job-card completed-job-card">
-            <div class="job-card-content" onclick="navigateToTrace('${job.id}')">
-                <span class="job-icon">${icon('check-circle')}</span>
-                <span class="job-name">${escapeHtml(name)}</span>
-                ${completedDate ? `<span class="job-completed-date">${completedDate}</span>` : ''}
+        <div class="topic-card completed-topic-card">
+            <div class="topic-card-content" onclick="navigateToTrace('${topic.id}')">
+                <span class="topic-icon">${icon('check-circle')}</span>
+                <span class="topic-name">${escapeHtml(name)}</span>
+                ${completedDate ? `<span class="topic-completed-date">${completedDate}</span>` : ''}
             </div>
-            <button class="trace-btn" onclick="event.stopPropagation(); navigateToTrace('${job.id}')" title="View Trace">
+            <button class="trace-btn" onclick="event.stopPropagation(); navigateToTrace('${topic.id}')" title="View Trace">
                 ${icon('chart-bar')}
             </button>
         </div>
@@ -141,39 +141,42 @@ function renderMonitoringContent(data) {
     `;
 }
 
-async function loadJobApiCalls(jobId) {
+async function loadTopicApiCalls(topicId) {
     try {
-        const response = await fetch(`/api/jobs/${jobId}/api-calls`);
+        const response = await fetch(`/api/topics/${topicId}/api-calls`);
         if (!response.ok) return null;
         return await response.json();
     } catch (error) {
-        console.error('Failed to load job API calls:', error);
+        console.error('Failed to load topic API calls:', error);
         return null;
     }
 }
 
-function renderJobApiCallsContent(data) {
-    if (!data || data.calls === 0) {
-        return '<div class="focus-empty">No API calls recorded for this job.</div>';
+function renderTopicApiCallsContent(data) {
+    if (!data || data.call_count === 0) {
+        return '<div class="focus-empty">No API calls recorded for this topic.</div>';
     }
 
-    const { calls, cost, input_tokens, output_tokens } = data;
+    const callCount = data.call_count || 0;
+    const totalCost = data.total_cost || 0;
+    const inputTokens = data.total_input_tokens || 0;
+    const outputTokens = data.total_output_tokens || 0;
     const callList = data.calls && Array.isArray(data.calls) ? data.calls : [];
 
     return `
         <div class="monitoring-stats">
             <div class="monitoring-stat">
                 <span class="stat-label">Total Calls</span>
-                <span class="stat-value">${calls}</span>
+                <span class="stat-value">${callCount}</span>
             </div>
             <div class="monitoring-stat">
                 <span class="stat-label">Total Cost</span>
-                <span class="stat-value">$${cost.toFixed(4)}</span>
+                <span class="stat-value">$${totalCost.toFixed(4)}</span>
             </div>
             <div class="monitoring-stat">
                 <span class="stat-label">Tokens</span>
-                <span class="stat-value">${formatTokenCount(input_tokens + output_tokens)}</span>
-                <span class="stat-detail">in: ${formatTokenCount(input_tokens)}, out: ${formatTokenCount(output_tokens)}</span>
+                <span class="stat-value">${formatTokenCount(inputTokens + outputTokens)}</span>
+                <span class="stat-detail">in: ${formatTokenCount(inputTokens)}, out: ${formatTokenCount(outputTokens)}</span>
             </div>
         </div>
 
@@ -183,9 +186,9 @@ function renderJobApiCallsContent(data) {
             ${callList.slice(0, 20).map(call => `
                 <div class="monitoring-prompt">
                     <span class="prompt-time">${formatPromptTime(call.timestamp)}</span>
-                    <span class="prompt-tokens">${call.input_tokens}/${call.output_tokens}</span>
+                    <span class="prompt-tokens">${call.input_tokens || 0}/${call.output_tokens || 0}</span>
                     <span class="prompt-model">${call.model || 'unknown'}</span>
-                    <span class="prompt-cost">$${call.cost.toFixed(4)}</span>
+                    <span class="prompt-cost">$${(call.cost || 0).toFixed(4)}</span>
                 </div>
             `).join('')}
         </div>
@@ -239,4 +242,212 @@ function formatTokenCount(count) {
     if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M';
     if (count >= 1000) return (count / 1000).toFixed(1) + 'K';
     return count.toString();
+}
+
+function formatPromptTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ============== Topic API Calls View ==============
+
+// Cache for topic API calls data
+let topicApiCallsCache = {};
+let topicApiCallsLoading = {};
+
+function renderTopicApiCallsView(topicId) {
+    const topic = allTopicsData.find(t => t.id === topicId);
+    const displayName = topic?.name || 'Topic';
+
+    // Check cache
+    if (!topicApiCallsCache[topicId] && !topicApiCallsLoading[topicId]) {
+        topicApiCallsLoading[topicId] = true;
+        loadTopicApiCalls(topicId).then(data => {
+            topicApiCallsCache[topicId] = data || { call_count: 0, total_cost: 0, total_input_tokens: 0, total_output_tokens: 0, calls: [] };
+            topicApiCallsLoading[topicId] = false;
+            renderFocusTab();
+        }).catch(() => {
+            topicApiCallsLoading[topicId] = false;
+        });
+        return `
+            ${renderViewHeader('API Calls')}
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading API calls...</div>
+            </div>
+        `;
+    }
+
+    const data = topicApiCallsCache[topicId] || { call_count: 0, total_cost: 0, total_input_tokens: 0, total_output_tokens: 0, calls: [] };
+    const callCount = data.call_count || 0;
+    const totalCost = data.total_cost || 0;
+    const inputTokens = data.total_input_tokens || 0;
+    const outputTokens = data.total_output_tokens || 0;
+    const callList = data.calls || [];
+
+    if (callCount === 0) {
+        return `
+            ${renderViewHeader('API Calls')}
+            <div class="focus-view-content">
+                <div class="focus-empty">No API calls recorded for this topic.</div>
+            </div>
+        `;
+    }
+
+    return `
+        ${renderViewHeader('API Calls')}
+        <div class="focus-view-content">
+            <!-- Stats -->
+            <div class="monitoring-stats">
+                <div class="monitoring-stat">
+                    <span class="stat-label">Total Calls</span>
+                    <span class="stat-value">${callCount}</span>
+                </div>
+                <div class="monitoring-stat">
+                    <span class="stat-label">Total Cost</span>
+                    <span class="stat-value">$${totalCost.toFixed(4)}</span>
+                </div>
+                <div class="monitoring-stat">
+                    <span class="stat-label">Tokens</span>
+                    <span class="stat-value">${formatTokenCount(inputTokens + outputTokens)}</span>
+                    <span class="stat-detail">in: ${formatTokenCount(inputTokens)}, out: ${formatTokenCount(outputTokens)}</span>
+                </div>
+            </div>
+
+            <!-- Calls List Header -->
+            <div class="topic-section">
+                <div class="topic-section-header">API Calls${callList.length > 0 ? ` (${callList.length})` : ''}</div>
+            </div>
+
+            <!-- Calls List -->
+            ${callList.length === 0 ? '<div class="focus-empty">No API calls</div>' :
+              callList.map((call, index) => `
+                <div class="prompt-list-item" onclick="navigateFocus('topic-prompt-${topicId}-${index}')">
+                    <span class="prompt-time">${formatPromptTime(call.timestamp)}</span>
+                    <span class="prompt-tokens">${call.input_tokens || 0}/${call.output_tokens || 0}</span>
+                    <span class="prompt-model">${escapeHtml(call.model || 'unknown')}</span>
+                    <span class="prompt-item-arrow">${icon('chevron-right')}</span>
+                </div>
+              `).join('')
+            }
+        </div>
+    `;
+}
+
+function renderTopicPromptDetailView(topicId, promptIndex) {
+    const cached = topicApiCallsCache[topicId];
+    if (!cached || !cached.calls) {
+        // Need to load data first
+        loadTopicApiCalls(topicId).then(data => {
+            topicApiCallsCache[topicId] = data || { call_count: 0, total_cost: 0, total_input_tokens: 0, total_output_tokens: 0, calls: [] };
+            renderFocusTab();
+        });
+        return `
+            ${renderViewHeader('Prompt')}
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading...</div>
+            </div>
+        `;
+    }
+
+    const call = cached.calls[parseInt(promptIndex)];
+    if (!call) {
+        return `
+            ${renderViewHeader('Prompt')}
+            <div class="focus-view-content">
+                <div class="focus-empty">Prompt not found</div>
+            </div>
+        `;
+    }
+
+    // Helper to render messages nicely
+    const renderMessages = (messages) => {
+        if (!Array.isArray(messages)) {
+            return `<pre class="prompt-content">${escapeHtml(JSON.stringify(messages, null, 2))}</pre>`;
+        }
+        return messages.map(msg => {
+            const role = msg.role || 'unknown';
+            const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content, null, 2);
+            return `
+                <div class="prompt-message">
+                    <div class="prompt-message-role">${escapeHtml(role)}</div>
+                    <div class="prompt-message-content">${marked.parse(content)}</div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    // Helper to render response
+    const renderResponse = (response) => {
+        if (typeof response === 'string') {
+            return marked.parse(response);
+        }
+        if (response && typeof response === 'object') {
+            if (Array.isArray(response.content)) {
+                return response.content.map(block => {
+                    if (block.type === 'text') {
+                        return `<div class="response-text">${marked.parse(block.text || '')}</div>`;
+                    } else if (block.type === 'tool_use') {
+                        return `
+                            <div class="response-tool-use">
+                                <div class="tool-use-header">Tool: ${escapeHtml(block.name || 'unknown')}</div>
+                                <pre class="tool-use-input">${escapeHtml(JSON.stringify(block.input, null, 2))}</pre>
+                            </div>
+                        `;
+                    }
+                    return `<pre class="prompt-content">${escapeHtml(JSON.stringify(block, null, 2))}</pre>`;
+                }).join('');
+            }
+            if (response.content) {
+                return marked.parse(String(response.content));
+            }
+        }
+        return `<pre class="prompt-content">${escapeHtml(JSON.stringify(response, null, 2))}</pre>`;
+    };
+
+    return `
+        ${renderViewHeader('Prompt')}
+        <div class="focus-view-content">
+            <!-- Call Metadata -->
+            <div class="monitoring-stats">
+                <div class="monitoring-stat">
+                    <span class="stat-label">Time</span>
+                    <span class="stat-value">${formatPromptTime(call.timestamp)}</span>
+                </div>
+                <div class="monitoring-stat">
+                    <span class="stat-label">Model</span>
+                    <span class="stat-value">${escapeHtml(call.model || 'unknown')}</span>
+                </div>
+                <div class="monitoring-stat">
+                    <span class="stat-label">Tokens</span>
+                    <span class="stat-value">${(call.input_tokens || 0) + (call.output_tokens || 0)}</span>
+                    <span class="stat-detail">in: ${call.input_tokens || 0}, out: ${call.output_tokens || 0}</span>
+                </div>
+                <div class="monitoring-stat">
+                    <span class="stat-label">Cost</span>
+                    <span class="stat-value">$${(call.cost || 0).toFixed(4)}</span>
+                </div>
+            </div>
+
+            ${call.messages ? `
+            <!-- Prompt Messages -->
+            <div class="topic-section">
+                <div class="topic-section-header">Messages</div>
+            </div>
+            <div class="prompt-messages">
+                ${renderMessages(call.messages)}
+            </div>
+            ` : ''}
+
+            ${call.response ? `
+            <!-- Response -->
+            <div class="topic-section">
+                <div class="topic-section-header">Response</div>
+            </div>
+            <div class="prompt-response">
+                ${renderResponse(call.response)}
+            </div>
+            ` : ''}
+        </div>
+    `;
 }

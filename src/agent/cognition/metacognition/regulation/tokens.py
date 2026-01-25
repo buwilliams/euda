@@ -632,7 +632,7 @@ class TokenAwareness:
 
     def record(self, agent_id: str, input_tokens: int, output_tokens: int,
                provider: str = "openai", model: str = "unknown",
-               job_id: Optional[str] = None, cached_input_tokens: int = 0,
+               topic_id: Optional[str] = None, cached_input_tokens: int = 0,
                stop_reason: str = None, duration_ms: int = None,
                timestamp: str = None):
         """Record actual token usage after an API call.
@@ -646,7 +646,7 @@ class TokenAwareness:
             output_tokens: Actual output tokens used
             provider: LLM provider name
             model: Model name
-            job_id: Optional job ID for per-job tracking
+            topic_id: Optional topic ID for per-topic tracking
             cached_input_tokens: Cached input tokens (subset of input_tokens)
             stop_reason: Reason the model stopped
             duration_ms: Duration of the API call
@@ -660,7 +660,7 @@ class TokenAwareness:
         self._log_cost_entry({
             "timestamp": call_timestamp,
             "agent": agent_id,
-            "job_id": job_id,
+            "topic_id": topic_id,
             "provider": provider,
             "model": model,
             "input_tokens": input_tokens,
@@ -1088,59 +1088,67 @@ def get_token_awareness() -> TokenAwareness:
         return _token_awareness
 
 
-def get_calls_by_job(job_id: str, days: int = 30) -> list:
-    """Get all API calls for a specific job.
+def get_calls_by_topic(topic_id: str, days: int = 30) -> list:
+    """Get all API calls for a specific topic.
 
     Args:
-        job_id: The job ID to filter by
+        topic_id: The topic ID to filter by
         days: Number of days to look back
 
     Returns:
-        List of API call entries for this job
+        List of API call entries for this topic
     """
-    ta = get_token_awareness()
-    cutoff = datetime.now() - timedelta(days=days)
+    now = datetime.now()
+    cutoff = now - timedelta(days=days)
+    start_date = cutoff.replace(day=1)
     results = []
 
-    # Read from current month's log file
-    log_path = ta._cost_log_path
-    if log_path.exists():
-        try:
-            with open(log_path, "r") as f:
-                for line in f:
-                    if not line.strip():
-                        continue
-                    try:
-                        entry = json.loads(line)
-                        if entry.get("job_id") == job_id:
-                            entry_time = datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
-                            if entry_time.replace(tzinfo=None) >= cutoff:
-                                results.append(entry)
-                    except (json.JSONDecodeError, KeyError, ValueError):
-                        continue
-        except Exception:
-            pass
+    # Read from all relevant monthly log files
+    current = start_date
+    while current <= now:
+        log_path = USAGE_DIR / f"{current.strftime('%Y-%m')}.jsonl"
+        if log_path.exists():
+            try:
+                with open(log_path, "r") as f:
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        try:
+                            entry = json.loads(line)
+                            if entry.get("topic_id") == topic_id:
+                                entry_time = datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
+                                if entry_time.replace(tzinfo=None) >= cutoff:
+                                    results.append(entry)
+                        except (json.JSONDecodeError, KeyError, ValueError):
+                            continue
+            except Exception:
+                pass
+        # Move to next month
+        if current.month == 12:
+            current = current.replace(year=current.year + 1, month=1)
+        else:
+            current = current.replace(month=current.month + 1)
 
     return results
 
 
-def get_job_call_count(job_id: str, days: int = 30) -> dict:
-    """Get call count and cost summary for a job.
+def get_topic_call_count(topic_id: str, days: int = 30) -> dict:
+    """Get call count and cost summary for a topic.
 
     Args:
-        job_id: The job ID to summarize
+        topic_id: The topic ID to summarize
         days: Number of days to look back
 
     Returns:
         Dict with call_count and total_cost
     """
-    calls = get_calls_by_job(job_id, days)
+    calls = get_calls_by_topic(topic_id, days)
     total_cost = sum(c.get("cost", 0) for c in calls)
     total_input = sum(c.get("input_tokens", 0) for c in calls)
     total_output = sum(c.get("output_tokens", 0) for c in calls)
 
     return {
-        "job_id": job_id,
+        "topic_id": topic_id,
         "call_count": len(calls),
         "total_cost": round(total_cost, 6),
         "total_input_tokens": total_input,
@@ -1157,32 +1165,41 @@ def get_costs_by_agent(days: int = 30) -> dict:
     Returns:
         Dict mapping agent_id to cost summary
     """
-    ta = get_token_awareness()
-    cutoff = datetime.now() - timedelta(days=days)
+    now = datetime.now()
+    cutoff = now - timedelta(days=days)
+    start_date = cutoff.replace(day=1)
     by_agent = {}
 
-    log_path = ta._cost_log_path
-    if log_path.exists():
-        try:
-            with open(log_path, "r") as f:
-                for line in f:
-                    if not line.strip():
-                        continue
-                    try:
-                        entry = json.loads(line)
-                        entry_time = datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
-                        if entry_time.replace(tzinfo=None) >= cutoff:
-                            agent_id = entry.get("agent", "unknown")
-                            if agent_id not in by_agent:
-                                by_agent[agent_id] = {"calls": 0, "cost": 0, "input_tokens": 0, "output_tokens": 0}
-                            by_agent[agent_id]["calls"] += 1
-                            by_agent[agent_id]["cost"] += entry.get("cost", 0)
-                            by_agent[agent_id]["input_tokens"] += entry.get("input_tokens", 0)
-                            by_agent[agent_id]["output_tokens"] += entry.get("output_tokens", 0)
-                    except (json.JSONDecodeError, KeyError, ValueError):
-                        continue
-        except Exception:
-            pass
+    # Read from all relevant monthly log files
+    current = start_date
+    while current <= now:
+        log_path = USAGE_DIR / f"{current.strftime('%Y-%m')}.jsonl"
+        if log_path.exists():
+            try:
+                with open(log_path, "r") as f:
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        try:
+                            entry = json.loads(line)
+                            entry_time = datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
+                            if entry_time.replace(tzinfo=None) >= cutoff:
+                                agent_id = entry.get("agent", "unknown")
+                                if agent_id not in by_agent:
+                                    by_agent[agent_id] = {"calls": 0, "cost": 0, "input_tokens": 0, "output_tokens": 0}
+                                by_agent[agent_id]["calls"] += 1
+                                by_agent[agent_id]["cost"] += entry.get("cost", 0)
+                                by_agent[agent_id]["input_tokens"] += entry.get("input_tokens", 0)
+                                by_agent[agent_id]["output_tokens"] += entry.get("output_tokens", 0)
+                        except (json.JSONDecodeError, KeyError, ValueError):
+                            continue
+            except Exception:
+                pass
+        # Move to next month
+        if current.month == 12:
+            current = current.replace(year=current.year + 1, month=1)
+        else:
+            current = current.replace(month=current.month + 1)
 
     return by_agent
 

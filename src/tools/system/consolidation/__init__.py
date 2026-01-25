@@ -3,7 +3,7 @@ Consolidation Module - Memory and identity consolidation for agents.
 
 This module provides:
 1. The Consolidation class for agent-level memory management (append after chat)
-2. The euno_consolidate tool for scheduled consolidation jobs (identity updates)
+2. The euno_consolidate tool for scheduled consolidation topics (identity updates)
 
 Each Agent has a Consolidation instance that handles:
 - Append phase: Extract noteworthy items from conversations to short-term memory
@@ -30,10 +30,10 @@ class Consolidation:
 
     Provides two phases:
     - append(): Lightweight extraction after each conversation
-    - consolidate(): Heavy analysis on daily trigger (now via euno:consolidate jobs)
+    - consolidate(): Heavy analysis on daily trigger (now via euno:consolidate topics)
 
     Note: consolidate() is kept for backwards compatibility but the preferred
-    approach is to use euno:consolidate jobs which call the euno_consolidate tool.
+    approach is to use euno:consolidate topics which call the euno_consolidate tool.
     """
 
     def __init__(self, agent: "Agent"):
@@ -125,7 +125,7 @@ class Consolidation:
         This is a heavy operation run on daily trigger. Analyzes long-term
         memory to update the agent's identity based on observed patterns.
 
-        Note: The preferred approach is to use euno:consolidate jobs instead
+        Note: The preferred approach is to use euno:consolidate topics instead
         of calling this method directly.
 
         Args:
@@ -250,20 +250,20 @@ class ConsolidationRunner:
 
 @tool(
     "euno_consolidate",
-    "Run consolidation for an agent. Internal system tool for scheduled consolidation jobs.",
+    "Run consolidation for an agent. Internal system tool for scheduled consolidation topics.",
     tool_type="system"
 )
 def euno_consolidate(agent_id: str, phase: str = "consolidate") -> dict:
     """Execute consolidation directly without LLM involvement.
 
-    This tool is called by the system when processing euno:consolidate jobs.
+    This tool is called by the system when processing euno:consolidate topics.
     It runs the consolidation logic that analyzes long-term memory and updates identity.
 
     Args:
         agent_id: The agent to run consolidation for
         phase: Phase to run - "consolidate" (default), "append", or "both"
                Note: append is typically run automatically after chat, so
-               scheduled jobs usually run "consolidate" only.
+               scheduled topics usually run "consolidate" only.
 
     Returns:
         Dict with status and result details

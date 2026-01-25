@@ -1,4 +1,4 @@
-/* Euno - Focus Extras (Indicators, Child Jobs, Quote, Agent Config) */
+/* Euno - Focus Extras (Indicators, Child Topics, Quote, Agent Config) */
 
 /* Card Status Indicators */
 .card-status-indicator {
@@ -70,13 +70,13 @@
     opacity: 0.5;
 }
 
-/* Child job cards in system container views (Agents, Projects) */
-.child-jobs-list {
+/* Child topic cards in system container views (Agents, Projects) */
+.child-topics-list {
     display: flex;
     flex-direction: column;
 }
 
-.child-job-card {
+.child-topic-card {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
@@ -90,58 +90,58 @@
     box-sizing: border-box;
 }
 
-.child-job-card:first-child {
+.child-topic-card:first-child {
     border-top: 1px solid var(--color-border-light);
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
-.child-job-card:last-child {
+.child-topic-card:last-child {
     border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
-.child-job-card:only-child {
+.child-topic-card:only-child {
     border-radius: var(--radius-xl);
 }
 
-.child-job-card:hover {
+.child-topic-card:hover {
     background: var(--color-bg-subtle);
 }
 
-.child-job-icon {
+.child-topic-icon {
     display: flex;
     align-items: center;
     flex-shrink: 0;
 }
 
-.child-job-icon img {
+.child-topic-icon img {
     width: 1em;
     height: 1em;
 }
 
-.child-job-name {
+.child-topic-name {
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.child-job-count {
+.child-topic-count {
     color: var(--color-text-secondary);
     font-size: var(--font-size-sm);
 }
 
-.child-job-arrow {
+.child-topic-arrow {
     display: flex;
     align-items: center;
     color: var(--color-text-tertiary);
 }
 
-.child-job-arrow img {
+.child-topic-arrow img {
     width: 1em;
     height: 1em;
 }
 
-.child-job-card .card-trash-btn {
+.child-topic-card .card-trash-btn {
     opacity: 0.5;
 }
 

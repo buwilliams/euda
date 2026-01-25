@@ -205,43 +205,43 @@ function retryLastMessage() {
     }
 }
 
-// ============== Job Context (for context-aware chat routing) ==============
+// ============== Topic Context (for context-aware chat routing) ==============
 
-let currentJobContext = null;
-let currentJobName = null;
+let currentTopicContext = null;
+let currentTopicName = null;
 
-function setJobContext(jobId) {
-    // Get job to check if it's a system container
-    const job = typeof jobsData !== 'undefined' ? jobsData.find(j => j.id === jobId) : null;
+function setTopicContext(topicId) {
+    // Get topic to check if it's a system container
+    const topic = typeof topicsData !== 'undefined' ? topicsData.find(j => j.id === topicId) : null;
 
-    // Don't show context for system containers (Agents, Projects, System) or agent inbox jobs
-    // But DO show for jobs that are descendants of agents (jobs the agent worked on)
-    if (job) {
-        const tags = job.tags || [];
-        // Only exclude the container jobs themselves, not their descendants
+    // Don't show context for system containers (Agents, Projects, System) or agent inbox topics
+    // But DO show for topics that are descendants of agents (topics the agent worked on)
+    if (topic) {
+        const tags = topic.tags || [];
+        // Only exclude the container topics themselves, not their descendants
         const isSystemContainer = tags.includes('system:agents') ||
                                   tags.includes('system:projects');
-        // Agent inbox jobs are the root jobs for each agent (have agent_id or agent-inbox tag)
-        const isAgentInbox = tags.includes('agent-inbox') || job.agent_id;
+        // Agent inbox topics are the root topics for each agent (have agent_id or agent-inbox tag)
+        const isAgentInbox = tags.includes('agent-inbox') || topic.agent_id;
 
         if (isSystemContainer || isAgentInbox) {
-            clearJobContext();
+            clearTopicContext();
             return;
         }
     }
 
-    currentJobContext = jobId;
-    currentJobName = job ? job.name : 'this job';
+    currentTopicContext = topicId;
+    currentTopicName = topic ? topic.name : 'this topic';
     updateInputContext();
 }
 
-function clearJobContext() {
-    currentJobContext = null;
-    currentJobName = null;
+function clearTopicContext() {
+    currentTopicContext = null;
+    currentTopicName = null;
     updateInputContext();
 
     // Also directly hide the label in case updateInputContext returns early
-    const label = document.getElementById('job-context-label');
+    const label = document.getElementById('topic-context-label');
     if (label) {
         label.classList.remove('active');
         label.textContent = '';
@@ -250,14 +250,14 @@ function clearJobContext() {
 
 function updateInputContext() {
     if (!contextInput) return;
-    const label = document.getElementById('job-context-label');
+    const label = document.getElementById('topic-context-label');
 
-    if (currentJobContext && label) {
-        contextInput.placeholder = "Send feedback about this job...";
-        label.textContent = '@job';
+    if (currentTopicContext && label) {
+        contextInput.placeholder = "Send feedback about this topic...";
+        label.textContent = '@topic';
         label.classList.add('active');
-        label.onclick = clearJobContext;
-        label.title = `Replying to: ${currentJobName || 'Job'} (click to clear)`;
+        label.onclick = clearTopicContext;
+        label.title = `Replying to: ${currentTopicName || 'Topic'} (click to clear)`;
     } else if (label) {
         contextInput.placeholder = "What's on your mind?";
         label.classList.remove('active');
@@ -267,16 +267,16 @@ function updateInputContext() {
     }
 }
 
-async function sendJobFeedback(jobId, message) {
-    // Show user message with job context indicator
-    const jobName = currentJobName || 'job';
-    addInlineMessage(message, 'you', `Re: ${jobName}`);
+async function sendTopicFeedback(topicId, message) {
+    // Show user message with topic context indicator
+    const topicName = currentTopicName || 'topic';
+    addInlineMessage(message, 'you', `Re: ${topicName}`);
     contextInput.value = '';
     contextInput.style.height = 'auto';
     addInlineThinking();
 
     try {
-        const response = await fetch(`/api/jobs/${jobId}/feedback`, {
+        const response = await fetch(`/api/topics/${topicId}/feedback`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message })
@@ -293,9 +293,9 @@ async function sendJobFeedback(jobId, message) {
         addInlineMessage(`Feedback sent to **${result.to_agent}**. They'll work on it and get back to you.`, 'friend');
         showChatNotification();
 
-        // Refresh job data if loadAllJobs exists
-        if (typeof loadAllJobs === 'function') {
-            await loadAllJobs();
+        // Refresh topic data if loadAllTopics exists
+        if (typeof loadAllTopics === 'function') {
+            await loadAllTopics();
         }
         if (typeof renderFocusTab === 'function') {
             renderFocusTab();
@@ -363,9 +363,9 @@ function sendContextMessage() {
     const message = contextInput.value.trim();
     if (!message) return;
 
-    // If viewing a job, route to job feedback endpoint
-    if (currentJobContext) {
-        sendJobFeedback(currentJobContext, message);
+    // If viewing a topic, route to topic feedback endpoint
+    if (currentTopicContext) {
+        sendTopicFeedback(currentTopicContext, message);
         return;
     }
 
@@ -502,7 +502,7 @@ function addInlineMessage(content, role, context = null) {
     div.setAttribute('data-testid', role === 'you' ? 'message-user' : 'message-agent');
     const html = role === 'friend' ? marked.parse(content) : escapeHtml(content);
 
-    // Add context label if provided (e.g., "Re: Job Name")
+    // Add context label if provided (e.g., "Re: Topic Name")
     const contextHtml = context ? `<div class="message-context">${escapeHtml(context)}</div>` : '';
 
     div.innerHTML = `${contextHtml}<div class="message-content">${html}</div>`;

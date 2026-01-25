@@ -42,30 +42,30 @@ function cancelEditingAsset() {
 
 // ============== Asset API Functions ==============
 
-async function loadJobAssets(jobId) {
+async function loadTopicAssets(topicId) {
     try {
-        const response = await fetch(`/api/jobs/${jobId}/assets`);
+        const response = await fetch(`/api/topics/${topicId}/assets`);
         if (response.ok) {
             const assets = await response.json();
-            jobAssetsCache[jobId] = assets;
+            topicAssetsCache[topicId] = assets;
             return assets;
         }
     } catch (error) {
         console.error('Failed to load assets:', error);
     }
     // Always set cache to prevent infinite reload loop
-    jobAssetsCache[jobId] = [];
+    topicAssetsCache[topicId] = [];
     return [];
 }
 
-async function deleteAsset(jobId, filename) {
+async function deleteAsset(topicId, filename) {
     try {
-        const response = await fetch(`/api/jobs/${jobId}/assets/${encodeURIComponent(filename)}`, {
+        const response = await fetch(`/api/topics/${topicId}/assets/${encodeURIComponent(filename)}`, {
             method: 'DELETE'
         });
 
         if (response.ok) {
-            await loadJobAssets(jobId);
+            await loadTopicAssets(topicId);
             renderFocusTab();
         }
     } catch (error) {
@@ -73,19 +73,19 @@ async function deleteAsset(jobId, filename) {
     }
 }
 
-async function uploadAsset(jobId, file) {
+async function uploadAsset(topicId, file) {
     try {
         // Read file as text (for now, only supporting text files)
         const content = await file.text();
 
-        const response = await fetch(`/api/jobs/${jobId}/assets/${encodeURIComponent(file.name)}`, {
+        const response = await fetch(`/api/topics/${topicId}/assets/${encodeURIComponent(file.name)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content })
         });
 
         if (response.ok) {
-            await loadJobAssets(jobId);
+            await loadTopicAssets(topicId);
             renderFocusTab();
         }
     } catch (error) {
@@ -93,36 +93,36 @@ async function uploadAsset(jobId, file) {
     }
 }
 
-function handleAssetUpload(event, jobId) {
+function handleAssetUpload(event, topicId) {
     const file = event.target.files[0];
     if (file) {
-        uploadAsset(jobId, file);
+        uploadAsset(topicId, file);
         event.target.value = ''; // Reset input
     }
 }
 
-async function loadAssetContent(jobId, filename) {
+async function loadAssetContent(topicId, filename) {
     try {
-        const response = await fetch(`/api/jobs/${jobId}/assets/${encodeURIComponent(filename)}`);
+        const response = await fetch(`/api/topics/${topicId}/assets/${encodeURIComponent(filename)}`);
         if (response.ok) {
             currentAssetData = await response.json();
-            currentAssetData.jobId = jobId;
+            currentAssetData.topicId = topicId;
             return currentAssetData;
         }
     } catch (error) {
         console.error('Failed to load asset:', error);
     }
     // Always set currentAssetData to prevent infinite reload loop
-    currentAssetData = { jobId, filename, content: '', error: true };
+    currentAssetData = { topicId, filename, content: '', error: true };
     return null;
 }
 
-async function saveAssetContent(jobId, filename) {
+async function saveAssetContent(topicId, filename) {
     const textarea = document.getElementById('asset-content-edit');
     if (!textarea) return;
 
     try {
-        const response = await fetch(`/api/jobs/${jobId}/assets/${encodeURIComponent(filename)}`, {
+        const response = await fetch(`/api/topics/${topicId}/assets/${encodeURIComponent(filename)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content: textarea.value })
@@ -131,15 +131,15 @@ async function saveAssetContent(jobId, filename) {
         if (response.ok) {
             // Update current data and refresh cache
             currentAssetData.content = textarea.value;
-            await loadJobAssets(jobId);
+            await loadTopicAssets(topicId);
         }
     } catch (error) {
         console.error('Failed to save asset:', error);
     }
 }
 
-async function createNewAsset(jobId) {
-    const input = document.getElementById(`new-asset-${jobId}`);
+async function createNewAsset(topicId) {
+    const input = document.getElementById(`new-asset-${topicId}`);
     if (!input) return;
 
     let filename = input.value.trim();
@@ -151,7 +151,7 @@ async function createNewAsset(jobId) {
     }
 
     try {
-        const response = await fetch(`/api/jobs/${jobId}/assets/${encodeURIComponent(filename)}`, {
+        const response = await fetch(`/api/topics/${topicId}/assets/${encodeURIComponent(filename)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content: '' })
@@ -159,32 +159,32 @@ async function createNewAsset(jobId) {
 
         if (response.ok) {
             input.value = '';
-            await loadJobAssets(jobId);
+            await loadTopicAssets(topicId);
             // Navigate to the new asset
-            navigateFocus(`asset-${jobId}-${filename}`);
+            navigateFocus(`asset-${topicId}-${filename}`);
         }
     } catch (error) {
         console.error('Failed to create asset:', error);
     }
 }
 
-function handleNewAssetKeypress(event, jobId) {
+function handleNewAssetKeypress(event, topicId) {
     if (event.key === 'Enter') {
-        createNewAsset(jobId);
+        createNewAsset(topicId);
     }
 }
 
 // ============== Asset Views ==============
 
-function renderAssetView(jobId, filename) {
-    // Get job name for header (use allJobsData to find any job regardless of status)
-    const job = allJobsData.find(j => j.id === jobId);
-    const isCompleted = job?.status === 'done';
-    const jobName = job ? job.name : 'Job';
+function renderAssetView(topicId, filename) {
+    // Get topic name for header (use allTopicsData to find any topic regardless of status)
+    const topic = allTopicsData.find(j => j.id === topicId);
+    const isCompleted = topic?.status === 'done';
+    const topicName = topic ? topic.name : 'Topic';
 
     // Load asset if not already loaded
-    if (!currentAssetData || currentAssetData.filename !== filename || currentAssetData.jobId !== jobId) {
-        loadAssetContent(jobId, filename).then(() => renderFocusTab());
+    if (!currentAssetData || currentAssetData.filename !== filename || currentAssetData.topicId !== topicId) {
+        loadAssetContent(topicId, filename).then(() => renderFocusTab());
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
@@ -216,33 +216,33 @@ function renderAssetView(jobId, filename) {
             <!-- Actions Row -->
             <div class="task-detail-actions">
                 ${isEditing ? `
-                    <button class="task-detail-action" onclick="saveAssetContent('${jobId}', '${escapeHtml(filename)}'); cancelEditingAsset();">${icon('arrow-down-tray')} Save</button>
+                    <button class="task-detail-action" onclick="saveAssetContent('${topicId}', '${escapeHtml(filename)}'); cancelEditingAsset();">${icon('arrow-down-tray')} Save</button>
                     <button class="task-detail-action" onclick="cancelEditingAsset()">Cancel</button>
                 ` : `
                     <button class="task-detail-action" onclick="startEditingAsset('${escapeHtml(filename)}')">${icon('pencil')} Edit</button>
                 `}
-                <button class="task-detail-action danger" onclick="deleteAsset('${jobId}', '${escapeHtml(filename)}'); navigateFocusBack();">${icon('trash')} Delete</button>
+                <button class="task-detail-action danger" onclick="deleteAsset('${topicId}', '${escapeHtml(filename)}'); navigateFocusBack();">${icon('trash')} Delete</button>
             </div>
 
             <!-- Asset Content -->
-            <div class="job-section">
-                <div class="job-section-header">Content</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Content</div>
                 ${isEditing ? `
-                    <textarea class="job-description-input" id="asset-content-edit" style="min-height: 300px;"
+                    <textarea class="topic-description-input" id="asset-content-edit" style="min-height: 300px;"
                         placeholder="Write content here...">${escapeHtml(asset.content || '')}</textarea>
                 ` : `
-                    <div class="job-description-display ${hasContent ? '' : 'empty'}" onclick="startEditingAsset('${escapeHtml(filename)}')">
+                    <div class="topic-description-display ${hasContent ? '' : 'empty'}" onclick="startEditingAsset('${escapeHtml(filename)}')">
                         ${hasContent ? (isMarkdown ? marked.parse(asset.content) : `<pre>${escapeHtml(asset.content)}</pre>`) : 'Click to add content...'}
                     </div>
                 `}
             </div>
 
             <!-- Back Link -->
-            <div class="job-section">
-                <div class="job-section-header">Job</div>
-                <div class="asset-back-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'job'}-${jobId}')">
+            <div class="topic-section">
+                <div class="topic-section-header">Topic</div>
+                <div class="asset-back-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'topic'}-${topicId}')">
                     ${icon('folder')}
-                    <span>${escapeHtml(jobName)}</span>
+                    <span>${escapeHtml(topicName)}</span>
                     ${icon('chevron-right')}
                 </div>
             </div>
@@ -250,16 +250,16 @@ function renderAssetView(jobId, filename) {
     `;
 }
 
-function renderAssetsListView(jobId) {
-    // Use allJobsData to find any job regardless of status
-    const job = allJobsData.find(j => j.id === jobId);
-    const isCompleted = job?.status === 'done';
-    const jobName = job ? job.name : 'Job';
-    const assets = jobAssetsCache[jobId] || [];
+function renderAssetsListView(topicId) {
+    // Use allTopicsData to find any topic regardless of status
+    const topic = allTopicsData.find(j => j.id === topicId);
+    const isCompleted = topic?.status === 'done';
+    const topicName = topic ? topic.name : 'Topic';
+    const assets = topicAssetsCache[topicId] || [];
 
     // Load assets if not cached
-    if (!jobAssetsCache[jobId]) {
-        loadJobAssets(jobId).then(() => renderFocusTab());
+    if (!topicAssetsCache[topicId]) {
+        loadTopicAssets(topicId).then(() => renderFocusTab());
     }
 
     return `
@@ -271,15 +271,15 @@ function renderAssetsListView(jobId) {
             </div>
         </div>
         <div class="focus-view-content">
-            <div class="job-section">
-                <div class="job-section-header">Job</div>
-                <div class="card-project-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'job'}-${jobId}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(jobName)}</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Topic</div>
+                <div class="card-project-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'topic'}-${topicId}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(topicName)}</div>
             </div>
 
             <div class="task-detail-actions">
                 <label class="task-detail-action" style="cursor: pointer;">
                     Upload File
-                    <input type="file" style="display: none;" onchange="handleAssetUpload(event, '${jobId}')">
+                    <input type="file" style="display: none;" onchange="handleAssetUpload(event, '${topicId}')">
                 </label>
             </div>
 
@@ -289,17 +289,17 @@ function renderAssetsListView(jobId) {
                         const isText = isTextAsset(asset);
                         const assetIcon = asset.filename.endsWith('.md') ? icon('pencil') : icon('document');
                         return isText ? `
-                            <div class="asset-item clickable" onclick="navigateFocus('asset-${jobId}-${asset.filename}')" style="cursor: pointer;">
+                            <div class="asset-item clickable" onclick="navigateFocus('asset-${topicId}-${asset.filename}')" style="cursor: pointer;">
                                 <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${jobId}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                                <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${topicId}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
                                 <span class="asset-item-arrow">${icon('chevron-right')}</span>
                             </div>
                         ` : `
                             <div class="asset-item">
                                 <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                <button class="asset-item-delete" onclick="deleteAsset('${jobId}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                                <button class="asset-item-delete" onclick="deleteAsset('${topicId}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
                             </div>
                         `;
                     }).join('')}
@@ -307,11 +307,11 @@ function renderAssetsListView(jobId) {
             ` : ''}
 
             <div class="asset-add-row">
-                <input type="text" class="asset-add-input" id="new-asset-${jobId}" placeholder="New asset name..." onkeypress="handleNewAssetKeypress(event, '${jobId}')">
-                <button class="asset-add-btn" onclick="createNewAsset('${jobId}')">${icon('plus')}</button>
+                <input type="text" class="asset-add-input" id="new-asset-${topicId}" placeholder="New asset name..." onkeypress="handleNewAssetKeypress(event, '${topicId}')">
+                <button class="asset-add-btn" onclick="createNewAsset('${topicId}')">${icon('plus')}</button>
                 <label class="asset-upload-btn">
                     Upload
-                    <input type="file" style="display: none;" onchange="handleAssetUpload(event, '${jobId}')">
+                    <input type="file" style="display: none;" onchange="handleAssetUpload(event, '${topicId}')">
                 </label>
             </div>
         </div>
