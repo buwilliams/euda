@@ -5,7 +5,7 @@ Tools are registered with decorators and can be looked up by name.
 Agents are granted access to specific tools via their config.
 
 Tools are organized by type:
-- data: Jobs, assets, user identity, memory
+- data: Topics, assets, user identity, memory
 - agents: Agent management and introspection
 - system: Config, dates, notifications, work control
 - integration: External knowledge and documentation

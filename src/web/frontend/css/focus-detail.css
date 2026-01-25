@@ -1,4 +1,4 @@
-/* Euno - Focus Detail View (Task Detail, Job Sections, Editing) */
+/* Euno - Focus Detail View (Task Detail, Topic Sections, Editing) */
 
 /* Task Detail View */
 .task-detail {
@@ -82,7 +82,7 @@
     color: var(--color-text-secondary);
 }
 
-/* Job Detail Sections */
+/* Topic Detail Sections */
 .topic-section {
     margin-bottom: var(--spacing-xl);
 }
@@ -119,7 +119,7 @@
     text-decoration: underline;
 }
 
-/* Collapsible Job Section Header */
+/* Collapsible Topic Section Header */
 .topic-section-header.collapsible {
     cursor: pointer;
     user-select: none;
@@ -157,7 +157,7 @@
     display: block;
 }
 
-/* Editable Job Name */
+/* Editable Topic Name */
 .topic-name-display {
     font-size: var(--font-size-xl);
     font-weight: 600;

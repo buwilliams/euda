@@ -579,7 +579,7 @@ def cmd_fresh_start(args):
     print("This will DELETE:")
     print("  - All agent memory (short-term and long-term)")
     print("  - All agent logs, state, and conversation history")
-    print("  - All jobs and job assets")
+    print("  - All topics and topic assets")
     print("  - Cost tracking history")
     print("  - Reflection logs")
     print("  - Prompt logs (LLM API call history)")

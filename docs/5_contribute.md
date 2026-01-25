@@ -88,7 +88,7 @@ If yes, your Arc is complete. Pick another, or take a beat and just use the syst
 
 ## Your First Contributions
 
-**Assignment 1: Use the System** — Open Chat, introduce yourself, create a reminder, explore Jobs and Timeline views, ask "What do you know about me?"
+**Assignment 1: Use the System** — Open Chat, introduce yourself, create a reminder, explore Topics and Timeline views, ask "What do you know about me?"
 
 **Assignment 2: Create an Agent** — Ask Chat: "Create a social-media agent that finds interesting content daily based on my identity." The agent starts immediately.
 

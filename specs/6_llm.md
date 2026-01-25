@@ -28,7 +28,7 @@ Rules for how agents interact with language models.
 - User identity: included in system prompt (who the agent serves)
 - User short-term memory: `list_memory("user")` tool (what's on their mind)
 - User long-term memory: `read_long_term_memory(date, "user")` tool (their history)
-- Job assets: `list_assets`, `read_asset` tools
+- Topic assets: `list_assets`, `read_asset` tools
 - Conversation history: included in messages array (not system prompt)
 
 ## Prompt Logging
