@@ -153,27 +153,30 @@ async function loadTopicApiCalls(topicId) {
 }
 
 function renderTopicApiCallsContent(data) {
-    if (!data || data.calls === 0) {
+    if (!data || data.call_count === 0) {
         return '<div class="focus-empty">No API calls recorded for this topic.</div>';
     }
 
-    const { calls, cost, input_tokens, output_tokens } = data;
+    const callCount = data.call_count || 0;
+    const totalCost = data.total_cost || 0;
+    const inputTokens = data.total_input_tokens || 0;
+    const outputTokens = data.total_output_tokens || 0;
     const callList = data.calls && Array.isArray(data.calls) ? data.calls : [];
 
     return `
         <div class="monitoring-stats">
             <div class="monitoring-stat">
                 <span class="stat-label">Total Calls</span>
-                <span class="stat-value">${calls}</span>
+                <span class="stat-value">${callCount}</span>
             </div>
             <div class="monitoring-stat">
                 <span class="stat-label">Total Cost</span>
-                <span class="stat-value">$${cost.toFixed(4)}</span>
+                <span class="stat-value">$${totalCost.toFixed(4)}</span>
             </div>
             <div class="monitoring-stat">
                 <span class="stat-label">Tokens</span>
-                <span class="stat-value">${formatTokenCount(input_tokens + output_tokens)}</span>
-                <span class="stat-detail">in: ${formatTokenCount(input_tokens)}, out: ${formatTokenCount(output_tokens)}</span>
+                <span class="stat-value">${formatTokenCount(inputTokens + outputTokens)}</span>
+                <span class="stat-detail">in: ${formatTokenCount(inputTokens)}, out: ${formatTokenCount(outputTokens)}</span>
             </div>
         </div>
 
@@ -183,9 +186,9 @@ function renderTopicApiCallsContent(data) {
             ${callList.slice(0, 20).map(call => `
                 <div class="monitoring-prompt">
                     <span class="prompt-time">${formatPromptTime(call.timestamp)}</span>
-                    <span class="prompt-tokens">${call.input_tokens}/${call.output_tokens}</span>
+                    <span class="prompt-tokens">${call.input_tokens || 0}/${call.output_tokens || 0}</span>
                     <span class="prompt-model">${call.model || 'unknown'}</span>
-                    <span class="prompt-cost">$${call.cost.toFixed(4)}</span>
+                    <span class="prompt-cost">$${(call.cost || 0).toFixed(4)}</span>
                 </div>
             `).join('')}
         </div>
