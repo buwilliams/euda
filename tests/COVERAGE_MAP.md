@@ -35,28 +35,28 @@ Mapping design requirements from `docs/3_system.md` and `specs/*.md` to test cov
 | Requirement | Tested | Notes |
 |-------------|--------|-------|
 | Tools limited to agent config | [x] | test_tool_access.py |
-| Triggers create jobs | [ ] | manager.py 0% coverage |
+| Triggers create topics | [ ] | manager.py 0% coverage |
 
 ---
 
 ## docs/3_system.md - Lifecycle
 
-### Jobs
+### Topics
 | Requirement | Tested | Notes |
 |-------------|--------|-------|
-| Jobs with waiting:* not actionable | [x] | test_job_actionability.py |
-| Jobs with blocked:* not actionable | [x] | test_job_actionability.py |
-| Jobs with someday=true not actionable | [x] | test_job_actionability.py |
-| Jobs with future due_date not actionable | [x] | test_job_actionability.py |
-| Job handoff with pending_from | [x] | test_jobs.py |
-| Unblock removes blocking tags | [x] | test_job_actionability.py |
+| Topics with waiting:* not actionable | [x] | test_topic_actionability.py |
+| Topics with blocked:* not actionable | [x] | test_topic_actionability.py |
+| Topics with someday=true not actionable | [x] | test_topic_actionability.py |
+| Topics with future due_date not actionable | [x] | test_topic_actionability.py |
+| Topic handoff with pending_from | [x] | test_topics.py |
+| Unblock removes blocking tags | [x] | test_topic_actionability.py |
 
 ### Manager
 | Requirement | Tested | Notes |
 |-------------|--------|-------|
 | Loads agent configs from data/agents/ | [ ] | manager.py 0% coverage |
 | Starts each agent in own thread | [ ] | manager.py 0% coverage |
-| Creates trigger jobs at scheduled times | [ ] | manager.py 0% coverage |
+| Creates trigger topics at scheduled times | [ ] | manager.py 0% coverage |
 | Detects missed triggers at startup | [ ] | manager.py 0% coverage |
 
 ### Agent States
@@ -70,7 +70,7 @@ Mapping design requirements from `docs/3_system.md` and `specs/*.md` to test cov
 ### Work Cycle
 | Requirement | Tested | Notes |
 |-------------|--------|-------|
-| One job per work cycle | [x] | test_work_cycle.py |
+| One topic per work cycle | [x] | test_work_cycle.py |
 | Agent calls done_working to complete | [ ] | No tests for done_working |
 | Max iterations configurable | [ ] | agent.py 23% coverage |
 
@@ -152,5 +152,5 @@ These modules have no test coverage and may contain obsolete code:
 
 1. **Progress Awareness** - Stuck detection is mentioned in design but only 30% covered
 2. **Consolidation Flow** - Core to design ("identity evolves through consolidation") but 0% covered
-3. **Manager Triggers** - "Triggers create jobs" is core behavior but 0% coverage
+3. **Manager Triggers** - "Triggers create topics" is core behavior but 0% coverage
 4. **done_working Tool** - How agents signal completion, not tested

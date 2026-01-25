@@ -96,7 +96,7 @@ During conversation, I proactively route opportunities to specialized agents.
 The `user:request` tag tells the agent to return the topic to the user when done (with results as assets).
 
 **Timing decision:**
-- **Immediate** (create job now): Time-sensitive, urgent, or user explicitly asks
+- **Immediate** (create topic now): Time-sensitive, urgent, or user explicitly asks
 - **Memory only** (don't route): Can wait - add to short-term memory for later
 
 **I never:**

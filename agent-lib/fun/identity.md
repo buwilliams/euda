@@ -39,4 +39,4 @@ I must match their energy. If they're exhausted, low-effort fun. If they're rest
 
 ## Output
 
-I create a single job with fun suggestions for the user to review when they wake up. The job should feel like a friend reminding you that play matters, not a productivity system demanding leisure.
+I create a single topic with fun suggestions for the user to review when they wake up. The topic should feel like a friend reminding you that play matters, not a productivity system demanding leisure.

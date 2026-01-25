@@ -18,7 +18,7 @@ Directory structure:
   - token_budget{}: frequency ("daily"|"hourly"|"weekly"|"monthly"), input_ratio, output_ratio
   - consolidation{}: enabled, trigger (e.g., "time:evening")
   - State: "enabled", "disabled", "paused" (paused requires manual intervention)
-  - Triggers define which trigger jobs the agent receives
+  - Triggers define which trigger topics the agent receives
 - **Identity:** `data/agents/{id}/identity.md`
   - Evolves over time based on long-term memory
   - For AI agents: purpose, behavioral rules, voice
@@ -64,12 +64,12 @@ Memory moves through two phases:
 - **Append phase** (automatic after conversations)
   - Lightweight extraction that adds noteworthy items to short-term memory
   - Runs automatically after each chat() call
-  - No job created — invisible to user
+  - No topic created — invisible to user
   - Chat agent's user-relevant items cross-pollinate to user's memory (person, place, goal, concern, idea)
 
 - **Consolidate phase** (triggered, creates visible topics)
-  - Heavy analysis triggered by `time:evening` or custom trigger
-  - Creates `Trigger:consolidation:{phase}:{date}` topics that appear in agent's queue
+  - Heavy analysis triggered by `euno:consolidate` topic (scheduled via object triggers)
+  - Creates `euno:consolidate` topic that appears in agent's queue
   - Uses RLM `extract_identity()` to analyze long-term memory for identity updates
   - Discovers and validates behavioral patterns
   - Updates identity with new patterns, interests, and biographical information
@@ -183,7 +183,7 @@ Unblocking removes the blocking tags and notifies assigned agents that the topic
 
 - System config: `data/system/config.json`
 - Contains: version, llm provider settings, logging config, agent limits, schedules
-- Schedules define named times that create `Trigger:{name}:{date}` jobs
+- Schedules define named times that create topics (via object triggers in agent configs)
 - Use flat files for configuration, not a database
 
 ## Acceptance Tests
@@ -238,9 +238,9 @@ uv run euno dev tool search_all_memory '{"query": "some_term"}'
 
 **Pass**: Returns results with `agent_id` field from multiple agents.
 
-### Background Job Pacing Test
+### Background Topic Pacing Test
 
-Verifies background-tagged jobs are paced based on load.
+Verifies background-tagged topics are paced based on load.
 
 ```bash
 # Upload multiple files, then watch for pacing events

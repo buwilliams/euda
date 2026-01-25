@@ -38,7 +38,7 @@ Rules for testing. Tests enforce the specs and docs, not the implementation deta
 - **Buttons:** `{action}-btn` (e.g., `send-btn`, `pause-btn`, `back-btn`)
 - **Inputs:** `{field-name}` (e.g., `context-input`, `budget-limit`)
 - **Containers:** `{component}-content` or `{component}-container`
-- **Cards:** `{type}-card` (e.g., `job-card`, `agent-card`)
+- **Cards:** `{type}-card` (e.g., `topic-card`, `agent-card`)
 - **Messages:** `message-{role}` (e.g., `message-user`, `message-agent`)
 - **Menu items:** `menu-{name}` or `overflow-{name}`
 - **Collapsible sections:** `section-{name}` (e.g., `section-timelines`, `section-llms`)

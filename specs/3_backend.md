@@ -60,7 +60,7 @@ Rules for the server, API, and infrastructure.
 - `GET /api/agents/{id}/monitoring?offset={n}&limit={n}` — Monitoring stats with pagination
 - `GET /api/agents/{id}/logs/consolidation?days={n}` — Get consolidation logs
 - `POST /api/agents/{id}/reflection/trigger` — Trigger consolidation (phase: append/consolidate/both)
-- `GET /api/agents/{id}/active-executions` — Active trigger jobs for UI state
+- `GET /api/agents/{id}/active-executions` — Active trigger topics for UI state
 
 ## Topic Management Endpoints
 

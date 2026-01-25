@@ -211,7 +211,7 @@ Agent = Identity + Cognition + Memory + Behavior
 | Category | Question | What It Contains |
 |----------|----------|------------------|
 | **Identity** | Who am I? | Purpose, values, voice, attractors, context |
-| **Cognition** | How do I think? | Reasoning (job planning, prompts) + Metacognition (self-regulation, consolidation) |
+| **Cognition** | How do I think? | Reasoning (topic planning, prompts) + Metacognition (self-regulation, consolidation) |
 | **Memory** | What do I know? | Short-term (90 days) + Long-term (permanent) |
 | **Behavior** | What can I do? | Tools + Triggers + Modes |
 

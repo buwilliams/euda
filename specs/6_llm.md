@@ -14,7 +14,7 @@ Rules for how agents interact with language models.
 ## Tools
 
 - Tools organized by type in `src/tools/{type}/`:
-  - `data/` — jobs, assets, identity, memory
+  - `data/` — topics, assets, identity, memory
   - `agents/` — agent management
   - `system/` — config, dates, notifications, done_working
   - `integration/` — docs, specs, logs
