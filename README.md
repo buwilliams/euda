@@ -51,6 +51,11 @@ Euno follows a top-down information hierarchy. When making changes, update highe
 - **tests/** — enforces the specs and docs, not the Python code
 - **src/** — implementation produced from docs, specs, and tests
 
+**Claude Code skills for maintaining consistency:**
+
+- `/check-alignment` — Detect drift between docs, specs, tests, and code without making changes
+- `/align` — After updating docs or specs, propagate changes downstream through specs, tests, and code
+
 ## Documentation
 
 - [Pitch](docs/1_pitch.md) — Introduction and vision
