@@ -11,8 +11,21 @@ function isSectionOpen(sectionId) {
 function toggleSection(sectionId) {
     const isOpen = isSectionOpen(sectionId);
     sessionStorage.setItem(`focus-section-${sectionId}`, isOpen ? 'closed' : 'open');
-    renderFocusTab();
-    if (focusView === 'menu') loadDailyQuote();
+
+    // Find and toggle DOM elements directly to avoid full re-render flicker
+    const labels = document.querySelectorAll('.focus-menu-section-label.collapsible');
+    for (const label of labels) {
+        // Check if this label's onclick contains the sectionId
+        const onclick = label.getAttribute('onclick') || '';
+        if (onclick.includes(`'${sectionId}'`)) {
+            label.classList.toggle('open');
+            const content = label.nextElementSibling;
+            if (content && content.classList.contains('collapsible-content')) {
+                content.classList.toggle('open');
+            }
+            break;
+        }
+    }
 }
 
 function togglePersonaSection(header, event) {
