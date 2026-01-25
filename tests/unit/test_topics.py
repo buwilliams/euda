@@ -21,7 +21,7 @@ class TestTopicCreation:
         assert topic["name"] == "Test Topic"
         assert topic["status"] == "todo"
         assert topic["id"].startswith("topic-")
-        assert len(topic["id"]) == 12  # topic- + 8 hex chars
+        assert len(topic["id"]) == 14  # "topic-" (6 chars) + 8 hex chars
 
     def test_create_topic_with_all_fields(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Create a topicwith all optional fields."""

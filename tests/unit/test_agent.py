@@ -518,37 +518,40 @@ class TestUserIdentityContext:
         assert "not yet established" in user_identity.lower()
 
     def test_get_user_identity_for_user_agent(self, tmp_path):
-        """_get_user_identity() returns special message for user agent itself.
+        """_get_user_identity() returns user identity even for user agent.
 
-        Spec: User agent doesn't need to know about itself.
+        Note: User agent uses its own identity through standard system prompt flow.
         """
         from src.agent.agent import Agent
 
         user_dir = tmp_path / "agents" / "user"
         user_dir.mkdir(parents=True)
         (user_dir / "config.json").write_text('{"id": "user", "state": "enabled", "tools": []}')
-        (user_dir / "identity.md").write_text("# User\n")
+        (user_dir / "identity.md").write_text("# User\n\nI am the user.")
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             agent = Agent("user")
             user_identity = agent._get_user_identity()
 
-        assert "You are the user" in user_identity
+        # User agent reads its own identity file
+        assert "# User" in user_identity
 
 
 # =============================================================================
-# Reflection Trigger Tests
+# Topic Prompt Type Tests
 # =============================================================================
 
 @pytest.mark.unit
-class TestReflectionTrigger:
-    """Test Agent reflection trigger detection and execution.
+class TestTopicPromptType:
+    """Test Agent._get_topic_prompt_type() method.
 
-    Spec: specs/1_agents.md - Consolidation section
+    Note: Legacy Trigger:consolidation:* topics are no longer used.
+    All topics now use the topic_assignment template.
+    Internal euno:* topics bypass the chat loop entirely.
     """
 
     def _create_agent(self, tmp_path):
-        """Create an agent with consolidation enabled."""
+        """Create an agent for testing."""
         from src.agent.agent import Agent
 
         agent_dir = tmp_path / "agents" / "test-agent"
@@ -565,75 +568,26 @@ class TestReflectionTrigger:
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             return Agent("test-agent")
 
-    def test_is_reflection_trigger_detects_consolidation_topic(self, tmp_path):
-        """_is_reflection_trigger() returns True for consolidation topics.
-
-        Spec: Template selection based on topic name: Trigger:consolidation:* → consolidation.md
-        """
-        agent = self._create_agent(tmp_path)
-
-        # Test various consolidation topic names
-        assert agent._is_reflection_trigger([], "Trigger:consolidation:both:2025-01-23") is True
-        assert agent._is_reflection_trigger([], "Trigger:consolidation:append:2025-01-23") is True
-        assert agent._is_reflection_trigger([], "Trigger:consolidation:consolidate:2025-01-23") is True
-
-    def test_is_reflection_trigger_false_for_regular_topics(self, tmp_path):
-        """_is_reflection_trigger() returns False for regular topics.
-
-        Spec: All other topics → topic_assignment.md
-        """
-        agent = self._create_agent(tmp_path)
-
-        assert agent._is_reflection_trigger([], "Regular topic") is False
-        assert agent._is_reflection_trigger([], "Trigger:start:2025-01-23") is False
-        assert agent._is_reflection_trigger([], "Trigger:morning:2025-01-23") is False
-
-    def test_get_topic_prompt_type_consolidation(self, tmp_path):
-        """_get_topic_prompt_type() returns consolidation template for consolidation topics."""
-        agent = self._create_agent(tmp_path)
-
-        topic = {"name": "Trigger:consolidation:both:2025-01-23", "tags": []}
-        assert agent._get_topic_prompt_type(topic) == "agent/consolidation"
-
     def test_get_topic_prompt_type_regular(self, tmp_path):
-        """_get_topic_prompt_type() returns topic_assignment template for regular topics."""
+        """_get_topic_prompt_type() returns topic_assignment template for all topics."""
         agent = self._create_agent(tmp_path)
 
         topic = {"name": "Write a report", "tags": []}
         assert agent._get_topic_prompt_type(topic) == "agent/topic_assignment"
 
-    def test_execute_reflection_trigger_extracts_phase(self, tmp_path):
-        """_execute_reflection_trigger() extracts phase from topic name.
-
-        Spec: Topic name format is Trigger:consolidation:{phase}:{date}
-        """
+    def test_get_topic_prompt_type_any_topic(self, tmp_path):
+        """_get_topic_prompt_type() always returns topic_assignment."""
         agent = self._create_agent(tmp_path)
 
-        # Mock consolidation and complete_topic
-        agent.consolidation = MagicMock()
+        # All topics use topic_assignment template
+        topics = [
+            {"name": "Regular topic", "tags": []},
+            {"name": "euno:consolidate", "tags": []},
+            {"name": "Some other topic", "tags": ["important"]},
+        ]
 
-        with patch("src.tools.data.topics.complete_topic"):
-            with patch.object(agent, '_log'):
-                # Test 'consolidate' phase
-                topic = {"id": "topic-1", "name": "Trigger:consolidation:consolidate:2025-01-23", "tags": []}
-                agent._execute_reflection_trigger(topic)
-
-                agent.consolidation.consolidate.assert_called_once()
-
-    def test_execute_reflection_trigger_completes_topic(self, tmp_path):
-        """_execute_reflection_trigger() completes the trigger topic.
-
-        Spec: Topics must be explicitly completed by the agent.
-        """
-        agent = self._create_agent(tmp_path)
-        agent.consolidation = MagicMock()
-
-        with patch("src.tools.data.topics.complete_topic") as mock_complete:
-            with patch.object(agent, '_log'):
-                topic = {"id": "topic-123", "name": "Trigger:consolidation:both:2025-01-23", "tags": []}
-                agent._execute_reflection_trigger(topic)
-
-                mock_complete.assert_called_once_with("topic-123")
+        for topic in topics:
+            assert agent._get_topic_prompt_type(topic) == "agent/topic_assignment"
 
 
 # =============================================================================
@@ -765,32 +719,6 @@ class TestWorkCycle:
 
                 # Should not proceed to chat
                 mock_chat.assert_not_called()
-
-    def test_work_cycle_handles_reflection_trigger(self, tmp_path):
-        """work_cycle_sync() routes consolidation topics to _execute_reflection_trigger.
-
-        Spec: Consolidation topics are handled directly, not through chat loop.
-        """
-        agent = self._create_agent(tmp_path)
-        agent.consolidation = MagicMock()
-
-        consolidation_topic = {
-            "id": "topic-1",
-            "name": "Trigger:consolidation:both:2025-01-23",
-            "tags": [],
-            "description": "Consolidation"
-        }
-
-        with patch("src.tools.data.topics.list_topics", return_value=[consolidation_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic"):
-                    with patch("src.tools.data.topics.complete_topic"):
-                        with patch.object(agent, 'chat') as mock_chat:
-                            with patch.object(agent, '_log'):
-                                agent.work_cycle_sync()
-
-                        # Chat should NOT be called for consolidation topics
-                        mock_chat.assert_not_called()
 
     def test_work_cycle_one_topic_at_a_time(self, tmp_path):
         """work_cycle_sync() only processes first topic from list.

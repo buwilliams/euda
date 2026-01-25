@@ -60,7 +60,7 @@ def create_manager_agent(manager_data_dir):
             "name": agent_id.title(),
             "state": "enabled" if enabled else "disabled",
             "tools": ["list_topics"],
-            "triggers": triggers or ["topic:assigned"]
+            "triggers": triggers or []  # Dict-based triggers only
         }
         agent_dir = manager_data_dir / "agents" / agent_id
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -75,7 +75,7 @@ def mock_agent():
     """Create a mock Agent instance."""
     agent = MagicMock()
     agent.id = "test-agent"
-    agent.config = {"id": "test-agent", "state": "enabled", "triggers": ["system:start"]}
+    agent.config = {"id": "test-agent", "state": "enabled", "triggers": []}
     return agent
 
 
@@ -85,68 +85,11 @@ def mock_agent():
 
 @pytest.mark.unit
 class TestStartupTriggers:
-    """Test _emit_startup_triggers functionality."""
+    """Test _emit_startup_triggers functionality.
 
-    def test_creates_start_trigger_for_subscribed_agents(
-        self, manager_data_dir, create_manager_agent, test_db, mock_emit_event, mock_emit_ui_event
-    ):
-        """Agents with system:start trigger get a Trigger:start topic.
-
-        Spec: Manager creates startup trigger topics for agents with system:start.
-        """
-        from src.agent.manager import AgentManager
-        from src.tools.data.topics import list_topics
-
-        # Create agent with system:start trigger
-        create_manager_agent("worker", triggers=["system:start", "topic:assigned"])
-
-        manager = AgentManager()
-        configs = manager.load_agent_configs()
-
-        # Manually add mock agent (don't actually start threads)
-        mock_agent = MagicMock()
-        mock_agent.id = "worker"
-        mock_agent.config = configs[0]
-        manager.agents["worker"] = mock_agent
-
-        # Emit startup triggers
-        manager._emit_startup_triggers()
-
-        # Verify trigger topic was created
-        topics = list_topics(assignee="worker")
-        trigger_topics = [t for t in topics if t["name"].startswith("Trigger:start:")]
-
-        assert len(trigger_topics) == 1
-        assert trigger_topics[0]["name"] == f"Trigger:start:{datetime.now().strftime('%Y-%m-%d')}"
-
-    def test_skips_agents_without_start_trigger(
-        self, manager_data_dir, create_manager_agent, test_db, mock_emit_event, mock_emit_ui_event
-    ):
-        """Agents without system:start trigger don't get startup topics.
-
-        Spec: Only agents subscribed to system:start receive trigger topics.
-        """
-        from src.agent.manager import AgentManager
-        from src.tools.data.topics import list_topics
-
-        # Create agent without system:start trigger
-        create_manager_agent("regular", triggers=["topic:assigned"])
-
-        manager = AgentManager()
-        configs = manager.load_agent_configs()
-
-        mock_agent = MagicMock()
-        mock_agent.id = "regular"
-        mock_agent.config = configs[0]
-        manager.agents["regular"] = mock_agent
-
-        manager._emit_startup_triggers()
-
-        # No trigger topics should exist
-        topics = list_topics(assignee="regular")
-        trigger_topics = [t for t in topics if t["name"].startswith("Trigger:start:")]
-
-        assert len(trigger_topics) == 0
+    Note: String-based triggers (system:start, time:morning) have been removed.
+    Only dict-based triggers are now supported.
+    """
 
     def test_skips_disabled_agents(
         self, manager_data_dir, create_manager_agent, test_db, mock_emit_event, mock_emit_ui_event
@@ -158,8 +101,24 @@ class TestStartupTriggers:
         from src.agent.manager import AgentManager
         from src.tools.data.topics import list_topics
 
-        # Create disabled agent with system:start trigger
-        create_manager_agent("disabled-worker", triggers=["system:start"], enabled=False)
+        # Create disabled agent with dict trigger
+        config = {
+            "id": "disabled-worker",
+            "name": "Disabled Worker",
+            "state": "disabled",
+            "tools": ["list_topics"],
+            "triggers": [
+                {
+                    "topic_name": "euno:consolidate",
+                    "topic_description": "Run consolidation",
+                    "schedule": "evening"
+                }
+            ]
+        }
+        agent_dir = manager_data_dir / "agents" / "disabled-worker"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
+        (agent_dir / "identity.md").write_text("# Disabled Worker\n\nTest agent.")
 
         manager = AgentManager()
         configs = manager.load_agent_configs()
@@ -171,39 +130,9 @@ class TestStartupTriggers:
 
         manager._emit_startup_triggers()
 
-        # No trigger topics should exist
+        # No trigger topics should exist for disabled agents
         topics = list_topics(assignee="disabled-worker")
         assert len(topics) == 0
-
-    def test_no_duplicate_trigger_topics(
-        self, manager_data_dir, create_manager_agent, test_db, mock_emit_event, mock_emit_ui_event
-    ):
-        """Running startup twice doesn't create duplicate trigger topics.
-
-        Spec: Check if trigger topic already exists before creating.
-        """
-        from src.agent.manager import AgentManager
-        from src.tools.data.topics import list_topics
-
-        create_manager_agent("worker", triggers=["system:start"])
-
-        manager = AgentManager()
-        configs = manager.load_agent_configs()
-
-        mock_agent = MagicMock()
-        mock_agent.id = "worker"
-        mock_agent.config = configs[0]
-        manager.agents["worker"] = mock_agent
-
-        # Emit twice
-        manager._emit_startup_triggers()
-        manager._emit_startup_triggers()
-
-        # Should still only have one trigger topic
-        topics = list_topics(assignee="worker")
-        trigger_topics = [t for t in topics if t["name"].startswith("Trigger:start:")]
-
-        assert len(trigger_topics) == 1
 
 
 # =============================================================================
@@ -217,7 +146,7 @@ class TestMissedTriggerDetection:
     def test_detects_missed_morning_trigger(self, manager_data_dir, system_config_with_schedules):
         """Detects morning trigger missed when time has passed and not run today.
 
-        Spec: Detects missed time:morning triggers at startup.
+        Spec: Detects missed morning triggers at startup.
         """
         from src.agent.manager import AgentManager
 
@@ -232,12 +161,13 @@ class TestMissedTriggerDetection:
             # No previous state (never run)
             missed = manager._check_missed_triggers()
 
-        assert "time:morning" in missed
+        # Returns schedule names as "time:{name}"
+        assert any("morning" in m for m in missed)
 
     def test_detects_missed_evening_trigger(self, manager_data_dir, system_config_with_schedules):
         """Detects evening trigger missed when time has passed and not run today.
 
-        Spec: Detects missed time:evening triggers at startup.
+        Spec: Detects missed evening triggers at startup.
         """
         from src.agent.manager import AgentManager
 
@@ -250,7 +180,8 @@ class TestMissedTriggerDetection:
 
             missed = manager._check_missed_triggers()
 
-        assert "time:evening" in missed
+        # Returns schedule names as "time:{name}"
+        assert any("evening" in m for m in missed)
 
     def test_no_missed_when_already_ran_today(self, manager_data_dir, system_config_with_schedules):
         """No missed triggers when they already ran today.
@@ -292,42 +223,8 @@ class TestMissedTriggerDetection:
 
             missed = manager._check_missed_triggers()
 
-        assert "time:morning" not in missed
-
-    def test_creates_topics_for_missed_triggers(
-        self, manager_data_dir, system_config_with_schedules, create_manager_agent,
-        test_db, mock_emit_event, mock_emit_ui_event
-    ):
-        """Missed triggers create topics for subscribed agents.
-
-        Spec: Creates missed trigger topics at startup.
-        """
-        from src.agent.manager import AgentManager
-        from src.tools.data.topics import list_topics
-
-        # Create agent subscribed to time:morning
-        create_manager_agent("morning-worker", triggers=["time:morning"])
-
-        manager = AgentManager()
-        configs = manager.load_agent_configs()
-
-        mock_agent = MagicMock()
-        mock_agent.id = "morning-worker"
-        mock_agent.config = configs[0]
-        manager.agents["morning-worker"] = mock_agent
-
-        with patch('src.agent.manager.datetime') as mock_dt:
-            mock_now = MagicMock()
-            mock_now.strftime.side_effect = lambda fmt: "2025-01-23" if fmt == "%Y-%m-%d" else "10:00"
-            mock_dt.now.return_value = mock_now
-
-            manager._emit_startup_triggers()
-
-        topics = list_topics(assignee="morning-worker")
-        morning_topics = [t for t in topics if "morning" in t["name"]]
-
-        assert len(morning_topics) == 1
-        assert morning_topics[0]["name"] == "Trigger:morning:2025-01-23"
+        # Morning shouldn't be missed if we're before 08:00
+        assert not any("morning" in m for m in missed)
 
 
 # =============================================================================
@@ -435,10 +332,10 @@ class TestConfigHotReload:
 
 @pytest.mark.unit
 class TestDictBasedTriggers:
-    """Test handling of new dict-based trigger format.
+    """Test handling of dict-based trigger format.
 
-    Spec: New trigger format uses objects with topic_name, topic_description, schedule.
-    Dict triggers should not be passed to event bus (only string triggers).
+    Spec: Trigger format uses objects with topic_name, topic_description, schedule.
+    Dict triggers are handled by the scheduler, not the event bus.
     """
 
     def test_start_agent_with_dict_triggers(
@@ -446,19 +343,18 @@ class TestDictBasedTriggers:
     ):
         """start_agent handles dict-based triggers without error.
 
-        Spec: Dict triggers are for scheduled topics, not event bus subscriptions.
+        Spec: Dict triggers are for scheduled topics.
         """
         from src.agent.manager import AgentManager
 
-        # Create agent with both string and dict triggers
+        # Create agent with dict triggers only (string triggers no longer supported)
         config = {
             "id": "dict-trigger-agent",
             "name": "Dict Trigger Agent",
             "state": "enabled",
             "tools": ["list_topics"],
             "triggers": [
-                "topic:assigned",  # String trigger (legacy)
-                {  # Dict trigger (new format)
+                {
                     "topic_name": "euno:consolidate",
                     "topic_description": "Run consolidation",
                     "schedule": "evening"
@@ -478,69 +374,12 @@ class TestDictBasedTriggers:
 
         assert "dict-trigger-agent" in manager.agents
 
-    def test_event_bus_only_receives_string_triggers(
-        self, manager_data_dir, create_manager_agent
-    ):
-        """Event bus subscription only receives string triggers, not dicts.
-
-        Spec: Dict triggers are handled by scheduler, not event bus.
-        """
-        from src.agent.manager import AgentManager
-
-        # Create agent with mixed triggers
-        config = {
-            "id": "mixed-trigger-agent",
-            "name": "Mixed Trigger Agent",
-            "state": "enabled",
-            "tools": ["list_topics"],
-            "triggers": [
-                "topic:assigned",
-                "system:start",
-                {
-                    "topic_name": "euno:consolidate",
-                    "schedule": "evening"
-                },
-                {
-                    "topic_name": "euno:quote",
-                    "schedule": "morning"
-                }
-            ]
-        }
-        agent_dir = manager_data_dir / "agents" / "mixed-trigger-agent"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
-        (agent_dir / "identity.md").write_text("# Mixed Trigger Agent\n\nTest agent.")
-
-        manager = AgentManager()
-
-        # Track what gets passed to event_bus.subscribe
-        subscribed_triggers = []
-        original_subscribe = manager.event_bus.subscribe
-
-        def capture_subscribe(agent_id, triggers):
-            subscribed_triggers.extend(triggers)
-            return original_subscribe(agent_id, triggers)
-
-        manager.event_bus.subscribe = capture_subscribe
-
-        with patch.object(manager, '_run_agent_loop'):
-            manager.start_agent(config)
-
-        # Only string triggers should be subscribed
-        assert "topic:assigned" in subscribed_triggers
-        assert "system:start" in subscribed_triggers
-        assert len(subscribed_triggers) == 2  # No dict triggers
-
-        # Verify no dicts in subscribed triggers
-        for trigger in subscribed_triggers:
-            assert isinstance(trigger, str), f"Dict trigger leaked to event bus: {trigger}"
-
     def test_start_agent_with_only_dict_triggers(
         self, manager_data_dir
     ):
         """start_agent works when agent has only dict-based triggers.
 
-        Spec: Agents can have only scheduled triggers (no event bus subscriptions).
+        Spec: Agents can have only scheduled triggers.
         """
         from src.agent.manager import AgentManager
 
@@ -564,7 +403,6 @@ class TestDictBasedTriggers:
 
         manager = AgentManager()
 
-        # Should not raise, should subscribe to empty list
         with patch.object(manager, '_run_agent_loop'):
             manager.start_agent(config)
 
