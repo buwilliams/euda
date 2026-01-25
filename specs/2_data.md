@@ -154,6 +154,22 @@ All integrations (file uploads, email import, etc.) should store content as topi
 - Agents can use standard asset tools (`read_asset`, `write_asset`, `list_assets`)
 - Cleanup happens naturally when topics are archived/deleted
 
+### Topic Logs
+
+Execution history for each topic stored as JSONL files:
+- **Location:** `data/topics/logs/{topic-id}.jsonl`
+- **Purpose:** Track agent actions, progress notes, handoffs
+- **Written by:** `add_topic_log` tool
+- **Fields:** timestamp, agent_id, message, metadata
+
+### LLM Calls
+
+LLM API calls made while working a topic:
+- **Location:** `data/topics/llm/{topic-id}.jsonl`
+- **Purpose:** Debugging, cost tracking, audit trail
+- **Written by:** LLM client automatically during work cycle
+- **Fields:** timestamp, agent_id, model, input_tokens, output_tokens, tools_used, duration_ms
+
 ### Blocked Topics
 
 Topics can be blocked when waiting on external input. This prevents agents from repeatedly polling the same topic.

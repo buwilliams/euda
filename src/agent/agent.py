@@ -520,6 +520,12 @@ class Agent:
 
         while response.stop_reason == "tool_use":
             tool_results = self._execute_tools(response)
+
+            # Break early if done_working was called (prevents LLM from looping)
+            if self._work_done:
+                self._log("tool_loop_exit", {"reason": "done_working"})
+                break
+
             messages.append({"role": "assistant", "content": response.content})
             messages.append({"role": "user", "content": tool_results})
 

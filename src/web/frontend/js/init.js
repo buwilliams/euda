@@ -212,6 +212,33 @@ function connectSSE() {
         }
     });
 
+    // Handle token budget updates (for real-time Token Budget display in agent detail)
+    eventSource.addEventListener('token_budget:update', (e) => {
+        const data = JSON.parse(e.data);
+        const agentId = data.agent_id;
+
+        // Update agentPauseStatus cache with new token data
+        if (typeof agentPauseStatus !== 'undefined' && agentPauseStatus[agentId]?.tokenUsage) {
+            const tokenUsage = agentPauseStatus[agentId].tokenUsage;
+            tokenUsage.input_tokens = data.input_tokens;
+            tokenUsage.output_tokens = data.output_tokens;
+            tokenUsage.input_budget = data.input_budget;
+            tokenUsage.output_budget = data.output_budget;
+            tokenUsage.input_percent = data.input_percent;
+            tokenUsage.output_percent = data.output_percent;
+        }
+
+        // Re-render if viewing this agent's detail page
+        if (typeof focusView !== 'undefined') {
+            // Check if we're on an agent detail view for this agent
+            const agentTopic = typeof topicsData !== 'undefined' ?
+                topicsData.find(t => t.agent_id === agentId) : null;
+            if (agentTopic && focusView === agentTopic.id) {
+                renderFocusTab();
+            }
+        }
+    });
+
     eventSource.onerror = () => {
         eventSource.close();
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);

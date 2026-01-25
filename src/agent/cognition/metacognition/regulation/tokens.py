@@ -756,6 +756,19 @@ class TokenAwareness:
                     }
                 )
 
+            # Emit token budget update for real-time UI refresh
+            input_budget = int(total_budget * budget_config.input_ratio)
+            input_percent = (usage["input"] / input_budget * 100) if input_budget > 0 else 0
+            emit_ui_event("token_budget:update", {
+                "agent_id": agent_id,
+                "input_tokens": usage["input"],
+                "output_tokens": usage["output"],
+                "input_budget": input_budget,
+                "output_budget": output_budget,
+                "input_percent": round(input_percent, 1),
+                "output_percent": round(output_percent, 1),
+            })
+
     def _pause_agent(self, agent_id: str, reason: str,
                      incident_type: IncidentType, details: dict):
         """Pause an agent due to threshold breach."""
