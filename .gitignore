@@ -53,14 +53,14 @@ data/agents/*/state.json
 # Agent logs are runtime data (ignore)
 data/agents/*/logs/
 
-# Jobs database is user data (ignore)
-data/jobs/db.sqlite
-data/jobs/db.sqlite-journal
-data/jobs/db.sqlite-wal
-data/jobs/db.sqlite-shm
+# Topics database is user data (ignore)
+data/topics/db.sqlite
+data/topics/db.sqlite-journal
+data/topics/db.sqlite-wal
+data/topics/db.sqlite-shm
 
 # Assets are user data (ignore)
-data/jobs/assets/
+data/topics/assets/
 
 # System config is tracked (contains settings, not secrets)
 !data/system/config.json
@@ -86,7 +86,7 @@ data/user/
 
 # Backups
 data_backup-*/
-data/jobs_backup_*/
+data/topics_backup_*/
 
 # ===================
 # Old Architecture
