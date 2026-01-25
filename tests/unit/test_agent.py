@@ -545,8 +545,7 @@ class TestUserIdentityContext:
 class TestTopicPromptType:
     """Test Agent._get_topic_prompt_type() method.
 
-    Note: Legacy Trigger:consolidation:* topics are no longer used.
-    All topics now use the topic_assignment template.
+    All topics use the topic_assignment template.
     Internal euno:* topics bypass the chat loop entirely.
     """
 

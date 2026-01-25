@@ -261,7 +261,7 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
             if agent_config.get("state", "enabled") == "disabled":
                 continue
             if "memory:long-term" in agent_config.get("triggers", []):
-                topic_name = f"Trigger:memory-long-term:{date}"
+                topic_name = f"euno:memory-long-term:{date}"
 
                 # Check if trigger topic already exists for this agent today
                 existing = list_topics(status="todo", assignee=agent_config["id"])

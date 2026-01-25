@@ -148,7 +148,6 @@ Agents respond to different types of topics:
 - System checks agent-specific first, falls back to base
 - Template selection based on topic type:
   - `euno:*` topics → bypassed (direct tool execution)
-  - `Trigger:consolidation:*` topics → consolidation.md (legacy)
   - All other topics → topic_assignment.md
 
 ## Topic Coordination

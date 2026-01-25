@@ -109,7 +109,7 @@ def _show_reflect_prompt(agent_id: str, json_mode: bool):
         "agent/consolidation",
         agent_id=agent_id,
         topic_id="<topic_id>",
-        topic_name="Trigger:consolidation:both:2025-01-01",
+        topic_name="euno:consolidate",
         topic_description="Daily reflection trigger",
         topic_due_date="No deadline",
         topic_tags="",

@@ -500,8 +500,8 @@ def complete_topic(topic_id: str, agent: str = "user") -> Optional[dict]:
         return {"error": f"Topic not found: {topic_id}"}
 
     # Prevent completing system topics (containers and agent inboxes)
-    # Exception: Allow completing trigger/internal topics even if they have system tags
-    is_internal = topic.get("name", "").startswith(("Trigger:", "euno:"))
+    # Exception: Allow completing internal euno:* topics even if they have system tags
+    is_internal = topic.get("name", "").startswith("euno:")
     if not is_internal:
         system_tags = {"system:agents", "system:projects", "agent-inbox"}
         if any(tag in system_tags for tag in topic.get("tags", [])):
