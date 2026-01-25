@@ -1,5 +1,5 @@
 """
-Trace command - Show execution trace of a job.
+Trace command - Show execution trace of a topic.
 """
 
 import json
@@ -16,42 +16,42 @@ AGENTS_DIR = DATA_DIR / "agents"
 
 
 def cmd_trace(args: List[str], json_mode: bool = False):
-    """Show execution trace of a job.
+    """Show execution trace of a topic.
 
     Usage:
-      dev trace <job_id>
+      dev trace <topic_id>
     """
     if not args:
-        print_error("Usage: dev trace <job_id>", json_mode)
+        print_error("Usage: dev trace <topic_id>", json_mode)
         sys.exit(1)
 
-    job_id = args[0]
+    topic_id = args[0]
 
-    from ...tools.data.jobs import get_job
+    from ...tools.data.topics import get_topic
 
-    job = get_job(job_id)
-    if not job:
-        print_error(f"Job not found: {job_id}", json_mode)
+    topic = get_topic(topic_id)
+    if not topic:
+        print_error(f"Topic not found: {topic_id}", json_mode)
         sys.exit(1)
 
     # Collect trace events from multiple sources
     events = []
 
-    # 1. Job logs from the database
-    job_logs = job.get("log", [])
-    for log in job_logs:
+    # 1. Topic logs from the database
+    topic_logs = topic.get("log", [])
+    for log in topic_logs:
         events.append({
             "timestamp": log.get("timestamp"),
             "source": log.get("agent", "system"),
-            "event": "job_log",
+            "event": "topic_log",
             "action": log.get("action"),
             "data": {}
         })
 
     # 2. Agent logs (find relevant entries)
-    assignees = job.get("assignees", [])
+    assignees = topic.get("assignees", [])
     for agent_id in assignees:
-        agent_events = _find_agent_events_for_job(agent_id, job_id)
+        agent_events = _find_agent_events_for_topic(agent_id, topic_id)
         events.extend(agent_events)
 
     # Sort by timestamp
@@ -59,17 +59,17 @@ def cmd_trace(args: List[str], json_mode: bool = False):
 
     if json_mode:
         print(json.dumps({
-            "job_id": job_id,
-            "job_name": job.get("name"),
-            "status": job.get("status"),
+            "topic_id": topic_id,
+            "topic_name": topic.get("name"),
+            "status": topic.get("status"),
             "events": events
         }))
     else:
-        _print_trace(job, events)
+        _print_trace(topic, events)
 
 
-def _find_agent_events_for_job(agent_id: str, job_id: str) -> List[dict]:
-    """Find events in agent logs related to a job."""
+def _find_agent_events_for_topic(agent_id: str, topic_id: str) -> List[dict]:
+    """Find events in agent logs related to a topic."""
     events = []
 
     agent_logs_dir = AGENTS_DIR / agent_id / "logs"
@@ -90,8 +90,8 @@ def _find_agent_events_for_job(agent_id: str, job_id: str) -> List[dict]:
                         entry = json.loads(line)
                         details = entry.get("details", {})
 
-                        # Check if this entry is related to the job
-                        if job_id in str(details) or job_id in str(entry):
+                        # Check if this entry is related to the topic
+                        if topic_id in str(details) or topic_id in str(entry):
                             events.append({
                                 "timestamp": entry.get("timestamp"),
                                 "source": agent_id,
@@ -106,7 +106,7 @@ def _find_agent_events_for_job(agent_id: str, job_id: str) -> List[dict]:
     return events
 
 
-def _print_trace(job: dict, events: List[dict]):
+def _print_trace(topic: dict, events: List[dict]):
     """Print trace in human-readable format."""
     dim = COLORS["dim"]
     cyan = COLORS["cyan"]
@@ -114,12 +114,12 @@ def _print_trace(job: dict, events: List[dict]):
     green = COLORS["green"]
     reset = COLORS["reset"]
 
-    print_header(f"Trace: {job.get('name', job['id'])}", False)
-    print(f"\n{dim}Job ID:{reset} {job['id']}")
-    print(f"{dim}Status:{reset} {job.get('status')}")
-    print(f"{dim}Created:{reset} {job.get('created_at')}")
+    print_header(f"Trace: {topic.get('name', topic['id'])}", False)
+    print(f"\n{dim}Topic ID:{reset} {topic['id']}")
+    print(f"{dim}Status:{reset} {topic.get('status')}")
+    print(f"{dim}Created:{reset} {topic.get('created_at')}")
 
-    assignees = job.get("assignees", [])
+    assignees = topic.get("assignees", [])
     if assignees:
         print(f"{dim}Assignees:{reset} {', '.join(assignees)}")
 
@@ -143,7 +143,7 @@ def _print_trace(job: dict, events: List[dict]):
         action = event.get("action")
 
         # Color code by event type
-        if event_type == "job_log":
+        if event_type == "topic_log":
             color = cyan
             detail = action or ""
         elif "tool" in event_type:

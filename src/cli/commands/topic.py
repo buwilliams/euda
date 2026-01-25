@@ -1,5 +1,5 @@
 """
-Job command - Create and run jobs with streaming output.
+Topic command - Create and run topics with streaming output.
 """
 
 import json
@@ -16,14 +16,14 @@ DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
 
 
-def cmd_job(args: List[str], json_mode: bool = False):
-    """Create a job and run it immediately.
+def cmd_topic(args: List[str], json_mode: bool = False):
+    """Create a topic and run it immediately.
 
     Usage:
-      dev job <agent> <task>          Create job and run
-      dev job <agent> <task> --no-reflect    Skip reflection
-      dev job <agent> <task> --dry-run       Show prompt only
-      dev job <agent> <task> --max-iterations N
+      dev topic <agent> <task>          Create topic and run
+      dev topic <agent> <task> --no-reflect    Skip reflection
+      dev topic <agent> <task> --dry-run       Show prompt only
+      dev topic <agent> <task> --max-iterations N
     """
     # Parse flags
     no_reflect = "--no-reflect" in args
@@ -54,7 +54,7 @@ def cmd_job(args: List[str], json_mode: bool = False):
             i += 1
 
     if len(clean_args) < 2:
-        print_error("Usage: dev job <agent> <task> [--no-reflect] [--dry-run]", json_mode)
+        print_error("Usage: dev topic <agent> <task> [--no-reflect] [--dry-run]", json_mode)
         sys.exit(1)
 
     agent_id = clean_args[0]
@@ -66,13 +66,13 @@ def cmd_job(args: List[str], json_mode: bool = False):
         print_error(f"Agent not found: {agent_id}", json_mode)
         sys.exit(1)
 
-    # Create the job under agent's inbox
-    from ...tools.data.jobs import create_job, get_agent_inbox_job
+    # Create the topic under agent's inbox
+    from ...tools.data.topics import create_topic, get_agent_inbox_topic
 
-    inbox = get_agent_inbox_job(agent_id)
+    inbox = get_agent_inbox_topic(agent_id)
     parent_id = inbox["id"] if inbox else None
 
-    job = create_job(
+    topic = create_topic(
         name=task[:100],  # Truncate name
         description=task if len(task) > 100 else None,
         parent_id=parent_id,
@@ -81,20 +81,20 @@ def cmd_job(args: List[str], json_mode: bool = False):
         created_by="dev-cli"
     )
 
-    job_id = job["id"]
+    topic_id = topic["id"]
 
     if not json_mode:
-        print_success(f"Created job: {job_id}", json_mode)
+        print_success(f"Created topic: {topic_id}", json_mode)
 
     if dry_run:
         # Show prompt without executing
         from ...agent import Agent
         agent = Agent(agent_id)
-        prompt = agent._format_job_prompt(job)
+        prompt = agent._format_topic_prompt(topic)
 
         if json_mode:
             print(json.dumps({
-                "job_id": job_id,
+                "topic_id": topic_id,
                 "agent_id": agent_id,
                 "prompt": prompt,
                 "dry_run": True
@@ -104,26 +104,26 @@ def cmd_job(args: List[str], json_mode: bool = False):
             print(prompt)
         return
 
-    # Run the job with streaming
-    _run_job(agent_id, job, no_reflect, max_iterations, json_mode)
+    # Run the topic with streaming
+    _run_topic(agent_id, topic, no_reflect, max_iterations, json_mode)
 
 
 def cmd_run(args: List[str], json_mode: bool = False):
-    """Run an existing job.
+    """Run an existing topic.
 
     Usage:
-      dev run <agent> <job_id>
-      dev run <agent> <job_id> --no-reflect
+      dev run <agent> <topic_id>
+      dev run <agent> <topic_id> --no-reflect
     """
     no_reflect = "--no-reflect" in args
     clean_args = [a for a in args if a != "--no-reflect"]
 
     if len(clean_args) < 2:
-        print_error("Usage: dev run <agent> <job_id> [--no-reflect]", json_mode)
+        print_error("Usage: dev run <agent> <topic_id> [--no-reflect]", json_mode)
         sys.exit(1)
 
     agent_id = clean_args[0]
-    job_id = clean_args[1]
+    topic_id = clean_args[1]
 
     # Check agent exists
     agent_dir = AGENTS_DIR / agent_id
@@ -131,19 +131,19 @@ def cmd_run(args: List[str], json_mode: bool = False):
         print_error(f"Agent not found: {agent_id}", json_mode)
         sys.exit(1)
 
-    # Get the job
-    from ...tools.data.jobs import get_job
+    # Get the topic
+    from ...tools.data.topics import get_topic
 
-    job = get_job(job_id)
-    if not job:
-        print_error(f"Job not found: {job_id}", json_mode)
+    topic = get_topic(topic_id)
+    if not topic:
+        print_error(f"Topic not found: {topic_id}", json_mode)
         sys.exit(1)
 
-    _run_job(agent_id, job, no_reflect, None, json_mode)
+    _run_topic(agent_id, topic, no_reflect, None, json_mode)
 
 
-def _run_job(agent_id: str, job: dict, no_reflect: bool, max_iterations: int, json_mode: bool):
-    """Run a job with streaming output."""
+def _run_topic(agent_id: str, topic: dict, no_reflect: bool, max_iterations: int, json_mode: bool):
+    """Run a topic with streaming output."""
     from ...agent import Agent
 
     # Create event stream
@@ -156,11 +156,11 @@ def _run_job(agent_id: str, job: dict, no_reflect: bool, max_iterations: int, js
     stream.start()
 
     try:
-        # Set job context
-        agent.set_job_context(job["id"])
+        # Set topic context
+        agent.set_topic_context(topic["id"])
 
         # Format prompt
-        prompt = agent._format_job_prompt(job)
+        prompt = agent._format_topic_prompt(topic)
 
         # Use override or default (for dev CLI only - normal work cycles have no limit)
         if max_iterations is None:
@@ -190,18 +190,18 @@ def _run_job(agent_id: str, job: dict, no_reflect: bool, max_iterations: int, js
         stream.sink("work_cycle_end", {
             "reason": reason,
             "iterations": iteration,
-            "job_id": job["id"]
+            "topic_id": topic["id"]
         })
 
     except KeyboardInterrupt:
-        stream.sink("interrupted", {"job_id": job["id"]})
+        stream.sink("interrupted", {"topic_id": topic["id"]})
         if not json_mode:
             print("\nInterrupted")
 
     except Exception as e:
-        stream.sink("error", {"error": str(e), "job_id": job["id"]})
+        stream.sink("error", {"error": str(e), "topic_id": topic["id"]})
         print_error(str(e), json_mode)
 
     finally:
-        agent.clear_job_context()
+        agent.clear_topic_context()
         stream.flush()

@@ -1,5 +1,5 @@
 """
-Upload command - Upload files to agent inbox or job.
+Upload command - Upload files to agent inbox or topic.
 """
 
 import json
@@ -15,11 +15,11 @@ AGENTS_DIR = DATA_DIR / "agents"
 
 
 def cmd_upload(args: List[str], json_mode: bool = False):
-    """Upload a file to an agent inbox or job.
+    """Upload a file to an agent inbox or topic.
 
     Usage:
-      dev upload <agent_id> <file>     Create job with file for agent
-      dev upload job-xxx <file>        Add file to existing job
+      dev upload <agent_id> <file>     Create topic with file for agent
+      dev upload topic-xxx <file>      Add file to existing topic
     """
     if len(args) < 2:
         print_error("Usage: dev upload <target> <file>", json_mode)
@@ -33,22 +33,22 @@ def cmd_upload(args: List[str], json_mode: bool = False):
         print_error(f"File not found: {file_path}", json_mode)
         sys.exit(1)
 
-    # Determine if target is a job ID or agent ID
-    if target.startswith("job-"):
-        _upload_to_job(target, file_path, json_mode)
+    # Determine if target is a topic ID or agent ID
+    if target.startswith("topic-"):
+        _upload_to_topic(target, file_path, json_mode)
     else:
         _upload_to_agent(target, file_path, json_mode)
 
 
-def _upload_to_job(job_id: str, file_path: Path, json_mode: bool):
-    """Upload file to an existing job."""
-    from ...tools.data.jobs import get_job
+def _upload_to_topic(topic_id: str, file_path: Path, json_mode: bool):
+    """Upload file to an existing topic."""
+    from ...tools.data.topics import get_topic
     from ...tools.data.assets import write_asset
 
-    # Verify job exists
-    job = get_job(job_id)
-    if not job:
-        print_error(f"Job not found: {job_id}", json_mode)
+    # Verify topic exists
+    topic = get_topic(topic_id)
+    if not topic:
+        print_error(f"Topic not found: {topic_id}", json_mode)
         sys.exit(1)
 
     # Read file content
@@ -59,7 +59,7 @@ def _upload_to_job(job_id: str, file_path: Path, json_mode: bool):
         sys.exit(1)
 
     # Write asset
-    result = write_asset(job_id, file_path.name, content)
+    result = write_asset(topic_id, file_path.name, content)
 
     if "error" in result:
         print_error(result["error"], json_mode)
@@ -67,16 +67,16 @@ def _upload_to_job(job_id: str, file_path: Path, json_mode: bool):
 
     if json_mode:
         print(json.dumps({
-            "job_id": job_id,
+            "topic_id": topic_id,
             "filename": file_path.name,
             "status": result.get("status", "success")
         }))
     else:
-        print_success(f"Uploaded {file_path.name} to job {job_id}", json_mode)
+        print_success(f"Uploaded {file_path.name} to topic {topic_id}", json_mode)
 
 
 def _upload_to_agent(agent_id: str, file_path: Path, json_mode: bool):
-    """Create a job for the agent with the file attached."""
+    """Create a topic for the agent with the file attached."""
     # Check agent exists
     agent_dir = AGENTS_DIR / agent_id
     if not agent_dir.exists():
@@ -90,14 +90,14 @@ def _upload_to_agent(agent_id: str, file_path: Path, json_mode: bool):
         print_error("Only text files are supported for upload", json_mode)
         sys.exit(1)
 
-    from ...tools.data.jobs import create_job, get_agent_inbox_job
+    from ...tools.data.topics import create_topic, get_agent_inbox_topic
     from ...tools.data.assets import write_asset
 
-    # Create job under agent's inbox
-    inbox = get_agent_inbox_job(agent_id)
+    # Create topic under agent's inbox
+    inbox = get_agent_inbox_topic(agent_id)
     parent_id = inbox["id"] if inbox else None
 
-    job = create_job(
+    topic = create_topic(
         name=f"Process file: {file_path.name}",
         description=f"File uploaded via dev CLI: {file_path.name}",
         parent_id=parent_id,
@@ -106,10 +106,10 @@ def _upload_to_agent(agent_id: str, file_path: Path, json_mode: bool):
         created_by="dev-cli"
     )
 
-    job_id = job["id"]
+    topic_id = topic["id"]
 
     # Write asset
-    result = write_asset(job_id, file_path.name, content)
+    result = write_asset(topic_id, file_path.name, content)
 
     if "error" in result:
         print_error(result["error"], json_mode)
@@ -117,10 +117,10 @@ def _upload_to_agent(agent_id: str, file_path: Path, json_mode: bool):
 
     if json_mode:
         print(json.dumps({
-            "job_id": job_id,
+            "topic_id": topic_id,
             "agent_id": agent_id,
             "filename": file_path.name,
             "status": "created"
         }))
     else:
-        print_success(f"Created job {job_id} for {agent_id} with file {file_path.name}", json_mode)
+        print_success(f"Created topic {topic_id} for {agent_id} with file {file_path.name}", json_mode)

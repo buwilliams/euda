@@ -18,12 +18,12 @@ def cmd_prompt(args: List[str], json_mode: bool = False):
     """Show prompts that would be sent to agents.
 
     Usage:
-      dev prompt <agent> system         Show system prompt
-      dev prompt <agent> job <job_id>   Show prompt for a specific job
-      dev prompt <agent> reflect        Show reflection prompt
+      dev prompt <agent> system             Show system prompt
+      dev prompt <agent> topic <topic_id>   Show prompt for a specific topic
+      dev prompt <agent> reflect            Show reflection prompt
     """
     if len(args) < 2:
-        print_error("Usage: dev prompt <agent> <system|job|reflect> [job_id]", json_mode)
+        print_error("Usage: dev prompt <agent> <system|topic|reflect> [topic_id]", json_mode)
         sys.exit(1)
 
     agent_id = args[0]
@@ -37,12 +37,12 @@ def cmd_prompt(args: List[str], json_mode: bool = False):
 
     if prompt_type == "system":
         _show_system_prompt(agent_id, json_mode)
-    elif prompt_type == "job":
+    elif prompt_type == "topic":
         if len(args) < 3:
-            print_error("Usage: dev prompt <agent> job <job_id>", json_mode)
+            print_error("Usage: dev prompt <agent> topic <topic_id>", json_mode)
             sys.exit(1)
-        job_id = args[2]
-        _show_job_prompt(agent_id, job_id, json_mode)
+        topic_id = args[2]
+        _show_topic_prompt(agent_id, topic_id, json_mode)
     elif prompt_type == "reflect":
         _show_reflect_prompt(agent_id, json_mode)
     else:
@@ -70,51 +70,51 @@ def _show_system_prompt(agent_id: str, json_mode: bool):
         print(system_prompt)
 
 
-def _show_job_prompt(agent_id: str, job_id: str, json_mode: bool):
-    """Show the prompt that would be sent for a job."""
+def _show_topic_prompt(agent_id: str, topic_id: str, json_mode: bool):
+    """Show the prompt that would be sent for a topic."""
     from ...agent import Agent
-    from ...tools.data.jobs import get_job
+    from ...tools.data.topics import get_topic
 
-    job = get_job(job_id)
-    if not job:
-        print_error(f"Job not found: {job_id}", json_mode)
+    topic = get_topic(topic_id)
+    if not topic:
+        print_error(f"Topic not found: {topic_id}", json_mode)
         sys.exit(1)
 
     # Create agent without event sink (read-only)
     agent = Agent(agent_id)
-    job_prompt = agent._format_job_prompt(job)
-    prompt_type = agent._get_job_prompt_type(job)
+    topic_prompt = agent._format_topic_prompt(topic)
+    prompt_type = agent._get_topic_prompt_type(topic)
 
     if json_mode:
         print(json.dumps({
             "agent_id": agent_id,
-            "job_id": job_id,
-            "job_name": job.get("name"),
+            "topic_id": topic_id,
+            "topic_name": topic.get("name"),
             "template": prompt_type,
-            "prompt": job_prompt
+            "prompt": topic_prompt
         }))
     else:
-        print_header(f"Job Prompt: {job.get('name', job_id)}", json_mode)
+        print_header(f"Topic Prompt: {topic.get('name', topic_id)}", json_mode)
         print(f"Template: {prompt_type}")
         print()
-        print(job_prompt)
+        print(topic_prompt)
 
 
 def _show_reflect_prompt(agent_id: str, json_mode: bool):
     """Show the reflection prompt template."""
     from ...prompts import render_template
 
-    # Create a fake reflection job to show the prompt
+    # Create a fake reflection topic to show the prompt
     prompt = render_template(
         "agent/consolidation",
         agent_id=agent_id,
-        job_id="<job_id>",
-        job_name="Trigger:consolidation:both:2025-01-01",
-        job_description="Daily reflection trigger",
-        job_due_date="No deadline",
-        job_tags="",
-        job_attachments="No attachments",
-        remaining_jobs_notice=""
+        topic_id="<topic_id>",
+        topic_name="Trigger:consolidation:both:2025-01-01",
+        topic_description="Daily reflection trigger",
+        topic_due_date="No deadline",
+        topic_tags="",
+        topic_attachments="No attachments",
+        remaining_topics_notice=""
     )
 
     if json_mode:

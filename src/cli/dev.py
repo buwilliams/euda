@@ -43,12 +43,12 @@ def cmd_dev(args: List[str]):
         from .commands.tool import cmd_tool
         cmd_tool(sub_args, json_mode)
 
-    elif subcommand == "job":
-        from .commands.job import cmd_job
-        cmd_job(sub_args, json_mode)
+    elif subcommand == "topic":
+        from .commands.topic import cmd_topic
+        cmd_topic(sub_args, json_mode)
 
     elif subcommand == "run":
-        from .commands.job import cmd_run
+        from .commands.topic import cmd_run
         cmd_run(sub_args, json_mode)
 
     elif subcommand == "chat":
@@ -89,13 +89,13 @@ Global Flags:
 
 Commands:
 
-JOB EXECUTION
-  job <agent> <task>        Create job and run immediately
+TOPIC EXECUTION
+  topic <agent> <task>      Create topic and run immediately
     --no-reflect            Skip reflection append after execution
     --dry-run               Show prompt without executing
     --max-iterations N      Limit work cycle iterations
 
-  run <agent> <job_id>      Run an existing job
+  run <agent> <topic_id>    Run an existing topic
     --no-reflect            Skip reflection append
 
 REFLECTION
@@ -120,7 +120,7 @@ TOOLS
 
 PROMPTS
   prompt <agent> system     Show system prompt
-  prompt <agent> job <id>   Show job prompt
+  prompt <agent> topic <id> Show topic prompt
   prompt <agent> reflect    Show reflection prompt
 
 CHAT
@@ -129,18 +129,18 @@ CHAT
     --no-reflect            Skip reflection append
 
 UPLOAD
-  upload <target> <file>    Upload file to agent inbox or job
+  upload <target> <file>    Upload file to agent inbox or topic
 
 OBSERVABILITY
   watch                     Live stream all system events
     --agent <id>            Filter to specific agent
     --event <type>          Filter to specific event type
-  trace <job_id>            Show execution trace of a job
+  trace <topic_id>          Show execution trace of a topic
 
 Examples:
   python main.py dev memory user
-  python main.py dev job user "List my current jobs"
+  python main.py dev topic user "List my current topics"
   python main.py dev reflect user --consolidate
-  python main.py dev tool list_jobs '{"status": "todo"}'
+  python main.py dev tool list_topics '{"status": "todo"}'
   python main.py dev watch --agent user
 """)
