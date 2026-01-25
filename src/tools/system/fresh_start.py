@@ -196,8 +196,13 @@ def perform_fresh_start(create_backup_first: bool = True) -> dict:
             incidents_file.unlink()
             deleted.append("system/incidents/unacknowledged.json")
 
-    # 5. Reinitialize database schema
+    # 5. Reinitialize database schema and system topics
     _ensure_schema()
+
+    # Create system topics (Agents and Projects containers)
+    from ..data.topics import get_agents_container, get_projects_container
+    get_agents_container()
+    get_projects_container()
 
     return {
         "backup_name": backup_name,
