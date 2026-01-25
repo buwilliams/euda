@@ -447,21 +447,21 @@ function openAgentControlsPicker(agentId) {
 
     if (agentState === 'enabled') {
         options = `
-            <div class="picker-option" onclick="closeAgentControlsPicker(); pauseAgent('${agentId}')">
+            <div class="picker-option" data-testid="pause-btn" onclick="closeAgentControlsPicker(); pauseAgent('${agentId}')">
                 <span class="picker-option-icon">${icon('pause')}</span>
                 <div class="picker-option-content">
                     <span class="picker-option-label">Pause</span>
                     <span class="picker-option-description">Temporarily stop agent from working</span>
                 </div>
             </div>
-            <div class="picker-option" onclick="closeAgentControlsPicker(); disableAgent('${agentId}')">
+            <div class="picker-option" data-testid="disable-btn" onclick="closeAgentControlsPicker(); disableAgent('${agentId}')">
                 <span class="picker-option-icon">${icon('x-mark')}</span>
                 <div class="picker-option-content">
                     <span class="picker-option-label">Disable</span>
                     <span class="picker-option-description">Turn off agent completely</span>
                 </div>
             </div>
-            <div class="picker-option" onclick="closeAgentControlsPicker(); resetAgentTokenUsage('${agentId}')">
+            <div class="picker-option" data-testid="reset-tokens-btn" onclick="closeAgentControlsPicker(); resetAgentTokenUsage('${agentId}')">
                 <span class="picker-option-icon">${icon('arrow-path')}</span>
                 <div class="picker-option-content">
                     <span class="picker-option-label">Reset Tokens</span>
@@ -471,14 +471,14 @@ function openAgentControlsPicker(agentId) {
         `;
     } else if (agentState === 'paused') {
         options = `
-            <div class="picker-option" onclick="closeAgentControlsPicker(); enableAgent('${agentId}')">
+            <div class="picker-option" data-testid="resume-btn" onclick="closeAgentControlsPicker(); enableAgent('${agentId}')">
                 <span class="picker-option-icon">${icon('play')}</span>
                 <div class="picker-option-content">
                     <span class="picker-option-label">Resume</span>
                     <span class="picker-option-description">Resume agent operations</span>
                 </div>
             </div>
-            <div class="picker-option" onclick="closeAgentControlsPicker(); resetAgentTokenUsage('${agentId}')">
+            <div class="picker-option" data-testid="reset-tokens-btn" onclick="closeAgentControlsPicker(); resetAgentTokenUsage('${agentId}')">
                 <span class="picker-option-icon">${icon('arrow-path')}</span>
                 <div class="picker-option-content">
                     <span class="picker-option-label">Reset Tokens</span>
@@ -488,14 +488,14 @@ function openAgentControlsPicker(agentId) {
         `;
     } else if (agentState === 'disabled') {
         options = `
-            <div class="picker-option" onclick="closeAgentControlsPicker(); enableAgent('${agentId}')">
+            <div class="picker-option" data-testid="enable-btn" onclick="closeAgentControlsPicker(); enableAgent('${agentId}')">
                 <span class="picker-option-icon">${icon('check')}</span>
                 <div class="picker-option-content">
                     <span class="picker-option-label">Enable</span>
                     <span class="picker-option-description">Turn on agent</span>
                 </div>
             </div>
-            <div class="picker-option" onclick="closeAgentControlsPicker(); resetAgentTokenUsage('${agentId}')">
+            <div class="picker-option" data-testid="reset-tokens-btn" onclick="closeAgentControlsPicker(); resetAgentTokenUsage('${agentId}')">
                 <span class="picker-option-icon">${icon('arrow-path')}</span>
                 <div class="picker-option-content">
                     <span class="picker-option-label">Reset Tokens</span>

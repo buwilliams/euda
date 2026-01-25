@@ -76,7 +76,7 @@ function renderAgentDetailView(topic) {
         // Store trigger data in a global cache for the picker to access
         window._triggerPickerData = window._triggerPickerData || {};
         window._triggerPickerData[agentId] = { triggers, disabledTriggers: activeTriggerTopics };
-        return `<button class="task-detail-action" onclick="openTriggerPickerFromCache('${agentId}')" ${disabled}>${icon('play')} Trigger</button>`;
+        return `<button class="task-detail-action" data-testid="trigger-btn" onclick="openTriggerPickerFromCache('${agentId}')" ${disabled}>${icon('play')} Trigger</button>`;
     };
 
     // Status badge color class
@@ -89,7 +89,7 @@ function renderAgentDetailView(topic) {
         // Store control state in cache for the picker
         window._agentControlsData = window._agentControlsData || {};
         window._agentControlsData[agentId] = { state: agentState };
-        return `<button class="task-detail-action" onclick="openAgentControlsPicker('${agentId}')">${icon('cog-6-tooth')} Controls</button>`;
+        return `<button class="task-detail-action" data-testid="controls-btn" onclick="openAgentControlsPicker('${agentId}')">${icon('cog-6-tooth')} Controls</button>`;
     };
 
     // Token budget info
