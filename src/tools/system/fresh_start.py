@@ -185,16 +185,11 @@ def perform_fresh_start(create_backup_first: bool = True) -> dict:
         if token_usage_dir.exists():
             shutil.rmtree(token_usage_dir)
             deleted.append("system/token_usage/")
-        # Remove consolidation logs
-        consolidation_logs = system_dir / "logs" / "consolidation"
-        if consolidation_logs.exists():
-            shutil.rmtree(consolidation_logs)
-            deleted.append("system/logs/consolidation/")
-        # Remove prompt logs
-        prompt_logs = system_dir / "logs" / "prompts"
-        if prompt_logs.exists():
-            shutil.rmtree(prompt_logs)
-            deleted.append("system/logs/prompts/")
+        # Remove all logs (consolidation, prompts, incidents, token-awareness, progress, etc.)
+        logs_dir = system_dir / "logs"
+        if logs_dir.exists():
+            shutil.rmtree(logs_dir)
+            deleted.append("system/logs/")
 
     # 5. Reinitialize database schema
     _ensure_schema()
