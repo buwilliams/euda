@@ -219,6 +219,20 @@ async function loadAgents() {
     return [];
 }
 
+async function loadRecentAssets() {
+    try {
+        const response = await fetch('/api/assets/recent', { credentials: 'same-origin' });
+        if (response.ok) {
+            recentAssetsCache = await response.json();
+            return recentAssetsCache;
+        }
+    } catch (error) {
+        console.error('Failed to load recent assets:', error);
+    }
+    recentAssetsCache = [];
+    return [];
+}
+
 async function loadAgentData(agentId) {
     try {
         const [identityRes, configRes] = await Promise.all([
@@ -333,9 +347,9 @@ async function loadAgentMonitoring(agentId, offset = 0, limit = 20) {
 function isContainerTopic(topic) {
     // Agent inbox topics have agent_id set
     if (topic.agent_id) return true;
-    // System containers have system:agents or system:projects tags
+    // System containers have system:agents, system:projects, or system:assets tags
     const tags = topic.tags || [];
-    if (tags.includes('system:agents') || tags.includes('system:projects')) return true;
+    if (tags.includes('system:agents') || tags.includes('system:projects') || tags.includes('system:assets')) return true;
     return false;
 }
 

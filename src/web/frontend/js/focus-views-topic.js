@@ -116,10 +116,13 @@ function renderFocusMenu() {
     // Find system containers
     const agentsContainer = topicsData.find(j => j.tags && j.tags.includes('system:agents') && !j.parent_id);
     const projectsContainer = topicsData.find(j => j.tags && j.tags.includes('system:projects') && !j.parent_id);
+    const assetsContainer = topicsData.find(j => j.tags && j.tags.includes('system:assets') && !j.parent_id);
 
     // Count children of each container
     const agentsCount = agentsContainer ? topicsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
     const projectsCount = projectsContainer ? topicsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
+    // Assets count comes from the cache (loaded separately)
+    const assetsCount = recentAssetsCache ? recentAssetsCache.length : 0;
 
     // Check collapsed states
     const timelinesOpen = isSectionOpen('timelines');
@@ -147,8 +150,8 @@ function renderFocusMenu() {
         `;
     }
 
-    // Build system section (Agents + Projects) if any exist
-    const hasSystemSection = agentsContainer || projectsContainer;
+    // Build system section (Agents + Projects + Assets) if any exist
+    const hasSystemSection = agentsContainer || projectsContainer || assetsContainer;
     const systemSection = hasSystemSection ? `
         <div class="focus-menu-section">
             <div class="focus-menu-section-label collapsible ${collectionsOpen ? 'open' : ''}" onclick="toggleSection('collections')">
@@ -169,6 +172,14 @@ function renderFocusMenu() {
                     <span class="focus-menu-icon">${icon('folder')}</span>
                     <span class="focus-menu-label">Projects</span>
                     <span class="focus-menu-count">${projectsCount}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                ` : ''}
+                ${assetsContainer ? `
+                <div class="focus-menu-item" onclick="navigateFocus('recent-assets')">
+                    <span class="focus-menu-icon">${icon('document')}</span>
+                    <span class="focus-menu-label">Assets</span>
+                    <span class="focus-menu-count">${assetsCount}</span>
                     <span class="focus-menu-arrow">›</span>
                 </div>
                 ` : ''}

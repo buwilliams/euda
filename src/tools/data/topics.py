@@ -1179,6 +1179,9 @@ def get_projects_container() -> dict:
     return get_or_create_system_topic("Projects", "system:projects")
 
 
+def get_assets_container() -> dict:
+    """Get or create the Assets container topic."""
+    return get_or_create_system_topic("Assets", "system:assets")
 
 
 def sync_agent_inbox_topics():
@@ -1193,6 +1196,7 @@ def sync_agent_inbox_topics():
     # Ensure system containers exist
     agents_container = get_agents_container()
     projects_container = get_projects_container()
+    get_assets_container()  # Create Assets container if it doesn't exist
 
     agents = list_agents()
     agent_ids = {a["id"] for a in agents}

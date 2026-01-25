@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.middleware.gzip import GZipMiddleware
 
-from .routes import topics, agents, chat, user, auth, system, upload, transcribe, synthesize
+from .routes import topics, agents, chat, user, auth, system, upload, transcribe, synthesize, assets
 from .routes.auth import get_session_token
 from .auth import is_password_set, verify_session
 from .events import trigger_shutdown
@@ -31,7 +31,11 @@ PUBLIC_PATHS = {
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle app startup and shutdown."""
-    # Startup
+    # Startup - ensure system containers exist
+    from ..tools.data.topics import get_agents_container, get_projects_container, get_assets_container
+    get_agents_container()
+    get_projects_container()
+    get_assets_container()
     yield
     # Shutdown - signal all SSE connections to close
     trigger_shutdown()
@@ -89,6 +93,7 @@ async def auth_middleware(request: Request, call_next):
 # Include routers
 app.include_router(topics.router, prefix="/api/topics", tags=["topics"])
 app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
+app.include_router(assets.router, prefix="/api/assets", tags=["assets"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(user.router, prefix="/api/user", tags=["user"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])

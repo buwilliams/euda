@@ -317,3 +317,69 @@ function renderAssetsListView(topicId) {
         </div>
     `;
 }
+
+function renderRecentAssetsView() {
+    // Load recent assets if not cached
+    if (recentAssetsCache === null) {
+        loadRecentAssets().then(() => renderFocusTab());
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">${icon('document')} Assets</span>
+                    ${renderBreadcrumbs()}
+                </div>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading assets...</div>
+            </div>
+        `;
+    }
+
+    const assets = recentAssetsCache || [];
+
+    // Helper to get topic name
+    const getTopicName = (topicId) => {
+        const topic = allTopicsData.find(t => t.id === topicId);
+        return topic ? topic.name : topicId;
+    };
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">${icon('document')} Assets</span>
+                ${renderBreadcrumbs()}
+            </div>
+        </div>
+        <div class="focus-view-content">
+            ${assets.length > 0 ? `
+                <div class="asset-list">
+                    ${assets.map(asset => {
+                        const isText = isTextAsset(asset);
+                        const assetIcon = asset.filename.endsWith('.md') ? icon('pencil') : icon('document');
+                        const topicName = getTopicName(asset.topic_id);
+                        return isText ? `
+                            <div class="asset-item clickable" onclick="navigateFocus('asset-${asset.topic_id}-${asset.filename}')" style="cursor: pointer;">
+                                <div class="asset-item-info">
+                                    <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
+                                    <span class="asset-item-topic">${escapeHtml(topicName)}</span>
+                                </div>
+                                <span class="asset-item-size">${formatFileSize(asset.size)}</span>
+                                <span class="asset-item-arrow">${icon('chevron-right')}</span>
+                            </div>
+                        ` : `
+                            <div class="asset-item">
+                                <div class="asset-item-info">
+                                    <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
+                                    <span class="asset-item-topic">${escapeHtml(topicName)}</span>
+                                </div>
+                                <span class="asset-item-size">${formatFileSize(asset.size)}</span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            ` : '<div class="focus-empty">No assets yet</div>'}
+        </div>
+    `;
+}
