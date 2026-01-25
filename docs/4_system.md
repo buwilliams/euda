@@ -1,5 +1,11 @@
 # Design
 
+There are two main concepts in Euno: Agents and Jobs. Agents are actors. Jobs are containers of work.
+
+---
+
+## Agency
+
 The design of Euno anthropomorphizes AI [attributing human characteristics/behavior]. In Euno, we treat people and AI basically the same and call them Agents. Agents, like people, grow and change over time, so we've built a system that supports that type of growth. When a person eats, they grow, AIs grow when fed them with data. Here's what makes up an Agent:
 - Cognition: the ability to reason and have self-awareness (consolidation/regulation)
 - Memory: form new short and long-term memories
