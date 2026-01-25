@@ -11,6 +11,7 @@ Long-term memory is the PRIMARY store. Identity is derived from long-term
 memory via RLM, eliminating the need to "graduate" short-term items.
 """
 
+import ast
 import json
 import re
 from datetime import datetime
@@ -172,6 +173,13 @@ def _parse_identity_updates(findings) -> Optional[dict]:
             return json.loads(findings)
         except json.JSONDecodeError:
             pass
+        # Try Python literal (single quotes) - RLM sometimes returns this format
+        try:
+            result = ast.literal_eval(findings)
+            if isinstance(result, dict):
+                return result
+        except (ValueError, SyntaxError):
+            pass
 
     # Try to find JSON object in the text
     match = re.search(r'\{[\s\S]*\}', findings)
@@ -179,6 +187,13 @@ def _parse_identity_updates(findings) -> Optional[dict]:
         try:
             return json.loads(match.group(0))
         except json.JSONDecodeError:
+            pass
+        # Try Python literal for extracted object
+        try:
+            result = ast.literal_eval(match.group(0))
+            if isinstance(result, dict):
+                return result
+        except (ValueError, SyntaxError):
             pass
 
     return None
@@ -417,6 +432,9 @@ def _update_identity(runner: "ConsolidationRunner", updates):
     # Merge updates into sections
     for key, content in updates.items():
         if key in IDENTITY_SECTIONS and content:
+            # Convert list to bullet-point string if needed (RLM returns lists)
+            if isinstance(content, list):
+                content = "\n".join(f"- {item}" for item in content if item)
             existing = sections.get(key, "")
             sections[key] = _merge_section_content(existing, content)
 
