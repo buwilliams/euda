@@ -315,7 +315,7 @@ class Agent:
             prompt += (
                 "The user is speaking to you via voice. Your response will be read aloud. "
                 "Respond in natural, conversational first-person speech with complete sentences. "
-                "Avoid bullet points, lists, job IDs, or formatted text. "
+                "Avoid bullet points, lists, topic IDs, or formatted text."
                 "Speak as if you're talking directly to the user."
             )
 

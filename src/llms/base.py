@@ -354,7 +354,7 @@ class UnifiedClient:
             messages: Conversation messages
             tools: Optional tool definitions
             agent_id: ID of calling agent (required for cost attribution)
-            job_id: ID of job being worked on (for per-job tracking)
+            topic_id: ID of topic being worked on (for per-topic tracking)
             track_cost: Whether to track costs (default True)
 
         Returns:

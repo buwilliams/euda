@@ -646,7 +646,7 @@ class TokenAwareness:
             output_tokens: Actual output tokens used
             provider: LLM provider name
             model: Model name
-            job_id: Optional job ID for per-job tracking
+            topic_id: Optional topic ID for per-topic tracking
             cached_input_tokens: Cached input tokens (subset of input_tokens)
             stop_reason: Reason the model stopped
             duration_ms: Duration of the API call
