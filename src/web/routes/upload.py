@@ -3,7 +3,7 @@ Upload API Route
 
 Handles file uploads by:
 1. Storing text content in user's long-term memory
-2. Creating a job for Chat to extract short-term memories
+2. Creating a topic for Chat to extract short-term memories
 3. Consolidation will extract identity-relevant information later
 """
 
@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import APIRouter, UploadFile, File
 
 from ...agent.cognition.reasoning.prompts import render_template
-from ...tools.data.jobs import create_job, get_agent_inbox_job
+from ...tools.data.topics import create_topic, get_agent_inbox_topic
 from ...tools.data.memory import write_long_term_memory
 
 
@@ -42,7 +42,7 @@ async def upload_file(file: UploadFile = File(...)):
     """Upload a file.
 
     Text files are stored in user's long-term memory.
-    A job is created for Chat to extract short-term memories.
+    A topic is created for Chat to extract short-term memories.
     """
     filename = file.filename
     content_bytes = await file.read()
@@ -66,14 +66,14 @@ async def upload_file(file: UploadFile = File(...)):
             source="Upload"
         )
 
-        # Create job to extract short-term memories
-        user_inbox = get_agent_inbox_job("user")
+        # Create topic to extract short-term memories
+        user_inbox = get_agent_inbox_topic("user")
         parent_id = user_inbox["id"] if user_inbox else None
 
-        # Truncate content for job description
+        # Truncate content for topic description
         truncated_content = content[:8000] + ("..." if len(content) > 8000 else "")
 
-        job = create_job(
+        topic = create_topic(
             name=f"euno:extract-memories:{filename}",
             description=render_template(
                 "upload/extract_memories",
@@ -90,7 +90,7 @@ async def upload_file(file: UploadFile = File(...)):
             "status": "uploaded",
             "filename": filename,
             "size": file_size_str,
-            "job_id": job["id"],
+            "topic_id": topic["id"],
             "message": "File stored in long-term memory. Extracting short-term memories."
         }
 

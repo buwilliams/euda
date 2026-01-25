@@ -2,13 +2,13 @@
 
 // ============== Job Editing ==============
 
-function startEditingField(jobId, field) {
-    editingJobField = { jobId, field };
+function startEditingField(topicId, field) {
+    editingTopicField = { topicId, field };
     renderFocusTab();
 
     // Focus the input after render
     setTimeout(() => {
-        const input = document.getElementById(`edit-${field}-${jobId}`);
+        const input = document.getElementById(`edit-${field}-${topicId}`);
         if (input) {
             input.focus();
             if (input.tagName === 'INPUT') {
@@ -19,77 +19,77 @@ function startEditingField(jobId, field) {
 }
 
 function cancelEditing() {
-    editingJobField = null;
+    editingTopicField = null;
     renderFocusTab();
 }
 
-async function saveJobField(jobId, field, value) {
+async function saveTopicField(topicId, field, value) {
     try {
         const body = {};
         body[field] = value;
 
-        const response = await fetch(`/api/jobs/${jobId}`, {
+        const response = await fetch(`/api/topics/${topicId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
 
         if (response.ok) {
-            editingJobField = null;
-            await loadJobsData();
+            editingTopicField = null;
+            await loadTopicsData();
         }
     } catch (error) {
         console.error('Failed to save job field:', error);
     }
 }
 
-function handleEditKeypress(event, jobId, field) {
+function handleEditKeypress(event, topicId, field) {
     if (event.key === 'Enter' && field === 'name') {
-        saveJobField(jobId, field, event.target.value);
+        saveTopicField(topicId, field, event.target.value);
     } else if (event.key === 'Escape') {
         cancelEditing();
     }
 }
 
-function handleDescriptionKeypress(event, jobId) {
+function handleDescriptionKeypress(event, topicId) {
     if (event.key === 'Escape') {
         cancelEditing();
     }
     // Ctrl+Enter or Cmd+Enter to save
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-        saveJobField(jobId, 'description', event.target.value);
+        saveTopicField(topicId, 'description', event.target.value);
     }
 }
 
 // ============== Completed Job Editing ==============
 
-async function saveCompletedJobField(jobId, field, value) {
+async function saveCompletedTopicField(topicId, field, value) {
     try {
         const body = {};
         body[field] = value;
 
-        const response = await fetch(`/api/jobs/${jobId}`, {
+        const response = await fetch(`/api/topics/${topicId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
 
         if (response.ok) {
-            editingJobField = null;
-            await loadJobsData();
+            editingTopicField = null;
+            await loadTopicsData();
         }
     } catch (error) {
         console.error('Failed to save completed job field:', error);
     }
 }
 
-function handleCompletedDescriptionKeypress(event, jobId) {
+function handleCompletedDescriptionKeypress(event, topicId) {
     if (event.key === 'Escape') {
         cancelEditing();
     }
     // Ctrl+Enter or Cmd+Enter to save
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-        saveCompletedJobField(jobId, 'description', event.target.value);
+        saveCompletedTopicField(topicId, 'description', event.target.value);
     }
 }
 
@@ -103,20 +103,20 @@ async function toggleAgentEnabled(agentId, enabled) {
     }
 }
 
-async function saveAgentIdentityField(agentId, jobId) {
-    const textarea = document.getElementById(`edit-identity-${jobId}`);
+async function saveAgentIdentityField(agentId, topicId) {
+    const textarea = document.getElementById(`edit-identity-${topicId}`);
     if (!textarea) return;
 
     const success = await saveAgentIdentity(agentId, textarea.value);
     if (success) {
-        editingJobField = null;
+        editingTopicField = null;
         renderFocusTab();
     }
 }
 
-async function saveAgentConfigField(agentId, jobId) {
-    const triggersInput = document.getElementById(`edit-triggers-${jobId}`);
-    const toolsInput = document.getElementById(`edit-tools-${jobId}`);
+async function saveAgentConfigField(agentId, topicId) {
+    const triggersInput = document.getElementById(`edit-triggers-${topicId}`);
+    const toolsInput = document.getElementById(`edit-tools-${topicId}`);
 
     if (!triggersInput || !toolsInput) return;
 
@@ -128,8 +128,8 @@ async function saveAgentConfigField(agentId, jobId) {
     const updates = { triggers, tools };
 
     // Get consolidation settings
-    const consolidationEnabledInput = document.getElementById(`edit-consolidation-enabled-${jobId}`);
-    const consolidationTriggerInput = document.getElementById(`edit-consolidation-trigger-${jobId}`);
+    const consolidationEnabledInput = document.getElementById(`edit-consolidation-enabled-${topicId}`);
+    const consolidationTriggerInput = document.getElementById(`edit-consolidation-trigger-${topicId}`);
     if (consolidationEnabledInput && consolidationTriggerInput) {
         updates.consolidation = {
             enabled: consolidationEnabledInput.checked,
@@ -139,17 +139,17 @@ async function saveAgentConfigField(agentId, jobId) {
 
     const success = await saveAgentConfig(agentId, updates);
     if (success) {
-        editingJobField = null;
+        editingTopicField = null;
         renderFocusTab();
     }
 }
 
-function handleAgentIdentityKeypress(event, agentId, jobId) {
+function handleAgentIdentityKeypress(event, agentId, topicId) {
     if (event.key === 'Escape') {
         cancelEditing();
     }
     // Ctrl+Enter or Cmd+Enter to save
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-        saveAgentIdentityField(agentId, jobId);
+        saveAgentIdentityField(agentId, topicId);
     }
 }

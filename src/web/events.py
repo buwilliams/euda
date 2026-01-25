@@ -2,7 +2,7 @@
 Event System - Central event bus for agent triggers and UI updates.
 
 Events follow the format: {type}:{event}
-Examples: job:assigned, memory:long-term, time:morning
+Examples: topic:assigned, memory:long-term, time:morning
 
 Scoped events only wake the specific agent they're scoped to.
 Unscoped events wake all agents subscribed to that event type.
@@ -21,7 +21,7 @@ from typing import Dict, List, Optional, Set
 @dataclass
 class Event:
     """An event that can trigger agents."""
-    event: str              # e.g., "job:assigned"
+    event: str              # e.g., "topic:assigned"
     scope: Optional[str]    # agent_id if scoped, None if broadcast
     data: dict              # context data
     timestamp: str          # ISO timestamp
@@ -74,7 +74,7 @@ class EventBus:
         """Emit an event.
 
         Args:
-            event: Event name (e.g., "job:assigned")
+            event: Event name (e.g., "topic:assigned")
             scope: If set, only this agent_id receives the event
             data: Context data to include with the event
         """

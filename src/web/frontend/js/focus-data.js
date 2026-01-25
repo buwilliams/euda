@@ -147,9 +147,9 @@ function handleReflectionComplete(data) {
         // Re-render if viewing any view related to this agent
         if (focusView) {
             const agentId = data.agent_id;
-            // Check if viewing agent's job detail page
-            const agentJob = jobsData.find(j => j.agent_id === agentId);
-            if ((agentJob && focusView === `job-${agentJob.id}`) ||
+            // Check if viewing agent's topic detail page
+            const agentTopic = topicsData.find(j => j.agent_id === agentId);
+            if ((agentTopic && focusView === `topic-${agentTopic.id}`) ||
                 focusView === `identity-${agentId}` ||
                 focusView === `config-${agentId}` ||
                 focusView === `monitoring-${agentId}` ||
@@ -170,12 +170,12 @@ function handleReflectionError(data) {
 
 // ============== Data Loading ==============
 
-async function loadJobsData() {
+async function loadTopicsData() {
     try {
         const fetchOpts = { credentials: 'same-origin' };
         const [activeRes, completedRes] = await Promise.all([
-            fetch('/api/jobs?status=todo', fetchOpts),
-            fetch('/api/jobs?status=done', fetchOpts)
+            fetch('/api/topics?status=todo', fetchOpts),
+            fetch('/api/topics?status=done', fetchOpts)
         ]);
 
         if (activeRes.status === 401 || completedRes.status === 401) {
@@ -184,16 +184,16 @@ async function loadJobsData() {
             return;
         }
 
-        const activeJobs = await activeRes.json();
-        const completedJobs = await completedRes.json();
+        const activeTopics = await activeRes.json();
+        const completedTopics = await completedRes.json();
 
         // Active jobs (not completed, not archived)
-        jobsData = Array.isArray(activeJobs) ? activeJobs : [];
-        // Recently completed jobs (limit to 20)
-        completedJobsData = Array.isArray(completedJobs) ? completedJobs.slice(0, 20) : [];
+        topicsData = Array.isArray(activeTopics) ? activeTopics : [];
+        // Recently completed topics (limit to 20)
+        completedTopicsData = Array.isArray(completedTopics) ? completedTopics.slice(0, 20) : [];
 
         renderFocusTab();
-        updateTasksBadge();
+        updateTopicsBadge();
         // Load daily quote when showing the focus menu
         if (focusView === 'menu') {
             loadDailyQuote();
@@ -204,8 +204,8 @@ async function loadJobsData() {
 }
 
 // Alias for backwards compatibility
-async function loadTasksData() {
-    return loadJobsData();
+async function loadTopicsData() {
+    return loadTopicsData();
 }
 
 async function loadAgents() {
@@ -295,7 +295,7 @@ async function saveAgentConfig(agentId, updates) {
     return false;
 }
 
-async function loadAgentCompletedJobs(agentId) {
+async function loadAgentCompletedTopics(agentId) {
     try {
         const response = await fetch(`/api/agents/${agentId}/completed-jobs`, {
             credentials: 'same-origin'
@@ -309,7 +309,7 @@ async function loadAgentCompletedJobs(agentId) {
             return jobs;
         }
     } catch (error) {
-        console.error('Failed to load agent completed jobs:', error);
+        console.error('Failed to load agent completed topics:', error);
     }
     return [];
 }
@@ -335,54 +335,54 @@ async function loadAgentMonitoring(agentId, offset = 0, limit = 20) {
 
 // ============== Job Categories ==============
 
-function isContainerJob(job) {
+function isContainerTopic(topic) {
     // Agent inbox jobs have agent_id set
-    if (job.agent_id) return true;
+    if (topic.agent_id) return true;
     // System containers have system:agents or system:projects tags
-    const tags = job.tags || [];
+    const tags = topic.tags || [];
     if (tags.includes('system:agents') || tags.includes('system:projects')) return true;
     return false;
 }
 
-function isAgentOrSystemJob(job) {
+function isAgentOrSystemTopic(topic) {
     // Check if job itself is an agent inbox or has system:agents tags
-    if (job.agent_id) return true;
-    const tags = job.tags || [];
+    if (topic.agent_id) return true;
+    const tags = topic.tags || [];
     if (tags.includes('system:agents')) return true;
     if (tags.includes('agent-inbox')) return true;
     return false;
 }
 
-function hasAgentOrSystemAncestor(job, allJobs) {
+function hasAgentOrSystemAncestor(topic, allTopics) {
     // Walk up the parent chain to check if any ancestor is under Agents or System
-    // allJobs should include both active and completed jobs for full traversal
-    let parentId = job.parent_id;
+    // allTopics should include both active and completed topics for full traversal
+    let parentId = topic.parent_id;
     while (parentId) {
-        const parent = allJobs.find(j => j.id === parentId);
+        const parent = allTopics.find(j => j.id === parentId);
         if (!parent) break;
-        if (isAgentOrSystemJob(parent)) return true;
+        if (isAgentOrSystemTopic(parent)) return true;
         parentId = parent.parent_id;
     }
     return false;
 }
 
-function isProjectsDescendant(job, allJobs) {
+function isProjectsDescendant(topic, allTopics) {
     // A job is a Projects descendant if it's NOT under Agents or System containers
-    // This includes jobs with no container parent (user-created root jobs)
-    if (isAgentOrSystemJob(job)) return false;
-    if (hasAgentOrSystemAncestor(job, allJobs)) return false;
+    // This includes jobs with no container parent (user-created root topics)
+    if (isAgentOrSystemTopic(topic)) return false;
+    if (hasAgentOrSystemAncestor(topic, allTopics)) return false;
     return true;
 }
 
-function getJobCategory(job) {
+function getTopicCategory(topic) {
     // Container jobs don't belong in timeline categories
-    if (isContainerJob(job)) return 'container';
+    if (isContainerTopic(topic)) return 'container';
 
     const today = getLocalDateString();
-    const dueDate = job.due_date;
-    const someday = job.someday;
+    const dueDate = topic.due_date;
+    const someday = topic.someday;
 
-    if (job.status === 'done') return 'logbook';
+    if (topic.status === 'done') return 'logbook';
     if (dueDate && dueDate <= today) return 'today';  // Includes past due
     if (dueDate && dueDate > today) return 'upcoming';
     if (!dueDate && someday) return 'someday';
@@ -391,9 +391,9 @@ function getJobCategory(job) {
 
 // ============== Job Hierarchy Helpers ==============
 
-function getJobById(id) {
-    // Use allJobsData to find jobs regardless of status
-    return allJobsData.find(j => j.id === id);
+function getTopicById(id) {
+    // Use allTopicsData to find jobs regardless of status
+    return allTopicsData.find(j => j.id === id);
 }
 
 function getTimelineContext() {
@@ -416,9 +416,9 @@ function getTimelineContext() {
     return null; // Not in a timeline context (e.g., navigated from Projects)
 }
 
-function getChildJobsForContext(parentId) {
-    // Get child jobs filtered by timeline context (if any)
-    const allChildren = jobsData.filter(j => j.parent_id === parentId);
+function getChildTopicsForContext(parentId) {
+    // Get child topics filtered by timeline context (if any)
+    const allChildren = topicsData.filter(j => j.parent_id === parentId);
     const context = getTimelineContext();
 
     if (!context) {
@@ -429,17 +429,17 @@ function getChildJobsForContext(parentId) {
     // Filter to only children (or descendants) that match the timeline context
     return allChildren.filter(child => {
         // Check if this child or any of its descendants match the context
-        if (child.status !== 'done' && getJobCategory(child) === context) {
+        if (child.status !== 'done' && getTopicCategory(child) === context) {
             return true;
         }
         // Check descendants
         const descendants = getAllDescendants(child.id);
-        return descendants.some(d => d.status !== 'done' && getJobCategory(d) === context);
+        return descendants.some(d => d.status !== 'done' && getTopicCategory(d) === context);
     });
 }
 
-function getAllChildJobsSorted(parentId) {
-    // Get ALL child jobs (including archived, error, etc.) from allJobsData
+function getAllChildTopicsSorted(parentId) {
+    // Get ALL child topics (including archived, error, etc.) from allTopicsData
     // Sort by status priority: working > todo > error > done > archived, then by created_at desc
     const statusPriority = {
         'working': 0,
@@ -449,7 +449,7 @@ function getAllChildJobsSorted(parentId) {
         'archived': 4
     };
 
-    return allJobsData
+    return allTopicsData
         .filter(j => j.parent_id === parentId)
         .sort((a, b) => {
             const aPriority = statusPriority[a.status] ?? 5;
@@ -462,10 +462,10 @@ function getAllChildJobsSorted(parentId) {
         });
 }
 
-function getDescendantCountForContext(jobId) {
+function getDescendantCountForContext(topicId) {
     // Count ALL descendants (not just direct children) that match the timeline context
     const context = getTimelineContext();
-    const allDescendants = getAllDescendants(jobId);
+    const allDescendants = getAllDescendants(topicId);
 
     if (!context) {
         // No timeline context - count all descendants
@@ -474,44 +474,44 @@ function getDescendantCountForContext(jobId) {
 
     // Count only descendants that match the context and are incomplete
     return allDescendants.filter(d =>
-        d.status !== 'done' && getJobCategory(d) === context
+        d.status !== 'done' && getTopicCategory(d) === context
     ).length;
 }
 
-function hasCompletedAncestor(job) {
+function hasCompletedAncestor(topic) {
     // Check if any ancestor of this job is completed
-    let parentId = job.parent_id;
+    let parentId = topic.parent_id;
     while (parentId) {
-        // Check if parent is in completed jobs
-        const completedParent = completedJobsData.find(j => j.id === parentId);
+        // Check if parent is in completed topics
+        const completedParent = completedTopicsData.find(j => j.id === parentId);
         if (completedParent) return true;
 
-        // Check if parent is in active jobs and continue walking up
-        const activeParent = getJobById(parentId);
+        // Check if parent is in active topics and continue walking up
+        const activeParent = getTopicById(parentId);
         if (!activeParent) break; // Parent not found anywhere
-        if (isContainerJob(activeParent)) break; // Stop at containers
+        if (isContainerTopic(activeParent)) break; // Stop at containers
         parentId = activeParent.parent_id;
     }
     return false;
 }
 
-function getRootAncestor(job) {
+function getRootAncestor(topic) {
     // Walk up the parent chain to find the root job
-    // Stop at containers (system jobs, agent inboxes) - job under container is the effective root
-    let current = job;
+    // Stop at containers (system topics, agent inboxes) - job under container is the effective root
+    let current = topic;
     while (current.parent_id) {
-        const parent = getJobById(current.parent_id);
-        if (!parent) break; // Parent not in active jobs, current is effectively root
-        if (isContainerJob(parent)) break; // Don't walk into containers
+        const parent = getTopicById(current.parent_id);
+        if (!parent) break; // Parent not in active topics, current is effectively root
+        if (isContainerTopic(parent)) break; // Don't walk into containers
         current = parent;
     }
     return current;
 }
 
-function getAllDescendants(jobId) {
+function getAllDescendants(topicId) {
     // Get all descendants recursively (children, grandchildren, etc.)
     const descendants = [];
-    const children = jobsData.filter(j => j.parent_id === jobId);
+    const children = topicsData.filter(j => j.parent_id === topicId);
 
     for (const child of children) {
         descendants.push(child);
@@ -521,27 +521,27 @@ function getAllDescendants(jobId) {
     return descendants;
 }
 
-function getJobWithDescendants(jobId) {
+function getTopicWithDescendants(topicId) {
     // Get a job and all its descendants
-    const job = getJobById(jobId);
-    if (!job) return [];
-    return [job, ...getAllDescendants(jobId)];
+    const topic = getTopicById(topicId);
+    if (!topic) return [];
+    return [topic, ...getAllDescendants(topicId)];
 }
 
-function hasMatchingIncompleteDescendant(job, category) {
+function hasMatchingIncompleteDescendant(topic, category) {
     // Check if this job or any of its descendants:
     // 1. Matches the category
     // 2. Is not completed
 
     // Check the job itself (only if it's a leaf or has the category set)
-    if (job.status !== 'done' && getJobCategory(job) === category) {
+    if (topic.status !== 'done' && getTopicCategory(topic) === category) {
         return true;
     }
 
     // Check all descendants
-    const descendants = getAllDescendants(job.id);
+    const descendants = getAllDescendants(topic.id);
     for (const descendant of descendants) {
-        if (descendant.status !== 'done' && getJobCategory(descendant) === category) {
+        if (descendant.status !== 'done' && getTopicCategory(descendant) === category) {
             return true;
         }
     }
@@ -549,32 +549,32 @@ function hasMatchingIncompleteDescendant(job, category) {
     return false;
 }
 
-function getRootJobsForCategory(category) {
-    // Get root jobs that have at least one incomplete descendant matching the category
-    // A "root" job is one with no parent, or whose parent is not in jobsData (e.g., system container)
+function getRootTopicsForCategory(category) {
+    // Get root topics that have at least one incomplete descendant matching the category
+    // A "root" job is one with no parent, or whose parent is not in topicsData (e.g., system container)
 
-    const rootJobs = new Map(); // Use Map to deduplicate by job ID
+    const rootTopics = new Map(); // Use Map to deduplicate by job ID
 
-    for (const job of jobsData) {
+    for (const topic of topicsData) {
         // Skip containers
-        if (isContainerJob(job)) continue;
+        if (isContainerTopic(topic)) continue;
 
         // Skip jobs with completed ancestors (orphaned children of completed projects)
-        if (hasCompletedAncestor(job)) continue;
+        if (hasCompletedAncestor(topic)) continue;
 
         // Check if this job matches the category and is incomplete
-        if (job.status !== 'done' && getJobCategory(job) === category) {
+        if (topic.status !== 'done' && getTopicCategory(topic) === category) {
             // Find its root ancestor
-            const root = getRootAncestor(job);
+            const root = getRootAncestor(topic);
 
-            // Skip if root is a container (system jobs, agent inboxes)
-            if (isContainerJob(root)) continue;
+            // Skip if root is a container (system topics, agent inboxes)
+            if (isContainerTopic(root)) continue;
 
-            rootJobs.set(root.id, root);
+            rootTopics.set(root.id, root);
         }
     }
 
-    return Array.from(rootJobs.values());
+    return Array.from(rootTopics.values());
 }
 
 // ============== Date Formatting ==============
@@ -624,26 +624,26 @@ function formatFriendlyPastDate(dateStr) {
 
 function getFocusCounts() {
     // Temporal filters (today, upcoming, someday): count ALL matching jobs
-    // Anytime: count root jobs only
+    // Anytime: count root topics only
     const counts = { today: 0, upcoming: 0, anytime: 0, someday: 0 };
 
-    jobsData.forEach(job => {
+    topicsData.forEach(topic => {
         // Skip containers
-        if (isContainerJob(job)) return;
+        if (isContainerTopic(topic)) return;
         // Skip completed
-        if (job.status === 'done') return;
+        if (topic.status === 'done') return;
         // Skip jobs with completed ancestors (orphaned children)
-        if (hasCompletedAncestor(job)) return;
+        if (hasCompletedAncestor(topic)) return;
 
-        const category = getJobCategory(job);
+        const category = getTopicCategory(topic);
         // For temporal categories, count all jobs
         if (category === 'today' || category === 'upcoming' || category === 'someday') {
             counts[category]++;
         }
     });
 
-    // For anytime, count root jobs only
-    counts.anytime = getRootJobsForCategory('anytime').length;
+    // For anytime, count root topics only
+    counts.anytime = getRootTopicsForCategory('anytime').length;
 
     return counts;
 }
@@ -787,9 +787,9 @@ async function loadConsolidationLogs(agentId) {
     return { agent_id: agentId, logs: [] };
 }
 
-async function loadJobTrace(jobId) {
+async function loadTopicTrace(topicId) {
     try {
-        const response = await fetch(`/api/jobs/${jobId}/trace`, {
+        const response = await fetch(`/api/topics/${topicId}/trace`, {
             credentials: 'same-origin'
         });
         if (response.ok) {
@@ -845,9 +845,9 @@ async function deleteMemoryItem(agentId, entryId) {
 
 async function refreshMemorySection(agentId, sectionType) {
     // Find and refresh the memory section content
-    const sections = document.querySelectorAll('.job-section');
+    const sections = document.querySelectorAll('.topic-section');
     for (const section of sections) {
-        const header = section.querySelector('.job-section-header');
+        const header = section.querySelector('.topic-section-header');
         if (header && header.textContent.includes('Short-term Memory') && sectionType === 'short-term-memory') {
             const content = header.nextElementSibling;
             if (content && content.classList.contains('collapsible-content')) {
@@ -882,9 +882,9 @@ async function loadLongTermMemoryDate(agentId, date) {
     const dates = longTermMemoryCache[agentId]?.dates || [];
 
     // Find and update the long-term memory section
-    const sections = document.querySelectorAll('.job-section');
+    const sections = document.querySelectorAll('.topic-section');
     for (const section of sections) {
-        const header = section.querySelector('.job-section-header');
+        const header = section.querySelector('.topic-section-header');
         if (header && header.textContent.includes('Long-term Memory')) {
             const contentDiv = header.nextElementSibling;
             if (contentDiv && contentDiv.classList.contains('collapsible-content')) {
@@ -931,9 +931,9 @@ async function triggerReflection(agentId, phase) {
 }
 
 async function refreshReflectionSection(agentId) {
-    const sections = document.querySelectorAll('.job-section');
+    const sections = document.querySelectorAll('.topic-section');
     for (const section of sections) {
-        const header = section.querySelector('.job-section-header');
+        const header = section.querySelector('.topic-section-header');
         if (header && header.textContent.includes('Reflection')) {
             const content = header.nextElementSibling;
             if (content && content.classList.contains('collapsible-content') && content.classList.contains('open')) {
@@ -947,16 +947,16 @@ async function refreshReflectionSection(agentId) {
 
 // ============== Job State Functions ==============
 
-async function setJobStatus(jobId, status) {
+async function setTopicStatus(topicId, status) {
     try {
-        const response = await fetch(`/api/jobs/${jobId}`, {
+        const response = await fetch(`/api/topics/${topicId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'same-origin',
             body: JSON.stringify({ status })
         });
         if (response.ok) {
-            await loadJobsData();
+            await loadTopicsData();
             return true;
         }
     } catch (error) {
@@ -965,21 +965,21 @@ async function setJobStatus(jobId, status) {
     return false;
 }
 
-async function reassignJob(jobId, agentId) {
+async function reassignTopic(topicId, agentId) {
     try {
         // Unassign current assignee if different
-        const job = jobsData.find(j => j.id === jobId) || completedJobsData.find(j => j.id === jobId);
-        if (job && job.assignee && job.assignee !== agentId) {
-            await fetch(`/api/jobs/${jobId}/unassign`, {
+        const topic = topicsData.find(j => j.id === topicId) || completedTopicsData.find(j => j.id === topicId);
+        if (job && topic.assignee && topic.assignee !== agentId) {
+            await fetch(`/api/topics/${topicId}/unassign`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'same-origin',
-                body: JSON.stringify({ agent_id: job.assignee })
+                body: JSON.stringify({ agent_id: topic.assignee })
             });
         }
 
         // Assign the new agent
-        const assignResponse = await fetch(`/api/jobs/${jobId}/assign`, {
+        const assignResponse = await fetch(`/api/topics/${topicId}/assign`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'same-origin',
@@ -992,7 +992,7 @@ async function reassignJob(jobId, agentId) {
         }
 
         // Set status to todo
-        const statusResponse = await fetch(`/api/jobs/${jobId}`, {
+        const statusResponse = await fetch(`/api/topics/${topicId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'same-origin',
@@ -1000,7 +1000,7 @@ async function reassignJob(jobId, agentId) {
         });
 
         if (statusResponse.ok) {
-            await loadJobsData();
+            await loadTopicsData();
             return true;
         }
     } catch (error) {

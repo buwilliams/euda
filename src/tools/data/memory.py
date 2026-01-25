@@ -252,28 +252,28 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
 
     memory_path.write_text(new_content)
 
-    # Create trigger jobs for agents subscribed to long-term memory updates
+    # Create trigger topics for agents subscribed to long-term memory updates
     if agent_id == "user":
-        from .jobs import create_job, list_jobs, get_agent_inbox_job
+        from .topics import create_topic, list_topics, get_agent_inbox_topic
         from ..agents.agents import list_agents
 
         for agent_config in list_agents():
             if agent_config.get("state", "enabled") == "disabled":
                 continue
             if "memory:long-term" in agent_config.get("triggers", []):
-                job_name = f"Trigger:memory-long-term:{date}"
+                topic_name = f"Trigger:memory-long-term:{date}"
 
-                # Check if trigger job already exists for this agent today
-                existing = list_jobs(status="todo", assignee=agent_config["id"])
-                already_exists = any(j["name"] == job_name for j in existing)
+                # Check if trigger topic already exists for this agent today
+                existing = list_topics(status="todo", assignee=agent_config["id"])
+                already_exists = any(t["name"] == topic_name for t in existing)
 
                 if not already_exists:
-                    # Create job under agent's inbox
-                    inbox = get_agent_inbox_job(agent_config["id"])
+                    # Create topic under agent's inbox
+                    inbox = get_agent_inbox_topic(agent_config["id"])
                     parent_id = inbox["id"] if inbox else None
 
-                    create_job(
-                        name=job_name,
+                    create_topic(
+                        name=topic_name,
                         description="New long-term memory entry to process",
                         parent_id=parent_id,
                         assignee=agent_config["id"],

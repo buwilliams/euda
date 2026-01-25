@@ -13,11 +13,11 @@ function getLocalDateString(date = null) {
 
 // ============== State ==============
 
-let jobsData = [];           // All active jobs
-let completedJobsData = [];  // Recently completed jobs
-let allJobsData = [];        // All jobs including archived (for detail views)
-let jobAssetsCache = {};     // Cache of assets per job
-let editingJobField = null;  // Which field is being edited: {jobId, field}
+let topicsData = [];           // All active topics
+let completedTopicsData = [];  // Recently completed topics
+let allTopicsData = [];        // All jobs including archived (for detail views)
+let topicAssetsCache = {};     // Cache of assets per job
+let editingTopicField = null;  // Which field is being edited: {topicId, field}
 let currentAssetData = null; // Currently viewed asset
 let editingAssetFilename = null; // Track if we're editing an asset
 let agentsCache = null;      // Cache of available agents
@@ -63,33 +63,33 @@ function renderFocusTab() {
     } else if (focusView === 'completed') {
         content = renderCompletedJobsView();
     } else if (focusView.startsWith('assets-')) {
-        // assets-{jobId} - list of assets for a job
-        const jobId = focusView.substring(7);
-        content = renderAssetsListView(jobId);
+        // assets-{topicId} - list of assets for a job
+        const topicId = focusView.substring(7);
+        content = renderAssetsListView(topicId);
     } else if (focusView.startsWith('asset-')) {
-        // asset-{jobId}-{filename} where jobId is like "job-xxxxxxxx"
+        // asset-{topicId}-{filename} where topicId is like "job-xxxxxxxx"
         const rest = focusView.substring(6); // remove "asset-"
         // Job IDs are "job-" + 8 hex chars, so extract first 12 chars
-        const jobId = rest.substring(0, 12);
-        const filename = rest.substring(13); // skip jobId + "-"
-        content = renderAssetView(jobId, filename);
+        const topicId = rest.substring(0, 12);
+        const filename = rest.substring(13); // skip topicId + "-"
+        content = renderAssetView(topicId, filename);
     } else if (focusView.startsWith('newjob-')) {
-        // newjob-{jobId} - create new child jobs
-        const jobId = focusView.substring(7);
-        content = renderNewJobScreen(jobId);
+        // newjob-{topicId} - create new child topics
+        const topicId = focusView.substring(7);
+        content = renderNewJobScreen(topicId);
     } else if (focusView.startsWith('attach-')) {
-        // attach-{jobId} - attach assets to a job
-        const jobId = focusView.substring(7);
-        content = renderAttachScreen(jobId);
-    } else if (focusView.startsWith('job-')) {
-        const jobId = focusView.substring(4);
-        content = renderJobDetailView(jobId);
+        // attach-{topicId} - attach assets to a job
+        const topicId = focusView.substring(7);
+        content = renderAttachScreen(topicId);
+    } else if (focusView.startsWith('topic-')) {
+        const topicId = focusView.substring(4);
+        content = renderTopicDetailView(topicId);
     } else if (focusView.startsWith('completed-')) {
-        const jobId = focusView.substring(10);
-        content = renderCompletedJobDetailView(jobId);
+        const topicId = focusView.substring(10);
+        content = renderCompletedTopicDetailView(topicId);
     } else if (focusView.startsWith('trace-')) {
-        const jobId = focusView.substring(6);
-        content = renderJobTraceView(jobId);
+        const topicId = focusView.substring(6);
+        content = renderTopicTraceView(topicId);
     } else if (focusView.startsWith('memory-list-')) {
         const agentId = focusView.substring(12);
         content = renderMemoryListView(agentId);
@@ -191,9 +191,9 @@ function navigateFocus(view) {
 
     // Set job context for chat input (context-aware routing)
     if (view.startsWith('job-')) {
-        const jobId = view.substring(4);
+        const topicId = view.substring(4);
         if (typeof setJobContext === 'function') {
-            setJobContext(jobId);
+            setJobContext(topicId);
         }
     } else {
         if (typeof clearJobContext === 'function') {
@@ -213,10 +213,10 @@ function navigateFocusBack() {
     focusSlideDirection = 'back';
 
     // Update job context for chat input
-    if (focusView.startsWith('job-')) {
-        const jobId = focusView.substring(4);
+    if (focusView.startsWith('topic-')) {
+        const topicId = focusView.substring(4);
         if (typeof setJobContext === 'function') {
-            setJobContext(jobId);
+            setJobContext(topicId);
         }
     } else {
         if (typeof clearJobContext === 'function') {
@@ -249,11 +249,11 @@ function getViewDisplayName(view) {
 
     // Job views - get job name from cache
     if (view.startsWith('job-')) {
-        const jobId = view.substring(4);
-        const job = allJobsData.find(j => j.id === jobId);
-        if (job) {
+        const topicId = view.substring(4);
+        const topic = allTopicsData.find(j => j.id === topicId);
+        if (topic) {
             // Truncate long names for breadcrumbs
-            const name = job.name || 'Job';
+            const name = topic.name || 'Job';
             return name.length > 20 ? name.substring(0, 18) + '...' : name;
         }
         return 'Job';
@@ -261,10 +261,10 @@ function getViewDisplayName(view) {
 
     // Completed job views
     if (view.startsWith('completed-')) {
-        const jobId = view.substring(10);
-        const job = completedJobsData.find(j => j.id === jobId);
-        if (job) {
-            const name = job.name || 'Job';
+        const topicId = view.substring(10);
+        const topic = completedTopicsData.find(j => j.id === topicId);
+        if (topic) {
+            const name = topic.name || 'Job';
             return name.length > 20 ? name.substring(0, 18) + '...' : name;
         }
         return 'Completed';
@@ -308,7 +308,7 @@ function getViewDisplayName(view) {
     }
     if (view.startsWith('asset-')) {
         const rest = view.substring(6);
-        const filename = rest.substring(13); // skip jobId + "-"
+        const filename = rest.substring(13); // skip topicId + "-"
         return filename.length > 15 ? filename.substring(0, 13) + '...' : filename;
     }
 
@@ -398,11 +398,11 @@ function getQuickAddContext() {
     }
 
     // Job detail view - create child job
-    if (focusView.startsWith('job-')) {
-        const jobId = focusView.substring(4);
-        const job = allJobsData.find(j => j.id === jobId);
-        if (job) {
-            return { parent_id: jobId, label: job.name };
+    if (focusView.startsWith('topic-')) {
+        const topicId = focusView.substring(4);
+        const topic = allTopicsData.find(j => j.id === topicId);
+        if (topic) {
+            return { parent_id: topicId, label: topic.name };
         }
     }
 
@@ -436,13 +436,13 @@ function quickAddFromInput() {
     input.value = '';
 
     // Create job in background (don't await)
-    fetch('/api/jobs', {
+    fetch('/api/topics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(jobData)
     }).then(response => {
         if (response.ok) {
-            loadJobsData().then(() => {
+            loadTopicsData().then(() => {
                 // Refresh view if on Focus tab
                 if (activeTab === 'focus') {
                     renderFocusTab();

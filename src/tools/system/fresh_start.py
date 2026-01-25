@@ -47,7 +47,7 @@ def perform_fresh_start(create_backup_first: bool = True) -> dict:
         - deleted: List of deleted items
         - reset: List of reset items
     """
-    from ..data.jobs import _clear_connection, _ensure_schema
+    from ..data.topics import _clear_connection, _ensure_schema
 
     backup_name = None
     if create_backup_first:
@@ -235,7 +235,7 @@ def restore_backup(backup_name: str) -> dict:
 
     The current data becomes a new backup, and the selected backup becomes data.
     """
-    from ..data.jobs import _clear_connection
+    from ..data.topics import _clear_connection
 
     project_dir = DATA_DIR.parent
     backup_path = project_dir / backup_name

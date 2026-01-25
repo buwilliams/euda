@@ -8,7 +8,7 @@ let swipeCurrentX = 0;
 let swipeDeltaX = 0;
 let swipeElement = null;
 let swipeCard = null;
-let swipeJobId = null;
+let swipeTopicId = null;
 let swipeIsCompleted = false;
 let swipeThreshold = 80; // pixels to trigger action
 let swipeMaxDistance = 120;
@@ -57,7 +57,7 @@ function handleSwipeStart(e) {
 
     swipeElement = swipeContainer;
     swipeCard = card;
-    swipeJobId = swipeContainer.dataset.jobId;
+    swipeTopicId = swipeContainer.dataset.topicId;
     swipeIsCompleted = swipeContainer.dataset.completed === 'true';
 
     const touch = e.touches[0];
@@ -172,7 +172,7 @@ function handleMouseDown(e) {
     isMouseDown = true;
     swipeElement = swipeContainer;
     swipeCard = card;
-    swipeJobId = swipeContainer.dataset.jobId;
+    swipeTopicId = swipeContainer.dataset.topicId;
     swipeIsCompleted = swipeContainer.dataset.completed === 'true';
 
     swipeStartX = e.clientX;
@@ -258,26 +258,26 @@ function handleMouseUp(e) {
 // ============== Swipe Actions ==============
 
 function triggerSwipeLeftAction() {
-    if (!swipeJobId) return;
+    if (!swipeTopicId) return;
 
     if (swipeIsCompleted) {
         // Delete completed job
-        deleteJob(null, swipeJobId);
+        deleteTopic(null, swipeTopicId);
     } else {
         // Complete active job
-        completeJob(null, swipeJobId);
+        completeJob(null, swipeTopicId);
     }
 }
 
 function triggerSwipeRightAction() {
-    if (!swipeJobId) return;
+    if (!swipeTopicId) return;
 
     if (swipeIsCompleted) {
         // Restore completed job
-        restoreJob(null, swipeJobId);
+        restoreTopic(null, swipeTopicId);
     } else {
         // Open when picker for active job
-        openWhenPicker('job', swipeJobId);
+        openWhenPicker('topic', swipeTopicId);
     }
 }
 
@@ -333,7 +333,7 @@ function resetSwipeState() {
     }
     swipeElement = null;
     swipeCard = null;
-    swipeJobId = null;
+    swipeTopicId = null;
     swipeIsCompleted = false;
     swipeDeltaX = 0;
     isSwipeActive = false;
@@ -341,7 +341,7 @@ function resetSwipeState() {
 
 // ============== Card Wrapper Functions ==============
 
-function wrapCardForSwipe(cardHtml, jobId, isCompleted = false) {
+function wrapCardForSwipe(cardHtml, topicId, isCompleted = false) {
     const leftActionIcon = isCompleted ? icon('trash') : icon('check');
     const leftActionClass = isCompleted ? 'danger' : 'complete';
 
@@ -349,7 +349,7 @@ function wrapCardForSwipe(cardHtml, jobId, isCompleted = false) {
     const rightActionClass = isCompleted ? 'restore' : 'when';
 
     return `
-        <div class="swipe-container" data-job-id="${jobId}" data-completed="${isCompleted}">
+        <div class="swipe-container" data-topic-id="${topicId}" data-completed="${isCompleted}">
             <div class="swipe-action swipe-action-right ${rightActionClass}">
                 ${rightActionIcon}
             </div>

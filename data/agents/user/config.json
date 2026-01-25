@@ -9,14 +9,14 @@
     "output_ratio": 0.2
   },
   "tools": [
-    "list_jobs",
-    "get_job",
-    "create_job",
-    "update_job",
-    "complete_job",
-    "add_job_log",
+    "list_topics",
+    "get_topic",
+    "create_topic",
+    "update_topic",
+    "complete_topic",
+    "add_topic_log",
     "done_working",
-    "get_child_jobs",
+    "get_child_topics",
     "assign_agent",
     "list_available_agents",
     "list_assets",
@@ -71,13 +71,13 @@
   ],
   "triggers": [
     {
-      "job_name": "euno:consolidate",
-      "job_description": "Review memories, evolve identity, graduate learnings",
+      "topic_name": "euno:consolidate",
+      "topic_description": "Review memories, evolve identity, graduate learnings",
       "schedule": "evening"
     },
     {
-      "job_name": "euno:quote",
-      "job_description": "Generate personalized daily quote based on user identity",
+      "topic_name": "euno:quote",
+      "topic_description": "Generate personalized daily quote based on user identity",
       "schedule": "morning"
     }
   ]

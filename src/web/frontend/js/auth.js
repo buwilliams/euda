@@ -89,7 +89,7 @@ function initApp() {
     connectSSE();
 
     // Load tasks data for badge
-    loadTasksData();
+    loadTopicsData();
 
     // Load settings data (needed for voice button visibility)
     loadSettingsData();

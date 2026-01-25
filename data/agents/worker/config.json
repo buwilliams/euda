@@ -9,14 +9,14 @@
     "output_ratio": 0.2
   },
   "tools": [
-    "list_jobs",
-    "get_job",
-    "create_job",
-    "update_job",
-    "complete_job",
-    "archive_job",
-    "add_job_log",
-    "get_child_jobs",
+    "list_topics",
+    "get_topic",
+    "create_topic",
+    "update_topic",
+    "complete_topic",
+    "archive_topic",
+    "add_topic_log",
+    "get_child_topics",
     "list_agents",
     "get_agent",
     "list_available_agents",
@@ -54,8 +54,8 @@
   ],
   "triggers": [
     {
-      "job_name": "euno:consolidate",
-      "job_description": "Review memories, evolve identity, graduate learnings",
+      "topic_name": "euno:consolidate",
+      "topic_description": "Review memories, evolve identity, graduate learnings",
       "schedule": "evening"
     }
   ]

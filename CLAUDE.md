@@ -51,15 +51,15 @@ uv run euno dev identity chat        # View agent's identity
 uv run euno dev prompt chat system   # View system prompt
 
 # Test execution
-uv run euno dev job chat "Test task" --dry-run   # See prompt without executing
-uv run euno dev tool list_jobs '{"status": "todo"}'  # Execute tool directly
+uv run euno dev topic chat "Test task" --dry-run   # See prompt without executing
+uv run euno dev tool list_topics '{"status": "todo"}'  # Execute tool directly
 
 # Trigger behaviors manually
 uv run euno dev reflect chat --consolidate   # Run only consolidate phase
 
 # Live monitoring
 uv run euno dev watch                        # Stream all system events
-uv run euno dev trace <job_id>               # Show execution trace
+uv run euno dev trace <topic_id>               # Show execution trace
 ```
 
 Use `--json` for machine-readable output. See `specs/7_dev_cli.md` for full documentation.
@@ -91,7 +91,7 @@ euno/
 │   ├── llms/               # LLM clients and tools
 │   │   ├── base.py         # Unified LLM client
 │   │   └── tools/          # All tools (registered with @tool decorator)
-│   │       ├── data/       # Jobs, assets, memory tools
+│   │       ├── data/       # Topics, assets, memory tools
 │   │       ├── agents/     # Agent introspection tools
 │   │       ├── system/     # Config, notifications tools
 │   │       └── integration/    # External integrations
@@ -107,10 +107,10 @@ euno/
 │   │       │   ├── short-term.jsonl
 │   │       │   └── long-term/{yyyy}/{yyyy-mm-dd}.md
 │   │       └── state/conversation/{session-id}.md
-│   ├── jobs/
-│   │   ├── db.sqlite       # SQLite database (jobs + job_logs tables)
-│   │   └── assets/         # Files per job
-│   │       └── {job-id}/
+│   ├── topics/
+│   │   ├── db.sqlite       # SQLite database (topics + topic_logs tables)
+│   │   └── assets/         # Files per topic
+│   │       └── {topic-id}/
 │   └── system/
 │       ├── config.json
 │       └── logs/reflection/ # Reflection logs
@@ -150,12 +150,12 @@ Metacognition has two aspects:
 
 System-wide defaults in `data/system/config.json` under `metacognition` key.
 
-### Jobs
-Jobs replace projects and tasks. A single hierarchical structure:
-- Stored in SQLite database (`data/jobs/db.sqlite`)
+### Topics
+Topics are the primary unit of work. A single hierarchical structure:
+- Stored in SQLite database (`data/topics/db.sqlite`)
 - Hierarchical via `parent_id` field
-- States: `todo`, `completed`, `archived`
-- Each job can have assets (files) in `data/jobs/assets/{job-id}/`
+- States: `todo`, `working`, `done`, `error`, `archived`
+- Each topic can have assets (files) in `data/topics/assets/{topic-id}/`
 - Assets can be any file type; text/markdown files are viewable and editable in the UI
 
 ### Memory
@@ -184,7 +184,7 @@ The user is conceptually an agent too - just with a different interface (Web UI/
      "id": "myagent",
      "name": "My Agent",
      "enabled": true,
-     "tools": ["list_jobs", "create_job", ...],
+     "tools": ["list_topics", "create_topic", ...],
      "triggers": ["time:morning", "system:start"],
      "consolidation": {
        "enabled": true,
@@ -210,11 +210,11 @@ No Python code needed for new agents.
 
 ## API Endpoints
 
-- `GET/POST /api/jobs` - List/create jobs
-- `GET/PATCH /api/jobs/{id}` - Get/update job
-- `POST /api/jobs/{id}/complete` - Complete job
-- `GET /api/jobs/{id}/assets` - List job assets
-- `GET/POST/DELETE /api/jobs/{id}/assets/{filename}` - Asset CRUD
+- `GET/POST /api/topics` - List/create topics
+- `GET/PATCH /api/topics/{id}` - Get/update topic
+- `POST /api/topics/{id}/complete` - Complete topic
+- `GET /api/topics/{id}/assets` - List topic assets
+- `GET/POST/DELETE /api/topics/{id}/assets/{filename}` - Asset CRUD
 - `GET/POST /api/chat` - Chat with agent
 - `GET /api/agents` - List agents
 - `GET/PATCH /api/agents/{id}/identity` - Agent identity
@@ -239,7 +239,7 @@ Build for yourself first, not "other people." This is not a solution looking for
 ## Checking for Drift
 
 Before submitting changes, review against `specs/*.md`:
-- `specs/1_agents.md` — Agent behavior, job coordination, triggers, work cycles
+- `specs/1_agents.md` — Agent behavior, topic coordination, triggers, work cycles
 - `specs/2_data.md` — Data structures, file paths, schemas
 - `specs/3_backend.md` — Server, API, authentication, storage
 - `specs/4_ux_ui.md` — User experience and interface patterns

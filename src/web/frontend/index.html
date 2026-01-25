@@ -126,7 +126,7 @@
                         <div class="settings-content" id="settings-content" data-testid="settings-content">
                             <!-- Costs Section -->
                             <div class="settings-section">
-                                <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
+                                <div class="topic-section-header collapsible open" onclick="togglePersonaSection(this, event)">
                                     <span>Costs</span>
                                     <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>
@@ -160,7 +160,7 @@
 
                             <!-- LLMs Section -->
                             <div class="settings-section">
-                                <div class="job-section-header collapsible" data-testid="section-llms" onclick="togglePersonaSection(this, event)">
+                                <div class="topic-section-header collapsible" data-testid="section-llms" onclick="togglePersonaSection(this, event)">
                                     <span>LLMs</span>
                                     <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>
@@ -207,7 +207,7 @@
 
                             <!-- Fresh Start Section -->
                             <div class="settings-section">
-                                <div class="job-section-header collapsible" data-testid="section-fresh-start" onclick="togglePersonaSection(this, event)">
+                                <div class="topic-section-header collapsible" data-testid="section-fresh-start" onclick="togglePersonaSection(this, event)">
                                     <span>Fresh Start</span>
                                     <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>
@@ -217,7 +217,7 @@
                                             <div class="fresh-start-info">
                                                 <p>Reset to a clean slate. Your current data is automatically backed up and can be restored at any time.</p>
                                                 <p><strong>Preserved:</strong> Agent configs & identities, system settings</p>
-                                                <p><strong>Reset:</strong> Jobs, memory, logs, conversation history, password</p>
+                                                <p><strong>Reset:</strong> Topics, memory, logs, conversation history, password</p>
                                             </div>
                                         </div>
                                         <div class="settings-field">
@@ -230,7 +230,7 @@
 
                             <!-- Backups Section -->
                             <div class="settings-section">
-                                <div class="job-section-header collapsible" data-testid="section-backups" onclick="togglePersonaSection(this, event); loadBackupsData();">
+                                <div class="topic-section-header collapsible" data-testid="section-backups" onclick="togglePersonaSection(this, event); loadBackupsData();">
                                     <span>Backups</span>
                                     <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>
@@ -246,7 +246,7 @@
 
                             <!-- Account Section -->
                             <div class="settings-section">
-                                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                                <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
                                     <span>Account</span>
                                     <span class="section-toggle"><img src="/web/icons/chevron-right.svg" alt="toggle"></span>
                                 </div>
@@ -320,7 +320,7 @@
             <div class="input-bar">
                 <div class="input-wrapper">
                     <textarea id="context-input" data-testid="context-input" placeholder="What's on your mind?" rows="1"></textarea>
-                    <span class="job-context-label" id="job-context-label"></span>
+                    <span class="topic-context-label" id="topic-context-label"></span>
                     <button id="voice-btn" data-testid="voice-btn" onclick="toggleVoiceRecording()" title="Voice input">
                         <span class="voice-indicator"></span>
                         <svg viewBox="0 0 24 24" id="voice-icon">
@@ -338,7 +338,7 @@
                     <button id="context-send-btn" class="input-bar-btn" data-testid="send-btn" onclick="sendContextMessage()" title="Send">
                         <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                     </button>
-                    <button id="quick-add-btn" class="input-bar-btn" data-testid="quick-add-btn" onclick="quickAddFromInput()" title="Add job">
+                    <button id="quick-add-btn" class="input-bar-btn" data-testid="quick-add-btn" onclick="quickAddFromInput()" title="Add topic">
                         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
                     </button>
                 </div>
@@ -371,7 +371,7 @@
     <script src="/web/js/focus-views-ui.js" defer></script>
     <script src="/web/js/focus-views-memory.js" defer></script>
     <script src="/web/js/focus-views-agent.js" defer></script>
-    <script src="/web/js/focus-views-job.js" defer></script>
+    <script src="/web/js/focus-views-topic.js" defer>
     <script src="/web/js/focus-pickers.js" defer></script>
     <script src="/web/js/focus-actions.js" defer></script>
     <script src="/web/js/focus-editing.js" defer></script>

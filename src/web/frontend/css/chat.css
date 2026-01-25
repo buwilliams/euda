@@ -286,7 +286,7 @@
 
 /* ============== Job Context Indicator ============== */
 
-.job-context-label {
+.topic-context-label {
     position: absolute;
     right: 48px;
     top: 50%;
@@ -302,15 +302,15 @@
 }
 
 /* Move @job closer to edge when mic button is hidden */
-.input-wrapper:has(#voice-btn.hidden) .job-context-label {
+.input-wrapper:has(#voice-btn.hidden) .topic-context-label {
     right: 12px;
 }
 
-.job-context-label:hover {
+.topic-context-label:hover {
     background: #bbdefb;
 }
 
-.job-context-label.active {
+.topic-context-label.active {
     display: inline-block;
 }
 

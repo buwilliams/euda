@@ -5,22 +5,22 @@
 
 let traceDataCache = {};
 
-// ============== Job Trace View ==============
+// ============== Topic Trace View ==============
 
-function renderJobTraceView(jobId) {
-    const traceData = traceDataCache[jobId];
+function renderTopicTraceView(topicId) {
+    const traceData = traceDataCache[topicId];
 
     // Load data if not cached
     if (!traceData) {
-        loadJobTrace(jobId).then(data => {
-            traceDataCache[jobId] = data || { job_id: jobId, job_name: 'Unknown', entries: [], summary: {} };
+        loadTopicTrace(topicId).then(data => {
+            traceDataCache[topicId] = data || { job_id: topicId, job_name: 'Unknown', entries: [], summary: {} };
             renderFocusTab();
         });
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
-                    <span class="focus-view-title">Job Trace</span>
+                    <span class="focus-view-title">Topic Trace</span>
                     ${renderBreadcrumbs()}
                 </div>
             </div>
@@ -91,8 +91,8 @@ function renderJobTraceView(jobId) {
     `;
 }
 
-function navigateToTrace(jobId) {
-    navigateFocusTo(`trace-${jobId}`);
+function navigateToTrace(topicId) {
+    navigateFocusTo(`trace-${topicId}`);
 }
 
 function formatPromptTime(timestamp) {
@@ -105,21 +105,21 @@ function formatPromptTime(timestamp) {
 
 function renderFocusMenu() {
     const counts = getFocusCounts();
-    const todayJobs = getRootJobsForCategory('today');
+    const todayTopics = getRootTopicsForCategory('today');
 
     // For completed count, only show Projects descendants (exclude Agents and System)
-    const allJobs = [...jobsData, ...completedJobsData];
-    const projectsCompletedJobs = completedJobsData.filter(j => isProjectsDescendant(j, allJobs));
-    const completedJobIds = new Set(projectsCompletedJobs.map(j => j.id));
-    const topLevelCompletedJobs = projectsCompletedJobs.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
+    const allTopics = [...topicsData, ...completedTopicsData];
+    const projectsCompletedTopics = completedTopicsData.filter(j => isProjectsDescendant(j, allTopics));
+    const completedJobIds = new Set(projectsCompletedTopics.map(j => j.id));
+    const topLevelCompletedTopics = projectsCompletedTopics.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
 
     // Find system containers
-    const agentsContainer = jobsData.find(j => j.tags && j.tags.includes('system:agents') && !j.parent_id);
-    const projectsContainer = jobsData.find(j => j.tags && j.tags.includes('system:projects') && !j.parent_id);
+    const agentsContainer = topicsData.find(j => j.tags && j.tags.includes('system:agents') && !j.parent_id);
+    const projectsContainer = topicsData.find(j => j.tags && j.tags.includes('system:projects') && !j.parent_id);
 
     // Count children of each container
-    const agentsCount = agentsContainer ? jobsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
-    const projectsCount = projectsContainer ? jobsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
+    const agentsCount = agentsContainer ? topicsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
+    const projectsCount = projectsContainer ? topicsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
 
     // Check collapsed states
     const timelinesOpen = isSectionOpen('timelines');
@@ -127,12 +127,12 @@ function renderFocusMenu() {
 
     // Build today section using same format as other menu sections
     let todaySection = '';
-    if (todayJobs.length > 0) {
+    if (todayTopics.length > 0) {
         todaySection = `
             <div class="focus-menu-section" data-testid="today-section">
                 <div class="focus-menu-section-label">Today</div>
                 <div class="focus-today-jobs">
-                    ${todayJobs.map(job => renderJobCard(job, isSwipeable(job))).join('')}
+                    ${todayTopics.map(topic => renderTopicCard(topic, isSwipeable(topic))).join('')}
                 </div>
             </div>
         `;
@@ -157,7 +157,7 @@ function renderFocusMenu() {
             </div>
             <div class="focus-menu collapsible-content ${collectionsOpen ? 'open' : ''}">
                 ${agentsContainer ? `
-                <div class="focus-menu-item" onclick="navigateFocus('job-${agentsContainer.id}')">
+                <div class="focus-menu-item" onclick="navigateFocus('topic-${agentsContainer.id}')">
                     <span class="focus-menu-icon">${icon('bolt')}</span>
                     <span class="focus-menu-label">Agents</span>
                     <span class="focus-menu-count">${agentsCount}</span>
@@ -165,7 +165,7 @@ function renderFocusMenu() {
                 </div>
                 ` : ''}
                 ${projectsContainer ? `
-                <div class="focus-menu-item" onclick="navigateFocus('job-${projectsContainer.id}')">
+                <div class="focus-menu-item" onclick="navigateFocus('topic-${projectsContainer.id}')">
                     <span class="focus-menu-icon">${icon('folder')}</span>
                     <span class="focus-menu-label">Projects</span>
                     <span class="focus-menu-count">${projectsCount}</span>
@@ -206,7 +206,7 @@ function renderFocusMenu() {
                 <div class="focus-menu-item" data-testid="menu-completed" onclick="navigateFocus('completed')">
                     <span class="focus-menu-icon">${icon('check')}</span>
                     <span class="focus-menu-label">Completed</span>
-                    <span class="focus-menu-count">${topLevelCompletedJobs.length}</span>
+                    <span class="focus-menu-count">${topLevelCompletedTopics.length}</span>
                     <span class="focus-menu-arrow">›</span>
                 </div>
             </div>
@@ -221,8 +221,8 @@ function getTimelineIcon(category) {
 }
 
 function renderTimelineView(category, title) {
-    // Get only root jobs that have descendants matching this category
-    let jobs = getRootJobsForCategory(category);
+    // Get only root topics that have descendants matching this category
+    let jobs = getRootTopicsForCategory(category);
 
     // Sort upcoming jobs by due date ascending (nearest first)
     if (category === 'upcoming') {
@@ -244,23 +244,23 @@ function renderTimelineView(category, title) {
         </div>
         <div class="focus-view-content">
             ${jobs.length === 0
-                ? '<div class="focus-empty">No jobs</div>'
-                : jobs.map(job => renderJobCard(job, isSwipeable(job))).join('')
+                ? '<div class="focus-empty">No topics</div>'
+                : jobs.map(topic => renderTopicCard(topic, isSwipeable(topic))).join('')
             }
         </div>
     `;
 }
 
 function renderCompletedJobsView() {
-    // Combine active and completed jobs for ancestor traversal
-    const allJobs = [...jobsData, ...completedJobsData];
+    // Combine active and completed topics for ancestor traversal
+    const allTopics = [...topicsData, ...completedTopicsData];
 
     // Filter to only Projects descendants (exclude Agents and System jobs)
-    const projectsCompletedJobs = completedJobsData.filter(j => isProjectsDescendant(j, allJobs));
+    const projectsCompletedTopics = completedTopicsData.filter(j => isProjectsDescendant(j, allTopics));
 
-    // Root completed jobs: no parent OR parent is not in completed list
-    const completedJobIds = new Set(projectsCompletedJobs.map(j => j.id));
-    const rootCompletedJobs = projectsCompletedJobs.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
+    // Root completed topics: no parent OR parent is not in completed list
+    const completedJobIds = new Set(projectsCompletedTopics.map(j => j.id));
+    const rootCompletedJobs = projectsCompletedTopics.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -272,10 +272,10 @@ function renderCompletedJobsView() {
         </div>
         <div class="focus-view-content">
             ${rootCompletedJobs.length === 0
-                ? '<div class="focus-empty">No completed jobs</div>'
-                : rootCompletedJobs.map(job => {
-                    const childCount = projectsCompletedJobs.filter(j => j.parent_id === job.id).length;
-                    return renderCompletedJobCard(job, childCount, true);
+                ? '<div class="focus-empty">No completed topics</div>'
+                : rootCompletedJobs.map(topic => {
+                    const childCount = projectsCompletedTopics.filter(j => j.parent_id === topic.id).length;
+                    return renderCompletedTopicCard(topic, childCount, true);
                 }).join('')
             }
         </div>
@@ -284,8 +284,8 @@ function renderCompletedJobsView() {
 
 // ============== System Container Views ==============
 
-function renderSystemContainerView(job, isAgentsContainer) {
-    const childJobs = jobsData.filter(j => j.parent_id === job.id);
+function renderSystemContainerView(topic, isAgentsContainer) {
+    const childTopics = topicsData.filter(j => j.parent_id === topic.id);
 
     // Determine container type and styling
     let titleIcon, containerName, emptyMessage;
@@ -302,7 +302,7 @@ function renderSystemContainerView(job, isAgentsContainer) {
     // For Projects containers, render children as swipeable job cards
     // For Agents container, render children as non-swipeable agent cards
     const renderChildJobs = () => {
-        if (childJobs.length === 0) {
+        if (childTopics.length === 0) {
             return `<div class="focus-empty">${emptyMessage}</div>`;
         }
 
@@ -310,11 +310,11 @@ function renderSystemContainerView(job, isAgentsContainer) {
             // Agent inboxes - not swipeable, custom rendering
             return `
                 <div class="child-jobs-list">
-                    ${childJobs.map(child => {
-                        const grandchildCount = jobsData.filter(j => j.parent_id === child.id).length;
+                    ${childTopics.map(child => {
+                        const grandchildCount = topicsData.filter(j => j.parent_id === child.id).length;
                         const childIcon = icon('bolt');
                         return `
-                            <div class="child-job-card" data-testid="agent-card" onclick="navigateFocus('job-${child.id}')">
+                            <div class="child-topic-card" data-testid="agent-card" onclick="navigateFocus('topic-${child.id}')">
                                 <span class="child-job-icon">${childIcon}</span>
                                 <span class="child-job-name">${escapeHtml(child.name)}</span>
                                 <span class="child-job-count">${grandchildCount}</span>
@@ -328,7 +328,7 @@ function renderSystemContainerView(job, isAgentsContainer) {
             // Projects - swipeable job cards
             return `
                 <div class="child-jobs-list">
-                    ${childJobs.map(child => renderJobCard(child, true)).join('')}
+                    ${childTopics.map(child => renderTopicCard(child, true)).join('')}
                 </div>
             `;
         }
@@ -344,7 +344,7 @@ function renderSystemContainerView(job, isAgentsContainer) {
         </div>
         <div class="focus-view-content" data-testid="agents-container">
             <!-- Child Jobs -->
-            <div class="job-section">
+            <div class="topic-section">
                 ${renderChildJobs()}
             </div>
         </div>
@@ -353,152 +353,152 @@ function renderSystemContainerView(job, isAgentsContainer) {
 
 // ============== Job Detail View ==============
 
-function renderJobDetailView(jobId) {
-    // Use allJobsData to find jobs regardless of status
-    const job = allJobsData.find(j => j.id === jobId);
-    if (!job) {
+function renderTopicDetailView(topicId) {
+    // Use allTopicsData to find jobs regardless of status
+    const topic = allTopicsData.find(j => j.id === topicId);
+    if (!topic) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
-                    <span class="focus-view-title">Job Not Found</span>
+                    <span class="focus-view-title">Topic Not Found</span>
                     ${renderBreadcrumbs()}
                 </div>
             </div>
-            <div class="focus-empty">This job no longer exists.</div>
+            <div class="focus-empty">This topic no longer exists.</div>
         `;
     }
 
     // Check if this is a system container
-    const isAgentsContainer = job.tags && job.tags.includes('system:agents');
-    const isProjectsContainer = job.tags && job.tags.includes('system:projects');
+    const isAgentsContainer = topic.tags && topic.tags.includes('system:agents');
+    const isProjectsContainer = topic.tags && topic.tags.includes('system:projects');
     const isSystemContainer = isAgentsContainer || isProjectsContainer;
 
     // For system containers, render a simplified view
     if (isSystemContainer) {
-        return renderSystemContainerView(job, isAgentsContainer);
+        return renderSystemContainerView(topic, isAgentsContainer);
     }
 
     // For agent inbox jobs, render the agent detail view
-    if (job.agent_id) {
-        return renderAgentDetailView(job);
+    if (topic.agent_id) {
+        return renderAgentDetailView(topic);
     }
 
-    const whenLabel = getWhenLabel(job);
-    const isArchiving = archivingTaskId === job.id;
-    const displayName = job.name || 'Untitled';
-    const hasDescription = job.description && job.description.length > 0;
-    // Get ALL child jobs sorted by status priority (working > todo > error > done > archived)
-    const allChildJobs = getAllChildJobsSorted(job.id);
-    const assets = jobAssetsCache[jobId] || [];
-    const isAgentJob = !!job.agent_id;
-    const titleIcon = isAgentJob ? icon('bolt') : '';
+    const whenLabel = getWhenLabel(topic);
+    const isArchiving = archivingTopicId === topic.id;
+    const displayName = topic.name || 'Untitled';
+    const hasDescription = topic.description && topic.description.length > 0;
+    // Get ALL child topics sorted by status priority (working > todo > error > done > archived)
+    const allChildTopics = getAllChildTopicsSorted(topic.id);
+    const assets = topicAssetsCache[topicId] || [];
+    const isAgentTopic = !!topic.agent_id;
+    const titleIcon = isAgentTopic ? icon('bolt') : '';
 
     // Check if we're editing this job
-    const isEditingName = editingJobField?.jobId === jobId && editingJobField?.field === 'name';
-    const isEditingDesc = editingJobField?.jobId === jobId && editingJobField?.field === 'description';
+    const isEditingName = editingTopicField?.topicId === topicId && editingTopicField?.field === 'name';
+    const isEditingDesc = editingTopicField?.topicId === topicId && editingTopicField?.field === 'description';
 
     // Get parent job name for context
     let parentName = null;
-    if (job.parent_id) {
-        const parent = allJobsData.find(j => j.id === job.parent_id);
+    if (topic.parent_id) {
+        const parent = allTopicsData.find(j => j.id === topic.parent_id);
         parentName = parent ? parent.name : null;
     }
 
     // Load assets if not cached
-    if (!jobAssetsCache[jobId]) {
-        loadJobAssets(jobId).then(() => renderFocusTab());
+    if (!topicAssetsCache[topicId]) {
+        loadTopicAssets(topicId).then(() => renderFocusTab());
     }
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
-                <span class="focus-view-title${isAgentJob ? ' agent-job-title' : ''}">${titleIcon}${escapeHtml(displayName)}</span>
+                <span class="focus-view-title${isAgentTopic ? ' agent-topic-title' : ''}">${titleIcon}${escapeHtml(displayName)}</span>
                 ${renderBreadcrumbs()}
             </div>
         </div>
         <div class="focus-view-content" data-testid="job-detail">
             <!-- Actions Row -->
             <div class="task-detail-actions">
-                <button class="task-detail-action" onclick="openWhenPicker('job', '${job.id}')">${icon('calendar')} ${escapeHtml(whenLabel)}</button>
-                <button class="task-detail-action" onclick="openStatePicker('${job.id}')">${getJobStatusIcon(job)} ${getJobStatusLabel(job)}</button>
-                <button class="task-detail-action" onclick="openAssigneesPicker('${job.id}')">${getAssigneesLabel(job)}</button>
-                <button class="task-detail-action" onclick="openReassignPicker('${job.id}')">${icon('arrow-path')} Reassign</button>
-                <button class="task-detail-action" onclick="openAddPicker('${job.id}')">+ Add</button>
-                ${isAgentJob ? '' : `<button class="task-detail-action" onclick="openMorePicker('${job.id}')">Actions</button>`}
+                <button class="task-detail-action" onclick="openWhenPicker('topic', '${topic.id}')">${icon('calendar')} ${escapeHtml(whenLabel)}</button>
+                <button class="task-detail-action" onclick="openStatePicker('${topic.id}')">${getTopicStatusIcon(topic)} ${getTopicStatusLabel(topic)}</button>
+                <button class="task-detail-action" onclick="openAssigneesPicker('${topic.id}')">${getAssigneesLabel(topic)}</button>
+                <button class="task-detail-action" onclick="openReassignPicker('${topic.id}')">${icon('arrow-path')} Reassign</button>
+                <button class="task-detail-action" onclick="openAddPicker('${topic.id}')">+ Add</button>
+                ${isAgentTopic ? '' : `<button class="task-detail-action" onclick="openMorePicker('${topic.id}')">Actions</button>`}
             </div>
 
             <!-- Name Section -->
-            <div class="job-section" data-testid="job-name">
-                <div class="job-section-header">Name</div>
+            <div class="topic-section" data-testid="job-name">
+                <div class="topic-section-header">Name</div>
                 ${isEditingName ? `
-                    <input type="text" class="job-name-input" id="edit-name-${job.id}" value="${escapeHtml(displayName)}"
-                        onkeydown="handleEditKeypress(event, '${job.id}', 'name')"
-                        onblur="saveJobField('${job.id}', 'name', this.value)">
+                    <input type="text" class="topic-name-input" id="edit-name-${topic.id}" value="${escapeHtml(displayName)}"
+                        onkeydown="handleEditKeypress(event, '${topic.id}', 'name')"
+                        onblur="saveTopicField('${topic.id}', 'name', this.value)">
                 ` : `
-                    <div class="job-name-display" onclick="startEditingField('${job.id}', 'name')">${escapeHtml(displayName)}</div>
+                    <div class="topic-name-display" onclick="startEditingField('${topic.id}', 'name')">${escapeHtml(displayName)}</div>
                 `}
             </div>
 
             <!-- Description Section -->
-            <div class="job-section" data-testid="job-description">
-                <div class="job-section-header">
+            <div class="topic-section" data-testid="job-description">
+                <div class="topic-section-header">
                     Description
-                    ${isEditingDesc ? `<span class="job-section-action" onclick="saveJobField('${job.id}', 'description', document.getElementById('edit-description-${job.id}').value)">Save</span>` : ''}
+                    ${isEditingDesc ? `<span class="topic-section-action" onclick="saveTopicField('${topic.id}', 'description', document.getElementById('edit-description-${topic.id}').value)">Save</span>` : ''}
                 </div>
                 ${isEditingDesc ? `
-                    <textarea class="job-description-input" id="edit-description-${job.id}"
-                        onkeydown="handleDescriptionKeypress(event, '${job.id}')"
-                        placeholder="Add a description...">${escapeHtml(job.description || '')}</textarea>
+                    <textarea class="topic-description-input" id="edit-description-${topic.id}"
+                        onkeydown="handleDescriptionKeypress(event, '${topic.id}')"
+                        placeholder="Add a description...">${escapeHtml(topic.description || '')}</textarea>
                 ` : `
-                    <div class="job-description-display ${hasDescription ? '' : 'empty'}" onclick="startEditingField('${job.id}', 'description')">
-                        ${hasDescription ? marked.parse(job.description) : 'Click to add description...'}
+                    <div class="topic-description-display ${hasDescription ? '' : 'empty'}" onclick="startEditingField('${topic.id}', 'description')">
+                        ${hasDescription ? marked.parse(topic.description) : 'Click to add description...'}
                     </div>
                 `}
             </div>
 
             <!-- Child Jobs Section - shows all jobs sorted by status -->
-            ${allChildJobs.length > 0 ? `
-            <div class="job-section">
-                <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
-                    <span>Jobs (${allChildJobs.length})</span>
+            ${allChildTopics.length > 0 ? `
+            <div class="topic-section">
+                <div class="topic-section-header collapsible open" onclick="togglePersonaSection(this, event)">
+                    <span>Jobs (${allChildTopics.length})</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
                 <div class="collapsible-content open">
-                    ${allChildJobs.map(child => renderJobCard(child, true)).join('')}
+                    ${allChildTopics.map(child => renderTopicCard(child, true)).join('')}
                 </div>
             </div>
             ` : ''}
 
             <!-- Parent Link -->
             ${parentName ? `
-            <div class="job-section">
-                <div class="job-section-header">Parent</div>
-                <div class="card-project-link" onclick="navigateFocus('job-${job.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Parent</div>
+                <div class="card-project-link" onclick="navigateFocus('topic-${topic.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
             </div>
             ` : ''}
 
             <!-- Assets Section -->
             ${assets.length > 0 ? `
-            <div class="job-section">
-                <div class="job-section-header">Assets (${assets.length})</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Assets (${assets.length})</div>
                 <div class="asset-list">
                     ${assets.map(asset => {
                         const isText = isTextAsset(asset);
                         const assetIcon = asset.filename.endsWith('.md') ? icon('pencil') : icon('document');
                         return isText ? `
-                            <div class="asset-item clickable" onclick="navigateFocus('asset-${job.id}-${asset.filename}')" style="cursor: pointer;">
+                            <div class="asset-item clickable" onclick="navigateFocus('asset-${topic.id}-${asset.filename}')" style="cursor: pointer;">
                                 <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                                <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${topic.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
                                 <span class="asset-item-arrow">${icon('chevron-right')}</span>
                             </div>
                         ` : `
                             <div class="asset-item">
                                 <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                <button class="asset-item-delete" onclick="deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                                <button class="asset-item-delete" onclick="deleteAsset('${topic.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
                             </div>
                         `;
                     }).join('')}
@@ -507,8 +507,8 @@ function renderJobDetailView(jobId) {
             ` : ''}
 
             <!-- API Calls Section -->
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="toggleAgentSection(this, event, 'job-api-calls', '${job.id}')">
+            <div class="topic-section">
+                <div class="topic-section-header collapsible" onclick="toggleAgentSection(this, event, 'job-api-calls', '${topic.id}')">
                     <span>API Calls</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
@@ -522,47 +522,47 @@ function renderJobDetailView(jobId) {
 
 // ============== Completed Job Detail View ==============
 
-function renderCompletedJobDetailView(jobId) {
-    const job = completedJobsData.find(j => j.id === jobId);
-    if (!job) {
+function renderCompletedTopicDetailView(topicId) {
+    const topic = completedTopicsData.find(j => j.id === topicId);
+    if (!topic) {
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
-                    <span class="focus-view-title">Job Not Found</span>
+                    <span class="focus-view-title">Topic Not Found</span>
                     ${renderBreadcrumbs()}
                 </div>
             </div>
-            <div class="focus-empty">This job no longer exists.</div>
+            <div class="focus-empty">This topic no longer exists.</div>
         `;
     }
 
-    const displayName = job.name || 'Untitled';
-    const hasDescription = job.description && job.description.length > 0;
+    const displayName = topic.name || 'Untitled';
+    const hasDescription = topic.description && topic.description.length > 0;
     const completedDate = job.completed_at ? formatFriendlyPastDate(job.completed_at) : 'Unknown';
-    const completedChildJobs = completedJobsData.filter(j => j.parent_id === job.id);
-    const activeChildJobs = jobsData.filter(j => j.parent_id === job.id);
-    const assets = jobAssetsCache[jobId] || [];
+    const completedChildTopics = completedTopicsData.filter(j => j.parent_id === topic.id);
+    const activeChildTopics = topicsData.filter(j => j.parent_id === topic.id);
+    const assets = topicAssetsCache[topicId] || [];
 
     // Check if we're editing this job
-    const isEditingName = editingJobField?.jobId === jobId && editingJobField?.field === 'name';
-    const isEditingDesc = editingJobField?.jobId === jobId && editingJobField?.field === 'description';
+    const isEditingName = editingTopicField?.topicId === topicId && editingTopicField?.field === 'name';
+    const isEditingDesc = editingTopicField?.topicId === topicId && editingTopicField?.field === 'description';
 
     // Get parent job name for context (could be active or completed)
     let parentName = null;
     let parentIsCompleted = false;
-    if (job.parent_id) {
-        let parent = jobsData.find(j => j.id === job.parent_id);
+    if (topic.parent_id) {
+        let parent = topicsData.find(j => j.id === topic.parent_id);
         if (!parent) {
-            parent = completedJobsData.find(j => j.id === job.parent_id);
+            parent = completedTopicsData.find(j => j.id === topic.parent_id);
             parentIsCompleted = true;
         }
         parentName = parent ? parent.name : null;
     }
 
     // Load assets if not cached
-    if (!jobAssetsCache[jobId]) {
-        loadJobAssets(jobId).then(() => renderFocusTab());
+    if (!topicAssetsCache[topicId]) {
+        loadTopicAssets(topicId).then(() => renderFocusTab());
     }
 
     return `
@@ -576,68 +576,68 @@ function renderCompletedJobDetailView(jobId) {
         <div class="focus-view-content">
             <!-- Actions Row -->
             <div class="task-detail-actions">
-                <button class="task-detail-action" onclick="restoreJob(event, '${job.id}')">${icon('arrow-uturn-left')} Restore</button>
-                <button class="task-detail-action danger" onclick="deleteJob(event, '${job.id}')">${icon('trash')} Delete</button>
+                <button class="task-detail-action" onclick="restoreTopic(event, '${topic.id}')">${icon('arrow-uturn-left')} Restore</button>
+                <button class="task-detail-action danger" onclick="deleteTopic(event, '${topic.id}')">${icon('trash')} Delete</button>
             </div>
 
             <!-- Completed Badge -->
-            <div class="job-section" style="background: #f0f8f0; border-radius: 6px; padding: 0.5rem 1rem;">
+            <div class="topic-section" style="background: #f0f8f0; border-radius: 6px; padding: 0.5rem 1rem;">
                 <span style="color: #4a8; font-weight: 500;">${icon('check')} Completed ${escapeHtml(completedDate)}</span>
             </div>
 
             <!-- Name Section -->
-            <div class="job-section">
-                <div class="job-section-header">Name</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Name</div>
                 ${isEditingName ? `
-                    <input type="text" class="job-name-input" id="edit-name-${job.id}" value="${escapeHtml(displayName)}"
-                        onkeydown="handleEditKeypress(event, '${job.id}', 'name')"
-                        onblur="saveCompletedJobField('${job.id}', 'name', this.value)">
+                    <input type="text" class="topic-name-input" id="edit-name-${topic.id}" value="${escapeHtml(displayName)}"
+                        onkeydown="handleEditKeypress(event, '${topic.id}', 'name')"
+                        onblur="saveCompletedTopicField('${topic.id}', 'name', this.value)">
                 ` : `
-                    <div class="job-name-display" onclick="startEditingField('${job.id}', 'name')">${escapeHtml(displayName)}</div>
+                    <div class="topic-name-display" onclick="startEditingField('${topic.id}', 'name')">${escapeHtml(displayName)}</div>
                 `}
             </div>
 
             <!-- Description Section -->
-            <div class="job-section">
-                <div class="job-section-header">
+            <div class="topic-section">
+                <div class="topic-section-header">
                     Description
-                    ${isEditingDesc ? `<span class="job-section-action" onclick="saveCompletedJobField('${job.id}', 'description', document.getElementById('edit-description-${job.id}').value)">Save</span>` : ''}
+                    ${isEditingDesc ? `<span class="topic-section-action" onclick="saveCompletedTopicField('${topic.id}', 'description', document.getElementById('edit-description-${topic.id}').value)">Save</span>` : ''}
                 </div>
                 ${isEditingDesc ? `
-                    <textarea class="job-description-input" id="edit-description-${job.id}"
-                        onkeydown="handleCompletedDescriptionKeypress(event, '${job.id}')"
-                        placeholder="Add a description...">${escapeHtml(job.description || '')}</textarea>
+                    <textarea class="topic-description-input" id="edit-description-${topic.id}"
+                        onkeydown="handleCompletedDescriptionKeypress(event, '${topic.id}')"
+                        placeholder="Add a description...">${escapeHtml(topic.description || '')}</textarea>
                 ` : `
-                    <div class="job-description-display ${hasDescription ? '' : 'empty'}" onclick="startEditingField('${job.id}', 'description')">
-                        ${hasDescription ? marked.parse(job.description) : 'Click to add description...'}
+                    <div class="topic-description-display ${hasDescription ? '' : 'empty'}" onclick="startEditingField('${topic.id}', 'description')">
+                        ${hasDescription ? marked.parse(topic.description) : 'Click to add description...'}
                     </div>
                 `}
             </div>
 
             <!-- Active Child Jobs Section (rare but possible) - open by default -->
-            ${activeChildJobs.length > 0 ? `
-            <div class="job-section">
-                <div class="job-section-header collapsible open" onclick="togglePersonaSection(this, event)">
-                    <span>Active Children (${activeChildJobs.length})</span>
+            ${activeChildTopics.length > 0 ? `
+            <div class="topic-section">
+                <div class="topic-section-header collapsible open" onclick="togglePersonaSection(this, event)">
+                    <span>Active Children (${activeChildTopics.length})</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
                 <div class="collapsible-content open">
-                    ${activeChildJobs.map(child => renderJobCard(child, true)).join('')}
+                    ${activeChildTopics.map(child => renderTopicCard(child, true)).join('')}
                 </div>
             </div>
             ` : ''}
 
             <!-- Completed Child Jobs Section - collapsed by default -->
-            ${completedChildJobs.length > 0 ? `
-            <div class="job-section">
-                <div class="job-section-header collapsible" onclick="togglePersonaSection(this, event)">
-                    <span>Completed Children (${completedChildJobs.length})</span>
+            ${completedChildTopics.length > 0 ? `
+            <div class="topic-section">
+                <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>Completed Children (${completedChildTopics.length})</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
                 <div class="collapsible-content">
-                    ${completedChildJobs.map(child => {
-                        const grandchildCount = completedJobsData.filter(j => j.parent_id === child.id).length;
-                        return renderCompletedJobCard(child, grandchildCount, true);
+                    ${completedChildTopics.map(child => {
+                        const grandchildCount = completedTopicsData.filter(j => j.parent_id === child.id).length;
+                        return renderCompletedTopicCard(child, grandchildCount, true);
                     }).join('')}
                 </div>
             </div>
@@ -645,32 +645,32 @@ function renderCompletedJobDetailView(jobId) {
 
             <!-- Parent Link -->
             ${parentName ? `
-            <div class="job-section">
-                <div class="job-section-header">Parent</div>
-                <div class="card-project-link" onclick="navigateFocus('${parentIsCompleted ? 'completed' : 'job'}-${job.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Parent</div>
+                <div class="card-project-link" onclick="navigateFocus('${parentIsCompleted ? 'completed' : 'job'}-${topic.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
             </div>
             ` : ''}
 
             <!-- Assets Section -->
             ${assets.length > 0 ? `
-            <div class="job-section">
-                <div class="job-section-header">Assets (${assets.length})</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Assets (${assets.length})</div>
                 <div class="asset-list">
                     ${assets.map(asset => {
                         const isText = isTextAsset(asset);
                         const assetIcon = asset.filename.endsWith('.md') ? icon('pencil') : icon('document');
                         return isText ? `
-                            <div class="asset-item clickable" onclick="navigateFocus('asset-${job.id}-${asset.filename}')" style="cursor: pointer;">
+                            <div class="asset-item clickable" onclick="navigateFocus('asset-${topic.id}-${asset.filename}')" style="cursor: pointer;">
                                 <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                                <button class="asset-item-delete" onclick="event.stopPropagation(); deleteAsset('${topic.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
                                 <span class="asset-item-arrow">${icon('chevron-right')}</span>
                             </div>
                         ` : `
                             <div class="asset-item">
                                 <span class="asset-item-name">${assetIcon} ${escapeHtml(asset.filename)}</span>
                                 <span class="asset-item-size">${formatFileSize(asset.size)}</span>
-                                <button class="asset-item-delete" onclick="deleteAsset('${job.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
+                                <button class="asset-item-delete" onclick="deleteAsset('${topic.id}', '${escapeHtml(asset.filename)}')" title="Delete">${icon('trash')}</button>
                             </div>
                         `;
                     }).join('')}

@@ -210,19 +210,19 @@ function retryLastMessage() {
 let currentJobContext = null;
 let currentJobName = null;
 
-function setJobContext(jobId) {
+function setJobContext(topicId) {
     // Get job to check if it's a system container
-    const job = typeof jobsData !== 'undefined' ? jobsData.find(j => j.id === jobId) : null;
+    const topic = typeof topicsData !== 'undefined' ? topicsData.find(j => j.id === topicId) : null;
 
     // Don't show context for system containers (Agents, Projects, System) or agent inbox jobs
     // But DO show for jobs that are descendants of agents (jobs the agent worked on)
-    if (job) {
-        const tags = job.tags || [];
+    if (topic) {
+        const tags = topic.tags || [];
         // Only exclude the container jobs themselves, not their descendants
         const isSystemContainer = tags.includes('system:agents') ||
                                   tags.includes('system:projects');
-        // Agent inbox jobs are the root jobs for each agent (have agent_id or agent-inbox tag)
-        const isAgentInbox = tags.includes('agent-inbox') || job.agent_id;
+        // Agent inbox jobs are the root topics for each agent (have agent_id or agent-inbox tag)
+        const isAgentInbox = tags.includes('agent-inbox') || topic.agent_id;
 
         if (isSystemContainer || isAgentInbox) {
             clearJobContext();
@@ -230,8 +230,8 @@ function setJobContext(jobId) {
         }
     }
 
-    currentJobContext = jobId;
-    currentJobName = job ? job.name : 'this job';
+    currentJobContext = topicId;
+    currentJobName = job ? topic.name : 'this job';
     updateInputContext();
 }
 
@@ -267,7 +267,7 @@ function updateInputContext() {
     }
 }
 
-async function sendJobFeedback(jobId, message) {
+async function sendJobFeedback(topicId, message) {
     // Show user message with job context indicator
     const jobName = currentJobName || 'job';
     addInlineMessage(message, 'you', `Re: ${jobName}`);
@@ -276,7 +276,7 @@ async function sendJobFeedback(jobId, message) {
     addInlineThinking();
 
     try {
-        const response = await fetch(`/api/jobs/${jobId}/feedback`, {
+        const response = await fetch(`/api/topics/${topicId}/feedback`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message })

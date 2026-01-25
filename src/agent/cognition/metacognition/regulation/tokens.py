@@ -1088,15 +1088,15 @@ def get_token_awareness() -> TokenAwareness:
         return _token_awareness
 
 
-def get_calls_by_job(job_id: str, days: int = 30) -> list:
-    """Get all API calls for a specific job.
+def get_calls_by_topic(topic_id: str, days: int = 30) -> list:
+    """Get all API calls for a specific topic.
 
     Args:
-        job_id: The job ID to filter by
+        topic_id: The topic ID to filter by
         days: Number of days to look back
 
     Returns:
-        List of API call entries for this job
+        List of API call entries for this topic
     """
     ta = get_token_awareness()
     cutoff = datetime.now() - timedelta(days=days)
@@ -1112,7 +1112,8 @@ def get_calls_by_job(job_id: str, days: int = 30) -> list:
                         continue
                     try:
                         entry = json.loads(line)
-                        if entry.get("job_id") == job_id:
+                        # Check both topic_id and job_id for backwards compatibility
+                        if entry.get("topic_id") == topic_id or entry.get("job_id") == topic_id:
                             entry_time = datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
                             if entry_time.replace(tzinfo=None) >= cutoff:
                                 results.append(entry)
@@ -1124,28 +1125,33 @@ def get_calls_by_job(job_id: str, days: int = 30) -> list:
     return results
 
 
-def get_job_call_count(job_id: str, days: int = 30) -> dict:
-    """Get call count and cost summary for a job.
+def get_topic_call_count(topic_id: str, days: int = 30) -> dict:
+    """Get call count and cost summary for a topic.
 
     Args:
-        job_id: The job ID to summarize
+        topic_id: The topic ID to summarize
         days: Number of days to look back
 
     Returns:
         Dict with call_count and total_cost
     """
-    calls = get_calls_by_job(job_id, days)
+    calls = get_calls_by_topic(topic_id, days)
     total_cost = sum(c.get("cost", 0) for c in calls)
     total_input = sum(c.get("input_tokens", 0) for c in calls)
     total_output = sum(c.get("output_tokens", 0) for c in calls)
 
     return {
-        "job_id": job_id,
+        "topic_id": topic_id,
         "call_count": len(calls),
         "total_cost": round(total_cost, 6),
         "total_input_tokens": total_input,
         "total_output_tokens": total_output
     }
+
+
+# Backwards compatibility aliases
+get_calls_by_job = get_calls_by_topic
+get_job_call_count = get_topic_call_count
 
 
 def get_costs_by_agent(days: int = 30) -> dict:

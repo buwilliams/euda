@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from ...llms import get_model, get_provider, get_providers_config, invalidate_client
 from ...llms.base import _load_config, LLM_CONFIG_PATH, VALID_PROVIDERS
-from ...tools.data.jobs import list_jobs
+from ...tools.data.topics import list_topics
 from ...tools.system.fresh_start import (
     perform_fresh_start,
     list_backups as _list_backups,
@@ -55,21 +55,21 @@ def get_about():
 
 # ============== Daily Quote ==============
 
-def _get_latest_quote_from_jobs() -> dict:
-    """Get the most recent completed euno:quote job's quote asset.
+def _get_latest_quote_from_topics() -> dict:
+    """Get the most recent completed euno:quote topic's quote asset.
 
     Returns:
         Dict with 'quote' and 'author' keys, or None if no quote found
     """
     from ...tools.data.assets import read_asset
 
-    # Get completed jobs and filter for quote jobs
-    all_jobs = list_jobs(status="done")
-    quote_jobs = [j for j in all_jobs if j.get("name", "").startswith("euno:quote")]
+    # Get completed topics and filter for quote topics
+    all_topics = list_topics(status="done")
+    quote_topics = [t for t in all_topics if t.get("name", "").startswith("euno:quote")]
 
-    for job in quote_jobs:
+    for topic in quote_topics:
         try:
-            asset = read_asset(job["id"], "quote.json")
+            asset = read_asset(topic["id"], "quote.json")
             if asset and asset.get("content"):
                 quote_data = json.loads(asset["content"])
                 if quote_data.get("quote") and quote_data.get("author"):
@@ -84,11 +84,11 @@ def _get_latest_quote_from_jobs() -> dict:
 def daily_quote():
     """Get a personalized daily quote.
 
-    Returns quote from completed euno:quote jobs. If none exists yet,
-    returns empty. Quote generation happens via the euno:quote job
+    Returns quote from completed euno:quote topics. If none exists yet,
+    returns empty. Quote generation happens via the euno:quote topic
     (scheduled for morning).
     """
-    quote = _get_latest_quote_from_jobs()
+    quote = _get_latest_quote_from_topics()
     if quote:
         return quote
 

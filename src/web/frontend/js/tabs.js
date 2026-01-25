@@ -142,7 +142,7 @@ function switchTab(tabName) {
         // Reset focus view to menu when clicking tab
         focusView = 'menu';
         focusViewHistory = [];
-        loadTasksData();
+        loadTopicsData();
         // Clear job context when returning to menu
         if (typeof clearJobContext === 'function') {
             clearJobContext();

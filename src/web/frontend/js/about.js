@@ -103,7 +103,7 @@ async function deleteProjectNote(projectId, filename) {
             // Clear the expanded state for this note
             expandedCards.delete(`note-${filename}`);
             // Reload data to refresh notes list
-            await loadTasksData();
+            await loadTopicsData();
         }
     } catch (error) {
         console.error('Failed to delete note:', error);
@@ -127,17 +127,17 @@ async function addTaskToProject(projectId, inputEl) {
 
         if (response.ok) {
             inputEl.value = '';
-            await loadTasksData();
+            await loadTopicsData();
         }
     } catch (error) {
         console.error('Failed to add task:', error);
     }
 }
 
-function updateTasksBadge() {
+function updateTopicsBadge() {
     const badge = document.getElementById('tasks-badge');
     // Count jobs due today
-    const count = jobsData.filter(j => getJobCategory(j) === 'today').length;
+    const count = topicsData.filter(j => getTopicCategory(j) === 'today').length;
     badge.textContent = count;
     badge.style.display = count > 0 ? 'inline' : 'none';
 }

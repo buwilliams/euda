@@ -2,31 +2,31 @@
 
 // ============== Job Actions ==============
 
-function showArchiveInput(event, jobId) {
+function showArchiveInput(event, topicId) {
     event.stopPropagation();
-    if (archivingTaskId === jobId) {
-        archivingTaskId = null;
+    if (archivingTopicId === topicId) {
+        archivingTopicId = null;
     } else {
-        archivingTaskId = jobId;
+        archivingTopicId = topicId;
     }
     renderFocusTab();
     setTimeout(() => {
-        const input = document.getElementById(`archive-reason-${jobId}`);
+        const input = document.getElementById(`archive-reason-${topicId}`);
         if (input) input.focus();
     }, 50);
 }
 
-async function confirmArchiveJob(jobId) {
+async function confirmArchiveJob(topicId) {
     try {
-        const response = await fetch(`/api/jobs/${jobId}/archive`, {
+        const response = await fetch(`/api/topics/${topicId}/archive`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
 
         if (response.ok) {
-            archivingTaskId = null;
-            await loadJobsData();
-            if (focusView === `job-${jobId}`) {
+            archivingTopicId = null;
+            await loadTopicsData();
+            if (focusView === `topic-${topicId}`) {
                 navigateFocusBack();
             }
         }
@@ -35,18 +35,18 @@ async function confirmArchiveJob(jobId) {
     }
 }
 
-async function completeJob(event, jobId) {
+async function completeJob(event, topicId) {
     if (event) event.stopPropagation();
 
     try {
-        const response = await fetch(`/api/jobs/${jobId}/complete`, {
+        const response = await fetch(`/api/topics/${topicId}/complete`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
 
         if (response.ok) {
-            await loadJobsData();
-            if (focusView === `job-${jobId}`) {
+            await loadTopicsData();
+            if (focusView === `topic-${topicId}`) {
                 navigateFocusBack();
             }
         }
@@ -55,18 +55,18 @@ async function completeJob(event, jobId) {
     }
 }
 
-async function restoreJob(event, jobId) {
+async function restoreTopic(event, topicId) {
     if (event) event.stopPropagation();
 
     try {
-        const response = await fetch(`/api/jobs/${jobId}/restore`, {
+        const response = await fetch(`/api/topics/${topicId}/restore`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
 
         if (response.ok) {
-            await loadJobsData();
-            if (focusView === `completed-${jobId}`) {
+            await loadTopicsData();
+            if (focusView === `completed-${topicId}`) {
                 navigateFocusBack();
             }
         }
@@ -75,18 +75,18 @@ async function restoreJob(event, jobId) {
     }
 }
 
-async function deleteJob(event, jobId) {
+async function deleteTopic(event, topicId) {
     if (event) event.stopPropagation();
 
-    const wasViewingJob = focusView === `job-${jobId}` || focusView === `completed-${jobId}`;
+    const wasViewingJob = focusView === `topic-${topicId}` || focusView === `completed-${topicId}`;
 
     try {
-        const response = await fetch(`/api/jobs/${jobId}?delete_children=true`, {
+        const response = await fetch(`/api/topics/${topicId}?delete_children=true`, {
             method: 'DELETE'
         });
 
         if (response.ok) {
-            await loadJobsData();
+            await loadTopicsData();
             if (wasViewingJob) {
                 navigateFocusBack();
             }
@@ -109,7 +109,7 @@ async function quickAddJob(inputId, parentId = null) {
             body.parent_id = parentId;
         }
 
-        const response = await fetch('/api/jobs', {
+        const response = await fetch('/api/topics', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
@@ -117,7 +117,7 @@ async function quickAddJob(inputId, parentId = null) {
 
         if (response.ok) {
             input.value = '';
-            await loadJobsData();
+            await loadTopicsData();
             // Re-focus the input for rapid entry
             setTimeout(() => {
                 const newInput = document.getElementById(inputId);
@@ -135,16 +135,16 @@ function handleQuickAddKeypress(event, inputId, parentId = null) {
     }
 }
 
-async function quickDeleteJob(event, jobId) {
+async function quickDeleteJob(event, topicId) {
     event.stopPropagation();
 
     try {
-        const response = await fetch(`/api/jobs/${jobId}?delete_children=true`, {
+        const response = await fetch(`/api/topics/${topicId}?delete_children=true`, {
             method: 'DELETE'
         });
 
         if (response.ok) {
-            await loadJobsData();
+            await loadTopicsData();
         }
     } catch (error) {
         console.error('Failed to delete job:', error);

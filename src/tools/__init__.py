@@ -184,7 +184,7 @@ def execute_tool(name: str, inputs: dict) -> Any:
 
 
 # Import all tool modules to register them
-from .data import jobs, assets, identity, memory
+from .data import topics, assets, identity, memory
 from .agents import agents
 from .system import system, dates, notifications
 from .integration import knowledge, mastodon, speech, nextcloud

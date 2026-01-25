@@ -17,7 +17,7 @@ function toggleSection(sectionId) {
 
 function togglePersonaSection(header, event) {
     // Don't toggle if clicking on the Save action
-    if (event.target.classList.contains('job-section-action')) return;
+    if (event.target.classList.contains('topic-section-action')) return;
 
     header.classList.toggle('open');
     const content = header.nextElementSibling;
@@ -28,7 +28,7 @@ function togglePersonaSection(header, event) {
 
 async function toggleAgentSection(header, event, sectionType, agentId) {
     // Don't toggle if clicking on actions
-    if (event.target.classList.contains('job-section-action')) return;
+    if (event.target.classList.contains('topic-section-action')) return;
 
     header.classList.toggle('open');
     const content = header.nextElementSibling;
@@ -42,13 +42,13 @@ async function toggleAgentSection(header, event, sectionType, agentId) {
                 content.innerHTML = '<div class="section-loading">Loading...</div>';
 
                 if (sectionType === 'completed-by-agent') {
-                    const jobs = await loadAgentCompletedJobs(agentId);
+                    const jobs = await loadAgentCompletedTopics(agentId);
                     content.innerHTML = renderAgentCompletedJobsContent(jobs);
                 } else if (sectionType === 'monitoring') {
                     const data = await loadAgentMonitoring(agentId);
                     content.innerHTML = renderMonitoringContent(data);
                 } else if (sectionType === 'job-api-calls') {
-                    const data = await loadJobApiCalls(agentId);  // agentId is actually jobId here
+                    const data = await loadJobApiCalls(agentId);  // agentId is actually topicId here
                     content.innerHTML = renderJobApiCallsContent(data);
                 } else if (sectionType === 'rate-limit-events') {
                     const data = await loadRateLimitEvents(agentId);
@@ -76,23 +76,23 @@ async function toggleAgentSection(header, event, sectionType, agentId) {
 
 function renderAgentCompletedJobsContent(jobs) {
     if (!jobs || jobs.length === 0) {
-        return '<div class="focus-empty">No jobs completed by this agent yet.</div>';
+        return '<div class="focus-empty">No topics completed by this agent yet.</div>';
     }
-    return jobs.map(job => renderCompletedJobCardWithTrace(job)).join('');
+    return jobs.map(topic => renderCompletedTopicCardWithTrace(topic)).join('');
 }
 
-function renderCompletedJobCardWithTrace(job) {
-    const name = job.name || 'Untitled';
+function renderCompletedTopicCardWithTrace(topic) {
+    const name = topic.name || 'Untitled';
     const completedDate = job.completed_at ? formatFriendlyPastDate(job.completed_at.split('T')[0]) : '';
 
     return `
-        <div class="job-card completed-job-card">
-            <div class="job-card-content" onclick="navigateToTrace('${job.id}')">
+        <div class="job-card completed-topic-card">
+            <div class="job-card-content" onclick="navigateToTrace('${topic.id}')">
                 <span class="job-icon">${icon('check-circle')}</span>
                 <span class="job-name">${escapeHtml(name)}</span>
                 ${completedDate ? `<span class="job-completed-date">${completedDate}</span>` : ''}
             </div>
-            <button class="trace-btn" onclick="event.stopPropagation(); navigateToTrace('${job.id}')" title="View Trace">
+            <button class="trace-btn" onclick="event.stopPropagation(); navigateToTrace('${topic.id}')" title="View Trace">
                 ${icon('chart-bar')}
             </button>
         </div>
@@ -141,9 +141,9 @@ function renderMonitoringContent(data) {
     `;
 }
 
-async function loadJobApiCalls(jobId) {
+async function loadJobApiCalls(topicId) {
     try {
-        const response = await fetch(`/api/jobs/${jobId}/api-calls`);
+        const response = await fetch(`/api/topics/${topicId}/api-calls`);
         if (!response.ok) return null;
         return await response.json();
     } catch (error) {
