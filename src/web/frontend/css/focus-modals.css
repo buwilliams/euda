@@ -244,6 +244,38 @@
     height: 16px;
 }
 
+/* Picker option content (for multi-line options) */
+.picker-option-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    flex: 1;
+}
+
+.picker-option-description {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.picker-option-badge {
+    margin-left: auto;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    background: var(--color-bg-muted);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+}
+
+/* Picker option disabled state */
+.picker-option.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.picker-option.disabled:hover {
+    background: transparent;
+}
+
 /* Picker description */
 .picker-description {
     font-size: var(--font-size-sm);

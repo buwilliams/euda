@@ -219,6 +219,20 @@ async function loadAgents() {
     return [];
 }
 
+async function loadRecentAssets() {
+    try {
+        const response = await fetch('/api/assets/recent', { credentials: 'same-origin' });
+        if (response.ok) {
+            recentAssetsCache = await response.json();
+            return recentAssetsCache;
+        }
+    } catch (error) {
+        console.error('Failed to load recent assets:', error);
+    }
+    recentAssetsCache = [];
+    return [];
+}
+
 async function loadAgentData(agentId) {
     try {
         const [identityRes, configRes] = await Promise.all([
@@ -333,9 +347,9 @@ async function loadAgentMonitoring(agentId, offset = 0, limit = 20) {
 function isContainerTopic(topic) {
     // Agent inbox topics have agent_id set
     if (topic.agent_id) return true;
-    // System containers have system:agents or system:projects tags
+    // System containers have system:agents, system:projects, or system:assets tags
     const tags = topic.tags || [];
-    if (tags.includes('system:agents') || tags.includes('system:projects')) return true;
+    if (tags.includes('system:agents') || tags.includes('system:projects') || tags.includes('system:assets')) return true;
     return false;
 }
 
@@ -457,6 +471,28 @@ function getAllChildTopicsSorted(parentId) {
         });
 }
 
+function getTopicsAssignedToAgent(agentId) {
+    // Get all topics assigned to this agent, sorted by status priority
+    const statusPriority = {
+        'working': 0,
+        'todo': 1,
+        'error': 2,
+        'done': 3,
+        'archived': 4
+    };
+
+    return allTopicsData
+        .filter(t => t.assignee === agentId)
+        .sort((a, b) => {
+            const aPriority = statusPriority[a.status] ?? 5;
+            const bPriority = statusPriority[b.status] ?? 5;
+            if (aPriority !== bPriority) {
+                return aPriority - bPriority;
+            }
+            return (b.created_at || '').localeCompare(a.created_at || '');
+        });
+}
+
 function getDescendantCountForContext(topicId) {
     // Count ALL descendants (not just direct children) that match the timeline context
     const context = getTimelineContext();
@@ -556,6 +592,9 @@ function getRootTopicsForCategory(category) {
 
         // Skip topics with completed ancestors (orphaned children of completed projects)
         if (hasCompletedAncestor(topic)) continue;
+
+        // Skip topics assigned to an agent (delegated)
+        if (topic.assignee) continue;
 
         // Check if this topic matches the category and is incomplete
         if (topic.status !== 'done' && getTopicCategory(topic) === category) {

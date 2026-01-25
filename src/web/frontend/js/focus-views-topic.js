@@ -116,10 +116,17 @@ function renderFocusMenu() {
     // Find system containers
     const agentsContainer = topicsData.find(j => j.tags && j.tags.includes('system:agents') && !j.parent_id);
     const projectsContainer = topicsData.find(j => j.tags && j.tags.includes('system:projects') && !j.parent_id);
+    const assetsContainer = topicsData.find(j => j.tags && j.tags.includes('system:assets') && !j.parent_id);
 
     // Count children of each container
     const agentsCount = agentsContainer ? topicsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
     const projectsCount = projectsContainer ? topicsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
+    // Assets count comes from the cache (loaded separately)
+    // Load assets if not cached yet (for count display)
+    if (assetsContainer && recentAssetsCache === null) {
+        loadRecentAssets().then(() => renderFocusTab());
+    }
+    const assetsCount = recentAssetsCache ? recentAssetsCache.length : 0;
 
     // Check collapsed states
     const timelinesOpen = isSectionOpen('timelines');
@@ -147,8 +154,8 @@ function renderFocusMenu() {
         `;
     }
 
-    // Build system section (Agents + Projects) if any exist
-    const hasSystemSection = agentsContainer || projectsContainer;
+    // Build system section (Agents + Projects + Assets) if any exist
+    const hasSystemSection = agentsContainer || projectsContainer || assetsContainer;
     const systemSection = hasSystemSection ? `
         <div class="focus-menu-section">
             <div class="focus-menu-section-label collapsible ${collectionsOpen ? 'open' : ''}" onclick="toggleSection('collections')">
@@ -169,6 +176,14 @@ function renderFocusMenu() {
                     <span class="focus-menu-icon">${icon('folder')}</span>
                     <span class="focus-menu-label">Projects</span>
                     <span class="focus-menu-count">${projectsCount}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                ` : ''}
+                ${assetsContainer ? `
+                <div class="focus-menu-item" onclick="navigateFocus('recent-assets')">
+                    <span class="focus-menu-icon">${icon('document')}</span>
+                    <span class="focus-menu-label">Assets</span>
+                    <span class="focus-menu-count">${assetsCount}</span>
                     <span class="focus-menu-arrow">›</span>
                 </div>
                 ` : ''}
@@ -311,13 +326,19 @@ function renderSystemContainerView(topic, isAgentsContainer) {
             return `
                 <div class="child-topics-list">
                     ${childTopics.map(child => {
-                        const grandchildCount = topicsData.filter(j => j.parent_id === child.id).length;
+                        const agentId = child.agent_id;
+                        // Count active topics (todo/working) assigned to this agent + children of inbox (deduped)
+                        const isActive = t => t.status === 'todo' || t.status === 'working';
+                        const assignedTopics = agentId ? allTopicsData.filter(t => t.assignee === agentId && isActive(t)) : [];
+                        const inboxChildren = allTopicsData.filter(j => j.parent_id === child.id && isActive(j));
+                        const assignedIds = new Set(assignedTopics.map(t => t.id));
+                        const totalCount = assignedTopics.length + inboxChildren.filter(t => !assignedIds.has(t.id)).length;
                         const childIcon = icon('bolt');
                         return `
                             <div class="child-topic-card" data-testid="agent-card" onclick="navigateFocus('topic-${child.id}')">
                                 <span class="child-topic-icon">${childIcon}</span>
                                 <span class="child-topic-name">${escapeHtml(child.name)}</span>
-                                <span class="child-topic-count">${grandchildCount}</span>
+                                <span class="child-topic-count">${totalCount}</span>
                                 <span class="child-topic-arrow">${icon('chevron-right')}</span>
                             </div>
                         `;

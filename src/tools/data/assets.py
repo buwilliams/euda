@@ -99,6 +99,45 @@ def delete_asset(topic_id: str, filename: str) -> dict:
     return {"filename": filename, "status": "deleted"}
 
 
+def list_recent_assets(limit: int = 50) -> List[dict]:
+    """List recent assets across all topics, sorted by modification time.
+
+    Returns a list of assets with topic_id included for navigation.
+    """
+    if not ASSETS_DIR.exists():
+        return []
+
+    all_assets = []
+
+    # Iterate through all topic asset directories
+    for topic_dir in ASSETS_DIR.iterdir():
+        if not topic_dir.is_dir():
+            continue
+
+        topic_id = topic_dir.name
+
+        for path in topic_dir.iterdir():
+            if path.is_file():
+                mime_type, _ = mimetypes.guess_type(str(path))
+                stat = path.stat()
+                all_assets.append({
+                    "topic_id": topic_id,
+                    "filename": path.name,
+                    "size": stat.st_size,
+                    "mime_type": mime_type,
+                    "modified_at": stat.st_mtime
+                })
+
+    # Sort by modification time (most recent first)
+    all_assets.sort(key=lambda x: x["modified_at"], reverse=True)
+
+    # Return limited results (remove internal modified_at timestamp)
+    return [
+        {k: v for k, v in asset.items() if k != "modified_at"}
+        for asset in all_assets[:limit]
+    ]
+
+
 def write_asset_bytes(topic_id: str, filename: str, content: bytes) -> dict:
     """Write binary content to an asset file (internal use).
 

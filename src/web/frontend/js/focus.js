@@ -17,6 +17,7 @@ let topicsData = [];           // All active topics
 let completedTopicsData = [];  // Recently completed topics
 let allTopicsData = [];        // All topics including archived (for detail views)
 let topicAssetsCache = {};     // Cache of assets per topic
+let recentAssetsCache = null;  // Cache of recent assets across all topics
 let editingTopicField = null;  // Which field is being edited: {topicId, field}
 let currentAssetData = null; // Currently viewed asset
 let editingAssetFilename = null; // Track if we're editing an asset
@@ -62,6 +63,8 @@ function renderFocusTab() {
         content = renderTimelineView('someday', 'Someday');
     } else if (focusView === 'completed') {
         content = renderCompletedTopicsView();
+    } else if (focusView === 'recent-assets') {
+        content = renderRecentAssetsView();
     } else if (focusView.startsWith('assets-')) {
         // assets-{topicId} - list of assets for a topic
         const topicId = focusView.substring(7);

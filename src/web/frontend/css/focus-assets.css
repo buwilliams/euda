@@ -89,6 +89,27 @@
     height: 16px;
 }
 
+/* Asset item with topic info (for recent assets view) */
+.asset-item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.asset-item-info .asset-item-name {
+    flex: none;
+}
+
+.asset-item-topic {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* Asset Back Link */
 .asset-back-link {
     display: flex;
