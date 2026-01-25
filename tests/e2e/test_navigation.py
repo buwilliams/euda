@@ -141,11 +141,11 @@ class TestBackNavigation:
         expect(page.locator('[data-testid="back-btn"]')).to_be_visible(timeout=5000)
 
         # If there are topics, navigate into one
-        job_cards = page.locator('[data-testid="topic-card"]')
-        if job_cards.count() > 0:
-            job_cards.first.click()
+        topic_cards = page.locator('[data-testid="topic-card"]')
+        if topic_cards.count() > 0:
+            topic_cards.first.click()
 
-            # Wait for job detail
+            # Wait for topic detail
             expect(page.locator('[data-testid="topic-detail"]')).to_be_visible(timeout=5000)
 
             # Go back

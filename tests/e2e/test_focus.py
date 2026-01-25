@@ -56,7 +56,7 @@ class TestTimelineNavigation:
         expect(page.locator('[data-testid="back-btn"]')).to_be_visible(timeout=5000)
 
     def test_navigate_to_completed(self, authenticated_page: Page):
-        """Should be able to navigate to Completed jobs."""
+        """Should be able to navigate to Completed topics."""
         page = authenticated_page
         self._expand_timelines_section(page)
         page.locator('[data-testid="menu-completed"]').click()
@@ -76,15 +76,15 @@ class TestQuickAdd:
 class TestTopicCard:
     """Tests for topiccard interactions."""
 
-    def test_job_card_opens_detail(self, authenticated_page: Page):
+    def test_topic_card_opens_detail(self, authenticated_page: Page):
         """Clicking a topiccard should open topicdetail view."""
         page = authenticated_page
 
         # First check if there are any topiccards
-        job_cards = page.locator('[data-testid="topic-card"]')
-        if job_cards.count() > 0:
+        topic_cards = page.locator('[data-testid="topic-card"]')
+        if topic_cards.count() > 0:
             # Click the first topiccard
-            job_cards.first.click()
+            topic_cards.first.click()
 
             # Should show topicdetail view with back button
             expect(page.locator('[data-testid="back-btn"]')).to_be_visible(timeout=5000)
@@ -94,14 +94,14 @@ class TestTopicCard:
 class TestTopicDetail:
     """Tests for topicdetail view elements."""
 
-    def test_job_detail_elements(self, authenticated_page: Page):
+    def test_topic_detail_elements(self, authenticated_page: Page):
         """Topic detail should show name and description sections."""
         page = authenticated_page
 
         # Navigate to a topicif one exists
-        job_cards = page.locator('[data-testid="topic-card"]')
-        if job_cards.count() > 0:
-            job_cards.first.click()
+        topic_cards = page.locator('[data-testid="topic-card"]')
+        if topic_cards.count() > 0:
+            topic_cards.first.click()
 
             # Wait for detail view
             expect(page.locator('[data-testid="topic-detail"]')).to_be_visible(timeout=5000)

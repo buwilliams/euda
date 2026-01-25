@@ -59,8 +59,8 @@ class TestUploadRoute:
         assert call_args.kwargs["agent_id"] == "user"
         assert call_args.kwargs["source"] == "Upload"
 
-    def test_text_file_creates_job_for_memory_extraction(self, patch_data_dir):
-        """Uploading text file creates job assigned to user agent."""
+    def test_text_file_creates_topic_for_memory_extraction(self, patch_data_dir):
+        """Uploading text file creates topic assigned to user agent."""
         from fastapi.testclient import TestClient
         from src.web.app import app
 
