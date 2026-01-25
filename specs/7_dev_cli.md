@@ -28,10 +28,10 @@ Rules for the developer experience CLI (`uv run euno dev`).
 - Agent class accepts optional `event_sink` callback for streaming
 - Events are emitted in addition to normal logging (not instead of)
 
-## Job Execution
+## Topic Execution
 
-- `dev job <agent> <task>` — Create job assigned to agent, run immediately
-- `dev run <agent> <job_id>` — Run existing job
+- `dev topic <agent> <task>` — Create topic assigned to agent, run immediately
+- `dev run <agent> <topic_id>` — Run existing topic
 - Creates standalone Agent instance (not managed by AgentManager)
 - Runs `work_cycle_sync()` directly, bypassing polling
 - Flags:
@@ -70,7 +70,7 @@ Rules for the developer experience CLI (`uv run euno dev`).
 
 ## Prompt Commands
 
-- `dev prompt <agent> job <job_id>` — Show prompt that would be generated for job
+- `dev prompt <agent> topic <topic_id>` — Show prompt that would be generated for topic
 - `dev prompt <agent> consolidation` — Show consolidation prompt
 - `dev prompt <agent> system` — Show system prompt (identity + tools)
 - Read-only inspection, no LLM calls
@@ -84,8 +84,8 @@ Rules for the developer experience CLI (`uv run euno dev`).
 
 ## Upload Command
 
-- `dev upload <target> <file>` — Upload file to agent inbox or job
-- Target is agent_id (creates job with asset) or job-xxx (adds to existing job)
+- `dev upload <target> <file>` — Upload file to agent inbox or topic
+- Target is agent_id (creates topic with asset) or topic-xxx (adds to existing topic)
 - Supports any file type
 
 ## Watch Command
@@ -98,8 +98,8 @@ Rules for the developer experience CLI (`uv run euno dev`).
 
 ## Trace Command
 
-- `dev trace <job_id>` — Show full execution trace of a job
-- Aggregates events from job logs, agent logs, and consolidation logs
+- `dev trace <topic_id>` — Show full execution trace of a topic
+- Aggregates events from topic logs, agent logs, and consolidation logs
 - Shows chronological sequence of what happened
 
 ## Module Structure

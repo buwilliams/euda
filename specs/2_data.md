@@ -2,7 +2,7 @@
 
 Rules for the major entities in the system and how they relate.
 
-- All configs, logs, and state is stored in `data/{agents|jobs|system}/*`
+- All configs, logs, and state is stored in `data/{agents|topics|system}/*`
 
 ## Agent
 
@@ -67,9 +67,9 @@ Memory moves through two phases:
   - No job created — invisible to user
   - Chat agent's user-relevant items cross-pollinate to user's memory (person, place, goal, concern, idea)
 
-- **Consolidate phase** (triggered, creates visible jobs)
+- **Consolidate phase** (triggered, creates visible topics)
   - Heavy analysis triggered by `time:evening` or custom trigger
-  - Creates `Trigger:consolidation:{phase}:{date}` jobs that appear in agent's queue
+  - Creates `Trigger:consolidation:{phase}:{date}` topics that appear in agent's queue
   - Uses RLM `extract_identity()` to analyze long-term memory for identity updates
   - Discovers and validates behavioral patterns
   - Updates identity with new patterns, interests, and biographical information
@@ -87,14 +87,14 @@ RLM provides intelligent access to long-term memory via iterative exploration:
 
 RLM is used during consolidation to evolve identity based on observed patterns in long-term memory, rather than simple rule-based analysis.
 
-### File Import via Jobs
+### File Import via Topics
 
-External files are imported to long-term memory through job-based processing:
-- **Command:** `euno store <path>` creates `Store:ingest:{timestamp}` jobs
-- **Deduplication:** Content hash stored as job tag (`store:hash:{sha256}`)
-- **Assets:** Files attached to job as assets
-- **Processing:** Chat agent processes job, extracts dates, writes to long-term memory
-- **Tracking:** Job completion marks content as processed (no separate manifest)
+External files are imported to long-term memory through topic-based processing:
+- **Command:** `euno store <path>` creates `Store:ingest:{timestamp}` topics
+- **Deduplication:** Content hash stored as topic tag (`store:hash:{sha256}`)
+- **Assets:** Files attached to topic as assets
+- **Processing:** Chat agent processes topic, extracts dates, writes to long-term memory
+- **Tracking:** Topic completion marks content as processed (no separate manifest)
 
 ### Identity Schema
 
@@ -132,52 +132,52 @@ This preserves how an agent's identity has evolved over time, enabling:
 - Treat user resistance as information, not opposition
 - Require explicit user affirmation before irreversible actions
 
-## Job
+## Topic
 
-- SQLite database: `data/jobs/db.sqlite`
-- Hierarchical — any job can contain sub-jobs via parent_id
-- All agents can see all jobs — visibility is universal
+- SQLite database: `data/topics/db.sqlite`
+- Hierarchical — any topic can contain sub-topics via parent_id
+- All agents can see all topics — visibility is universal
 - Fields: id, name, parent_id, status, description, due_date, someday, tags, assignee, created_at, updated_at, completed_at, created_by
 - Status: todo, working, done, error, archived
-- Assets stored as files: `data/jobs/assets/{job-id}/{filename}`
+- Assets stored as files: `data/topics/assets/{topic-id}/{filename}`
 - Use SQLite because indexing and querying is required
 
-### Job Assets
+### Topic Assets
 
-Job assets are files attached to a job. They serve multiple purposes:
+Topic assets are files attached to a topic. They serve multiple purposes:
 - **Integration data**: Uploaded files, imported content from external sources
 - **Work products**: Documents, reports, analysis results created by agents
-- **Context**: Supporting materials needed for job completion
+- **Context**: Supporting materials needed for topic completion
 
-All integrations (file uploads, email import, etc.) should store content as job assets rather than in separate directories. This ensures:
-- Content is tied to the job that processes it
+All integrations (file uploads, email import, etc.) should store content as topic assets rather than in separate directories. This ensures:
+- Content is tied to the topic that processes it
 - Agents can use standard asset tools (`read_asset`, `write_asset`, `list_assets`)
-- Cleanup happens naturally when jobs are archived/deleted
+- Cleanup happens naturally when topics are archived/deleted
 
-### Blocked Jobs
+### Blocked Topics
 
-Jobs can be blocked when waiting on external input. This prevents agents from repeatedly polling the same job.
+Topics can be blocked when waiting on external input. This prevents agents from repeatedly polling the same topic.
 
 **Blocking tags:**
 - `waiting:{reason}` — Waiting on external input (e.g., `waiting:logan`, `waiting:user-input`)
 - `blocked:{reason}` — Blocked for other reasons
 
 **Agent behavior:**
-When an agent cannot progress on a job due to external dependencies:
-1. Add a `waiting:` tag: `update_job(job_id, tags=[...existing, "waiting:logan"])`
-2. Log the reason: `add_job_log(job_id, "Blocked: waiting for Logan's QA findings")`
+When an agent cannot progress on a topic due to external dependencies:
+1. Add a `waiting:` tag: `update_topic(topic_id, tags=[...existing, "waiting:logan"])`
+2. Log the reason: `add_topic_log(topic_id, "Blocked: waiting for Logan's QA findings")`
 3. Call `done_working()` to end the work cycle
 
 **Actionable filter:**
-The `list_jobs(actionable=True)` filter excludes jobs with `waiting:*` or `blocked:*` tags.
+The `list_topics(actionable=True)` filter excludes topics with `waiting:*` or `blocked:*` tags.
 
 **Unblocking:**
-Jobs are automatically unblocked when the user:
-- Edits an asset on the job
-- Sends feedback about the job
-- Calls `POST /api/jobs/{id}/unblock` explicitly
+Topics are automatically unblocked when the user:
+- Edits an asset on the topic
+- Sends feedback about the topic
+- Calls `POST /api/topics/{id}/unblock` explicitly
 
-Unblocking removes the blocking tags and notifies assigned agents that the job is actionable again.
+Unblocking removes the blocking tags and notifies assigned agents that the topic is actionable again.
 
 ## Config
 
