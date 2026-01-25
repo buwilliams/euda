@@ -183,6 +183,13 @@ let isProcessingQueue = false;
 // Cached quote for chat empty state
 let cachedChatQuote = null;
 
+// Scroll chat messages to bottom
+function scrollChatToBottom() {
+    if (inlineMessages) {
+        inlineMessages.scrollTop = inlineMessages.scrollHeight;
+    }
+}
+
 // Format seconds into human-readable time
 function formatPauseTime(seconds) {
     if (seconds >= 60) {
@@ -440,8 +447,7 @@ async function processMessageQueue() {
 
                     removeChatEmptyState();
                     inlineMessages.appendChild(div);
-                    const chatPane = document.getElementById('tab-chat');
-                    if (chatPane) chatPane.scrollTop = chatPane.scrollHeight;
+                    scrollChatToBottom();
                 } else {
                     // Generic error
                     const errorMsg = typeof data.detail === 'string' ? data.detail : 'Unknown error';
@@ -507,9 +513,7 @@ function addInlineMessage(content, role, context = null) {
 
     div.innerHTML = `${contextHtml}<div class="message-content">${html}</div>`;
     inlineMessages.appendChild(div);
-    // Scroll to bottom of chat tab
-    const chatPane = document.getElementById('tab-chat');
-    if (chatPane) chatPane.scrollTop = chatPane.scrollHeight;
+    scrollChatToBottom();
 }
 
 function addInlineThinking() {
@@ -519,8 +523,7 @@ function addInlineThinking() {
     div.setAttribute('data-testid', 'thinking-indicator');
     div.innerHTML = `<div class="message-content" style="color: #999; font-style: italic;">Thinking<span class="thinking-dots"><span></span><span></span><span></span></span></div>`;
     inlineMessages.appendChild(div);
-    const chatPane = document.getElementById('tab-chat');
-    if (chatPane) chatPane.scrollTop = chatPane.scrollHeight;
+    scrollChatToBottom();
 }
 
 function removeInlineThinking() {

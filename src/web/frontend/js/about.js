@@ -52,8 +52,8 @@ function showFullContent(title, content, type = 'task') {
 }
 
 function scrollChatToBottom() {
-    const chatPane = document.getElementById('tab-chat');
-    if (chatPane) chatPane.scrollTop = chatPane.scrollHeight;
+    const messages = document.getElementById('inline-messages');
+    if (messages) messages.scrollTop = messages.scrollHeight;
 }
 
 function showTaskById(taskId) {
