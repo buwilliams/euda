@@ -67,14 +67,14 @@ Euno is in early development. It's a self-hosted web app with a conversational i
 
 **The Foundation:**
 - **Chat** — Conversational interface powered by LLMs (Claude, OpenAI, Grok)
-- **Jobs** — Hierarchical task/project management with timeline views (Today, Upcoming, Anytime, Someday)
+- **Topics** — Hierarchical task/project management with timeline views (Today, Upcoming, Anytime, Someday)
 - **User Identity** — A markdown file that captures who you are, referenced in every conversation
 - **Long-term Memory** — Daily records of your interactions and reflections
-- **File Upload** — Attach documents, images, and files to any job
+- **File Upload** — Attach documents, images, and files to any topic
 
 **The Agents:**
 - **Chat** — Your conversational interface; knows your identity; manages other agents
-- **Worker** — Can work on jobs autonomously; still learning what's useful
+- **Worker** — Can work on topics autonomously; still learning what's useful
 - **Create your own** — Ask Chat to create specialized agents for your needs
 - **Agent Library** — Pre-built agents available in `agent-lib/` (fun, growth, socialize)
 
@@ -95,10 +95,10 @@ Euno is in early development. It's a self-hosted web app with a conversational i
 - Your identity shapes every response — conversations feel personal, not generic
 
 **Organize Your Work:**
-- Create jobs and sub-jobs to break down projects
+- Create topics and sub-topics to break down projects
 - Use timeline views: Today, Upcoming, Anytime, Someday
-- Attach files and notes to any job
-- Say "I need to..." or "Remind me to..." — watch jobs get created
+- Attach files and notes to any topic
+- Say "I need to..." or "Remind me to..." — watch topics get created
 
 **Build Your Record:**
 - Upload documents, photos, and files
@@ -106,7 +106,7 @@ Euno is in early development. It's a self-hosted web app with a conversational i
 - Over time, Euno learns your patterns and preferences
 
 **Let Agents Help:**
-- The Worker can pick up jobs and make progress autonomously
+- The Worker can pick up topics and make progress autonomously
 - Review what agents have done and guide their work
 - Agents are still learning — expect to teach them what's useful
 
