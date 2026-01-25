@@ -507,12 +507,9 @@ function renderTopicDetailView(topicId) {
 
             <!-- API Calls Section -->
             <div class="topic-section">
-                <div class="topic-section-header collapsible" onclick="toggleAgentSection(this, event, 'topic-api-calls', '${topic.id}')">
+                <div class="topic-section-header collapsible clickable" onclick="navigateFocus('topic-api-calls-${topic.id}')">
                     <span>API Calls</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
-                </div>
-                <div class="collapsible-content" data-loaded="false">
-                    <div class="section-loading">Loading...</div>
                 </div>
             </div>
         </div>

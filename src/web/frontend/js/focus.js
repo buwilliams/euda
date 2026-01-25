@@ -81,6 +81,17 @@ function renderFocusTab() {
         // attach-{topicId} - attach assets to a topic
         const topicId = focusView.substring(7);
         content = renderAttachScreen(topicId);
+    } else if (focusView.startsWith('topic-api-calls-')) {
+        // topic-api-calls-{topicId} - API calls for a topic
+        const topicId = focusView.substring(16);
+        content = renderTopicApiCallsView(topicId);
+    } else if (focusView.startsWith('topic-prompt-')) {
+        // topic-prompt-{topicId}-{index} - specific API call detail
+        const rest = focusView.substring(13);
+        const dashIndex = rest.indexOf('-');
+        const topicId = rest.substring(0, dashIndex);
+        const promptIndex = rest.substring(dashIndex + 1);
+        content = renderTopicPromptDetailView(topicId, promptIndex);
     } else if (focusView.startsWith('topic-')) {
         const topicId = focusView.substring(6);
         content = renderTopicDetailView(topicId);
@@ -297,6 +308,12 @@ function getViewDisplayName(view) {
     }
     if (view.startsWith('rate-limits-')) {
         return 'Incidents';
+    }
+    if (view.startsWith('topic-api-calls-')) {
+        return 'API Calls';
+    }
+    if (view.startsWith('topic-prompt-')) {
+        return 'Prompt';
     }
     if (view.startsWith('trace-')) {
         return 'Trace';

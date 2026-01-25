@@ -243,3 +243,211 @@ function formatTokenCount(count) {
     if (count >= 1000) return (count / 1000).toFixed(1) + 'K';
     return count.toString();
 }
+
+function formatPromptTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ============== Topic API Calls View ==============
+
+// Cache for topic API calls data
+let topicApiCallsCache = {};
+let topicApiCallsLoading = {};
+
+function renderTopicApiCallsView(topicId) {
+    const topic = allTopicsData.find(t => t.id === topicId);
+    const displayName = topic?.name || 'Topic';
+
+    // Check cache
+    if (!topicApiCallsCache[topicId] && !topicApiCallsLoading[topicId]) {
+        topicApiCallsLoading[topicId] = true;
+        loadTopicApiCalls(topicId).then(data => {
+            topicApiCallsCache[topicId] = data || { call_count: 0, total_cost: 0, total_input_tokens: 0, total_output_tokens: 0, calls: [] };
+            topicApiCallsLoading[topicId] = false;
+            renderFocusTab();
+        }).catch(() => {
+            topicApiCallsLoading[topicId] = false;
+        });
+        return `
+            ${renderViewHeader('API Calls')}
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading API calls...</div>
+            </div>
+        `;
+    }
+
+    const data = topicApiCallsCache[topicId] || { call_count: 0, total_cost: 0, total_input_tokens: 0, total_output_tokens: 0, calls: [] };
+    const callCount = data.call_count || 0;
+    const totalCost = data.total_cost || 0;
+    const inputTokens = data.total_input_tokens || 0;
+    const outputTokens = data.total_output_tokens || 0;
+    const callList = data.calls || [];
+
+    if (callCount === 0) {
+        return `
+            ${renderViewHeader('API Calls')}
+            <div class="focus-view-content">
+                <div class="focus-empty">No API calls recorded for this topic.</div>
+            </div>
+        `;
+    }
+
+    return `
+        ${renderViewHeader('API Calls')}
+        <div class="focus-view-content">
+            <!-- Stats -->
+            <div class="monitoring-stats">
+                <div class="monitoring-stat">
+                    <span class="stat-label">Total Calls</span>
+                    <span class="stat-value">${callCount}</span>
+                </div>
+                <div class="monitoring-stat">
+                    <span class="stat-label">Total Cost</span>
+                    <span class="stat-value">$${totalCost.toFixed(4)}</span>
+                </div>
+                <div class="monitoring-stat">
+                    <span class="stat-label">Tokens</span>
+                    <span class="stat-value">${formatTokenCount(inputTokens + outputTokens)}</span>
+                    <span class="stat-detail">in: ${formatTokenCount(inputTokens)}, out: ${formatTokenCount(outputTokens)}</span>
+                </div>
+            </div>
+
+            <!-- Calls List Header -->
+            <div class="topic-section">
+                <div class="topic-section-header">API Calls${callList.length > 0 ? ` (${callList.length})` : ''}</div>
+            </div>
+
+            <!-- Calls List -->
+            ${callList.length === 0 ? '<div class="focus-empty">No API calls</div>' :
+              callList.map((call, index) => `
+                <div class="prompt-list-item" onclick="navigateFocus('topic-prompt-${topicId}-${index}')">
+                    <span class="prompt-time">${formatPromptTime(call.timestamp)}</span>
+                    <span class="prompt-tokens">${call.input_tokens || 0}/${call.output_tokens || 0}</span>
+                    <span class="prompt-model">${escapeHtml(call.model || 'unknown')}</span>
+                    <span class="prompt-item-arrow">${icon('chevron-right')}</span>
+                </div>
+              `).join('')
+            }
+        </div>
+    `;
+}
+
+function renderTopicPromptDetailView(topicId, promptIndex) {
+    const cached = topicApiCallsCache[topicId];
+    if (!cached || !cached.calls) {
+        // Need to load data first
+        loadTopicApiCalls(topicId).then(data => {
+            topicApiCallsCache[topicId] = data || { call_count: 0, total_cost: 0, total_input_tokens: 0, total_output_tokens: 0, calls: [] };
+            renderFocusTab();
+        });
+        return `
+            ${renderViewHeader('Prompt')}
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading...</div>
+            </div>
+        `;
+    }
+
+    const call = cached.calls[parseInt(promptIndex)];
+    if (!call) {
+        return `
+            ${renderViewHeader('Prompt')}
+            <div class="focus-view-content">
+                <div class="focus-empty">Prompt not found</div>
+            </div>
+        `;
+    }
+
+    // Helper to render messages nicely
+    const renderMessages = (messages) => {
+        if (!Array.isArray(messages)) {
+            return `<pre class="prompt-content">${escapeHtml(JSON.stringify(messages, null, 2))}</pre>`;
+        }
+        return messages.map(msg => {
+            const role = msg.role || 'unknown';
+            const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content, null, 2);
+            return `
+                <div class="prompt-message">
+                    <div class="prompt-message-role">${escapeHtml(role)}</div>
+                    <div class="prompt-message-content">${marked.parse(content)}</div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    // Helper to render response
+    const renderResponse = (response) => {
+        if (typeof response === 'string') {
+            return marked.parse(response);
+        }
+        if (response && typeof response === 'object') {
+            if (Array.isArray(response.content)) {
+                return response.content.map(block => {
+                    if (block.type === 'text') {
+                        return `<div class="response-text">${marked.parse(block.text || '')}</div>`;
+                    } else if (block.type === 'tool_use') {
+                        return `
+                            <div class="response-tool-use">
+                                <div class="tool-use-header">Tool: ${escapeHtml(block.name || 'unknown')}</div>
+                                <pre class="tool-use-input">${escapeHtml(JSON.stringify(block.input, null, 2))}</pre>
+                            </div>
+                        `;
+                    }
+                    return `<pre class="prompt-content">${escapeHtml(JSON.stringify(block, null, 2))}</pre>`;
+                }).join('');
+            }
+            if (response.content) {
+                return marked.parse(String(response.content));
+            }
+        }
+        return `<pre class="prompt-content">${escapeHtml(JSON.stringify(response, null, 2))}</pre>`;
+    };
+
+    return `
+        ${renderViewHeader('Prompt')}
+        <div class="focus-view-content">
+            <!-- Call Metadata -->
+            <div class="monitoring-stats">
+                <div class="monitoring-stat">
+                    <span class="stat-label">Time</span>
+                    <span class="stat-value">${formatPromptTime(call.timestamp)}</span>
+                </div>
+                <div class="monitoring-stat">
+                    <span class="stat-label">Model</span>
+                    <span class="stat-value">${escapeHtml(call.model || 'unknown')}</span>
+                </div>
+                <div class="monitoring-stat">
+                    <span class="stat-label">Tokens</span>
+                    <span class="stat-value">${(call.input_tokens || 0) + (call.output_tokens || 0)}</span>
+                    <span class="stat-detail">in: ${call.input_tokens || 0}, out: ${call.output_tokens || 0}</span>
+                </div>
+                <div class="monitoring-stat">
+                    <span class="stat-label">Cost</span>
+                    <span class="stat-value">$${(call.cost || 0).toFixed(4)}</span>
+                </div>
+            </div>
+
+            ${call.messages ? `
+            <!-- Prompt Messages -->
+            <div class="topic-section">
+                <div class="topic-section-header">Messages</div>
+            </div>
+            <div class="prompt-messages">
+                ${renderMessages(call.messages)}
+            </div>
+            ` : ''}
+
+            ${call.response ? `
+            <!-- Response -->
+            <div class="topic-section">
+                <div class="topic-section-header">Response</div>
+            </div>
+            <div class="prompt-response">
+                ${renderResponse(call.response)}
+            </div>
+            ` : ''}
+        </div>
+    `;
+}
