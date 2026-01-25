@@ -253,7 +253,7 @@ class ConsolidationRunner:
     "Run consolidation for an agent. Internal system tool for scheduled consolidation topics.",
     tool_type="system"
 )
-def euno_consolidate(agent_id: str, phase: str = "consolidate") -> dict:
+def euno_consolidate(agent_id: str, phase: str = "consolidate", topic_id: str = None) -> dict:
     """Execute consolidation directly without LLM involvement.
 
     This tool is called by the system when processing euno:consolidate topics.
@@ -264,6 +264,7 @@ def euno_consolidate(agent_id: str, phase: str = "consolidate") -> dict:
         phase: Phase to run - "consolidate" (default), "append", or "both"
                Note: append is typically run automatically after chat, so
                scheduled topics usually run "consolidate" only.
+        topic_id: Optional topic ID (passed by internal topic handler, not used)
 
     Returns:
         Dict with status and result details
