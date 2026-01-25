@@ -50,7 +50,7 @@ async function quickAddChildTopic(parentTopicId) {
         const response = await fetch('/api/topics', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, parent_id: parentTopicId })
+            body: JSON.stringify({ name, parent_id: parentTopicId, assignee: 'user' })
         });
 
         if (response.ok) {
