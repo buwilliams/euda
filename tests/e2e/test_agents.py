@@ -6,23 +6,17 @@ from playwright.sync_api import Page, expect
 pytestmark = pytest.mark.e2e
 
 
-def navigate_to_agents(page: Page) -> bool:
-    """Navigate to agents container. Returns True if successful, False if not available."""
+def navigate_to_agents(page: Page):
+    """Navigate to agents container via Collections > Agents."""
     # The agents container is accessible via the Collections section
-    # This section only exists if there's a topic with tag 'system:agents'
     collections_section = page.get_by_text("Collections")
-    if not collections_section.is_visible(timeout=2000):
-        return False
-
+    expect(collections_section).to_be_visible(timeout=5000)
     collections_section.click()
 
-    # Look for Agents menu item
+    # Click Agents menu item
     agents_link = page.get_by_text("Agents")
-    if not agents_link.is_visible(timeout=2000):
-        return False
-
+    expect(agents_link).to_be_visible(timeout=2000)
     agents_link.click()
-    return True
 
 
 class TestAgentsContainer:
@@ -32,8 +26,7 @@ class TestAgentsContainer:
         """Agents container should be accessible from Focus tab."""
         page = authenticated_page
 
-        if not navigate_to_agents(page):
-            pytest.skip("Agents container not available (no system:agents topic)")
+        navigate_to_agents(page)
 
         # Should show agents container
         expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
@@ -46,8 +39,7 @@ class TestAgentCard:
         """Agent cards should be visible in agents container."""
         page = authenticated_page
 
-        if not navigate_to_agents(page):
-            pytest.skip("Agents container not available (no system:agents topic)")
+        navigate_to_agents(page)
 
         # Wait for agents container
         expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
@@ -65,8 +57,7 @@ class TestAgentDetail:
         """Clicking an agent card should open agent detail view."""
         page = authenticated_page
 
-        if not navigate_to_agents(page):
-            pytest.skip("Agents container not available (no system:agents topic)")
+        navigate_to_agents(page)
 
         # Wait for agents container
         expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
@@ -89,8 +80,7 @@ class TestAgentManagement:
         """Pause button should be visible in agent detail view."""
         page = authenticated_page
 
-        if not navigate_to_agents(page):
-            pytest.skip("Agents container not available (no system:agents topic)")
+        navigate_to_agents(page)
 
         # Wait for agents container
         expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
@@ -117,8 +107,7 @@ class TestAgentIdentity:
         """Identity content should be visible in identity view."""
         page = authenticated_page
 
-        if not navigate_to_agents(page):
-            pytest.skip("Agents container not available (no system:agents topic)")
+        navigate_to_agents(page)
 
         # Wait for agents container
         expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
@@ -151,8 +140,7 @@ class TestAgentMemory:
         """Memory list should be visible in memory view."""
         page = authenticated_page
 
-        if not navigate_to_agents(page):
-            pytest.skip("Agents container not available (no system:agents topic)")
+        navigate_to_agents(page)
 
         # Wait for agents container
         expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
