@@ -16,8 +16,6 @@ from .tokens import (
     get_token_awareness,
     get_calls_by_topic,
     get_topic_call_count,
-    get_calls_by_job,  # backwards compatibility
-    get_job_call_count,  # backwards compatibility
     get_costs_by_agent,
     get_cost_summary,
     get_resource_tracker,
@@ -47,8 +45,6 @@ __all__ = [
     "get_token_awareness",
     "get_calls_by_topic",
     "get_topic_call_count",
-    "get_calls_by_job",  # backwards compatibility
-    "get_job_call_count",  # backwards compatibility
     "get_costs_by_agent",
     "get_cost_summary",
     "get_resource_tracker",

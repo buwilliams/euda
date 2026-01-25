@@ -1379,28 +1379,3 @@ def get_topics_completed_by_agent(agent_id: str, limit: int = 20) -> List[dict]:
     return topics
 
 
-# =============================================================================
-# BACKWARDS COMPATIBILITY ALIASES
-# =============================================================================
-# These aliases allow gradual migration from job terminology to topic terminology
-
-# Keep old function names as aliases for backwards compatibility during transition
-list_jobs = list_topics
-get_job = get_topic
-create_job = create_topic
-update_job = update_topic
-complete_job = complete_topic
-restore_job = restore_topic
-archive_job = archive_topic
-delete_job = delete_topic
-add_job_log = add_topic_log
-get_job_logs = get_topic_logs
-get_child_jobs = get_child_topics
-handoff_job = handoff_topic
-claim_job = claim_topic
-release_job = release_topic
-error_job = error_topic
-unblock_job = unblock_topic
-get_agent_inbox_job = get_agent_inbox_topic
-sync_agent_inbox_jobs = sync_agent_inbox_topics
-get_jobs_completed_by_agent = get_topics_completed_by_agent
