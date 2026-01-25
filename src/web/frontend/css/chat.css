@@ -301,7 +301,7 @@
     white-space: nowrap;
 }
 
-/* Move @job closer to edge when mic button is hidden */
+/* Move @topic closer to edge when mic button is hidden */
 .input-wrapper:has(#voice-btn.hidden) .topic-context-label {
     right: 12px;
 }

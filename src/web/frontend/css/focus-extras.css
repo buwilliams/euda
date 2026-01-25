@@ -1,4 +1,4 @@
-/* Euno - Focus Extras (Indicators, Child Jobs, Quote, Agent Config) */
+/* Euno - Focus Extras (Indicators, Child Topics, Quote, Agent Config) */
 
 /* Card Status Indicators */
 .card-status-indicator {
@@ -70,8 +70,8 @@
     opacity: 0.5;
 }
 
-/* Child job cards in system container views (Agents, Projects) */
-.child-jobs-list {
+/* Child topic cards in system container views (Agents, Projects) */
+.child-topics-list {
     display: flex;
     flex-direction: column;
 }

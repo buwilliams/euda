@@ -87,7 +87,7 @@
     margin-bottom: var(--spacing-xl);
 }
 
-/* Inline icons in job section content (e.g., completed badge) */
+/* Inline icons in topic section content (e.g., completed badge) */
 .topic-section > span img {
     width: 1em;
     height: 1em;
@@ -815,14 +815,14 @@
     overflow-y: auto;
 }
 
-/* Trace button on completed job cards */
+/* Trace button on completed topic cards */
 .completed-topic-card {
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
-.completed-topic-card .job-card-content {
+.completed-topic-card .topic-card-content {
     flex: 1;
     display: flex;
     align-items: center;
