@@ -122,6 +122,10 @@ function renderFocusMenu() {
     const agentsCount = agentsContainer ? topicsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
     const projectsCount = projectsContainer ? topicsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
     // Assets count comes from the cache (loaded separately)
+    // Load assets if not cached yet (for count display)
+    if (assetsContainer && recentAssetsCache === null) {
+        loadRecentAssets().then(() => renderFocusTab());
+    }
     const assetsCount = recentAssetsCache ? recentAssetsCache.length : 0;
 
     // Check collapsed states
@@ -323,9 +327,10 @@ function renderSystemContainerView(topic, isAgentsContainer) {
                 <div class="child-topics-list">
                     ${childTopics.map(child => {
                         const agentId = child.agent_id;
-                        // Count topics assigned to this agent + children of inbox (deduped)
-                        const assignedTopics = agentId ? allTopicsData.filter(t => t.assignee === agentId) : [];
-                        const inboxChildren = allTopicsData.filter(j => j.parent_id === child.id);
+                        // Count active topics (todo/working) assigned to this agent + children of inbox (deduped)
+                        const isActive = t => t.status === 'todo' || t.status === 'working';
+                        const assignedTopics = agentId ? allTopicsData.filter(t => t.assignee === agentId && isActive(t)) : [];
+                        const inboxChildren = allTopicsData.filter(j => j.parent_id === child.id && isActive(j));
                         const assignedIds = new Set(assignedTopics.map(t => t.id));
                         const totalCount = assignedTopics.length + inboxChildren.filter(t => !assignedIds.has(t.id)).length;
                         const childIcon = icon('bolt');
