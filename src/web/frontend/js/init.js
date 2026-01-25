@@ -12,10 +12,10 @@ function connectSSE() {
 
     eventSource.addEventListener('init', (e) => {
         const data = JSON.parse(e.data);
-        const allTopics = data.jobs || [];
-        // Store all jobs for detail views (including archived)
+        const allTopics = data.topics || [];
+        // Store all topics for detail views (including archived)
         allTopicsData = allTopics;
-        // Split jobs into active (todo, working) - exclude done, archived, error
+        // Split topics into active (todo, working) - exclude done, archived, error
         topicsData = allTopics.filter(j => j.status === 'todo' || j.status === 'working');
         completedTopicsData = allTopics.filter(j => j.status === 'done')
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
@@ -28,12 +28,12 @@ function connectSSE() {
         reconnectAttempts = 0;
     });
 
-    eventSource.addEventListener('jobs_update', (e) => {
+    eventSource.addEventListener('topics_update', (e) => {
         const data = JSON.parse(e.data);
-        const allTopics = data.jobs || [];
-        // Store all jobs for detail views (including archived)
+        const allTopics = data.topics || [];
+        // Store all topics for detail views (including archived)
         allTopicsData = allTopics;
-        // Split jobs into active (todo, working) - exclude done, archived, error
+        // Split topics into active (todo, working) - exclude done, archived, error
         topicsData = allTopics.filter(j => j.status === 'todo' || j.status === 'working');
         completedTopicsData = allTopics.filter(j => j.status === 'done')
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))

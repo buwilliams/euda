@@ -1,6 +1,6 @@
 // Euno - Focus Inline Field Editing
 
-// ============== Job Editing ==============
+// ============== Topic Editing ==============
 
 function startEditingField(topicId, field) {
     editingTopicField = { topicId, field };
@@ -39,7 +39,7 @@ async function saveTopicField(topicId, field, value) {
             await loadTopicsData();
         }
     } catch (error) {
-        console.error('Failed to save job field:', error);
+        console.error('Failed to save topic field:', error);
     }
 }
 
@@ -61,7 +61,7 @@ function handleDescriptionKeypress(event, topicId) {
     }
 }
 
-// ============== Completed Job Editing ==============
+// ============== Completed Topic Editing ==============
 
 async function saveCompletedTopicField(topicId, field, value) {
     try {
@@ -79,7 +79,7 @@ async function saveCompletedTopicField(topicId, field, value) {
             await loadTopicsData();
         }
     } catch (error) {
-        console.error('Failed to save completed job field:', error);
+        console.error('Failed to save completed topic field:', error);
     }
 }
 

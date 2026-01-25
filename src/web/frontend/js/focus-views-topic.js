@@ -1,5 +1,5 @@
-// Euno - Focus View Job Renderers
-// Job views, navigation menus, and timelines
+// Euno - Focus View Topic Renderers
+// Topic views, navigation menus, and timelines
 
 // ============== Global Caches ==============
 
@@ -13,7 +13,7 @@ function renderTopicTraceView(topicId) {
     // Load data if not cached
     if (!traceData) {
         loadTopicTrace(topicId).then(data => {
-            traceDataCache[topicId] = data || { job_id: topicId, job_name: 'Unknown', entries: [], summary: {} };
+            traceDataCache[topicId] = data || { topic_id: topicId, topic_name: 'Unknown', entries: [], summary: {} };
             renderFocusTab();
         });
         return `
@@ -30,13 +30,13 @@ function renderTopicTraceView(topicId) {
         `;
     }
 
-    const { job_name, summary, entries } = traceData;
+    const { topic_name, summary, entries } = traceData;
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
-                <span class="focus-view-title">${icon('chart-bar')} Trace: ${escapeHtml(job_name || 'Job')}</span>
+                <span class="focus-view-title">${icon('chart-bar')} Trace: ${escapeHtml(topic_name || 'Topic')}</span>
                 ${renderBreadcrumbs()}
             </div>
         </div>
@@ -110,8 +110,8 @@ function renderFocusMenu() {
     // For completed count, only show Projects descendants (exclude Agents and System)
     const allTopics = [...topicsData, ...completedTopicsData];
     const projectsCompletedTopics = completedTopicsData.filter(j => isProjectsDescendant(j, allTopics));
-    const completedJobIds = new Set(projectsCompletedTopics.map(j => j.id));
-    const topLevelCompletedTopics = projectsCompletedTopics.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
+    const completedTopicIds = new Set(projectsCompletedTopics.map(j => j.id));
+    const topLevelCompletedTopics = projectsCompletedTopics.filter(j => !j.parent_id || !completedTopicIds.has(j.parent_id));
 
     // Find system containers
     const agentsContainer = topicsData.find(j => j.tags && j.tags.includes('system:agents') && !j.parent_id);
@@ -131,7 +131,7 @@ function renderFocusMenu() {
         todaySection = `
             <div class="focus-menu-section" data-testid="today-section">
                 <div class="focus-menu-section-label">Today</div>
-                <div class="focus-today-jobs">
+                <div class="focus-today-topics">
                     ${todayTopics.map(topic => renderTopicCard(topic, isSwipeable(topic))).join('')}
                 </div>
             </div>
@@ -222,11 +222,11 @@ function getTimelineIcon(category) {
 
 function renderTimelineView(category, title) {
     // Get only root topics that have descendants matching this category
-    let jobs = getRootTopicsForCategory(category);
+    let topics = getRootTopicsForCategory(category);
 
-    // Sort upcoming jobs by due date ascending (nearest first)
+    // Sort upcoming topics by due date ascending (nearest first)
     if (category === 'upcoming') {
-        jobs = jobs.slice().sort((a, b) => {
+        topics = topics.slice().sort((a, b) => {
             const dateA = a.due_date || '9999-12-31';
             const dateB = b.due_date || '9999-12-31';
             return dateA.localeCompare(dateB);
@@ -243,24 +243,24 @@ function renderTimelineView(category, title) {
             </div>
         </div>
         <div class="focus-view-content">
-            ${jobs.length === 0
+            ${topics.length === 0
                 ? '<div class="focus-empty">No topics</div>'
-                : jobs.map(topic => renderTopicCard(topic, isSwipeable(topic))).join('')
+                : topics.map(topic => renderTopicCard(topic, isSwipeable(topic))).join('')
             }
         </div>
     `;
 }
 
-function renderCompletedJobsView() {
+function renderCompletedTopicsView() {
     // Combine active and completed topics for ancestor traversal
     const allTopics = [...topicsData, ...completedTopicsData];
 
-    // Filter to only Projects descendants (exclude Agents and System jobs)
+    // Filter to only Projects descendants (exclude Agents and System topics)
     const projectsCompletedTopics = completedTopicsData.filter(j => isProjectsDescendant(j, allTopics));
 
     // Root completed topics: no parent OR parent is not in completed list
-    const completedJobIds = new Set(projectsCompletedTopics.map(j => j.id));
-    const rootCompletedJobs = projectsCompletedTopics.filter(j => !j.parent_id || !completedJobIds.has(j.parent_id));
+    const completedTopicIds = new Set(projectsCompletedTopics.map(j => j.id));
+    const rootCompletedTopics = projectsCompletedTopics.filter(j => !j.parent_id || !completedTopicIds.has(j.parent_id));
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -271,9 +271,9 @@ function renderCompletedJobsView() {
             </div>
         </div>
         <div class="focus-view-content">
-            ${rootCompletedJobs.length === 0
+            ${rootCompletedTopics.length === 0
                 ? '<div class="focus-empty">No completed topics</div>'
-                : rootCompletedJobs.map(topic => {
+                : rootCompletedTopics.map(topic => {
                     const childCount = projectsCompletedTopics.filter(j => j.parent_id === topic.id).length;
                     return renderCompletedTopicCard(topic, childCount, true);
                 }).join('')
@@ -299,9 +299,9 @@ function renderSystemContainerView(topic, isAgentsContainer) {
         emptyMessage = 'No projects yet.';
     }
 
-    // For Projects containers, render children as swipeable job cards
+    // For Projects containers, render children as swipeable topic cards
     // For Agents container, render children as non-swipeable agent cards
-    const renderChildJobs = () => {
+    const renderChildTopics = () => {
         if (childTopics.length === 0) {
             return `<div class="focus-empty">${emptyMessage}</div>`;
         }
@@ -309,25 +309,25 @@ function renderSystemContainerView(topic, isAgentsContainer) {
         if (isAgentsContainer) {
             // Agent inboxes - not swipeable, custom rendering
             return `
-                <div class="child-jobs-list">
+                <div class="child-topics-list">
                     ${childTopics.map(child => {
                         const grandchildCount = topicsData.filter(j => j.parent_id === child.id).length;
                         const childIcon = icon('bolt');
                         return `
                             <div class="child-topic-card" data-testid="agent-card" onclick="navigateFocus('topic-${child.id}')">
-                                <span class="child-job-icon">${childIcon}</span>
-                                <span class="child-job-name">${escapeHtml(child.name)}</span>
-                                <span class="child-job-count">${grandchildCount}</span>
-                                <span class="child-job-arrow">${icon('chevron-right')}</span>
+                                <span class="child-topic-icon">${childIcon}</span>
+                                <span class="child-topic-name">${escapeHtml(child.name)}</span>
+                                <span class="child-topic-count">${grandchildCount}</span>
+                                <span class="child-topic-arrow">${icon('chevron-right')}</span>
                             </div>
                         `;
                     }).join('')}
                 </div>
             `;
         } else {
-            // Projects - swipeable job cards
+            // Projects - swipeable topic cards
             return `
-                <div class="child-jobs-list">
+                <div class="child-topics-list">
                     ${childTopics.map(child => renderTopicCard(child, true)).join('')}
                 </div>
             `;
@@ -343,18 +343,18 @@ function renderSystemContainerView(topic, isAgentsContainer) {
             </div>
         </div>
         <div class="focus-view-content" data-testid="agents-container">
-            <!-- Child Jobs -->
+            <!-- Child Topics -->
             <div class="topic-section">
-                ${renderChildJobs()}
+                ${renderChildTopics()}
             </div>
         </div>
     `;
 }
 
-// ============== Job Detail View ==============
+// ============== Topic Detail View ==============
 
 function renderTopicDetailView(topicId) {
-    // Use allTopicsData to find jobs regardless of status
+    // Use allTopicsData to find topics regardless of status
     const topic = allTopicsData.find(j => j.id === topicId);
     if (!topic) {
         return `
@@ -379,7 +379,7 @@ function renderTopicDetailView(topicId) {
         return renderSystemContainerView(topic, isAgentsContainer);
     }
 
-    // For agent inbox jobs, render the agent detail view
+    // For agent inbox topics, render the agent detail view
     if (topic.agent_id) {
         return renderAgentDetailView(topic);
     }
@@ -394,11 +394,11 @@ function renderTopicDetailView(topicId) {
     const isAgentTopic = !!topic.agent_id;
     const titleIcon = isAgentTopic ? icon('bolt') : '';
 
-    // Check if we're editing this job
+    // Check if we're editing this topic
     const isEditingName = editingTopicField?.topicId === topicId && editingTopicField?.field === 'name';
     const isEditingDesc = editingTopicField?.topicId === topicId && editingTopicField?.field === 'description';
 
-    // Get parent job name for context
+    // Get parent topic name for context
     let parentName = null;
     if (topic.parent_id) {
         const parent = allTopicsData.find(j => j.id === topic.parent_id);
@@ -418,7 +418,7 @@ function renderTopicDetailView(topicId) {
                 ${renderBreadcrumbs()}
             </div>
         </div>
-        <div class="focus-view-content" data-testid="job-detail">
+        <div class="focus-view-content" data-testid="topic-detail">
             <!-- Actions Row -->
             <div class="task-detail-actions">
                 <button class="task-detail-action" onclick="openWhenPicker('topic', '${topic.id}')">${icon('calendar')} ${escapeHtml(whenLabel)}</button>
@@ -430,7 +430,7 @@ function renderTopicDetailView(topicId) {
             </div>
 
             <!-- Name Section -->
-            <div class="topic-section" data-testid="job-name">
+            <div class="topic-section" data-testid="topic-name">
                 <div class="topic-section-header">Name</div>
                 ${isEditingName ? `
                     <input type="text" class="topic-name-input" id="edit-name-${topic.id}" value="${escapeHtml(displayName)}"
@@ -442,7 +442,7 @@ function renderTopicDetailView(topicId) {
             </div>
 
             <!-- Description Section -->
-            <div class="topic-section" data-testid="job-description">
+            <div class="topic-section" data-testid="topic-description">
                 <div class="topic-section-header">
                     Description
                     ${isEditingDesc ? `<span class="topic-section-action" onclick="saveTopicField('${topic.id}', 'description', document.getElementById('edit-description-${topic.id}').value)">Save</span>` : ''}
@@ -458,11 +458,11 @@ function renderTopicDetailView(topicId) {
                 `}
             </div>
 
-            <!-- Child Jobs Section - shows all jobs sorted by status -->
+            <!-- Child Topics Section - shows all topics sorted by status -->
             ${allChildTopics.length > 0 ? `
             <div class="topic-section">
                 <div class="topic-section-header collapsible open" onclick="togglePersonaSection(this, event)">
-                    <span>Jobs (${allChildTopics.length})</span>
+                    <span>Topics (${allChildTopics.length})</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
                 <div class="collapsible-content open">
@@ -508,7 +508,7 @@ function renderTopicDetailView(topicId) {
 
             <!-- API Calls Section -->
             <div class="topic-section">
-                <div class="topic-section-header collapsible" onclick="toggleAgentSection(this, event, 'job-api-calls', '${topic.id}')">
+                <div class="topic-section-header collapsible" onclick="toggleAgentSection(this, event, 'topic-api-calls', '${topic.id}')">
                     <span>API Calls</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
@@ -520,7 +520,7 @@ function renderTopicDetailView(topicId) {
     `;
 }
 
-// ============== Completed Job Detail View ==============
+// ============== Completed Topic Detail View ==============
 
 function renderCompletedTopicDetailView(topicId) {
     const topic = completedTopicsData.find(j => j.id === topicId);
@@ -539,16 +539,16 @@ function renderCompletedTopicDetailView(topicId) {
 
     const displayName = topic.name || 'Untitled';
     const hasDescription = topic.description && topic.description.length > 0;
-    const completedDate = job.completed_at ? formatFriendlyPastDate(job.completed_at) : 'Unknown';
+    const completedDate = topic.completed_at ? formatFriendlyPastDate(topic.completed_at) : 'Unknown';
     const completedChildTopics = completedTopicsData.filter(j => j.parent_id === topic.id);
     const activeChildTopics = topicsData.filter(j => j.parent_id === topic.id);
     const assets = topicAssetsCache[topicId] || [];
 
-    // Check if we're editing this job
+    // Check if we're editing this topic
     const isEditingName = editingTopicField?.topicId === topicId && editingTopicField?.field === 'name';
     const isEditingDesc = editingTopicField?.topicId === topicId && editingTopicField?.field === 'description';
 
-    // Get parent job name for context (could be active or completed)
+    // Get parent topic name for context (could be active or completed)
     let parentName = null;
     let parentIsCompleted = false;
     if (topic.parent_id) {
@@ -614,7 +614,7 @@ function renderCompletedTopicDetailView(topicId) {
                 `}
             </div>
 
-            <!-- Active Child Jobs Section (rare but possible) - open by default -->
+            <!-- Active Child Topics Section (rare but possible) - open by default -->
             ${activeChildTopics.length > 0 ? `
             <div class="topic-section">
                 <div class="topic-section-header collapsible open" onclick="togglePersonaSection(this, event)">
@@ -627,7 +627,7 @@ function renderCompletedTopicDetailView(topicId) {
             </div>
             ` : ''}
 
-            <!-- Completed Child Jobs Section - collapsed by default -->
+            <!-- Completed Child Topics Section - collapsed by default -->
             ${completedChildTopics.length > 0 ? `
             <div class="topic-section">
                 <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
@@ -647,7 +647,7 @@ function renderCompletedTopicDetailView(topicId) {
             ${parentName ? `
             <div class="topic-section">
                 <div class="topic-section-header">Parent</div>
-                <div class="card-project-link" onclick="navigateFocus('${parentIsCompleted ? 'completed' : 'job'}-${topic.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
+                <div class="card-project-link" onclick="navigateFocus('${parentIsCompleted ? 'completed' : 'topic'}-${topic.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
             </div>
             ` : ''}
 

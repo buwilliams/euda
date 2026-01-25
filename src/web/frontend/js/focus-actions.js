@@ -1,6 +1,6 @@
-// Euno - Focus Job Actions (CRUD Operations)
+// Euno - Focus Topic Actions (CRUD Operations)
 
-// ============== Job Actions ==============
+// ============== Topic Actions ==============
 
 function showArchiveInput(event, topicId) {
     event.stopPropagation();
@@ -31,7 +31,7 @@ async function confirmArchiveJob(topicId) {
             }
         }
     } catch (error) {
-        console.error('Failed to archive job:', error);
+        console.error('Failed to archive topic:', error);
     }
 }
 
@@ -51,7 +51,7 @@ async function completeJob(event, topicId) {
             }
         }
     } catch (error) {
-        console.error('Failed to complete job:', error);
+        console.error('Failed to complete topic:', error);
     }
 }
 
@@ -71,7 +71,7 @@ async function restoreTopic(event, topicId) {
             }
         }
     } catch (error) {
-        console.error('Failed to restore job:', error);
+        console.error('Failed to restore topic:', error);
     }
 }
 
@@ -92,7 +92,7 @@ async function deleteTopic(event, topicId) {
             }
         }
     } catch (error) {
-        console.error('Failed to delete job:', error);
+        console.error('Failed to delete topic:', error);
     }
 }
 
@@ -125,7 +125,7 @@ async function quickAddJob(inputId, parentId = null) {
             }, 50);
         }
     } catch (error) {
-        console.error('Failed to create job:', error);
+        console.error('Failed to create topic:', error);
     }
 }
 
@@ -147,6 +147,6 @@ async function quickDeleteJob(event, topicId) {
             await loadTopicsData();
         }
     } catch (error) {
-        console.error('Failed to delete job:', error);
+        console.error('Failed to delete topic:', error);
     }
 }
