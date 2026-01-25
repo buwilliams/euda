@@ -23,6 +23,7 @@ from .cognition.metacognition import (
     AgentState,
 )
 from ..web.events import EventBus, set_event_bus, get_event_bus
+from .watchers import registry as watcher_registry, process_observations
 
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
@@ -595,6 +596,39 @@ class AgentManager:
 
             time.sleep(10)  # Check every 10 seconds
 
+    def _run_observation_watchers(self):
+        """Background thread that runs observation watchers periodically.
+
+        Watchers check calendar and mastodon for content matching agent interests.
+        When matches are found, observation topics are created.
+        """
+        watcher_interval = 15 * 60  # 15 minutes between checks
+
+        while self.running:
+            try:
+                # Run all watchers and collect observations
+                observations = watcher_registry.check_all()
+
+                if observations:
+                    print(f"[watchers] Found {len(observations)} observation(s)")
+
+                    # Create topics for observations (handles rate limiting)
+                    created = process_observations(observations)
+
+                    if created:
+                        print(f"[watchers] Created {len(created)} observation topic(s)")
+
+                        # Notify topic cache for affected agents
+                        for topic in created:
+                            agent_id = topic.get("assignee")
+                            if agent_id:
+                                self.agents_with_topics[agent_id] = True
+
+            except Exception as e:
+                print(f"Watcher error: {e}")
+
+            time.sleep(watcher_interval)
+
     def run(self):
         """Run the agent manager."""
         self.running = True
@@ -655,6 +689,15 @@ class AgentManager:
         )
         self._config_watch_thread.start()
         print("Config watcher started")
+
+        # Start observation watchers (calendar, mastodon)
+        watcher_thread = threading.Thread(
+            target=self._run_observation_watchers,
+            name="observation-watchers",
+            daemon=True
+        )
+        watcher_thread.start()
+        print("Observation watchers started")
 
         # Wait until shutdown
         try:

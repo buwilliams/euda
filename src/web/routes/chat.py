@@ -10,7 +10,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 
-from ...agent import Agent, AGENTS_DIR
+from ...agent import Agent, AGENTS_DIR, check_content_for_observations
+from ...agent.watchers import process_observations
 from ...tools.speech import get_speech_client, supports_tts
 from ...agent.cognition.metacognition import AgentPausedError, get_token_awareness
 
@@ -73,6 +74,21 @@ def api_chat(request: ChatRequest) -> ChatResponse:
     # Emit chat:message event for agent triggers
     from ..events import emit_event, emit_ui_event
     emit_event("chat:message", data={"agent_id": request.agent_id})
+
+    # Check user message against agent interests (real-time observation)
+    # Exclude the agent that's chatting from receiving observations about their own conversation
+    try:
+        observations = check_content_for_observations(
+            content=request.message,
+            source="chat",
+            excluded_agents=[request.agent_id]
+        )
+        if observations:
+            # Process observations in background (creates topics with rate limiting)
+            process_observations(observations)
+    except Exception as e:
+        # Interest matching failures are non-fatal
+        print(f"[Chat] Interest matching failed: {e}")
 
     # Emit UI event for SSE clients
     emit_ui_event("chat_update", {

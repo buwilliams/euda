@@ -12,6 +12,14 @@ Where:
 
 from pathlib import Path
 from .agent import Agent
+from .interests import (
+    Observation,
+    get_observing_agents,
+    get_agent_interests,
+    matches_interests,
+    check_content_for_observations,
+    invalidate_interest_cache,
+)
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
@@ -20,4 +28,10 @@ __all__ = [
     "Agent",
     "DATA_DIR",
     "AGENTS_DIR",
+    "Observation",
+    "get_observing_agents",
+    "get_agent_interests",
+    "matches_interests",
+    "check_content_for_observations",
+    "invalidate_interest_cache",
 ]
