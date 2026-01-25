@@ -94,7 +94,7 @@ class TestUploadRoute:
 
         assert response.status_code == 200
 
-        # Verify job was created with correct parameters
+        # Verify topic was created with correct parameters
         mock_create_topic.assert_called_once()
         call_args = mock_create_topic.call_args
         assert call_args.kwargs["name"] == "euno:extract-memories:notes.md"
@@ -125,7 +125,7 @@ class TestUploadRoute:
         assert "topic_id" not in result
         assert "Binary file" in result["message"]
 
-        # Verify no memory written and no job created
+        # Verify no memory written and no topic created
         mock_write.assert_not_called()
         mock_create_topic.assert_not_called()
 
@@ -155,7 +155,7 @@ class TestUploadRoute:
             assert not is_text_file(filename), f"{filename} should not be recognized as text"
 
     def test_content_truncated_for_job_description(self, patch_data_dir):
-        """Large file content is truncated in job description."""
+        """Large file content is truncated in topic description."""
         from fastapi.testclient import TestClient
         from src.web.app import app
 
@@ -192,7 +192,7 @@ class TestUploadRoute:
 
         assert response.status_code == 200
 
-        # Verify job description has truncated content
+        # Verify topic description has truncated content
         call_args = mock_create_topic.call_args
         description = call_args.kwargs["description"]
         # Template includes {content} which should be truncated
@@ -205,7 +205,7 @@ class TestUploadRoute:
 
         with patch("src.web.routes.upload.write_long_term_memory") as mock_write:
             with patch("src.web.routes.upload.create_topic") as mock_create_topic:
-                # Test binary file to avoid job creation complexity
+                # Test binary file to avoid topic creation complexity
                 client = TestClient(app)
 
                 # Small file (bytes)
@@ -255,6 +255,6 @@ class TestUploadRoute:
 
         assert response.status_code == 200
 
-        # Verify job was created with parent_id=None
+        # Verify topic was created with parent_id=None
         call_args = mock_create_topic.call_args
         assert call_args.kwargs["parent_id"] is None
