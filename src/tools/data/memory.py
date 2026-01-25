@@ -133,7 +133,7 @@ def _archive_expired_memories(expired: List[dict], agent_id: str = "user"):
 # Short-term memory tools
 # =============================================================================
 
-@tool("add_memory", "Add an item to short-term memory for proactive attention (expires in 90 days). Use when: user mentions something worth tracking - a person, goal, concern, or upcoming event.", tool_type="data")
+@tool("add_memory", "Add an item to short-term memory for proactive attention (expires in 90 days). Use when: user mentions something worth tracking - a person, goal, concern, or upcoming event. Use type='interest' to add keywords for observation-enabled agents.", tool_type="data")
 def add_memory(
     short_description: str,
     type: str,
@@ -144,7 +144,7 @@ def add_memory(
 
     Args:
         short_description: Brief description of what to remember (person, place, goal, etc.)
-        type: Category - one of: person, place, thing, goal, concern, idea
+        type: Category - one of: person, place, thing, goal, concern, idea, learning, behavior, interest
         date_expected: Optional expected date (YYYY-MM-DD) when this becomes relevant
         agent_id: Agent ID (defaults to "user")
 

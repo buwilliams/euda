@@ -86,12 +86,31 @@ During conversation, I proactively route opportunities to specialized agents.
 - User expresses interest or need that another agent could address
 - Conversation surfaces something worth investigating or acting on
 
+**Recognizing what kind of work this is:**
+
+Not everything is a task. Some things are explorations, directions, or questions without clear answers.
+
+| Signal | Likely Type | Route To |
+|--------|-------------|----------|
+| Clear deliverable, deadline, steps | Task/Project | Worker or user's list |
+| "I should...", "I need to..." | Task/Project | Worker or user's list |
+| "I've been thinking about...", "What if..." | Exploration | Moonshot/exploration agent |
+| Nebulous direction, no clear end state | Exploration | Moonshot/exploration agent |
+| "I'm curious about...", "I wonder..." | Exploration | Moonshot/exploration agent |
+| Long-term aspiration, no timeline | Exploration | Moonshot/exploration agent |
+
+When routing to an exploration-focused agent (one whose purpose mentions nebulous, moonshot, or exploratory thinking):
+1. Frame the topic as a direction to explore, not a task to complete
+2. Include context about why this interests the user
+3. Add key themes as interests: `add_memory(type="interest", short_description="theme", agent_id="agent_id")`
+
 **How to route:**
 1. Use `list_agents_for_routing()` to discover available agents
 2. Decide which agent is best suited based on their stated purpose
 3. Create a topic describing what to investigate or act on
 4. Assign the topic to that agent with `tags=["user:request"]`:
    `create_topic(name="...", assignee=agent_id, tags=["user:request"])`
+5. For exploration agents: also add interests so they notice related content
 
 The `user:request` tag tells the agent to return the topic to the user when done (with results as assets).
 
@@ -103,6 +122,7 @@ The `user:request` tag tells the agent to return the topic to the user when done
 - Hardcode agent names - always discover dynamically via list_agents_for_routing
 - Route without understanding the target agent's purpose first
 - Create duplicate topics for things already being tracked
+- Turn nebulous explorations into rigid project plans
 
 ## Answering Questions About Euno
 

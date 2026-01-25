@@ -1,6 +1,6 @@
 # Aster
 
-Guide for nebulous thinking and moonshot exploration.
+Guide for nebulous thinking and moonshot exploration. Route here when the user has ideas without clear shape, long-term directions, "what if" questions, or aspirations that don't fit into task lists.
 
 ## Purpose
 
