@@ -1,17 +1,17 @@
-// Euno - Focus Feature Screens (Child Jobs, Attach)
+// Euno - Focus Feature Screens (Child Topics, Attach)
 
-// ============== New Child Job Screen ==============
+// ============== New Child Topic Screen ==============
 
-function renderNewJobScreen(parentJobId) {
-    const parentJob = allTopicsData.find(j => j.id === parentJobId);
-    const parentName = parentJob ? parentJob.name : 'Job';
-    const childTopics = allTopicsData.filter(j => j.parent_id === parentJobId);
+function renderNewTopicScreen(parentTopicId) {
+    const parentTopic = allTopicsData.find(j => j.id === parentTopicId);
+    const parentName = parentTopic ? parentTopic.name : 'Topic';
+    const childTopics = allTopicsData.filter(j => j.parent_id === parentTopicId);
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
-                <span class="focus-view-title">Add Jobs</span>
+                <span class="focus-view-title">Add Topics</span>
                 ${renderBreadcrumbs()}
             </div>
         </div>
@@ -19,13 +19,13 @@ function renderNewJobScreen(parentJobId) {
             <div class="topic-section">
                 <div class="topic-section-header">Add to: ${escapeHtml(parentName)}</div>
                 <div class="quick-add-section" style="margin-top: 0; padding-top: 0; border-top: none;">
-                    <input type="text" id="quick-add-child-${parentJobId}" class="quick-add-input" placeholder="New job name..." onkeypress="handleQuickAddChildKeypress(event, '${parentJobId}')">
-                    <button class="quick-add-btn" onclick="quickAddChildJob('${parentJobId}')">${icon('plus')}</button>
+                    <input type="text" id="quick-add-child-${parentTopicId}" class="quick-add-input" placeholder="New topic name..." onkeypress="handleQuickAddChildKeypress(event, '${parentTopicId}')">
+                    <button class="quick-add-btn" onclick="quickAddChildTopic('${parentTopicId}')">${icon('plus')}</button>
                 </div>
             </div>
             ${childTopics.length > 0 ? `
             <div class="topic-section">
-                <div class="topic-section-header">Child Jobs (${childTopics.length})</div>
+                <div class="topic-section-header">Child Topics (${childTopics.length})</div>
                 ${childTopics.map(topic => renderTopicCard(topic, true)).join('')}
             </div>
             ` : ''}
@@ -33,14 +33,14 @@ function renderNewJobScreen(parentJobId) {
     `;
 }
 
-function handleQuickAddChildKeypress(event, parentJobId) {
+function handleQuickAddChildKeypress(event, parentTopicId) {
     if (event.key === 'Enter') {
-        quickAddChildJob(parentJobId);
+        quickAddChildTopic(parentTopicId);
     }
 }
 
-async function quickAddChildJob(parentJobId) {
-    const input = document.getElementById(`quick-add-child-${parentJobId}`);
+async function quickAddChildTopic(parentTopicId) {
+    const input = document.getElementById(`quick-add-child-${parentTopicId}`);
     if (!input) return;
 
     const name = input.value.trim();
@@ -50,7 +50,7 @@ async function quickAddChildJob(parentJobId) {
         const response = await fetch('/api/topics', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, parent_id: parentJobId })
+            body: JSON.stringify({ name, parent_id: parentTopicId })
         });
 
         if (response.ok) {
@@ -58,12 +58,12 @@ async function quickAddChildJob(parentJobId) {
             await loadTopicsData();
             // Re-focus the input for rapid entry
             setTimeout(() => {
-                const newInput = document.getElementById(`quick-add-child-${parentJobId}`);
+                const newInput = document.getElementById(`quick-add-child-${parentTopicId}`);
                 if (newInput) newInput.focus();
             }, 50);
         }
     } catch (error) {
-        console.error('Failed to create job:', error);
+        console.error('Failed to create topic:', error);
     }
 }
 
@@ -71,7 +71,7 @@ async function quickAddChildJob(parentJobId) {
 
 function renderAttachScreen(topicId) {
     const topic = allTopicsData.find(j => j.id === topicId);
-    const jobName = job ? topic.name : 'Job';
+    const topicName = topic ? topic.name : 'Topic';
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -83,7 +83,7 @@ function renderAttachScreen(topicId) {
         </div>
         <div class="focus-view-content">
             <div class="topic-section">
-                <div class="topic-section-header">Add to: ${escapeHtml(jobName)}</div>
+                <div class="topic-section-header">Add to: ${escapeHtml(topicName)}</div>
 
                 <div class="attach-option" onclick="showNewFileForm('${topicId}')">
                     <span class="attach-option-icon">${icon('pencil')}</span>

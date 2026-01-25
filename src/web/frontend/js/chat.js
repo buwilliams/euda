@@ -211,17 +211,17 @@ let currentJobContext = null;
 let currentJobName = null;
 
 function setJobContext(topicId) {
-    // Get job to check if it's a system container
+    // Get topic to check if it's a system container
     const topic = typeof topicsData !== 'undefined' ? topicsData.find(j => j.id === topicId) : null;
 
-    // Don't show context for system containers (Agents, Projects, System) or agent inbox jobs
-    // But DO show for jobs that are descendants of agents (jobs the agent worked on)
+    // Don't show context for system containers (Agents, Projects, System) or agent inbox topics
+    // But DO show for topics that are descendants of agents (topics the agent worked on)
     if (topic) {
         const tags = topic.tags || [];
-        // Only exclude the container jobs themselves, not their descendants
+        // Only exclude the container topics themselves, not their descendants
         const isSystemContainer = tags.includes('system:agents') ||
                                   tags.includes('system:projects');
-        // Agent inbox jobs are the root topics for each agent (have agent_id or agent-inbox tag)
+        // Agent inbox topics are the root topics for each agent (have agent_id or agent-inbox tag)
         const isAgentInbox = tags.includes('agent-inbox') || topic.agent_id;
 
         if (isSystemContainer || isAgentInbox) {
@@ -231,7 +231,7 @@ function setJobContext(topicId) {
     }
 
     currentJobContext = topicId;
-    currentJobName = job ? topic.name : 'this job';
+    currentTopicName = topic ? topic.name : 'this topic';
     updateInputContext();
 }
 
@@ -241,7 +241,7 @@ function clearJobContext() {
     updateInputContext();
 
     // Also directly hide the label in case updateInputContext returns early
-    const label = document.getElementById('job-context-label');
+    const label = document.getElementById('topic-context-label');
     if (label) {
         label.classList.remove('active');
         label.textContent = '';
@@ -250,11 +250,11 @@ function clearJobContext() {
 
 function updateInputContext() {
     if (!contextInput) return;
-    const label = document.getElementById('job-context-label');
+    const label = document.getElementById('topic-context-label');
 
     if (currentJobContext && label) {
-        contextInput.placeholder = "Send feedback about this job...";
-        label.textContent = '@job';
+        contextInput.placeholder = "Send feedback about this topic...";
+        label.textContent = '@topic';
         label.classList.add('active');
         label.onclick = clearJobContext;
         label.title = `Replying to: ${currentJobName || 'Job'} (click to clear)`;
@@ -268,9 +268,9 @@ function updateInputContext() {
 }
 
 async function sendJobFeedback(topicId, message) {
-    // Show user message with job context indicator
-    const jobName = currentJobName || 'job';
-    addInlineMessage(message, 'you', `Re: ${jobName}`);
+    // Show user message with topic context indicator
+    const topicName = currentTopicName || 'topic';
+    addInlineMessage(message, 'you', `Re: ${topicName}`);
     contextInput.value = '';
     contextInput.style.height = 'auto';
     addInlineThinking();
@@ -293,8 +293,8 @@ async function sendJobFeedback(topicId, message) {
         addInlineMessage(`Feedback sent to **${result.to_agent}**. They'll work on it and get back to you.`, 'friend');
         showChatNotification();
 
-        // Refresh job data if loadAllJobs exists
-        if (typeof loadAllJobs === 'function') {
+        // Refresh topic data if loadAllTopics exists
+        if (typeof loadAllTopics === 'function') {
             await loadAllJobs();
         }
         if (typeof renderFocusTab === 'function') {
@@ -363,7 +363,7 @@ function sendContextMessage() {
     const message = contextInput.value.trim();
     if (!message) return;
 
-    // If viewing a job, route to job feedback endpoint
+    // If viewing a topic, route to topic feedback endpoint
     if (currentJobContext) {
         sendJobFeedback(currentJobContext, message);
         return;

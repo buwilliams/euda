@@ -177,10 +177,10 @@ function handleNewAssetKeypress(event, topicId) {
 // ============== Asset Views ==============
 
 function renderAssetView(topicId, filename) {
-    // Get job name for header (use allTopicsData to find any job regardless of status)
+    // Get topic name for header (use allTopicsData to find any topic regardless of status)
     const topic = allTopicsData.find(j => j.id === topicId);
-    const isCompleted = job?.status === 'done';
-    const jobName = job ? topic.name : 'Job';
+    const isCompleted = topic?.status === 'done';
+    const topicName = topic ? topic.name : 'Topic';
 
     // Load asset if not already loaded
     if (!currentAssetData || currentAssetData.filename !== filename || currentAssetData.topicId !== topicId) {
@@ -239,10 +239,10 @@ function renderAssetView(topicId, filename) {
 
             <!-- Back Link -->
             <div class="topic-section">
-                <div class="topic-section-header">Job</div>
-                <div class="asset-back-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'job'}-${topicId}')">
+                <div class="topic-section-header">Topic</div>
+                <div class="asset-back-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'topic'}-${topicId}')">
                     ${icon('folder')}
-                    <span>${escapeHtml(jobName)}</span>
+                    <span>${escapeHtml(topicName)}</span>
                     ${icon('chevron-right')}
                 </div>
             </div>
@@ -251,10 +251,10 @@ function renderAssetView(topicId, filename) {
 }
 
 function renderAssetsListView(topicId) {
-    // Use allTopicsData to find any job regardless of status
+    // Use allTopicsData to find any topic regardless of status
     const topic = allTopicsData.find(j => j.id === topicId);
-    const isCompleted = job?.status === 'done';
-    const jobName = job ? topic.name : 'Job';
+    const isCompleted = topic?.status === 'done';
+    const topicName = topic ? topic.name : 'Topic';
     const assets = topicAssetsCache[topicId] || [];
 
     // Load assets if not cached
@@ -272,8 +272,8 @@ function renderAssetsListView(topicId) {
         </div>
         <div class="focus-view-content">
             <div class="topic-section">
-                <div class="topic-section-header">Job</div>
-                <div class="card-project-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'job'}-${topicId}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(jobName)}</div>
+                <div class="topic-section-header">Topic</div>
+                <div class="card-project-link" onclick="navigateFocus('${isCompleted ? 'completed' : 'topic'}-${topicId}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(topicName)}</div>
             </div>
 
             <div class="task-detail-actions">

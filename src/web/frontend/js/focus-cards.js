@@ -7,7 +7,7 @@ function isSwipeable(topic) {
     if (topic.tags && (topic.tags.includes('system:agents') || topic.tags.includes('system:projects'))) {
         return false;
     }
-    // Agent inbox jobs are not swipeable
+    // Agent inbox topics are not swipeable
     if (topic.tags && topic.tags.includes('agent-inbox')) {
         return false;
     }
@@ -39,7 +39,7 @@ function renderMinimalJobCard(topic) {
     const childBadge = childCount > 0 ? `<span class="card-badge">${childCount}</span>` : '';
     const assignee = topic.assignee;
 
-    // Status indicator based on job state
+    // Status indicator based on topic state
     let statusIndicator = '';
     if (topic.status === 'working') {
         statusIndicator = '<span class="card-status-indicator card-working-indicator" title="Agent working">' + icon('bolt') + '</span>';
@@ -54,12 +54,12 @@ function renderMinimalJobCard(topic) {
     }
 
     return `
-        <div class="card card-minimal${topic.status === 'done' ? ' card-completed' : ''}${topic.status === 'archived' ? ' card-archived' : ''}${topic.status === 'error' ? ' card-error' : ''}" data-topic-id="${topic.id}" data-testid="job-card" onclick="navigateFocus('topic-${topic.id}')">
+        <div class="card card-minimal${topic.status === 'done' ? ' card-completed' : ''}${topic.status === 'archived' ? ' card-archived' : ''}${topic.status === 'error' ? ' card-error' : ''}" data-topic-id="${topic.id}" data-testid="topic-card" onclick="navigateFocus('topic-${topic.id}')">
             ${statusIndicator}
             <span class="card-title">${escapeHtml(displayName)}</span>
             ${childBadge}
             ${dueDateLabel}
-            <button class="card-trash-btn" onclick="quickDeleteJob(event, '${topic.id}')" title="Delete job">${icon('trash')}</button>
+            <button class="card-trash-btn" onclick="quickDeleteTopic(event, '${topic.id}')" title="Delete topic">${icon('trash')}</button>
             <span class="card-arrow">›</span>
         </div>
     `;
@@ -73,7 +73,7 @@ function renderFullJobCard(topic) {
     // Use context-aware descendant count (all descendants matching timeline)
     const childCount = getDescendantCountForContext(topic.id);
 
-    // Get parent job name for context
+    // Get parent topic name for context
     let parentName = null;
     if (topic.parent_id) {
         const parent = allTopicsData.find(j => j.id === topic.parent_id);
@@ -81,7 +81,7 @@ function renderFullJobCard(topic) {
     }
 
     return `
-        <div class="card card-full" data-topic-id="${topic.id}" data-testid="job-card">
+        <div class="card card-full" data-topic-id="${topic.id}" data-testid="topic-card">
             <div class="card-header">
                 <span class="card-title" onclick="toggleJobCard('${topic.id}')">${escapeHtml(displayName)}</span>
                 <button class="card-collapse" onclick="event.stopPropagation(); toggleJobCard('${topic.id}')">−</button>
@@ -89,7 +89,7 @@ function renderFullJobCard(topic) {
             <div class="card-body">
                 ${hasDescription ? `<div class="card-description">${marked.parse(topic.description)}</div>` : ''}
                 ${parentName ? `<div class="card-meta">Parent: <span class="card-project-link" onclick="event.stopPropagation(); navigateFocus('topic-${topic.parent_id}')">${escapeHtml(parentName)}</span></div>` : ''}
-                ${childCount > 0 ? `<div class="card-meta">${childCount} child job${childCount !== 1 ? 's' : ''}</div>` : ''}
+                ${childCount > 0 ? `<div class="card-meta">${childCount} child topic${childCount !== 1 ? 's' : ''}</div>` : ''}
             </div>
             <div class="card-actions">
                 <button class="card-action" onclick="event.stopPropagation(); openWhenPicker('topic', '${topic.id}')">${icon('calendar')} ${escapeHtml(whenLabel)}</button>
@@ -130,7 +130,7 @@ function toggleJobCard(topicId) {
 
 function renderCompletedTopicCard(topic, childCount = 0, swipeable = false) {
     const displayName = topic.name || 'Untitled';
-    const completedDateLabel = job.completed_at ? `<span class="card-due-date">${formatFriendlyPastDate(job.completed_at)}</span>` : '';
+    const completedDateLabel = topic.completed_at ? `<span class="card-due-date">${formatFriendlyPastDate(job.completed_at)}</span>` : '';
     const childBadge = childCount > 0 ? `<span class="card-badge">${childCount}</span>` : '';
 
     const cardHtml = `
