@@ -82,7 +82,7 @@ function renderFocusTab() {
         const topicId = focusView.substring(7);
         content = renderAttachScreen(topicId);
     } else if (focusView.startsWith('topic-')) {
-        const topicId = focusView.substring(4);
+        const topicId = focusView.substring(6);
         content = renderTopicDetailView(topicId);
     } else if (focusView.startsWith('completed-')) {
         const topicId = focusView.substring(10);

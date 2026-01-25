@@ -8,15 +8,26 @@ pytestmark = pytest.mark.e2e
 
 def navigate_to_agents(page: Page):
     """Navigate to agents container via Collections > Agents."""
+    # First, ensure we're on the Focus tab
+    focus_tab = page.locator('[data-testid="tab-btn-focus"]')
+    focus_tab.click()
+    page.wait_for_timeout(500)
+
     # The agents container is accessible via the Collections section
-    collections_section = page.get_by_text("Collections")
+    collections_section = page.get_by_text("Collections", exact=True)
     expect(collections_section).to_be_visible(timeout=5000)
     collections_section.click()
 
+    # Wait for collapsible content to expand
+    page.wait_for_timeout(300)
+
     # Click Agents menu item
-    agents_link = page.get_by_text("Agents")
+    agents_link = page.locator('.focus-menu-item:has-text("Agents")')
     expect(agents_link).to_be_visible(timeout=2000)
     agents_link.click()
+
+    # Wait for view transition animation to complete
+    page.wait_for_timeout(500)
 
 
 class TestAgentsContainer:
