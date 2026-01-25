@@ -278,6 +278,18 @@ async function toggleAgentAssignment(topicId, agentId, isCurrentlyAssigned) {
         });
 
         if (response.ok) {
+            // If assigning and topic is currently "working", reset to "todo"
+            if (!isCurrentlyAssigned) {
+                const topic = allTopicsData.find(t => t.id === topicId);
+                if (topic && topic.status === 'working') {
+                    await fetch(`/api/topics/${topicId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: 'todo' })
+                    });
+                }
+            }
+
             await loadTopicsData();
             closeAssigneesPicker();
             // Reopen picker to show updated state
@@ -430,40 +442,6 @@ async function selectTopicState(topicId, status) {
     await setTopicStatus(topicId, status);
 }
 
-// ============== Reassign Picker ==============
-
-async function openReassignPicker(topicId) {
-    const agents = await loadAgents();
-
-    const picker = document.createElement('div');
-    picker.className = 'picker-modal';
-    picker.id = 'reassign-picker';
-    picker.innerHTML = `
-        <div class="picker-backdrop" onclick="closeReassignPicker()"></div>
-        <div class="picker-content">
-            <div class="picker-header">Reassign To</div>
-            <div class="picker-description">Assigns agent and sets status to "todo"</div>
-            ${agents.map(agent => `
-                <div class="picker-option" onclick="selectReassignAgent('${topicId}', '${agent.id}')">
-                    <span class="picker-option-icon">${icon('bolt')}</span>
-                    <span class="picker-option-label">${escapeHtml(agent.name || agent.id)}</span>
-                </div>
-            `).join('')}
-            ${agents.length === 0 ? '<div class="picker-empty">No agents available</div>' : ''}
-        </div>
-    `;
-    document.body.appendChild(picker);
-}
-
-function closeReassignPicker() {
-    const picker = document.getElementById('reassign-picker');
-    if (picker) picker.remove();
-}
-
-async function selectReassignAgent(topicId, agentId) {
-    closeReassignPicker();
-    await reassignTopic(topicId, agentId);
-}
 
 // ============== Topic Status Label ==============
 

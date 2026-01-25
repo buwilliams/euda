@@ -424,7 +424,6 @@ function renderTopicDetailView(topicId) {
                 <button class="task-detail-action" onclick="openWhenPicker('topic', '${topic.id}')">${icon('calendar')} ${escapeHtml(whenLabel)}</button>
                 <button class="task-detail-action" onclick="openStatePicker('${topic.id}')">${getTopicStatusIcon(topic)} ${getTopicStatusLabel(topic)}</button>
                 <button class="task-detail-action" onclick="openAssigneesPicker('${topic.id}')">${getAssigneesLabel(topic)}</button>
-                <button class="task-detail-action" onclick="openReassignPicker('${topic.id}')">${icon('arrow-path')} Reassign</button>
                 <button class="task-detail-action" onclick="openAddPicker('${topic.id}')">+ Add</button>
                 ${isAgentTopic ? '' : `<button class="task-detail-action" onclick="openMorePicker('${topic.id}')">Actions</button>`}
             </div>
