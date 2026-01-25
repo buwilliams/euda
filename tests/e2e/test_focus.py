@@ -64,7 +64,7 @@ class TestTimelineNavigation:
 
 
 class TestQuickAdd:
-    """Tests for quick add job functionality."""
+    """Tests for quick add topicfunctionality."""
 
     def test_quick_add_elements_visible(self, authenticated_page: Page):
         """Quick add input and button should be visible."""
@@ -73,39 +73,39 @@ class TestQuickAdd:
         expect(page.locator('[data-testid="quick-add-btn"]')).to_be_visible()
 
 
-class TestJobCard:
-    """Tests for job card interactions."""
+class TestTopicCard:
+    """Tests for topiccard interactions."""
 
     def test_job_card_opens_detail(self, authenticated_page: Page):
-        """Clicking a job card should open job detail view."""
+        """Clicking a topiccard should open topicdetail view."""
         page = authenticated_page
 
-        # First check if there are any job cards
-        job_cards = page.locator('[data-testid="job-card"]')
+        # First check if there are any topiccards
+        job_cards = page.locator('[data-testid="topic-card"]')
         if job_cards.count() > 0:
-            # Click the first job card
+            # Click the first topiccard
             job_cards.first.click()
 
-            # Should show job detail view with back button
+            # Should show topicdetail view with back button
             expect(page.locator('[data-testid="back-btn"]')).to_be_visible(timeout=5000)
-            expect(page.locator('[data-testid="job-detail"]')).to_be_visible(timeout=5000)
+            expect(page.locator('[data-testid="topic-detail"]')).to_be_visible(timeout=5000)
 
 
-class TestJobDetail:
-    """Tests for job detail view elements."""
+class TestTopicDetail:
+    """Tests for topicdetail view elements."""
 
     def test_job_detail_elements(self, authenticated_page: Page):
-        """Job detail should show name and description sections."""
+        """Topic detail should show name and description sections."""
         page = authenticated_page
 
-        # Navigate to a job if one exists
-        job_cards = page.locator('[data-testid="job-card"]')
+        # Navigate to a topicif one exists
+        job_cards = page.locator('[data-testid="topic-card"]')
         if job_cards.count() > 0:
             job_cards.first.click()
 
             # Wait for detail view
-            expect(page.locator('[data-testid="job-detail"]')).to_be_visible(timeout=5000)
+            expect(page.locator('[data-testid="topic-detail"]')).to_be_visible(timeout=5000)
 
             # Check for name and description sections
-            expect(page.locator('[data-testid="job-name"]')).to_be_visible()
-            expect(page.locator('[data-testid="job-description"]')).to_be_visible()
+            expect(page.locator('[data-testid="topic-name"]')).to_be_visible()
+            expect(page.locator('[data-testid="topic-description"]')).to_be_visible()

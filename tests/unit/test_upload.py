@@ -37,7 +37,7 @@ class TestUploadRoute:
                 mock_create_topic.return_value = {"id": "job-test123"}
 
                 with patch("src.web.routes.upload.get_agent_inbox_topic") as mock_inbox:
-                    mock_inbox.return_value = {"id": "job-inbox"}
+                    mock_inbox.return_value = {"id": "topic-inbox"}
 
                     client = TestClient(app)
                     response = client.post(
@@ -84,7 +84,7 @@ class TestUploadRoute:
                 mock_create_topic.return_value = {"id": "job-test456"}
 
                 with patch("src.web.routes.upload.get_agent_inbox_topic") as mock_inbox:
-                    mock_inbox.return_value = {"id": "job-inbox"}
+                    mock_inbox.return_value = {"id": "topic-inbox"}
 
                     client = TestClient(app)
                     response = client.post(
@@ -100,7 +100,7 @@ class TestUploadRoute:
         assert call_args.kwargs["name"] == "euno:extract-memories:notes.md"
         assert call_args.kwargs["assignee"] == "user"
         assert call_args.kwargs["tags"] == ["euno:internal"]
-        assert call_args.kwargs["parent_id"] == "job-inbox"
+        assert call_args.kwargs["parent_id"] == "topic-inbox"
         assert call_args.kwargs["created_by"] == "system"
         # Description should contain filename from template
         assert "notes.md" in call_args.kwargs["description"]
