@@ -178,30 +178,30 @@ def record_planning_scenarios(recorder: LLMResponseRecorder):
         PLANNING_SYSTEM_PROMPT, PLANNING_USER_PROMPT
     )
 
-    # Scenario: Simple job planning
+    # Scenario: Simple topic planning
     recorder.record(
         scenario="planning_simple",
-        description="Planning for a simple job",
+        description="Planning for a simple topic",
         system=PLANNING_SYSTEM_PROMPT,
         messages=[{
             "role": "user",
             "content": PLANNING_USER_PROMPT.format(
                 task_description="**Task:** Send daily summary email\n**Details:** Compile and send summary",
-                available_tools="- **send_email**: Send an email\n- **list_jobs**: List jobs"
+                available_tools="- **send_email**: Send an email\n- **list_topics**: List topics"
             )
         }]
     )
 
-    # Scenario: Complex job with multiple tools
+    # Scenario: Complex topic with multiple tools
     recorder.record(
         scenario="planning_complex",
-        description="Planning for a complex multi-step job",
+        description="Planning for a complex multi-step topic",
         system=PLANNING_SYSTEM_PROMPT,
         messages=[{
             "role": "user",
             "content": PLANNING_USER_PROMPT.format(
                 task_description="**Task:** Research and summarize topic\n**Details:** Find information, analyze, create summary",
-                available_tools="- **web_search**: Search the web\n- **read_file**: Read files\n- **write_file**: Write files\n- **create_job**: Create sub-jobs"
+                available_tools="- **web_search**: Search the web\n- **read_file**: Read files\n- **write_file**: Write files\n- **create_topic**: Create sub-topics"
             )
         }]
     )

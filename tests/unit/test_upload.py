@@ -33,10 +33,10 @@ class TestUploadRoute:
         with patch("src.web.routes.upload.write_long_term_memory") as mock_write:
             mock_write.return_value = {"status": "added"}
 
-            with patch("src.web.routes.upload.create_job") as mock_create_job:
-                mock_create_job.return_value = {"id": "job-test123"}
+            with patch("src.web.routes.upload.create_topic") as mock_create_topic:
+                mock_create_topic.return_value = {"id": "job-test123"}
 
-                with patch("src.web.routes.upload.get_agent_inbox_job") as mock_inbox:
+                with patch("src.web.routes.upload.get_agent_inbox_topic") as mock_inbox:
                     mock_inbox.return_value = {"id": "job-inbox"}
 
                     client = TestClient(app)
@@ -49,7 +49,7 @@ class TestUploadRoute:
         result = response.json()
         assert result["status"] == "uploaded"
         assert result["filename"] == "test.txt"
-        assert result["job_id"] == "job-test123"
+        assert result["topic_id"] == "job-test123"
 
         # Verify long-term memory was written
         mock_write.assert_called_once()
@@ -80,10 +80,10 @@ class TestUploadRoute:
         with patch("src.web.routes.upload.write_long_term_memory") as mock_write:
             mock_write.return_value = {"status": "added"}
 
-            with patch("src.web.routes.upload.create_job") as mock_create_job:
-                mock_create_job.return_value = {"id": "job-test456"}
+            with patch("src.web.routes.upload.create_topic") as mock_create_topic:
+                mock_create_topic.return_value = {"id": "job-test456"}
 
-                with patch("src.web.routes.upload.get_agent_inbox_job") as mock_inbox:
+                with patch("src.web.routes.upload.get_agent_inbox_topic") as mock_inbox:
                     mock_inbox.return_value = {"id": "job-inbox"}
 
                     client = TestClient(app)
@@ -95,8 +95,8 @@ class TestUploadRoute:
         assert response.status_code == 200
 
         # Verify job was created with correct parameters
-        mock_create_job.assert_called_once()
-        call_args = mock_create_job.call_args
+        mock_create_topic.assert_called_once()
+        call_args = mock_create_topic.call_args
         assert call_args.kwargs["name"] == "euno:extract-memories:notes.md"
         assert call_args.kwargs["assignee"] == "user"
         assert call_args.kwargs["tags"] == ["euno:internal"]
@@ -111,7 +111,7 @@ class TestUploadRoute:
         from src.web.app import app
 
         with patch("src.web.routes.upload.write_long_term_memory") as mock_write:
-            with patch("src.web.routes.upload.create_job") as mock_create_job:
+            with patch("src.web.routes.upload.create_topic") as mock_create_topic:
                 client = TestClient(app)
                 response = client.post(
                     "/api/upload",
@@ -122,12 +122,12 @@ class TestUploadRoute:
         result = response.json()
         assert result["status"] == "uploaded"
         assert result["filename"] == "image.png"
-        assert "job_id" not in result
+        assert "topic_id" not in result
         assert "Binary file" in result["message"]
 
         # Verify no memory written and no job created
         mock_write.assert_not_called()
-        mock_create_job.assert_not_called()
+        mock_create_topic.assert_not_called()
 
     def test_various_text_extensions_recognized(self, patch_data_dir):
         """Various text file extensions are recognized as text."""
@@ -178,10 +178,10 @@ class TestUploadRoute:
         with patch("src.web.routes.upload.write_long_term_memory") as mock_write:
             mock_write.return_value = {"status": "added"}
 
-            with patch("src.web.routes.upload.create_job") as mock_create_job:
-                mock_create_job.return_value = {"id": "job-test789"}
+            with patch("src.web.routes.upload.create_topic") as mock_create_topic:
+                mock_create_topic.return_value = {"id": "job-test789"}
 
-                with patch("src.web.routes.upload.get_agent_inbox_job") as mock_inbox:
+                with patch("src.web.routes.upload.get_agent_inbox_topic") as mock_inbox:
                     mock_inbox.return_value = None
 
                     client = TestClient(app)
@@ -193,7 +193,7 @@ class TestUploadRoute:
         assert response.status_code == 200
 
         # Verify job description has truncated content
-        call_args = mock_create_job.call_args
+        call_args = mock_create_topic.call_args
         description = call_args.kwargs["description"]
         # Template includes {content} which should be truncated
         assert "..." in description or len(description) < len(large_content)
@@ -204,7 +204,7 @@ class TestUploadRoute:
         from src.web.app import app
 
         with patch("src.web.routes.upload.write_long_term_memory") as mock_write:
-            with patch("src.web.routes.upload.create_job") as mock_create_job:
+            with patch("src.web.routes.upload.create_topic") as mock_create_topic:
                 # Test binary file to avoid job creation complexity
                 client = TestClient(app)
 
@@ -241,10 +241,10 @@ class TestUploadRoute:
         with patch("src.web.routes.upload.write_long_term_memory") as mock_write:
             mock_write.return_value = {"status": "added"}
 
-            with patch("src.web.routes.upload.create_job") as mock_create_job:
-                mock_create_job.return_value = {"id": "job-orphan"}
+            with patch("src.web.routes.upload.create_topic") as mock_create_topic:
+                mock_create_topic.return_value = {"id": "job-orphan"}
 
-                with patch("src.web.routes.upload.get_agent_inbox_job") as mock_inbox:
+                with patch("src.web.routes.upload.get_agent_inbox_topic") as mock_inbox:
                     mock_inbox.return_value = None  # No inbox found
 
                     client = TestClient(app)
@@ -256,5 +256,5 @@ class TestUploadRoute:
         assert response.status_code == 200
 
         # Verify job was created with parent_id=None
-        call_args = mock_create_job.call_args
+        call_args = mock_create_topic.call_args
         assert call_args.kwargs["parent_id"] is None

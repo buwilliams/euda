@@ -6,8 +6,8 @@ Spec: docs/3_system.md - "Work Cycle" section
 These tests verify work cycle behavior.
 
 Invariants tested:
-- One job per work cycle (agent processes only one job at a time)
-- Remaining count reflects queued jobs
+- One topic per work cycle (agent processes only one topic at a time)
+- Remaining count reflects queued topics
 """
 
 import pytest
@@ -15,57 +15,57 @@ from unittest.mock import patch, MagicMock
 
 
 @pytest.mark.invariant
-class TestOneJobPerWorkCycle:
-    """Test that agents only process one job per work cycle."""
+class TestOneTopicPerWorkCycle:
+    """Test that agents only process one topic per work cycle."""
 
-    def test_list_jobs_returns_multiple_but_only_first_used(self, test_db, mock_emit_event, mock_emit_ui_event):
-        """When multiple jobs exist, work_cycle should only process first one.
+    def test_list_topics_returns_multiple_but_only_first_used(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """When multiple topics exist, work_cycle should only process first one.
 
-        Spec: "Pass only the first job to avoid overwhelming the agent.
-        After this job is done, the manager will start another work cycle
-        if more jobs exist."
+        Spec: "Pass only the first topic to avoid overwhelming the agent.
+        After this topic is done, the manager will start another work cycle
+        if more topics exist."
 
-        This test verifies the code logic by checking jobs[0] usage.
+        This test verifies the code logic by checking topics[0] usage.
         """
-        from src.tools.data.jobs import create_job, list_jobs
+        from src.tools.data.topics import create_topic, list_topics
 
-        # Create multiple jobs
-        job1 = create_job(name="First", assignee="agent", parent_id=None, created_by="test")
-        job2 = create_job(name="Second", assignee="agent", parent_id=None, created_by="test")
-        job3 = create_job(name="Third", assignee="agent", parent_id=None, created_by="test")
+        # Create multiple topics
+        topic1 = create_topic(name="First", assignee="agent", parent_id=None, created_by="test")
+        topic2 = create_topic(name="Second", assignee="agent", parent_id=None, created_by="test")
+        topic3 = create_topic(name="Third", assignee="agent", parent_id=None, created_by="test")
 
-        # Verify list_jobs returns all 3
-        jobs = list_jobs(assignee="agent", actionable=True)
-        assert len(jobs) == 3
+        # Verify list_topics returns all 3
+        topics = list_topics(assignee="agent", actionable=True)
+        assert len(topics) == 3
 
-        # The invariant is that work_cycle_sync uses jobs[0] and remaining = len(jobs) - 1
-        # We verify the pattern: first job selected, remaining calculated
-        current_job = jobs[0]
-        remaining = len(jobs) - 1
+        # The invariant is that work_cycle_sync uses topics[0] and remaining = len(topics) - 1
+        # We verify the pattern: first topic selected, remaining calculated
+        current_topic = topics[0]
+        remaining = len(topics) - 1
 
         # Don't assume order, just verify the invariant pattern holds
-        assert current_job is not None
+        assert current_topic is not None
         assert remaining == 2
 
-    def test_format_job_prompt_receives_remaining_count(self, test_db, mock_emit_event, mock_emit_ui_event):
-        """format_job_prompt should receive correct remaining count.
+    def test_format_topic_prompt_receives_remaining_count(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """format_topic_prompt should receive correct remaining count.
 
-        Spec: Agent knows how many more jobs are queued.
+        Spec: Agent knows how many more topics are queued.
         """
-        from src.tools.data.jobs import create_job, list_jobs
+        from src.tools.data.topics import create_topic, list_topics
 
-        # Create 5 jobs
+        # Create 5 topics
         for i in range(5):
-            create_job(name=f"Job {i+1}", assignee="agent", parent_id=None, created_by="test")
+            create_topic(name=f"Topic {i+1}", assignee="agent", parent_id=None, created_by="test")
 
-        jobs = list_jobs(assignee="agent", actionable=True)
-        remaining = len(jobs) - 1
+        topics = list_topics(assignee="agent", actionable=True)
+        remaining = len(topics) - 1
 
-        # With 5 jobs, processing first means 4 remaining
+        # With 5 topics, processing first means 4 remaining
         assert remaining == 4
 
-    def test_work_cycle_code_selects_first_job(self):
-        """Verify work_cycle_sync selects jobs[0].
+    def test_work_cycle_code_selects_first_topic(self):
+        """Verify work_cycle_sync selects topics[0].
 
         This is a code inspection test - verifying the invariant is implemented.
         """
@@ -74,31 +74,31 @@ class TestOneJobPerWorkCycle:
 
         source = inspect.getsource(Agent.work_cycle_sync)
 
-        # The invariant should be implemented as: current_job = jobs[0]
-        assert "current_job = jobs[0]" in source, \
-            "work_cycle_sync should select only the first job"
+        # The invariant should be implemented as: current_topic = topics[0]
+        assert "current_topic = topics[0]" in source, \
+            "work_cycle_sync should select only the first topic"
 
-        # And remaining should be calculated as len(jobs) - 1
-        assert "remaining = len(jobs) - 1" in source, \
-            "work_cycle_sync should calculate remaining jobs"
+        # And remaining should be calculated as len(topics) - 1
+        assert "remaining = len(topics) - 1" in source, \
+            "work_cycle_sync should calculate remaining topics"
 
 
 @pytest.mark.invariant
-class TestJobSelectionOrder:
-    """Test that job selection follows expected patterns."""
+class TestTopicSelectionOrder:
+    """Test that topic selection follows expected patterns."""
 
-    def test_actionable_jobs_are_selectable(self, test_db, mock_emit_event, mock_emit_ui_event):
-        """Actionable jobs (no blocking tags) should be returned.
+    def test_actionable_topics_are_selectable(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Actionable topics (no blocking tags) should be returned.
 
-        Spec: Agents poll for actionable jobs.
+        Spec: Agents poll for actionable topics.
         """
-        from src.tools.data.jobs import create_job, list_jobs
+        from src.tools.data.topics import create_topic, list_topics
 
-        # Create actionable job
-        actionable = create_job(name="Actionable", assignee="agent", parent_id=None, created_by="test")
+        # Create actionable topic
+        actionable = create_topic(name="Actionable", assignee="agent", parent_id=None, created_by="test")
 
-        # Create blocked job
-        blocked = create_job(
+        # Create blocked topic
+        blocked = create_topic(
             name="Blocked",
             assignee="agent",
             tags=["blocked:dependency"],
@@ -106,8 +106,8 @@ class TestJobSelectionOrder:
             created_by="test"
         )
 
-        jobs = list_jobs(assignee="agent", actionable=True)
-        job_ids = [j["id"] for j in jobs]
+        topics = list_topics(assignee="agent", actionable=True)
+        topic_ids = [t["id"] for t in topics]
 
-        assert actionable["id"] in job_ids
-        assert blocked["id"] not in job_ids
+        assert actionable["id"] in topic_ids
+        assert blocked["id"] not in topic_ids

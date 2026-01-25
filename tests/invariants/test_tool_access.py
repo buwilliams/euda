@@ -26,7 +26,7 @@ class TestToolAccessRestriction:
         from src.tools import get_tools_for_agent
 
         # Request specific tools
-        configured = ["list_jobs", "get_job", "create_job"]
+        configured = ["list_topics", "get_topic", "create_topic"]
         tools = get_tools_for_agent(configured)
 
         tool_names = [t["name"] for t in tools]
@@ -42,14 +42,14 @@ class TestToolAccessRestriction:
         from src.tools import get_tools_for_agent
 
         # Request mix of valid and invalid tools
-        requested = ["list_jobs", "nonexistent_tool", "fake_tool", "get_job"]
+        requested = ["list_topics", "nonexistent_tool", "fake_tool", "get_topic"]
         tools = get_tools_for_agent(requested)
 
         tool_names = [t["name"] for t in tools]
 
         # Should only have valid tools
-        assert "list_jobs" in tool_names
-        assert "get_job" in tool_names
+        assert "list_topics" in tool_names
+        assert "get_topic" in tool_names
         assert "nonexistent_tool" not in tool_names
         assert "fake_tool" not in tool_names
         assert len(tools) == 2
@@ -71,7 +71,7 @@ class TestToolAccessRestriction:
         """
         from src.tools import get_tools_grouped_by_type
 
-        configured = ["list_jobs", "create_job", "get_today", "list_agents"]
+        configured = ["list_topics", "create_topic", "get_today", "list_agents"]
         grouped = get_tools_grouped_by_type(configured)
 
         # Should have the expected types as keys
@@ -80,10 +80,10 @@ class TestToolAccessRestriction:
         assert "system" in grouped
         assert "integration" in grouped
 
-        # Jobs tools should be in data
+        # Topics tools should be in data
         data_names = [t["name"] for t in grouped["data"]]
-        assert "list_jobs" in data_names
-        assert "create_job" in data_names
+        assert "list_topics" in data_names
+        assert "create_topic" in data_names
 
     def test_agent_only_sees_own_tools_in_prompt(self, patch_data_dir):
         """Agent system prompt should only show configured tools.
@@ -102,17 +102,17 @@ class TestToolAccessRestriction:
                 "id": "restricted-agent",
                 "name": "Restricted Agent",
                 "enabled": True,
-                "tools": ["list_jobs"],  # Only one tool
+                "tools": ["list_topics"],  # Only one tool
                 "triggers": []
             })
 
             prompt = agent._build_system_prompt()
 
-            # Should mention list_jobs
-            assert "list_jobs" in prompt
+            # Should mention list_topics
+            assert "list_topics" in prompt
 
             # Should NOT mention tools not in config
-            assert "create_job" not in prompt or "list_jobs" in prompt.split("create_job")[0]
+            assert "create_topic" not in prompt or "list_topics" in prompt.split("create_topic")[0]
 
 
 @pytest.mark.invariant
