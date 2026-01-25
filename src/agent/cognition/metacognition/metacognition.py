@@ -196,7 +196,7 @@ class Metacognition:
 
     # ============== Planning ==============
 
-    def should_plan(self, job: dict) -> bool:
+    def should_plan(self, topic: dict) -> bool:
         """Planning is always enabled for efficiency."""
         return True
 
