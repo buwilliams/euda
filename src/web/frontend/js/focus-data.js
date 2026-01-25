@@ -457,6 +457,28 @@ function getAllChildTopicsSorted(parentId) {
         });
 }
 
+function getTopicsAssignedToAgent(agentId) {
+    // Get all topics assigned to this agent, sorted by status priority
+    const statusPriority = {
+        'working': 0,
+        'todo': 1,
+        'error': 2,
+        'done': 3,
+        'archived': 4
+    };
+
+    return allTopicsData
+        .filter(t => t.assignee === agentId)
+        .sort((a, b) => {
+            const aPriority = statusPriority[a.status] ?? 5;
+            const bPriority = statusPriority[b.status] ?? 5;
+            if (aPriority !== bPriority) {
+                return aPriority - bPriority;
+            }
+            return (b.created_at || '').localeCompare(a.created_at || '');
+        });
+}
+
 function getDescendantCountForContext(topicId) {
     // Count ALL descendants (not just direct children) that match the timeline context
     const context = getTimelineContext();
@@ -556,6 +578,9 @@ function getRootTopicsForCategory(category) {
 
         // Skip topics with completed ancestors (orphaned children of completed projects)
         if (hasCompletedAncestor(topic)) continue;
+
+        // Skip topics assigned to an agent (delegated)
+        if (topic.assignee) continue;
 
         // Check if this topic matches the category and is incomplete
         if (topic.status !== 'done' && getTopicCategory(topic) === category) {

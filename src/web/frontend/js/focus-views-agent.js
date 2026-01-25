@@ -17,8 +17,13 @@ let rateLimitViewCache = {};
 function renderAgentDetailView(topic) {
     const agentId = topic.agent_id;
     const displayName = topic.name || 'Untitled';
-    // Get ALL child topics sorted by status priority (working > todo > error > done > archived)
-    const allChildTopics = getAllChildTopicsSorted(topic.id);
+    // Get topics assigned to this agent, sorted by status priority
+    const assignedTopics = getTopicsAssignedToAgent(agentId);
+    // Also get child topics of the agent's inbox (for system-created topics like triggers)
+    const inboxChildTopics = getAllChildTopicsSorted(topic.id);
+    // Combine both, deduplicating by ID (assigned topics take priority)
+    const assignedIds = new Set(assignedTopics.map(t => t.id));
+    const allChildTopics = [...assignedTopics, ...inboxChildTopics.filter(t => !assignedIds.has(t.id))];
     const assets = topicAssetsCache[topic.id] || [];
 
     // Load agent data if not cached
