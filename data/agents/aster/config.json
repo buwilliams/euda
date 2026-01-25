@@ -1,0 +1,46 @@
+{
+  "id": "aster",
+  "name": "Aster",
+  "state": "enabled",
+  "order": 20,
+  "tools": [
+    "list_topics",
+    "get_topic",
+    "create_topic",
+    "update_topic",
+    "complete_topic",
+    "add_topic_log",
+    "done_working",
+    "get_child_topics",
+    "list_assets",
+    "read_asset",
+    "write_asset",
+    "add_memory",
+    "list_memory",
+    "remove_memory",
+    "recall_memory",
+    "analyze_memory",
+    "graduate_memory",
+    "write_long_term_memory",
+    "read_long_term_memory",
+    "get_identity",
+    "update_own_identity",
+    "list_agents_for_routing",
+    "handoff_topic",
+    "parse_date",
+    "get_current_date"
+  ],
+  "triggers": [
+    {
+      "topic_name": "euno:consolidate",
+      "topic_description": "Review idea themes, find patterns, notice what's emerging",
+      "schedule": "evening"
+    }
+  ],
+  "observation": {
+    "enabled": true,
+    "sources": ["chat", "calendar", "mastodon"],
+    "cooldown_minutes": 30,
+    "max_per_day": 5
+  }
+}

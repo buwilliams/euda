@@ -399,3 +399,128 @@ Behavior defines *when* things activate via triggers. The processes themselves m
 | Regular topic | Topic assignment | Behavior (tool execution via LLM) |
 | `euno:consolidate` | Self-improvement | Cognition (metacognition via tool) |
 | `euno:quote` | Quote generation | System (direct tool execution) |
+
+## Observation System
+
+The observation system enables agents to notice relevant content across different sources and surface observations proactively.
+
+### Overview
+
+- Agents can declare interests via memory entries of type `interest`
+- Watchers monitor content sources (chat, calendar, mastodon)
+- When content matches an agent's interests, an observation topic is created
+- Agent reviews observation and may surface it in chat
+
+### Interest Sources
+
+Interests come from two places:
+
+1. **Memory entries** with `type: "interest"` — keywords/themes the agent is tracking
+2. **Active topics** assigned to the agent — titles and descriptions expand the interest surface
+
+```json
+// Example interest memory entry
+{
+  "id": "mem-abc12345",
+  "type": "interest",
+  "short_description": "decentralized identity",
+  "date_mentioned": "2026-01-25"
+}
+```
+
+Interests expire after 90 days if not reinforced (standard memory expiration).
+
+### Content Sources
+
+| Source | Monitoring | Matching |
+|--------|------------|----------|
+| **Chat** | Real-time (inline) | Every message checked against interests |
+| **Calendar** | Periodic (watcher) | New/changed events checked |
+| **Mastodon** | Periodic (watcher) | User's posts checked |
+
+Chat is real-time to make Euno feel responsive. Calendar and Mastodon are periodic since they change less frequently.
+
+### Watchers
+
+Watchers are background processes in the manager that:
+
+1. Poll content sources periodically (every 15-30 min for calendar/mastodon)
+2. Track last-seen state to detect changes
+3. Check new content against agent interests (keyword matching, no LLM)
+4. Create observation topics when matches found
+
+Chat matching is different — it hooks into chat processing inline rather than polling.
+
+### Matching Logic
+
+Matching is lightweight (no LLM):
+
+```python
+def matches_interests(content: str, agent_id: str) -> bool:
+    # Load interest-type memories for agent
+    interests = [m for m in list_memory(agent_id) if m["type"] == "interest"]
+    keywords = [m["short_description"].lower() for m in interests]
+
+    # Also check active topics
+    active_topics = list_topics(assignee=agent_id, status=["todo", "working"])
+    for topic in active_topics:
+        keywords.extend(extract_keywords(topic["name"]))
+
+    # Simple keyword matching
+    content_lower = content.lower()
+    return any(kw in content_lower for kw in keywords)
+```
+
+### Observation Topics
+
+When a match is found:
+
+1. Create topic assigned to the agent with tag `observation`
+2. Topic name: `observation:{source}:{timestamp}`
+3. Topic description includes: matched content, source, matched keyword
+4. Agent works the observation during its normal cycle
+5. Agent decides whether to surface to user or dismiss
+
+### Agent Configuration
+
+Agents opt into observations via config:
+
+```json
+{
+  "observation": {
+    "enabled": true,
+    "sources": ["chat", "calendar", "mastodon"],
+    "cooldown_minutes": 30,
+    "max_per_day": 5
+  }
+}
+```
+
+- `enabled`: Whether to monitor for this agent
+- `sources`: Which sources to monitor
+- `cooldown_minutes`: Minimum time between observations from same source
+- `max_per_day`: Cap on daily observations (prevents spam)
+
+### Interest Population
+
+Interests are populated through use, not pre-seeded:
+
+1. **Topic assignment**: When user assigns a topic to an observing agent, system extracts keywords and creates interest memories
+2. **Consolidation**: Agent during consolidation can add/remove interests based on patterns
+3. **Manual**: User can add interest memories directly
+
+### Chat Integration
+
+For chat, interest checking hooks into the message flow:
+
+1. User sends message to Chat agent
+2. Before/after processing, check message against all observing agents' interests
+3. If match found, queue observation (don't interrupt current chat)
+4. Observation surfaced when user next interacts or agent works its queue
+
+### Implementation Notes
+
+- Watchers run in manager, one thread per source type
+- Interest cache rebuilds periodically or on memory file change
+- No LLM calls during matching — all keyword/pattern based
+- Observation topics are low-priority (don't preempt regular work)

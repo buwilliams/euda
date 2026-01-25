@@ -22,7 +22,7 @@ from ...agent.rlm import RLMClient, load_long_term_memory
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
 
-VALID_TYPES = {"person", "place", "thing", "goal", "concern", "idea", "learning", "behavior"}
+VALID_TYPES = {"person", "place", "thing", "goal", "concern", "idea", "learning", "behavior", "interest"}
 VALIDITY_DAYS = 90  # 3 months
 
 
