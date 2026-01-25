@@ -423,7 +423,7 @@ function quickAddFromInput() {
     }
 
     const context = getQuickAddContext();
-    const topicData = { name, assignee: 'user' };
+    const topicData = { name };
 
     if (context.parent_id) {
         topicData.parent_id = context.parent_id;

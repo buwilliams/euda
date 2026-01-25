@@ -104,7 +104,7 @@ async function quickAddTopic(inputId, parentId = null) {
     if (!name) return;
 
     try {
-        const body = { name, assignee: 'user' };
+        const body = { name };
         if (parentId) {
             body.parent_id = parentId;
         }
