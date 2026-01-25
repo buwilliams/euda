@@ -278,18 +278,7 @@ async function toggleAgentAssignment(topicId, agentId, isCurrentlyAssigned) {
         });
 
         if (response.ok) {
-            // If assigning and topic is currently "working", reset to "todo"
-            if (!isCurrentlyAssigned) {
-                const topic = allTopicsData.find(t => t.id === topicId);
-                if (topic && topic.status === 'working') {
-                    await fetch(`/api/topics/${topicId}`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ status: 'todo' })
-                    });
-                }
-            }
-
+            // Backend handles resetting status to 'todo' if topic was 'working'
             await loadTopicsData();
             closeAssigneesPicker();
             // Reopen picker to show updated state

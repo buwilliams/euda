@@ -437,8 +437,11 @@ def handoff_topic(topic_id: str, to: str, note: str = None, agent: str = "user")
     """Hand off a topic to another agent or user.
 
     This is the primary mechanism for topic coordination between agents.
-    It sets the assignee to the target, resets status to 'todo', and records
-    who sent it so the topic can be returned to them.
+    It sets the assignee to the target, resets status to 'todo' if currently
+    'working', and records who sent it so the topic can be returned to them.
+
+    If the topic is 'error' or 'archived', the status is left alone as
+    handoff to those states is a no-op.
 
     Args:
         topic_id: The topic to hand off
@@ -454,13 +457,20 @@ def handoff_topic(topic_id: str, to: str, note: str = None, agent: str = "user")
         return {"error": f"Topic not found: {topic_id}"}
 
     now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    current_status = topic.get("status", "todo")
 
-    # Update assignee, reset status to todo, and set pending_from
+    # Update assignee and set pending_from; reset status to 'todo' only if 'working'
     with _transaction() as conn:
-        conn.execute('''
-            UPDATE topics SET assignee = ?, status = 'todo', pending_from = ?, updated_at = ?
-            WHERE id = ?
-        ''', (to, agent, now, topic_id))
+        if current_status == "working":
+            conn.execute('''
+                UPDATE topics SET assignee = ?, status = 'todo', pending_from = ?, updated_at = ?
+                WHERE id = ?
+            ''', (to, agent, now, topic_id))
+        else:
+            conn.execute('''
+                UPDATE topics SET assignee = ?, pending_from = ?, updated_at = ?
+                WHERE id = ?
+            ''', (to, agent, now, topic_id))
 
         # Add log entry
         action = f"Handed off to {to}"
@@ -939,6 +949,10 @@ def add_topic_logs_batch(logs: list, agent: str = "user") -> dict:
 def assign_agent(topic_id: str, agent_id: str) -> Optional[dict]:
     """Assign an agent to work on a topic. Wakes the agent immediately.
 
+    If the topic is currently 'working', resets status to 'todo' so the new
+    agent can pick it up. Other statuses (error, archived) are left alone
+    as assignment to those is a no-op.
+
     Args:
         topic_id: The topic to assign
         agent_id: The agent ID to assign
@@ -952,12 +966,20 @@ def assign_agent(topic_id: str, agent_id: str) -> Optional[dict]:
         return {"error": f"Agent {agent_id} already assigned"}
 
     now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    current_status = topic.get("status", "todo")
 
     with _transaction() as conn:
-        conn.execute(
-            "UPDATE topics SET assignee = ?, updated_at = ? WHERE id = ?",
-            (agent_id, now, topic_id)
-        )
+        # Reset status to 'todo' if currently 'working' so new agent can pick it up
+        if current_status == "working":
+            conn.execute(
+                "UPDATE topics SET assignee = ?, status = 'todo', updated_at = ? WHERE id = ?",
+                (agent_id, now, topic_id)
+            )
+        else:
+            conn.execute(
+                "UPDATE topics SET assignee = ?, updated_at = ? WHERE id = ?",
+                (agent_id, now, topic_id)
+            )
         conn.execute(
             "INSERT INTO topic_logs (topic_id, timestamp, agent, action) VALUES (?, ?, ?, ?)",
             (topic_id, now, "system", f"assigned:{agent_id}")

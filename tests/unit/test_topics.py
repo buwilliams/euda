@@ -335,6 +335,100 @@ class TestTopicHandoff:
         assert len(handoff_logs) == 1
         assert "Check this" in handoff_logs[0]["action"]
 
+    def test_handoff_resets_working_to_todo(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Handoff should reset status to 'todo' if currently 'working'."""
+        from src.tools.data.topics import create_topic, claim_topic, handoff_topic, get_topic
+
+        topic = create_topic(name="Working Topic", assignee="agent1", parent_id=None, created_by="test")
+        claim_topic(topic["id"], "agent1")  # Sets status to 'working'
+
+        # Verify it's working
+        working = get_topic(topic["id"])
+        assert working["status"] == "working"
+
+        # Handoff should reset to 'todo'
+        result = handoff_topic(topic["id"], to="agent2", agent="agent1")
+        assert result["status"] == "todo"
+
+    def test_handoff_leaves_error_status_alone(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Handoff should not change 'error' status."""
+        from src.tools.data.topics import create_topic, error_topic, handoff_topic
+
+        topic = create_topic(name="Error Topic", assignee="agent1", parent_id=None, created_by="test")
+        error_topic(topic["id"], "Something failed", agent="agent1")
+
+        result = handoff_topic(topic["id"], to="agent2", agent="agent1")
+        assert result["status"] == "error"
+
+    def test_handoff_leaves_todo_status_alone(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Handoff should not change 'todo' status."""
+        from src.tools.data.topics import create_topic, handoff_topic
+
+        topic = create_topic(name="Todo Topic", assignee="agent1", parent_id=None, created_by="test")
+        assert topic["status"] == "todo"
+
+        result = handoff_topic(topic["id"], to="agent2", agent="agent1")
+        assert result["status"] == "todo"
+
+
+class TestTopicAssignment:
+    """Test topic assignment functionality."""
+
+    def test_assign_agent_basic(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Assign an agent to a topic."""
+        from src.tools.data.topics import create_topic, assign_agent
+
+        topic = create_topic(name="Assign Me", parent_id=None, created_by="test")
+        result = assign_agent(topic["id"], "agent1")
+
+        assert result["assignee"] == "agent1"
+
+    def test_assign_agent_resets_working_to_todo(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Assigning should reset status to 'todo' if currently 'working'."""
+        from src.tools.data.topics import create_topic, claim_topic, assign_agent, get_topic
+
+        topic = create_topic(name="Working Topic", assignee="agent1", parent_id=None, created_by="test")
+        claim_topic(topic["id"], "agent1")  # Sets status to 'working'
+
+        # Verify it's working
+        working = get_topic(topic["id"])
+        assert working["status"] == "working"
+
+        # Assign to different agent should reset to 'todo'
+        result = assign_agent(topic["id"], "agent2")
+        assert result["status"] == "todo"
+        assert result["assignee"] == "agent2"
+
+    def test_assign_agent_leaves_error_status_alone(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Assignment should not change 'error' status."""
+        from src.tools.data.topics import create_topic, error_topic, assign_agent
+
+        topic = create_topic(name="Error Topic", parent_id=None, created_by="test")
+        error_topic(topic["id"], "Something failed", agent="test")
+
+        result = assign_agent(topic["id"], "agent1")
+        assert result["status"] == "error"
+        assert result["assignee"] == "agent1"
+
+    def test_assign_agent_leaves_todo_status_alone(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Assignment should not change 'todo' status."""
+        from src.tools.data.topics import create_topic, assign_agent
+
+        topic = create_topic(name="Todo Topic", parent_id=None, created_by="test")
+        assert topic["status"] == "todo"
+
+        result = assign_agent(topic["id"], "agent1")
+        assert result["status"] == "todo"
+
+    def test_assign_same_agent_returns_error(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Assigning the same agent returns an error."""
+        from src.tools.data.topics import create_topic, assign_agent
+
+        topic = create_topic(name="Already Assigned", assignee="agent1", parent_id=None, created_by="test")
+
+        result = assign_agent(topic["id"], "agent1")
+        assert "error" in result
+
 
 class TestSystemTopicProtection:
     """Test protection of system topics."""
