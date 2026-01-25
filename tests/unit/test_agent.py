@@ -1018,7 +1018,7 @@ class TestWorkCycleDeferredConsolidation:
         """
         agent = self._create_agent(tmp_path)
 
-        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test"}
+        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test", "status": "working"}
         iteration = [0]
 
         def multi_iteration_chat(*args, **kwargs):
@@ -1030,15 +1030,16 @@ class TestWorkCycleDeferredConsolidation:
         with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
             with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
                 with patch("src.tools.data.topics.release_topic"):
-                    with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
-                        with patch.object(agent.metacognition, 'should_defer_consolidation', return_value=True):
-                            with patch.object(agent.metacognition, 'check_stuck', return_value=None):
-                                with patch.object(agent, 'chat', side_effect=multi_iteration_chat):
-                                    with patch.object(agent, '_log'):
-                                        with patch.object(agent.consolidation, 'append_batch') as mock_batch:
-                                            agent.work_cycle_sync()
+                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
+                        with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
+                            with patch.object(agent.metacognition, 'should_defer_consolidation', return_value=True):
+                                with patch.object(agent.metacognition, 'check_stuck', return_value=None):
+                                    with patch.object(agent, 'chat', side_effect=multi_iteration_chat):
+                                        with patch.object(agent, '_log'):
+                                            with patch.object(agent.consolidation, 'append_batch') as mock_batch:
+                                                agent.work_cycle_sync()
 
-                                        # append_batch should be called once at end with collected exchanges
-                                        mock_batch.assert_called_once()
-                                        exchanges = mock_batch.call_args[0][0]
-                                        assert len(exchanges) == 2  # 2 iterations
+                                            # append_batch should be called once at end with collected exchanges
+                                            mock_batch.assert_called_once()
+                                            exchanges = mock_batch.call_args[0][0]
+                                            assert len(exchanges) == 2  # 2 iterations
