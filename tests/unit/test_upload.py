@@ -34,7 +34,7 @@ class TestUploadRoute:
             mock_write.return_value = {"status": "added"}
 
             with patch("src.web.routes.upload.create_topic") as mock_create_topic:
-                mock_create_topic.return_value = {"id": "job-test123"}
+                mock_create_topic.return_value = {"id": "topic-test123"}
 
                 with patch("src.web.routes.upload.get_agent_inbox_topic") as mock_inbox:
                     mock_inbox.return_value = {"id": "topic-inbox"}
@@ -49,7 +49,7 @@ class TestUploadRoute:
         result = response.json()
         assert result["status"] == "uploaded"
         assert result["filename"] == "test.txt"
-        assert result["topic_id"] == "job-test123"
+        assert result["topic_id"] == "topic-test123"
 
         # Verify long-term memory was written
         mock_write.assert_called_once()
@@ -81,7 +81,7 @@ class TestUploadRoute:
             mock_write.return_value = {"status": "added"}
 
             with patch("src.web.routes.upload.create_topic") as mock_create_topic:
-                mock_create_topic.return_value = {"id": "job-test456"}
+                mock_create_topic.return_value = {"id": "topic-test456"}
 
                 with patch("src.web.routes.upload.get_agent_inbox_topic") as mock_inbox:
                     mock_inbox.return_value = {"id": "topic-inbox"}
@@ -154,7 +154,7 @@ class TestUploadRoute:
         for filename in binary_files:
             assert not is_text_file(filename), f"{filename} should not be recognized as text"
 
-    def test_content_truncated_for_job_description(self, patch_data_dir):
+    def test_content_truncated_for_topic_description(self, patch_data_dir):
         """Large file content is truncated in topic description."""
         from fastapi.testclient import TestClient
         from src.web.app import app
@@ -179,7 +179,7 @@ class TestUploadRoute:
             mock_write.return_value = {"status": "added"}
 
             with patch("src.web.routes.upload.create_topic") as mock_create_topic:
-                mock_create_topic.return_value = {"id": "job-test789"}
+                mock_create_topic.return_value = {"id": "topic-test789"}
 
                 with patch("src.web.routes.upload.get_agent_inbox_topic") as mock_inbox:
                     mock_inbox.return_value = None
@@ -223,7 +223,7 @@ class TestUploadRoute:
                 assert "KB" in response.json()["size"]
 
     def test_no_parent_when_inbox_not_found(self, patch_data_dir):
-        """Job created without parent when user inbox doesn't exist."""
+        """Topic created without parent when user inbox doesn't exist."""
         from fastapi.testclient import TestClient
         from src.web.app import app
 
@@ -242,7 +242,7 @@ class TestUploadRoute:
             mock_write.return_value = {"status": "added"}
 
             with patch("src.web.routes.upload.create_topic") as mock_create_topic:
-                mock_create_topic.return_value = {"id": "job-orphan"}
+                mock_create_topic.return_value = {"id": "topic-orphan"}
 
                 with patch("src.web.routes.upload.get_agent_inbox_topic") as mock_inbox:
                     mock_inbox.return_value = None  # No inbox found

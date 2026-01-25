@@ -124,7 +124,7 @@ Mapping design requirements from `docs/3_system.md` and `specs/*.md` to test cov
 | Confidence decays without validation | [x] | test_pattern_confidence.py |
 | Confidence boosts on validation | [x] | test_pattern_confidence.py |
 
-### Job Assets
+### Topic Assets
 | Requirement | Tested | Notes |
 |-------------|--------|-------|
 | Assets stored as files | [ ] | assets.py 34% coverage |
