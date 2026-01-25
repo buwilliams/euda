@@ -42,6 +42,11 @@ class TriggerReflectionRequest(BaseModel):
     phase: Optional[str] = "both"  # "append", "consolidate", or "both"
 
 
+class TriggerRequest(BaseModel):
+    topic_name: str  # e.g., "euno:consolidate", "euno:quote"
+    topic_description: Optional[str] = None
+
+
 class AddMemoryRequest(BaseModel):
     short_description: str
     type: str
@@ -333,6 +338,52 @@ def api_trigger_reflection(agent_id: str, request: TriggerReflectionRequest = No
         "execution_id": execution_id,
         "agent_id": agent_id,
         "phase": phase,
+        "topic_id": topic["id"],
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+# General trigger endpoint
+@router.post("/{agent_id}/trigger")
+def api_trigger(agent_id: str, request: TriggerRequest):
+    """Trigger any scheduled event for an agent by creating a trigger topic.
+
+    Creates a topic with the specified name that the agent will pick up
+    and process during its work cycle.
+
+    Args:
+        agent_id: The agent to trigger
+        request: Contains topic_name (required) and topic_description (optional)
+
+    Returns an execution_id for SSE progress tracking.
+    """
+    # Verify agent exists
+    config = get_agent_config(agent_id)
+    if config is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Generate execution_id for SSE tracking
+    execution_id = f"exec-{uuid.uuid4().hex[:8]}"
+
+    inbox = get_agent_inbox_topic(agent_id)
+    parent_id = inbox["id"] if inbox else None
+
+    description = request.topic_description or f"Manual trigger (execution_id: {execution_id})"
+
+    topic = create_topic(
+        name=request.topic_name,
+        description=description,
+        parent_id=parent_id,
+        assignee=agent_id,
+        tags=["ui:manual", f"execution:{execution_id}"],
+        created_by="web-ui"
+    )
+
+    return {
+        "status": "triggered",
+        "execution_id": execution_id,
+        "agent_id": agent_id,
+        "topic_name": request.topic_name,
         "topic_id": topic["id"],
         "timestamp": datetime.now().isoformat()
     }

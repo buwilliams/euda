@@ -432,6 +432,180 @@ async function selectTopicState(topicId, status) {
 }
 
 
+// ============== Agent Controls Picker ==============
+
+function openAgentControlsPicker(agentId) {
+    const data = window._agentControlsData?.[agentId];
+    const agentState = data?.state || 'enabled';
+
+    const picker = document.createElement('div');
+    picker.className = 'picker-modal';
+    picker.id = 'agent-controls-picker';
+
+    // Build options based on current state
+    let options = '';
+
+    if (agentState === 'enabled') {
+        options = `
+            <div class="picker-option" onclick="closeAgentControlsPicker(); pauseAgent('${agentId}')">
+                <span class="picker-option-icon">${icon('pause')}</span>
+                <div class="picker-option-content">
+                    <span class="picker-option-label">Pause</span>
+                    <span class="picker-option-description">Temporarily stop agent from working</span>
+                </div>
+            </div>
+            <div class="picker-option" onclick="closeAgentControlsPicker(); disableAgent('${agentId}')">
+                <span class="picker-option-icon">${icon('x-mark')}</span>
+                <div class="picker-option-content">
+                    <span class="picker-option-label">Disable</span>
+                    <span class="picker-option-description">Turn off agent completely</span>
+                </div>
+            </div>
+            <div class="picker-option" onclick="closeAgentControlsPicker(); resetAgentTokenUsage('${agentId}')">
+                <span class="picker-option-icon">${icon('arrow-path')}</span>
+                <div class="picker-option-content">
+                    <span class="picker-option-label">Reset Tokens</span>
+                    <span class="picker-option-description">Reset token usage for current period</span>
+                </div>
+            </div>
+        `;
+    } else if (agentState === 'paused') {
+        options = `
+            <div class="picker-option" onclick="closeAgentControlsPicker(); enableAgent('${agentId}')">
+                <span class="picker-option-icon">${icon('play')}</span>
+                <div class="picker-option-content">
+                    <span class="picker-option-label">Resume</span>
+                    <span class="picker-option-description">Resume agent operations</span>
+                </div>
+            </div>
+            <div class="picker-option" onclick="closeAgentControlsPicker(); resetAgentTokenUsage('${agentId}')">
+                <span class="picker-option-icon">${icon('arrow-path')}</span>
+                <div class="picker-option-content">
+                    <span class="picker-option-label">Reset Tokens</span>
+                    <span class="picker-option-description">Reset token usage for current period</span>
+                </div>
+            </div>
+        `;
+    } else if (agentState === 'disabled') {
+        options = `
+            <div class="picker-option" onclick="closeAgentControlsPicker(); enableAgent('${agentId}')">
+                <span class="picker-option-icon">${icon('check')}</span>
+                <div class="picker-option-content">
+                    <span class="picker-option-label">Enable</span>
+                    <span class="picker-option-description">Turn on agent</span>
+                </div>
+            </div>
+            <div class="picker-option" onclick="closeAgentControlsPicker(); resetAgentTokenUsage('${agentId}')">
+                <span class="picker-option-icon">${icon('arrow-path')}</span>
+                <div class="picker-option-content">
+                    <span class="picker-option-label">Reset Tokens</span>
+                    <span class="picker-option-description">Reset token usage for current period</span>
+                </div>
+            </div>
+        `;
+    }
+
+    picker.innerHTML = `
+        <div class="picker-backdrop" onclick="closeAgentControlsPicker()"></div>
+        <div class="picker-content">
+            <div class="picker-header">Controls</div>
+            ${options}
+        </div>
+    `;
+    document.body.appendChild(picker);
+}
+
+function closeAgentControlsPicker() {
+    const picker = document.getElementById('agent-controls-picker');
+    if (picker) picker.remove();
+}
+
+
+// ============== Trigger Picker ==============
+
+function openTriggerPickerFromCache(agentId) {
+    const data = window._triggerPickerData?.[agentId];
+    if (!data) {
+        console.warn('No trigger data found for agent:', agentId);
+        return;
+    }
+    openTriggerPicker(agentId, data.triggers, data.disabledTriggers || []);
+}
+
+function openTriggerPicker(agentId, triggers, disabledTriggers = []) {
+    if (!triggers || triggers.length === 0) {
+        console.warn('No triggers configured for agent');
+        return;
+    }
+
+    const picker = document.createElement('div');
+    picker.className = 'picker-modal';
+    picker.id = 'trigger-picker';
+
+    const triggerOptions = triggers.map(trigger => {
+        const topicName = trigger.topic_name || trigger;
+        const description = trigger.topic_description || '';
+        const schedule = trigger.schedule || '';
+        const isDisabled = disabledTriggers.includes(topicName);
+        const disabledAttr = isDisabled ? 'disabled' : '';
+        const disabledClass = isDisabled ? 'disabled' : '';
+
+        // Format display name (e.g., "euno:consolidate" -> "Consolidate")
+        const displayName = topicName.includes(':')
+            ? topicName.split(':').pop().replace(/^\w/, c => c.toUpperCase())
+            : topicName;
+
+        return `
+            <div class="picker-option ${disabledClass}" onclick="${isDisabled ? '' : `triggerEvent('${agentId}', '${topicName}', '${escapeHtml(description)}')`}" ${disabledAttr}>
+                <span class="picker-option-icon">${icon('play')}</span>
+                <div class="picker-option-content">
+                    <span class="picker-option-label">${escapeHtml(displayName)}</span>
+                    ${description ? `<span class="picker-option-description">${escapeHtml(description)}</span>` : ''}
+                </div>
+                ${schedule ? `<span class="picker-option-badge">${escapeHtml(schedule)}</span>` : ''}
+            </div>
+        `;
+    }).join('');
+
+    picker.innerHTML = `
+        <div class="picker-backdrop" onclick="closeTriggerPicker()"></div>
+        <div class="picker-content">
+            <div class="picker-header">Trigger</div>
+            ${triggerOptions}
+        </div>
+    `;
+    document.body.appendChild(picker);
+}
+
+function closeTriggerPicker() {
+    const picker = document.getElementById('trigger-picker');
+    if (picker) picker.remove();
+}
+
+async function triggerEvent(agentId, topicName, topicDescription) {
+    closeTriggerPicker();
+
+    try {
+        const response = await fetch(`/api/agents/${agentId}/trigger`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                topic_name: topicName,
+                topic_description: topicDescription || undefined
+            })
+        });
+
+        if (!response.ok) {
+            console.error('Failed to trigger event:', await response.text());
+        }
+        // Topic created - SSE will update the topics list
+    } catch (error) {
+        console.error('Failed to trigger event:', error);
+    }
+}
+
+
 // ============== Topic Status Label ==============
 
 function getTopicStatusLabel(topic) {

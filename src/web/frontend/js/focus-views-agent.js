@@ -50,18 +50,26 @@ function renderAgentDetailView(topic) {
     }
 
     const config = agentData.config || {};
+    const triggers = config.triggers || [];
     const pauseStatus = agentPauseStatus[agentId] || { state: 'enabled', isPaused: false, isDisabled: false, isEnabled: true };
     const agentState = pauseStatus.state || 'enabled';
 
-    // Check if there's an active consolidation task for this agent
-    const hasActiveConsolidateTask = allChildTopics.some(j =>
-        j.name === 'euno:consolidate' && (j.status === 'todo' || j.status === 'working')
-    );
+    // Get trigger topic names to check for active tasks
+    const triggerTopicNames = triggers.map(t => t.topic_name || t);
 
-    // Helper to render action button - disabled when consolidation task is active
-    const actionButton = (phase, iconName, label, onclick) => {
-        const disabled = hasActiveConsolidateTask || pauseStatus.isPaused || pauseStatus.isDisabled ? 'disabled' : '';
-        return `<button class="task-detail-action" onclick="${onclick}" ${disabled}>${icon(iconName)} ${label}</button>`;
+    // Find which triggers have active tasks (todo or working)
+    const activeTriggerTopics = allChildTopics
+        .filter(j => triggerTopicNames.includes(j.name) && (j.status === 'todo' || j.status === 'working'))
+        .map(j => j.name);
+
+    // Render trigger button with picker
+    const renderTriggerButton = () => {
+        if (triggers.length === 0) return '';
+        const disabled = pauseStatus.isPaused || pauseStatus.isDisabled ? 'disabled' : '';
+        // Store trigger data in a global cache for the picker to access
+        window._triggerPickerData = window._triggerPickerData || {};
+        window._triggerPickerData[agentId] = { triggers, disabledTriggers: activeTriggerTopics };
+        return `<button class="task-detail-action" onclick="openTriggerPickerFromCache('${agentId}')" ${disabled}>${icon('play')} Trigger</button>`;
     };
 
     // Status badge color class
@@ -69,27 +77,12 @@ function renderAgentDetailView(topic) {
                              agentState === 'paused' ? 'status-paused' :
                              agentState === 'disabled' ? 'status-disabled' : '';
 
-    // Render status controls based on current state
-    const resetButton = `<button class="task-detail-action" onclick="resetAgentTokenUsage('${agentId}')">${icon('arrow-path')} Reset</button>`;
-    const renderStatusControls = () => {
-        if (agentState === 'enabled') {
-            return `
-                <button class="task-detail-action" data-testid="pause-btn" onclick="pauseAgent('${agentId}')">${icon('pause')} Pause</button>
-                <button class="task-detail-action" onclick="disableAgent('${agentId}')">${icon('x-mark')} Disable</button>
-                ${resetButton}
-            `;
-        } else if (agentState === 'paused') {
-            return `
-                <button class="task-detail-action" data-testid="resume-btn" onclick="enableAgent('${agentId}')">${icon('play')} Resume</button>
-                ${resetButton}
-            `;
-        } else if (agentState === 'disabled') {
-            return `
-                <button class="task-detail-action" onclick="enableAgent('${agentId}')">${icon('check')} Enable</button>
-                ${resetButton}
-            `;
-        }
-        return '';
+    // Render controls button that opens a picker
+    const renderControlsButton = () => {
+        // Store control state in cache for the picker
+        window._agentControlsData = window._agentControlsData || {};
+        window._agentControlsData[agentId] = { state: agentState };
+        return `<button class="task-detail-action" onclick="openAgentControlsPicker('${agentId}')">${icon('cog-6-tooth')} Controls</button>`;
     };
 
     // Token budget info
@@ -302,8 +295,8 @@ function renderAgentDetailView(topic) {
 
             <!-- Action Menu - all controls in one row -->
             <div class="task-detail-actions">
-                ${renderStatusControls()}
-                ${actionButton('consolidate', 'archive-box', 'Consolidate', `triggerReflection('${agentId}', 'consolidate')`)}
+                ${renderControlsButton()}
+                ${renderTriggerButton()}
                 <button class="task-detail-action" onclick="openAddPicker('${topic.id}')">+ Add</button>
             </div>
 
