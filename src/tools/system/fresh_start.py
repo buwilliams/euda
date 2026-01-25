@@ -190,6 +190,11 @@ def perform_fresh_start(create_backup_first: bool = True) -> dict:
         if logs_dir.exists():
             shutil.rmtree(logs_dir)
             deleted.append("system/logs/")
+        # Remove unacknowledged incidents
+        incidents_file = system_dir / "incidents" / "unacknowledged.json"
+        if incidents_file.exists():
+            incidents_file.unlink()
+            deleted.append("system/incidents/unacknowledged.json")
 
     # 5. Reinitialize database schema
     _ensure_schema()
