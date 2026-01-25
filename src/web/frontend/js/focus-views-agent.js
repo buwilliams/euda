@@ -24,6 +24,8 @@ function renderAgentDetailView(topic) {
     // Combine both, deduplicating by ID (assigned topics take priority)
     const assignedIds = new Set(assignedTopics.map(t => t.id));
     const allChildTopics = [...assignedTopics, ...inboxChildTopics.filter(t => !assignedIds.has(t.id))];
+    // Count only active topics (todo/working) for display
+    const activeTopicsCount = allChildTopics.filter(t => t.status === 'todo' || t.status === 'working').length;
     const assets = topicAssetsCache[topic.id] || [];
 
     // Load agent data if not cached
@@ -308,7 +310,7 @@ function renderAgentDetailView(topic) {
             <!-- Topics Section (all topics sorted by status: working > todo > error > done > archived) -->
             <div class="topic-section">
                 <div class="topic-section-header collapsible ${allChildTopics.length > 0 ? 'open' : ''}" onclick="togglePersonaSection(this, event)">
-                    <span>Topics${allChildTopics.length > 0 ? ` (${allChildTopics.length})` : ''}</span>
+                    <span>Topics${activeTopicsCount > 0 ? ` (${activeTopicsCount})` : ''}</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
                 <div class="collapsible-content ${allChildTopics.length > 0 ? 'open' : ''}">
