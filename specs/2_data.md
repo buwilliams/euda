@@ -240,12 +240,12 @@ uv run euno dev tool search_all_memory '{"query": "some_term"}'
 
 ### Background Topic Pacing Test
 
-Verifies background-tagged topics are paced based on load.
+Verifies work cycles are paced to prevent runaway spinning.
 
 ```bash
-# Upload multiple files, then watch for pacing events
+# Upload multiple files, observe agent doesn't spin continuously
 for i in 1 2 3; do curl -F "file=@test.txt" http://localhost:8000/api/upload; done
-uv run euno dev watch  # Look for "background_job_pacing" events
+uv run euno dev watch  # Observe work_cycle events with natural delays
 ```
 
-**Pass**: Agent logs show `background_job_pacing` events with delays scaling to utilization.
+**Pass**: Work cycles have minimum 500ms delay between them, preventing CPU spinning.
