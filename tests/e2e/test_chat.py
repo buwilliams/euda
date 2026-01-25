@@ -48,11 +48,13 @@ class TestChatInput:
         expect(page.locator('[data-testid="context-input"]')).to_be_visible()
         expect(page.locator('[data-testid="send-btn"]')).to_be_visible()
 
-    def test_voice_button_visible(self, authenticated_page: Page):
-        """Voice button should be visible."""
+    def test_voice_button_exists(self, authenticated_page: Page):
+        """Voice button should exist (may be hidden if STT unavailable)."""
         page = authenticated_page
 
-        expect(page.locator('[data-testid="voice-btn"]')).to_be_visible()
+        # Voice button exists but may be hidden if STT provider not configured
+        voice_btn = page.locator('[data-testid="voice-btn"]')
+        expect(voice_btn).to_be_attached()
 
 
 class TestSendMessage:

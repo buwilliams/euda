@@ -6,6 +6,25 @@ from playwright.sync_api import Page, expect
 pytestmark = pytest.mark.e2e
 
 
+def navigate_to_agents(page: Page) -> bool:
+    """Navigate to agents container. Returns True if successful, False if not available."""
+    # The agents container is accessible via the Collections section
+    # This section only exists if there's a topic with tag 'system:agents'
+    collections_section = page.get_by_text("Collections")
+    if not collections_section.is_visible(timeout=2000):
+        return False
+
+    collections_section.click()
+
+    # Look for Agents menu item
+    agents_link = page.get_by_text("Agents")
+    if not agents_link.is_visible(timeout=2000):
+        return False
+
+    agents_link.click()
+    return True
+
+
 class TestAgentsContainer:
     """Tests for agents container display."""
 
@@ -13,19 +32,11 @@ class TestAgentsContainer:
         """Agents container should be accessible from Focus tab."""
         page = authenticated_page
 
-        # The agents container is accessible via the Collections section
-        # Look for the Collections section header and expand it
-        collections_section = page.get_by_text("Collections")
-        if collections_section.is_visible():
-            collections_section.click()
+        if not navigate_to_agents(page):
+            pytest.skip("Agents container not available (no system:agents topic)")
 
-            # Look for Agents menu item
-            agents_link = page.get_by_text("Agents")
-            if agents_link.is_visible():
-                agents_link.click()
-
-                # Should show agents container
-                expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
+        # Should show agents container
+        expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
 
 
 class TestAgentCard:
@@ -35,22 +46,16 @@ class TestAgentCard:
         """Agent cards should be visible in agents container."""
         page = authenticated_page
 
-        # Navigate to agents container
-        collections_section = page.get_by_text("Collections")
-        if collections_section.is_visible():
-            collections_section.click()
+        if not navigate_to_agents(page):
+            pytest.skip("Agents container not available (no system:agents topic)")
 
-            agents_link = page.get_by_text("Agents")
-            if agents_link.is_visible():
-                agents_link.click()
+        # Wait for agents container
+        expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
 
-                # Wait for agents container
-                expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
-
-                # Check for agent cards
-                agent_cards = page.locator('[data-testid="agent-card"]')
-                if agent_cards.count() > 0:
-                    expect(agent_cards.first).to_be_visible()
+        # Check for agent cards
+        agent_cards = page.locator('[data-testid="agent-card"]')
+        if agent_cards.count() > 0:
+            expect(agent_cards.first).to_be_visible()
 
 
 class TestAgentDetail:
@@ -60,25 +65,21 @@ class TestAgentDetail:
         """Clicking an agent card should open agent detail view."""
         page = authenticated_page
 
-        # Navigate to agents container
-        collections_section = page.get_by_text("Collections")
-        if collections_section.is_visible():
-            collections_section.click()
+        if not navigate_to_agents(page):
+            pytest.skip("Agents container not available (no system:agents topic)")
 
-            agents_link = page.get_by_text("Agents")
-            if agents_link.is_visible():
-                agents_link.click()
+        # Wait for agents container
+        expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
 
-                # Wait for agents container
-                expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
+        # Click first agent card
+        agent_cards = page.locator('[data-testid="agent-card"]')
+        if agent_cards.count() == 0:
+            pytest.skip("No agent cards available")
 
-                # Click first agent card
-                agent_cards = page.locator('[data-testid="agent-card"]')
-                if agent_cards.count() > 0:
-                    agent_cards.first.click()
+        agent_cards.first.click()
 
-                    # Should show agent detail
-                    expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
+        # Should show agent detail
+        expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
 
 
 class TestAgentManagement:
@@ -88,29 +89,25 @@ class TestAgentManagement:
         """Pause button should be visible in agent detail view."""
         page = authenticated_page
 
-        # Navigate to an agent detail view
-        collections_section = page.get_by_text("Collections")
-        if collections_section.is_visible():
-            collections_section.click()
+        if not navigate_to_agents(page):
+            pytest.skip("Agents container not available (no system:agents topic)")
 
-            agents_link = page.get_by_text("Agents")
-            if agents_link.is_visible():
-                agents_link.click()
+        # Wait for agents container
+        expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
 
-                # Wait for agents container
-                expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
+        # Click first agent card
+        agent_cards = page.locator('[data-testid="agent-card"]')
+        if agent_cards.count() == 0:
+            pytest.skip("No agent cards available")
 
-                # Click first agent card
-                agent_cards = page.locator('[data-testid="agent-card"]')
-                if agent_cards.count() > 0:
-                    agent_cards.first.click()
+        agent_cards.first.click()
 
-                    # Wait for agent detail
-                    expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
+        # Wait for agent detail
+        expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
 
-                    # Pause button should be visible in detail view (or resume if already paused)
-                    pause_or_resume = page.locator('[data-testid="pause-btn"], [data-testid="resume-btn"]')
-                    expect(pause_or_resume.first).to_be_visible(timeout=5000)
+        # Pause button should be visible in detail view (or resume if already paused)
+        pause_or_resume = page.locator('[data-testid="pause-btn"], [data-testid="resume-btn"]')
+        expect(pause_or_resume.first).to_be_visible(timeout=5000)
 
 
 class TestAgentIdentity:
@@ -120,33 +117,31 @@ class TestAgentIdentity:
         """Identity content should be visible in identity view."""
         page = authenticated_page
 
-        # Navigate to an agent's identity view
-        collections_section = page.get_by_text("Collections")
-        if collections_section.is_visible():
-            collections_section.click()
+        if not navigate_to_agents(page):
+            pytest.skip("Agents container not available (no system:agents topic)")
 
-            agents_link = page.get_by_text("Agents")
-            if agents_link.is_visible():
-                agents_link.click()
+        # Wait for agents container
+        expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
 
-                # Wait for agents container
-                expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
+        # Click first agent card
+        agent_cards = page.locator('[data-testid="agent-card"]')
+        if agent_cards.count() == 0:
+            pytest.skip("No agent cards available")
 
-                # Click first agent card
-                agent_cards = page.locator('[data-testid="agent-card"]')
-                if agent_cards.count() > 0:
-                    agent_cards.first.click()
+        agent_cards.first.click()
 
-                    # Wait for agent detail
-                    expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
+        # Wait for agent detail
+        expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
 
-                    # Click Identity section (now directly in agent detail view)
-                    identity_link = page.get_by_text("Identity")
-                    if identity_link.is_visible():
-                        identity_link.click()
+        # Click Identity section (now directly in agent detail view)
+        identity_link = page.get_by_text("Identity")
+        if not identity_link.is_visible(timeout=2000):
+            pytest.skip("Identity link not visible")
 
-                        # Identity content should be visible
-                        expect(page.locator('[data-testid="identity-content"]')).to_be_visible(timeout=5000)
+        identity_link.click()
+
+        # Identity content should be visible
+        expect(page.locator('[data-testid="identity-content"]')).to_be_visible(timeout=5000)
 
 
 class TestAgentMemory:
@@ -156,30 +151,28 @@ class TestAgentMemory:
         """Memory list should be visible in memory view."""
         page = authenticated_page
 
-        # Navigate to an agent's memory view
-        collections_section = page.get_by_text("Collections")
-        if collections_section.is_visible():
-            collections_section.click()
+        if not navigate_to_agents(page):
+            pytest.skip("Agents container not available (no system:agents topic)")
 
-            agents_link = page.get_by_text("Agents")
-            if agents_link.is_visible():
-                agents_link.click()
+        # Wait for agents container
+        expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
 
-                # Wait for agents container
-                expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
+        # Click first agent card
+        agent_cards = page.locator('[data-testid="agent-card"]')
+        if agent_cards.count() == 0:
+            pytest.skip("No agent cards available")
 
-                # Click first agent card
-                agent_cards = page.locator('[data-testid="agent-card"]')
-                if agent_cards.count() > 0:
-                    agent_cards.first.click()
+        agent_cards.first.click()
 
-                    # Wait for agent detail
-                    expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
+        # Wait for agent detail
+        expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
 
-                    # Click Short-term Memory section (now directly in agent detail view)
-                    memory_link = page.get_by_text("Short-term Memory")
-                    if memory_link.is_visible():
-                        memory_link.click()
+        # Click Short-term Memory section (now directly in agent detail view)
+        memory_link = page.get_by_text("Short-term Memory")
+        if not memory_link.is_visible(timeout=2000):
+            pytest.skip("Short-term Memory link not visible")
 
-                        # Memory list should be visible
-                        expect(page.locator('[data-testid="memory-list"]')).to_be_visible(timeout=5000)
+        memory_link.click()
+
+        # Memory list should be visible
+        expect(page.locator('[data-testid="memory-list"]')).to_be_visible(timeout=5000)
