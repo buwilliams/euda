@@ -4,6 +4,86 @@ There are two main concepts in Euno: Agents and Topics. Agents are actors. Topic
 
 ---
 
+## Entities
+
+This section defines the core entities, their properties, and relationships. This is the source of truth for what exists in the system.
+
+### Agent
+
+An agent is an actor in the system (AI or human).
+
+**Properties:**
+- `id` - unique identifier
+- `name` - display name
+- `state` - operational state
+  - `enabled` - normal operation, polling for topics
+  - `disabled` - user explicitly turned off
+  - `paused` - system auto-paused (e.g., budget exceeded)
+- `order` - execution priority (lower runs first)
+
+**Files:**
+- `identity.md` - current identity (purpose, values, voice, rules)
+- `identity.{year}.md` - archived identity snapshots (e.g., `identity.2025.md`)
+- `config.json` - behavior configuration
+
+**Memory:**
+- `short-term[]` - rolling 90-day concerns (`.jsonl`)
+- `long-term[]` - permanent archive by date (`{yyyy}/{yyyy-mm-dd}.md`)
+
+**Cognition:**
+- `system_prompts[]` - base reasoning prompts
+- `prompts[]` - dynamic prompts (identity, memory, context)
+- `regulation` - metacognition (token tracking, progress detection)
+
+**Behavior:**
+- `tools[]` - available tool names
+- `triggers[]` - when agent acts (schedules, events)
+
+**Consolidation:**
+- `enabled` - whether consolidation runs
+- `trigger` - when to run (e.g., `time:evening`)
+
+### Topic
+
+A topic is a unit of work and coordination between agents.
+
+**Properties:**
+- `id` - unique identifier (14-char)
+- `name` - title
+- `description` - details
+- `state` - workflow state
+  - `todo` - waiting to be worked
+  - `working` - agent actively working
+  - `done` - completed successfully
+  - `error` - something went wrong
+  - `archived` - soft-deleted
+- `due_date` - optional deadline (`YYYY-MM-DD`)
+- `assignee` - agent_id or `user`
+- `parent_id` - parent topic (hierarchy)
+- `created_by` - who created it
+- `pending_from` - who handed it off (for returns)
+- `tags[]` - metadata tags (e.g., `waiting:user-response`)
+
+**Related Data:**
+- `assets[]` - files attached to topic (`data/topics/assets/{topic-id}/`)
+- `topic_logs[]` - execution history (`data/topics/logs/{topic-id}.jsonl`)
+- `llm_calls[]` - LLM API calls made while working topic (`data/topics/llm/{topic-id}.jsonl`)
+- `topics[]` - child topics (hierarchy)
+
+### Manager
+
+The manager orchestrates the system lifecycle.
+
+**Responsibilities:**
+- Loads agents from `data/agents/*`
+- Watches for agent config changes
+- Reloads agents on config change
+- Runs time scheduler for triggers
+- Creates scheduled topics at trigger times
+- Monitors agent health
+
+---
+
 ## Agency
 
 The design of Euno anthropomorphizes AI [attributing human characteristics/behavior]. In Euno, we treat people and AI basically the same and call them Agents. Agents, like people, grow and change over time, so we've built a system that supports that type of growth. When a person eats, they grow, AIs grow when fed them with data. Here's what makes up an Agent:
@@ -64,6 +144,28 @@ Behavior is what enables action. It has two parts.
 ---
 
 ## Euno Lifecycle
+
+### System Flow
+
+```
+Manager:
+  1. Loads agents from data/agents/*
+  2. Watches data/agents/* for changes
+  3. Reloads agents on config change
+  4. Creates scheduled topics at trigger times
+
+Agent (work cycle):
+  1. Agent polls for one assigned topic (status=todo, assignee=self)
+  2. Agent sets topic to 'working'
+  3. Agent calls LLM with system prompts + context
+  4. LLM uses tools to act
+  5. Regulation monitors all LLM calls (tokens, progress)
+  6. Agent updates topic:
+     - Creates assets as needed
+     - Sets state to 'done' or 'error'
+     - Or reassigns to another agent
+  7. (repeat)
+```
 
 ### Topics
 
