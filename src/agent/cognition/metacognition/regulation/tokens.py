@@ -1098,28 +1098,36 @@ def get_calls_by_topic(topic_id: str, days: int = 30) -> list:
     Returns:
         List of API call entries for this topic
     """
-    ta = get_token_awareness()
-    cutoff = datetime.now() - timedelta(days=days)
+    now = datetime.now()
+    cutoff = now - timedelta(days=days)
+    start_date = cutoff.replace(day=1)
     results = []
 
-    # Read from current month's log file
-    log_path = ta._cost_log_path
-    if log_path.exists():
-        try:
-            with open(log_path, "r") as f:
-                for line in f:
-                    if not line.strip():
-                        continue
-                    try:
-                        entry = json.loads(line)
-                        if entry.get("topic_id") == topic_id:
-                            entry_time = datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
-                            if entry_time.replace(tzinfo=None) >= cutoff:
-                                results.append(entry)
-                    except (json.JSONDecodeError, KeyError, ValueError):
-                        continue
-        except Exception:
-            pass
+    # Read from all relevant monthly log files
+    current = start_date
+    while current <= now:
+        log_path = USAGE_DIR / f"{current.strftime('%Y-%m')}.jsonl"
+        if log_path.exists():
+            try:
+                with open(log_path, "r") as f:
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        try:
+                            entry = json.loads(line)
+                            if entry.get("topic_id") == topic_id:
+                                entry_time = datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
+                                if entry_time.replace(tzinfo=None) >= cutoff:
+                                    results.append(entry)
+                        except (json.JSONDecodeError, KeyError, ValueError):
+                            continue
+            except Exception:
+                pass
+        # Move to next month
+        if current.month == 12:
+            current = current.replace(year=current.year + 1, month=1)
+        else:
+            current = current.replace(month=current.month + 1)
 
     return results
 
@@ -1157,32 +1165,41 @@ def get_costs_by_agent(days: int = 30) -> dict:
     Returns:
         Dict mapping agent_id to cost summary
     """
-    ta = get_token_awareness()
-    cutoff = datetime.now() - timedelta(days=days)
+    now = datetime.now()
+    cutoff = now - timedelta(days=days)
+    start_date = cutoff.replace(day=1)
     by_agent = {}
 
-    log_path = ta._cost_log_path
-    if log_path.exists():
-        try:
-            with open(log_path, "r") as f:
-                for line in f:
-                    if not line.strip():
-                        continue
-                    try:
-                        entry = json.loads(line)
-                        entry_time = datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
-                        if entry_time.replace(tzinfo=None) >= cutoff:
-                            agent_id = entry.get("agent", "unknown")
-                            if agent_id not in by_agent:
-                                by_agent[agent_id] = {"calls": 0, "cost": 0, "input_tokens": 0, "output_tokens": 0}
-                            by_agent[agent_id]["calls"] += 1
-                            by_agent[agent_id]["cost"] += entry.get("cost", 0)
-                            by_agent[agent_id]["input_tokens"] += entry.get("input_tokens", 0)
-                            by_agent[agent_id]["output_tokens"] += entry.get("output_tokens", 0)
-                    except (json.JSONDecodeError, KeyError, ValueError):
-                        continue
-        except Exception:
-            pass
+    # Read from all relevant monthly log files
+    current = start_date
+    while current <= now:
+        log_path = USAGE_DIR / f"{current.strftime('%Y-%m')}.jsonl"
+        if log_path.exists():
+            try:
+                with open(log_path, "r") as f:
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        try:
+                            entry = json.loads(line)
+                            entry_time = datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
+                            if entry_time.replace(tzinfo=None) >= cutoff:
+                                agent_id = entry.get("agent", "unknown")
+                                if agent_id not in by_agent:
+                                    by_agent[agent_id] = {"calls": 0, "cost": 0, "input_tokens": 0, "output_tokens": 0}
+                                by_agent[agent_id]["calls"] += 1
+                                by_agent[agent_id]["cost"] += entry.get("cost", 0)
+                                by_agent[agent_id]["input_tokens"] += entry.get("input_tokens", 0)
+                                by_agent[agent_id]["output_tokens"] += entry.get("output_tokens", 0)
+                        except (json.JSONDecodeError, KeyError, ValueError):
+                            continue
+            except Exception:
+                pass
+        # Move to next month
+        if current.month == 12:
+            current = current.replace(year=current.year + 1, month=1)
+        else:
+            current = current.replace(month=current.month + 1)
 
     return by_agent
 
