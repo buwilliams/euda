@@ -322,13 +322,18 @@ function renderSystemContainerView(topic, isAgentsContainer) {
             return `
                 <div class="child-topics-list">
                     ${childTopics.map(child => {
-                        const grandchildCount = topicsData.filter(j => j.parent_id === child.id).length;
+                        const agentId = child.agent_id;
+                        // Count topics assigned to this agent + children of inbox (deduped)
+                        const assignedTopics = agentId ? allTopicsData.filter(t => t.assignee === agentId) : [];
+                        const inboxChildren = allTopicsData.filter(j => j.parent_id === child.id);
+                        const assignedIds = new Set(assignedTopics.map(t => t.id));
+                        const totalCount = assignedTopics.length + inboxChildren.filter(t => !assignedIds.has(t.id)).length;
                         const childIcon = icon('bolt');
                         return `
                             <div class="child-topic-card" data-testid="agent-card" onclick="navigateFocus('topic-${child.id}')">
                                 <span class="child-topic-icon">${childIcon}</span>
                                 <span class="child-topic-name">${escapeHtml(child.name)}</span>
-                                <span class="child-topic-count">${grandchildCount}</span>
+                                <span class="child-topic-count">${totalCount}</span>
                                 <span class="child-topic-arrow">${icon('chevron-right')}</span>
                             </div>
                         `;
