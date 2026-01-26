@@ -1352,8 +1352,8 @@ def sync_agent_inbox_topics():
             changes_made = True
 
     # Migrate orphaned root topics (user-created, not system) under Projects
-    system_tags = {"system:agents", "system:projects"}
-    system_container_names = {"Agents", "Projects", "System"}
+    system_tags = {"system:agents", "system:projects", "system:assets", "system:explorations"}
+    system_container_names = {"Agents", "Projects", "Assets", "Explorations", "System"}
     for topic in all_topics:
         # Skip if not a root topic
         if topic["parent_id"] is not None:
