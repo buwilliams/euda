@@ -15,9 +15,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from ..tools.data.memory import list_memory
-from ..tools.data.topics import list_topics
-from ..tools.agents.agents import list_agents
+# Lazy imports to avoid circular dependency
+# These are imported inside functions that use them
+# from ..tools.data.memory import list_memory
+# from ..tools.data.topics import list_topics
+# from ..tools.agents.agents import list_agents
 
 
 @dataclass
@@ -41,6 +43,8 @@ def get_observing_agents() -> list[dict]:
     Returns:
         List of agent configs with observation.enabled=True
     """
+    from ..tools.agents.agents import list_agents
+
     agents = []
     for agent in list_agents():
         obs_config = agent.get("observation", {})
@@ -62,6 +66,9 @@ def get_agent_interests(agent_id: str) -> list[str]:
     Returns:
         List of lowercase keywords to match against
     """
+    from ..tools.data.memory import list_memory
+    from ..tools.data.topics import list_topics
+
     keywords = []
 
     # Get interest-type memories

@@ -12,17 +12,24 @@ Where:
 
 from pathlib import Path
 from .agent import Agent
-from .interests import (
-    Observation,
-    get_observing_agents,
-    get_agent_interests,
-    matches_interests,
-    check_content_for_observations,
-    invalidate_interest_cache,
-)
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
+
+# Lazy imports for interests module to avoid circular dependency
+def __getattr__(name):
+    """Lazy import for interests module exports."""
+    if name in (
+        "Observation",
+        "get_observing_agents",
+        "get_agent_interests",
+        "matches_interests",
+        "check_content_for_observations",
+        "invalidate_interest_cache",
+    ):
+        from . import interests
+        return getattr(interests, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 __all__ = [
     "Agent",
