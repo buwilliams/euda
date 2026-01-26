@@ -142,6 +142,26 @@ This preserves how an agent's identity has evolved over time, enabling:
 - Assets stored as files: `data/topics/assets/{topic-id}/{filename}`
 - Use SQLite because indexing and querying is required
 
+### Topic Organization
+
+Root-level system containers organize topics:
+
+- **Agents** (`system:agents`) — Agent inbox topics, one per agent
+- **Projects** (`system:projects`) — Task-oriented work with clear endpoints
+- **Explorations** (`system:explorations`) — Long-term interests without clear endpoints
+- **Assets** (`system:assets`) — Placeholder for browsing assets across all topics
+
+**Routing rules:**
+- Topics with `exploration` tag automatically route to Explorations container
+- Topics created by user/system default to Projects
+- Topics created by agents default to their inbox
+
+**Explorations vs Projects:**
+- Projects follow `todo → working → done` progression
+- Explorations accumulate findings without completion pressure
+- Exploration agents (like Aster) own explorations and add assets over time
+- User agent does NOT turn exploration findings into project deliverables
+
 ### Topic Assets
 
 Topic assets are files attached to a topic. They serve multiple purposes:

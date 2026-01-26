@@ -322,6 +322,7 @@ def create_topic(
     """Create a new topic.
 
     If no parent_id is provided:
+    - Topics with "exploration" tag go under Explorations container
     - Topics created by user/system go under Projects
     - Topics created by other agents go under their agent inbox
     """
@@ -331,7 +332,12 @@ def create_topic(
     # Set default parent if none provided
     effective_parent_id = parent_id
     if effective_parent_id is None:
-        effective_parent_id = _get_default_parent_for_creator(created_by)
+        # Check if this is an exploration topic
+        if tags and "exploration" in tags:
+            explorations = get_explorations_container()
+            effective_parent_id = explorations["id"] if explorations else None
+        else:
+            effective_parent_id = _get_default_parent_for_creator(created_by)
 
     with _transaction() as conn:
         conn.execute('''
@@ -1252,6 +1258,16 @@ def get_assets_container() -> dict:
     return get_or_create_system_topic("Assets", "system:assets")
 
 
+def get_explorations_container() -> dict:
+    """Get or create the Explorations container topic.
+
+    Explorations are long-term interests and directions without clear endpoints.
+    Unlike Projects (which have deliverables), Explorations are tended by
+    exploration agents like Aster and accumulate findings over time.
+    """
+    return get_or_create_system_topic("Explorations", "system:explorations")
+
+
 def sync_agent_inbox_topics():
     """Sync agent inbox topics with current agents.
 
@@ -1265,6 +1281,7 @@ def sync_agent_inbox_topics():
     agents_container = get_agents_container()
     projects_container = get_projects_container()
     get_assets_container()  # Create Assets container if it doesn't exist
+    get_explorations_container()  # Create Explorations container if it doesn't exist
 
     agents = list_agents()
     agent_ids = {a["id"] for a in agents}

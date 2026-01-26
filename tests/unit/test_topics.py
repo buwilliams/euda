@@ -609,3 +609,57 @@ class TestInterestExtractionOnAssignment:
         python_interests = [m for m in memories if m.get("type") == "interest" and m.get("short_description", "").lower() == "python"]
 
         assert len(python_interests) == 1  # Only the original one
+
+
+class TestExplorationRouting:
+    """Test exploration topics route to Explorations container."""
+
+    def test_exploration_tag_routes_to_explorations(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Topics with 'exploration' tag go to Explorations container."""
+        from src.tools.data.topics import create_topic, get_explorations_container
+
+        # Create Explorations container
+        explorations = get_explorations_container()
+
+        # Create exploration topic
+        topic = create_topic(
+            name="What if we could fly",
+            tags=["exploration", "user:request"],
+            created_by="user"
+        )
+
+        assert topic["parent_id"] == explorations["id"]
+        assert "exploration" in topic["tags"]
+
+    def test_non_exploration_routes_to_projects(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Topics without 'exploration' tag go to Projects."""
+        from src.tools.data.topics import create_topic, get_projects_container
+
+        # Create Projects container
+        projects = get_projects_container()
+
+        # Create regular topic
+        topic = create_topic(
+            name="Fix the bug",
+            tags=["urgent"],
+            created_by="user"
+        )
+
+        assert topic["parent_id"] == projects["id"]
+
+    def test_explicit_parent_overrides_exploration_routing(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Explicit parent_id takes precedence over exploration tag routing."""
+        from src.tools.data.topics import create_topic
+
+        # Create a custom parent
+        parent = create_topic(name="Custom Parent", parent_id=None, created_by="test")
+
+        # Create exploration topic with explicit parent
+        topic = create_topic(
+            name="Nested exploration",
+            tags=["exploration"],
+            parent_id=parent["id"],
+            created_by="user"
+        )
+
+        assert topic["parent_id"] == parent["id"]

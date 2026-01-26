@@ -117,10 +117,12 @@ function renderFocusMenu() {
     const agentsContainer = topicsData.find(j => j.tags && j.tags.includes('system:agents') && !j.parent_id);
     const projectsContainer = topicsData.find(j => j.tags && j.tags.includes('system:projects') && !j.parent_id);
     const assetsContainer = topicsData.find(j => j.tags && j.tags.includes('system:assets') && !j.parent_id);
+    const explorationsContainer = topicsData.find(j => j.tags && j.tags.includes('system:explorations') && !j.parent_id);
 
     // Count children of each container
     const agentsCount = agentsContainer ? topicsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
     const projectsCount = projectsContainer ? topicsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
+    const explorationsCount = explorationsContainer ? topicsData.filter(j => j.parent_id === explorationsContainer.id).length : 0;
     // Assets count comes from the cache (loaded separately)
     // Load assets if not cached yet (for count display)
     if (assetsContainer && recentAssetsCache === null) {
@@ -154,8 +156,8 @@ function renderFocusMenu() {
         `;
     }
 
-    // Build system section (Agents + Projects + Assets) if any exist
-    const hasSystemSection = agentsContainer || projectsContainer || assetsContainer;
+    // Build system section (Agents + Projects + Explorations + Assets) if any exist
+    const hasSystemSection = agentsContainer || projectsContainer || explorationsContainer || assetsContainer;
     const systemSection = hasSystemSection ? `
         <div class="focus-menu-section">
             <div class="focus-menu-section-label collapsible ${collectionsOpen ? 'open' : ''}" onclick="toggleSection('collections')">
@@ -176,6 +178,14 @@ function renderFocusMenu() {
                     <span class="focus-menu-icon">${icon('folder')}</span>
                     <span class="focus-menu-label">Projects</span>
                     <span class="focus-menu-count">${projectsCount}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                ` : ''}
+                ${explorationsContainer ? `
+                <div class="focus-menu-item" onclick="navigateFocus('topic-${explorationsContainer.id}')">
+                    <span class="focus-menu-icon">${icon('sparkles')}</span>
+                    <span class="focus-menu-label">Explorations</span>
+                    <span class="focus-menu-count">${explorationsCount}</span>
                     <span class="focus-menu-arrow">›</span>
                 </div>
                 ` : ''}
