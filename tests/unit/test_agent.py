@@ -1042,3 +1042,137 @@ class TestWorkCycleDeferredConsolidation:
                                             mock_batch.assert_called_once()
                                             exchanges = mock_batch.call_args[0][0]
                                             assert len(exchanges) == 2  # 2 iterations
+
+
+# =============================================================================
+# Minimal Response Detection Tests
+# =============================================================================
+
+@pytest.mark.unit
+class TestMinimalResponseDetection:
+    """Test minimal/empty response stuck detection in work_cycle_sync().
+
+    Spec: specs/1_agents.md - Agent should detect when LLM returns minimal
+    responses (like '...' or empty) and pause after threshold is reached.
+    """
+
+    def _create_agent(self, tmp_path):
+        """Create an agent for minimal response tests."""
+        from src.agent.agent import Agent
+
+        agent_dir = tmp_path / "agents" / "test-agent"
+        agent_dir.mkdir(parents=True)
+        config = {
+            "id": "test-agent",
+            "state": "enabled",
+            "tools": ["done_working"],
+            "consolidation": {"enabled": False}
+        }
+        (agent_dir / "config.json").write_text(json.dumps(config))
+        (agent_dir / "identity.md").write_text("# Test\n")
+
+        system_dir = tmp_path / "system"
+        system_dir.mkdir(parents=True)
+        (system_dir / "config.json").write_text('{"agents": {"max_work_iterations": 20}}')
+
+        with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
+            with patch("src.agent.agent.DATA_DIR", tmp_path):
+                return Agent("test-agent")
+
+    def test_detects_consecutive_minimal_responses(self, tmp_path):
+        """Raises AgentPausedError after 5 consecutive minimal responses.
+
+        Spec: Agent pauses when LLM returns minimal content repeatedly.
+        """
+        from src.agent.cognition.metacognition import AgentPausedError
+
+        agent = self._create_agent(tmp_path)
+        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test", "status": "working"}
+        chat_count = [0]
+
+        def minimal_response(*args, **kwargs):
+            chat_count[0] += 1
+            return "..."  # Minimal response
+
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
+                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
+                        with patch("src.tools.data.topics.error_topic"):
+                            with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
+                                with patch.object(agent.metacognition, 'start_work_session', return_value="test-session"):
+                                    with patch.object(agent.metacognition, 'end_work_session', return_value={}):
+                                        with patch.object(agent.metacognition, 'check_stuck', return_value=None):
+                                            with patch.object(agent, 'chat', side_effect=minimal_response):
+                                                with patch.object(agent, '_log'):
+                                                    with pytest.raises(AgentPausedError) as exc_info:
+                                                        agent.work_cycle_sync()
+
+                            # Should have tried 5 times before giving up
+                            assert chat_count[0] == 5
+                            assert "minimal responses" in str(exc_info.value)
+
+    def test_resets_counter_on_substantive_response(self, tmp_path):
+        """Counter resets when a substantive response is received."""
+        agent = self._create_agent(tmp_path)
+        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test", "status": "working"}
+        chat_count = [0]
+
+        def mixed_responses(*args, **kwargs):
+            chat_count[0] += 1
+            if chat_count[0] <= 3:
+                return "..."  # Minimal
+            elif chat_count[0] == 4:
+                return "This is a substantive response that resets the counter"
+            elif chat_count[0] <= 7:
+                return "."  # Minimal again
+            else:
+                agent._work_done = True
+                return "Done with substantive response"
+
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
+                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
+                        with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
+                            with patch.object(agent.metacognition, 'start_work_session', return_value="test-session"):
+                                with patch.object(agent.metacognition, 'end_work_session', return_value={}):
+                                    with patch.object(agent.metacognition, 'check_stuck', return_value=None):
+                                        with patch.object(agent, 'chat', side_effect=mixed_responses):
+                                            with patch.object(agent, '_log'):
+                                                # Should complete without raising (counter reset at 4)
+                                                agent.work_cycle_sync()
+
+                            # Should have made it through all 8 calls
+                            assert chat_count[0] == 8
+
+    def test_empty_response_counts_as_minimal(self, tmp_path):
+        """Empty strings and whitespace-only responses count as minimal."""
+        from src.agent.cognition.metacognition import AgentPausedError
+
+        agent = self._create_agent(tmp_path)
+        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test", "status": "working"}
+        chat_count = [0]
+        responses = ["", "   ", "\n", "\t", "  \n  "]
+
+        def empty_responses(*args, **kwargs):
+            chat_count[0] += 1
+            return responses[(chat_count[0] - 1) % len(responses)]
+
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
+                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
+                        with patch("src.tools.data.topics.error_topic"):
+                            with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
+                                with patch.object(agent.metacognition, 'start_work_session', return_value="test-session"):
+                                    with patch.object(agent.metacognition, 'end_work_session', return_value={}):
+                                        with patch.object(agent.metacognition, 'check_stuck', return_value=None):
+                                            with patch.object(agent, 'chat', side_effect=empty_responses):
+                                                with patch.object(agent, '_log'):
+                                                    with pytest.raises(AgentPausedError):
+                                                        agent.work_cycle_sync()
+
+                            assert chat_count[0] == 5
+
+

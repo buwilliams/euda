@@ -7,6 +7,7 @@ Tests for src/tools/data/topics.py
 import json
 import pytest
 from datetime import datetime
+from unittest.mock import patch
 
 
 class TestTopicCreation:
@@ -663,3 +664,85 @@ class TestExplorationRouting:
         )
 
         assert topic["parent_id"] == parent["id"]
+
+
+class TestSyncAgentInboxTopicsProtection:
+    """Test sync_agent_inbox_topics preserves system containers."""
+
+    def test_does_not_reparent_assets_container(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Assets container at root level is not moved under Projects."""
+        from src.tools.data.topics import (
+            get_assets_container, get_projects_container, sync_agent_inbox_topics
+        )
+
+        # Create both containers
+        assets = get_assets_container()
+        projects = get_projects_container()
+
+        # Verify Assets is at root
+        assert assets["parent_id"] is None
+
+        # Run sync (this is what was moving containers incorrectly)
+        with patch("src.tools.agents.agents.list_agents", return_value=[]):
+            sync_agent_inbox_topics()
+
+        # Re-fetch to check it wasn't moved
+        from src.tools.data.topics import get_topic
+        assets_after = get_topic(assets["id"])
+
+        assert assets_after["parent_id"] is None
+
+    def test_does_not_reparent_explorations_container(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Explorations container at root level is not moved under Projects."""
+        from src.tools.data.topics import (
+            get_explorations_container, get_projects_container, sync_agent_inbox_topics
+        )
+
+        # Create both containers
+        explorations = get_explorations_container()
+        projects = get_projects_container()
+
+        # Verify Explorations is at root
+        assert explorations["parent_id"] is None
+
+        # Run sync
+        with patch("src.tools.agents.agents.list_agents", return_value=[]):
+            sync_agent_inbox_topics()
+
+        # Re-fetch to check it wasn't moved
+        from src.tools.data.topics import get_topic
+        explorations_after = get_topic(explorations["id"])
+
+        assert explorations_after["parent_id"] is None
+
+    def test_moves_orphan_user_topics_to_projects(self, test_db, mock_emit_event, mock_emit_ui_event):
+        """Regular orphan topics at root DO get moved to Projects."""
+        from src.tools.data.topics import (
+            create_topic, get_projects_container, sync_agent_inbox_topics, get_topic, _transaction
+        )
+        import json
+        from datetime import datetime, UTC
+
+        # Create Projects container first
+        projects = get_projects_container()
+
+        # Create an orphan topic at root level (bypassing normal routing)
+        now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        with _transaction() as conn:
+            conn.execute('''
+                INSERT INTO topics (id, name, parent_id, status, created_at, updated_at,
+                                created_by, tags)
+                VALUES (?, ?, NULL, 'todo', ?, ?, 'user', ?)
+            ''', ("topic-orphan-1", "Orphan Topic", now, now, json.dumps([])))
+
+        # Verify it's at root
+        orphan = get_topic("topic-orphan-1")
+        assert orphan["parent_id"] is None
+
+        # Run sync
+        with patch("src.tools.agents.agents.list_agents", return_value=[]):
+            sync_agent_inbox_topics()
+
+        # Re-fetch - should now be under Projects
+        orphan_after = get_topic("topic-orphan-1")
+        assert orphan_after["parent_id"] == projects["id"]
