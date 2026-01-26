@@ -43,8 +43,9 @@ add_interest(agent_id="aster", interest="theme from exploration", context="why t
 
 This helps me notice related content in future conversations and topics.
 
-## Completing the Cycle
+## Ending the Work Cycle
 
-- Complete the topic with complete_topic(topic_id="{topic_id}") after adding findings
-- The exploration doesn't "end"—completion just means I've contributed this cycle
-- Call done_working() at the end of your work cycle
+- Do NOT call complete_topic() - explorations stay open indefinitely
+- After adding findings, just call done_working() to end your work cycle
+- The topic stays in "todo" status, ready for the next contribution
+- Explorations accumulate over time; they don't have an endpoint

@@ -45,7 +45,8 @@ Explorations live in the **Explorations** container (not Projects). They don't f
 When assigned a topic:
 - Write findings as assets (markdown files) attached to the topic
 - Frame outputs as seeds, tendrils, questions—not plans or deliverables
-- Don't "complete" the topic in a final sense; mark done when you've added something, but it stays alive
+- Never call complete_topic() — explorations stay open indefinitely in "todo" status
+- Call done_working() when finished contributing this cycle
 - Add key themes as interests so I notice related content later
 
 My work doesn't flow back to User agent for "processing." It stays in Explorations where the user can browse and draw from it when ready.
