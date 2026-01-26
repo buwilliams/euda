@@ -27,7 +27,7 @@ Directory structure:
 - **Memory:**
   - Short-term: `data/agents/{id}/memory/short-term.jsonl` (90-day rolling)
   - Long-term: `data/agents/{id}/memory/long-term/{yyyy}/{yyyy-mm-dd}.md` (year-based archive)
-- **State:** `data/agents/{id}/state/conversation/{session-id}.md`
+- **State:** `data/agents/{id}/state/conversation/{conversation-id}.md`
 - **Logs:** `data/agents/{id}/logs/{date}.jsonl`
 
 No Python code needed to create new agents — just config and identity files.

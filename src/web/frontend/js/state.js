@@ -9,8 +9,8 @@ if ('scrollRestoration' in history) {
 marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
 
 // State
-let sessionId = localStorage.getItem('sessionId') || null;
-let viewingHistorySessionId = null;
+let conversationId = null;
+let viewingHistoryConversationId = null;
 let isWaiting = false;
 let activeTab = 'focus';  // Always start fresh on page load
 let expandedCards = new Set();

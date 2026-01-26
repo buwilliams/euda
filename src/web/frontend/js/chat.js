@@ -1,5 +1,67 @@
 // Euno - Chat & Daily Quote
 
+// ============== Conversation Initialization ==============
+
+const CONVERSATION_RESUME_THRESHOLD = 6 * 60 * 60; // 6 hours in seconds
+
+async function initializeConversation() {
+    // Show loading in chat area
+    inlineMessages.innerHTML = '<div class="chat-loading">Loading...</div>';
+
+    try {
+        const response = await fetch('/api/chat/conversations/recent?count=1');
+        const data = await response.json();
+
+        // Remove loading
+        const loadingEl = inlineMessages.querySelector('.chat-loading');
+        if (loadingEl) loadingEl.remove();
+
+        if (!data.conversations || data.conversations.length === 0) {
+            showChatEmptyState();
+            return;
+        }
+
+        const mostRecent = data.conversations[0];
+        const now = Math.floor(Date.now() / 1000);
+        const lastMessageTime = mostRecent.last_message_timestamp || 0;
+        const secondsSinceLastMessage = now - lastMessageTime;
+
+        if (secondsSinceLastMessage < CONVERSATION_RESUME_THRESHOLD) {
+            // Within 6 hours - load conversation
+            await loadConversationById(mostRecent.conversation_id);
+        } else {
+            // Over 6 hours - start fresh
+            showChatEmptyState();
+        }
+    } catch (error) {
+        console.error('Failed to initialize conversation:', error);
+        const loadingEl = inlineMessages.querySelector('.chat-loading');
+        if (loadingEl) loadingEl.remove();
+        showChatEmptyState();
+    }
+}
+
+async function loadConversationById(convId) {
+    try {
+        const response = await fetch('/api/chat/conversations/fork', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversation_id: convId })
+        });
+        if (!response.ok) throw new Error('Failed to load conversation');
+        const data = await response.json();
+
+        conversationId = data.new_conversation_id;
+        inlineMessages.innerHTML = '';
+        for (const msg of data.messages) {
+            addInlineMessage(msg.content, msg.role === 'user' ? 'you' : 'friend');
+        }
+    } catch (error) {
+        console.error('Failed to load conversation:', error);
+        showChatEmptyState();
+    }
+}
+
 // ============== Daily Quote ==============
 
 // Cache the quote data for reuse
@@ -406,7 +468,7 @@ async function processMessageQueue() {
                 body: JSON.stringify({
                     message,
                     agent_id: 'user',
-                    session_id: sessionId,
+                    conversation_id: conversationId,
                     voice_input: voiceInput
                 })
             });
@@ -458,10 +520,9 @@ async function processMessageQueue() {
                 continue;
             }
 
-            // Store session ID from server
-            if (data.session_id) {
-                sessionId = data.session_id;
-                localStorage.setItem('sessionId', sessionId);
+            // Store conversation ID from server
+            if (data.conversation_id) {
+                conversationId = data.conversation_id;
             }
 
             removeInlineThinking();
@@ -595,10 +656,9 @@ async function resetUI() {
     inlineMessages.innerHTML = '';
     // Show empty state with quote
     showChatEmptyState();
-    // Clear session to start a new conversation
-    sessionId = null;
-    localStorage.removeItem('sessionId');
-    viewingHistorySessionId = null;
+    // Clear conversation to start a new one
+    conversationId = null;
+    viewingHistoryConversationId = null;
     // Switch to chat tab for new conversation
     switchTab('chat');
     // Clear expanded cards state

@@ -92,7 +92,7 @@ Rules for the server, API, and infrastructure.
 - `GET /api/chat/history?agent_id={id}&date={date}` — Get conversation history
 - `GET /api/chat/conversations/recent?count={n}` — Recent conversations
 - `POST /api/chat/conversations/fork` — Fork past conversation
-- `DELETE /api/chat/conversations/{session_id}` — Delete conversation
+- `DELETE /api/chat/conversations/{conversation_id}` — Delete conversation
 
 ## Speech Endpoints
 

@@ -78,9 +78,9 @@ function initApp() {
     // Load daily quote for Focus tab
     loadDailyQuote();
 
-    // Load quote and show empty state for Chat tab
+    // Load quote and initialize conversation for Chat tab
     loadChatQuote();
-    showChatEmptyState();
+    initializeConversation();
 
     // Initialize swipe gesture handlers
     initSwipeHandlers();
