@@ -1042,3 +1042,241 @@ class TestWorkCycleDeferredConsolidation:
                                             mock_batch.assert_called_once()
                                             exchanges = mock_batch.call_args[0][0]
                                             assert len(exchanges) == 2  # 2 iterations
+
+
+# =============================================================================
+# Minimal Response Stuck Detection Tests
+# =============================================================================
+
+@pytest.mark.unit
+class TestMinimalResponseDetection:
+    """Test minimal/empty response stuck detection in work_cycle_sync().
+
+    When an LLM returns consecutive minimal responses (like "..." or empty),
+    the work cycle should detect this as a stuck state and raise an error.
+
+    This complements tool-based stuck detection for cases where no tools are called.
+    """
+
+    def _create_agent(self, tmp_path):
+        """Create an agent for minimal response tests."""
+        from src.agent.agent import Agent
+
+        agent_dir = tmp_path / "agents" / "test-agent"
+        agent_dir.mkdir(parents=True)
+        config = {
+            "id": "test-agent",
+            "state": "enabled",
+            "tools": ["done_working"],
+            "consolidation": {"enabled": False}
+        }
+        (agent_dir / "config.json").write_text(json.dumps(config))
+        (agent_dir / "identity.md").write_text("# Test\n")
+
+        system_dir = tmp_path / "system"
+        system_dir.mkdir(parents=True)
+        (system_dir / "config.json").write_text('{"agents": {"max_work_iterations": 20}}')
+
+        with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
+            with patch("src.agent.agent.DATA_DIR", tmp_path):
+                return Agent("test-agent")
+
+    def test_detects_consecutive_minimal_responses(self, tmp_path):
+        """work_cycle_sync() detects 5 consecutive minimal responses as stuck.
+
+        When LLM returns "..." or similar minimal responses repeatedly without
+        calling any tools, the agent should be paused to prevent infinite loops.
+        """
+        from src.agent.cognition.metacognition import AgentPausedError
+
+        agent = self._create_agent(tmp_path)
+
+        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test", "status": "working"}
+        response_count = [0]
+
+        def minimal_response(*args, **kwargs):
+            response_count[0] += 1
+            return "..."  # Minimal response < 20 chars
+
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
+                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
+                        with patch("src.tools.data.topics.error_topic"):
+                            with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
+                                with patch.object(agent.metacognition, 'check_stuck', return_value=None):
+                                    with patch.object(agent, 'chat', side_effect=minimal_response):
+                                        with patch.object(agent, '_log'):
+                                            with pytest.raises(AgentPausedError) as exc_info:
+                                                agent.work_cycle_sync()
+
+                                            # Should detect minimal response stuck pattern
+                                            assert "minimal responses" in str(exc_info.value).lower()
+                                            # Should have tried 5 times (the threshold)
+                                            assert response_count[0] == 5
+
+    def test_resets_counter_on_substantive_response(self, tmp_path):
+        """Counter resets when a substantive response (>=20 chars) is received.
+
+        If agent gets minimal responses but then a real response, the counter
+        resets and it can continue working normally.
+        """
+        agent = self._create_agent(tmp_path)
+
+        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test", "status": "working"}
+        response_count = [0]
+
+        def alternating_response(*args, **kwargs):
+            response_count[0] += 1
+            if response_count[0] <= 3:
+                return "..."  # Minimal
+            elif response_count[0] == 4:
+                return "This is a substantive response that resets the counter."
+            elif response_count[0] <= 7:
+                return "..."  # Minimal again
+            else:
+                agent._work_done = True
+                return "This is another substantive response with more content."
+
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
+                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
+                        with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
+                            with patch.object(agent.metacognition, 'check_stuck', return_value=None):
+                                with patch.object(agent, 'chat', side_effect=alternating_response):
+                                    with patch.object(agent, '_log'):
+                                        # Should complete without raising - counter resets on substantive responses
+                                        agent.work_cycle_sync()
+
+                                        # Should have gone through all responses without stuck detection
+                                        assert response_count[0] == 8
+
+    def test_empty_response_counts_as_minimal(self, tmp_path):
+        """Empty strings and None responses count as minimal."""
+        from src.agent.cognition.metacognition import AgentPausedError
+
+        agent = self._create_agent(tmp_path)
+
+        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test", "status": "working"}
+        response_count = [0]
+
+        def empty_responses(*args, **kwargs):
+            response_count[0] += 1
+            # Alternate between empty string and whitespace-only
+            if response_count[0] % 2 == 0:
+                return ""
+            else:
+                return "   "
+
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
+                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
+                        with patch("src.tools.data.topics.error_topic"):
+                            with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
+                                with patch.object(agent.metacognition, 'check_stuck', return_value=None):
+                                    with patch.object(agent, 'chat', side_effect=empty_responses):
+                                        with patch.object(agent, '_log'):
+                                            with pytest.raises(AgentPausedError):
+                                                agent.work_cycle_sync()
+
+                                            # Should trigger after 5 minimal responses
+                                            assert response_count[0] == 5
+
+    def test_logs_minimal_response_events(self, tmp_path):
+        """work_cycle_sync() logs each minimal response detection."""
+        from src.agent.cognition.metacognition import AgentPausedError
+
+        agent = self._create_agent(tmp_path)
+
+        mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test", "status": "working"}
+        logged_events = []
+
+        def capture_log(event, data=None):
+            logged_events.append(event)
+
+        def minimal_response(*args, **kwargs):
+            return "..."
+
+        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("src.tools.data.topics.release_topic"):
+                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
+                        with patch("src.tools.data.topics.error_topic"):
+                            with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
+                                with patch.object(agent.metacognition, 'check_stuck', return_value=None):
+                                    with patch.object(agent, 'chat', side_effect=minimal_response):
+                                        with patch.object(agent, '_log', side_effect=capture_log):
+                                            with pytest.raises(AgentPausedError):
+                                                agent.work_cycle_sync()
+
+                                            # Should have logged minimal_response events
+                                            assert logged_events.count("minimal_response") == 5
+
+
+# =============================================================================
+# Metacognition Increment Iteration Tests
+# =============================================================================
+
+@pytest.mark.unit
+class TestMetacognitionIncrementIteration:
+    """Test Metacognition.increment_iteration() method.
+
+    This method is called at each work cycle iteration to track progress
+    and enforce iteration limits.
+    """
+
+    def _create_agent(self, tmp_path):
+        """Create an agent for testing metacognition."""
+        from src.agent.agent import Agent
+
+        agent_dir = tmp_path / "agents" / "test-agent"
+        agent_dir.mkdir(parents=True)
+        config = {
+            "id": "test-agent",
+            "state": "enabled",
+            "tools": [],
+            "consolidation": {"enabled": False}
+        }
+        (agent_dir / "config.json").write_text(json.dumps(config))
+        (agent_dir / "identity.md").write_text("# Test\n")
+
+        with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
+            return Agent("test-agent")
+
+    def test_increment_iteration_increments_count(self, tmp_path):
+        """increment_iteration() increments internal iteration count."""
+        agent = self._create_agent(tmp_path)
+
+        initial_count = agent.metacognition._iteration_count
+
+        result = agent.metacognition.increment_iteration()
+
+        assert agent.metacognition._iteration_count == initial_count + 1
+        assert result >= initial_count + 1
+
+    def test_increment_iteration_uses_progress_tracker_when_session_active(self, tmp_path):
+        """increment_iteration() delegates to progress tracker when session is active."""
+        agent = self._create_agent(tmp_path)
+
+        # Start a work session
+        session_id = agent.metacognition.start_work_session(session_type="work_cycle")
+
+        with patch.object(agent.metacognition._progress, 'increment', return_value=42) as mock_increment:
+            result = agent.metacognition.increment_iteration()
+
+            mock_increment.assert_called_once_with(session_id)
+            assert result == 42
+
+    def test_increment_iteration_returns_internal_count_without_session(self, tmp_path):
+        """increment_iteration() returns internal count when no session is active."""
+        agent = self._create_agent(tmp_path)
+
+        # Don't start a session
+        agent.metacognition._iteration_count = 5
+
+        result = agent.metacognition.increment_iteration()
+
+        assert result == 6
+        assert agent.metacognition._iteration_count == 6
