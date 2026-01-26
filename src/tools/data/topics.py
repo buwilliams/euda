@@ -945,6 +945,68 @@ def add_topic_logs_batch(logs: list, agent: str = "user") -> dict:
 # AGENT ASSIGNMENT AND SYSTEM CONTAINERS
 # =============================================================================
 
+def _extract_interests_for_observing_agent(topic: dict, agent_id: str):
+    """Extract keywords from topic and create interest memories for observing agents.
+
+    Called when a topic is assigned to an agent that has observation.enabled=True.
+    This allows agents to automatically track topics they're assigned to.
+
+    Args:
+        topic: The topic being assigned
+        agent_id: The agent being assigned to
+    """
+    from ..agents.agents import list_agents
+
+    # Check if agent has observation enabled
+    agent_config = None
+    for agent in list_agents():
+        if agent.get("id") == agent_id:
+            agent_config = agent
+            break
+
+    if not agent_config:
+        return
+
+    obs_config = agent_config.get("observation", {})
+    if not obs_config.get("enabled", False):
+        return
+
+    # Import here to avoid circular dependency
+    from ...agent.interests import extract_keywords
+    from .memory import add_memory, list_memory
+
+    # Extract keywords from topic name and description
+    text = topic.get("name", "")
+    if topic.get("description"):
+        text += " " + topic["description"]
+
+    keywords = extract_keywords(text)
+    if not keywords:
+        return
+
+    # Get existing interests to avoid duplicates
+    existing_interests = set()
+    try:
+        memories = list_memory(agent_id)
+        for mem in memories:
+            if mem.get("type") == "interest":
+                existing_interests.add(mem.get("short_description", "").lower())
+    except Exception:
+        pass
+
+    # Add new interest memories for keywords not already tracked
+    for keyword in keywords[:5]:  # Limit to 5 keywords per topic
+        if keyword.lower() not in existing_interests:
+            try:
+                add_memory(
+                    short_description=keyword,
+                    type="interest",
+                    agent_id=agent_id
+                )
+            except Exception:
+                pass  # Don't fail assignment if interest creation fails
+
+
 @tool("assign_agent", "Assign an agent to a topic. Use when: delegating work to another agent.", tool_type="data")
 def assign_agent(topic_id: str, agent_id: str) -> Optional[dict]:
     """Assign an agent to work on a topic. Wakes the agent immediately.
@@ -952,6 +1014,9 @@ def assign_agent(topic_id: str, agent_id: str) -> Optional[dict]:
     If the topic is currently 'working', resets status to 'todo' so the new
     agent can pick it up. Other statuses (error, archived) are left alone
     as assignment to those is a no-op.
+
+    For observation-enabled agents, automatically extracts keywords from the
+    topic and creates interest memories to enable topic watching.
 
     Args:
         topic_id: The topic to assign
@@ -984,6 +1049,9 @@ def assign_agent(topic_id: str, agent_id: str) -> Optional[dict]:
             "INSERT INTO topic_logs (topic_id, timestamp, agent, action) VALUES (?, ?, ?, ?)",
             (topic_id, now, "system", f"assigned:{agent_id}")
         )
+
+    # Extract interests for observation-enabled agents
+    _extract_interests_for_observing_agent(topic, agent_id)
 
     # Emit topic:assigned event to the agent and notify cache
     _emit_event("topic:assigned", scope=agent_id, data={"topic_id": topic_id, "name": topic["name"]})

@@ -234,8 +234,7 @@ def invalidate_interest_cache(agent_id: str = None):
     Args:
         agent_id: Specific agent to invalidate, or None for all
     """
-    global _interest_cache
     if agent_id:
         _interest_cache.pop(agent_id, None)
     else:
-        _interest_cache = {}
+        _interest_cache.clear()

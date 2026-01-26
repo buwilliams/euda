@@ -278,12 +278,14 @@ def _get_agent_config(agent_id: str) -> dict:
 
 
 def _is_today(timestamp: str) -> bool:
-    """Check if timestamp is from today."""
+    """Check if timestamp is from today (local time)."""
     if not timestamp:
         return False
     try:
         dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-        return dt.date() == datetime.now().date()
+        # Convert to local time for comparison
+        local_dt = dt.astimezone()
+        return local_dt.date() == datetime.now().date()
     except ValueError:
         return False
 

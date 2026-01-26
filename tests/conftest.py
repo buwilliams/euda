@@ -112,6 +112,20 @@ def patch_data_dir(temp_data_dir):
     except ImportError:
         pass
 
+    # Patch watchers state directory
+    try:
+        from src.agent.watchers import base as watcher_base
+        patch.object(watcher_base, 'STATE_DIR', temp_data_dir / "system" / "watchers").start()
+    except ImportError:
+        pass
+
+    # Patch agents module
+    try:
+        from src.tools.agents import agents
+        patch.object(agents, 'AGENTS_DIR', temp_data_dir / "agents").start()
+    except ImportError:
+        pass
+
     yield temp_data_dir
 
     # Stop all patches

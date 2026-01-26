@@ -34,13 +34,14 @@ def consolidate_phase(runner: "ConsolidationRunner", execution_id: str = None) -
 
     Performs heavy analysis to update identity based on long-term memory.
     Uses RLM extract_identity() for intelligent identity evolution.
+    Also manages interests for observation-enabled agents.
 
     Args:
         runner: The ConsolidationRunner instance
         execution_id: Optional execution ID for SSE progress tracking
 
     Returns:
-        Dict with identity_updated flag
+        Dict with identity_updated and interests_managed flags
     """
     agent_id = runner.agent_id
 
@@ -79,7 +80,7 @@ def consolidate_phase(runner: "ConsolidationRunner", execution_id: str = None) -
             "phase": "consolidate",
             "skipped": True
         })
-        return {"identity_updated": False}
+        return {"identity_updated": False, "interests_managed": False}
 
     # Load current identity
     current_identity = runner.identity
@@ -116,11 +117,16 @@ def consolidate_phase(runner: "ConsolidationRunner", execution_id: str = None) -
     # Check for year boundary and create historical snapshot
     _maybe_snapshot_identity(runner)
 
+    # Manage interests for observation-enabled agents
+    emit_progress("interest_management", "Managing interests...")
+    interests_managed = _manage_interests(runner, execution_id)
+
     runner.logger.info({
         "event": "consolidate_complete",
         "agent_id": agent_id,
         "execution_id": execution_id,
-        "identity_updated": identity_updated
+        "identity_updated": identity_updated,
+        "interests_managed": interests_managed
     })
 
     # Emit completion event
@@ -128,10 +134,11 @@ def consolidate_phase(runner: "ConsolidationRunner", execution_id: str = None) -
         "execution_id": execution_id,
         "agent_id": agent_id,
         "phase": "consolidate",
-        "identity_updated": identity_updated
+        "identity_updated": identity_updated,
+        "interests_managed": interests_managed
     })
 
-    return {"identity_updated": identity_updated}
+    return {"identity_updated": identity_updated, "interests_managed": interests_managed}
 
 
 def _parse_identity_updates(findings) -> Optional[dict]:
@@ -470,3 +477,140 @@ def _maybe_snapshot_identity(runner: "ConsolidationRunner"):
                 "agent_id": runner.agent_id,
                 "year": previous_year
             })
+
+
+# Interest staleness threshold - remove interests not reinforced in this many days
+INTEREST_STALE_DAYS = 30
+
+
+def _manage_interests(runner: "ConsolidationRunner", execution_id: str = None) -> bool:
+    """Manage interests for observation-enabled agents.
+
+    During consolidation, this function:
+    1. Identifies stale interests (not reinforced in INTEREST_STALE_DAYS)
+    2. Removes stale interests that are no longer relevant
+    3. Logs interest management actions
+
+    An interest is considered "reinforced" if:
+    - The agent has worked on a topic containing that keyword recently
+    - The interest's date_mentioned is recent (refreshed manually)
+
+    Args:
+        runner: The ConsolidationRunner instance
+        execution_id: Optional execution ID for logging
+
+    Returns:
+        True if any interests were managed, False otherwise
+    """
+    from datetime import timedelta
+    from ....tools.agents.agents import list_agents
+    from ....tools.data.memory import list_memory, remove_memory
+    from ....tools.data.topics import list_topics
+
+    agent_id = runner.agent_id
+
+    # Check if this agent has observation enabled
+    agent_config = None
+    for agent in list_agents():
+        if agent.get("id") == agent_id:
+            agent_config = agent
+            break
+
+    if not agent_config:
+        return False
+
+    obs_config = agent_config.get("observation", {})
+    if not obs_config.get("enabled", False):
+        return False
+
+    # Get current interests
+    try:
+        memories = list_memory(agent_id)
+    except Exception:
+        return False
+
+    interests = [m for m in memories if m.get("type") == "interest"]
+    if not interests:
+        return False
+
+    # Get recently completed topics for this agent to identify active interests
+    try:
+        completed_topics = list_topics(status="done", assignee=agent_id)
+        working_topics = list_topics(status="working", assignee=agent_id)
+        todo_topics = list_topics(status="todo", assignee=agent_id)
+        active_topics = completed_topics + working_topics + todo_topics
+    except Exception:
+        active_topics = []
+
+    # Build set of keywords from recently active topics
+    active_keywords = set()
+    cutoff_date = datetime.now() - timedelta(days=INTEREST_STALE_DAYS)
+
+    for topic in active_topics:
+        # Check if topic was updated recently
+        updated_at = topic.get("updated_at", "")
+        try:
+            topic_date = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+            if topic_date.replace(tzinfo=None) < cutoff_date:
+                continue
+        except (ValueError, TypeError):
+            continue
+
+        # Extract keywords from topic name and description
+        text = topic.get("name", "")
+        if topic.get("description"):
+            text += " " + topic["description"]
+
+        # Simple keyword extraction (lowercase words >= 3 chars)
+        words = re.split(r'\W+', text.lower())
+        for word in words:
+            if len(word) >= 3:
+                active_keywords.add(word)
+
+    # Identify stale interests
+    stale_interests = []
+    for interest in interests:
+        keyword = interest.get("short_description", "").lower()
+        date_mentioned = interest.get("date_mentioned", "")
+
+        # Check if interest was mentioned recently
+        try:
+            mentioned_date = datetime.strptime(date_mentioned, "%Y-%m-%d")
+            is_recent = mentioned_date >= cutoff_date.replace(tzinfo=None)
+        except (ValueError, TypeError):
+            is_recent = False
+
+        # Interest is stale if:
+        # 1. Not mentioned recently AND
+        # 2. Not reinforced by active topic keywords
+        if not is_recent and keyword not in active_keywords:
+            stale_interests.append(interest)
+
+    # Remove stale interests
+    removed_count = 0
+    for interest in stale_interests:
+        try:
+            result = remove_memory(interest["id"], agent_id=agent_id)
+            if "removed" in result:
+                removed_count += 1
+                runner.logger.info({
+                    "event": "interest_removed",
+                    "agent_id": agent_id,
+                    "interest_id": interest["id"],
+                    "keyword": interest.get("short_description", ""),
+                    "reason": "stale",
+                    "execution_id": execution_id
+                })
+        except Exception:
+            pass
+
+    if removed_count > 0:
+        runner.logger.info({
+            "event": "interests_managed",
+            "agent_id": agent_id,
+            "removed_count": removed_count,
+            "total_interests": len(interests),
+            "execution_id": execution_id
+        })
+
+    return removed_count > 0

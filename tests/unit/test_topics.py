@@ -514,3 +514,98 @@ class TestTopicDeletion:
         result = delete_topic(topic["id"])
 
         assert "error" in result
+
+
+class TestInterestExtractionOnAssignment:
+    """Test automatic interest extraction when assigning topics to observing agents."""
+
+    def test_assign_to_observing_agent_creates_interests(self, test_db, patch_data_dir, mock_emit_event, mock_emit_ui_event, create_test_agent):
+        """Assigning a topic to an observation-enabled agent extracts interests."""
+        from src.tools.data.topics import create_topic, assign_agent
+        from src.tools.data.memory import list_memory
+
+        # Create an observation-enabled agent
+        create_test_agent("observer", observation={"enabled": True, "sources": ["chat"]})
+
+        # Create memory directory
+        agent_dir = patch_data_dir / "agents" / "observer" / "memory"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create topic with meaningful keywords
+        topic = create_topic(
+            name="Learn Python programming",
+            description="Study machine learning basics",
+            parent_id=None,
+            created_by="test"
+        )
+
+        # Assign to observing agent
+        assign_agent(topic["id"], "observer")
+
+        # Check interests were created
+        memories = list_memory(agent_id="observer")
+        interests = [m for m in memories if m.get("type") == "interest"]
+
+        assert len(interests) > 0
+        interest_keywords = [i["short_description"].lower() for i in interests]
+        # Should have extracted at least one keyword
+        assert any(kw in interest_keywords for kw in ["python", "programming", "learn", "machine", "learning", "basics", "study"])
+
+    def test_assign_to_non_observing_agent_no_interests(self, test_db, patch_data_dir, mock_emit_event, mock_emit_ui_event, create_test_agent):
+        """Assigning a topic to a non-observing agent does not create interests."""
+        from src.tools.data.topics import create_topic, assign_agent
+        from src.tools.data.memory import list_memory
+
+        # Create a non-observing agent
+        create_test_agent("non-observer")
+
+        # Create memory directory
+        agent_dir = patch_data_dir / "agents" / "non-observer" / "memory"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create topic
+        topic = create_topic(
+            name="Learn Python programming",
+            parent_id=None,
+            created_by="test"
+        )
+
+        # Assign to non-observing agent
+        assign_agent(topic["id"], "non-observer")
+
+        # Check no interests were created
+        memories = list_memory(agent_id="non-observer")
+        interests = [m for m in memories if m.get("type") == "interest"]
+
+        assert len(interests) == 0
+
+    def test_assign_does_not_duplicate_interests(self, test_db, patch_data_dir, mock_emit_event, mock_emit_ui_event, create_test_agent):
+        """Assigning multiple topics with same keywords doesn't duplicate interests."""
+        from src.tools.data.topics import create_topic, assign_agent
+        from src.tools.data.memory import list_memory, add_memory
+
+        # Create an observation-enabled agent
+        create_test_agent("observer", observation={"enabled": True, "sources": ["chat"]})
+
+        # Create memory directory
+        agent_dir = patch_data_dir / "agents" / "observer" / "memory"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+
+        # Pre-add an interest
+        add_memory(short_description="python", type="interest", agent_id="observer")
+
+        # Create topic with same keyword
+        topic = create_topic(
+            name="Advanced Python techniques",
+            parent_id=None,
+            created_by="test"
+        )
+
+        # Assign to observing agent
+        assign_agent(topic["id"], "observer")
+
+        # Check no duplicate python interest
+        memories = list_memory(agent_id="observer")
+        python_interests = [m for m in memories if m.get("type") == "interest" and m.get("short_description", "").lower() == "python"]
+
+        assert len(python_interests) == 1  # Only the original one
