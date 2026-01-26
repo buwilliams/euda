@@ -72,7 +72,7 @@ class TestSendMessage:
         page.locator('[data-testid="send-btn"]').click()
 
         # User message should appear
-        expect(page.locator('[data-testid="message-user"]')).to_be_visible(timeout=5000)
+        expect(page.locator('[data-testid="message-user"]').first).to_be_visible(timeout=5000)
 
     def test_send_message_shows_processing_state(self, authenticated_page: Page):
         """Sending a message should show thinking indicator or agent response."""
@@ -113,4 +113,4 @@ class TestReceiveResponse:
         page.locator('[data-testid="send-btn"]').click()
 
         # Agent response should appear
-        expect(page.locator('[data-testid="message-agent"]')).to_be_visible(timeout=30000)
+        expect(page.locator('[data-testid="message-agent"]').first).to_be_visible(timeout=30000)
