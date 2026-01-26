@@ -54,11 +54,13 @@ if [ -d "$PROJECT_DIR/data" ]; then
     cp -r "$PROJECT_DIR/data" "$PROJECT_DIR/$BACKUP_NAME"
 fi
 
-# Save local password_hash before sync (base64 encoded to preserve $ characters)
+# Save local auth.json before sync
 echo "[3/5] Preserving local password..."
-LOCAL_PASSWORD_B64=""
-if [ -f "$PROJECT_DIR/data/system/config.json" ]; then
-    LOCAL_PASSWORD_B64=$(python3 -c "import json,base64; d=json.load(open('$PROJECT_DIR/data/system/config.json')); h=d.get('password_hash',''); print(base64.b64encode(h.encode()).decode() if h else '')" 2>/dev/null || echo "")
+LOCAL_AUTH_FILE="$PROJECT_DIR/data/system/auth.json"
+LOCAL_AUTH_EXISTS="no"
+if [ -f "$LOCAL_AUTH_FILE" ]; then
+    LOCAL_AUTH_EXISTS="yes"
+    cp "$LOCAL_AUTH_FILE" /tmp/euno-auth-backup-local.json
 fi
 
 # Pull data directory
@@ -68,17 +70,11 @@ rsync -avz --delete \
     --exclude '.DS_Store' \
     "$SERVER:$REMOTE_DIR/data/" "$PROJECT_DIR/data/"
 
-# Restore local password_hash after sync
-if [ -n "$LOCAL_PASSWORD_B64" ]; then
+# Restore local auth.json after sync
+if [ "$LOCAL_AUTH_EXISTS" = "yes" ]; then
     echo "[5/5] Restoring local password..."
-    python3 -c "
-import json, base64
-from pathlib import Path
-config_path = Path('$PROJECT_DIR/data/system/config.json')
-config = json.loads(config_path.read_text()) if config_path.exists() else {}
-config['password_hash'] = base64.b64decode('$LOCAL_PASSWORD_B64').decode()
-config_path.write_text(json.dumps(config, indent=2))
-"
+    cp /tmp/euno-auth-backup-local.json "$LOCAL_AUTH_FILE"
+    rm /tmp/euno-auth-backup-local.json
 fi
 
 echo ""

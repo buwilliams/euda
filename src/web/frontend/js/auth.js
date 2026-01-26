@@ -124,6 +124,11 @@ async function loadSettingsData() {
         if (typeof updateVoiceButtonVisibility === 'function') {
             updateVoiceButtonVisibility();
         }
+
+        // Check if password is set and update UI accordingly
+        const authResponse = await fetch('/api/auth/check');
+        const authData = await authResponse.json();
+        updatePasswordFieldVisibility(authData.password_required);
     } catch (error) {
         console.error('Failed to load settings:', error);
     }
@@ -414,14 +419,25 @@ async function handleModelChange() {
 async function handleChangePassword(event) {
     event.preventDefault();
 
-    const currentPassword = document.getElementById('current-password').value;
+    const currentPasswordEl = document.getElementById('current-password');
+    const currentPassword = currentPasswordEl.value;
     const newPassword = document.getElementById('new-password').value;
     const confirmPassword = document.getElementById('confirm-password').value;
     const messageEl = document.getElementById('password-message');
 
+    // Check if password is currently set (current password field is visible)
+    const currentPasswordWrapper = currentPasswordEl.closest('.password-field-current');
+    const passwordIsSet = currentPasswordWrapper && !currentPasswordWrapper.classList.contains('hidden');
+
     // Validate
-    if (!currentPassword || !newPassword || !confirmPassword) {
-        messageEl.textContent = 'All fields are required';
+    if (passwordIsSet && !currentPassword) {
+        messageEl.textContent = 'Current password is required';
+        messageEl.className = 'settings-message error';
+        return;
+    }
+
+    if (!newPassword || !confirmPassword) {
+        messageEl.textContent = 'New password fields are required';
         messageEl.className = 'settings-message error';
         return;
     }
@@ -439,22 +455,26 @@ async function handleChangePassword(event) {
     }
 
     try {
+        const body = { new_password: newPassword };
+        if (passwordIsSet) {
+            body.current_password = currentPassword;
+        }
+
         const response = await fetch('/api/auth/change-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                current_password: currentPassword,
-                new_password: newPassword
-            })
+            body: JSON.stringify(body)
         });
 
         if (response.ok) {
-            messageEl.textContent = 'Password changed successfully';
+            messageEl.textContent = 'Password ' + (passwordIsSet ? 'changed' : 'set') + ' successfully';
             messageEl.className = 'settings-message success';
             // Clear form
             document.getElementById('current-password').value = '';
             document.getElementById('new-password').value = '';
             document.getElementById('confirm-password').value = '';
+            // Update UI to show current password field now that password is set
+            updatePasswordFieldVisibility(true);
         } else {
             const data = await response.json();
             messageEl.textContent = data.detail || 'Failed to change password';
@@ -466,6 +486,28 @@ async function handleChangePassword(event) {
     }
 
     setTimeout(() => { messageEl.textContent = ''; }, 3000);
+}
+
+function updatePasswordFieldVisibility(passwordIsSet) {
+    const currentPasswordField = document.getElementById('current-password')?.closest('.password-field-current');
+    const label = document.getElementById('password-label');
+    const submitBtn = document.getElementById('password-submit-btn');
+
+    if (currentPasswordField) {
+        if (passwordIsSet) {
+            currentPasswordField.classList.remove('hidden');
+        } else {
+            currentPasswordField.classList.add('hidden');
+        }
+    }
+
+    if (label) {
+        label.textContent = passwordIsSet ? 'Change Password' : 'Set Password';
+    }
+
+    if (submitBtn) {
+        submitBtn.textContent = passwordIsSet ? 'Update Password' : 'Set Password';
+    }
 }
 
 // ============== Fresh Start & Backups ==============

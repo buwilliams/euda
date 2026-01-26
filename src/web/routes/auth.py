@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from ..auth import (
     is_password_set, verify_password, create_session,
-    verify_session, invalidate_session
+    verify_session, invalidate_session, set_password
 )
 
 
@@ -78,4 +78,28 @@ def auth_logout(request: Request, response: Response):
     if token:
         invalidate_session(token)
     response.delete_cookie("session")
+    return {"success": True}
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str | None = None
+    new_password: str
+
+
+@router.post("/change-password")
+def auth_change_password(request_body: ChangePasswordRequest):
+    """Change or set password."""
+    # If password is already set, verify current password
+    if is_password_set():
+        if not request_body.current_password:
+            raise HTTPException(status_code=400, detail="Current password is required")
+        if not verify_password(request_body.current_password):
+            raise HTTPException(status_code=401, detail="Current password is incorrect")
+
+    # Validate new password
+    if len(request_body.new_password) < 4:
+        raise HTTPException(status_code=400, detail="Password must be at least 4 characters")
+
+    # Set new password
+    set_password(request_body.new_password)
     return {"success": True}
