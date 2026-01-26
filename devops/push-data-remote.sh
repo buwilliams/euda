@@ -63,9 +63,9 @@ echo ""
 
 # Determine step count
 if [ "$RESTART" = true ]; then
-    STEPS=6
+    STEPS=4
 else
-    STEPS=5
+    STEPS=3
 fi
 
 # Check SSH connectivity
@@ -80,29 +80,17 @@ BACKUP_NAME="data_backup-$(date +%Y%m%d-%H%M%S)"
 echo "[2/$STEPS] Backing up remote data to $BACKUP_NAME..."
 ssh "$SERVER" "cd $REMOTE_DIR && if [ -d data ]; then cp -r data $BACKUP_NAME; fi"
 
-# Save remote auth.json before sync
-echo "[3/$STEPS] Preserving remote password..."
-REMOTE_AUTH_EXISTS=$(ssh "$SERVER" "test -f $REMOTE_DIR/data/system/auth.json && echo 'yes' || echo 'no'")
-if [ "$REMOTE_AUTH_EXISTS" = "yes" ]; then
-    ssh "$SERVER" "cp $REMOTE_DIR/data/system/auth.json /tmp/euno-auth-backup.json"
-fi
-
-# Sync data directory
-echo "[4/$STEPS] Pushing data..."
+# Sync data directory (exclude auth.json to preserve remote password)
+echo "[3/$STEPS] Pushing data..."
 rsync -avz --delete \
     --exclude '__pycache__/' \
     --exclude '.DS_Store' \
+    --exclude 'system/auth.json' \
     "$PROJECT_DIR/data/" "$SERVER:$REMOTE_DIR/data/"
-
-# Restore remote auth.json after sync
-if [ "$REMOTE_AUTH_EXISTS" = "yes" ]; then
-    echo "[5/$STEPS] Restoring remote password..."
-    ssh "$SERVER" "cp /tmp/euno-auth-backup.json $REMOTE_DIR/data/system/auth.json && rm /tmp/euno-auth-backup.json"
-fi
 
 # Restart service if requested
 if [ "$RESTART" = true ]; then
-    echo "[6/$STEPS] Restarting service..."
+    echo "[4/$STEPS] Restarting service..."
     timeout 30 ssh "$SERVER" "sudo systemctl restart euno" || echo "Warning: Restart timed out or failed, checking status..."
     sleep 2
     echo ""
