@@ -86,7 +86,7 @@ ssh -T "$SERVER" "cd $REMOTE_DIR && source ~/.local/bin/env && uv sync"
 
 # Restart service
 echo "[6/6] Restarting service..."
-timeout 30 ssh "$SERVER" "sudo systemctl restart euno" || echo "Warning: Restart timed out or failed, checking status..."
+ssh "$SERVER" "sudo systemctl restart euno" || echo "Warning: Restart failed, checking status..."
 
 # Check status
 sleep 2
