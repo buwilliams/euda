@@ -55,7 +55,7 @@ class TestNewChatButton:
         page.locator('[data-testid="send-btn"]').click()
 
         # Wait for message to appear
-        expect(page.locator('[data-testid="message-user"]')).to_be_visible(timeout=5000)
+        expect(page.locator('[data-testid="message-user"]').first).to_be_visible(timeout=5000)
 
         # Click New Chat
         page.locator('[data-testid="overflow-btn"]').click()
