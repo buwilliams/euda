@@ -190,6 +190,23 @@ class Metacognition:
             return None
         return self._progress.check_stuck(self._current_session_id)
 
+    def increment_iteration(self) -> int:
+        """Increment iteration count and check limits.
+
+        Called at the start of each work cycle iteration to enforce
+        max iteration limits.
+
+        Returns:
+            Current iteration count
+
+        Raises:
+            ProgressLimitExceeded: If max iterations exceeded
+        """
+        self._iteration_count += 1
+        if self._current_session_id:
+            return self._progress.increment(self._current_session_id)
+        return self._iteration_count
+
     def get_current_session_id(self) -> Optional[str]:
         """Get the current progress tracking session ID."""
         return self._current_session_id

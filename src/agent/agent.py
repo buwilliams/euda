@@ -671,6 +671,12 @@ class Agent:
             defer_consolidation = self.metacognition.should_defer_consolidation()
             exchanges = []  # Collect for batched reflection if deferred
 
+            # Track consecutive minimal responses to detect stuck patterns
+            # (complements tool-based stuck detection for cases where no tools are called)
+            consecutive_minimal_responses = 0
+            MINIMAL_RESPONSE_THRESHOLD = 5  # Stop after N consecutive minimal responses
+            MINIMAL_RESPONSE_LENGTH = 20  # Responses shorter than this are "minimal"
+
             # Start progress tracking session for stuck detection
             session_id = self.metacognition.start_work_session(session_type="work_cycle")
             self._log("work_session_started", {"session_id": session_id})
@@ -679,6 +685,9 @@ class Agent:
                 while not self._work_done:
                     iteration += 1
                     self._log("work_iteration", {"iteration": iteration})
+
+                    # Increment progress tracker to enforce iteration limits
+                    self.metacognition.increment_iteration()
 
                     # Check if topic was cancelled (archived/deleted) by user
                     if iteration > 1 and self._is_topic_cancelled(topic_id):
@@ -694,6 +703,25 @@ class Agent:
                     # Defer reflection if enabled (will batch process at end)
                     response = self.chat(prompt, log_to_memory=True, save_to_history=False,
                                          defer_consolidation=defer_consolidation)
+
+                    # Detect minimal/empty responses (LLM returning "..." or similar)
+                    # This catches cases where no tools are called and stuck detection won't trigger
+                    response_text = response.strip() if response else ""
+                    if len(response_text) < MINIMAL_RESPONSE_LENGTH:
+                        consecutive_minimal_responses += 1
+                        self._log("minimal_response", {
+                            "iteration": iteration,
+                            "response_length": len(response_text),
+                            "consecutive_count": consecutive_minimal_responses
+                        })
+                        if consecutive_minimal_responses >= MINIMAL_RESPONSE_THRESHOLD:
+                            raise ProgressLimitExceeded(
+                                self.id,
+                                session_id,
+                                f"Agent returned {consecutive_minimal_responses} consecutive minimal responses"
+                            )
+                    else:
+                        consecutive_minimal_responses = 0  # Reset on substantive response
 
                     # Collect exchange for batched reflection
                     if defer_consolidation and self.consolidation:
