@@ -144,15 +144,19 @@ class TokenAwareness:
             budget.get("pause_percent", 100)
         )
 
-    def _get_global_budget_tokens(self) -> int:
-        """Get global monthly token budget from config.
+    def _get_global_budget_tokens(self) -> tuple[int, str]:
+        """Get global token budget from config.
 
         Converts the dollar budget to tokens using current model pricing.
-        Default: 10M tokens if no budget configured.
+        Returns both the token count and the period it represents.
+
+        Returns:
+            Tuple of (tokens, period) where period is "daily", "weekly", or "monthly"
         """
         llm_config = self._load_llm_config()
         budget = llm_config.get("budget", {})
         budget_dollars = budget.get("limit", 10.0)
+        budget_period = budget.get("period", "monthly")  # Default to monthly for backwards compat
 
         # Get pricing for the current model
         provider = llm_config.get("provider")
@@ -169,10 +173,10 @@ class TokenAwareness:
         # Convert dollars to tokens (in millions, then to actual tokens)
         if avg_rate > 0:
             tokens_in_millions = budget_dollars / avg_rate
-            return int(tokens_in_millions * 1_000_000)
+            return int(tokens_in_millions * 1_000_000), budget_period
 
         # Default fallback
-        return 10_000_000  # 10M tokens
+        return 10_000_000, budget_period  # 10M tokens
 
     def _get_model_pricing(self, provider: str, model: str) -> dict:
         """Get pricing for a specific model from LLM config.
@@ -307,8 +311,8 @@ class TokenAwareness:
                                  frequency: str) -> tuple:
         """Calculate token budget for a period.
 
-        Each agent gets an equal share of the global monthly budget,
-        then divided by the frequency period.
+        Each agent gets an equal share of the global budget,
+        then converted to the agent's frequency period.
 
         Args:
             enabled_agent_count: Number of enabled agents
@@ -317,24 +321,34 @@ class TokenAwareness:
         Returns:
             Tuple of (total_budget_tokens, period_name)
         """
-        global_budget = self._get_global_budget_tokens()
+        global_budget, budget_period = self._get_global_budget_tokens()
 
-        # Each agent gets equal share
-        per_agent_monthly = global_budget // max(1, enabled_agent_count)
+        # Each agent gets equal share of the global budget
+        per_agent_budget = global_budget // max(1, enabled_agent_count)
 
-        # Divide by frequency
+        # Convert from budget_period to daily first (normalize)
+        if budget_period == "daily":
+            per_agent_daily = per_agent_budget
+        elif budget_period == "weekly":
+            per_agent_daily = per_agent_budget // 7
+        elif budget_period == "monthly":
+            per_agent_daily = per_agent_budget // 31
+        else:
+            # Default: treat as daily
+            per_agent_daily = per_agent_budget
+
+        # Now convert daily to the agent's requested frequency
         if frequency == "monthly":
-            return per_agent_monthly, "month"
+            return per_agent_daily * 31, "month"
         elif frequency == "weekly":
-            return per_agent_monthly // 4, "week"
+            return per_agent_daily * 7, "week"
         elif frequency == "daily":
-            return per_agent_monthly // 31, "day"
+            return per_agent_daily, "day"
         elif frequency == "hourly":
-            daily = per_agent_monthly // 31
-            return daily // 24, "hour"
+            return per_agent_daily // 24, "hour"
         else:
             # Default to daily
-            return per_agent_monthly // 31, "day"
+            return per_agent_daily, "day"
 
     def _get_period_key(self, frequency: str) -> str:
         """Get the current period key for usage tracking."""
