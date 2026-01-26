@@ -19,15 +19,18 @@ def navigate_to_assets(page: Page):
     focus_tab.click()
     page.wait_for_timeout(500)
 
-    # Expand Collections section
-    collections_section = page.get_by_text("Collections", exact=True)
-    expect(collections_section).to_be_visible(timeout=5000)
-    collections_section.click()
-    page.wait_for_timeout(300)
+    # Check if Assets link is already visible (Collections expanded)
+    assets_link = page.locator('.focus-menu-item:has-text("Assets")')
+    if not assets_link.is_visible():
+        # Expand Collections section
+        collections_section = page.get_by_text("Collections", exact=True)
+        expect(collections_section).to_be_visible(timeout=5000)
+        collections_section.click()
+        # Wait for expansion animation
+        page.wait_for_timeout(500)
 
     # Click Assets menu item
-    assets_link = page.locator('.focus-menu-item:has-text("Assets")')
-    expect(assets_link).to_be_visible(timeout=2000)
+    expect(assets_link).to_be_visible(timeout=3000)
     assets_link.click()
     page.wait_for_timeout(500)
 
