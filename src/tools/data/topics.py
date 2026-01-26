@@ -242,7 +242,7 @@ def list_topics(status: str = None, parent_id: str = None, tag: str = None, assi
         query += " AND assignee = ?"
         params.append(assignee)
         # Exclude system topics - only their descendants should be processed by agents
-        query += " AND NOT EXISTS (SELECT 1 FROM json_each(tags) WHERE json_each.value IN ('system:agents', 'system:projects', 'agent-inbox'))"
+        query += " AND NOT EXISTS (SELECT 1 FROM json_each(tags) WHERE json_each.value IN ('system:agents', 'system:projects', 'system:assets', 'agent-inbox'))"
 
     if actionable:
         # Only topics that are due today, past, or have no due date (and not someday)
@@ -383,7 +383,7 @@ def update_topic(
         return {"error": "Cannot set status to 'working' directly. Use claim_topic instead."}
 
     # Prevent status changes on system topics
-    system_tags = {"system:agents", "system:projects", "agent-inbox"}
+    system_tags = {"system:agents", "system:projects", "system:assets", "agent-inbox"}
     if status is not None and any(tag in system_tags for tag in topic.get("tags", [])):
         return {"error": "Cannot change status of system topics"}
 
@@ -503,7 +503,7 @@ def complete_topic(topic_id: str, agent: str = "user") -> Optional[dict]:
     # Exception: Allow completing internal euno:* topics even if they have system tags
     is_internal = topic.get("name", "").startswith("euno:")
     if not is_internal:
-        system_tags = {"system:agents", "system:projects", "agent-inbox"}
+        system_tags = {"system:agents", "system:projects", "system:assets", "agent-inbox"}
         if any(tag in system_tags for tag in topic.get("tags", [])):
             return {"error": "Cannot complete system topics"}
 
@@ -615,7 +615,7 @@ def archive_topic(topic_id: str, agent: str = "user") -> Optional[dict]:
         return {"error": f"Topic not found: {topic_id}"}
 
     # Prevent archiving system topics (containers and agent inboxes)
-    system_tags = {"system:agents", "system:projects", "agent-inbox"}
+    system_tags = {"system:agents", "system:projects", "system:assets", "agent-inbox"}
     if any(tag in system_tags for tag in topic.get("tags", [])):
         return {"error": "Cannot archive system topics"}
 
@@ -697,7 +697,7 @@ def delete_topic(topic_id: str, delete_children: bool = False) -> dict:
         return {"error": f"Topic not found: {topic_id}"}
 
     # Prevent deletion of system topics (containers and agent inboxes)
-    system_tags = {"system:agents", "system:projects", "agent-inbox"}
+    system_tags = {"system:agents", "system:projects", "system:assets", "agent-inbox"}
     if any(tag in system_tags for tag in topic.get("tags", [])):
         return {"error": "Cannot delete system topics"}
 
@@ -1074,7 +1074,7 @@ def claim_topic(topic_id: str, agent_id: str) -> dict:
 
     # Prevent claiming system topics (containers and agent inboxes)
     # Only their descendants should be processed
-    system_tags = {"system:agents", "system:projects", "agent-inbox"}
+    system_tags = {"system:agents", "system:projects", "system:assets", "agent-inbox"}
     if any(tag in system_tags for tag in topic.get("tags", [])):
         return {"error": "Cannot claim system topics - only their descendants can be processed"}
 
@@ -1267,8 +1267,8 @@ def sync_agent_inbox_topics():
             changes_made = True
 
     # Migrate orphaned root topics (user-created, not system) under Projects
-    system_tags = {"system:agents", "system:projects"}
-    system_container_names = {"Agents", "Projects", "System"}
+    system_tags = {"system:agents", "system:projects", "system:assets"}
+    system_container_names = {"Agents", "Projects", "Assets", "System"}
     for topic in all_topics:
         # Skip if not a root topic
         if topic["parent_id"] is not None:
