@@ -6,11 +6,11 @@ Memory types:
 - person: Someone to follow up with, check on, or reconnect with
 - place: A location relevant to upcoming plans
 - thing: Physical items, purchases, or objects of interest
-- goal: Fitness goals, habits, skills being developed
+- goal: Personal development goals - fitness, habits, skills being developed, learning objectives
 - concern: Health issues, relationship tensions, work challenges
 - idea: Projects to explore, insights, books, social media threads
 - learning: Corrections, mistakes, or task failures to learn from (e.g., "user wanted X but I did Y", "asked too many questions instead of acting", "missed an obvious request")
-- behavior: User preferences about how the assistant should act (e.g., "prefers concise responses", "wants topics created immediately for reminders", "dislikes being asked too many clarifying questions")
+- behavior: User preferences about how the assistant should act or operate (e.g., "prefers concise responses", "wants proactive topic creation and delegation to Worker for actionable tasks", "dislikes being asked too many clarifying questions", "prefers assistant to take action rather than ask for confirmation")
 
 Return a JSON array of items to remember. Each item must have:
 - type: One of the types above

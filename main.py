@@ -28,7 +28,7 @@ Commands:
   points           Show contribution points summary
   store            Import files into long-term memory using RLM
   dev              Developer tools for debugging agents
-  set-password     Set the access password
+  set-password     Set the access password (empty to disable auth)
   remove-password  Remove the password (disable auth)
   fresh-start      Reset all user data (memory, topics, logs, password)
 
@@ -513,11 +513,13 @@ def cmd_points(args):
 def cmd_set_password(args):
     """Set the access password."""
     import getpass
-    from src.web.auth import set_password, is_password_set
+    from src.web.auth import set_password, remove_password, is_password_set
 
     print("=" * 60)
     print("Euno - Set Password")
     print("=" * 60)
+    print()
+    print("Enter an empty password to disable authentication.")
     print()
 
     if is_password_set():
@@ -526,6 +528,7 @@ def cmd_set_password(args):
         if confirm != 'y':
             print("Cancelled.")
             return
+        print()
 
     try:
         password = getpass.getpass("Enter new password: ")
@@ -535,9 +538,14 @@ def cmd_set_password(args):
             print("Passwords do not match.")
             return
 
-        set_password(password)
-        print("\nPassword set successfully.")
-        print("The web UI will now require authentication.")
+        if not password:
+            remove_password()
+            print("\nPassword removed.")
+            print("The web UI no longer requires authentication.")
+        else:
+            set_password(password)
+            print("\nPassword set successfully.")
+            print("The web UI will now require authentication.")
 
     except ValueError as e:
         print(f"Error: {e}")

@@ -203,6 +203,11 @@ function navigateFocus(view) {
     focusView = view;
     focusSlideDirection = 'forward';
 
+    // Invalidate assets cache when navigating to assets view to show fresh data
+    if (view === 'recent-assets') {
+        recentAssetsCache = null;
+    }
+
     // Set topic context for chat input (context-aware routing)
     if (view.startsWith('topic-')) {
         const topicId = view.substring(6);

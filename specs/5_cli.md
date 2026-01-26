@@ -16,7 +16,7 @@ Rules for the command-line interface.
 - `topics` — List all topics with status
 - `store <path>` — Import files into long-term memory
 - `points [name]` — Show contribution points, optionally filtered by name
-- `set-password` — Set access password for web UI
+- `set-password` — Set access password for web UI (empty password disables auth)
 - `remove-password` — Disable authentication
 - `fresh-start` — Reset all user data while keeping configs
 

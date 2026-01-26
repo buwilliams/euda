@@ -2,6 +2,12 @@
 
 // ============== Asset Utilities ==============
 
+function normalizeNewlines(content) {
+    // Convert literal \n sequences to actual newlines (fixes LLM double-escaping)
+    if (!content) return content;
+    return content.replace(/\\n/g, '\n');
+}
+
 function isTextAsset(asset) {
     const textTypes = ['text/', 'application/json', 'application/xml', 'application/javascript'];
     const textExtensions = ['.md', '.txt', '.json', '.xml', '.html', '.css', '.js', '.py', '.sh', '.yaml', '.yml'];
@@ -66,6 +72,7 @@ async function deleteAsset(topicId, filename) {
 
         if (response.ok) {
             await loadTopicAssets(topicId);
+            recentAssetsCache = null;  // Invalidate cache to refresh assets list
             renderFocusTab();
         }
     } catch (error) {
@@ -86,6 +93,7 @@ async function uploadAsset(topicId, file) {
 
         if (response.ok) {
             await loadTopicAssets(topicId);
+            recentAssetsCache = null;  // Invalidate cache to refresh assets list
             renderFocusTab();
         }
     } catch (error) {
@@ -132,6 +140,7 @@ async function saveAssetContent(topicId, filename) {
             // Update current data and refresh cache
             currentAssetData.content = textarea.value;
             await loadTopicAssets(topicId);
+            recentAssetsCache = null;  // Invalidate cache to refresh assets list
         }
     } catch (error) {
         console.error('Failed to save asset:', error);
@@ -160,6 +169,7 @@ async function createNewAsset(topicId) {
         if (response.ok) {
             input.value = '';
             await loadTopicAssets(topicId);
+            recentAssetsCache = null;  // Invalidate cache to refresh assets list
             // Navigate to the new asset
             navigateFocus(`asset-${topicId}-${filename}`);
         }
@@ -232,7 +242,7 @@ function renderAssetView(topicId, filename) {
                         placeholder="Write content here...">${escapeHtml(asset.content || '')}</textarea>
                 ` : `
                     <div class="topic-description-display ${hasContent ? '' : 'empty'}" onclick="startEditingAsset('${escapeHtml(filename)}')">
-                        ${hasContent ? (isMarkdown ? marked.parse(asset.content) : `<pre>${escapeHtml(asset.content)}</pre>`) : 'Click to add content...'}
+                        ${hasContent ? (isMarkdown ? marked.parse(normalizeNewlines(asset.content)) : `<pre>${escapeHtml(asset.content)}</pre>`) : 'Click to add content...'}
                     </div>
                 `}
             </div>
@@ -319,7 +329,8 @@ function renderAssetsListView(topicId) {
 }
 
 function renderRecentAssetsView() {
-    // Load recent assets if not cached
+    // Load recent assets - refresh on each navigation to show latest
+    // (assets may be created by agents between navigations)
     if (recentAssetsCache === null) {
         loadRecentAssets().then(() => renderFocusTab());
         return `

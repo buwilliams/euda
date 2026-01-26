@@ -17,15 +17,24 @@ let rateLimitViewCache = {};
 function renderAgentDetailView(topic) {
     const agentId = topic.agent_id;
     const displayName = topic.name || 'Untitled';
-    // Get topics assigned to this agent, sorted by status priority
+    // Get topics assigned to this agent and map to their root ancestors for drill-down navigation
     const assignedTopics = getTopicsAssignedToAgent(agentId);
-    // Also get child topics of the agent's inbox (for system-created topics like triggers)
+    const rootTopicsMap = new Map();
+    for (const t of assignedTopics) {
+        const root = getRootAncestor(t);
+        if (!isContainerTopic(root)) {
+            rootTopicsMap.set(root.id, root);
+        }
+    }
+    const assignedRootTopics = Array.from(rootTopicsMap.values());
+    // Also get direct children of the agent's inbox
     const inboxChildTopics = getAllChildTopicsSorted(topic.id);
-    // Combine both, deduplicating by ID (assigned topics take priority)
-    const assignedIds = new Set(assignedTopics.map(t => t.id));
-    const allChildTopics = [...assignedTopics, ...inboxChildTopics.filter(t => !assignedIds.has(t.id))];
-    // Count only active topics (todo/working) for display
-    const activeTopicsCount = allChildTopics.filter(t => t.status === 'todo' || t.status === 'working').length;
+    // Combine both, deduplicating by ID (root topics take priority)
+    const rootIds = new Set(assignedRootTopics.map(t => t.id));
+    const topLevelTopics = [...assignedRootTopics, ...inboxChildTopics.filter(t => !rootIds.has(t.id))];
+    // Count only active topics (todo/working) for display - check assigned topics, not roots
+    const activeTopicsCount = assignedTopics.filter(t => t.status === 'todo' || t.status === 'working').length
+        + inboxChildTopics.filter(t => !rootIds.has(t.id) && (t.status === 'todo' || t.status === 'working')).length;
     const assets = topicAssetsCache[topic.id] || [];
 
     // Load agent data if not cached
@@ -65,7 +74,7 @@ function renderAgentDetailView(topic) {
     const triggerTopicNames = triggers.map(t => t.topic_name || t);
 
     // Find which triggers have active tasks (todo or working)
-    const activeTriggerTopics = allChildTopics
+    const activeTriggerTopics = topLevelTopics
         .filter(j => triggerTopicNames.includes(j.name) && (j.status === 'todo' || j.status === 'working'))
         .map(j => j.name);
 
@@ -309,13 +318,13 @@ function renderAgentDetailView(topic) {
 
             <!-- Topics Section (all topics sorted by status: working > todo > error > done > archived) -->
             <div class="topic-section">
-                <div class="topic-section-header collapsible ${allChildTopics.length > 0 ? 'open' : ''}" onclick="togglePersonaSection(this, event)">
+                <div class="topic-section-header collapsible ${topLevelTopics.length > 0 ? 'open' : ''}" onclick="togglePersonaSection(this, event)">
                     <span>Topics${activeTopicsCount > 0 ? ` (${activeTopicsCount})` : ''}</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
-                <div class="collapsible-content ${allChildTopics.length > 0 ? 'open' : ''}">
-                    ${allChildTopics.length === 0 ? '<div class="focus-empty">No topics assigned to this agent.</div>' :
-                      allChildTopics.map(child => renderTopicCard(child, true)).join('')
+                <div class="collapsible-content ${topLevelTopics.length > 0 ? 'open' : ''}">
+                    ${topLevelTopics.length === 0 ? '<div class="focus-empty">No topics assigned to this agent.</div>' :
+                      topLevelTopics.map(child => renderTopicCard(child, true)).join('')
                     }
                 </div>
             </div>
