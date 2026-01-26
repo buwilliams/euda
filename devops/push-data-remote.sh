@@ -80,9 +80,9 @@ BACKUP_NAME="data_backup-$(date +%Y%m%d-%H%M%S)"
 echo "[2/$STEPS] Backing up remote data to $BACKUP_NAME..."
 ssh "$SERVER" "cd $REMOTE_DIR && if [ -d data ]; then cp -r data $BACKUP_NAME; fi"
 
-# Save remote password_hash before sync
+# Save remote password_hash before sync (base64 encoded to preserve $ characters)
 echo "[3/$STEPS] Preserving remote password..."
-REMOTE_PASSWORD_HASH=$(ssh "$SERVER" "cat $REMOTE_DIR/data/system/config.json 2>/dev/null | python3 -c \"import sys,json; d=json.load(sys.stdin); print(d.get('password_hash',''))\" 2>/dev/null" || echo "")
+REMOTE_PASSWORD_B64=$(ssh "$SERVER" "cat $REMOTE_DIR/data/system/config.json 2>/dev/null | python3 -c \"import sys,json,base64; d=json.load(sys.stdin); h=d.get('password_hash',''); print(base64.b64encode(h.encode()).decode() if h else '')\" 2>/dev/null" || echo "")
 
 # Sync data directory
 echo "[4/$STEPS] Pushing data..."
@@ -92,14 +92,14 @@ rsync -avz --delete \
     "$PROJECT_DIR/data/" "$SERVER:$REMOTE_DIR/data/"
 
 # Restore remote password_hash after sync
-if [ -n "$REMOTE_PASSWORD_HASH" ]; then
+if [ -n "$REMOTE_PASSWORD_B64" ]; then
     echo "[5/$STEPS] Restoring remote password..."
     ssh "$SERVER" "cd $REMOTE_DIR && python3 -c \"
-import json
+import json, base64
 from pathlib import Path
 config_path = Path('data/system/config.json')
 config = json.loads(config_path.read_text()) if config_path.exists() else {}
-config['password_hash'] = '$REMOTE_PASSWORD_HASH'
+config['password_hash'] = base64.b64decode('$REMOTE_PASSWORD_B64').decode()
 config_path.write_text(json.dumps(config, indent=2))
 \""
 fi
