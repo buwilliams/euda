@@ -80,9 +80,12 @@ BACKUP_NAME="data_backup-$(date +%Y%m%d-%H%M%S)"
 echo "[2/$STEPS] Backing up remote data to $BACKUP_NAME..."
 ssh "$SERVER" "cd $REMOTE_DIR && if [ -d data ]; then cp -r data $BACKUP_NAME; fi"
 
-# Save remote password_hash before sync (base64 encoded to preserve $ characters)
+# Save remote auth.json before sync
 echo "[3/$STEPS] Preserving remote password..."
-REMOTE_PASSWORD_B64=$(ssh "$SERVER" "cat $REMOTE_DIR/data/system/config.json 2>/dev/null | python3 -c \"import sys,json,base64; d=json.load(sys.stdin); h=d.get('password_hash',''); print(base64.b64encode(h.encode()).decode() if h else '')\" 2>/dev/null" || echo "")
+REMOTE_AUTH_EXISTS=$(ssh "$SERVER" "test -f $REMOTE_DIR/data/system/auth.json && echo 'yes' || echo 'no'")
+if [ "$REMOTE_AUTH_EXISTS" = "yes" ]; then
+    ssh "$SERVER" "cp $REMOTE_DIR/data/system/auth.json /tmp/euno-auth-backup.json"
+fi
 
 # Sync data directory
 echo "[4/$STEPS] Pushing data..."
@@ -91,17 +94,10 @@ rsync -avz --delete \
     --exclude '.DS_Store' \
     "$PROJECT_DIR/data/" "$SERVER:$REMOTE_DIR/data/"
 
-# Restore remote password_hash after sync
-if [ -n "$REMOTE_PASSWORD_B64" ]; then
+# Restore remote auth.json after sync
+if [ "$REMOTE_AUTH_EXISTS" = "yes" ]; then
     echo "[5/$STEPS] Restoring remote password..."
-    ssh "$SERVER" "cd $REMOTE_DIR && python3 -c \"
-import json, base64
-from pathlib import Path
-config_path = Path('data/system/config.json')
-config = json.loads(config_path.read_text()) if config_path.exists() else {}
-config['password_hash'] = base64.b64decode('$REMOTE_PASSWORD_B64').decode()
-config_path.write_text(json.dumps(config, indent=2))
-\""
+    ssh "$SERVER" "cp /tmp/euno-auth-backup.json $REMOTE_DIR/data/system/auth.json && rm /tmp/euno-auth-backup.json"
 fi
 
 # Restart service if requested
