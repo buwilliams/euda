@@ -9,8 +9,25 @@ async function initializeConversation() {
     inlineMessages.innerHTML = '<div class="chat-loading">Loading...</div>';
 
     try {
-        const response = await fetch('/api/chat/conversations/recent?count=1');
-        const data = await response.json();
+        // Fetch quote and conversations in parallel
+        const [quoteResponse, convResponse] = await Promise.all([
+            fetch('/api/daily-quote', { credentials: 'same-origin' }).catch(() => null),
+            fetch('/api/chat/conversations/recent?count=1')
+        ]);
+
+        // Cache the quote if available
+        if (quoteResponse && quoteResponse.ok) {
+            try {
+                const quoteData = await quoteResponse.json();
+                if (quoteData.quote) {
+                    cachedChatQuote = quoteData;
+                }
+            } catch (e) {
+                // Ignore quote parsing errors
+            }
+        }
+
+        const data = await convResponse.json();
 
         // Remove loading
         const loadingEl = inlineMessages.querySelector('.chat-loading');
