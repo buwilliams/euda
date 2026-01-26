@@ -74,21 +74,49 @@ class TestQuickAdd:
 
 
 class TestTopicCard:
-    """Tests for topiccard interactions."""
+    """Tests for topic card interactions."""
 
     def test_topic_card_opens_detail(self, authenticated_page: Page):
-        """Clicking a topiccard should open topicdetail view."""
+        """Clicking a topic card should open topic detail view."""
         page = authenticated_page
 
-        # First check if there are any topiccards
+        # First check if there are any topic cards
         topic_cards = page.locator('[data-testid="topic-card"]')
         if topic_cards.count() > 0:
-            # Click the first topiccard
+            # Click the first topic card
             topic_cards.first.click()
 
-            # Should show topicdetail view with back button
+            # Should show topic detail view with back button
             expect(page.locator('[data-testid="back-btn"]')).to_be_visible(timeout=5000)
             expect(page.locator('[data-testid="topic-detail"]')).to_be_visible(timeout=5000)
+
+    def test_topic_card_shows_assignee_label(self, authenticated_page: Page):
+        """Topic cards should show an assignee label (agent name or 'unassigned')."""
+        page = authenticated_page
+
+        # Check if there are any topic cards
+        topic_cards = page.locator('[data-testid="topic-card"]')
+        if topic_cards.count() > 0:
+            first_card = topic_cards.first
+
+            # Should have an assignee label element
+            assignee_label = first_card.locator('.card-assignee-label')
+            expect(assignee_label).to_be_visible()
+
+            # Label should contain text (either agent name or "unassigned")
+            label_text = assignee_label.inner_text()
+            assert len(label_text) > 0, "Assignee label should have text"
+
+    def test_unassigned_topic_shows_unassigned_label(self, authenticated_page: Page):
+        """Unassigned topics should show 'unassigned' label with appropriate styling."""
+        page = authenticated_page
+
+        # Look for unassigned labels
+        unassigned_labels = page.locator('.card-assignee-label.card-unassigned')
+        if unassigned_labels.count() > 0:
+            # Should contain "unassigned" text
+            label_text = unassigned_labels.first.inner_text()
+            assert label_text.lower() == "unassigned"
 
 
 class TestTopicDetail:

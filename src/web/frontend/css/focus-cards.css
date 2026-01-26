@@ -89,6 +89,23 @@
     flex-shrink: 0;
 }
 
+.card-assignee-label {
+    font-size: 9px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #5a7a9a;
+    flex-shrink: 0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: #e8f0f8;
+}
+
+.card-assignee-label.card-unassigned {
+    color: #999;
+    background: #f0f0f0;
+}
+
 .card-arrow {
     color: #ccc;
     font-size: var(--font-size-xl);

@@ -200,3 +200,127 @@ class TestAgentMemory:
 
         # Memory list should be visible
         expect(page.locator('[data-testid="memory-list"]')).to_be_visible(timeout=5000)
+
+
+class TestAgentTopics:
+    """Tests for agent topics display (root ancestors with assignee labels)."""
+
+    def test_agent_detail_shows_topics_section(self, authenticated_page: Page):
+        """Agent detail view should show a Topics section."""
+        page = authenticated_page
+
+        navigate_to_agents(page)
+
+        # Wait for agents container
+        expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
+
+        # Click first agent card
+        agent_cards = page.locator('[data-testid="agent-card"]')
+        if agent_cards.count() == 0:
+            pytest.skip("No agent cards available")
+
+        agent_cards.first.click()
+
+        # Wait for agent detail
+        expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
+
+        # Topics section should be visible
+        topics_section = page.get_by_text("Topics", exact=False)
+        expect(topics_section.first).to_be_visible(timeout=5000)
+
+    def test_topic_cards_show_assignee_labels(self, authenticated_page: Page):
+        """Topic cards in agent detail should show assignee labels."""
+        page = authenticated_page
+
+        navigate_to_agents(page)
+
+        # Wait for agents container
+        expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
+
+        # Click first agent card
+        agent_cards = page.locator('[data-testid="agent-card"]')
+        if agent_cards.count() == 0:
+            pytest.skip("No agent cards available")
+
+        agent_cards.first.click()
+
+        # Wait for agent detail
+        expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
+
+        # Check for topic cards with assignee labels
+        topic_cards = page.locator('[data-testid="topic-card"]')
+        if topic_cards.count() > 0:
+            first_card = topic_cards.first
+            assignee_label = first_card.locator('.card-assignee-label')
+            expect(assignee_label).to_be_visible()
+
+    def test_topic_cards_are_clickable_for_drill_down(self, authenticated_page: Page):
+        """Topic cards in agent detail should be clickable for drill-down navigation."""
+        page = authenticated_page
+
+        navigate_to_agents(page)
+
+        # Wait for agents container
+        expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
+
+        # Click first agent card
+        agent_cards = page.locator('[data-testid="agent-card"]')
+        if agent_cards.count() == 0:
+            pytest.skip("No agent cards available")
+
+        agent_cards.first.click()
+
+        # Wait for agent detail
+        expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
+
+        # Check for topic cards in the Topics section
+        topic_cards = page.locator('[data-testid="topic-card"]')
+        if topic_cards.count() > 0:
+            # Topic cards should be clickable
+            first_card = topic_cards.first
+            expect(first_card).to_be_visible()
+
+            # Click the topic card to drill down (shows root ancestor for navigation)
+            first_card.click()
+            page.wait_for_timeout(500)
+
+            # Should navigate to topic detail (back button should be visible)
+            expect(page.locator('[data-testid="back-btn"]')).to_be_visible(timeout=5000)
+
+    def test_topic_drill_down_and_back_navigation(self, authenticated_page: Page):
+        """Drilling down into a topic and back should work correctly."""
+        page = authenticated_page
+
+        navigate_to_agents(page)
+
+        # Wait for agents container
+        expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
+
+        # Click first agent card
+        agent_cards = page.locator('[data-testid="agent-card"]')
+        if agent_cards.count() == 0:
+            pytest.skip("No agent cards available")
+
+        agent_cards.first.click()
+
+        # Wait for agent detail
+        expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
+
+        # Check for topic cards
+        topic_cards = page.locator('[data-testid="topic-card"]')
+        if topic_cards.count() == 0:
+            pytest.skip("No topic cards in agent detail")
+
+        # Click first topic to drill down
+        topic_cards.first.click()
+        page.wait_for_timeout(500)
+
+        # Should be in topic detail view
+        expect(page.locator('[data-testid="topic-detail"]')).to_be_visible(timeout=5000)
+
+        # Navigate back
+        page.locator('[data-testid="back-btn"]').click()
+        page.wait_for_timeout(500)
+
+        # Should be back in agent detail
+        expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)

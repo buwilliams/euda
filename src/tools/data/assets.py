@@ -77,8 +77,11 @@ def write_asset(topic_id: str, filename: str, content: str) -> dict:
     assets_dir = _get_topic_assets_dir(topic_id)
     assets_dir.mkdir(parents=True, exist_ok=True)
 
+    # Normalize escaped newlines from LLM output (converts literal \n to actual newlines)
+    normalized_content = content.replace('\\n', '\n') if content else content
+
     path = assets_dir / filename
-    path.write_text(content)
+    path.write_text(normalized_content)
 
     return {
         "filename": filename,
