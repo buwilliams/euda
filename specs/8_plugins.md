@@ -13,30 +13,32 @@ Plugins extend Euno's capabilities through CLI-based commands. Agents interact w
 ## Directory Structure
 
 ```
-plugins/                    # Plugin directory (project root)
-├── core/                   # Core Euno functionality
-│   ├── cli.py              # Typer CLI entry point
-│   ├── __init__.py
-│   └── commands/           # Command modules
-│       ├── topics.py       # Topic management
-│       ├── assets.py       # Asset operations
-│       ├── memory.py       # Memory operations
-│       ├── identity.py     # Identity management
-│       ├── agents.py       # Agent management
-│       ├── consolidate.py  # Consolidation
-│       ├── dates.py        # Date utilities
+src/core/                  # Business logic (shared by web UI + plugins)
+├── data/                  # Topics, assets, memory, identity
+├── agents/                # Agent operations
+├── system/                # Consolidation, notifications, dates
+└── integration/           # File processing
+
+plugins/                   # Plugin CLI interfaces (for LLM agents)
+├── core/                  # Core plugin (CLI wrappers only)
+│   ├── cli.py             # Typer CLI entry point
+│   └── commands/          # CLI wrappers (import from src/core/)
+│       ├── topics.py      # → imports from src.core.data.topics
+│       ├── assets.py      # → imports from src.core.data.assets
+│       ├── memory.py      # → imports from src.core.data.memory
+│       ├── identity.py    # → imports from src.core.data.identity
+│       ├── agents.py      # → imports from src.core.agents
+│       ├── consolidate.py # → imports from src.core.system.consolidation
+│       ├── dates.py       # → imports from src.core.system.dates
 │       ├── notifications.py
 │       ├── quote.py
 │       └── done.py
-├── nextcloud/              # Nextcloud integration
+├── nextcloud/             # Self-contained external integration
 │   ├── cli.py
 │   └── commands/
-│       ├── files.py
-│       ├── calendar.py
-│       └── deck.py
-├── speech/                 # Text-to-speech
+├── speech/                # Self-contained external integration
 │   └── cli.py
-└── mastodon/              # Mastodon integration
+└── mastodon/              # Self-contained external integration
     └── cli.py
 
 src/plugins/               # Plugin infrastructure
@@ -48,6 +50,14 @@ src/plugins/               # Plugin infrastructure
 ├── exceptions.py          # Plugin-specific errors
 └── tools.py               # 3 meta-tools for LLM
 ```
+
+### Architecture Note
+
+The `core` plugin is special: its CLI commands are thin wrappers that import business logic from `src/core/`. This allows:
+- **Web UI**: Direct Python imports from `src/core/` (fast)
+- **LLM Agents**: Plugin CLI subprocess calls (flexible)
+
+External plugins (nextcloud, speech, mastodon) are self-contained with their own business logic.
 
 ## Plugin Contract
 

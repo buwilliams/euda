@@ -1,7 +1,7 @@
 """
 Unit tests for assets module.
 
-Tests for src/tools/data/assets.py
+Tests for src/core/data/assets.py
 """
 
 import pytest

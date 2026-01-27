@@ -1,7 +1,7 @@
 """
 Unit tests for topics module.
 
-Tests for src/tools/data/topics.py
+Tests for src/core/data/topics.py
 """
 
 import json

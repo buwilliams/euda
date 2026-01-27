@@ -84,37 +84,36 @@ uv run euno plugin core memory list
 ```
 euno/
 ├── main.py                 # Entry point, CLI
-├── plugins/                # Plugin directory
-│   ├── core/               # Core Euno functionality
+├── plugins/                # Plugin CLI interfaces (for LLM agents)
+│   ├── core/               # Core plugin (CLI wrappers only)
 │   │   ├── cli.py          # Typer CLI entry point
-│   │   └── commands/       # Command modules
-│   │       ├── topics.py   # Topic management
-│   │       ├── assets.py   # Asset operations
-│   │       ├── memory.py   # Memory operations
-│   │       ├── identity.py # Identity management
-│   │       ├── agents.py   # Agent management
+│   │   └── commands/       # CLI commands (import from src/core/)
+│   │       ├── topics.py   # Topic commands
+│   │       ├── assets.py   # Asset commands
+│   │       ├── memory.py   # Memory commands
 │   │       └── ...
-│   ├── nextcloud/          # Nextcloud integration
-│   ├── speech/             # Text-to-speech
-│   └── mastodon/           # Mastodon integration
+│   ├── nextcloud/          # Nextcloud integration (self-contained)
+│   ├── speech/             # Text-to-speech (self-contained)
+│   └── mastodon/           # Mastodon integration (self-contained)
 ├── src/
+│   ├── core/               # Business logic (shared by web + plugins)
+│   │   ├── data/           # Topics, assets, memory, identity
+│   │   ├── agents/         # Agent operations
+│   │   ├── system/         # Consolidation, notifications, dates
+│   │   └── integration/    # File processing
 │   ├── plugins/            # Plugin infrastructure
 │   │   ├── discovery.py    # Scan plugins/, validate
 │   │   ├── executor.py     # Run CLI via subprocess
 │   │   ├── usage.py        # Extract --help text
 │   │   ├── context.py      # Build env vars
 │   │   └── tools.py        # 3 meta-tools for LLM
-│   ├── agent/              # Agent module (Identity + Cognition + Memory + Behavior)
+│   ├── agent/              # Agent runtime (Identity + Cognition + Memory)
 │   │   ├── agent.py        # Main Agent class
 │   │   ├── manager.py      # Agent Manager
 │   │   └── cognition/      # Reasoning + Metacognition
-│   ├── tools/              # Business logic (called by plugins)
-│   │   ├── data/           # Topics, assets, memory
-│   │   ├── agents/         # Agent operations
-│   │   ├── system/         # Config, notifications
-│   │   └── integration/    # External integrations
 │   ├── llms/               # LLM clients
-│   └── web/                # FastAPI application
+│   ├── web/                # FastAPI application
+│   └── logger.py           # Centralized logging
 ├── data/
 │   ├── agents/             # Agent configs and state
 │   ├── topics/             # SQLite database + assets
@@ -123,6 +122,13 @@ euno/
 ├── web/                    # Web UI
 └── devops/                 # Deployment scripts
 ```
+
+### Two Paths to Business Logic
+
+Both the web UI and plugin CLI use the same business logic in `src/core/`:
+
+1. **Web UI (fast)**: `src/web/routes/*.py` → direct import from `src/core/`
+2. **LLM Agents (CLI)**: `plugins/core/commands/*.py` → import from `src/core/` → subprocess execution
 
 ## Core Concepts
 
@@ -135,10 +141,12 @@ Agents interact with Euno through **plugins** - CLI-based extensions that provid
 - `execute_plugin(plugin, command)` - Run a plugin command
 
 Built-in plugins:
-- **core**: Topics, memory, agents, identity, consolidation, dates
-- **nextcloud**: Files, calendar, deck integration
-- **speech**: Text-to-speech
-- **mastodon**: Social media posts
+- **core**: Topics, memory, agents, identity, consolidation, dates (CLI wrappers for `src/core/`)
+- **nextcloud**: Files, calendar, deck integration (self-contained)
+- **speech**: Text-to-speech (self-contained)
+- **mastodon**: Social media posts (self-contained)
+
+**Architecture note:** The `core` plugin is special—its CLI commands are thin wrappers that import business logic from `src/core/`. External plugins (nextcloud, speech, mastodon) are self-contained with their own logic.
 
 See `specs/8_plugins.md` for full plugin documentation.
 

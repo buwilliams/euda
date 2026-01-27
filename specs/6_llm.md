@@ -13,14 +13,20 @@ Rules for how agents interact with language models.
 
 ## Tools
 
-- Tools organized by type in `src/tools/{type}/`:
+Agents interact with Euno through **plugins** using three meta-tools:
+- `list_plugins` — Discover available plugins
+- `plugin_usage(plugin)` — Get help for a plugin
+- `execute_plugin(plugin, command)` — Run a plugin command
+
+Business logic is organized in `src/core/`:
   - `data/` — topics, assets, identity, memory
   - `agents/` — agent management
-  - `system/` — config, dates, notifications, done_working
-  - `integration/` — docs, specs, logs
-- Every tool description has two parts: what it does, when to use it
-- Format: `"What it does. Use when: specific scenarios."`
-- All agents get base tools: list_topics, get_topic, create_topic, complete_topic, add_topic_log, done_working
+  - `system/` — config, dates, notifications, consolidation
+  - `integration/` — file processing
+
+Plugin CLI commands in `plugins/core/commands/` are thin wrappers that import from `src/core/`.
+
+See `specs/8_plugins.md` for full plugin documentation.
 
 ## Context Access
 
