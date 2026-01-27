@@ -150,6 +150,40 @@ def cmd_web(args):
     asyncio.run(serve())
 
 
+class Spinner:
+    """Simple text spinner for CLI feedback."""
+
+    FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
+    def __init__(self, message: str = "Thinking"):
+        import threading
+        self.message = message
+        self._stop_event = threading.Event()
+        self._thread = None
+
+    def start(self):
+        import threading
+        self._stop_event.clear()
+        self._thread = threading.Thread(target=self._spin, daemon=True)
+        self._thread.start()
+
+    def _spin(self):
+        import time
+        idx = 0
+        while not self._stop_event.is_set():
+            frame = self.FRAMES[idx % len(self.FRAMES)]
+            print(f"\r{frame} {self.message}...", end="", flush=True)
+            idx += 1
+            time.sleep(0.1)
+
+    def stop(self):
+        self._stop_event.set()
+        if self._thread:
+            self._thread.join(timeout=0.5)
+        # Clear the spinner line
+        print("\r" + " " * (len(self.message) + 10) + "\r", end="", flush=True)
+
+
 def cmd_chat(args):
     """Interactive chat with an agent."""
     import threading
@@ -192,6 +226,7 @@ def cmd_chat(args):
     print()
 
     agent = Agent(agent_id)
+    spinner = Spinner("Thinking")
 
     while True:
         try:
@@ -202,8 +237,13 @@ def cmd_chat(args):
                 print("\nGoodbye!")
                 break
 
-            response = agent.chat(user_input)
-            print(f"\n{agent_id}: {response}\n")
+            spinner.start()
+            try:
+                response = agent.chat(user_input)
+            finally:
+                spinner.stop()
+
+            print(f"{agent_id}: {response}\n")
 
         except AgentPausedError as e:
             print(f"\n\nAGENT PAUSED: {e.reason}")
