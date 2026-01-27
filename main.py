@@ -152,8 +152,9 @@ def cmd_start(args):
 
 def cmd_chat(args):
     """Interactive chat with an agent."""
+    import threading
     from src.agent import Agent
-    from src.tools import get_tools_for_agent
+    from src.agent.manager import AgentManager, set_manager
     from src.agent.cognition.metacognition import AgentPausedError
     from src.llms import ConfigError
     from src.llms.base import _load_config
@@ -172,6 +173,16 @@ def cmd_chat(args):
     print(f"Euno - Chat with {agent_id}")
     print("=" * 60)
     print()
+
+    # Start agents in background thread (same as cmd_start)
+    def run_agents():
+        manager = AgentManager()
+        set_manager(manager)
+        asyncio.run(manager.run())
+
+    agent_thread = threading.Thread(target=run_agents, daemon=True)
+    agent_thread.start()
+    print("Platform running in background (triggers, events)")
     print("Type 'quit' to exit.")
     print()
 
