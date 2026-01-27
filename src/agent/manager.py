@@ -345,9 +345,11 @@ class AgentManager:
         """Get triggers from agent config.
 
         Triggers are objects with:
+        - event: schedule name (e.g., "morning", "evening") or future system event
+        - action: "tool" (direct execution) or "llm" (agent processes via LLM loop)
+        - tool: tool to execute directly (required when action="tool")
         - topic_name: e.g., "euno:consolidate", "euno:quote"
         - topic_description: description for the topic (optional)
-        - schedule: schedule name from system config (e.g., "morning", "evening")
 
         Args:
             config: Agent configuration dict
@@ -407,7 +409,7 @@ class AgentManager:
                     # Handle object triggers
                     triggers = self._get_agent_triggers(config)
                     for t in triggers:
-                        if t.get("schedule") == trigger_type:
+                        if t.get("event") == trigger_type:
                             topic_name = t.get("topic_name")
                             topic_desc = t.get("topic_description", f"Missed scheduled {topic_name}")
 
@@ -567,7 +569,7 @@ class AgentManager:
                             # Handle object triggers
                             triggers = self._get_agent_triggers(config)
                             for trigger in triggers:
-                                if trigger.get("schedule") == name:
+                                if trigger.get("event") == name:
                                     topic_name = trigger.get("topic_name")
                                     topic_desc = trigger.get("topic_description", f"Scheduled {topic_name}")
 

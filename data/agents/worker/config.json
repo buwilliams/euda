@@ -54,9 +54,11 @@
   ],
   "triggers": [
     {
+      "event": "evening",
+      "action": "tool",
+      "tool": "euno_consolidate",
       "topic_name": "euno:consolidate",
-      "topic_description": "Review memories, evolve identity, graduate learnings",
-      "schedule": "evening"
+      "topic_description": "Review memories, evolve identity, graduate learnings"
     }
   ]
 }

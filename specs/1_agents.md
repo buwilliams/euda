@@ -30,30 +30,55 @@ Rules for how agents work and coordinate through topics.
 - Triggers are configured per-agent in `config.json` under `triggers[]`
 - Triggers create topics, they do not wake agents directly
 
-### New Trigger Format (Recommended)
+### Trigger Format
 
-Triggers are objects that specify a topic to create on a schedule:
+Triggers are objects with explicit `event` and `action` keys:
 
 ```json
 {
   "triggers": [
     {
+      "event": "evening",
+      "action": "tool",
+      "tool": "euno_consolidate",
       "topic_name": "euno:consolidate",
-      "topic_description": "Review memories, evolve identity, graduate learnings",
-      "schedule": "evening"
+      "topic_description": "Review memories, evolve identity"
     },
     {
+      "event": "morning",
+      "action": "tool",
+      "tool": "euno_quote",
       "topic_name": "euno:quote",
-      "topic_description": "Generate personalized daily quote",
-      "schedule": "morning"
+      "topic_description": "Generate daily quote"
     }
   ]
 }
 ```
 
+### Trigger Fields
+
+- `event`: What causes the trigger (schedule name or future system event)
+- `action`: How to handle it—`tool` (direct execution) or `llm` (agent processes via LLM loop)
+- `tool`: Tool to execute directly (required when `action: "tool"`)
 - `topic_name`: The name of the topic to create (e.g., `euno:consolidate`, `euno:quote`)
 - `topic_description`: Description for the created topic (optional)
-- `schedule`: Schedule name from system config (e.g., `morning`, `evening`)
+
+### Event Types
+
+**Schedule Events** (implemented):
+- `morning`, `evening`, `hourly`, `hour_00`, `hour_04`, `hour_06`, `hour_12`, `hour_18`
+- Maps to times in `data/system/config.json` under `schedules`
+
+**System Events** (future):
+- `system:start` - Euno startup
+- `chat:message_received` - User sends chat message
+- `topic:created` - Any topic created
+- `topic:completed` - Any topic completed
+
+### Action Types
+
+- `tool` - Execute tool directly (no LLM), requires `tool` field
+- `llm` - Create topic, agent processes via LLM loop (default)
 
 ### Internal Topics (`euno:*`)
 
@@ -328,8 +353,11 @@ Consolidation is scheduled via the trigger system (see Triggers section):
 {
   "triggers": [
     {
+      "event": "evening",
+      "action": "tool",
+      "tool": "euno_consolidate",
       "topic_name": "euno:consolidate",
-      "schedule": "evening"
+      "topic_description": "Review memories, evolve identity"
     }
   ]
 }
@@ -387,8 +415,7 @@ See the main Triggers section above for full documentation.
 
 - Triggers are configured per-agent in `config.json` under `triggers[]`
 - Triggers create topics, they do not wake agents directly
-- New format: objects with `topic_name`, `topic_description`, `schedule`
-- Legacy format: strings like `"time:morning"`, `"system:start"`
+- Format: objects with `event`, `action`, `tool` (if action=tool), `topic_name`, `topic_description`
 
 ### Triggers vs Processes
 

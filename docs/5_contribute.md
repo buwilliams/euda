@@ -18,6 +18,81 @@ Ask yourself:
 
 The best contributions come from lived experience. Build for yourself first. If it helps you flourish, it will help others too.
 
+## Extending Euno
+
+When you want to change how Euno behaves, choose the lightest mechanism that achieves your goal. This hierarchy goes from simplest (top) to most complex (bottom):
+
+### Level 1: Identity Changes
+**Location:** `data/agents/{id}/identity.md`
+
+Change an agent's persona, values, or behavioral rules. The LLM interprets these and adapts its behavior.
+
+**When to use:**
+- Agent responds in a way you don't like
+- Agent should prioritize differently
+- Agent needs new behavioral constraints
+
+**Example:** Chat is turning musings into tasks. Add to its identity: "I must not: Turn every musing into an action item. Some thoughts are for exploration."
+
+### Level 2: Prompt Changes
+**Location:** `data/agents/{id}/prompts/*.md` or `data/system/prompts/`
+
+Change how agents process specific situations. Prompts are templates that guide reasoning for particular contexts.
+
+**When to use:**
+- Specific workflow needs different handling
+- Need detailed instructions for a task type
+- Agent-specific overrides of system prompts
+
+**Example:** Worker agent needs special handling for research tasks. Create `data/agents/worker/prompts/research.md`.
+
+### Level 3: Tool Additions
+**Location:** `src/tools/`
+
+Add new capabilities that agents can invoke. Tools are functions agents call to take actions.
+
+**When to use:**
+- Agents need to interact with external systems
+- Need structured data operations
+- Capability doesn't exist yet
+
+**Example:** Need to query a database. Create `src/tools/data/database.py` with `@tool` decorator.
+
+### Level 4: New Agents
+**Location:** `data/agents/{new-agent}/`
+
+Create a specialized agent for a new domain. Agents are Identity + Cognition + Memory + Behavior.
+
+**When to use:**
+- New domain of expertise needed
+- Want separation of concerns
+- Different trigger/tool requirements
+
+**Example:** Need an agent focused on long-term explorations. Create `data/agents/explorer/` with appropriate identity and config.
+
+### Level 5: Architecture Changes
+**Location:** `src/`, `specs/`
+
+Modify the core system—agent lifecycle, data schemas, APIs, or coordination mechanisms.
+
+**When to use:**
+- None of the above can achieve your goal
+- Need new primitives (event types, data structures)
+- Requires spec changes
+
+**Example:** Need agents to respond to chat events. Requires new trigger event types and manager changes.
+
+### Choosing the Right Level
+
+Ask yourself:
+1. Can I achieve this by telling an agent to behave differently? → **Level 1**
+2. Do I need specific instructions for a workflow? → **Level 2**
+3. Do I need a new action or capability? → **Level 3**
+4. Do I need a new domain of expertise? → **Level 4**
+5. Does the platform lack the primitive I need? → **Level 5**
+
+**Rule of thumb:** If you're reaching for Level 5, pause and ask in Discord. There's often a lighter way.
+
 ## Arcs
 
 An Arc is how contributors organize their work on Euno. It's not a technical roadmap—it's a personal chapter in your story of flourishing.
