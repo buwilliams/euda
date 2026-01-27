@@ -516,15 +516,16 @@ class Agent:
         # Client handles budget checking, cost tracking, and rate limiting automatically
         client = get_client()
 
-        # Get provider display name and max_output_tokens
-        from ..llms import get_provider, get_providers_config
+        # Get provider display name, model, and max_output_tokens
+        from ..llms import get_provider, get_model, get_providers_config
         provider_id = get_provider()
+        model = get_model()
         providers_config = get_providers_config()
         provider_display = providers_config.get(provider_id, {}).get("display_name", provider_id)
         max_tokens = providers_config.get(provider_id, {}).get("max_output_tokens", 16000)
 
         # Call LLM with tools
-        _status(f"Waiting for {provider_display}...")
+        _status(f"Waiting for {provider_display} ({model})...")
         response = client.create(
             max_tokens=max_tokens,
             system=system_prompt,
@@ -553,7 +554,7 @@ class Agent:
             messages.append({"role": "assistant", "content": response.content})
             messages.append({"role": "user", "content": tool_results})
 
-            _status(f"Waiting for {provider_display}...")
+            _status(f"Waiting for {provider_display} ({model})...")
             response = client.create(
                 max_tokens=max_tokens,
                 system=system_prompt,
