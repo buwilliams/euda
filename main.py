@@ -486,8 +486,10 @@ def cmd_plugin(args):
         return
 
     # Plugin name is first arg, rest is the command
+    import shlex
     plugin_name = args[0]
-    command = " ".join(args[1:]) if len(args) > 1 else "--help"
+    # Quote args that contain spaces to preserve them through shlex.split in executor
+    command = " ".join(shlex.quote(a) for a in args[1:]) if len(args) > 1 else "--help"
 
     try:
         result = execute_plugin(plugin_name, command)
