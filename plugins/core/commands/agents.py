@@ -8,7 +8,7 @@ app = typer.Typer(no_args_is_help=True)
 
 def _get_agents_module():
     """Lazy import of agents module."""
-    from src.tools.agents.agents import (
+    from plugins.core.agents.agents import (
         list_agents, get_agent, create_agent,
         enable_agent, disable_agent, delete_agent,
         list_available_tools

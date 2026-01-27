@@ -22,7 +22,7 @@ from datetime import date, timedelta
 @pytest.fixture
 def setup_topics(test_db, mock_emit_event, mock_emit_ui_event):
     """Setup common topics for testing actionability."""
-    from src.tools.data.topics import create_topic, _get_connection
+    from plugins.core.data.topics import create_topic, _get_connection
 
     # Bypass the default parent routing for tests
     conn = _get_connection()
@@ -108,7 +108,7 @@ class TestTopicActionabilityInvariants:
 
         Spec: Topics waiting for external input are not actionable.
         """
-        from src.tools.data.topics import list_topics
+        from plugins.core.data.topics import list_topics
 
         actionable = list_topics(assignee="test-agent", actionable=True)
         topic_ids = [t["id"] for t in actionable]
@@ -121,7 +121,7 @@ class TestTopicActionabilityInvariants:
 
         Spec: Topics blocked by dependencies are not actionable.
         """
-        from src.tools.data.topics import list_topics
+        from plugins.core.data.topics import list_topics
 
         actionable = list_topics(assignee="test-agent", actionable=True)
         topic_ids = [t["id"] for t in actionable]
@@ -134,7 +134,7 @@ class TestTopicActionabilityInvariants:
 
         Spec: Someday/maybe topics are not in the active queue.
         """
-        from src.tools.data.topics import list_topics
+        from plugins.core.data.topics import list_topics
 
         actionable = list_topics(assignee="test-agent", actionable=True)
         topic_ids = [t["id"] for t in actionable]
@@ -147,7 +147,7 @@ class TestTopicActionabilityInvariants:
 
         Spec: Only topics due today or past (or no due date) are actionable.
         """
-        from src.tools.data.topics import list_topics
+        from plugins.core.data.topics import list_topics
 
         actionable = list_topics(assignee="test-agent", actionable=True)
         topic_ids = [t["id"] for t in actionable]
@@ -160,7 +160,7 @@ class TestTopicActionabilityInvariants:
 
         Spec: Agent only sees topics assigned to them.
         """
-        from src.tools.data.topics import list_topics
+        from plugins.core.data.topics import list_topics
 
         assigned_topics = list_topics(assignee="test-agent")
         topic_ids = [t["id"] for t in assigned_topics]
@@ -173,7 +173,7 @@ class TestTopicActionabilityInvariants:
 
         Spec: Topics with 'working' status are currently being processed.
         """
-        from src.tools.data.topics import list_topics
+        from plugins.core.data.topics import list_topics
 
         actionable = list_topics(assignee="test-agent", actionable=True)
         topic_ids = [t["id"] for t in actionable]
@@ -186,7 +186,7 @@ class TestTopicActionabilityInvariants:
 
         This is the positive case to ensure we're not over-filtering.
         """
-        from src.tools.data.topics import list_topics
+        from plugins.core.data.topics import list_topics
 
         actionable = list_topics(assignee="test-agent", actionable=True)
         topic_ids = [t["id"] for t in actionable]
@@ -201,7 +201,7 @@ class TestUnblockBehavior:
 
     def test_unblock_removes_waiting_tag(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Unblocking a topic should remove waiting:* tags."""
-        from src.tools.data.topics import create_topic, unblock_topic, get_topic
+        from plugins.core.data.topics import create_topic, unblock_topic, get_topic
 
         topic = create_topic(
             name="Waiting Topic",
@@ -220,7 +220,7 @@ class TestUnblockBehavior:
 
     def test_unblock_removes_blocked_tag(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Unblocking a topic should remove blocked:* tags."""
-        from src.tools.data.topics import create_topic, unblock_topic, get_topic
+        from plugins.core.data.topics import create_topic, unblock_topic, get_topic
 
         topic = create_topic(
             name="Blocked Topic",
@@ -238,7 +238,7 @@ class TestUnblockBehavior:
 
     def test_unblock_returns_false_if_not_blocked(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Unblocking a topic that's not blocked should return False."""
-        from src.tools.data.topics import create_topic, unblock_topic
+        from plugins.core.data.topics import create_topic, unblock_topic
 
         topic = create_topic(
             name="Normal Topic",

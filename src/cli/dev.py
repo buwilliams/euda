@@ -35,14 +35,6 @@ def cmd_dev(args: List[str]):
         from .commands.prompt import cmd_prompt
         cmd_prompt(sub_args, json_mode)
 
-    elif subcommand == "tools":
-        from .commands.tool import cmd_tools
-        cmd_tools(sub_args, json_mode)
-
-    elif subcommand == "tool":
-        from .commands.tool import cmd_tool
-        cmd_tool(sub_args, json_mode)
-
     elif subcommand == "topic":
         from .commands.topic import cmd_topic
         cmd_topic(sub_args, json_mode)
@@ -114,9 +106,11 @@ IDENTITY
   identity <agent>          Show agent's identity
     --history               Show historical identity snapshots
 
-TOOLS
-  tools                     List all available tools
-  tool <name> [json]        Execute a tool directly
+PLUGINS
+  Use 'euno plugin' commands instead:
+    euno plugin list                    List available plugins
+    euno plugin <name> --help           Get plugin help
+    euno plugin <name> <command>        Execute plugin command
 
 PROMPTS
   prompt <agent> system     Show system prompt
@@ -141,6 +135,6 @@ Examples:
   python main.py dev memory user
   python main.py dev topic user "List my current topics"
   python main.py dev reflect user --consolidate
-  python main.py dev tool list_topics '{"status": "todo"}'
   python main.py dev watch --agent user
+  uv run euno plugin core topics list --status todo
 """)

@@ -386,7 +386,7 @@ def cmd_remove_password(args):
 
 def cmd_fresh_start(args):
     """Reset all user data for a clean slate."""
-    from src.tools.system.fresh_start import perform_fresh_start
+    from plugins.core.system.fresh_start import perform_fresh_start
 
     print("=" * 60)
     print("Euno - Fresh Start")

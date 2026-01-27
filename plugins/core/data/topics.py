@@ -1,5 +1,5 @@
 """
-Topic Tools - CRUD operations for topics.
+Topics - CRUD operations for topics.
 
 Topics are the primary unit of work in the system.
 They can be nested via parent_id to form hierarchies.
@@ -16,7 +16,6 @@ from datetime import datetime, UTC
 from pathlib import Path
 from typing import Optional, List
 
-from .. import tool
 
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
@@ -134,26 +133,26 @@ _ensure_schema()
 
 def _emit_event(event: str, scope: str = None, data: dict = None):
     """Emit an event to the event bus (for agent-scoped events like topic:assigned)."""
-    from ...events import emit_event
+    from src.events import emit_event
     emit_event(event, scope=scope, data=data)
 
 
 def _emit_system_event(event: str, data: dict = None, source: str = "system"):
     """Emit a system event for trigger matching."""
-    from ...events import emit_system_event
+    from src.events import emit_system_event
     emit_system_event(event, data=data, source=source)
 
 
 def _emit_topics_update():
     """Notify UI clients that topics have changed."""
-    from ...web.events import emit_ui_event
+    from src.web.events import emit_ui_event
     all_topics = list_topics()
     emit_ui_event("topics_update", {"topics": all_topics})
 
 
 def _notify_agent_has_topics(agent_id: str):
     """Notify the topic cache that an agent has pending topics."""
-    from ...agent.manager import get_manager
+    from src.agent.manager import get_manager
     manager = get_manager()
     if manager:
         manager.agents_with_topics[agent_id] = True
@@ -209,7 +208,6 @@ def _load_topic(topic_id: str) -> Optional[dict]:
     return None
 
 
-@tool("list_topics", "List all topics, optionally filtered by status, parent, tag, assignee, or actionable due date. Use when: reviewing work queue, finding assigned topics, checking project status.", tool_type="data")
 def list_topics(status: str = None, parent_id: str = None, tag: str = None, assignee: str = None, actionable: bool = False) -> List[dict]:
     """List topics with optional filters.
 
@@ -272,7 +270,6 @@ def list_topics(status: str = None, parent_id: str = None, tag: str = None, assi
     return topics
 
 
-@tool("get_topic", "Get a topic by its ID with full details. Use when: need complete topic info including logs and attachments.", tool_type="data")
 def get_topic(topic_id: str) -> Optional[dict]:
     """Get a single topic by ID."""
     return _load_topic(topic_id)
@@ -314,7 +311,6 @@ def _get_default_parent_for_creator(created_by: str) -> Optional[str]:
     return projects["id"] if projects else None
 
 
-@tool("create_topic", "Create a new topic with optional parent, tags, assignee, and due date. Use when: breaking down work, creating tasks for yourself or other agents.", tool_type="data")
 def create_topic(
     name: str,
     description: str = None,
@@ -371,7 +367,6 @@ def create_topic(
     return topic
 
 
-@tool("update_topic", "Update a topic's fields (name, description, status, tags, assignee, due date). Use when: modifying topic details, changing assignments, rescheduling.", tool_type="data")
 def update_topic(
     topic_id: str,
     name: str = None,
@@ -441,7 +436,6 @@ def update_topic(
     return _load_topic(topic_id)
 
 
-@tool("handoff_topic", "Pass a topic to another agent or user for review/action. Tracks who it came from so they can receive it back.", tool_type="data")
 def handoff_topic(topic_id: str, to: str, note: str = None, agent: str = "user") -> Optional[dict]:
     """Hand off a topic to another agent or user.
 
@@ -501,7 +495,6 @@ def handoff_topic(topic_id: str, to: str, note: str = None, agent: str = "user")
     return _load_topic(topic_id)
 
 
-@tool("complete_topic", "Mark a topic as done. Use when: work is finished and verified, task is no longer needed.", tool_type="data")
 def complete_topic(topic_id: str, agent: str = "user") -> Optional[dict]:
     """Mark a topic as done."""
     topic = _load_topic(topic_id)
@@ -543,7 +536,6 @@ def complete_topic(topic_id: str, agent: str = "user") -> Optional[dict]:
     return _load_topic(topic_id)
 
 
-@tool("restore_topic", "Restore a done topic back to todo status. Use when: a done topic needs to be reopened.", tool_type="data")
 def restore_topic(topic_id: str, agent: str = "user") -> Optional[dict]:
     """Restore a done topic back to todo status."""
     topic = _load_topic(topic_id)
@@ -619,7 +611,6 @@ def unblock_topic(topic_id: str) -> bool:
     return True
 
 
-@tool("archive_topic", "Archive a topic (mark as no longer relevant). Use when: topic is obsolete or cancelled.", tool_type="data")
 def archive_topic(topic_id: str, agent: str = "user") -> Optional[dict]:
     """Archive a topic."""
     topic = _load_topic(topic_id)
@@ -655,7 +646,6 @@ def archive_topic(topic_id: str, agent: str = "user") -> Optional[dict]:
     return _load_topic(topic_id)
 
 
-@tool("add_topic_log", "Add a log entry to a topic. Use when: recording progress, notes, or status updates on a topic.", tool_type="data")
 def add_topic_log(topic_id: str, action: str, agent: str = "user") -> Optional[dict]:
     """Add a log entry to a topic."""
     topic = _load_topic(topic_id)
@@ -695,13 +685,11 @@ def get_topic_logs(topic_id: str) -> List[dict]:
     return [dict(row) for row in cursor.fetchall()]
 
 
-@tool("get_child_topics", "Get all child topics of a parent topic. Use when: viewing topic hierarchy, checking sub-tasks.", tool_type="data")
 def get_child_topics(parent_id: str) -> List[dict]:
     """Get all child topics of a given parent."""
     return list_topics(parent_id=parent_id)
 
 
-@tool("delete_topic", "Delete a topic permanently. Use when: removing unwanted topics (use archive_topic for normal cleanup).", tool_type="data")
 def delete_topic(topic_id: str, delete_children: bool = False) -> dict:
     """Delete a topic. Optionally delete child topics too."""
     topic = _load_topic(topic_id)
@@ -733,34 +721,6 @@ def delete_topic(topic_id: str, delete_children: bool = False) -> dict:
 # BATCH OPERATIONS - More efficient than multiple single-item calls
 # =============================================================================
 
-@tool(
-    "create_topics_batch",
-    "Create multiple topics in a single operation. Use when: creating many related tasks at once for efficiency.",
-    input_schema={
-        "type": "object",
-        "properties": {
-            "topics": {
-                "type": "array",
-                "description": "List of topics to create",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "name": {"type": "string", "description": "Topic name (required)"},
-                        "description": {"type": "string", "description": "Topic description"},
-                        "parent_id": {"type": "string", "description": "Parent topic ID for sub-topics"},
-                        "tags": {"type": "array", "items": {"type": "string"}, "description": "Tags for the topic"},
-                        "due_date": {"type": "string", "description": "Due date (ISO format)"},
-                        "someday": {"type": "boolean", "description": "Mark as someday/maybe"}
-                    },
-                    "required": ["name"]
-                }
-            },
-            "created_by": {"type": "string", "description": "Who is creating these topics"}
-        },
-        "required": ["topics"]
-    },
-    tool_type="data"
-)
 def create_topics_batch(topics: list, created_by: str = "agent") -> dict:
     """Create multiple topics in a single operation.
 
@@ -792,34 +752,6 @@ def create_topics_batch(topics: list, created_by: str = "agent") -> dict:
     }
 
 
-@tool(
-    "update_topics_batch",
-    "Update multiple topics in a single operation. Use when: bulk updating topic fields for efficiency.",
-    input_schema={
-        "type": "object",
-        "properties": {
-            "updates": {
-                "type": "array",
-                "description": "List of topic updates",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "topic_id": {"type": "string", "description": "Topic ID to update (required)"},
-                        "name": {"type": "string", "description": "New topic name"},
-                        "description": {"type": "string", "description": "New description"},
-                        "status": {"type": "string", "enum": ["todo", "done", "error", "archived"], "description": "New status (use claim_topic for 'working')"},
-                        "tags": {"type": "array", "items": {"type": "string"}, "description": "New tags"},
-                        "due_date": {"type": "string", "description": "New due date"},
-                        "someday": {"type": "boolean", "description": "Someday/maybe flag"}
-                    },
-                    "required": ["topic_id"]
-                }
-            }
-        },
-        "required": ["updates"]
-    },
-    tool_type="data"
-)
 def update_topics_batch(updates: list) -> dict:
     """Update multiple topics in a single operation.
 
@@ -853,23 +785,6 @@ def update_topics_batch(updates: list) -> dict:
     }
 
 
-@tool(
-    "complete_topics_batch",
-    "Complete multiple topics in a single operation. Use when: finishing multiple related tasks at once.",
-    input_schema={
-        "type": "object",
-        "properties": {
-            "topic_ids": {
-                "type": "array",
-                "description": "List of topic IDs to complete",
-                "items": {"type": "string"}
-            },
-            "agent": {"type": "string", "description": "Agent completing the topics"}
-        },
-        "required": ["topic_ids"]
-    },
-    tool_type="data"
-)
 def complete_topics_batch(topic_ids: list, agent: str = "user") -> dict:
     """Complete multiple topics in a single operation.
 
@@ -896,30 +811,6 @@ def complete_topics_batch(topic_ids: list, agent: str = "user") -> dict:
     }
 
 
-@tool(
-    "add_topic_logs_batch",
-    "Add log entries to multiple topics in a single operation. Use when: recording progress on multiple topics at once.",
-    input_schema={
-        "type": "object",
-        "properties": {
-            "logs": {
-                "type": "array",
-                "description": "List of log entries to add",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "topic_id": {"type": "string", "description": "Topic ID (required)"},
-                        "action": {"type": "string", "description": "Log action/message (required)"}
-                    },
-                    "required": ["topic_id", "action"]
-                }
-            },
-            "agent": {"type": "string", "description": "Agent adding the logs"}
-        },
-        "required": ["logs"]
-    },
-    tool_type="data"
-)
 def add_topic_logs_batch(logs: list, agent: str = "user") -> dict:
     """Add log entries to multiple topics in a single operation.
 
@@ -957,7 +848,6 @@ def add_topic_logs_batch(logs: list, agent: str = "user") -> dict:
 # AGENT ASSIGNMENT AND SYSTEM CONTAINERS
 # =============================================================================
 
-@tool("assign_agent", "Assign an agent to a topic. Use when: delegating work to another agent.", tool_type="data")
 def assign_agent(topic_id: str, agent_id: str) -> Optional[dict]:
     """Assign an agent to work on a topic. Wakes the agent immediately.
 
@@ -1007,7 +897,6 @@ def assign_agent(topic_id: str, agent_id: str) -> Optional[dict]:
     return _load_topic(topic_id)
 
 
-@tool("unassign_agent", "Remove an agent assignment from a topic. Use when: reassigning work or removing delegation.", tool_type="data")
 def unassign_agent(topic_id: str, agent_id: str) -> Optional[dict]:
     """Remove an agent from a topic.
 
@@ -1044,7 +933,6 @@ def unassign_agent(topic_id: str, agent_id: str) -> Optional[dict]:
     return _load_topic(topic_id)
 
 
-@tool("get_assignee", "Get the agent assigned to a topic. Use when: checking who is working on a topic.", tool_type="data")
 def get_assignee(topic_id: str) -> dict:
     """Get the agent ID assigned to a topic.
 
@@ -1061,7 +949,6 @@ def get_assignee(topic_id: str) -> dict:
     return {"assignee": topic.get("assignee")}
 
 
-@tool("list_available_agents", "List all agent IDs that can be assigned to topics. Use when: finding agents to assign work to.", tool_type="data")
 def list_available_agents() -> list:
     """Get list of all available agent IDs."""
     from ..agents.agents import list_agents
@@ -1069,7 +956,6 @@ def list_available_agents() -> list:
     return [a["id"] for a in agents]
 
 
-@tool("claim_topic", "Claim a topic for exclusive work. Use when: starting work to prevent conflicts.", tool_type="data")
 def claim_topic(topic_id: str, agent_id: str) -> dict:
     """Claim a topic by setting status to 'working'.
 
@@ -1320,7 +1206,6 @@ def sync_agent_inbox_topics():
     return {"synced": True, "agent_count": len(agents)}
 
 
-@tool("release_topic", "Release a claimed topic. Use when: done working or need to let another agent take over.", tool_type="data")
 def release_topic(topic_id: str, agent_id: str) -> dict:
     """Release a topic after working on it.
 
@@ -1345,7 +1230,6 @@ def release_topic(topic_id: str, agent_id: str) -> dict:
     return {"released": True, "topic_id": topic_id}
 
 
-@tool("error_topic", "Mark a topic as failed with an error. Use when: topic cannot be completed due to an error.", tool_type="data")
 def error_topic(topic_id: str, error_message: str, agent: str = "user") -> Optional[dict]:
     """Mark a topic as failed with an error.
 

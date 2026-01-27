@@ -27,7 +27,7 @@ class TestOneTopicPerWorkCycle:
 
         This test verifies the code logic by checking topics[0] usage.
         """
-        from src.tools.data.topics import create_topic, list_topics
+        from plugins.core.data.topics import create_topic, list_topics
 
         # Create multiple topics
         topic1 = create_topic(name="First", assignee="agent", parent_id=None, created_by="test")
@@ -52,7 +52,7 @@ class TestOneTopicPerWorkCycle:
 
         Spec: Agent knows how many more topics are queued.
         """
-        from src.tools.data.topics import create_topic, list_topics
+        from plugins.core.data.topics import create_topic, list_topics
 
         # Create 5 topics
         for i in range(5):
@@ -92,7 +92,7 @@ class TestTopicSelectionOrder:
 
         Spec: Agents poll for actionable topics.
         """
-        from src.tools.data.topics import create_topic, list_topics
+        from plugins.core.data.topics import create_topic, list_topics
 
         # Create actionable topic
         actionable = create_topic(name="Actionable", assignee="agent", parent_id=None, created_by="test")

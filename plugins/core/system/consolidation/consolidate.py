@@ -18,8 +18,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from ....web.events import emit_ui_event
-from ....agent.rlm import RLMClient, load_long_term_memory
+from src.web.events import emit_ui_event
+from src.agent.rlm import RLMClient, load_long_term_memory
 
 if TYPE_CHECKING:
     from . import ConsolidationRunner

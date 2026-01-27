@@ -8,7 +8,7 @@ app = typer.Typer(no_args_is_help=True)
 
 def _get_deck_module():
     """Lazy import of nextcloud deck module."""
-    from src.tools.integration.nextcloud.deck import (
+    from plugins.nextcloud.lib.deck import (
         nc_list_boards, nc_get_board, nc_list_cards,
         nc_create_card, nc_update_card, nc_move_card, nc_delete_card
     )

@@ -677,9 +677,9 @@ class TestWorkCycle:
 
         mock_topic = {"id": "topic-1", "name": "Test topic", "tags": [], "description": "Test"}
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}) as mock_claim:
-                with patch("src.tools.data.topics.release_topic"):
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}) as mock_claim:
+                with patch("plugins.core.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                         with patch.object(agent, 'chat', side_effect=lambda *a, **k: setattr(agent, '_work_done', True) or "Done"):
                             with patch.object(agent, '_log'):
@@ -696,9 +696,9 @@ class TestWorkCycle:
 
         mock_topic = {"id": "topic-1", "name": "Test topic", "tags": [], "description": "Test"}
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic") as mock_release:
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("plugins.core.data.topics.release_topic") as mock_release:
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                         with patch.object(agent, 'chat', side_effect=lambda *a, **k: setattr(agent, '_work_done', True) or "Done"):
                             with patch.object(agent, '_log'):
@@ -715,9 +715,9 @@ class TestWorkCycle:
 
         mock_topic = {"id": "topic-1", "name": "Test topic", "tags": [], "description": "Test"}
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic") as mock_release:
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("plugins.core.data.topics.release_topic") as mock_release:
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                         with patch.object(agent, 'chat', side_effect=Exception("LLM error")):
                             with patch.object(agent, '_log'):
@@ -736,8 +736,8 @@ class TestWorkCycle:
         """
         agent = self._create_agent(tmp_path)
 
-        with patch("src.tools.data.topics.list_topics", return_value=[]):
-            with patch("src.tools.data.topics.claim_topic") as mock_claim:
+        with patch("plugins.core.data.topics.list_topics", return_value=[]):
+            with patch("plugins.core.data.topics.claim_topic") as mock_claim:
                 with patch.object(agent, '_log'):
                     agent.work_cycle_sync()
 
@@ -753,8 +753,8 @@ class TestWorkCycle:
 
         mock_topic = {"id": "topic-1", "name": "Test topic", "tags": [], "description": "Test"}
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"error": "Already claimed"}):
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"error": "Already claimed"}):
                 with patch.object(agent, 'chat') as mock_chat:
                     with patch.object(agent, '_log'):
                         agent.work_cycle_sync()
@@ -780,9 +780,9 @@ class TestWorkCycle:
             claimed_topics.append(topic_id)
             return {"claimed": True}
 
-        with patch("src.tools.data.topics.list_topics", return_value=topics):
-            with patch("src.tools.data.topics.claim_topic", side_effect=track_claim):
-                with patch("src.tools.data.topics.release_topic"):
+        with patch("plugins.core.data.topics.list_topics", return_value=topics):
+            with patch("plugins.core.data.topics.claim_topic", side_effect=track_claim):
+                with patch("plugins.core.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                         with patch.object(agent, 'chat', side_effect=lambda *a, **k: setattr(agent, '_work_done', True) or "Done"):
                             with patch.object(agent, '_log'):
@@ -835,9 +835,9 @@ class TestWorkCyclePlanning:
 
         mock_topic = {"id": "topic-1", "name": "Test topic", "tags": [], "description": "Test"}
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic"):
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("plugins.core.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False) as mock_should:
                         with patch.object(agent, 'chat', side_effect=lambda *a, **k: setattr(agent, '_work_done', True) or "Done"):
                             with patch.object(agent, '_log'):
@@ -854,9 +854,9 @@ class TestWorkCyclePlanning:
 
         mock_topic = {"id": "topic-1", "name": "Complex topic", "tags": [], "description": "Needs planning"}
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic"):
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("plugins.core.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=True):
                         with patch.object(agent.metacognition.planner, 'create_plan', return_value="1. Do this\n2. Do that") as mock_create:
                             with patch.object(agent.metacognition.planner, 'inject_plan', return_value="Plan: ..."):
@@ -875,9 +875,9 @@ class TestWorkCyclePlanning:
 
         mock_topic = {"id": "topic-1", "name": "Topic", "tags": [], "description": "Test"}
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic"):
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("plugins.core.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=True):
                         with patch.object(agent.metacognition.planner, 'create_plan', return_value="The plan"):
                             with patch.object(agent.metacognition.planner, 'inject_plan', return_value="Injected prompt") as mock_inject:
@@ -935,9 +935,9 @@ class TestWorkCycleStuckDetection:
             agent._work_done = True
             return "Response"
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic"):
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("plugins.core.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                         with patch.object(agent.metacognition, 'start_work_session', return_value="test-session") as mock_start:
                             with patch.object(agent.metacognition, 'end_work_session', return_value={}) as mock_end:
@@ -966,10 +966,10 @@ class TestWorkCycleStuckDetection:
             # Simulate stuck detection during tool execution in chat()
             raise ProgressLimitExceeded("test-agent", "test-session", "Same tool 'test' called 5 times with identical inputs")
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic"):
-                    with patch("src.tools.data.topics.error_topic") as mock_error_topic:
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("plugins.core.data.topics.release_topic"):
+                    with patch("plugins.core.data.topics.error_topic") as mock_error_topic:
                         with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                             with patch.object(agent.metacognition, 'start_work_session', return_value="test-session"):
                                 with patch.object(agent.metacognition, 'end_work_session', return_value={}):
@@ -1040,9 +1040,9 @@ class TestWorkCycleDeferredConsolidation:
             agent._work_done = True
             return "Done"
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic"):
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("plugins.core.data.topics.release_topic"):
                     with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                         with patch.object(agent.metacognition, 'should_defer_consolidation', return_value=True):
                             with patch.object(agent, 'chat', side_effect=capture_chat):
@@ -1069,10 +1069,10 @@ class TestWorkCycleDeferredConsolidation:
                 agent._work_done = True
             return f"Response {iteration[0]}"
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic"):
-                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("plugins.core.data.topics.release_topic"):
+                    with patch("plugins.core.data.topics.get_topic", return_value=mock_topic):
                         with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                             with patch.object(agent.metacognition, 'should_defer_consolidation', return_value=True):
                                 with patch.object(agent.metacognition, 'check_stuck', return_value=None):
@@ -1141,11 +1141,11 @@ class TestMinimalResponseDetection:
             response_count[0] += 1
             return "..."  # Minimal response < 20 chars
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic"):
-                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
-                        with patch("src.tools.data.topics.error_topic"):
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("plugins.core.data.topics.release_topic"):
+                    with patch("plugins.core.data.topics.get_topic", return_value=mock_topic):
+                        with patch("plugins.core.data.topics.error_topic"):
                             with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                                 with patch.object(agent.metacognition, 'check_stuck', return_value=None):
                                     with patch.object(agent, 'chat', side_effect=minimal_response):
@@ -1181,10 +1181,10 @@ class TestMinimalResponseDetection:
                 agent._work_done = True
                 return "This is another substantive response with more content."
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic"):
-                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("plugins.core.data.topics.release_topic"):
+                    with patch("plugins.core.data.topics.get_topic", return_value=mock_topic):
                         with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                             with patch.object(agent.metacognition, 'check_stuck', return_value=None):
                                 with patch.object(agent, 'chat', side_effect=alternating_response):
@@ -1212,11 +1212,11 @@ class TestMinimalResponseDetection:
             else:
                 return "   "
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic"):
-                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
-                        with patch("src.tools.data.topics.error_topic"):
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("plugins.core.data.topics.release_topic"):
+                    with patch("plugins.core.data.topics.get_topic", return_value=mock_topic):
+                        with patch("plugins.core.data.topics.error_topic"):
                             with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                                 with patch.object(agent.metacognition, 'check_stuck', return_value=None):
                                     with patch.object(agent, 'chat', side_effect=empty_responses):
@@ -1242,11 +1242,11 @@ class TestMinimalResponseDetection:
         def minimal_response(*args, **kwargs):
             return "..."
 
-        with patch("src.tools.data.topics.list_topics", return_value=[mock_topic]):
-            with patch("src.tools.data.topics.claim_topic", return_value={"claimed": True}):
-                with patch("src.tools.data.topics.release_topic"):
-                    with patch("src.tools.data.topics.get_topic", return_value=mock_topic):
-                        with patch("src.tools.data.topics.error_topic"):
+        with patch("plugins.core.data.topics.list_topics", return_value=[mock_topic]):
+            with patch("plugins.core.data.topics.claim_topic", return_value={"claimed": True}):
+                with patch("plugins.core.data.topics.release_topic"):
+                    with patch("plugins.core.data.topics.get_topic", return_value=mock_topic):
+                        with patch("plugins.core.data.topics.error_topic"):
                             with patch.object(agent.metacognition.planner, 'should_plan', return_value=False):
                                 with patch.object(agent.metacognition, 'check_stuck', return_value=None):
                                     with patch.object(agent, 'chat', side_effect=minimal_response):

@@ -13,8 +13,8 @@ from pydantic import BaseModel
 
 from ...llms import get_model, get_provider, get_providers_config, invalidate_client
 from ...llms.base import _load_config, LLM_CONFIG_PATH, VALID_PROVIDERS
-from ...tools.data.topics import list_topics
-from ...tools.system.fresh_start import (
+from plugins.core.data.topics import list_topics
+from plugins.core.system.fresh_start import (
     perform_fresh_start,
     list_backups as _list_backups,
     restore_backup as _restore_backup,
@@ -61,7 +61,7 @@ def _get_latest_quote_from_topics() -> dict:
     Returns:
         Dict with 'quote' and 'author' keys, or None if no quote found
     """
-    from ...tools.data.assets import read_asset
+    from plugins.core.data.assets import read_asset
 
     # Get completed topics and filter for quote topics
     all_topics = list_topics(status="done")
@@ -141,7 +141,7 @@ def get_costs_by_agent(days: int = 30):
 @router.get("/settings")
 def get_settings():
     """Get current LLM settings with all providers and speech capabilities."""
-    from ...tools.speech import supports_stt, supports_tts
+    from plugins.speech import supports_stt, supports_tts
     import json
 
     # Load LLM config
@@ -209,7 +209,7 @@ def update_llm_settings(data: dict):
     invalidate_client()
 
     # Also invalidate speech client since it depends on provider
-    from ...tools.speech import invalidate_speech_client
+    from plugins.speech import invalidate_speech_client
     invalidate_speech_client()
 
     # Invalidate token awareness cache so budget changes take effect

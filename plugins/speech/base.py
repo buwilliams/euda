@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 
-from ...llms import get_provider
+from src.llms import get_provider
 
 
 # Provider capabilities for speech features

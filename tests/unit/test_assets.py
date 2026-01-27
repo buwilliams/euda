@@ -22,13 +22,13 @@ class TestWriteAssetNewlineNormalization:
     @pytest.fixture
     def patch_assets_dir(self, assets_dir):
         """Patch ASSETS_DIR to use temp directory."""
-        from src.tools.data import assets
+        from plugins.core.data import assets
         with patch.object(assets, 'ASSETS_DIR', assets_dir):
             yield assets_dir
 
     def test_write_asset_normalizes_escaped_newlines(self, patch_assets_dir):
         """Literal \\n sequences should be converted to actual newlines."""
-        from src.tools.data.assets import write_asset
+        from plugins.core.data.assets import write_asset
 
         # Content with literal \n (as LLMs sometimes output)
         content = "# Header\\n\\nParagraph 1\\n\\nParagraph 2"
@@ -48,7 +48,7 @@ class TestWriteAssetNewlineNormalization:
 
     def test_write_asset_preserves_actual_newlines(self, patch_assets_dir):
         """Actual newlines in content should be preserved."""
-        from src.tools.data.assets import write_asset
+        from plugins.core.data.assets import write_asset
 
         # Content with actual newlines
         content = "# Header\n\nParagraph 1\n\nParagraph 2"
@@ -62,7 +62,7 @@ class TestWriteAssetNewlineNormalization:
 
     def test_write_asset_handles_mixed_newlines(self, patch_assets_dir):
         """Content with both literal \\n and actual newlines should be handled."""
-        from src.tools.data.assets import write_asset
+        from plugins.core.data.assets import write_asset
 
         # Mix of literal \n and actual newlines
         content = "Line 1\\nLine 2\nLine 3\\nLine 4"
@@ -78,7 +78,7 @@ class TestWriteAssetNewlineNormalization:
 
     def test_write_asset_handles_empty_content(self, patch_assets_dir):
         """Empty content should be handled gracefully."""
-        from src.tools.data.assets import write_asset
+        from plugins.core.data.assets import write_asset
 
         result = write_asset("topic-empty", "empty.md", "")
 
@@ -88,7 +88,7 @@ class TestWriteAssetNewlineNormalization:
 
     def test_write_asset_handles_none_content(self, patch_assets_dir):
         """None content should be handled gracefully."""
-        from src.tools.data.assets import write_asset
+        from plugins.core.data.assets import write_asset
 
         # This tests the conditional: content.replace(...) if content else content
         # Since None is falsy, it should pass through
@@ -104,7 +104,7 @@ class TestWriteAssetNewlineNormalization:
 
     def test_write_asset_creates_directory(self, patch_assets_dir):
         """Asset directory should be created if it doesn't exist."""
-        from src.tools.data.assets import write_asset
+        from plugins.core.data.assets import write_asset
 
         result = write_asset("new-topic", "new.md", "content")
 
@@ -132,13 +132,13 @@ class TestReadAsset:
     @pytest.fixture
     def patch_assets_dir(self, assets_dir):
         """Patch ASSETS_DIR to use temp directory."""
-        from src.tools.data import assets
+        from plugins.core.data import assets
         with patch.object(assets, 'ASSETS_DIR', assets_dir):
             yield assets_dir
 
     def test_read_asset_returns_content(self, patch_assets_dir):
         """read_asset should return file content."""
-        from src.tools.data.assets import read_asset
+        from plugins.core.data.assets import read_asset
 
         result = read_asset("topic-read", "test.md")
 
@@ -148,7 +148,7 @@ class TestReadAsset:
 
     def test_read_asset_not_found(self, patch_assets_dir):
         """read_asset should return error for non-existent file."""
-        from src.tools.data.assets import read_asset
+        from plugins.core.data.assets import read_asset
 
         result = read_asset("topic-read", "nonexistent.md")
 
@@ -175,13 +175,13 @@ class TestListRecentAssets:
     @pytest.fixture
     def patch_assets_dir(self, assets_dir):
         """Patch ASSETS_DIR to use temp directory."""
-        from src.tools.data import assets
+        from plugins.core.data import assets
         with patch.object(assets, 'ASSETS_DIR', assets_dir):
             yield assets_dir
 
     def test_list_recent_assets_returns_all(self, patch_assets_dir):
         """list_recent_assets should return assets from all topics."""
-        from src.tools.data.assets import list_recent_assets
+        from plugins.core.data.assets import list_recent_assets
 
         result = list_recent_assets()
 
@@ -191,7 +191,7 @@ class TestListRecentAssets:
 
     def test_list_recent_assets_respects_limit(self, patch_assets_dir):
         """list_recent_assets should respect the limit parameter."""
-        from src.tools.data.assets import list_recent_assets
+        from plugins.core.data.assets import list_recent_assets
 
         result = list_recent_assets(limit=2)
 
@@ -199,7 +199,7 @@ class TestListRecentAssets:
 
     def test_list_recent_assets_includes_topic_id(self, patch_assets_dir):
         """Each asset should include its topic_id for navigation."""
-        from src.tools.data.assets import list_recent_assets
+        from plugins.core.data.assets import list_recent_assets
 
         result = list_recent_assets()
 

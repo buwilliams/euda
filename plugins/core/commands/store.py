@@ -22,8 +22,8 @@ def import_files(
     Files are loaded, checked for duplicates, and attached to a Store:ingest topic.
     The user agent processes the topic and writes content to long-term memory.
     """
-    from src.tools.integration.files.loader import load_files
-    from src.tools.integration.files.dedup import compute_hash
+    from plugins.core.integration.files.loader import load_files
+    from plugins.core.integration.files.dedup import compute_hash
 
     path_obj = Path(path).expanduser().resolve()
 
@@ -96,7 +96,7 @@ def import_files(
 @app.command("clear-manifest")
 def clear_manifest():
     """Clear legacy processing history (manifest file)."""
-    from src.tools.integration.files.dedup import clear_manifest as do_clear
+    from plugins.core.integration.files.dedup import clear_manifest as do_clear
 
     count = do_clear()
     print(f"Cleared {count} entries from legacy manifest")
@@ -104,7 +104,7 @@ def clear_manifest():
 
 def _is_already_processed(content_hash: str) -> bool:
     """Check if content has already been processed via topic tags."""
-    from src.tools.data.topics import list_topics
+    from plugins.core.data.topics import list_topics
 
     tag = f"store:hash:{content_hash}"
     topics = list_topics(status="done", tag=tag)
@@ -113,8 +113,8 @@ def _is_already_processed(content_hash: str) -> bool:
 
 def _create_store_topic(items_with_hashes: list) -> dict:
     """Create a store topic with files as assets."""
-    from src.tools.data.topics import create_topic, get_agent_inbox_topic
-    from src.tools.data.assets import write_asset
+    from plugins.core.data.topics import create_topic, get_agent_inbox_topic
+    from plugins.core.data.assets import write_asset
 
     timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 

@@ -23,7 +23,7 @@ class TestAppendPhaseWithMockLLM:
 
     def _create_consolidation(self, tmp_path):
         """Create a Consolidation instance with mock agent."""
-        from src.tools.system.consolidation import Consolidation
+        from plugins.core.system.consolidation import Consolidation
 
         mock_agent = MagicMock()
         mock_agent.id = "test-agent"
@@ -40,7 +40,7 @@ class TestAppendPhaseWithMockLLM:
 
     def test_parse_items_extracts_valid_json(self):
         """_parse_items correctly extracts items from JSON response."""
-        from src.tools.system.consolidation.append import _parse_items
+        from plugins.core.system.consolidation.append import _parse_items
 
         response = '''[
           {"type": "person", "short_description": "John Doe - colleague"},
@@ -56,7 +56,7 @@ class TestAppendPhaseWithMockLLM:
 
     def test_parse_items_handles_markdown_code_block(self):
         """_parse_items handles JSON wrapped in markdown code blocks."""
-        from src.tools.system.consolidation.append import _parse_items
+        from plugins.core.system.consolidation.append import _parse_items
 
         response = '''```json
 [
@@ -71,7 +71,7 @@ class TestAppendPhaseWithMockLLM:
 
     def test_parse_items_validates_types(self):
         """_parse_items filters out invalid memory types."""
-        from src.tools.system.consolidation.append import _parse_items
+        from plugins.core.system.consolidation.append import _parse_items
 
         response = '''[
           {"type": "person", "short_description": "Valid person"},
@@ -87,7 +87,7 @@ class TestAppendPhaseWithMockLLM:
 
     def test_parse_items_validates_date_format(self):
         """_parse_items validates date_expected format."""
-        from src.tools.system.consolidation.append import _parse_items
+        from plugins.core.system.consolidation.append import _parse_items
 
         response = '''[
           {"type": "goal", "short_description": "Valid date", "date_expected": "2025-01-31"},
@@ -101,21 +101,21 @@ class TestAppendPhaseWithMockLLM:
 
     def test_parse_items_handles_empty_response(self):
         """_parse_items returns empty list for empty array."""
-        from src.tools.system.consolidation.append import _parse_items
+        from plugins.core.system.consolidation.append import _parse_items
 
         items = _parse_items("[]")
         assert items == []
 
     def test_parse_items_handles_malformed_json(self):
         """_parse_items returns empty list for invalid JSON."""
-        from src.tools.system.consolidation.append import _parse_items
+        from plugins.core.system.consolidation.append import _parse_items
 
         items = _parse_items("This is not JSON")
         assert items == []
 
     def test_parse_items_truncates_long_descriptions(self):
         """_parse_items truncates descriptions over 500 chars."""
-        from src.tools.system.consolidation.append import _parse_items
+        from plugins.core.system.consolidation.append import _parse_items
 
         long_desc = "x" * 600
         response = f'[{{"type": "idea", "short_description": "{long_desc}"}}]'
@@ -130,7 +130,7 @@ class TestAppendPhaseWithFixtures:
 
     def test_append_fixture_returns_memory_items(self, tmp_path):
         """Append fixture returns properly formatted memory items."""
-        from src.tools.system.consolidation.append import _parse_items
+        from plugins.core.system.consolidation.append import _parse_items
 
         mock = MockLLMClient.from_fixture("append")
 
@@ -149,7 +149,7 @@ class TestAppendPhaseWithFixtures:
 
     def test_append_fixture_empty_scenario(self):
         """Append fixture returns empty list for trivial conversations."""
-        from src.tools.system.consolidation.append import _parse_items
+        from plugins.core.system.consolidation.append import _parse_items
 
         mock = MockLLMClient.from_fixture("append")
 
@@ -171,13 +171,13 @@ class TestAddItemsToMemory:
     def _patch_memory_dirs(self, tmp_path):
         """Create patches for memory module directories."""
         return [
-            patch("src.tools.data.memory.DATA_DIR", tmp_path),
-            patch("src.tools.data.memory.AGENTS_DIR", tmp_path / "agents")
+            patch("plugins.core.data.memory.DATA_DIR", tmp_path),
+            patch("plugins.core.data.memory.AGENTS_DIR", tmp_path / "agents")
         ]
 
     def test_add_items_avoids_duplicates(self, tmp_path):
         """_add_items_to_memory avoids adding duplicate descriptions."""
-        from src.tools.system.consolidation.append import _add_items_to_memory
+        from plugins.core.system.consolidation.append import _add_items_to_memory
 
         patches = self._patch_memory_dirs(tmp_path)
         for p in patches:
@@ -206,7 +206,7 @@ class TestAddItemsToMemory:
 
     def test_add_items_generates_ids(self, tmp_path):
         """_add_items_to_memory generates unique IDs for new items."""
-        from src.tools.system.consolidation.append import _add_items_to_memory
+        from plugins.core.system.consolidation.append import _add_items_to_memory
 
         patches = self._patch_memory_dirs(tmp_path)
         for p in patches:

@@ -26,7 +26,7 @@ def speak_cmd(
 
     The audio will be played through the user's speakers if connected.
     """
-    from src.tools.integration.speech import speak_aloud
+    from plugins.speech.integration import speak_aloud
 
     result = speak_aloud(text=text, voice=voice)
 

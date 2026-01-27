@@ -15,8 +15,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
 
-from .. import tool
-from ...agent.rlm import RLMClient, load_long_term_memory
+from src.agent.rlm import RLMClient, load_long_term_memory
 
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
@@ -133,7 +132,6 @@ def _archive_expired_memories(expired: List[dict], agent_id: str = "user"):
 # Short-term memory tools
 # =============================================================================
 
-@tool("add_memory", "Add an item to short-term memory for proactive attention (expires in 90 days). Use when: user mentions something worth tracking - a person, goal, concern, or upcoming event.", tool_type="data")
 def add_memory(
     short_description: str,
     type: str,
@@ -169,7 +167,6 @@ def add_memory(
     return entry
 
 
-@tool("list_memory", "List all valid short-term memory items (people, places, goals, concerns). Use when: need context about what's on someone's mind or active concerns.", tool_type="data")
 def list_memory(agent_id: str = "user") -> List[dict]:
     """Get all valid (non-expired) short-term memory entries for an agent.
 
@@ -190,7 +187,6 @@ def list_memory(agent_id: str = "user") -> List[dict]:
     return valid
 
 
-@tool("remove_memory", "Remove a short-term memory item by ID. Use when: item is no longer relevant or was added by mistake.", tool_type="data")
 def remove_memory(entry_id: str, agent_id: str = "user") -> dict:
     """Remove a short-term memory entry.
 
@@ -213,7 +209,6 @@ def remove_memory(entry_id: str, agent_id: str = "user") -> dict:
 # Long-term memory tools
 # =============================================================================
 
-@tool("write_long_term_memory", "Add an entry to long-term memory. Use when: recording significant events or conversations.", tool_type="data")
 def write_long_term_memory(content: str, date: str = None, agent_id: str = "user", source: str = None) -> dict:
     """Add an entry to long-term memory.
 
@@ -284,7 +279,6 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
     return {"date": date, "agent_id": agent_id, "status": "added", "source": source}
 
 
-@tool("graduate_memory", "Graduate a short-term memory item to long-term memory. Use when: an item is important enough to preserve permanently.", tool_type="data")
 def graduate_memory(memory_id: str, reason: str = None, agent_id: str = "user") -> dict:
     """Move a short-term memory item to long-term memory.
 
@@ -337,7 +331,6 @@ def graduate_memory(memory_id: str, reason: str = None, agent_id: str = "user") 
     }
 
 
-@tool("recall_memory", "Recall information from long-term memory using semantic search. Use when: you need to remember something from the past.", tool_type="data")
 def recall_memory(
     query: str,
     time_range_days: int = 365,
@@ -390,7 +383,6 @@ def recall_memory(
     }
 
 
-@tool("analyze_memory", "Analyze patterns and trends in long-term memory. Use when: you need to understand how things have changed over time.", tool_type="data")
 def analyze_memory(
     query: str,
     time_range_days: int = 365,

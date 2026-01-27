@@ -4,7 +4,7 @@ Consolidation Prompts - LLM prompts for append and consolidate phases.
 Prompts are loaded from data/system/prompts/ templates.
 """
 
-from ....agent.cognition.reasoning.prompts import load_template, render_template
+from src.agent.cognition.reasoning.prompts import load_template, render_template
 
 
 # =============================================================================

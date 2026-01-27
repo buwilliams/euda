@@ -1,4 +1,4 @@
-"""Data tools - Topics, assets, identity, memory."""
+"""Core data operations - Topics, assets, identity, memory."""
 
 from . import topics
 from . import assets

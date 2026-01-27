@@ -26,7 +26,7 @@ app.add_typer(deck.app, name="deck", help="Deck kanban board operations")
 @app.command("instances")
 def list_instances():
     """List configured Nextcloud instances."""
-    from src.tools.integration.nextcloud.client import list_instances
+    from plugins.nextcloud.lib.client import list_instances
 
     instances = list_instances()
 

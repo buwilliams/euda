@@ -8,11 +8,10 @@ saves them as topic assets for later retrieval via the API.
 import json
 from pathlib import Path
 
-from .. import tool
-from ...llms import get_client
-from ...tools.data.identity import get_identity
-from ...tools.data.topics import list_topics
-from ...tools.data.assets import write_asset, read_asset
+from src.llms import get_client
+from ..data.identity import get_identity
+from ..data.topics import list_topics
+from ..data.assets import write_asset, read_asset
 
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
@@ -99,11 +98,6 @@ The quote can be from a famous person, philosopher, writer, or you can compose a
         }
 
 
-@tool(
-    "euno_quote",
-    "Generate a personalized daily quote. Internal system tool for scheduled quote topics.",
-    tool_type="system"
-)
 def euno_quote(agent_id: str, topic_id: str) -> dict:
     """Generate a personalized quote and save as topic asset.
 

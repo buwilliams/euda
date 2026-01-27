@@ -7,7 +7,6 @@ import threading
 from pathlib import Path
 from typing import Optional
 
-from .. import tool
 
 
 # Thread-local storage for agent context
@@ -38,7 +37,6 @@ def _ensure_system_dir():
     SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
 
 
-@tool("get_system_config", "Get system configuration settings. Use when: checking system settings or LLM config.", tool_type="system")
 def get_system_config() -> dict:
     """Get system configuration."""
     _ensure_system_dir()
@@ -50,7 +48,6 @@ def get_system_config() -> dict:
     return {}
 
 
-@tool("update_system_config", "Update system configuration settings. Use when: changing system behavior or settings.", tool_type="system")
 def update_system_config(key: str, value: str) -> dict:
     """Update a system configuration value."""
     _ensure_system_dir()
@@ -70,7 +67,6 @@ def update_system_config(key: str, value: str) -> dict:
     return {"status": "updated", "key": key}
 
 
-@tool("done_working", "Signal that you have finished your current work cycle. Use when: all assigned work is complete, no more actions needed, or blocked.", tool_type="system")
 def done_working(summary: str = "") -> dict:
     """Signal that the agent has finished working and is ready to sleep.
 
@@ -97,30 +93,6 @@ def done_working(summary: str = "") -> dict:
     }
 
 
-@tool(
-    "send_notifications_batch",
-    "Send multiple notifications in a single operation. Use when: sending multiple alerts to the user at once.",
-    input_schema={
-        "type": "object",
-        "properties": {
-            "notifications": {
-                "type": "array",
-                "description": "List of notifications to send",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "title": {"type": "string", "description": "Notification title (required)"},
-                        "message": {"type": "string", "description": "Notification body (required)"},
-                        "priority": {"type": "string", "enum": ["low", "normal", "high"], "description": "Priority level"}
-                    },
-                    "required": ["title", "message"]
-                }
-            }
-        },
-        "required": ["notifications"]
-    },
-    tool_type="system"
-)
 def send_notifications_batch(notifications: list) -> dict:
     """Send multiple notifications in a single operation.
 

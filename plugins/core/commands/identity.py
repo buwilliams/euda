@@ -9,7 +9,7 @@ app = typer.Typer(no_args_is_help=True)
 
 def _get_identity_module():
     """Lazy import of identity module."""
-    from src.tools.data.identity import (
+    from plugins.core.data.identity import (
         get_identity, update_identity
     )
     return {

@@ -7,7 +7,6 @@ import shutil
 from pathlib import Path
 from typing import List, Optional
 
-from .. import tool, _TOOL_REGISTRY
 
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
@@ -24,7 +23,6 @@ BASE_TOOLS = [
 ]
 
 
-@tool("list_agents", "List all configured agents with their settings. Use when: checking what agents exist, finding who to assign work to.", tool_type="agents")
 def list_agents() -> List[dict]:
     """List all agents with their configurations."""
     agents = []
@@ -43,7 +41,6 @@ def list_agents() -> List[dict]:
     return agents
 
 
-@tool("list_agents_for_routing", "List agents with minimal details for topic routing decisions. Shows id, name, purpose, and enabled status.", tool_type="agents")
 def list_agents_for_routing() -> List[dict]:
     """List agents with just enough info for routing decisions.
 
@@ -88,7 +85,6 @@ def list_agents_for_routing() -> List[dict]:
     return agents
 
 
-@tool("get_agent", "Get an agent's configuration and identity. Use when: need detailed info about a specific agent.", tool_type="agents")
 def get_agent(agent_id: str) -> Optional[dict]:
     """Get detailed info about an agent."""
     agent_dir = AGENTS_DIR / agent_id
@@ -161,21 +157,6 @@ def update_agent_config(agent_id: str, config: dict) -> dict:
     return {"updated": True, "agent_id": agent_id, "config": config}
 
 
-@tool("create_agent", "Create a new agent with config and identity. Use when: user asks for a new specialized agent or automation capability.", tool_type="agents", input_schema={
-    "type": "object",
-    "properties": {
-        "agent_id": {"type": "string", "description": "Unique identifier (lowercase, no spaces, e.g., 'researcher')"},
-        "name": {"type": "string", "description": "Display name (e.g., 'Researcher')"},
-        "purpose": {"type": "string", "description": "Description of what the agent does"},
-        "tools": {"type": "array", "items": {"type": "string"}, "description": "List of tool names to assign"},
-        "triggers": {
-            "type": "array",
-            "items": {"type": "object"},
-            "description": "Scheduled triggers as objects with topic_name, topic_description, schedule"
-        }
-    },
-    "required": ["agent_id", "name", "purpose"]
-})
 def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, triggers: list = None) -> dict:
     """Create a new agent with the specified configuration.
 
@@ -267,7 +248,7 @@ I must:
     identity_path.write_text(identity)
 
     # Dynamically register and start the agent if manager is running
-    from ...agent.manager import get_manager
+    from src.agent.manager import get_manager
     manager = get_manager()
     if manager and manager.running:
         result = manager.register_new_agent(agent_id)
@@ -284,7 +265,6 @@ I must:
     }
 
 
-@tool("update_agent_identity", "Update an agent's identity/instructions. Use when: modifying how an agent behaves.", tool_type="agents")
 def update_agent_identity(agent_id: str, identity: str) -> dict:
     """Update an agent's identity markdown file.
 
@@ -295,7 +275,6 @@ def update_agent_identity(agent_id: str, identity: str) -> dict:
     return update_agent_identity_internal(agent_id, identity)
 
 
-@tool("update_own_identity", "Update your own identity with learnings from reflection. Use during reflection to codify behavioral patterns.", tool_type="agents")
 def update_own_identity(updates: str, agent_id: str = None) -> dict:
     """Append a reflection update section to your own identity.
 
@@ -331,7 +310,6 @@ def update_own_identity(updates: str, agent_id: str = None) -> dict:
     return {"updated": True, "agent_id": agent_id, "date": today}
 
 
-@tool("append_to_agent_identity", "Add a section to an agent's identity without overwriting existing content. Safer than update_agent_identity which replaces entirely.", tool_type="agents")
 def append_to_agent_identity(agent_id: str, section_title: str, content: str) -> dict:
     """Safely append a new section to an agent's identity.
 
@@ -367,14 +345,13 @@ def append_to_agent_identity(agent_id: str, section_title: str, content: str) ->
 
 
 
-@tool("enable_agent", "Enable a disabled agent. Use when: reactivating an agent that was paused.", tool_type="agents")
 def enable_agent(agent_id: str) -> dict:
     """Enable an agent so it can process topics.
 
     Args:
         agent_id: The agent to enable
     """
-    from ...agent.cognition.metacognition.regulation.tokens import get_token_awareness, AgentState
+    from src.agent.cognition.metacognition.regulation.tokens import get_token_awareness, AgentState
 
     config = get_agent_config(agent_id)
     if not config:
@@ -385,14 +362,13 @@ def enable_agent(agent_id: str) -> dict:
     return {"agent_id": agent_id, "state": "enabled"}
 
 
-@tool("disable_agent", "Disable an agent so it stops processing topics. Use when: pausing an agent temporarily.", tool_type="agents")
 def disable_agent(agent_id: str) -> dict:
     """Disable an agent so it stops processing topics.
 
     Args:
         agent_id: The agent to disable
     """
-    from ...agent.cognition.metacognition.regulation.tokens import get_token_awareness, AgentState
+    from src.agent.cognition.metacognition.regulation.tokens import get_token_awareness, AgentState
 
     config = get_agent_config(agent_id)
     if not config:
@@ -403,7 +379,6 @@ def disable_agent(agent_id: str) -> dict:
     return {"agent_id": agent_id, "state": "disabled"}
 
 
-@tool("update_agent_triggers", "Update an agent's trigger configuration. Use when: changing when an agent wakes up (requires restart).", tool_type="agents")
 def update_agent_triggers(agent_id: str, triggers: list) -> dict:
     """Update which triggers wake an agent.
 
@@ -426,7 +401,6 @@ def update_agent_triggers(agent_id: str, triggers: list) -> dict:
     return result
 
 
-@tool("delete_agent", "Permanently delete an agent. Use when: removing an agent that is no longer needed (cannot be undone).", tool_type="agents")
 def delete_agent(agent_id: str) -> dict:
     """Permanently delete an agent and all its data.
 
@@ -454,7 +428,6 @@ def delete_agent(agent_id: str) -> dict:
     }
 
 
-@tool("list_available_tools", "List all tools that can be assigned to agents. Use when: creating/updating agents and need to know what capabilities to grant.", tool_type="agents")
 def list_available_tools() -> List[dict]:
     """List all available tools that can be assigned to agents.
 

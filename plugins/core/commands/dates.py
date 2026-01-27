@@ -7,7 +7,7 @@ app = typer.Typer(no_args_is_help=True)
 
 def _get_dates_module():
     """Lazy import of dates module."""
-    from src.tools.system.dates import (
+    from plugins.core.system.dates import (
         parse_date, get_current_date
     )
     return {

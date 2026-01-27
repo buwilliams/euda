@@ -12,8 +12,8 @@ from pathlib import Path
 from fastapi import APIRouter, UploadFile, File
 
 from ...agent.cognition.reasoning.prompts import render_template
-from ...tools.data.topics import create_topic, get_agent_inbox_topic
-from ...tools.data.memory import write_long_term_memory
+from plugins.core.data.topics import create_topic, get_agent_inbox_topic
+from plugins.core.data.memory import write_long_term_memory
 
 
 router = APIRouter()

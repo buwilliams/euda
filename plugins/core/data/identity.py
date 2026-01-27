@@ -9,7 +9,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
-from .. import tool
 
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
@@ -31,7 +30,6 @@ def _ensure_agent_dir(agent_id: str):
     (AGENTS_DIR / agent_id).mkdir(parents=True, exist_ok=True)
 
 
-@tool("get_identity", "Get an agent's identity containing biographical info, preferences, and patterns. Use when: need to personalize responses or understand context.", tool_type="data")
 def get_identity(agent_id: str = "user") -> dict:
     """Get an agent's identity.
 
@@ -54,7 +52,6 @@ def get_identity(agent_id: str = "user") -> dict:
     }
 
 
-@tool("update_identity", "Update an agent's identity with new information. Use when: learning new facts or updating patterns.", tool_type="data")
 def update_identity(agent_id: str = "user", content: str = None) -> dict:
     """Update an agent's identity.
 
@@ -74,13 +71,11 @@ def update_identity(agent_id: str = "user", content: str = None) -> dict:
 
 
 # Backward-compatible aliases for user-specific operations
-@tool("get_user_identity", "Get the user's identity. Use when: need user context. (Alias for get_identity with agent_id='user')", tool_type="data")
 def get_user_identity() -> dict:
     """Get the user's identity. Alias for get_identity('user')."""
     return get_identity("user")
 
 
-@tool("update_user_identity", "Update the user's identity. Use when: learning new facts about the user. (Alias for update_identity with agent_id='user')", tool_type="data")
 def update_user_identity(content: str) -> dict:
     """Update the user's identity. Alias for update_identity('user', content)."""
     return update_identity("user", content)

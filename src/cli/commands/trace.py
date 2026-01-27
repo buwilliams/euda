@@ -27,7 +27,7 @@ def cmd_trace(args: List[str], json_mode: bool = False):
 
     topic_id = args[0]
 
-    from ...tools.data.topics import get_topic
+    from plugins.core.data.topics import get_topic
 
     topic = get_topic(topic_id)
     if not topic:

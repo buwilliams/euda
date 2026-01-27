@@ -18,7 +18,7 @@ class TestIdentitySectionParsing:
 
     def test_parse_identity_with_title_and_sections(self):
         """Parse structured identity with title and sections."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _parse_identity_sections
         )
 
@@ -51,7 +51,7 @@ I must not procrastinate.
 
     def test_parse_identity_without_title(self):
         """Parse identity without a title line."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _parse_identity_sections
         )
 
@@ -72,7 +72,7 @@ Friendly and helpful.
 
     def test_parse_identity_with_preamble(self):
         """Parse identity with unstructured content before sections."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _parse_identity_sections
         )
 
@@ -95,7 +95,7 @@ Main purpose here.
 
     def test_parse_identity_with_unrecognized_sections(self):
         """Parse identity with custom sections not in standard schema."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _parse_identity_sections
         )
 
@@ -123,7 +123,7 @@ Custom content.
 
     def test_parse_identity_with_date_suffix_in_header(self):
         """Parse identity with date suffix in section header."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _parse_identity_sections
         )
 
@@ -146,7 +146,7 @@ class TestIdentityBuilding:
 
     def test_build_identity_with_all_sections(self):
         """Build identity markdown from complete sections dict."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _build_identity_markdown
         )
 
@@ -166,7 +166,7 @@ class TestIdentityBuilding:
 
     def test_build_identity_generates_title_if_missing(self):
         """Build identity generates title from agent_id if not provided."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _build_identity_markdown
         )
 
@@ -178,7 +178,7 @@ class TestIdentityBuilding:
 
     def test_build_identity_includes_preamble(self):
         """Build identity includes preamble content."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _build_identity_markdown
         )
 
@@ -196,7 +196,7 @@ class TestIdentityBuilding:
 
     def test_build_identity_preserves_other_sections(self):
         """Build identity preserves unrecognized sections."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _build_identity_markdown
         )
 
@@ -216,7 +216,7 @@ class TestSectionMerging:
 
     def test_merge_into_empty_section(self):
         """Merge content into empty section."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _merge_section_content
         )
 
@@ -226,7 +226,7 @@ class TestSectionMerging:
 
     def test_merge_empty_into_existing(self):
         """Merge empty content preserves existing."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _merge_section_content
         )
 
@@ -236,7 +236,7 @@ class TestSectionMerging:
 
     def test_merge_prose_appends_with_paragraph_break(self):
         """Merge prose content appends with paragraph break."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _merge_section_content
         )
 
@@ -251,7 +251,7 @@ class TestSectionMerging:
 
     def test_merge_list_appends_without_duplicates(self):
         """Merge list content appends new items, avoiding duplicates."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _merge_section_content
         )
 
@@ -266,7 +266,7 @@ class TestSectionMerging:
 
     def test_merge_behavioral_rules_list(self):
         """Merge behavioral rules (I must/must not format)."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _merge_section_content
         )
 
@@ -285,7 +285,7 @@ class TestIdentityUpdate:
 
     def test_update_identity_structured_updates(self, tmp_path):
         """Update identity with structured section updates."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _update_identity
         )
 
@@ -311,7 +311,7 @@ class TestIdentityUpdate:
 
     def test_update_identity_legacy_string_format(self, tmp_path):
         """Update identity with legacy string format for backwards compatibility."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _update_identity
         )
 
@@ -330,7 +330,7 @@ class TestIdentityUpdate:
 
     def test_update_identity_creates_file_if_missing(self, tmp_path):
         """Update identity creates file if it doesn't exist."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _update_identity
         )
 
@@ -357,7 +357,7 @@ class TestYearBoundarySnapshots:
 
     def test_snapshot_created_in_first_week_of_year(self, tmp_path):
         """Snapshot created when in first week of new year."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _maybe_snapshot_identity
         )
 
@@ -373,7 +373,7 @@ class TestYearBoundarySnapshots:
         consolidation.logger = MagicMock()
 
         # Mock datetime to be in first week of January
-        with patch('src.tools.system.consolidation.consolidate.datetime') as mock_dt:
+        with patch('plugins.core.system.consolidation.consolidate.datetime') as mock_dt:
             mock_dt.now.return_value.month = 1
             mock_dt.now.return_value.day = 3
             mock_dt.now.return_value.strftime.return_value = "2026"
@@ -385,7 +385,7 @@ class TestYearBoundarySnapshots:
 
     def test_no_snapshot_after_first_week(self, tmp_path):
         """No snapshot created after first week of year."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _maybe_snapshot_identity
         )
 
@@ -399,7 +399,7 @@ class TestYearBoundarySnapshots:
         consolidation.logger = MagicMock()
 
         # Mock datetime to be after first week
-        with patch('src.tools.system.consolidation.consolidate.datetime') as mock_dt:
+        with patch('plugins.core.system.consolidation.consolidate.datetime') as mock_dt:
             mock_dt.now.return_value.month = 1
             mock_dt.now.return_value.day = 15  # After first week
 
@@ -409,7 +409,7 @@ class TestYearBoundarySnapshots:
 
     def test_no_duplicate_snapshot(self, tmp_path):
         """No snapshot created if one already exists."""
-        from src.tools.system.consolidation.consolidate import (
+        from plugins.core.system.consolidation.consolidate import (
             _maybe_snapshot_identity
         )
 
@@ -424,7 +424,7 @@ class TestYearBoundarySnapshots:
         consolidation._get_historical_identity_path.return_value = historical_path
         consolidation.logger = MagicMock()
 
-        with patch('src.tools.system.consolidation.consolidate.datetime') as mock_dt:
+        with patch('plugins.core.system.consolidation.consolidate.datetime') as mock_dt:
             mock_dt.now.return_value.month = 1
             mock_dt.now.return_value.day = 3
 

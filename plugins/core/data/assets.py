@@ -7,7 +7,6 @@ import mimetypes
 from pathlib import Path
 from typing import List, Optional
 
-from .. import tool
 
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
@@ -19,7 +18,6 @@ def _get_topic_assets_dir(topic_id: str) -> Path:
     return ASSETS_DIR / topic_id
 
 
-@tool("list_assets", "List all assets attached to a topic. Use when: checking what files are attached to a topic.", tool_type="data")
 def list_assets(topic_id: str) -> List[dict]:
     """List assets attached to a topic."""
     assets_dir = _get_topic_assets_dir(topic_id)
@@ -40,7 +38,6 @@ def list_assets(topic_id: str) -> List[dict]:
     return assets
 
 
-@tool("read_asset", "Read an asset's content (text files only). Use when: viewing topic attachments or context files.", tool_type="data")
 def read_asset(topic_id: str, filename: str) -> Optional[dict]:
     """Read an asset's content."""
     path = _get_topic_assets_dir(topic_id) / filename
@@ -71,7 +68,6 @@ def read_asset(topic_id: str, filename: str) -> Optional[dict]:
         }
 
 
-@tool("write_asset", "Write content to an asset file. Use when: storing files, notes, or data related to a topic.", tool_type="data")
 def write_asset(topic_id: str, filename: str, content: str) -> dict:
     """Write content to an asset file."""
     assets_dir = _get_topic_assets_dir(topic_id)
@@ -90,7 +86,6 @@ def write_asset(topic_id: str, filename: str, content: str) -> dict:
     }
 
 
-@tool("delete_asset", "Delete an asset from a topic. Use when: removing outdated or unwanted attachments.", tool_type="data")
 def delete_asset(topic_id: str, filename: str) -> dict:
     """Delete an asset."""
     path = _get_topic_assets_dir(topic_id) / filename

@@ -14,11 +14,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Callable
 
-from ... import tool
-from ....agent.logger import get_logger
+from src.agent.logger import get_logger
 
 if TYPE_CHECKING:
-    from ....agent.agent import Agent
+    from src.agent.agent import Agent
 
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent.parent / "data"
@@ -248,11 +247,6 @@ class ConsolidationRunner:
         return consolidate_phase(self, self.execution_id)
 
 
-@tool(
-    "euno_consolidate",
-    "Run consolidation for an agent. Internal system tool for scheduled consolidation topics.",
-    tool_type="system"
-)
 def euno_consolidate(agent_id: str, phase: str = "consolidate", topic_id: str = None) -> dict:
     """Execute consolidation directly without LLM involvement.
 

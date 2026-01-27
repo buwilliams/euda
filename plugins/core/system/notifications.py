@@ -8,11 +8,9 @@ when they have the app open.
 from datetime import datetime
 from typing import Optional
 
-from .. import tool
-from ...web.events import emit_ui_event, has_connected_clients
+from src.web.events import emit_ui_event, has_connected_clients
 
 
-@tool("send_chat_message", "Send a message to the user's chat (if connected). Use when: need to proactively inform user about something important.", tool_type="system")
 def send_chat_message(message: str, agent_name: str = "Curator") -> dict:
     """Send a message to the user's chat.
 
@@ -38,7 +36,6 @@ def send_chat_message(message: str, agent_name: str = "Curator") -> dict:
     return {"delivered": True}
 
 
-@tool("check_user_connected", "Check if the user has the app open. Use when: deciding whether to send a notification or wait.", tool_type="system")
 def check_user_connected() -> dict:
     """Check if the user currently has the Euno app open.
 

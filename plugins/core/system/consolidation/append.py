@@ -10,8 +10,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List
 import uuid
 
-from ....llms import get_client
-from ....web.events import emit_ui_event
+from src.llms import get_client
+from src.web.events import emit_ui_event
 from ...data.memory import _load_entries, _save_entries, VALID_TYPES
 
 from .prompts import get_append_system_prompt, build_append_prompt, build_append_batch_prompt

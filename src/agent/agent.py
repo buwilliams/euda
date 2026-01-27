@@ -151,8 +151,8 @@ class Agent:
             return ""
 
         # Import from old tools module (still available during transition)
-        from ..tools.data.topics import get_topic
-        from ..tools.data.assets import list_assets, read_asset
+        from plugins.core.data.topics import get_topic
+        from plugins.core.data.assets import list_assets, read_asset
 
         topic = get_topic(self._current_topic_id)
         if not topic:
@@ -230,7 +230,7 @@ class Agent:
 
     def _append_to_long_term_memory(self, user_message: str, assistant_response: str):
         """Append a conversation exchange to today's long-term memory."""
-        from ..tools.data.memory import write_long_term_memory
+        from plugins.core.data.memory import write_long_term_memory
 
         agent_name = self.config.get('name', self.id)
 
@@ -351,7 +351,7 @@ class Agent:
         Returns:
             True if topic no longer exists or is no longer in 'working' status
         """
-        from ..tools.data.topics import get_topic
+        from plugins.core.data.topics import get_topic
 
         topic = get_topic(topic_id)
         if topic is None:
@@ -367,7 +367,7 @@ class Agent:
         The plugin command is executed and the topic is completed.
         """
         from ..plugins import execute_plugin
-        from ..tools.data.topics import complete_topic
+        from plugins.core.data.topics import complete_topic
 
         topic_id = topic.get("id")
         topic_name = topic.get("name", "")
@@ -448,8 +448,8 @@ class Agent:
 
     def _format_topic_prompt(self, topic: dict, remaining: int = 0) -> str:
         """Format a topic as a standardized prompt for the agent."""
-        from ..tools.data.assets import list_assets
-        from ..tools.data.memory import get_memory_for_prompt
+        from plugins.core.data.assets import list_assets
+        from plugins.core.data.memory import get_memory_for_prompt
         from .cognition.reasoning.prompts import render_template
 
         assets = list_assets(topic['id'])
@@ -583,7 +583,7 @@ class Agent:
         """Execute tool calls (meta-tools for plugin system) and return results."""
         import json
         from ..plugins import execute_meta_tool
-        from ..tools.system.system import set_agent_context, clear_agent_context
+        from plugins.core.system.system import set_agent_context, clear_agent_context
 
         # Set agent context so tools can access this agent
         set_agent_context(self)
@@ -641,7 +641,7 @@ class Agent:
         Args:
             trigger_context: Optional event data that triggered this cycle
         """
-        from ..tools.data.topics import list_topics, claim_topic, release_topic, error_topic
+        from plugins.core.data.topics import list_topics, claim_topic, release_topic, error_topic
 
         self._log("work_cycle_start", {"trigger": trigger_context})
         self._work_done = False

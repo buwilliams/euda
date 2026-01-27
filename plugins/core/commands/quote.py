@@ -9,7 +9,7 @@ app = typer.Typer(no_args_is_help=True)
 
 def _get_quote_module():
     """Lazy import of quote module."""
-    from src.tools.system.quote import euno_quote
+    from plugins.core.system.quote import euno_quote
     return {
         "euno_quote": euno_quote,
     }
@@ -40,8 +40,8 @@ def generate_cmd(
             raise typer.Exit(1)
     else:
         # Generate without saving to topic - call internal helpers directly
-        from src.tools.system.quote import _generate_quote, _get_quote_history
-        from src.tools.data.identity import get_identity
+        from plugins.core.system.quote import _generate_quote, _get_quote_history
+        from plugins.core.data.identity import get_identity
 
         identity = get_identity("user")
         identity_content = identity.get("content", "") if identity.get("exists") else ""
