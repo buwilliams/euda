@@ -75,6 +75,12 @@ Add new capabilities as CLI-based plugins that agents can discover and execute.
 
 **When to use:** Agents need to interact with external systems or perform new operations.
 
+**Environment variables** available to plugins:
+- `EUNO_DATA_DIR` — Path to data directory (always set)
+- `EUNO_AGENT_ID` — Current agent ID (set during agent execution)
+- `EUNO_TOPIC_ID` — Current topic ID (set during topic work)
+- `EUNO_SESSION_ID` — Current session ID (set during chat)
+
 **Examples:**
 - Create `plugins/calendar/cli.py` for calendar integration
 - Create `plugins/obsidian/cli.py` for note-taking integration
