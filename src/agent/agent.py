@@ -518,14 +518,16 @@ class Agent:
 
         # Get provider display name, model, and max_output_tokens
         from ..llms import get_provider, get_model, get_providers_config
+        from .cognition.metacognition.regulation.tokenizer import estimate_request_tokens
         provider_id = get_provider()
         model = get_model()
         providers_config = get_providers_config()
         provider_display = providers_config.get(provider_id, {}).get("display_name", provider_id)
         max_tokens = providers_config.get(provider_id, {}).get("max_output_tokens", 16000)
 
-        # Call LLM with tools
-        _status(f"Waiting for {provider_display} ({model})...")
+        # Estimate tokens and call LLM
+        estimated_tokens = estimate_request_tokens(system_prompt, messages, tools)
+        _status(f"Sending ~{estimated_tokens:,} tokens to {provider_display} ({model})...")
         response = client.create(
             max_tokens=max_tokens,
             system=system_prompt,
@@ -534,6 +536,7 @@ class Agent:
             agent_id=self.id,
             topic_id=self._current_topic_id
         )
+        _status(f"Received {response.usage.output_tokens:,} tokens from {provider_display}...")
 
         self._log("llm_response", {
             "stop_reason": response.stop_reason,
@@ -554,7 +557,8 @@ class Agent:
             messages.append({"role": "assistant", "content": response.content})
             messages.append({"role": "user", "content": tool_results})
 
-            _status(f"Waiting for {provider_display} ({model})...")
+            estimated_tokens = estimate_request_tokens(system_prompt, messages, tools)
+            _status(f"Sending ~{estimated_tokens:,} tokens to {provider_display} ({model})...")
             response = client.create(
                 max_tokens=max_tokens,
                 system=system_prompt,
@@ -563,6 +567,7 @@ class Agent:
                 agent_id=self.id,
                 topic_id=self._current_topic_id
             )
+            _status(f"Received {response.usage.output_tokens:,} tokens from {provider_display}...")
 
             self._log("llm_response", {
                 "stop_reason": response.stop_reason,
