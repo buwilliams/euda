@@ -16,7 +16,7 @@ The best way to get started is to understand the mental model behind Euno.
 3. [Business Plan](docs/3_business-plan.md) — Vision, affordable loss, crazy quilt, and gates
 4. [System](docs/4_system.md) — Entities, ontology, and lifecycle
 
-The [Contributing Guide](docs/5_contribute.md) provides three hands-on assignments to help you learn by doing.
+The [Getting Started Guide](docs/5_getting_started.md) will have you running Euno locally in minutes.
 
 ## Usage
 
@@ -62,10 +62,11 @@ Euno follows a top-down information hierarchy. When making changes, update highe
 - [Euno for People](docs/2_euno_for_people.md) — Personas and how Euno helps them flourish
 - [Business Plan](docs/3_business-plan.md) — Vision and growth gates
 - [System](docs/4_system.md) — Entities, ontology, and lifecycle
-- [Contributing](docs/5_contribute.md) — Setup, PR process, deployment
-- [Points](docs/6_points.md) — Contribution tracking and rewards
-- [Operating Agreement](docs/7_operating-agreement.md) — Ownership and governance
-- [Privacy](docs/8_privacy.md) — Privacy philosophy and current state
+- [Getting Started](docs/5_getting_started.md) — Local setup and deployment
+- [Contributing](docs/6_contribute.md) — Extension hierarchy and PR process
+- [Points](docs/7_points.md) — Contribution tracking and rewards
+- [Operating Agreement](docs/8_operating-agreement.md) — Ownership and governance
+- [Privacy](docs/9_privacy.md) — Privacy philosophy and current state
 
 ## License
 
