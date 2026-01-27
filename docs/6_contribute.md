@@ -6,15 +6,36 @@ Build for yourself first. If it helps you flourish, it will help others too.
 
 When changing Euno, choose the lightest mechanism that achieves your goal:
 
-### 1. UI Changes
+### 1. Interface Changes
+
+Modify how users interact with Euno.
+
+#### Web UI
 **Location:** `web/`
 
-Modify the web interface—layouts, styles, interactions.
+The browser-based interface—layouts, styles, interactions.
 
 **Examples:**
 - Change how topics are displayed
 - Add a new view or tab
 - Improve mobile responsiveness
+
+#### CLI
+**Location:** `main.py`, `src/cli/`
+
+The command-line interface for terminal users.
+
+**Examples:**
+- Add a new command to `main.py`
+- Modify the `chat` REPL experience
+- Add dev CLI commands in `src/cli/`
+
+#### Future Interfaces
+**Location:** TBD
+
+Other ways to interact with Euno (mobile apps, voice, APIs).
+
+**Principle:** All interfaces share the same backend (AgentManager, plugins, topics). Only the presentation layer differs.
 
 ### 2. Agent Changes
 
