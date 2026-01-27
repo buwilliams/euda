@@ -480,7 +480,8 @@ class Agent:
         )
 
     def chat(self, message: str, log_to_memory: bool = True, save_to_history: bool = True,
-             voice_input: bool = False, defer_consolidation: bool = False) -> str:
+             voice_input: bool = False, defer_consolidation: bool = False,
+             status_callback: callable = None) -> str:
         """Process a chat message and return response.
 
         Args:
@@ -489,9 +490,17 @@ class Agent:
             save_to_history: Whether to save to conversation history (default True)
             voice_input: Whether input came from voice (enables conversational response style)
             defer_consolidation: If True, skip reflection append (caller will batch it)
+            status_callback: Optional callback for status updates (e.g., for CLI spinner)
         """
-        self._log("chat_start", {"message_length": len(message)})
+        def _status(msg: str):
+            if status_callback:
+                status_callback(msg)
 
+        self._log("chat_start", {"message_length": len(message)})
+        # Store callback for use in _execute_tools
+        self._status_callback = status_callback
+
+        _status("Building prompt...")
         tools = self._get_tools()
         system_prompt = self._build_system_prompt(voice_input=voice_input)
 
@@ -515,6 +524,7 @@ class Agent:
         max_tokens = provider_config.get("max_output_tokens", 16000)
 
         # Call LLM with tools
+        _status(f"Waiting for {provider}...")
         response = client.create(
             max_tokens=max_tokens,
             system=system_prompt,
@@ -543,6 +553,7 @@ class Agent:
             messages.append({"role": "assistant", "content": response.content})
             messages.append({"role": "user", "content": tool_results})
 
+            _status(f"Waiting for {provider}...")
             response = client.create(
                 max_tokens=max_tokens,
                 system=system_prompt,
@@ -558,6 +569,7 @@ class Agent:
             })
 
         # Extract text response
+        _status("Processing response...")
         text_response = ""
         for block in response.content:
             if hasattr(block, "text"):
@@ -575,7 +587,11 @@ class Agent:
         # Run reflection append phase to extract noteworthy items
         # Skip if defer_consolidation=True (caller will batch process)
         if self.consolidation and log_to_memory and not defer_consolidation:
+            _status("Updating memory...")
             self.consolidation.append(message, text_response)
+
+        # Cleanup
+        self._status_callback = None
 
         return text_response
 
@@ -596,6 +612,10 @@ class Agent:
             "excluded_plugins": self.config.get("excluded_plugins", [])
         }
 
+        def _status(msg: str):
+            if hasattr(self, '_status_callback') and self._status_callback:
+                self._status_callback(msg)
+
         try:
             # Collect all tool calls
             tool_calls = [block for block in response.content if block.type == "tool_use"]
@@ -606,6 +626,19 @@ class Agent:
                 self._log("tool_call", {"tool": block.name, "input": block.input})
                 # Record for action/progress awareness
                 self.metacognition.record_tool_call(block.name, block.input)
+
+                # Report status for plugin execution
+                if block.name == "execute_plugin":
+                    plugin = block.input.get("plugin", "unknown")
+                    cmd = block.input.get("command", "").split()[0] if block.input.get("command") else ""
+                    _status(f"Running {plugin} {cmd}...")
+                elif block.name == "list_plugins":
+                    _status("Listing plugins...")
+                elif block.name == "plugin_usage":
+                    plugin = block.input.get("plugin", "unknown")
+                    _status(f"Getting {plugin} help...")
+                else:
+                    _status(f"Calling {block.name}...")
 
                 # Execute meta-tool
                 result = execute_meta_tool(block.name, block.input, agent_context)

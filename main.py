@@ -151,7 +151,7 @@ def cmd_web(args):
 
 
 class Spinner:
-    """Simple text spinner for CLI feedback."""
+    """Simple text spinner for CLI feedback with dynamic messages."""
 
     FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
@@ -160,6 +160,13 @@ class Spinner:
         self.message = message
         self._stop_event = threading.Event()
         self._thread = None
+        self._lock = threading.Lock()
+        self._last_line_len = 0
+
+    def update(self, message: str):
+        """Update the spinner message."""
+        with self._lock:
+            self.message = message
 
     def start(self):
         import threading
@@ -172,7 +179,12 @@ class Spinner:
         idx = 0
         while not self._stop_event.is_set():
             frame = self.FRAMES[idx % len(self.FRAMES)]
-            print(f"\r{frame} {self.message}...", end="", flush=True)
+            with self._lock:
+                line = f"\r{frame} {self.message}"
+            # Clear previous line if shorter
+            padding = max(0, self._last_line_len - len(line))
+            print(line + " " * padding, end="", flush=True)
+            self._last_line_len = len(line)
             idx += 1
             time.sleep(0.1)
 
@@ -181,7 +193,7 @@ class Spinner:
         if self._thread:
             self._thread.join(timeout=0.5)
         # Clear the spinner line
-        print("\r" + " " * (len(self.message) + 10) + "\r", end="", flush=True)
+        print("\r" + " " * (self._last_line_len + 5) + "\r", end="", flush=True)
 
 
 def cmd_chat(args):
@@ -226,7 +238,11 @@ def cmd_chat(args):
     print()
 
     agent = Agent(agent_id)
-    spinner = Spinner("Thinking")
+    spinner = Spinner("Preparing...")
+
+    def status_callback(status: str):
+        """Update spinner with current status."""
+        spinner.update(status)
 
     while True:
         try:
@@ -239,7 +255,7 @@ def cmd_chat(args):
 
             spinner.start()
             try:
-                response = agent.chat(user_input)
+                response = agent.chat(user_input, status_callback=status_callback)
             finally:
                 spinner.stop()
 
