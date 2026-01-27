@@ -68,7 +68,7 @@ def patch_data_dir(temp_data_dir):
 
     # Patch topics module
     try:
-        from plugins.core.data import topics
+        from src.core.data import topics
         p1 = patch.object(topics, 'DATA_DIR', temp_data_dir)
         p1.start()
         patches.append(p1)
@@ -84,7 +84,7 @@ def patch_data_dir(temp_data_dir):
 
     # Patch memory module
     try:
-        from plugins.core.data import memory
+        from src.core.data import memory
         p2 = patch.object(memory, 'DATA_DIR', temp_data_dir)
         p2.start()
         patches.append(p2)
@@ -129,7 +129,7 @@ def test_db(patch_data_dir):
 
     Returns the database path after initializing schema.
     """
-    from plugins.core.data import topics
+    from src.core.data import topics
 
     db_path = patch_data_dir / "topics" / "db.sqlite"
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -216,15 +216,15 @@ def mock_llm_client():
 @pytest.fixture
 def mock_emit_event():
     """Mock event emission to avoid side effects."""
-    with patch('plugins.core.data.topics._emit_event') as mock:
+    with patch('src.core.data.topics._emit_event') as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_emit_ui_event():
     """Mock UI event emission and topics update notification."""
-    with patch('plugins.core.data.topics._emit_topics_update') as mock_update:
-        with patch('plugins.core.data.topics._notify_agent_has_topics') as mock_notify:
+    with patch('src.core.data.topics._emit_topics_update') as mock_update:
+        with patch('src.core.data.topics._notify_agent_has_topics') as mock_notify:
             yield mock_update, mock_notify
 
 

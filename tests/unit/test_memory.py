@@ -15,7 +15,7 @@ class TestShortTermMemory:
 
     def test_add_memory(self, patch_data_dir):
         """Add a memory item."""
-        from plugins.core.data.memory import add_memory
+        from src.core.data.memory import add_memory
 
         # Create agent directory
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
@@ -34,7 +34,7 @@ class TestShortTermMemory:
 
     def test_add_memory_with_expected_date(self, patch_data_dir):
         """Add a memory item with expected date."""
-        from plugins.core.data.memory import add_memory
+        from src.core.data.memory import add_memory
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -50,7 +50,7 @@ class TestShortTermMemory:
 
     def test_list_memory_returns_valid_only(self, patch_data_dir):
         """list_memory returns only valid entries."""
-        from plugins.core.data.memory import add_memory, list_memory
+        from src.core.data.memory import add_memory, list_memory
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -69,7 +69,7 @@ class TestShortTermMemory:
 
     def test_remove_memory(self, patch_data_dir):
         """Remove a memory item by ID."""
-        from plugins.core.data.memory import add_memory, remove_memory, list_memory
+        from src.core.data.memory import add_memory, remove_memory, list_memory
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -88,7 +88,7 @@ class TestShortTermMemory:
 
     def test_remove_memory_not_found(self, patch_data_dir):
         """Remove non-existent memory returns error."""
-        from plugins.core.data.memory import remove_memory
+        from src.core.data.memory import remove_memory
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -102,7 +102,7 @@ class TestLongTermMemory:
 
     def test_write_long_term_memory(self, patch_data_dir):
         """Write an entry to long-term memory."""
-        from plugins.core.data.memory import write_long_term_memory
+        from src.core.data.memory import write_long_term_memory
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -128,7 +128,7 @@ class TestLongTermMemory:
 
     def test_write_long_term_memory_appends(self, patch_data_dir):
         """Multiple writes to same day append to file."""
-        from plugins.core.data.memory import write_long_term_memory
+        from src.core.data.memory import write_long_term_memory
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -150,7 +150,7 @@ class TestMemoryGraduation:
 
     def test_graduate_memory(self, patch_data_dir):
         """Graduate a short-term memory to long-term."""
-        from plugins.core.data.memory import add_memory, graduate_memory, list_memory
+        from src.core.data.memory import add_memory, graduate_memory, list_memory
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -174,7 +174,7 @@ class TestMemoryGraduation:
 
     def test_graduate_memory_not_found(self, patch_data_dir):
         """Graduate non-existent memory returns error."""
-        from plugins.core.data.memory import graduate_memory
+        from src.core.data.memory import graduate_memory
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -188,7 +188,7 @@ class TestMemoryPersistence:
 
     def test_short_term_persistence(self, patch_data_dir):
         """Short-term memory persists to JSONL file."""
-        from plugins.core.data.memory import add_memory, _get_short_term_path
+        from src.core.data.memory import add_memory, _get_short_term_path
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -210,7 +210,7 @@ class TestMemoryPersistence:
 
     def test_long_term_uses_year_directory(self, patch_data_dir):
         """Long-term memory uses year-based directory structure."""
-        from plugins.core.data.memory import write_long_term_memory, _get_long_term_dir
+        from src.core.data.memory import write_long_term_memory, _get_long_term_dir
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -232,7 +232,7 @@ class TestMemoryForPrompt:
 
     def test_get_memory_for_prompt_empty(self, patch_data_dir):
         """Empty memory returns empty string."""
-        from plugins.core.data.memory import get_memory_for_prompt
+        from src.core.data.memory import get_memory_for_prompt
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -242,7 +242,7 @@ class TestMemoryForPrompt:
 
     def test_get_memory_for_prompt_formatted(self, patch_data_dir):
         """Memory is formatted with headers and types."""
-        from plugins.core.data.memory import add_memory, get_memory_for_prompt
+        from src.core.data.memory import add_memory, get_memory_for_prompt
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -272,7 +272,7 @@ class TestMemoryDirectoryCreation:
 
     def test_ensure_memory_dirs(self, patch_data_dir):
         """Memory directories are created automatically."""
-        from plugins.core.data.memory import _ensure_memory_dirs
+        from src.core.data.memory import _ensure_memory_dirs
 
         _ensure_memory_dirs("new-agent")
 
@@ -291,7 +291,7 @@ class TestMemoryExpiration:
 
     def test_is_valid_within_90_days(self, patch_data_dir):
         """Entry within 90 days is valid."""
-        from plugins.core.data.memory import _is_valid
+        from src.core.data.memory import _is_valid
 
         today = datetime.now().strftime('%Y-%m-%d')
         entry = {"date_mentioned": today, "short_description": "Recent"}
@@ -300,7 +300,7 @@ class TestMemoryExpiration:
 
     def test_is_valid_at_89_days(self, patch_data_dir):
         """Entry at 89 days is still valid (within 90-day window)."""
-        from plugins.core.data.memory import _is_valid
+        from src.core.data.memory import _is_valid
 
         # 89 days ago is safely within the 90-day window
         recent = (datetime.now() - timedelta(days=89)).strftime('%Y-%m-%d')
@@ -310,7 +310,7 @@ class TestMemoryExpiration:
 
     def test_is_valid_expired_at_91_days(self, patch_data_dir):
         """Entry at 91 days is expired."""
-        from plugins.core.data.memory import _is_valid
+        from src.core.data.memory import _is_valid
 
         expired = (datetime.now() - timedelta(days=91)).strftime('%Y-%m-%d')
         entry = {"date_mentioned": expired, "short_description": "Old"}
@@ -319,7 +319,7 @@ class TestMemoryExpiration:
 
     def test_is_valid_missing_date(self, patch_data_dir):
         """Entry without date_mentioned is invalid."""
-        from plugins.core.data.memory import _is_valid
+        from src.core.data.memory import _is_valid
 
         entry = {"short_description": "No date"}
 
@@ -327,7 +327,7 @@ class TestMemoryExpiration:
 
     def test_is_valid_malformed_date(self, patch_data_dir):
         """Entry with malformed date is invalid."""
-        from plugins.core.data.memory import _is_valid
+        from src.core.data.memory import _is_valid
 
         entry = {"date_mentioned": "not-a-date", "short_description": "Bad date"}
 
@@ -342,7 +342,7 @@ class TestMemoryArchival:
 
     def test_archive_expired_memories_writes_to_long_term(self, patch_data_dir):
         """Expired memories are archived to long-term memory."""
-        from plugins.core.data.memory import _archive_expired_memories, _ensure_memory_dirs
+        from src.core.data.memory import _archive_expired_memories, _ensure_memory_dirs
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -381,7 +381,7 @@ class TestMemoryArchival:
 
     def test_archive_expired_memories_includes_expected_date(self, patch_data_dir):
         """Archive includes expected date when present."""
-        from plugins.core.data.memory import _archive_expired_memories, _ensure_memory_dirs
+        from src.core.data.memory import _archive_expired_memories, _ensure_memory_dirs
 
         agent_dir = patch_data_dir / "agents" / "test-agent" / "memory"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -408,7 +408,7 @@ class TestMemoryArchival:
 
     def test_list_memory_archives_expired_entries(self, patch_data_dir):
         """list_memory automatically archives expired entries."""
-        from plugins.core.data.memory import (
+        from src.core.data.memory import (
             _save_entries, _ensure_memory_dirs, list_memory
         )
 
@@ -454,7 +454,7 @@ class TestMemoryArchival:
 
     def test_list_memory_prunes_expired_from_file(self, patch_data_dir):
         """list_memory removes expired entries from short-term file."""
-        from plugins.core.data.memory import (
+        from src.core.data.memory import (
             _save_entries, _load_entries, _ensure_memory_dirs, list_memory
         )
 

@@ -73,7 +73,7 @@ def _show_system_prompt(agent_id: str, json_mode: bool):
 def _show_topic_prompt(agent_id: str, topic_id: str, json_mode: bool):
     """Show the prompt that would be sent for a topic."""
     from ...agent import Agent
-    from plugins.core.data.topics import get_topic
+    from src.core.data.topics import get_topic
 
     topic = get_topic(topic_id)
     if not topic:

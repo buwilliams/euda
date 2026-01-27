@@ -30,7 +30,7 @@ from .regulation import (
     get_incident_tracker,
 )
 # Consolidation is now in tools/system/consolidation
-from plugins.core.system.consolidation import Consolidation
+from src.core.system.consolidation import Consolidation
 
 __all__ = [
     # Main class

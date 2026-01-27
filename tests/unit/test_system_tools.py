@@ -23,7 +23,7 @@ class TestDoneWorking:
 
         Design: This signals the work cycle loop to exit.
         """
-        from plugins.core.system.system import done_working, set_agent_context, clear_agent_context
+        from src.core.system.system import done_working, set_agent_context, clear_agent_context
 
         # Mock agent
         mock_agent = MagicMock()
@@ -44,7 +44,7 @@ class TestDoneWorking:
 
         Design: Logging provides visibility into what agents accomplished.
         """
-        from plugins.core.system.system import done_working, set_agent_context, clear_agent_context
+        from src.core.system.system import done_working, set_agent_context, clear_agent_context
 
         mock_agent = MagicMock()
         mock_agent._log = MagicMock()
@@ -59,7 +59,7 @@ class TestDoneWorking:
 
     def test_done_working_without_summary(self):
         """done_working works without a summary."""
-        from plugins.core.system.system import done_working, set_agent_context, clear_agent_context
+        from src.core.system.system import done_working, set_agent_context, clear_agent_context
 
         mock_agent = MagicMock()
         mock_agent._log = MagicMock()
@@ -78,7 +78,7 @@ class TestDoneWorking:
 
         This can happen in testing or standalone usage.
         """
-        from plugins.core.system.system import done_working, clear_agent_context
+        from src.core.system.system import done_working, clear_agent_context
 
         clear_agent_context()
         result = done_working("Test")
@@ -92,7 +92,7 @@ class TestAgentContext:
 
     def test_set_and_get_context(self):
         """Agent context can be set and retrieved."""
-        from plugins.core.system.system import (
+        from src.core.system.system import (
             set_agent_context, get_agent_context, clear_agent_context
         )
 
@@ -109,7 +109,7 @@ class TestAgentContext:
 
     def test_clear_context(self):
         """Agent context can be cleared."""
-        from plugins.core.system.system import (
+        from src.core.system.system import (
             set_agent_context, get_agent_context, clear_agent_context
         )
 
@@ -124,7 +124,7 @@ class TestGetCurrentDate:
 
     def test_get_current_date_returns_date(self):
         """get_current_date returns current date info."""
-        from plugins.core.system.dates import get_current_date
+        from src.core.system.dates import get_current_date
 
         result = get_current_date()
 
@@ -133,7 +133,7 @@ class TestGetCurrentDate:
 
     def test_get_current_date_format(self):
         """get_current_date date format is ISO (YYYY-MM-DD)."""
-        from plugins.core.system.dates import get_current_date
+        from src.core.system.dates import get_current_date
 
         result = get_current_date()
 

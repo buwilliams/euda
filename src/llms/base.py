@@ -17,7 +17,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, List, Dict
 
-from ..agent.logger import get_logger
+from src.logger import get_logger
 
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"

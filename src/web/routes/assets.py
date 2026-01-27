@@ -4,7 +4,7 @@ Assets API Routes - endpoints for cross-topic asset operations
 
 from fastapi import APIRouter
 
-from plugins.core.data.assets import list_recent_assets
+from src.core.data.assets import list_recent_assets
 
 
 router = APIRouter()

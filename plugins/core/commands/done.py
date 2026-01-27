@@ -7,7 +7,7 @@ import typer
 
 def _get_system_module():
     """Lazy import of system module."""
-    from plugins.core.system.system import done_working
+    from src.core.system.system import done_working
     return {
         "done_working": done_working,
     }

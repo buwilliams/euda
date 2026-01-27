@@ -8,7 +8,7 @@ app = typer.Typer(no_args_is_help=True)
 
 def _get_assets_module():
     """Lazy import of assets module."""
-    from plugins.core.data.assets import (
+    from src.core.data.assets import (
         list_assets, read_asset, write_asset, delete_asset
     )
     return {

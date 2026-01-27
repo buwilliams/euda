@@ -167,7 +167,7 @@ def _show_long_term(agent_id: str, json_mode: bool, days: int = 7):
 
 def _add_memory(agent_id: str, mem_type: str, description: str, json_mode: bool):
     """Add a memory entry manually."""
-    from plugins.core.data.memory import add_memory, VALID_TYPES
+    from src.core.data.memory import add_memory, VALID_TYPES
 
     if mem_type not in VALID_TYPES:
         print_error(f"Invalid memory type: {mem_type}. Valid types: {', '.join(VALID_TYPES)}", json_mode)
@@ -189,7 +189,7 @@ def _add_memory(agent_id: str, mem_type: str, description: str, json_mode: bool)
 
 def _graduate_memory(agent_id: str, mem_id: str, json_mode: bool):
     """Graduate a memory to long-term."""
-    from plugins.core.data.memory import graduate_memory
+    from src.core.data.memory import graduate_memory
 
     result = graduate_memory(
         memory_id=mem_id,

@@ -20,7 +20,7 @@ from .regulation.config import MetacognitionConfig
 from .regulation.tokens import get_token_awareness, TokenAwareness, AgentState
 from .regulation.progress import get_progress_tracker, ProgressTracker
 from ..reasoning.planning import Planner
-from ...logger import get_logger
+from src.logger import get_logger
 
 if TYPE_CHECKING:
     from ...agent import Agent

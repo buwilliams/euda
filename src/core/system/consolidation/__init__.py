@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Callable
 
-from src.agent.logger import get_logger
+from src.logger import get_logger
 
 if TYPE_CHECKING:
     from src.agent.agent import Agent

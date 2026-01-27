@@ -8,19 +8,19 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
-from plugins.core.agents.agents import (
+from src.core.agents.agents import (
     list_agents, get_agent,
     get_agent_identity, update_agent_identity,
     get_agent_config, update_agent_config
 )
-from plugins.core.agents.monitoring import get_agent_monitoring
-from plugins.core.data.topics import get_topics_completed_by_agent, create_topic, get_agent_inbox_topic
-from plugins.core.data.identity import get_identity, update_identity
-from plugins.core.data.memory import (
+from src.core.agents.monitoring import get_agent_monitoring
+from src.core.data.topics import get_topics_completed_by_agent, create_topic, get_agent_inbox_topic
+from src.core.data.identity import get_identity, update_identity
+from src.core.data.memory import (
     list_memory, add_memory, remove_memory, write_long_term_memory
 )
 from ...agent.rlm import read_memory_date, list_memory_dates
-from ...agent.logger import get_logger
+from src.logger import get_logger
 from ...agent.cognition.metacognition import get_token_awareness, AgentState
 
 
@@ -400,7 +400,7 @@ def api_get_active_executions(agent_id: str):
     Returns:
         List of active executions with execution_id, phase, topic_id, created_at
     """
-    from plugins.core.data.topics import list_topics
+    from src.core.data.topics import list_topics
 
     # Verify agent exists
     config = get_agent_config(agent_id)

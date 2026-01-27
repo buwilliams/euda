@@ -99,7 +99,7 @@ class TestStartupTriggers:
         Spec: Disabled agents never process topics.
         """
         from src.agent.manager import AgentManager
-        from plugins.core.data.topics import list_topics
+        from src.core.data.topics import list_topics
 
         # Create disabled agent with event trigger
         config = {
@@ -544,7 +544,7 @@ class TestSchedulerEventMatching:
         Spec: event key maps to schedule names in system config.
         """
         from src.agent.manager import AgentManager
-        from plugins.core.data.topics import list_topics
+        from src.core.data.topics import list_topics
 
         # Create agent with evening event trigger
         config = {
@@ -596,7 +596,7 @@ class TestSchedulerEventMatching:
         Spec: Only matching events trigger topic creation.
         """
         from src.agent.manager import AgentManager
-        from plugins.core.data.topics import list_topics
+        from src.core.data.topics import list_topics
 
         # Create agent with morning event trigger
         config = {
@@ -655,7 +655,7 @@ class TestSchedulerEventMatching:
         Spec: topic_description is used when creating the trigger topic.
         """
         from src.agent.manager import AgentManager
-        from plugins.core.data.topics import list_topics
+        from src.core.data.topics import list_topics
 
         config = {
             "id": "desc-test",
@@ -795,7 +795,7 @@ class TestTriggerActionTypes:
         Spec: Prevent duplicate topics while a topic is being executed (status=working).
         """
         from src.agent.manager import AgentManager
-        from plugins.core.data.topics import create_topic, claim_topic
+        from src.core.data.topics import create_topic, claim_topic
 
         manager = AgentManager()
 
@@ -819,7 +819,7 @@ class TestTriggerActionTypes:
         Spec: Prevent duplicate topics when a topic is pending.
         """
         from src.agent.manager import AgentManager
-        from plugins.core.data.topics import create_topic
+        from src.core.data.topics import create_topic
 
         manager = AgentManager()
 
@@ -842,7 +842,7 @@ class TestTriggerActionTypes:
         Spec: Completed topics should not block creating new ones.
         """
         from src.agent.manager import AgentManager
-        from plugins.core.data.topics import create_topic, complete_topic
+        from src.core.data.topics import create_topic, complete_topic
 
         manager = AgentManager()
 
@@ -873,7 +873,7 @@ class TestTopicCacheNotification:
         Spec: Cache is shared across threads - when topic assigned, cache is notified.
         """
         from src.agent.manager import AgentManager, set_manager, get_manager
-        from plugins.core.data.topics import _notify_agent_has_topics
+        from src.core.data.topics import _notify_agent_has_topics
 
         manager = AgentManager()
         set_manager(manager)
@@ -895,14 +895,14 @@ class TestTopicCacheNotification:
         Spec: When agent A assigns to agent B, cache is notified immediately.
         """
         from src.agent.manager import AgentManager, set_manager
-        from plugins.core.data.topics import create_topic
+        from src.core.data.topics import create_topic
 
         manager = AgentManager()
         set_manager(manager)
 
         # Create topic with assignee
-        with patch('plugins.core.data.topics._notify_agent_has_topics') as mock_notify:
-            with patch('plugins.core.data.topics._emit_topics_update'):
+        with patch('src.core.data.topics._notify_agent_has_topics') as mock_notify:
+            with patch('src.core.data.topics._emit_topics_update'):
                 create_topic(
                     name="Test Topic",
                     assignee="worker-agent",
@@ -921,14 +921,14 @@ class TestTopicCacheNotification:
         Spec: Topic assignment immediately notifies the cache.
         """
         from src.agent.manager import AgentManager, set_manager
-        from plugins.core.data.topics import create_topic, assign_agent
+        from src.core.data.topics import create_topic, assign_agent
 
         manager = AgentManager()
         set_manager(manager)
 
         # Create topic without assignee
-        with patch('plugins.core.data.topics._notify_agent_has_topics'):
-            with patch('plugins.core.data.topics._emit_topics_update'):
+        with patch('src.core.data.topics._notify_agent_has_topics'):
+            with patch('src.core.data.topics._emit_topics_update'):
                 topic = create_topic(
                     name="Unassigned Topic",
                     assignee=None,
@@ -937,9 +937,9 @@ class TestTopicCacheNotification:
                 )
 
         # Assign to agent
-        with patch('plugins.core.data.topics._notify_agent_has_topics') as mock_notify:
-            with patch('plugins.core.data.topics._emit_topics_update'):
-                with patch('plugins.core.data.topics._emit_event'):
+        with patch('src.core.data.topics._notify_agent_has_topics') as mock_notify:
+            with patch('src.core.data.topics._emit_topics_update'):
+                with patch('src.core.data.topics._emit_event'):
                     assign_agent(topic["id"], "new-assignee")
 
             mock_notify.assert_called_with("new-assignee")
@@ -952,14 +952,14 @@ class TestTopicCacheNotification:
         Spec: Topic handoff notifies the receiving agent's cache.
         """
         from src.agent.manager import AgentManager, set_manager
-        from plugins.core.data.topics import create_topic, handoff_topic
+        from src.core.data.topics import create_topic, handoff_topic
 
         manager = AgentManager()
         set_manager(manager)
 
         # Create topic assigned to agent A
-        with patch('plugins.core.data.topics._notify_agent_has_topics'):
-            with patch('plugins.core.data.topics._emit_topics_update'):
+        with patch('src.core.data.topics._notify_agent_has_topics'):
+            with patch('src.core.data.topics._emit_topics_update'):
                 topic = create_topic(
                     name="Handoff Topic",
                     assignee="agent-a",
@@ -968,9 +968,9 @@ class TestTopicCacheNotification:
                 )
 
         # Handoff to agent B
-        with patch('plugins.core.data.topics._notify_agent_has_topics') as mock_notify:
-            with patch('plugins.core.data.topics._emit_topics_update'):
-                with patch('plugins.core.data.topics._emit_event'):
+        with patch('src.core.data.topics._notify_agent_has_topics') as mock_notify:
+            with patch('src.core.data.topics._emit_topics_update'):
+                with patch('src.core.data.topics._emit_event'):
                     handoff_topic(topic["id"], "agent-b", "Please review")
 
             mock_notify.assert_called_with("agent-b")

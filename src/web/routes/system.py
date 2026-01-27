@@ -13,8 +13,8 @@ from pydantic import BaseModel
 
 from ...llms import get_model, get_provider, get_providers_config, invalidate_client
 from ...llms.base import _load_config, LLM_CONFIG_PATH, VALID_PROVIDERS
-from plugins.core.data.topics import list_topics
-from plugins.core.system.fresh_start import (
+from src.core.data.topics import list_topics
+from src.core.system.fresh_start import (
     perform_fresh_start,
     list_backups as _list_backups,
     restore_backup as _restore_backup,
@@ -61,7 +61,7 @@ def _get_latest_quote_from_topics() -> dict:
     Returns:
         Dict with 'quote' and 'author' keys, or None if no quote found
     """
-    from plugins.core.data.assets import read_asset
+    from src.core.data.assets import read_asset
 
     # Get completed topics and filter for quote topics
     all_topics = list_topics(status="done")

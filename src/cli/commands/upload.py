@@ -42,8 +42,8 @@ def cmd_upload(args: List[str], json_mode: bool = False):
 
 def _upload_to_topic(topic_id: str, file_path: Path, json_mode: bool):
     """Upload file to an existing topic."""
-    from plugins.core.data.topics import get_topic
-    from plugins.core.data.assets import write_asset
+    from src.core.data.topics import get_topic
+    from src.core.data.assets import write_asset
 
     # Verify topic exists
     topic = get_topic(topic_id)
@@ -90,8 +90,8 @@ def _upload_to_agent(agent_id: str, file_path: Path, json_mode: bool):
         print_error("Only text files are supported for upload", json_mode)
         sys.exit(1)
 
-    from plugins.core.data.topics import create_topic, get_agent_inbox_topic
-    from plugins.core.data.assets import write_asset
+    from src.core.data.topics import create_topic, get_agent_inbox_topic
+    from src.core.data.assets import write_asset
 
     # Create topic under agent's inbox
     inbox = get_agent_inbox_topic(agent_id)

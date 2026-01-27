@@ -67,7 +67,7 @@ def cmd_topic(args: List[str], json_mode: bool = False):
         sys.exit(1)
 
     # Create the topic under agent's inbox
-    from plugins.core.data.topics import create_topic, get_agent_inbox_topic
+    from src.core.data.topics import create_topic, get_agent_inbox_topic
 
     inbox = get_agent_inbox_topic(agent_id)
     parent_id = inbox["id"] if inbox else None
@@ -132,7 +132,7 @@ def cmd_run(args: List[str], json_mode: bool = False):
         sys.exit(1)
 
     # Get the topic
-    from plugins.core.data.topics import get_topic
+    from src.core.data.topics import get_topic
 
     topic = get_topic(topic_id)
     if not topic:

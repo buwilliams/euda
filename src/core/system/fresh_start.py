@@ -295,7 +295,7 @@ def _clear_logger_caches():
     """Clear all logger caches and in-memory state to prevent stale data."""
     # Clear general loggers
     try:
-        from src.agent.logger import _loggers
+        from src.logger import _loggers
         _loggers.clear()
     except Exception:
         pass

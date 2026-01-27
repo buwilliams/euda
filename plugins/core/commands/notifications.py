@@ -9,7 +9,7 @@ app = typer.Typer(no_args_is_help=True)
 
 def _get_notifications_module():
     """Lazy import of notifications module."""
-    from plugins.core.system.notifications import (
+    from src.core.system.notifications import (
         send_chat_message, check_user_connected
     )
     return {

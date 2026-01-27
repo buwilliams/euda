@@ -11,7 +11,7 @@ VALID_TYPES = {"person", "place", "thing", "goal", "concern", "idea", "learning"
 
 def _get_memory_module():
     """Lazy import of memory module."""
-    from plugins.core.data.memory import (
+    from src.core.data.memory import (
         add_memory, list_memory, remove_memory,
         write_long_term_memory, graduate_memory,
         recall_memory, analyze_memory
