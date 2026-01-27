@@ -28,6 +28,7 @@ Commands:
   points           Show contribution points summary
   store            Import files into long-term memory using RLM
   dev              Developer tools for debugging agents
+  plugin           Run plugin commands
   set-password     Set the access password (empty to disable auth)
   remove-password  Remove the password (disable auth)
   fresh-start      Reset all user data (memory, topics, logs, password)
@@ -41,6 +42,9 @@ Examples:
   euno points            # Show contribution points
   euno store ~/journal/  # Import journal files to memory
   euno dev help          # Show dev commands
+  euno plugin list       # List available plugins
+  euno plugin core --help  # Show core plugin help
+  euno plugin core topics list  # List topics via plugin
   euno set-password      # Set access password
   euno remove-password   # Disable authentication
   euno fresh-start       # Clean slate (keeps agent configs)
@@ -61,6 +65,7 @@ Examples:
         "points": cmd_points,
         "store": cmd_store,
         "dev": cmd_dev,
+        "plugin": cmd_plugin,
         "set-password": cmd_set_password,
         "remove-password": cmd_remove_password,
         "fresh-start": cmd_fresh_start,
@@ -651,6 +656,65 @@ def cmd_dev(args):
     """Developer tools for debugging and improving agents."""
     from src.cli import cmd_dev as dev_main
     dev_main(args)
+
+
+def cmd_plugin(args):
+    """Run plugin commands.
+
+    Usage:
+        euno plugin list                    # List available plugins
+        euno plugin <name> --help           # Show plugin help
+        euno plugin <name> <command>        # Execute plugin command
+    """
+    from src.plugins import discover_plugins, execute_plugin, get_plugin_usage
+    from src.plugins.exceptions import PluginError
+
+    if not args or args[0] == "help":
+        print("=" * 60)
+        print("Euno - Plugins")
+        print("=" * 60)
+        print()
+        print("Usage:")
+        print("  euno plugin list                    # List available plugins")
+        print("  euno plugin <name> --help           # Show plugin help")
+        print("  euno plugin <name> <command>        # Execute plugin command")
+        print()
+        print("Examples:")
+        print("  euno plugin core topics list")
+        print("  euno plugin core topics create 'My topic'")
+        print("  euno plugin core memory list")
+        return
+
+    if args[0] == "list":
+        plugins = discover_plugins()
+        print("=" * 60)
+        print("Euno - Available Plugins")
+        print("=" * 60)
+        print()
+        if not plugins:
+            print("No plugins found.")
+            return
+        for plugin in plugins:
+            if plugin.description:
+                print(f"  {plugin.name}: {plugin.description}")
+            else:
+                print(f"  {plugin.name}")
+        print()
+        print("Use 'euno plugin <name> --help' for plugin details.")
+        return
+
+    # Plugin name is first arg, rest is the command
+    plugin_name = args[0]
+    command = " ".join(args[1:]) if len(args) > 1 else "--help"
+
+    try:
+        result = execute_plugin(plugin_name, command)
+        print(result.output)
+        if not result.success:
+            sys.exit(result.exit_code)
+    except PluginError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -27,6 +27,7 @@ dependencies = [
     "rarfile>=4.0",
     "bcrypt>=4.0.0",
     "xai-sdk>=1.5.0",
+    "typer>=0.9.0",
 ]
 
 [project.scripts]
