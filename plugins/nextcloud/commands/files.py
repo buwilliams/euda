@@ -8,7 +8,7 @@ app = typer.Typer(no_args_is_help=True)
 
 def _get_files_module():
     """Lazy import of nextcloud files module."""
-    from src.tools.integration.nextcloud.files import (
+    from plugins.nextcloud.lib.files import (
         nc_list_files, nc_read_file, nc_write_file,
         nc_delete_file, nc_create_folder, nc_move_file
     )

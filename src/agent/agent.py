@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from ..llms import get_client
-from .logger import get_logger
+from src.logger import get_logger
 from .cognition.metacognition import Metacognition, AgentState, AgentPausedError, ProgressLimitExceeded, Consolidation
 
 
@@ -151,8 +151,8 @@ class Agent:
             return ""
 
         # Import from old tools module (still available during transition)
-        from ..tools.data.topics import get_topic
-        from ..tools.data.assets import list_assets, read_asset
+        from src.core.data.topics import get_topic
+        from src.core.data.assets import list_assets, read_asset
 
         topic = get_topic(self._current_topic_id)
         if not topic:
@@ -230,7 +230,7 @@ class Agent:
 
     def _append_to_long_term_memory(self, user_message: str, assistant_response: str):
         """Append a conversation exchange to today's long-term memory."""
-        from ..tools.data.memory import write_long_term_memory
+        from src.core.data.memory import write_long_term_memory
 
         agent_name = self.config.get('name', self.id)
 
@@ -326,18 +326,18 @@ class Agent:
         from ..plugins import get_meta_tools
         return get_meta_tools()
 
-    # Map of euno:* topic names to tool names for direct execution
-    INTERNAL_TOPIC_TOOLS = {
-        "euno:consolidate": "euno_consolidate",
-        "euno:quote": "euno_quote",
+    # Map of euno:* topic names to plugin commands for direct execution
+    INTERNAL_TOPIC_COMMANDS = {
+        "euno:consolidate": ("core", "consolidate run"),
+        "euno:quote": ("core", "quote generate"),
     }
 
     def _is_internal_topic(self, topic_name: str) -> bool:
         """Check if topic is an internal euno:* topic that should be executed directly.
 
-        Internal topics bypass the LLM chat loop and execute their mapped tool directly.
+        Internal topics bypass the LLM chat loop and execute their mapped plugin command directly.
         """
-        for prefix in self.INTERNAL_TOPIC_TOOLS:
+        for prefix in self.INTERNAL_TOPIC_COMMANDS:
             if topic_name.startswith(prefix):
                 return True
         return False
@@ -351,7 +351,7 @@ class Agent:
         Returns:
             True if topic no longer exists or is no longer in 'working' status
         """
-        from ..tools.data.topics import get_topic
+        from src.core.data.topics import get_topic
 
         topic = get_topic(topic_id)
         if topic is None:
@@ -361,65 +361,79 @@ class Agent:
         return False
 
     def _execute_internal_topic(self, topic: dict):
-        """Execute an internal euno:* topic by calling its mapped tool directly.
+        """Execute an internal euno:* topic by calling its mapped plugin command.
 
         Internal topics bypass the LLM chat loop entirely for efficiency.
-        The tool is executed directly and the topic is completed.
+        The plugin command is executed and the topic is completed.
         """
-        from ..tools import execute_tool
-        from ..tools.data.topics import complete_topic
+        from ..plugins import execute_plugin
+        from src.core.data.topics import complete_topic
 
         topic_id = topic.get("id")
         topic_name = topic.get("name", "")
 
-        # Find matching tool
-        tool_name = None
-        for prefix, tool in self.INTERNAL_TOPIC_TOOLS.items():
+        # Find matching plugin command
+        plugin_cmd = None
+        for prefix, cmd in self.INTERNAL_TOPIC_COMMANDS.items():
             if topic_name.startswith(prefix):
-                tool_name = tool
+                plugin_cmd = cmd
                 break
 
-        if not tool_name:
+        if not plugin_cmd:
             self._log("internal_topic_unknown", {"topic_id": topic_id, "topic_name": topic_name})
             return
+
+        plugin_name, base_command = plugin_cmd
 
         self._log("internal_topic_start", {
             "topic_id": topic_id,
             "topic_name": topic_name,
-            "tool": tool_name
+            "plugin": plugin_name,
+            "command": base_command
         })
 
         try:
-            # Build tool inputs based on topic
-            inputs = {"agent_id": self.id, "topic_id": topic_id}
+            # Build command with options
+            command = base_command
 
-            # For euno:consolidate, extract phase from topic description
-            if tool_name == "euno_consolidate":
+            # For consolidate, extract phase from topic description
+            if "consolidate" in base_command:
                 description = topic.get("description", "")
                 if "phase: append" in description:
-                    inputs["phase"] = "append"
+                    command += " --phase append"
                 elif "phase: consolidate" in description:
-                    inputs["phase"] = "consolidate"
+                    command += " --phase consolidate"
                 elif "phase: both" in description:
-                    inputs["phase"] = "both"
-                # Default to "consolidate" if not specified
+                    command += " --phase both"
 
-            # Execute tool directly
-            result = execute_tool(tool_name, inputs)
+            # For quote, add topic ID
+            if "quote" in base_command:
+                command += f" --topic {topic_id}"
+
+            # Execute plugin command
+            result = execute_plugin(
+                plugin_name,
+                command,
+                agent_id=self.id,
+                topic_id=topic_id
+            )
 
             # Complete topic
             complete_topic(topic_id)
 
             self._log("internal_topic_complete", {
                 "topic_id": topic_id,
-                "tool": tool_name,
-                "result": result
+                "plugin": plugin_name,
+                "command": command,
+                "success": result.success,
+                "output": result.output[:500] if result.output else ""
             })
 
         except Exception as e:
             self._log("internal_topic_error", {
                 "topic_id": topic_id,
-                "tool": tool_name,
+                "plugin": plugin_name,
+                "command": command,
                 "error": str(e)
             })
             # Don't re-raise - topic stays in todo for retry
@@ -434,8 +448,8 @@ class Agent:
 
     def _format_topic_prompt(self, topic: dict, remaining: int = 0) -> str:
         """Format a topic as a standardized prompt for the agent."""
-        from ..tools.data.assets import list_assets
-        from ..tools.data.memory import get_memory_for_prompt
+        from src.core.data.assets import list_assets
+        from src.core.data.memory import get_memory_for_prompt
         from .cognition.reasoning.prompts import render_template
 
         assets = list_assets(topic['id'])
@@ -569,7 +583,7 @@ class Agent:
         """Execute tool calls (meta-tools for plugin system) and return results."""
         import json
         from ..plugins import execute_meta_tool
-        from ..tools.system.system import set_agent_context, clear_agent_context
+        from src.core.system.system import set_agent_context, clear_agent_context
 
         # Set agent context so tools can access this agent
         set_agent_context(self)
@@ -627,7 +641,7 @@ class Agent:
         Args:
             trigger_context: Optional event data that triggered this cycle
         """
-        from ..tools.data.topics import list_topics, claim_topic, release_topic, error_topic
+        from src.core.data.topics import list_topics, claim_topic, release_topic, error_topic
 
         self._log("work_cycle_start", {"trigger": trigger_context})
         self._work_done = False

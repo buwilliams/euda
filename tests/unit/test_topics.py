@@ -14,7 +14,7 @@ class TestTopicCreation:
 
     def test_create_topic_basic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Create a basic topicwith minimal fields."""
-        from src.tools.data.topics import create_topic
+        from src.core.data.topics import create_topic
 
         topic= create_topic(name="Test Topic", parent_id=None, created_by="test")
 
@@ -25,7 +25,7 @@ class TestTopicCreation:
 
     def test_create_topic_with_all_fields(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Create a topicwith all optional fields."""
-        from src.tools.data.topics import create_topic
+        from src.core.data.topics import create_topic
 
         topic= create_topic(
             name="Full Topic",
@@ -47,7 +47,7 @@ class TestTopicCreation:
 
     def test_create_topic_with_someday(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Create a someday/maybe topic."""
-        from src.tools.data.topics import create_topic
+        from src.core.data.topics import create_topic
 
         topic= create_topic(name="Maybe Later", someday=True, parent_id=None, created_by="test")
 
@@ -55,7 +55,7 @@ class TestTopicCreation:
 
     def test_create_topic_adds_log_entry(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Created topicshould have initial log entry."""
-        from src.tools.data.topics import create_topic
+        from src.core.data.topics import create_topic
 
         topic= create_topic(name="Logged Topic", parent_id=None, created_by="test")
 
@@ -69,7 +69,7 @@ class TestTopicRetrieval:
 
     def test_get_topic_exists(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Get an existing topicby ID."""
-        from src.tools.data.topics import create_topic, get_topic
+        from src.core.data.topics import create_topic, get_topic
 
         created = create_topic(name="Find Me", parent_id=None, created_by="test")
         found = get_topic(created["id"])
@@ -80,7 +80,7 @@ class TestTopicRetrieval:
 
     def test_get_topic_not_exists(self, test_db):
         """Get a non-existent topicreturns None."""
-        from src.tools.data.topics import get_topic
+        from src.core.data.topics import get_topic
 
         result = get_topic("topic-nonexistent")
 
@@ -88,7 +88,7 @@ class TestTopicRetrieval:
 
     def test_list_topics_by_status(self, test_db, mock_emit_event, mock_emit_ui_event):
         """List topics filtered by status."""
-        from src.tools.data.topics import create_topic, complete_topic, list_topics
+        from src.core.data.topics import create_topic, complete_topic, list_topics
 
         topic1 = create_topic(name="Todo Topic", parent_id=None, created_by="test")
         topic2 = create_topic(name="Done Topic", parent_id=None, created_by="test")
@@ -106,7 +106,7 @@ class TestTopicRetrieval:
 
     def test_list_topics_by_tag(self, test_db, mock_emit_event, mock_emit_ui_event):
         """List topics filtered by tag."""
-        from src.tools.data.topics import create_topic, list_topics
+        from src.core.data.topics import create_topic, list_topics
 
         topic1 = create_topic(name="Tagged Topic", tags=["important"], parent_id=None, created_by="test")
         topic2 = create_topic(name="Untagged Topic", parent_id=None, created_by="test")
@@ -123,7 +123,7 @@ class TestTopicUpdate:
 
     def test_update_topic_name(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Update topicname."""
-        from src.tools.data.topics import create_topic, update_topic
+        from src.core.data.topics import create_topic, update_topic
 
         topic= create_topic(name="Original", parent_id=None, created_by="test")
         updated = update_topic(topic["id"], name="Updated")
@@ -132,7 +132,7 @@ class TestTopicUpdate:
 
     def test_update_topic_tags(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Update topictags."""
-        from src.tools.data.topics import create_topic, update_topic
+        from src.core.data.topics import create_topic, update_topic
 
         topic= create_topic(name="Tagged", tags=["old"], parent_id=None, created_by="test")
         updated = update_topic(topic["id"], tags=["new1", "new2"])
@@ -141,7 +141,7 @@ class TestTopicUpdate:
 
     def test_update_topic_not_found(self, test_db):
         """Update non-existent topicreturns error."""
-        from src.tools.data.topics import update_topic
+        from src.core.data.topics import update_topic
 
         result = update_topic("topic-nonexistent", name="New Name")
 
@@ -149,7 +149,7 @@ class TestTopicUpdate:
 
     def test_update_topic_cannot_set_working_status(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Cannot set status to 'working' via update_topic - must use claim_topic."""
-        from src.tools.data.topics import create_topic, update_topic
+        from src.core.data.topics import create_topic, update_topic
 
         topic= create_topic(name="Test Topic", assignee="agent1", parent_id=None, created_by="test")
         result = update_topic(topic["id"], status="working")
@@ -163,7 +163,7 @@ class TestTopicCompletion:
 
     def test_complete_topic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Complete a topic."""
-        from src.tools.data.topics import create_topic, complete_topic
+        from src.core.data.topics import create_topic, complete_topic
 
         topic= create_topic(name="Complete Me", parent_id=None, created_by="test")
         completed = complete_topic(topic["id"], agent="test")
@@ -173,7 +173,7 @@ class TestTopicCompletion:
 
     def test_complete_topic_adds_log(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Completing topicadds log entry."""
-        from src.tools.data.topics import create_topic, complete_topic
+        from src.core.data.topics import create_topic, complete_topic
 
         topic= create_topic(name="Log Me", parent_id=None, created_by="test")
         completed = complete_topic(topic["id"], agent="test-agent")
@@ -184,7 +184,7 @@ class TestTopicCompletion:
 
     def test_restore_completed_topic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Restore a completed topicback to todo."""
-        from src.tools.data.topics import create_topic, complete_topic, restore_topic
+        from src.core.data.topics import create_topic, complete_topic, restore_topic
 
         topic= create_topic(name="Restore Me", parent_id=None, created_by="test")
         complete_topic(topic["id"], agent="test")
@@ -195,7 +195,7 @@ class TestTopicCompletion:
 
     def test_complete_sets_done_status(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Completing a topicsets status to done."""
-        from src.tools.data.topics import create_topic, claim_topic, complete_topic, get_topic
+        from src.core.data.topics import create_topic, claim_topic, complete_topic, get_topic
 
         topic= create_topic(name="Complete Me", assignee="agent1", parent_id=None, created_by="test")
         claim_topic(topic["id"], "agent1")
@@ -206,7 +206,7 @@ class TestTopicCompletion:
 
     def test_release_noop_for_completed_topic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Release is a no-op for already completed topics - status stays done."""
-        from src.tools.data.topics import create_topic, claim_topic, complete_topic, release_topic, get_topic
+        from src.core.data.topics import create_topic, claim_topic, complete_topic, release_topic, get_topic
 
         topic= create_topic(name="Complete Then Release", assignee="agent1", parent_id=None, created_by="test")
         claim_topic(topic["id"], "agent1")
@@ -224,7 +224,7 @@ class TestTopicClaiming:
 
     def test_claim_topic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Claim a topicfor exclusive work."""
-        from src.tools.data.topics import create_topic, claim_topic, get_topic
+        from src.core.data.topics import create_topic, claim_topic, get_topic
 
         topic= create_topic(name="Claim Me", assignee="agent1", parent_id=None, created_by="test")
         result = claim_topic(topic["id"], "agent1")
@@ -236,7 +236,7 @@ class TestTopicClaiming:
 
     def test_claim_unassigned_fails(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Cannot claim topicnot assigned to the agent."""
-        from src.tools.data.topics import create_topic, claim_topic
+        from src.core.data.topics import create_topic, claim_topic
 
         topic= create_topic(name="Not Yours", assignee="agent1", parent_id=None, created_by="test")
 
@@ -247,7 +247,7 @@ class TestTopicClaiming:
 
     def test_release_topic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Release a claimed topic."""
-        from src.tools.data.topics import create_topic, claim_topic, release_topic, get_topic
+        from src.core.data.topics import create_topic, claim_topic, release_topic, get_topic
 
         topic= create_topic(name="Release Me", assignee="agent1", parent_id=None, created_by="test")
         claim_topic(topic["id"], "agent1")
@@ -262,7 +262,7 @@ class TestTopicError:
 
     def test_error_topic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Mark a topicas failed with error."""
-        from src.tools.data.topics import create_topic, error_topic, get_topic
+        from src.core.data.topics import create_topic, error_topic, get_topic
 
         topic= create_topic(name="Error Me", parent_id=None, created_by="test")
         result = error_topic(topic["id"], "Something went wrong", agent="test-agent")
@@ -271,7 +271,7 @@ class TestTopicError:
 
     def test_error_topic_adds_log(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Error topicshould add log entry with error message."""
-        from src.tools.data.topics import create_topic, error_topic
+        from src.core.data.topics import create_topic, error_topic
 
         topic= create_topic(name="Log Error", parent_id=None, created_by="test")
         result = error_topic(topic["id"], "Database connection failed", agent="worker")
@@ -287,7 +287,7 @@ class TestTopicHierarchy:
 
     def test_create_child_topic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Create a topicunder a parent."""
-        from src.tools.data.topics import create_topic
+        from src.core.data.topics import create_topic
 
         parent = create_topic(name="Parent", parent_id=None, created_by="test")
         child = create_topic(name="Child", parent_id=parent["id"], created_by="test")
@@ -296,7 +296,7 @@ class TestTopicHierarchy:
 
     def test_get_child_topics(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Get all children of a parent topic."""
-        from src.tools.data.topics import create_topic, get_child_topics
+        from src.core.data.topics import create_topic, get_child_topics
 
         parent = create_topic(name="Parent", parent_id=None, created_by="test")
         child1 = create_topic(name="Child 1", parent_id=parent["id"], created_by="test")
@@ -316,7 +316,7 @@ class TestTopicHandoff:
 
     def test_handoff_topic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Hand off a topicto another agent."""
-        from src.tools.data.topics import create_topic, handoff_topic
+        from src.core.data.topics import create_topic, handoff_topic
 
         topic= create_topic(name="Hand Me Off", assignee="agent1", parent_id=None, created_by="test")
         result = handoff_topic(topic["id"], to="agent2", note="Please review", agent="agent1")
@@ -326,7 +326,7 @@ class TestTopicHandoff:
 
     def test_handoff_adds_log(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Handoff should add log entry with note."""
-        from src.tools.data.topics import create_topic, handoff_topic
+        from src.core.data.topics import create_topic, handoff_topic
 
         topic= create_topic(name="Log Handoff", assignee="agent1", parent_id=None, created_by="test")
         result = handoff_topic(topic["id"], to="agent2", note="Check this", agent="agent1")
@@ -337,7 +337,7 @@ class TestTopicHandoff:
 
     def test_handoff_resets_working_to_todo(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Handoff should reset status to 'todo' if currently 'working'."""
-        from src.tools.data.topics import create_topic, claim_topic, handoff_topic, get_topic
+        from src.core.data.topics import create_topic, claim_topic, handoff_topic, get_topic
 
         topic = create_topic(name="Working Topic", assignee="agent1", parent_id=None, created_by="test")
         claim_topic(topic["id"], "agent1")  # Sets status to 'working'
@@ -352,7 +352,7 @@ class TestTopicHandoff:
 
     def test_handoff_leaves_error_status_alone(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Handoff should not change 'error' status."""
-        from src.tools.data.topics import create_topic, error_topic, handoff_topic
+        from src.core.data.topics import create_topic, error_topic, handoff_topic
 
         topic = create_topic(name="Error Topic", assignee="agent1", parent_id=None, created_by="test")
         error_topic(topic["id"], "Something failed", agent="agent1")
@@ -362,7 +362,7 @@ class TestTopicHandoff:
 
     def test_handoff_leaves_todo_status_alone(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Handoff should not change 'todo' status."""
-        from src.tools.data.topics import create_topic, handoff_topic
+        from src.core.data.topics import create_topic, handoff_topic
 
         topic = create_topic(name="Todo Topic", assignee="agent1", parent_id=None, created_by="test")
         assert topic["status"] == "todo"
@@ -376,7 +376,7 @@ class TestTopicAssignment:
 
     def test_assign_agent_basic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Assign an agent to a topic."""
-        from src.tools.data.topics import create_topic, assign_agent
+        from src.core.data.topics import create_topic, assign_agent
 
         topic = create_topic(name="Assign Me", parent_id=None, created_by="test")
         result = assign_agent(topic["id"], "agent1")
@@ -385,7 +385,7 @@ class TestTopicAssignment:
 
     def test_assign_agent_resets_working_to_todo(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Assigning should reset status to 'todo' if currently 'working'."""
-        from src.tools.data.topics import create_topic, claim_topic, assign_agent, get_topic
+        from src.core.data.topics import create_topic, claim_topic, assign_agent, get_topic
 
         topic = create_topic(name="Working Topic", assignee="agent1", parent_id=None, created_by="test")
         claim_topic(topic["id"], "agent1")  # Sets status to 'working'
@@ -401,7 +401,7 @@ class TestTopicAssignment:
 
     def test_assign_agent_leaves_error_status_alone(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Assignment should not change 'error' status."""
-        from src.tools.data.topics import create_topic, error_topic, assign_agent
+        from src.core.data.topics import create_topic, error_topic, assign_agent
 
         topic = create_topic(name="Error Topic", parent_id=None, created_by="test")
         error_topic(topic["id"], "Something failed", agent="test")
@@ -412,7 +412,7 @@ class TestTopicAssignment:
 
     def test_assign_agent_leaves_todo_status_alone(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Assignment should not change 'todo' status."""
-        from src.tools.data.topics import create_topic, assign_agent
+        from src.core.data.topics import create_topic, assign_agent
 
         topic = create_topic(name="Todo Topic", parent_id=None, created_by="test")
         assert topic["status"] == "todo"
@@ -422,7 +422,7 @@ class TestTopicAssignment:
 
     def test_assign_same_agent_returns_error(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Assigning the same agent returns an error."""
-        from src.tools.data.topics import create_topic, assign_agent
+        from src.core.data.topics import create_topic, assign_agent
 
         topic = create_topic(name="Already Assigned", assignee="agent1", parent_id=None, created_by="test")
 
@@ -435,7 +435,7 @@ class TestSystemTopicProtection:
 
     def test_cannot_complete_system_topic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Cannot complete system container topics."""
-        from src.tools.data.topics import create_topic, complete_topic
+        from src.core.data.topics import create_topic, complete_topic
 
         topic= create_topic(
             name="System Container",
@@ -449,7 +449,7 @@ class TestSystemTopicProtection:
 
     def test_cannot_archive_system_topic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Cannot archive system container topics."""
-        from src.tools.data.topics import create_topic, archive_topic
+        from src.core.data.topics import create_topic, archive_topic
 
         topic= create_topic(
             name="System Container",
@@ -463,7 +463,7 @@ class TestSystemTopicProtection:
 
     def test_cannot_claim_system_topic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Cannot claim system container topics."""
-        from src.tools.data.topics import create_topic, claim_topic
+        from src.core.data.topics import create_topic, claim_topic
 
         topic= create_topic(
             name="Agents Container",
@@ -481,7 +481,7 @@ class TestTopicDeletion:
 
     def test_delete_topic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Delete a topic."""
-        from src.tools.data.topics import create_topic, delete_topic, get_topic
+        from src.core.data.topics import create_topic, delete_topic, get_topic
 
         topic= create_topic(name="Delete Me", parent_id=None, created_by="test")
         result = delete_topic(topic["id"])
@@ -491,7 +491,7 @@ class TestTopicDeletion:
 
     def test_delete_topic_with_children(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Delete topicand its children."""
-        from src.tools.data.topics import create_topic, delete_topic, get_topic
+        from src.core.data.topics import create_topic, delete_topic, get_topic
 
         parent = create_topic(name="Parent", parent_id=None, created_by="test")
         child = create_topic(name="Child", parent_id=parent["id"], created_by="test")
@@ -503,7 +503,7 @@ class TestTopicDeletion:
 
     def test_cannot_delete_system_topic(self, test_db, mock_emit_event, mock_emit_ui_event):
         """Cannot delete system topics."""
-        from src.tools.data.topics import create_topic, delete_topic
+        from src.core.data.topics import create_topic, delete_topic
 
         topic= create_topic(
             name="System",

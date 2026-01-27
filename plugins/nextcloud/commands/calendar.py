@@ -8,7 +8,7 @@ app = typer.Typer(no_args_is_help=True)
 
 def _get_calendar_module():
     """Lazy import of nextcloud calendar module."""
-    from src.tools.integration.nextcloud.calendar import (
+    from plugins.nextcloud.lib.calendar import (
         nc_list_calendars, nc_list_events, nc_create_event, nc_delete_event
     )
     return {

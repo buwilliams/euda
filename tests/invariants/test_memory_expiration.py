@@ -31,7 +31,7 @@ class TestMemoryExpirationInvariants:
         behavior, since _is_valid compares dates (at midnight) with the current
         datetime.
         """
-        from src.tools.data.memory import _is_valid, VALIDITY_DAYS
+        from src.core.data.memory import _is_valid, VALIDITY_DAYS
 
         # Verify constant
         assert VALIDITY_DAYS == 90
@@ -54,7 +54,7 @@ class TestMemoryExpirationInvariants:
 
         Spec: Entries older than 90 days are expired.
         """
-        from src.tools.data.memory import _is_valid
+        from src.core.data.memory import _is_valid
 
         # Create entry from 91 days ago
         date_91_days_ago = (datetime.now() - timedelta(days=91)).strftime('%Y-%m-%d')
@@ -72,7 +72,7 @@ class TestMemoryExpirationInvariants:
 
         Spec: Only valid (non-expired) entries returned.
         """
-        from src.tools.data.memory import add_memory, list_memory, _save_entries, _load_entries
+        from src.core.data.memory import add_memory, list_memory, _save_entries, _load_entries
 
         agent_id = "test-agent"
 
@@ -102,7 +102,7 @@ class TestMemoryExpirationInvariants:
 
         # Patch write_long_term_memory to avoid side effects
         from unittest.mock import patch
-        with patch('src.tools.data.memory.write_long_term_memory'):
+        with patch('src.core.data.memory.write_long_term_memory'):
             result = list_memory(agent_id)
 
         # Only valid entry should be returned
@@ -114,7 +114,7 @@ class TestMemoryExpirationInvariants:
 
         Spec: Expired memories are preserved in long-term memory.
         """
-        from src.tools.data.memory import list_memory, _save_entries
+        from src.core.data.memory import list_memory, _save_entries
         from unittest.mock import patch, MagicMock
 
         agent_id = "test-agent"
@@ -136,7 +136,7 @@ class TestMemoryExpirationInvariants:
         _save_entries(entries, agent_id)
 
         # Mock write_long_term_memory to verify it's called
-        with patch('src.tools.data.memory.write_long_term_memory') as mock_write:
+        with patch('src.core.data.memory.write_long_term_memory') as mock_write:
             list_memory(agent_id)
 
             # Verify archive was called
@@ -155,7 +155,7 @@ class TestMemoryTypes:
 
         Spec: person, place, thing, goal, concern, idea, learning, behavior
         """
-        from src.tools.data.memory import VALID_TYPES
+        from src.core.data.memory import VALID_TYPES
 
         expected = {"person", "place", "thing", "goal", "concern", "idea", "learning", "behavior"}
         assert VALID_TYPES == expected
@@ -165,7 +165,7 @@ class TestMemoryTypes:
 
         Spec: Type must be one of the valid types.
         """
-        from src.tools.data.memory import add_memory
+        from src.core.data.memory import add_memory
 
         result = add_memory(
             short_description="Test",
@@ -180,7 +180,7 @@ class TestMemoryTypes:
 
         Spec: All specified types should work.
         """
-        from src.tools.data.memory import add_memory, VALID_TYPES
+        from src.core.data.memory import add_memory, VALID_TYPES
 
         agent_id = "test-agent"
 
@@ -204,7 +204,7 @@ class TestMemoryDateValidation:
 
     def test_missing_date_is_invalid(self):
         """Entry without date_mentioned should be invalid."""
-        from src.tools.data.memory import _is_valid
+        from src.core.data.memory import _is_valid
 
         entry = {
             "id": "mem-nodate",
@@ -216,7 +216,7 @@ class TestMemoryDateValidation:
 
     def test_malformed_date_is_invalid(self):
         """Entry with malformed date should be invalid."""
-        from src.tools.data.memory import _is_valid
+        from src.core.data.memory import _is_valid
 
         entry = {
             "id": "mem-baddate",
@@ -229,7 +229,7 @@ class TestMemoryDateValidation:
 
     def test_future_date_is_valid(self):
         """Entry with future date should be valid (just mentioned early)."""
-        from src.tools.data.memory import _is_valid
+        from src.core.data.memory import _is_valid
 
         future_date = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
         entry = {

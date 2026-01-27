@@ -8,7 +8,7 @@ app = typer.Typer(no_args_is_help=True)
 
 def _get_topics_module():
     """Lazy import of topics module to avoid circular imports."""
-    from src.tools.data.topics import (
+    from src.core.data.topics import (
         list_topics, get_topic, create_topic, update_topic,
         complete_topic, restore_topic, archive_topic, delete_topic,
         add_topic_log, get_child_topics, assign_agent, unassign_agent,

@@ -35,7 +35,7 @@ def cmd_store(args: List[str], json_mode: bool = False):
 
     # Handle clear manifest (legacy support)
     if clear_manifest:
-        from ...tools.integration.files.dedup import clear_manifest as do_clear
+        from src.core.integration.files.dedup import clear_manifest as do_clear
         count = do_clear()
         if json_mode:
             print(json.dumps({"cleared": count}))
@@ -55,8 +55,8 @@ def cmd_store(args: List[str], json_mode: bool = False):
         sys.exit(1)
 
     # Load files
-    from ...tools.integration.files.loader import load_files
-    from ...tools.integration.files.dedup import compute_hash
+    from src.core.integration.files.loader import load_files
+    from src.core.integration.files.dedup import compute_hash
 
     if not json_mode:
         print_info(f"Loading files from: {path}", json_mode)
@@ -162,7 +162,7 @@ def _is_already_processed(content_hash: str) -> bool:
     Returns:
         True if a done topic exists with this hash tag
     """
-    from ...tools.data.topics import list_topics
+    from src.core.data.topics import list_topics
 
     # Check for done topics with this hash tag
     tag = f"store:hash:{content_hash}"
@@ -179,8 +179,8 @@ def _create_store_topic(items_with_hashes: List[tuple]) -> dict:
     Returns:
         Created topic dict
     """
-    from ...tools.data.topics import create_topic, get_agent_inbox_topic
-    from ...tools.data.assets import write_asset
+    from src.core.data.topics import create_topic, get_agent_inbox_topic
+    from src.core.data.assets import write_asset
 
     timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 

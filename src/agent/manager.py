@@ -142,7 +142,7 @@ class AgentManager:
         self._config_mtimes[agent_id] = config_path.stat().st_mtime
 
         # Sync agent inbox topics to create the inbox for this agent
-        from ..tools.data.topics import sync_agent_inbox_topics
+        from src.core.data.topics import sync_agent_inbox_topics
         sync_agent_inbox_topics()
 
         # Start the agent if enabled (check state field)
@@ -150,7 +150,7 @@ class AgentManager:
             self.start_agent(config)
 
             # Initialize topic cache for this agent
-            from ..tools.data.topics import list_topics
+            from src.core.data.topics import list_topics
             topics = list_topics(status="todo", assignee=agent_id, actionable=True)
             self.agents_with_topics[agent_id] = bool(topics)
 
@@ -228,7 +228,7 @@ class AgentManager:
             self.start_agent(config)
 
             # Initialize topic cache
-            from ..tools.data.topics import list_topics
+            from src.core.data.topics import list_topics
             topics = list_topics(status="todo", assignee=agent_id, actionable=True)
             self.agents_with_topics[agent_id] = bool(topics)
 
@@ -381,7 +381,7 @@ class AgentManager:
         Returns:
             True if an open topic with this name exists for this agent
         """
-        from ..tools.data.topics import list_topics
+        from src.core.data.topics import list_topics
 
         # Check for any todo OR working topics with this exact name assigned to this agent
         # Must check both statuses to prevent creating duplicates while topic is being executed
@@ -394,7 +394,7 @@ class AgentManager:
 
     def _emit_startup_triggers(self):
         """Create topics for any missed time triggers at startup."""
-        from ..tools.data.topics import create_topic, get_agent_inbox_topic
+        from src.core.data.topics import create_topic, get_agent_inbox_topic
 
         today = datetime.now().strftime("%Y-%m-%d")
 
@@ -452,7 +452,7 @@ class AgentManager:
             agent: The agent to run
             stop_event: Event to signal this agent should stop (for reload/shutdown)
         """
-        from ..tools.data.topics import list_topics
+        from src.core.data.topics import list_topics
 
         poll_interval = 0.1  # seconds between topic polls
         token_awareness = get_token_awareness()
@@ -530,7 +530,7 @@ class AgentManager:
 
     def _run_time_scheduler(self):
         """Background thread that creates trigger topics based on schedules."""
-        from ..tools.data.topics import create_topic, get_agent_inbox_topic
+        from src.core.data.topics import create_topic, get_agent_inbox_topic
 
         last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
 
@@ -607,7 +607,7 @@ class AgentManager:
 
     def _run_event_handler(self):
         """Background thread that handles system events and creates trigger topics."""
-        from ..tools.data.topics import create_topic, get_agent_inbox_topic
+        from src.core.data.topics import create_topic, get_agent_inbox_topic
 
         while self.running:
             try:
@@ -643,7 +643,7 @@ class AgentManager:
             agent: The agent instance
             event: The Event object
         """
-        from ..tools.data.topics import create_topic, get_agent_inbox_topic
+        from src.core.data.topics import create_topic, get_agent_inbox_topic
 
         config = agent.config
         event_name = event.event
@@ -707,7 +707,7 @@ class AgentManager:
         print(f"Found {len(configs)} agents, {len(enabled)} enabled")
 
         # Sync agent inbox topics
-        from ..tools.data.topics import sync_agent_inbox_topics
+        from src.core.data.topics import sync_agent_inbox_topics
         sync_agent_inbox_topics()
         print("Agent inbox topics synced")
 
@@ -732,7 +732,7 @@ class AgentManager:
         emit_system_event("system:start", data={"agents": [c["id"] for c in enabled]})
 
         # Initialize topic cache - check for existing actionable topics
-        from ..tools.data.topics import list_topics
+        from src.core.data.topics import list_topics
         for agent_id in self.agents:
             topics = list_topics(status="todo", assignee=agent_id, actionable=True)
             self.agents_with_topics[agent_id] = bool(topics)

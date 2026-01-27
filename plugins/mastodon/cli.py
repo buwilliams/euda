@@ -24,7 +24,7 @@ def posts_cmd(
     limit: int = typer.Option(20, "--limit", "-l", help="Number of posts to fetch (max 40)"),
 ):
     """Fetch recent public posts from a Mastodon account."""
-    from src.tools.integration.mastodon import get_mastodon_posts
+    from plugins.mastodon.lib.mastodon import get_mastodon_posts
 
     result = get_mastodon_posts(username=username, instance=instance, limit=limit)
 

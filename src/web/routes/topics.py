@@ -6,12 +6,12 @@ from typing import Optional, List
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from ...tools.data.topics import (
+from src.core.data.topics import (
     list_topics, get_topic, create_topic, update_topic,
     complete_topic, restore_topic, archive_topic, add_topic_log, get_child_topics, delete_topic,
     assign_agent, unassign_agent, get_assignee, handoff_topic, unblock_topic
 )
-from ...tools.data.assets import list_assets, read_asset, write_asset, delete_asset
+from src.core.data.assets import list_assets, read_asset, write_asset, delete_asset
 
 
 router = APIRouter()
@@ -311,7 +311,7 @@ def api_get_topic_trace(topic_id: str, days: int = 7):
         raise HTTPException(status_code=404, detail="Topic not found")
 
     # Get topic logs from database
-    from ...tools.data.topics import get_topic_logs
+    from src.core.data.topics import get_topic_logs
     topic_logs = get_topic_logs(topic_id)
 
     # Get API calls
