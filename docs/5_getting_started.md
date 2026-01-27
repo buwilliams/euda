@@ -39,6 +39,22 @@ open http://localhost:8000
 4. Ask: "Create a reminder to test Euno tomorrow"
 5. Verify the reminder appears in Topics
 
+## Usage
+
+```bash
+# Start Euno (web server + agents)
+uv run euno start
+
+# Run tests
+uv run pytest                      # unit + integration tests (default)
+uv run pytest tests/e2e/           # e2e UI tests (requires running server)
+
+# CLI commands
+uv run euno chat                   # interactive chat with agent
+uv run euno dev watch              # stream all system events
+uv run euno dev memory chat        # view agent's memory
+```
+
 ## Deploy to Server
 
 Single-user, single-server architecture. Each user deploys their own instance.

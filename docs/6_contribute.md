@@ -94,6 +94,28 @@ Stay in an Arc until it's delivering real value. Then pick another.
 | Buddy | I want Euno to understand who I am and help me stay productive on what matters |
 | *Your name* | *Your arc* |
 
+## Source of Truth
+
+Euno follows a top-down information hierarchy. When making changes, update higher levels first:
+
+- **docs/** — most reliable understanding of Euno (what and why)
+- **specs/** — technical details enforcing the docs (single-depth bullet rules)
+- **tests/** — enforces the specs and docs, not the Python code
+- **src/** — implementation produced from docs, specs, and tests
+
+**Claude Code skills for maintaining consistency:**
+
+- `/check-alignment` — Detect drift between docs, specs, tests, and code without making changes
+- `/align` — After updating docs or specs, propagate changes downstream through specs, tests, and code
+
+### Specs (Design Rules)
+
+- [Agents](../specs/1_agents.md) — Agent behavior, triggers, work cycles
+- [Data](../specs/2_data.md) — Entity schemas
+- [Backend](../specs/3_backend.md) — Server, API, storage
+- [UX & UI](../specs/4_ux_ui.md) — Interface patterns
+- [CLI](../specs/5_cli.md) — Command-line interface
+
 ## Submitting Changes
 
 1. Create a feature branch from main
@@ -105,16 +127,6 @@ Stay in an Arc until it's delivering real value. Then pick another.
 git push -u origin feature/my-feature
 gh pr create --title "Add my feature" --body "Description"
 ```
-
-### Specs (Design Rules)
-
-The `specs/` directory defines how Euno works. Before merging, check for implementation drift:
-
-- [Agents](../specs/1_agents.md) — Agent behavior, triggers, work cycles
-- [Data](../specs/2_data.md) — Entity schemas
-- [Backend](../specs/3_backend.md) — Server, API, storage
-- [UX & UI](../specs/4_ux_ui.md) — Interface patterns
-- [CLI](../specs/5_cli.md) — Command-line interface
 
 ## Community
 
