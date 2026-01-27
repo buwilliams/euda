@@ -4,9 +4,9 @@
 
 ## Vision
 
-**A personal intelligence that anticipates you.**
+**A personal intelligence for human flourishing.**
 
-**Mission:** A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities.
+**Mission:** Help people grow into who they're meant to be—through purpose, meaning, and becoming. Data, integrations, and automations serve this mission; they are not the mission itself.
 
 This is the singular filter for all work on Euno. Any goal, task, or contribution that does not serve this purpose is out of bounds by default. Out-of-bound work may be considered if there is strong justification, but must be explicitly approved by Buddy Williams.
 

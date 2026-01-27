@@ -1,6 +1,6 @@
 # Euno
 
-**A personal intelligence that anticipates you.**
+**A personal intelligence for human flourishing.**
 
 ---
 
@@ -37,9 +37,11 @@ Without safety, you're unmoored. Without surprise, you're stagnant.
 
 ## The Vision
 
-> Today's AI remembers facts about you. But it doesn't *know* you, so it can't anticipate you.
+> Today's AI wants to be your assistant—doing tasks, managing schedules, optimizing productivity. But it doesn't know *why* any of that matters to you.
 >
 > Euno is different.
+>
+> **It's about becoming.** Euno isn't here to make you more efficient. It's here to help you grow. It learns who you actually are—from your writing, photos, and behaviors—and uses that understanding to help you thrive.
 >
 > **It's personal.** Euno suggests a fun new activity for you to do next weekend. It notices when you're overwhelmed and suggests a self-care activity. It builds a real model of who you actually are from your writing, photos, and behaviors. Not who you say you are. Who you are.
 >
@@ -49,7 +51,7 @@ Without safety, you're unmoored. Without surprise, you're stagnant.
 >
 > **It travels.** Ask your earbuds about dinner plans, then pick up the same conversation on your laptop. One intelligence that knows you, present wherever you are.
 >
-> The goal isn't productivity. It's flourishing—your life organized, your concerns addressed, free to explore what matters.
+> The goal isn't productivity. It's flourishing—becoming who you're meant to be, with your concerns addressed and space to explore what matters.
 
 ---
 
