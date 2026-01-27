@@ -22,7 +22,7 @@ from .cognition.metacognition import (
     get_token_awareness,
     AgentState,
 )
-from ..web.events import EventBus, set_event_bus, get_event_bus
+from ..events import EventBus, set_event_bus, get_event_bus, emit_system_event
 
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
@@ -89,6 +89,14 @@ class AgentManager:
         config_path = AGENTS_DIR / agent_id / "config.json"
         if config_path.exists():
             self._config_mtimes[agent_id] = config_path.stat().st_mtime
+
+        # Subscribe agent to system event triggers
+        system_events = ["system:start", "chat:message_received", "topic:created", "topic:completed"]
+        agent_triggers = self._get_agent_triggers(config)
+        subscribed = [t.get("event") for t in agent_triggers if t.get("event") in system_events]
+        if subscribed:
+            self.event_bus.subscribe(agent_id, subscribed)
+            print(f"  Subscribed to system events: {subscribed}")
 
         # Create stop event for this agent
         stop_event = threading.Event()
@@ -345,9 +353,11 @@ class AgentManager:
         """Get triggers from agent config.
 
         Triggers are objects with:
+        - event: schedule name (e.g., "morning", "evening") or future system event
+        - action: "tool" (direct execution) or "llm" (agent processes via LLM loop)
+        - tool: tool to execute directly (required when action="tool")
         - topic_name: e.g., "euno:consolidate", "euno:quote"
         - topic_description: description for the topic (optional)
-        - schedule: schedule name from system config (e.g., "morning", "evening")
 
         Args:
             config: Agent configuration dict
@@ -407,7 +417,7 @@ class AgentManager:
                     # Handle object triggers
                     triggers = self._get_agent_triggers(config)
                     for t in triggers:
-                        if t.get("schedule") == trigger_type:
+                        if t.get("event") == trigger_type:
                             topic_name = t.get("topic_name")
                             topic_desc = t.get("topic_description", f"Missed scheduled {topic_name}")
 
@@ -567,7 +577,7 @@ class AgentManager:
                             # Handle object triggers
                             triggers = self._get_agent_triggers(config)
                             for trigger in triggers:
-                                if trigger.get("schedule") == name:
+                                if trigger.get("event") == name:
                                     topic_name = trigger.get("topic_name")
                                     topic_desc = trigger.get("topic_description", f"Scheduled {topic_name}")
 
@@ -595,6 +605,75 @@ class AgentManager:
 
             time.sleep(10)  # Check every 10 seconds
 
+    def _run_event_handler(self):
+        """Background thread that handles system events and creates trigger topics."""
+        from ..tools.data.topics import create_topic, get_agent_inbox_topic
+
+        while self.running:
+            try:
+                # Poll each agent's event queue (non-blocking)
+                for agent_id, agent in list(self.agents.items()):
+                    config = agent.config
+                    if config.get("state", "enabled") == "disabled":
+                        continue
+
+                    # Check for events in agent's queue
+                    event = self.event_bus.get_event_nonblocking(agent_id)
+                    if not event:
+                        continue
+
+                    # Skip events from triggers to prevent loops
+                    event_data = event.data or {}
+                    if event_data.get("_source") == "trigger":
+                        continue
+
+                    # Handle the event
+                    self._handle_system_event(agent_id, agent, event)
+
+            except Exception as e:
+                print(f"Event handler error: {e}")
+
+            time.sleep(0.1)  # Poll every 100ms
+
+    def _handle_system_event(self, agent_id: str, agent, event):
+        """Handle a system event for an agent by creating trigger topics.
+
+        Args:
+            agent_id: The agent to handle the event for
+            agent: The agent instance
+            event: The Event object
+        """
+        from ..tools.data.topics import create_topic, get_agent_inbox_topic
+
+        config = agent.config
+        event_name = event.event
+
+        # Get agent's inbox topic as parent for trigger topics
+        inbox = get_agent_inbox_topic(agent_id)
+        parent_id = inbox["id"] if inbox else None
+
+        # Match event against agent's triggers
+        triggers = self._get_agent_triggers(config)
+        for trigger in triggers:
+            if trigger.get("event") != event_name:
+                continue
+
+            topic_name = trigger.get("topic_name")
+            topic_desc = trigger.get("topic_description", f"Triggered by {event_name}")
+
+            # Check for duplicate - only one pending at a time
+            if not self._has_open_internal_topic(topic_name, agent_id):
+                print(f"[event-handler] Creating topic: {topic_name} for {agent_id} (event: {event_name})")
+                create_topic(
+                    name=topic_name,
+                    description=topic_desc,
+                    parent_id=parent_id,
+                    assignee=agent_id,
+                    tags=[topic_name],
+                    due_date=None,
+                    created_by="trigger"  # Mark as trigger-created for loop prevention
+                )
+
     def run(self):
         """Run the agent manager."""
         self.running = True
@@ -610,6 +689,15 @@ class AgentManager:
         )
         scheduler_thread.start()
         print("Time scheduler started")
+
+        # Start event handler for system events
+        event_handler_thread = threading.Thread(
+            target=self._run_event_handler,
+            name="event-handler",
+            daemon=True
+        )
+        event_handler_thread.start()
+        print("Event handler started")
 
         # Load and start all enabled agents (check state field)
         configs = self.load_agent_configs()
@@ -636,9 +724,12 @@ class AgentManager:
         if not enabled:
             print("No enabled agents. Waiting...")
 
-        # Emit startup triggers (system:start and any missed time triggers)
+        # Emit startup triggers (any missed time triggers)
         if enabled:
             self._emit_startup_triggers()
+
+        # Emit system:start event for agents subscribed to it
+        emit_system_event("system:start", data={"agents": [c["id"] for c in enabled]})
 
         # Initialize topic cache - check for existing actionable topics
         from ..tools.data.topics import list_topics

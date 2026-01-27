@@ -1,45 +1,38 @@
 # Euno
 
-**A personal intelligence that anticipates you.**
+**A personal intelligence for human flourishing.**
 
 ---
 
 ## The Name
 
-*Pronounced "you-know." Built for its creator first—refined through lived experience, not hypothetical users.*
-
-From *Eudaimonia* (you-dye-MOH-nee-ah)—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities.
+*Pronounced "you-know.", from Eudaimonia (you-dye-MOH-nee-ah)—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities.*
 
 ---
 
 ## Human Flourishing
 
-Human flourishing is subjective. A deeply religious person, a staunch atheist, and a spiritually eclectic person should all be able to use Euno with delight. Therefore, human flourishing encompasses a wide range of values.
+Flourishing is subjective—a curious kid, an overwhelmed parent, and a late-blooming retiree all flourish differently.
 
 **Life**
 
-At the basement level is the concept of *life*. Euno is about the promotion of life in all its various forms. Dead things do not move. Life fundamentally means motion, growth, activity, and awe.
+The only universal value is *life*—motion, growth, activity, awe. Dead things don't move.
 
-This view covers a limited portion of morals, on purpose. Just as people diverge on values, so too should Euno allow this flexibility. It would be unjust and undesirable to build a platform that supplants basic human freedom of expression and exploration.
-
-Flourishing can mean what you want it to mean—as long as it promotes life. That's the line.
+Flourishing can mean what you want it to mean, as long as it promotes life. That's the line. Beyond that, Euno stays out of morals on purpose—people diverge on values, and a platform shouldn't supplant human freedom.
 
 **Safety and Surprise**
 
-The only other principle worth enforcing is the 90/10 balance of security and surprise. This exists to expand you, so we don't create wacky echo chambers.
-
-- **90% Security** — Building walls of safety. Grounding you in your known values, goals, and interests.
-- **10% Surprise** — Building bridges. Exposing you to the unfamiliar, the adjacent possible, the thing you didn't know you needed.
-
-Without safety, you're unmoored. Without surprise, you're stagnant.
+The other principle: 90% security, 10% surprise. Walls of safety ground you in your values; bridges to the unfamiliar keep you from stagnating in an echo chamber.
 
 ---
 
 ## The Vision
 
-> Today's AI remembers facts about you. But it doesn't *know* you, so it can't anticipate you.
+> Today's AI wants to be your assistant—doing tasks, managing schedules, optimizing productivity. But it doesn't know *why* any of that matters to you.
 >
 > Euno is different.
+>
+> **It's about becoming.** Euno isn't here to make you more efficient. It's here to help you grow. It learns who you actually are—from your writing, photos, and behaviors—and uses that understanding to help you thrive.
 >
 > **It's personal.** Euno suggests a fun new activity for you to do next weekend. It notices when you're overwhelmed and suggests a self-care activity. It builds a real model of who you actually are from your writing, photos, and behaviors. Not who you say you are. Who you are.
 >
@@ -49,7 +42,7 @@ Without safety, you're unmoored. Without surprise, you're stagnant.
 >
 > **It travels.** Ask your earbuds about dinner plans, then pick up the same conversation on your laptop. One intelligence that knows you, present wherever you are.
 >
-> The goal isn't productivity. It's flourishing—your life organized, your concerns addressed, free to explore what matters.
+> The goal isn't productivity. It's flourishing—becoming who you're meant to be, with your concerns addressed and space to explore what matters.
 
 ---
 

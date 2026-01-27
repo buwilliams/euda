@@ -71,14 +71,18 @@
   ],
   "triggers": [
     {
+      "event": "evening",
+      "action": "tool",
+      "tool": "euno_consolidate",
       "topic_name": "euno:consolidate",
-      "topic_description": "Review memories, evolve identity, graduate learnings",
-      "schedule": "evening"
+      "topic_description": "Review memories, evolve identity, graduate learnings"
     },
     {
+      "event": "morning",
+      "action": "tool",
+      "tool": "euno_quote",
       "topic_name": "euno:quote",
-      "topic_description": "Generate personalized daily quote based on user identity",
-      "schedule": "morning"
+      "topic_description": "Generate personalized daily quote based on user identity"
     }
   ]
 }

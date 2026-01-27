@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Euno is a personal intelligence that learns to anticipate you: doing tasks for you, curating what helps you thrive, and expanding your horizons.
+Euno is a personal intelligence for human flourishing. It helps you grow into who you're meant to be—through purpose and meaning. It can do tasks, curate information, and anticipate your needs, but those capabilities serve a deeper mission: helping you thrive.
 
 ## Key References
 

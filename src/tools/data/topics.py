@@ -133,9 +133,15 @@ _ensure_schema()
 
 
 def _emit_event(event: str, scope: str = None, data: dict = None):
-    """Emit an event to the event bus."""
-    from ...web.events import emit_event
+    """Emit an event to the event bus (for agent-scoped events like topic:assigned)."""
+    from ...events import emit_event
     emit_event(event, scope=scope, data=data)
+
+
+def _emit_system_event(event: str, data: dict = None, source: str = "system"):
+    """Emit a system event for trigger matching."""
+    from ...events import emit_system_event
+    emit_system_event(event, data=data, source=source)
 
 
 def _emit_topics_update():
@@ -349,9 +355,12 @@ def create_topic(
             VALUES (?, ?, ?, 'created')
         ''', (topic_id, now, created_by))
 
-    # Emit topic:created (broadcast) and topic:assigned (scoped) events
+    # Emit topic:created system event (only for non-trigger topics to prevent loops)
     topic = _load_topic(topic_id)
-    _emit_event("topic:created", data={"topic_id": topic_id, "name": name})
+    if created_by != "trigger":
+        _emit_system_event("topic:created", data={"topic_id": topic_id, "name": name})
+
+    # Emit topic:assigned (scoped) event for agent wakeup
     if assignee:
         _emit_event("topic:assigned", scope=assignee, data={"topic_id": topic_id, "name": name})
         _notify_agent_has_topics(assignee)
@@ -520,7 +529,10 @@ def complete_topic(topic_id: str, agent: str = "user") -> Optional[dict]:
             VALUES (?, ?, ?, 'completed')
         ''', (topic_id, now, agent))
 
-    # Emit topic:completed to assignee
+    # Emit topic:completed system event for triggers
+    _emit_system_event("topic:completed", data={"topic_id": topic_id, "name": topic["name"]})
+
+    # Emit topic:completed to assignee (scoped event)
     assignee = topic.get("assignee")
     if assignee:
         _emit_event("topic:completed", scope=assignee, data={"topic_id": topic_id, "name": topic["name"]})
