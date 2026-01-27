@@ -115,7 +115,7 @@ User=root
 WorkingDirectory=$REMOTE_DIR
 EnvironmentFile=$REMOTE_DIR/.env
 Environment=PATH=/root/.local/bin:/usr/bin:/bin
-ExecStart=/root/.local/bin/uv run euno start
+ExecStart=/root/.local/bin/uv run euno web
 Restart=always
 RestartSec=5
 TimeoutStopSec=10

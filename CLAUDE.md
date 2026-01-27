@@ -32,7 +32,7 @@ Euno is a personal intelligence for human flourishing. It helps you grow into wh
 
 4. Run Euno:
    ```
-   uv run euno start    # Web server + agents (run in background in Claude Code)
+   uv run euno web    # Web server + agents (run in background in Claude Code)
    uv run euno chat     # Interactive chat with an agent
    ```
 

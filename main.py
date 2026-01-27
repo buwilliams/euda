@@ -21,7 +21,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Commands:
-  start            Start the web server with agents
+  web              Start the web server with agents
   chat             Interactive chat with an agent
   plugin           Run plugin commands
   dev              Developer tools for debugging agents
@@ -45,7 +45,7 @@ Plugin Commands:
   euno plugin <name> <command> [args]   Run a plugin command
 
 Examples:
-  euno start                            # Run web server + agents
+  euno web                              # Run web server + agents
   euno chat                             # Chat with default agent (user)
   euno chat worker                      # Chat with specific agent
   euno plugin core topics list          # List topics
@@ -64,7 +64,7 @@ Examples:
     args = parser.parse_args()
 
     commands = {
-        "start": cmd_start,
+        "web": cmd_web,
         "chat": cmd_chat,
         "plugin": cmd_plugin,
         "dev": cmd_dev,
@@ -90,7 +90,7 @@ Examples:
     commands[args.command](args.args)
 
 
-def cmd_start(args):
+def cmd_web(args):
     """Start web server with agents."""
     import signal
     import threading

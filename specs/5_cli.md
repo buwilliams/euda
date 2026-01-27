@@ -10,7 +10,7 @@ Rules for the command-line interface.
 
 ## Commands
 
-- `start` — Run web server (port 8000) with agents in background
+- `web` — Run web server (port 8000) with agents in background
 - `chat [agent]` — Interactive chat with an agent (default: user)
 - `plugin` — Run plugin commands
 - `dev` — Developer tools for debugging agents
@@ -29,7 +29,7 @@ Rules for the command-line interface.
 - `server-setup` — Setup remote server
 - `server-remove` — Remove remote server
 
-## start
+## web
 
 - Validates config before starting
 - Starts agents in background thread via AgentManager
