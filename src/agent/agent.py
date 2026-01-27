@@ -67,7 +67,7 @@ class Agent:
             Event dict with keys: event, data, timestamp
             None if timeout or not subscribed
         """
-        from ..web.events import get_event_bus
+        from ..events import get_event_bus
         bus = get_event_bus()
         if not bus:
             return None

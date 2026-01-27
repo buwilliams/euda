@@ -69,11 +69,11 @@ Triggers are objects with explicit `event` and `action` keys:
 - `morning`, `evening`, `hourly`, `hour_00`, `hour_04`, `hour_06`, `hour_12`, `hour_18`
 - Maps to times in `data/system/config.json` under `schedules`
 
-**System Events** (future):
-- `system:start` - Euno startup
-- `chat:message_received` - User sends chat message
-- `topic:created` - Any topic created
-- `topic:completed` - Any topic completed
+**System Events** (implemented):
+- `system:start` - Fires once when Euno starts up
+- `chat:message_received` - Fires when user sends a chat message
+- `topic:created` - Fires when any topic is created (excludes trigger-created topics)
+- `topic:completed` - Fires when any topic is completed
 
 ### Action Types
 
