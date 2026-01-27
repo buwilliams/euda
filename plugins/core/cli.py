@@ -9,7 +9,7 @@ import typer
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from plugins.core.commands import topics, assets, memory, identity, agents, consolidate, dates, notifications, quote, done
+from plugins.core.commands import topics, assets, memory, identity, agents, consolidate, dates, notifications, quote, done, store
 
 app = typer.Typer(
     name="core",
@@ -27,6 +27,7 @@ app.add_typer(consolidate.app, name="consolidate", help="Consolidation operation
 app.add_typer(dates.app, name="dates", help="Date utilities")
 app.add_typer(notifications.app, name="notify", help="Notification commands")
 app.add_typer(quote.app, name="quote", help="Quote generation")
+app.add_typer(store.app, name="store", help="Import files to long-term memory")
 
 # Register standalone commands
 app.command(name="done")(done.done_working)

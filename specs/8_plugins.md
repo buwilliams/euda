@@ -194,6 +194,10 @@ Executes a plugin command.
 - `agents delete <id>`
 - `agents tools`
 
+### Store
+- `store import <path> [--force] [--dry-run]`
+- `store clear-manifest`
+
 ### Other
 - `consolidate run [--phase]`
 - `dates parse <text>`
