@@ -150,6 +150,52 @@ def cmd_web(args):
     asyncio.run(serve())
 
 
+class Spinner:
+    """Simple text spinner for CLI feedback with dynamic messages."""
+
+    FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
+    def __init__(self, message: str = "Thinking"):
+        import threading
+        self.message = message
+        self._stop_event = threading.Event()
+        self._thread = None
+        self._lock = threading.Lock()
+        self._last_line_len = 0
+
+    def update(self, message: str):
+        """Update the spinner message."""
+        with self._lock:
+            self.message = message
+
+    def start(self):
+        import threading
+        self._stop_event.clear()
+        self._thread = threading.Thread(target=self._spin, daemon=True)
+        self._thread.start()
+
+    def _spin(self):
+        import time
+        idx = 0
+        while not self._stop_event.is_set():
+            frame = self.FRAMES[idx % len(self.FRAMES)]
+            with self._lock:
+                line = f"\r{frame} {self.message}"
+            # Clear previous line if shorter
+            padding = max(0, self._last_line_len - len(line))
+            print(line + " " * padding, end="", flush=True)
+            self._last_line_len = len(line)
+            idx += 1
+            time.sleep(0.1)
+
+    def stop(self):
+        self._stop_event.set()
+        if self._thread:
+            self._thread.join(timeout=0.5)
+        # Clear the spinner line
+        print("\r" + " " * (self._last_line_len + 5) + "\r", end="", flush=True)
+
+
 def cmd_chat(args):
     """Interactive chat with an agent."""
     import threading
@@ -174,19 +220,29 @@ def cmd_chat(args):
     print("=" * 60)
     print()
 
-    # Start agents in background thread (same as cmd_start)
+    # Create manager in main thread so we can wait for startup
+    manager = AgentManager()
+    set_manager(manager)
+
+    # Start agents in background thread
     def run_agents():
-        manager = AgentManager()
-        set_manager(manager)
-        asyncio.run(manager.run())
+        manager.run()
 
     agent_thread = threading.Thread(target=run_agents, daemon=True)
     agent_thread.start()
-    print("Platform running in background (triggers, events)")
+
+    # Wait for platform startup to complete before showing prompt
+    manager.wait_for_startup()
+    print()
     print("Type 'quit' to exit.")
     print()
 
     agent = Agent(agent_id)
+    spinner = Spinner("Preparing...")
+
+    def status_callback(status: str):
+        """Update spinner with current status."""
+        spinner.update(status)
 
     while True:
         try:
@@ -197,8 +253,13 @@ def cmd_chat(args):
                 print("\nGoodbye!")
                 break
 
-            response = agent.chat(user_input)
-            print(f"\n{agent_id}: {response}\n")
+            spinner.start()
+            try:
+                response = agent.chat(user_input, status_callback=status_callback)
+            finally:
+                spinner.stop()
+
+            print(f"{agent_id}: {response}\n")
 
         except AgentPausedError as e:
             print(f"\n\nAGENT PAUSED: {e.reason}")
