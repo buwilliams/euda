@@ -411,7 +411,6 @@ function showChatEmptyState() {
 
     inlineMessages.innerHTML = `
         <div class="chat-empty-state" id="chat-empty-state" data-testid="chat-empty-state">
-            <div class="chat-empty-greeting">What's on your mind?</div>
             ${quoteHtml}
         </div>
     `;
