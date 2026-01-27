@@ -51,7 +51,7 @@ if [ ! -f "$PROJECT_DIR/.env" ]; then
 fi
 
 # Check SSH connectivity
-echo "[1/6] Testing SSH connection..."
+echo "[1/7] Testing SSH connection..."
 ssh -o ConnectTimeout=10 "$SERVER" "echo 'Connected'" || {
     echo "Error: Cannot connect to $SERVER"
     echo "Run ./setup-server.sh first if this is a new server"
@@ -59,11 +59,11 @@ ssh -o ConnectTimeout=10 "$SERVER" "echo 'Connected'" || {
 }
 
 # Clean up __pycache__ on remote so rsync --delete can remove old directories
-echo "[2/6] Cleaning remote __pycache__..."
+echo "[2/7] Cleaning remote __pycache__..."
 ssh -T "$SERVER" "find $REMOTE_DIR/src -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true"
 
 # Sync files (exclude data, .venv, __pycache__, .git)
-echo "[3/6] Syncing files..."
+echo "[3/7] Syncing files..."
 rsync -avz --delete \
     --exclude '/data/' \
     --exclude '/android-app/' \
@@ -77,15 +77,19 @@ rsync -avz --delete \
     "$PROJECT_DIR/" "$SERVER:$REMOTE_DIR/"
 
 # Copy .env file
-echo "[4/6] Copying .env file..."
+echo "[4/7] Copying .env file..."
 scp "$PROJECT_DIR/.env" "$SERVER:$REMOTE_DIR/.env"
 
 # Install dependencies
-echo "[5/6] Installing dependencies..."
+echo "[5/7] Installing dependencies..."
 ssh -T "$SERVER" "cd $REMOTE_DIR && source ~/.local/bin/env && uv sync"
 
+# Update service file if needed (euno start -> euno web)
+echo "[6/7] Checking service file..."
+ssh "$SERVER" "grep -q 'euno start' /etc/systemd/system/euno.service 2>/dev/null && sudo sed -i 's/euno start/euno web/g' /etc/systemd/system/euno.service && sudo systemctl daemon-reload && echo 'Updated service file (start -> web)' || echo 'Service file OK'"
+
 # Restart service
-echo "[6/6] Restarting service..."
+echo "[7/7] Restarting service..."
 ssh "$SERVER" "sudo systemctl restart euno" || echo "Warning: Restart failed, checking status..."
 
 # Check status
