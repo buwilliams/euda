@@ -150,6 +150,7 @@ class Agent:
         if not self._current_topic_id:
             return ""
 
+        # Import from old tools module (still available during transition)
         from ..tools.data.topics import get_topic
         from ..tools.data.assets import list_assets, read_asset
 
@@ -266,38 +267,37 @@ class Agent:
         return {}
 
     def _build_system_prompt(self, voice_input: bool = False) -> str:
-        """Build the system prompt from identity, user context, and tools.
+        """Build the system prompt from identity, user context, and plugins.
 
         Includes:
         - Agent's identity (from identity.md)
         - User's identity (so agents know who they serve)
-        - Available tools grouped by type
+        - Available plugins summary
 
-        Note: User memory is NOT auto-injected (use list_memory tool for specifics).
+        Note: User memory is NOT auto-injected (use memory commands for specifics).
 
         Args:
             voice_input: Whether input came from voice (enables conversational response style)
         """
-        from ..tools import get_tools_grouped_by_type
+        from ..plugins import discover_plugins
         from .cognition.reasoning.prompts import render_template
 
-        # Build tools section grouped by type
-        tools_by_type = get_tools_grouped_by_type(self.config.get("tools", []))
-        type_labels = {
-            "data": "Data Tools",
-            "agents": "Agent Tools",
-            "system": "System Tools",
-            "integration": "Integration Tools"
-        }
+        # Get available plugins (filtered by excluded_plugins)
+        excluded = self.config.get("excluded_plugins", [])
+        plugins = [p for p in discover_plugins() if p.name not in excluded]
 
-        tools_sections = []
-        for tool_type in ["data", "agents", "system", "integration"]:
-            tools = tools_by_type.get(tool_type, [])
-            if tools:
-                tools_sections.append(f"### {type_labels[tool_type]}\n")
-                for t in tools:
-                    tools_sections.append(f"- **{t['name']}**: {t['description']}")
-        tools_text = "\n".join(tools_sections) if tools_sections else "No tools available."
+        # Build plugins section
+        if plugins:
+            plugins_lines = ["### Available Plugins\n"]
+            for plugin in plugins:
+                desc = plugin.description or "(plugin)"
+                plugins_lines.append(f"- **{plugin.name}**: {desc}")
+            plugins_lines.append("")
+            plugins_lines.append("Use `list_plugins` to see plugins, `plugin_usage(plugin)` for help,")
+            plugins_lines.append("`execute_plugin(plugin, command)` to run commands.")
+            plugins_text = "\n".join(plugins_lines)
+        else:
+            plugins_text = "No plugins available."
 
         # Load user identity so agents know who they serve
         user_identity = self._get_user_identity()
@@ -306,7 +306,7 @@ class Agent:
             "agent/system",
             identity=self.identity,
             user_identity=user_identity,
-            tools_by_type=tools_text
+            tools_by_type=plugins_text  # Reuse the template variable
         )
 
         # Voice mode instructions
@@ -322,9 +322,9 @@ class Agent:
         return prompt
 
     def _get_tools(self) -> list:
-        """Get tool definitions for this agent."""
-        from ..tools import get_tools_for_agent
-        return get_tools_for_agent(self.config.get("tools", []))
+        """Get tool definitions for this agent (meta-tools for plugin system)."""
+        from ..plugins import get_meta_tools
+        return get_meta_tools()
 
     # Map of euno:* topic names to tool names for direct execution
     INTERNAL_TOPIC_TOOLS = {
@@ -566,13 +566,21 @@ class Agent:
         return text_response
 
     def _execute_tools(self, response) -> list:
-        """Execute tool calls and return results."""
+        """Execute tool calls (meta-tools for plugin system) and return results."""
         import json
-        from ..tools import execute_tool
+        from ..plugins import execute_meta_tool
         from ..tools.system.system import set_agent_context, clear_agent_context
 
         # Set agent context so tools can access this agent
         set_agent_context(self)
+
+        # Build context for meta-tools
+        agent_context = {
+            "agent_id": self.id,
+            "topic_id": self._current_topic_id,
+            "session_id": self._session_id,
+            "excluded_plugins": self.config.get("excluded_plugins", [])
+        }
 
         try:
             # Collect all tool calls
@@ -585,8 +593,15 @@ class Agent:
                 # Record for action/progress awareness
                 self.metacognition.record_tool_call(block.name, block.input)
 
-                # Execute tool
-                result = execute_tool(block.name, block.input)
+                # Execute meta-tool
+                result = execute_meta_tool(block.name, block.input, agent_context)
+
+                # Check for done_working signal in execute_plugin results
+                if block.name == "execute_plugin":
+                    plugin = block.input.get("plugin", "")
+                    command = block.input.get("command", "")
+                    if plugin == "core" and command.strip() == "done":
+                        self._work_done = True
 
                 # Format result for LLM
                 formatted = {

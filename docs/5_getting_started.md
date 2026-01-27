@@ -24,11 +24,9 @@ uv sync
 # Set your password
 uv run euno set-password
 
-# Start Euno
-uv run euno start
-
-# Open in browser
-open http://localhost:8000
+# Start Euno (choose one)
+uv run euno web     # Web UI at http://localhost:8000
+uv run euno chat    # CLI chat interface
 ```
 
 ## Verify It Works
@@ -42,17 +40,18 @@ open http://localhost:8000
 ## Usage
 
 ```bash
-# Start Euno (web server + agents)
-uv run euno start
+# Start Euno (choose one)
+uv run euno web                    # Web UI + agents
+uv run euno chat                   # CLI chat + agents
 
 # Run tests
 uv run pytest                      # unit + integration tests (default)
 uv run pytest tests/e2e/           # e2e UI tests (requires running server)
 
-# CLI commands
-uv run euno chat                   # interactive chat with agent
+# Other commands
 uv run euno dev watch              # stream all system events
 uv run euno dev memory chat        # view agent's memory
+uv run euno plugin core topics list  # list topics via plugin
 ```
 
 ## Deploy to Server

@@ -115,9 +115,8 @@ These topics:
 ## Agent Creation & Management
 
 - Users create agents through the Chat agent (via chat)
-- Chat uses `list_available_tools` to determine appropriate tools for new agents
 - Core agents are protected: chat, worker, user
-- All agents get base tools: list_topics, get_topic, create_topic, complete_topic, add_topic_log, done_working
+- All agents have access to all plugins by default (use `excluded_plugins[]` to restrict)
 - Changes to triggers require a restart to take effect
 - Agent files: `config.json` (settings) and `identity.md` (identity/instructions)
 
@@ -237,7 +236,7 @@ Agent = Identity + Cognition + Memory + Behavior
 | **Identity** | Who am I? | Purpose, values, voice, attractors, context |
 | **Cognition** | How do I think? | Reasoning (topic planning, prompts) + Metacognition (self-regulation, consolidation) |
 | **Memory** | What do I know? | Short-term (90 days) + Long-term (permanent) |
-| **Behavior** | What can I do? | Tools + Triggers + Modes |
+| **Behavior** | What can I do? | Plugins + Triggers + Modes |
 
 ### Identity
 
@@ -402,12 +401,13 @@ Individual agents can override specific settings in their `config.json` but rare
 
 Behavior defines what agents can do and when they activate.
 
-### Tools
+### Plugins
 
-- Capabilities defined by `tools[]` in agent's config.json
-- All agents get base tools: list_topics, get_topic, create_topic, complete_topic, add_topic_log, done_working
-- Additional tools granted per-agent based on role
-- An agent cannot use tools not in its config
+- Agents interact with the system through plugins - CLI-based extensions
+- Three meta-tools: `list_plugins`, `plugin_usage(plugin)`, `execute_plugin(plugin, command)`
+- By default, all agents have access to all plugins
+- Use `excluded_plugins[]` in config.json to restrict access to specific plugins
+- Built-in plugins: `core` (topics, memory, agents), `nextcloud`, `speech`, `mastodon`
 
 ### Triggers
 

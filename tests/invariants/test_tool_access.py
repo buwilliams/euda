@@ -85,10 +85,10 @@ class TestToolAccessRestriction:
         assert "list_topics" in data_names
         assert "create_topic" in data_names
 
-    def test_agent_only_sees_own_tools_in_prompt(self, patch_data_dir):
-        """Agent system prompt should only show configured tools.
+    def test_agent_only_sees_allowed_plugins_in_prompt(self, patch_data_dir):
+        """Agent system prompt should only show non-excluded plugins.
 
-        Spec: Agent's prompt includes only its configured tools.
+        Spec: Agent's prompt includes only plugins not in excluded_plugins.
         """
         from src.agent.agent import Agent
         from unittest.mock import patch
@@ -102,17 +102,19 @@ class TestToolAccessRestriction:
                 "id": "restricted-agent",
                 "name": "Restricted Agent",
                 "enabled": True,
-                "tools": ["list_topics"],  # Only one tool
+                "excluded_plugins": ["speech", "mastodon"],  # Exclude these plugins
                 "triggers": []
             })
 
             prompt = agent._build_system_prompt()
 
-            # Should mention list_topics
-            assert "list_topics" in prompt
+            # Should mention available plugins
+            assert "core" in prompt
+            assert "nextcloud" in prompt
 
-            # Should NOT mention tools not in config
-            assert "create_topic" not in prompt or "list_topics" in prompt.split("create_topic")[0]
+            # Should NOT mention excluded plugins
+            assert "speech" not in prompt
+            assert "mastodon" not in prompt
 
 
 @pytest.mark.invariant

@@ -21,29 +21,39 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Commands:
-  start            Start the web server with agents
+  web              Start the web server with agents
   chat             Interactive chat with an agent
-  agents           List all agents
-  topics           List all topics
-  points           Show contribution points summary
-  store            Import files into long-term memory using RLM
+  plugin           Run plugin commands
   dev              Developer tools for debugging agents
+  points           Show contribution points summary
   set-password     Set the access password (empty to disable auth)
   remove-password  Remove the password (disable auth)
   fresh-start      Reset all user data (memory, topics, logs, password)
 
+Server Commands:
+  server-deploy    Deploy to remote server
+  server-pull      Pull data from remote server
+  server-push      Push data to remote server
+  server-push-agents  Push agent configs to remote server
+  server-remote    SSH into remote server
+  server-setup     Setup remote server
+  server-remove    Remove remote server
+
+Plugin Commands:
+  euno plugin list                      List available plugins
+  euno plugin <name> --help             Show plugin help
+  euno plugin <name> <command> [args]   Run a plugin command
+
 Examples:
-  euno start             # Run web server + agents
-  euno chat              # Chat with default agent (chat)
-  euno chat chat         # Chat with specific agent
-  euno agents            # List agents
-  euno topics            # List topics
-  euno points            # Show contribution points
-  euno store ~/journal/  # Import journal files to memory
-  euno dev help          # Show dev commands
-  euno set-password      # Set access password
-  euno remove-password   # Disable authentication
-  euno fresh-start       # Clean slate (keeps agent configs)
+  euno web                              # Run web server + agents
+  euno chat                             # Chat with default agent (user)
+  euno chat worker                      # Chat with specific agent
+  euno plugin core topics list          # List topics
+  euno plugin core agents list          # List agents
+  euno plugin core store import ~/docs  # Import files to memory
+  euno plugin core memory list          # List memories
+  euno dev help                         # Show dev commands
+  euno server-deploy                    # Deploy to remote server
 """
     )
 
@@ -54,16 +64,21 @@ Examples:
     args = parser.parse_args()
 
     commands = {
-        "start": cmd_start,
+        "web": cmd_web,
         "chat": cmd_chat,
-        "agents": cmd_agents,
-        "topics": cmd_topics,
-        "points": cmd_points,
-        "store": cmd_store,
+        "plugin": cmd_plugin,
         "dev": cmd_dev,
+        "points": cmd_points,
         "set-password": cmd_set_password,
         "remove-password": cmd_remove_password,
         "fresh-start": cmd_fresh_start,
+        "server-deploy": cmd_server_deploy,
+        "server-pull": cmd_server_pull,
+        "server-push": cmd_server_push,
+        "server-push-agents": cmd_server_push_agents,
+        "server-remote": cmd_server_remote,
+        "server-setup": cmd_server_setup,
+        "server-remove": cmd_server_remove,
         "help": lambda _: parser.print_help(),
     }
 
@@ -75,7 +90,7 @@ Examples:
     commands[args.command](args.args)
 
 
-def cmd_start(args):
+def cmd_web(args):
     """Start web server with agents."""
     import signal
     import threading
@@ -137,8 +152,9 @@ def cmd_start(args):
 
 def cmd_chat(args):
     """Interactive chat with an agent."""
+    import threading
     from src.agent import Agent
-    from src.tools import get_tools_for_agent
+    from src.agent.manager import AgentManager, set_manager
     from src.agent.cognition.metacognition import AgentPausedError
     from src.llms import ConfigError
     from src.llms.base import _load_config
@@ -151,12 +167,22 @@ def cmd_chat(args):
         print("\nPlease ensure data/system/config.json exists and is valid.")
         sys.exit(1)
 
-    agent_id = args[0] if args else "chat"
+    agent_id = args[0] if args else "user"
 
     print("=" * 60)
     print(f"Euno - Chat with {agent_id}")
     print("=" * 60)
     print()
+
+    # Start agents in background thread (same as cmd_start)
+    def run_agents():
+        manager = AgentManager()
+        set_manager(manager)
+        asyncio.run(manager.run())
+
+    agent_thread = threading.Thread(target=run_agents, daemon=True)
+    agent_thread.start()
+    print("Platform running in background (triggers, events)")
     print("Type 'quit' to exit.")
     print()
 
@@ -186,224 +212,6 @@ def cmd_chat(args):
             break
 
 
-def cmd_agents(args):
-    """List agents or perform agent actions."""
-    import json
-    from src.tools.agents.agents import list_agents
-    from src.agent.cognition.metacognition import get_token_awareness, AgentState
-
-    # Handle help action
-    if args and args[0] == 'help':
-        print("Usage: python main.py agents [name] [action]")
-        print()
-        print("Arguments:")
-        print("  [name]    Agent ID to filter or act on")
-        print()
-        print("Actions:")
-        print("  (none)    Show agent info")
-        print("  enable    Enable the agent (resume from paused/disabled)")
-        print("  disable   Disable the agent")
-        print("  resume    Resume a paused agent (alias for enable)")
-        print("  status    Show detailed state and token usage")
-        print("  logs      Show last 50 log entries")
-        print("  help      Show this help")
-        return
-
-    data_dir = Path(__file__).parent / "data"
-    token_awareness = get_token_awareness()
-
-    # Parse args: [name] [action]
-    agent_filter = args[0] if args else None
-    action = args[1] if len(args) > 1 else None
-
-    # Handle actions
-    if agent_filter and action:
-        if action == "enable" or action == "resume":
-            _agent_set_state(agent_filter, AgentState.ENABLED)
-        elif action == "disable":
-            _agent_set_state(agent_filter, AgentState.DISABLED)
-        elif action == "status":
-            _agent_show_status(agent_filter)
-        elif action == "logs":
-            _agent_show_logs(agent_filter)
-        else:
-            print(f"Unknown action: {action}")
-            print("Valid actions: enable, disable, resume, status, logs")
-        return
-
-    print("=" * 60)
-    print("Euno - Agents")
-    print("=" * 60)
-    print()
-
-    # Show system state (only when listing all agents)
-    if not agent_filter:
-        system_state_path = data_dir / "system" / "state.json"
-        if system_state_path.exists():
-            with open(system_state_path) as f:
-                system_state = json.load(f)
-            last_morning = system_state.get("last_morning", "never")
-            last_evening = system_state.get("last_evening", "never")
-        else:
-            last_morning = "never"
-            last_evening = "never"
-
-        print(f"System: last_morning={last_morning}, last_evening={last_evening}")
-        print()
-
-    agents = list_agents()
-    if not agents:
-        print("No agents configured.")
-        return
-
-    # Filter by name if provided
-    if agent_filter:
-        agents = [a for a in agents if a['id'] == agent_filter]
-        if not agents:
-            print(f"Agent not found: {agent_filter}")
-            return
-
-    # Sort agents by order
-    agents.sort(key=lambda a: a.get("order", 999))
-
-    for agent in agents:
-        agent_id = agent['id']
-        order = agent.get("order", "-")
-        triggers = ", ".join(agent.get("triggers", [])) or "none"
-
-        # Get state from token awareness
-        state = token_awareness.get_agent_state(agent_id)
-        status = state.value
-
-        # Add pause reason if paused
-        if state == AgentState.PAUSED:
-            pause_info = token_awareness.get_pause_info(agent_id)
-            reason = pause_info.get("reason", "unknown")
-            status = f"PAUSED ({reason})"
-
-        # Load agent state to get last_ran
-        state_path = data_dir / "agents" / agent_id / "state.json"
-        last_ran = "never"
-        if state_path.exists():
-            with open(state_path) as f:
-                file_state = json.load(f)
-                if "last_ran" in file_state:
-                    last_ran = file_state["last_ran"]
-
-        print(f"  [{order}] {agent_id}: {agent['name']} [{status}]")
-        print(f"      triggers: {triggers}")
-        print(f"      last_ran: {last_ran}")
-        print()
-
-
-def _agent_set_state(agent_id: str, state):
-    """Set agent state using the token awareness system."""
-    from src.agent.cognition.metacognition import get_token_awareness, AgentState
-
-    config_path = Path(__file__).parent / "data" / "agents" / agent_id / "config.json"
-    if not config_path.exists():
-        print(f"Agent not found: {agent_id}")
-        return
-
-    token_awareness = get_token_awareness()
-    token_awareness.set_agent_state(agent_id, state)
-    print(f"Agent {agent_id} {state.value}.")
-
-
-def _agent_set_enabled(agent_id: str, enabled: bool):
-    """Enable or disable an agent (legacy wrapper)."""
-    from src.agent.cognition.metacognition import AgentState
-
-    state = AgentState.ENABLED if enabled else AgentState.DISABLED
-    _agent_set_state(agent_id, state)
-
-
-def _agent_show_status(agent_id: str):
-    """Show detailed agent status including token usage."""
-    from src.agent.cognition.metacognition import get_token_awareness
-
-    config_path = Path(__file__).parent / "data" / "agents" / agent_id / "config.json"
-    if not config_path.exists():
-        print(f"Agent not found: {agent_id}")
-        return
-
-    token_awareness = get_token_awareness()
-    state = token_awareness.get_agent_state(agent_id)
-    usage = token_awareness.get_agent_usage(agent_id)
-    pause_info = token_awareness.get_pause_info(agent_id)
-
-    print(f"Agent: {agent_id}")
-    print(f"State: {state.value}")
-    print()
-
-    if pause_info.get("is_paused"):
-        print(f"Pause Reason: {pause_info.get('reason', 'unknown')}")
-        print(f"Paused At: {pause_info.get('timestamp', 'unknown')}")
-        print()
-
-    print("Token Usage (current period):")
-    print(f"  Frequency: {usage.get('frequency', 'hourly')}")
-    print(f"  Period: {usage.get('period', 'unknown')}")
-    print(f"  Input: {usage.get('input_tokens', 0):,} / {usage.get('input_budget', 0):,} ({usage.get('input_percent', 0)}%)")
-    print(f"  Output: {usage.get('output_tokens', 0):,} / {usage.get('output_budget', 0):,} ({usage.get('output_percent', 0)}%)")
-
-
-def _agent_show_logs(agent_id: str):
-    """Show last 50 log entries for an agent."""
-    import json
-
-    logs_dir = Path(__file__).parent / "data" / "agents" / agent_id / "logs"
-    if not logs_dir.exists():
-        print(f"No logs found for agent: {agent_id}")
-        return
-
-    # Find most recent log file
-    log_files = sorted(logs_dir.glob("*.json*"), reverse=True)
-    if not log_files:
-        print(f"No log files found for agent: {agent_id}")
-        return
-
-    log_file = log_files[0]
-    print(f"Showing logs from: {log_file.name}")
-    print()
-
-    # Read last 50 entries (JSONL format - one JSON object per line)
-    entries = []
-    with open(log_file) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                try:
-                    entries.append(json.loads(line))
-                except json.JSONDecodeError:
-                    pass
-
-    for entry in entries[-50:]:
-        ts = entry.get("timestamp", "?")[:19]
-        event = entry.get("event", "?")
-        details = entry.get("details", {})
-        details_str = json.dumps(details)
-        if len(details_str) > 80:
-            details_str = details_str[:77] + "..."
-        print(f"[{ts}] {event}: {details_str}")
-
-
-def cmd_topics(args):
-    """List all topics."""
-    from src.tools.data.topics import list_topics
-
-    print("=" * 60)
-    print("Euno - Topics")
-    print("=" * 60)
-    print()
-
-    topics = list_topics()
-    if not topics:
-        print("No topics found.")
-        return
-
-    for topic in topics:
-        print(f"  [{topic['status']}] {topic['name']} ({topic['id']})")
 
 
 def cmd_points(args):
@@ -635,22 +443,128 @@ def cmd_fresh_start(args):
     print("Fresh start complete. Ready for new data.")
 
 
-def cmd_store(args):
-    """Import files into long-term memory using RLM."""
-    from src.cli.commands.store import cmd_store as store_main
-
-    # Parse global flags
-    json_mode = "--json" in args
-    if json_mode:
-        args = [a for a in args if a != "--json"]
-
-    store_main(args, json_mode)
 
 
 def cmd_dev(args):
     """Developer tools for debugging and improving agents."""
     from src.cli import cmd_dev as dev_main
     dev_main(args)
+
+
+def cmd_plugin(args):
+    """Run plugin commands.
+
+    Usage:
+        euno plugin list                    # List available plugins
+        euno plugin <name> --help           # Show plugin help
+        euno plugin <name> <command>        # Execute plugin command
+    """
+    from src.plugins import discover_plugins, execute_plugin, get_plugin_usage
+    from src.plugins.exceptions import PluginError
+
+    if not args or args[0] == "help":
+        print("=" * 60)
+        print("Euno - Plugins")
+        print("=" * 60)
+        print()
+        print("Usage:")
+        print("  euno plugin list                    # List available plugins")
+        print("  euno plugin <name> --help           # Show plugin help")
+        print("  euno plugin <name> <command>        # Execute plugin command")
+        print()
+        print("Examples:")
+        print("  euno plugin core topics list")
+        print("  euno plugin core topics create 'My topic'")
+        print("  euno plugin core memory list")
+        return
+
+    if args[0] == "list":
+        plugins = discover_plugins()
+        print("=" * 60)
+        print("Euno - Available Plugins")
+        print("=" * 60)
+        print()
+        if not plugins:
+            print("No plugins found.")
+            return
+        for plugin in plugins:
+            if plugin.description:
+                print(f"  {plugin.name}: {plugin.description}")
+            else:
+                print(f"  {plugin.name}")
+        print()
+        print("Use 'euno plugin <name> --help' for plugin details.")
+        return
+
+    # Plugin name is first arg, rest is the command
+    import shlex
+    plugin_name = args[0]
+    # Quote args that contain spaces to preserve them through shlex.split in executor
+    command = " ".join(shlex.quote(a) for a in args[1:]) if len(args) > 1 else "--help"
+
+    try:
+        result = execute_plugin(plugin_name, command)
+        print(result.output)
+        if not result.success:
+            sys.exit(result.exit_code)
+    except PluginError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+
+def _run_devops_script(script_name: str, args: list):
+    """Run a devops script with optional arguments."""
+    import subprocess
+
+    script_path = Path(__file__).parent / "devops" / script_name
+    if not script_path.exists():
+        print(f"Error: Script not found: {script_path}")
+        sys.exit(1)
+
+    try:
+        result = subprocess.run(
+            ["bash", str(script_path)] + args,
+            cwd=Path(__file__).parent
+        )
+        sys.exit(result.returncode)
+    except KeyboardInterrupt:
+        print("\nCancelled.")
+        sys.exit(1)
+
+
+def cmd_server_deploy(args):
+    """Deploy to remote server."""
+    _run_devops_script("deploy-euno.sh", args)
+
+
+def cmd_server_pull(args):
+    """Pull data from remote server."""
+    _run_devops_script("pull-data-remote.sh", args)
+
+
+def cmd_server_push(args):
+    """Push data to remote server."""
+    _run_devops_script("push-data-remote.sh", args)
+
+
+def cmd_server_push_agents(args):
+    """Push agent configs to remote server."""
+    _run_devops_script("push-agents-remote.sh", args)
+
+
+def cmd_server_remote(args):
+    """SSH into remote server."""
+    _run_devops_script("manage.sh", args)
+
+
+def cmd_server_setup(args):
+    """Setup remote server."""
+    _run_devops_script("setup-server.sh", args)
+
+
+def cmd_server_remove(args):
+    """Remove remote server."""
+    _run_devops_script("remove-server.sh", args)
 
 
 if __name__ == "__main__":

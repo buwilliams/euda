@@ -1,0 +1,1 @@
+"""Nextcloud plugin command modules."""

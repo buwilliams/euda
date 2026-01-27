@@ -32,7 +32,7 @@ Euno is a personal intelligence for human flourishing. It helps you grow into wh
 
 4. Run Euno:
    ```
-   uv run euno start    # Web server + agents (run in background in Claude Code)
+   uv run euno web    # Web server + agents (run in background in Claude Code)
    uv run euno chat     # Interactive chat with an agent
    ```
 
@@ -52,7 +52,6 @@ uv run euno dev prompt chat system   # View system prompt
 
 # Test execution
 uv run euno dev topic chat "Test task" --dry-run   # See prompt without executing
-uv run euno dev tool list_topics '{"status": "todo"}'  # Execute tool directly
 
 # Trigger behaviors manually
 uv run euno dev reflect chat --consolidate   # Run only consolidate phase
@@ -64,66 +63,84 @@ uv run euno dev trace <topic_id>               # Show execution trace
 
 Use `--json` for machine-readable output. See `specs/7_dev_cli.md` for full documentation.
 
+### Testing Plugins
+
+```bash
+# List available plugins
+uv run euno plugin list
+
+# Get help for a plugin
+uv run euno plugin core --help
+uv run euno plugin core topics --help
+
+# Run plugin commands directly
+uv run euno plugin core topics list
+uv run euno plugin core topics create "Test topic"
+uv run euno plugin core memory list
+```
+
 ## Project Structure
 
 ```
 euno/
 ├── main.py                 # Entry point, CLI
+├── plugins/                # Plugin directory
+│   ├── core/               # Core Euno functionality
+│   │   ├── cli.py          # Typer CLI entry point
+│   │   └── commands/       # Command modules
+│   │       ├── topics.py   # Topic management
+│   │       ├── assets.py   # Asset operations
+│   │       ├── memory.py   # Memory operations
+│   │       ├── identity.py # Identity management
+│   │       ├── agents.py   # Agent management
+│   │       └── ...
+│   ├── nextcloud/          # Nextcloud integration
+│   ├── speech/             # Text-to-speech
+│   └── mastodon/           # Mastodon integration
 ├── src/
-│   ├── manager.py          # Agent Manager - starts/stops all agents
+│   ├── plugins/            # Plugin infrastructure
+│   │   ├── discovery.py    # Scan plugins/, validate
+│   │   ├── executor.py     # Run CLI via subprocess
+│   │   ├── usage.py        # Extract --help text
+│   │   ├── context.py      # Build env vars
+│   │   └── tools.py        # 3 meta-tools for LLM
 │   ├── agent/              # Agent module (Identity + Cognition + Memory + Behavior)
 │   │   ├── agent.py        # Main Agent class
-│   │   ├── cognition/      # Agent cognition (reasoning + metacognition)
-│   │   │   ├── reasoning/  # First-order thinking
-│   │   │   │   └── planning.py  # Strategic planning
-│   │   │   └── metacognition/   # Second-order thinking (self-regulation)
-│   │   │       ├── regulation/  # Self-regulation
-│   │   │       │   ├── tokens.py    # Token/cost awareness
-│   │   │       │   ├── progress.py  # Stuck detection
-│   │   │       │   └── config.py    # Configuration
-│   │   │       └── consolidation/   # Self-improvement (memory/identity)
-│   │   │           ├── consolidation.py  # Main Consolidation class
-│   │   │           ├── append.py    # Lightweight extraction after chat
-│   │   │           └── consolidate.py    # Heavy analysis on trigger
-│   │   └── rlm/            # Recursive Language Model for memory access
-│   ├── metacognition/      # Legacy metacognition (imports from agent/cognition)
-│   ├── reflection/         # Legacy reflection (imports from agent/cognition)
-│   ├── llms/               # LLM clients and tools
-│   │   ├── base.py         # Unified LLM client
-│   │   └── tools/          # All tools (registered with @tool decorator)
-│   │       ├── data/       # Topics, assets, memory tools
-│   │       ├── agents/     # Agent introspection tools
-│   │       ├── system/     # Config, notifications tools
-│   │       └── integration/    # External integrations
-│   └── web/
-│       ├── app.py          # FastAPI application
-│       └── routes/         # API endpoints
+│   │   ├── manager.py      # Agent Manager
+│   │   └── cognition/      # Reasoning + Metacognition
+│   ├── tools/              # Business logic (called by plugins)
+│   │   ├── data/           # Topics, assets, memory
+│   │   ├── agents/         # Agent operations
+│   │   ├── system/         # Config, notifications
+│   │   └── integration/    # External integrations
+│   ├── llms/               # LLM clients
+│   └── web/                # FastAPI application
 ├── data/
 │   ├── agents/             # Agent configs and state
-│   │   └── {agent-id}/
-│   │       ├── config.json
-│   │       ├── identity.md
-│   │       ├── memory/
-│   │       │   ├── short-term.jsonl
-│   │       │   └── long-term/{yyyy}/{yyyy-mm-dd}.md
-│   │       └── state/conversation/{session-id}.md
-│   ├── topics/
-│   │   ├── db.sqlite       # SQLite database (topics + topic_logs tables)
-│   │   └── assets/         # Files per topic
-│   │       └── {topic-id}/
-│   └── system/
-│       ├── config.json
-│       └── logs/reflection/ # Reflection logs
-├── specs/                   # Design rules for drift detection
-│   ├── 1_agents.md
-│   ├── 2_data.md
-│   ├── 3_backend.md
-│   └── 4_ux_ui.md
+│   ├── topics/             # SQLite database + assets
+│   └── system/             # System config and logs
+├── specs/                  # Design rules for drift detection
 ├── web/                    # Web UI
 └── devops/                 # Deployment scripts
 ```
 
 ## Core Concepts
+
+### Plugins
+
+Agents interact with Euno through **plugins** - CLI-based extensions that provide capabilities. The LLM uses three meta-tools:
+
+- `list_plugins` - Discover available plugins
+- `plugin_usage(plugin)` - Get help for a plugin
+- `execute_plugin(plugin, command)` - Run a plugin command
+
+Built-in plugins:
+- **core**: Topics, memory, agents, identity, consolidation, dates
+- **nextcloud**: Files, calendar, deck integration
+- **speech**: Text-to-speech
+- **mastodon**: Social media posts
+
+See `specs/8_plugins.md` for full plugin documentation.
 
 ### Agents
 An agent is: **Identity + Cognition + Memory + Behavior**
@@ -131,7 +148,7 @@ An agent is: **Identity + Cognition + Memory + Behavior**
 - **Identity** (`identity.md`): Purpose, values, voice, stable attractors, context
 - **Cognition**: Reasoning (system prompts) + Metacognition (self-regulation, reflection)
 - **Memory**: Short-term (90 days) + Long-term (permanent archive)
-- **Behavior** (`config.json`): Tools + Triggers
+- **Behavior** (`config.json`): Plugins + Triggers
 
 ### Metacognition
 Metacognition is the agent's self-regulation and self-improvement system:
@@ -183,9 +200,9 @@ The user is conceptually an agent too - just with a different interface (Web UI/
    {
      "id": "myagent",
      "name": "My Agent",
-     "enabled": true,
-     "tools": ["list_topics", "create_topic", ...],
-     "triggers": ["time:morning", "system:start"],
+     "state": "enabled",
+     "excluded_plugins": [],
+     "triggers": [],
      "consolidation": {
        "enabled": true,
        "trigger": "time:evening"
@@ -197,16 +214,30 @@ The user is conceptually an agent too - just with a different interface (Web UI/
 
 No Python code needed for new agents.
 
-## Adding a New Tool
+## Adding a New Plugin
 
-1. Add function in `src/tools/` with `@tool` decorator:
+1. Create directory: `plugins/{name}/`
+2. Create `cli.py`:
    ```python
-   @tool("my_tool", "Description of what it does")
-   def my_tool(param: str) -> dict:
-       return {"result": param}
+   """My plugin description."""
+   import typer
+
+   app = typer.Typer(name="myplugin", help="My plugin help")
+
+   @app.command()
+   def mycommand():
+       """Command description."""
+       print("Output")
+
+   def main():
+       app()
+
+   if __name__ == "__main__":
+       main()
    ```
-2. Import in `src/tools/__init__.py`
-3. Add tool name to agent configs that should use it
+3. Plugins are auto-discovered on next invocation
+
+See `specs/8_plugins.md` for full documentation.
 
 ## API Endpoints
 
@@ -245,3 +276,4 @@ Before submitting changes, review against `specs/*.md`:
 - `specs/4_ux_ui.md` — User experience and interface patterns
 - `specs/5_cli.md` — Command-line interface commands and behavior
 - `specs/7_dev_cli.md` — Developer CLI for debugging and improving agents
+- `specs/8_plugins.md` — Plugin architecture and commands

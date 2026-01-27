@@ -119,7 +119,7 @@ if [ ! -f "$SERVICE_FILE" ]; then
 fi
 
 # Check if service needs updating
-if grep -q "/root/.local/bin/uv run euno start" "$SERVICE_FILE"; then
+if grep -q "/root/.local/bin/uv run euno web" "$SERVICE_FILE"; then
     echo "ℹ Service already configured for uv"
     exit 0
 fi
@@ -141,7 +141,7 @@ User=root
 WorkingDirectory=/opt/euno
 EnvironmentFile=/opt/euno/.env
 Environment=PATH=/root/.local/bin:/usr/bin:/bin
-ExecStart=/root/.local/bin/uv run euno start
+ExecStart=/root/.local/bin/uv run euno web
 Restart=always
 RestartSec=5
 TimeoutStopSec=10
@@ -175,7 +175,7 @@ fi
 
 # Check systemd service
 echo -n "Checking systemd service... "
-if grep -q "/root/.local/bin/uv run euno start" /etc/systemd/system/euno.service; then
+if grep -q "/root/.local/bin/uv run euno web" /etc/systemd/system/euno.service; then
     echo "✓"
 else
     echo "✗ FAILED: Service not configured correctly"

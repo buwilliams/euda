@@ -3,6 +3,39 @@
 Rules for the major entities in the system and how they relate.
 
 - All configs, logs, and state is stored in `data/{agents|topics|system}/*`
+- Plugins are stored in `plugins/` at the project root
+
+## Plugins
+
+Plugins are CLI-based extensions that provide capabilities to agents.
+
+Directory structure:
+```
+plugins/
+├── core/                   # Core Euno functionality
+│   ├── cli.py              # Typer CLI entry point
+│   └── commands/           # Command modules
+│       ├── topics.py       # Topic management
+│       ├── assets.py       # Asset operations
+│       ├── memory.py       # Memory operations
+│       ├── identity.py     # Identity management
+│       ├── agents.py       # Agent management
+│       └── ...
+├── nextcloud/              # Nextcloud integration
+│   ├── cli.py
+│   └── commands/
+├── speech/                 # Text-to-speech
+│   └── cli.py
+└── mastodon/               # Mastodon integration
+    └── cli.py
+```
+
+Each plugin must have:
+- A directory under `plugins/{name}/`
+- A `cli.py` file with a `main()` function
+- Plugins are auto-discovered at runtime
+
+See `specs/8_plugins.md` for full plugin specification.
 
 ## Agent
 
@@ -10,7 +43,7 @@ Every agent (including the user) shares the same four-category structure:
 - **Identity** → `identity.md`
 - **Cognition** → `prompts/` + system `metacognition` config
 - **Memory** → `memory/short-term.jsonl` + `memory/long-term/`
-- **Behavior** → `config.json` (tools, triggers, consolidation)
+- **Behavior** → `config.json` (plugins, triggers, consolidation)
 
 Directory structure:
 - **Config:** `data/agents/{id}/config.json`
