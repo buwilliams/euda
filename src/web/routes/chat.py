@@ -24,14 +24,14 @@ CONV_DIR = AGENTS_DIR / "user" / "state" / "conversation"
 class ChatRequest(BaseModel):
     message: str
     agent_id: str = "user"
-    session_id: Optional[str] = None
+    conversation_id: Optional[str] = None
     voice_input: bool = False
 
 
 class ChatResponse(BaseModel):
     response: str
     agent_id: str
-    session_id: str
+    conversation_id: str
     audio_base64: Optional[str] = None
 
 
@@ -49,8 +49,8 @@ def api_chat(request: ChatRequest) -> ChatResponse:
     """Send a message and get a response."""
     agent = get_agent_instance(request.agent_id)
 
-    # Set session - if None, agent will create a new one on first save
-    agent.set_session(request.session_id)
+    # Set conversation - if None, agent will create a new one on first save
+    agent.set_session(request.conversation_id)
 
     try:
         response = agent.chat(request.message, voice_input=request.voice_input)
@@ -77,7 +77,7 @@ def api_chat(request: ChatRequest) -> ChatResponse:
     # Emit UI event for SSE clients
     emit_ui_event("chat_update", {
         "agent_id": request.agent_id,
-        "session_id": agent.get_session_id()
+        "conversation_id": agent.get_session_id()
     })
 
     # Generate TTS audio if voice input and TTS available
@@ -98,7 +98,7 @@ def api_chat(request: ChatRequest) -> ChatResponse:
     return ChatResponse(
         response=response,
         agent_id=request.agent_id,
-        session_id=agent.get_session_id(),
+        conversation_id=agent.get_session_id(),
         audio_base64=audio_base64
     )
 
@@ -128,8 +128,8 @@ def get_recent_conversations(count: int = 20):
         # Sort by modification time (most recent first)
         files = sorted(CONV_DIR.glob("*.md"), key=lambda f: f.stat().st_mtime, reverse=True)[:count]
 
-        for file in files:
-            session_id = file.stem
+        for i, file in enumerate(files):
+            conversation_id = file.stem
             content = file.read_text()
 
             # Use file modification time for display (when conversation was last active)
@@ -145,25 +145,30 @@ def get_recent_conversations(count: int = 20):
 
             message_count = len(re.findall(r'^## (User|Assistant)', content, re.MULTILINE))
 
-            conversations.append({
-                "session_id": session_id,
+            conv_data = {
+                "conversation_id": conversation_id,
                 "date": date_str,
                 "time": time_str,
                 "preview": preview,
                 "message_count": message_count
-            })
+            }
+            # Include last_message_timestamp only for the most recent conversation
+            if i == 0:
+                conv_data["last_message_timestamp"] = int(mtime)
+
+            conversations.append(conv_data)
 
     return {"conversations": conversations}
 
 
 class ForkRequest(BaseModel):
-    session_id: str
+    conversation_id: str
 
 
 @router.post("/conversations/fork")
 def fork_conversation(request: ForkRequest):
     """Load a past conversation to continue it."""
-    conv_file = CONV_DIR / f"{request.session_id}.md"
+    conv_file = CONV_DIR / f"{request.conversation_id}.md"
 
     if not conv_file.exists():
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -183,18 +188,18 @@ def fork_conversation(request: ForkRequest):
         i += 2
 
     return {
-        "new_session_id": request.session_id,
+        "new_conversation_id": request.conversation_id,
         "messages": messages
     }
 
 
-@router.delete("/conversations/{session_id}")
-def delete_conversation(session_id: str):
-    """Delete a conversation by session ID."""
-    conv_file = CONV_DIR / f"{session_id}.md"
+@router.delete("/conversations/{conversation_id}")
+def delete_conversation(conversation_id: str):
+    """Delete a conversation by conversation ID."""
+    conv_file = CONV_DIR / f"{conversation_id}.md"
 
     if not conv_file.exists():
         raise HTTPException(status_code=404, detail="Conversation not found")
 
     conv_file.unlink()
-    return {"status": "deleted", "session_id": session_id}
+    return {"status": "deleted", "conversation_id": conversation_id}

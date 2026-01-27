@@ -90,8 +90,8 @@ function renderHistory() {
     if (historyView === 'list') {
         content = renderHistoryList();
     } else if (historyView.startsWith('conversation-')) {
-        const sessionId = historyView.substring(13);
-        content = renderHistoryDetail(sessionId);
+        const conversationId = historyView.substring(13);
+        content = renderHistoryDetail(conversationId);
     } else {
         content = renderHistoryList();
     }
@@ -177,19 +177,19 @@ function renderHistoryCard(item) {
     const preview = item.preview || 'No preview';
 
     const cardHtml = `
-        <div class="card card-minimal" data-testid="history-card" onclick="navigateHistory('conversation-${item.session_id}')">
+        <div class="card card-minimal" data-testid="history-card" onclick="navigateHistory('conversation-${item.conversation_id}')">
             <span class="card-title">${friendlyDate} ${friendlyTime}</span>
             <span class="card-preview">${escapeHtml(preview)}</span>
             <span class="card-arrow">${icon('chevron-right')}</span>
         </div>
     `;
 
-    return wrapCardForHistorySwipe(cardHtml, item.session_id);
+    return wrapCardForHistorySwipe(cardHtml, item.conversation_id);
 }
 
-function wrapCardForHistorySwipe(cardHtml, sessionId) {
+function wrapCardForHistorySwipe(cardHtml, conversationId) {
     return `
-        <div class="swipe-container" data-session-id="${sessionId}" data-type="history">
+        <div class="swipe-container" data-conversation-id="${conversationId}" data-type="history">
             <div class="swipe-action swipe-action-right restore">
                 ${icon('chat-bubble-left')}
             </div>
@@ -203,8 +203,8 @@ function wrapCardForHistorySwipe(cardHtml, sessionId) {
     `;
 }
 
-function renderHistoryDetail(sessionId) {
-    const item = historyData.find(h => h.session_id === sessionId);
+function renderHistoryDetail(conversationId) {
+    const item = historyData.find(h => h.conversation_id === conversationId);
 
     if (!item) {
         return `
@@ -232,8 +232,8 @@ function renderHistoryDetail(sessionId) {
                 <div class="history-detail-meta">${item.message_count || '?'} messages</div>
             </div>
             <div class="task-detail-actions">
-                <button class="task-detail-action" data-testid="continue-btn" onclick="loadConversation('${item.session_id}')">${icon('chat-bubble-left')} Continue</button>
-                <button class="task-detail-action danger" data-testid="delete-btn" onclick="deleteConversation('${item.session_id}')">${icon('trash')} Delete</button>
+                <button class="task-detail-action" data-testid="continue-btn" onclick="loadConversation('${item.conversation_id}')">${icon('chat-bubble-left')} Continue</button>
+                <button class="task-detail-action danger" data-testid="delete-btn" onclick="deleteConversation('${item.conversation_id}')">${icon('trash')} Delete</button>
             </div>
         </div>
     `;
@@ -243,7 +243,7 @@ function renderHistoryDetail(sessionId) {
 
 let historySwipeElement = null;
 let historySwipeCard = null;
-let historySwipeSessionId = null;
+let historySwipeConversationId = null;
 
 let historySwipeHandlersInitialized = false;
 
@@ -295,7 +295,7 @@ function handleHistorySwipeStart(e) {
 
     historySwipeElement = swipeContainer;
     historySwipeCard = card;
-    historySwipeSessionId = swipeContainer.dataset.sessionId;
+    historySwipeConversationId = swipeContainer.dataset.conversationId;
 
     const touch = e.touches[0];
     historySwipeStartX = touch.clientX;
@@ -380,7 +380,7 @@ function handleHistoryMouseDown(e) {
     historyIsMouseDown = true;
     historySwipeElement = swipeContainer;
     historySwipeCard = card;
-    historySwipeSessionId = swipeContainer.dataset.sessionId;
+    historySwipeConversationId = swipeContainer.dataset.conversationId;
 
     historySwipeStartX = e.clientX;
     historySwipeStartY = e.clientY;
@@ -491,7 +491,7 @@ function resetHistorySwipeState() {
     }
     historySwipeElement = null;
     historySwipeCard = null;
-    historySwipeSessionId = null;
+    historySwipeConversationId = null;
     historySwipeDeltaX = 0;
     historyIsSwipeActive = false;
 }
@@ -500,31 +500,30 @@ function resetHistorySwipeState() {
 
 function triggerHistorySwipeLeft() {
     // Swipe left = delete
-    if (!historySwipeSessionId) return;
-    deleteConversation(historySwipeSessionId);
+    if (!historySwipeConversationId) return;
+    deleteConversation(historySwipeConversationId);
 }
 
 function triggerHistorySwipeRight() {
     // Swipe right = load into chat
-    if (!historySwipeSessionId) return;
-    loadConversation(historySwipeSessionId);
+    if (!historySwipeConversationId) return;
+    loadConversation(historySwipeConversationId);
 }
 
 // ============== History Actions ==============
 
-async function loadConversation(oldSessionId) {
+async function loadConversation(oldConversationId) {
     try {
         const response = await fetch('/api/chat/conversations/fork', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: oldSessionId })
+            body: JSON.stringify({ conversation_id: oldConversationId })
         });
         if (!response.ok) throw new Error('Failed to fork');
         const data = await response.json();
 
-        sessionId = data.new_session_id;
-        localStorage.setItem('sessionId', sessionId);
-        viewingHistorySessionId = oldSessionId;
+        conversationId = data.new_conversation_id;
+        viewingHistoryConversationId = oldConversationId;
 
         inlineMessages.innerHTML = '';
         for (const msg of data.messages) {
@@ -540,16 +539,16 @@ async function loadConversation(oldSessionId) {
     }
 }
 
-async function deleteConversation(targetSessionId) {
+async function deleteConversation(targetConversationId) {
     try {
-        const response = await fetch(`/api/chat/conversations/${targetSessionId}`, {
+        const response = await fetch(`/api/chat/conversations/${targetConversationId}`, {
             method: 'DELETE'
         });
         if (!response.ok) throw new Error('Failed to delete');
 
-        if (targetSessionId === viewingHistorySessionId) {
+        if (targetConversationId === viewingHistoryConversationId) {
             inlineMessages.innerHTML = '';
-            viewingHistorySessionId = null;
+            viewingHistoryConversationId = null;
         }
 
         // If viewing detail, go back to list
@@ -564,14 +563,14 @@ async function deleteConversation(targetSessionId) {
 }
 
 // Legacy aliases
-async function forkConversation(oldSessionId) {
-    return loadConversation(oldSessionId);
+async function forkConversation(oldConversationId) {
+    return loadConversation(oldConversationId);
 }
 
-async function archiveConversation(targetSessionId) {
-    await deleteConversation(targetSessionId);
+async function archiveConversation(targetConversationId) {
+    await deleteConversation(targetConversationId);
 }
 
-async function deleteConversationById(targetSessionId) {
-    await deleteConversation(targetSessionId);
+async function deleteConversationById(targetConversationId) {
+    await deleteConversation(targetConversationId);
 }
