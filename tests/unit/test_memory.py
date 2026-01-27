@@ -1,7 +1,7 @@
 """
 Unit tests for memory module.
 
-Tests for src/tools/data/memory.py
+Tests for src/core/data/memory.py
 """
 
 import json

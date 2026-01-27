@@ -1,7 +1,7 @@
 """
 Unit tests for system tools module.
 
-Tests for src/tools/system/system.py
+Tests for src/core/system/
 
 Design: specs/1_agents.md - Work Cycle
 - Agent calls done_working when work is complete

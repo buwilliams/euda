@@ -345,7 +345,7 @@ Consolidation is the metacognitive process of self-analysis and growth:
   - Triggered by `euno:consolidate` trigger in agent config
   - Creates `euno:consolidate` topic that executes directly (no LLM loop)
   - Reviews long-term memory via RLM, updates identity
-  - Implemented as `euno_consolidate` tool in `src/tools/system/consolidation/`
+  - Implemented in `src/core/system/consolidation/`
 
 Consolidation is scheduled via the trigger system (see Triggers section):
 ```json
