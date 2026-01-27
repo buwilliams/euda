@@ -174,15 +174,20 @@ def cmd_chat(args):
     print("=" * 60)
     print()
 
-    # Start agents in background thread (same as cmd_start)
+    # Create manager in main thread so we can wait for startup
+    manager = AgentManager()
+    set_manager(manager)
+
+    # Start agents in background thread
     def run_agents():
-        manager = AgentManager()
-        set_manager(manager)
-        asyncio.run(manager.run())
+        manager.run()
 
     agent_thread = threading.Thread(target=run_agents, daemon=True)
     agent_thread.start()
-    print("Platform running in background (triggers, events)")
+
+    # Wait for platform startup to complete before showing prompt
+    manager.wait_for_startup()
+    print()
     print("Type 'quit' to exit.")
     print()
 

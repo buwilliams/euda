@@ -57,6 +57,19 @@ class AgentManager:
         self._config_mtimes: Dict[str, float] = {}  # agent_id -> last mtime
         self._agent_stop_events: Dict[str, threading.Event] = {}  # Signal agents to stop
         self._config_watch_thread: Optional[threading.Thread] = None
+        # Startup synchronization
+        self._startup_complete = threading.Event()
+
+    def wait_for_startup(self, timeout: float = 30.0) -> bool:
+        """Wait for the manager to complete startup.
+
+        Args:
+            timeout: Maximum time to wait in seconds
+
+        Returns:
+            True if startup completed, False if timeout
+        """
+        return self._startup_complete.wait(timeout=timeout)
 
     def load_agent_configs(self) -> List[dict]:
         """Load all agent configurations from data/agents/*/config.json."""
@@ -746,6 +759,9 @@ class AgentManager:
         )
         self._config_watch_thread.start()
         print("Config watcher started")
+
+        # Signal that startup is complete
+        self._startup_complete.set()
 
         # Wait until shutdown
         try:
