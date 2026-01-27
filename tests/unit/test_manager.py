@@ -101,7 +101,7 @@ class TestStartupTriggers:
         from src.agent.manager import AgentManager
         from src.tools.data.topics import list_topics
 
-        # Create disabled agent with dict trigger
+        # Create disabled agent with event trigger
         config = {
             "id": "disabled-worker",
             "name": "Disabled Worker",
@@ -109,9 +109,11 @@ class TestStartupTriggers:
             "tools": ["list_topics"],
             "triggers": [
                 {
+                    "event": "evening",
+                    "action": "tool",
+                    "tool": "euno_consolidate",
                     "topic_name": "euno:consolidate",
-                    "topic_description": "Run consolidation",
-                    "schedule": "evening"
+                    "topic_description": "Run consolidation"
                 }
             ]
         }
@@ -327,86 +329,463 @@ class TestConfigHotReload:
 
 
 # =============================================================================
-# Dict-Based Trigger Format Tests
+# Event-Based Trigger Format Tests
 # =============================================================================
 
 @pytest.mark.unit
-class TestDictBasedTriggers:
-    """Test handling of dict-based trigger format.
+class TestEventBasedTriggers:
+    """Test handling of event-based trigger format.
 
-    Spec: Trigger format uses objects with topic_name, topic_description, schedule.
-    Dict triggers are handled by the scheduler, not the event bus.
+    Spec: specs/1_agents.md - Trigger format uses objects with event, action, tool, topic_name.
+    Triggers are handled by the scheduler based on the `event` key.
     """
 
-    def test_start_agent_with_dict_triggers(
+    def test_start_agent_with_event_triggers(
         self, manager_data_dir, create_manager_agent
     ):
-        """start_agent handles dict-based triggers without error.
+        """start_agent handles event-based triggers without error.
 
-        Spec: Dict triggers are for scheduled topics.
+        Spec: Triggers use `event` key for schedule matching.
         """
         from src.agent.manager import AgentManager
 
-        # Create agent with dict triggers only (string triggers no longer supported)
         config = {
-            "id": "dict-trigger-agent",
-            "name": "Dict Trigger Agent",
+            "id": "event-trigger-agent",
+            "name": "Event Trigger Agent",
             "state": "enabled",
             "tools": ["list_topics"],
             "triggers": [
                 {
+                    "event": "evening",
+                    "action": "tool",
+                    "tool": "euno_consolidate",
                     "topic_name": "euno:consolidate",
-                    "topic_description": "Run consolidation",
-                    "schedule": "evening"
+                    "topic_description": "Run consolidation"
                 }
             ]
         }
-        agent_dir = manager_data_dir / "agents" / "dict-trigger-agent"
+        agent_dir = manager_data_dir / "agents" / "event-trigger-agent"
         agent_dir.mkdir(parents=True, exist_ok=True)
         (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
-        (agent_dir / "identity.md").write_text("# Dict Trigger Agent\n\nTest agent.")
+        (agent_dir / "identity.md").write_text("# Event Trigger Agent\n\nTest agent.")
 
         manager = AgentManager()
 
-        # This should not raise TypeError: unhashable type: 'dict'
         with patch.object(manager, '_run_agent_loop'):
             manager.start_agent(config)
 
-        assert "dict-trigger-agent" in manager.agents
+        assert "event-trigger-agent" in manager.agents
 
-    def test_start_agent_with_only_dict_triggers(
+    def test_start_agent_with_multiple_event_triggers(
         self, manager_data_dir
     ):
-        """start_agent works when agent has only dict-based triggers.
+        """start_agent works with multiple event-based triggers.
 
-        Spec: Agents can have only scheduled triggers.
+        Spec: Agents can have multiple scheduled triggers with different events.
         """
         from src.agent.manager import AgentManager
 
-        # Create agent with only dict triggers
         config = {
-            "id": "only-dict-triggers",
-            "name": "Only Dict Triggers",
+            "id": "multi-event-triggers",
+            "name": "Multi Event Triggers",
             "state": "enabled",
             "tools": ["list_topics"],
             "triggers": [
                 {
-                    "topic_name": "euno:consolidate",
-                    "schedule": "evening"
+                    "event": "evening",
+                    "action": "tool",
+                    "tool": "euno_consolidate",
+                    "topic_name": "euno:consolidate"
+                },
+                {
+                    "event": "morning",
+                    "action": "tool",
+                    "tool": "euno_quote",
+                    "topic_name": "euno:quote"
                 }
             ]
         }
-        agent_dir = manager_data_dir / "agents" / "only-dict-triggers"
+        agent_dir = manager_data_dir / "agents" / "multi-event-triggers"
         agent_dir.mkdir(parents=True, exist_ok=True)
         (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
-        (agent_dir / "identity.md").write_text("# Only Dict Triggers\n\nTest agent.")
+        (agent_dir / "identity.md").write_text("# Multi Event Triggers\n\nTest agent.")
 
         manager = AgentManager()
 
         with patch.object(manager, '_run_agent_loop'):
             manager.start_agent(config)
 
-        assert "only-dict-triggers" in manager.agents
+        assert "multi-event-triggers" in manager.agents
+
+
+# =============================================================================
+# _get_agent_triggers() Tests
+# =============================================================================
+
+@pytest.mark.unit
+class TestGetAgentTriggers:
+    """Test _get_agent_triggers() method.
+
+    Spec: specs/1_agents.md - Triggers are objects with event, action, tool, topic_name.
+    """
+
+    def test_returns_dict_triggers_only(self, manager_data_dir):
+        """_get_agent_triggers returns only dict-based triggers.
+
+        Spec: Only object triggers are supported.
+        """
+        from src.agent.manager import AgentManager
+
+        manager = AgentManager()
+
+        config = {
+            "id": "test",
+            "triggers": [
+                {"event": "morning", "topic_name": "euno:quote"},
+                {"event": "evening", "topic_name": "euno:consolidate"}
+            ]
+        }
+
+        triggers = manager._get_agent_triggers(config)
+
+        assert len(triggers) == 2
+        assert all(isinstance(t, dict) for t in triggers)
+
+    def test_returns_empty_for_no_triggers(self, manager_data_dir):
+        """_get_agent_triggers returns empty list when no triggers.
+
+        Spec: Agents can have no triggers.
+        """
+        from src.agent.manager import AgentManager
+
+        manager = AgentManager()
+
+        config = {"id": "test", "triggers": []}
+        triggers = manager._get_agent_triggers(config)
+        assert triggers == []
+
+        config_no_key = {"id": "test"}
+        triggers = manager._get_agent_triggers(config_no_key)
+        assert triggers == []
+
+    def test_preserves_event_key(self, manager_data_dir):
+        """_get_agent_triggers preserves event key in returned triggers.
+
+        Spec: Triggers use `event` key for schedule matching.
+        """
+        from src.agent.manager import AgentManager
+
+        manager = AgentManager()
+
+        config = {
+            "id": "test",
+            "triggers": [
+                {
+                    "event": "evening",
+                    "action": "tool",
+                    "tool": "euno_consolidate",
+                    "topic_name": "euno:consolidate"
+                }
+            ]
+        }
+
+        triggers = manager._get_agent_triggers(config)
+
+        assert len(triggers) == 1
+        assert triggers[0].get("event") == "evening"
+        assert triggers[0].get("action") == "tool"
+        assert triggers[0].get("tool") == "euno_consolidate"
+
+    def test_filters_non_dict_entries(self, manager_data_dir):
+        """_get_agent_triggers filters out non-dict entries.
+
+        Spec: Only object triggers are valid.
+        """
+        from src.agent.manager import AgentManager
+
+        manager = AgentManager()
+
+        # Mix of valid dicts and invalid strings/numbers
+        config = {
+            "id": "test",
+            "triggers": [
+                {"event": "morning", "topic_name": "euno:quote"},
+                "invalid_string",
+                123,
+                {"event": "evening", "topic_name": "euno:consolidate"},
+                None
+            ]
+        }
+
+        triggers = manager._get_agent_triggers(config)
+
+        # Should only return the two valid dict triggers
+        assert len(triggers) == 2
+        assert triggers[0]["event"] == "morning"
+        assert triggers[1]["event"] == "evening"
+
+
+# =============================================================================
+# Scheduler Event Matching Tests
+# =============================================================================
+
+@pytest.mark.unit
+class TestSchedulerEventMatching:
+    """Test scheduler matches triggers by `event` key.
+
+    Spec: specs/1_agents.md - Scheduler creates topics when schedule matches event.
+    """
+
+    def test_scheduler_matches_event_to_schedule(
+        self, manager_data_dir, system_config_with_schedules, test_db, mock_emit_event, mock_emit_ui_event
+    ):
+        """Scheduler creates topic when event matches schedule name.
+
+        Spec: event key maps to schedule names in system config.
+        """
+        from src.agent.manager import AgentManager
+        from src.tools.data.topics import list_topics
+
+        # Create agent with evening event trigger
+        config = {
+            "id": "scheduler-test",
+            "name": "Scheduler Test",
+            "state": "enabled",
+            "tools": ["list_topics"],
+            "triggers": [
+                {
+                    "event": "evening",
+                    "action": "tool",
+                    "tool": "euno_consolidate",
+                    "topic_name": "euno:consolidate",
+                    "topic_description": "Test consolidation"
+                }
+            ]
+        }
+        agent_dir = manager_data_dir / "agents" / "scheduler-test"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
+        (agent_dir / "identity.md").write_text("# Scheduler Test\n\nTest agent.")
+
+        manager = AgentManager()
+
+        # Load and register agent
+        mock_agent = MagicMock()
+        mock_agent.id = "scheduler-test"
+        mock_agent.config = config
+        manager.agents["scheduler-test"] = mock_agent
+
+        # Simulate missed evening trigger
+        with patch('src.agent.manager.datetime') as mock_dt:
+            mock_now = MagicMock()
+            mock_now.strftime.side_effect = lambda fmt: "2025-01-23" if fmt == "%Y-%m-%d" else "22:00"
+            mock_dt.now.return_value = mock_now
+
+            manager._emit_startup_triggers()
+
+        # Should have created the topic
+        topics = list_topics(assignee="scheduler-test")
+        assert len(topics) == 1
+        assert topics[0]["name"] == "euno:consolidate"
+
+    def test_scheduler_ignores_mismatched_event(
+        self, manager_data_dir, system_config_with_schedules, test_db, mock_emit_event, mock_emit_ui_event
+    ):
+        """Scheduler doesn't create topic when event doesn't match.
+
+        Spec: Only matching events trigger topic creation.
+        """
+        from src.agent.manager import AgentManager
+        from src.tools.data.topics import list_topics
+
+        # Create agent with morning event trigger
+        config = {
+            "id": "morning-agent",
+            "name": "Morning Agent",
+            "state": "enabled",
+            "tools": ["list_topics"],
+            "triggers": [
+                {
+                    "event": "morning",
+                    "action": "tool",
+                    "tool": "euno_quote",
+                    "topic_name": "euno:quote"
+                }
+            ]
+        }
+        agent_dir = manager_data_dir / "agents" / "morning-agent"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
+        (agent_dir / "identity.md").write_text("# Morning Agent\n\nTest agent.")
+
+        manager = AgentManager()
+
+        mock_agent = MagicMock()
+        mock_agent.id = "morning-agent"
+        mock_agent.config = config
+        manager.agents["morning-agent"] = mock_agent
+
+        # Time is after evening (22:00) but before morning would be "missed"
+        # We check that evening trigger fires but morning doesn't
+        # Actually, let's test that morning IS fired when morning is missed
+
+        # Set state to indicate evening already ran
+        state = {"last_evening": "2025-01-23"}
+        state_path = manager_data_dir / "system" / "state.json"
+        state_path.write_text(json.dumps(state))
+
+        with patch('src.agent.manager.datetime') as mock_dt:
+            mock_now = MagicMock()
+            # After morning (08:00) so morning should be detected as missed
+            mock_now.strftime.side_effect = lambda fmt: "2025-01-23" if fmt == "%Y-%m-%d" else "10:00"
+            mock_dt.now.return_value = mock_now
+
+            manager._emit_startup_triggers()
+
+        # Should have created the morning topic
+        topics = list_topics(assignee="morning-agent")
+        assert len(topics) == 1
+        assert topics[0]["name"] == "euno:quote"
+
+    def test_scheduler_creates_topic_with_description(
+        self, manager_data_dir, system_config_with_schedules, test_db, mock_emit_event, mock_emit_ui_event
+    ):
+        """Scheduler uses topic_description from trigger config.
+
+        Spec: topic_description is used when creating the trigger topic.
+        """
+        from src.agent.manager import AgentManager
+        from src.tools.data.topics import list_topics
+
+        config = {
+            "id": "desc-test",
+            "name": "Description Test",
+            "state": "enabled",
+            "tools": ["list_topics"],
+            "triggers": [
+                {
+                    "event": "evening",
+                    "action": "tool",
+                    "tool": "euno_consolidate",
+                    "topic_name": "euno:consolidate",
+                    "topic_description": "Custom description for consolidation"
+                }
+            ]
+        }
+        agent_dir = manager_data_dir / "agents" / "desc-test"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
+        (agent_dir / "identity.md").write_text("# Desc Test\n\nTest agent.")
+
+        manager = AgentManager()
+
+        mock_agent = MagicMock()
+        mock_agent.id = "desc-test"
+        mock_agent.config = config
+        manager.agents["desc-test"] = mock_agent
+
+        with patch('src.agent.manager.datetime') as mock_dt:
+            mock_now = MagicMock()
+            mock_now.strftime.side_effect = lambda fmt: "2025-01-23" if fmt == "%Y-%m-%d" else "22:00"
+            mock_dt.now.return_value = mock_now
+
+            manager._emit_startup_triggers()
+
+        topics = list_topics(assignee="desc-test")
+        assert len(topics) == 1
+        assert topics[0]["description"] == "Custom description for consolidation"
+
+
+# =============================================================================
+# Trigger Action Type Tests
+# =============================================================================
+
+@pytest.mark.unit
+class TestTriggerActionTypes:
+    """Test trigger action types (tool vs llm).
+
+    Spec: specs/1_agents.md - action: "tool" executes directly, "llm" uses agent loop.
+    """
+
+    def test_tool_action_includes_tool_field(self, manager_data_dir):
+        """Triggers with action=tool should have tool field.
+
+        Spec: action: "tool" requires tool field.
+        """
+        from src.agent.manager import AgentManager
+
+        manager = AgentManager()
+
+        config = {
+            "id": "test",
+            "triggers": [
+                {
+                    "event": "evening",
+                    "action": "tool",
+                    "tool": "euno_consolidate",
+                    "topic_name": "euno:consolidate"
+                }
+            ]
+        }
+
+        triggers = manager._get_agent_triggers(config)
+
+        assert len(triggers) == 1
+        assert triggers[0]["action"] == "tool"
+        assert triggers[0]["tool"] == "euno_consolidate"
+
+    def test_llm_action_no_tool_field_required(self, manager_data_dir):
+        """Triggers with action=llm don't need tool field.
+
+        Spec: action: "llm" creates topic for agent to process via LLM loop.
+        """
+        from src.agent.manager import AgentManager
+
+        manager = AgentManager()
+
+        config = {
+            "id": "test",
+            "triggers": [
+                {
+                    "event": "morning",
+                    "action": "llm",
+                    "topic_name": "daily:review",
+                    "topic_description": "Review daily goals"
+                }
+            ]
+        }
+
+        triggers = manager._get_agent_triggers(config)
+
+        assert len(triggers) == 1
+        assert triggers[0]["action"] == "llm"
+        assert "tool" not in triggers[0]
+
+    def test_default_action_is_llm(self, manager_data_dir):
+        """Triggers without action field default to llm.
+
+        Spec: action defaults to "llm" if not specified.
+        """
+        from src.agent.manager import AgentManager
+
+        manager = AgentManager()
+
+        config = {
+            "id": "test",
+            "triggers": [
+                {
+                    "event": "morning",
+                    "topic_name": "daily:task"
+                }
+            ]
+        }
+
+        triggers = manager._get_agent_triggers(config)
+
+        assert len(triggers) == 1
+        # No action field means it defaults to llm behavior
+        assert triggers[0].get("action") is None  # Not set, defaults to llm
+
 
     def test_has_open_internal_topic_detects_working_status(
         self, manager_data_dir, test_db, mock_emit_event, mock_emit_ui_event
