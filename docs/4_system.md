@@ -36,7 +36,7 @@ An agent is an actor in the system (AI or human).
 - `regulation` - metacognition (token tracking, progress detection)
 
 **Behavior:**
-- `tools[]` - available tool names
+- `excluded_plugins[]` - plugins to exclude (empty = all plugins available)
 - `triggers[]` - when agent acts (schedules, events)
 
 **Consolidation:**
@@ -138,8 +138,29 @@ RLM provides intelligent access to long-term memory through iterative exploratio
 
 Behavior is what enables action. It has two parts.
 
-- Tools are capabilities that agents use to act in the world. Each tool is a function with a name, description, and parameters. Each agent has access to a configured subset of available tools.
+- Plugins are capabilities that agents use to act in the world. Each plugin provides CLI commands for a domain (topics, memory, integrations). Agents interact with plugins through three meta-tools: `list_plugins`, `plugin_usage`, and `execute_plugin`.
 - Triggers determine when agents act—topic assignment, scheduled times, or system events.
+
+### Plugins
+
+Plugins are CLI-based extensions that provide capabilities to agents. The system uses a plugin architecture where agents don't call individual tools directly—instead, they use three meta-tools to discover and execute plugin commands.
+
+**Meta-Tools:**
+- `list_plugins` - Discover available plugins
+- `plugin_usage(plugin)` - Get CLI help for a plugin
+- `execute_plugin(plugin, command)` - Run a plugin command
+
+**Built-in Plugins:**
+- `core` - Topics, memory, agents, identity, consolidation, dates
+- `nextcloud` - Files, calendar, deck integration
+- `speech` - Text-to-speech
+- `mastodon` - Social media posts
+
+**Plugin Structure:**
+Each plugin is a directory under `plugins/` with a `cli.py` entry point that implements a Typer CLI. Plugins are auto-discovered at runtime.
+
+**Agent Configuration:**
+Agents configure plugin access via `excluded_plugins[]` in their config. An empty list gives access to all plugins.
 
 ---
 
