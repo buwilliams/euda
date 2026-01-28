@@ -68,6 +68,7 @@ rsync -avz --delete \
     --exclude '/data/' \
     --exclude '/android-app/' \
     --exclude '.venv/' \
+    --exclude 'venv/' \
     --exclude '__pycache__/' \
     --exclude '*.pyc' \
     --exclude '.git/' \
@@ -97,6 +98,21 @@ sleep 2
 echo ""
 echo "Checking Euno service status..."
 ssh "$SERVER" "sudo systemctl status euno --no-pager -l" | head -15
+
+# Install Docker if not present
+echo ""
+echo "Checking Docker..."
+ssh "$SERVER" bash << 'REMOTE_DOCKER'
+if ! command -v docker &> /dev/null; then
+    echo "Installing Docker..."
+    curl -fsSL https://get.docker.com | sh
+    systemctl enable docker
+    systemctl start docker
+    echo "Docker installed: $(docker --version)"
+else
+    echo "Docker: $(docker --version)"
+fi
+REMOTE_DOCKER
 
 # Start/check SearXNG
 echo ""
