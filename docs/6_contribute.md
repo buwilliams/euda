@@ -151,6 +151,30 @@ git push -u origin feature/my-feature
 gh pr create --title "Add my feature" --body "Description"
 ```
 
+## Syncing Data
+
+Keep local and remote data in sync when developing on multiple machines or deploying to a server:
+
+```bash
+# Sync operations (auto-configures from EUNO_SERVER in .env)
+euno sync                          # Bidirectional merge
+euno sync --push                   # Local → remote
+euno sync --pull                   # Remote → local
+euno sync --dry-run                # Preview changes
+
+# Conflict resolution
+euno sync status                   # Show sync state
+euno sync conflicts                # List unresolved conflicts
+euno sync resolve <id> --keep-local
+euno sync resolve <id> --keep-remote
+```
+
+Backups are created automatically before sync. Use `--no-backup` to skip.
+
+**What syncs:** Topics, memory, agent configs/identities, system configs, assets
+
+**What doesn't sync:** Logs, auth, sync state (instance-specific)
+
 ## Community
 
 **[Discord](https://discord.gg/5B9VdQ6vYP)** — where we meet, plan, and discuss. Come say hi!
