@@ -157,6 +157,7 @@ env/
 # ===================
 .DS_Store
 Thumbs.db
+*:Zone.Identifier
 
 # ===================
 # DevOps / Diagnostics
