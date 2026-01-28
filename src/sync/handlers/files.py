@@ -496,22 +496,25 @@ class FilesSyncHandler(SyncHandler):
         if not local_base.exists():
             return deleted
 
-        # Get local items
+        # Get local items (directories only)
         local_items = set()
         if local_base.exists():
             for item in local_base.iterdir():
                 if item.is_dir():
                     local_items.add(item.name)
 
-        # Get remote items
+        # Get remote items (directories only) using proper directory listing
         remote_items = set()
         if transport.remote_directory_exists(base_path):
-            remote_items = set(transport.list_remote_files(base_path))
+            remote_items = set(transport.list_remote_directories(base_path))
 
-        # Find orphans (remote only)
+        # Find orphans (remote only) - directories that exist on remote but not locally
         orphans = remote_items - local_items
 
         for orphan in orphans:
+            # Skip items with colons or other invalid characters (ls formatting artifacts)
+            if ':' in orphan or not orphan:
+                continue
             orphan_path = f"{base_path}/{orphan}"
             log(f"Deleting remote: {orphan_path}")
             try:
@@ -536,18 +539,18 @@ class FilesSyncHandler(SyncHandler):
         if not local_base.exists():
             return deleted
 
-        # Get local items
+        # Get local items (directories only)
         local_items = set()
         for item in local_base.iterdir():
             if item.is_dir():
                 local_items.add(item.name)
 
-        # Get remote items
+        # Get remote items (directories only)
         remote_items = set()
         if transport.remote_directory_exists(base_path):
-            remote_items = set(transport.list_remote_files(base_path))
+            remote_items = set(transport.list_remote_directories(base_path))
 
-        # Find orphans (local only)
+        # Find orphans (local only) - directories that exist locally but not on remote
         orphans = local_items - remote_items
 
         for orphan in orphans:

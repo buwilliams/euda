@@ -274,6 +274,23 @@ class Transport:
             return [f for f in stdout.strip().split("\n") if f]
         return []
 
+    def list_remote_directories(self, remote_relative_path: str) -> List[str]:
+        """List only directories in a remote directory.
+
+        Args:
+            remote_relative_path: Path relative to remote data directory
+
+        Returns:
+            List of directory names (not full paths)
+        """
+        remote_path = f"{self.remote_data_path}/{remote_relative_path}"
+        success, stdout, _ = self.run_remote_command(
+            f"find {remote_path} -maxdepth 1 -mindepth 1 -type d -exec basename {{}} \\; 2>/dev/null"
+        )
+        if success and stdout.strip():
+            return [d for d in stdout.strip().split("\n") if d and ':' not in d]
+        return []
+
     def remote_file_exists(self, remote_relative_path: str) -> bool:
         """Check if a remote file exists.
 
