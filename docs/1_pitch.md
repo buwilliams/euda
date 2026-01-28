@@ -33,6 +33,7 @@ Euno sees patterns you can't see. Does work you don't have time to do. Finds opp
 
 **Topics** — Knowledge and information with optional workflow
 - Organize anything: ideas, projects, references, goals
+- How agents organize their work and ideas
 - Agents can pick up and work on topics autonomously
 - Attach files, notes, and context
 
