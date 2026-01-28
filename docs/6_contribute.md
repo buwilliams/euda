@@ -153,13 +153,14 @@ gh pr create --title "Add my feature" --body "Description"
 
 ## Syncing Data
 
-Keep local and remote data in sync when developing on multiple machines or deploying to a server:
+Keep local and remote in sync when developing on multiple machines or deploying to a server:
 
 ```bash
-# Sync operations (auto-configures from EUNO_SERVER in .env)
-euno sync                          # Bidirectional merge
-euno sync --push                   # Local → remote
-euno sync --pull                   # Remote → local
+# Full sync (code + data, stops/restarts server)
+euno sync                          # Deploy code + bidirectional data merge
+euno sync --data-only              # Skip code sync, data only
+euno sync --push                   # Local → remote only
+euno sync --pull                   # Remote → local only
 euno sync --dry-run                # Preview changes
 
 # Conflict resolution
@@ -169,11 +170,12 @@ euno sync resolve <id> --keep-local
 euno sync resolve <id> --keep-remote
 ```
 
-Backups are created automatically before sync. Use `--no-backup` to skip.
+By default, sync: (1) stops remote server, (2) syncs code, (3) syncs data, (4) restarts server.
+Use `--data-only` to skip code deployment. Backups are created automatically before data sync.
 
-**What syncs:** Topics, memory, agent configs/identities, system configs, assets
+**What syncs:** Source code (local → remote), topics, memory, agent configs/identities, assets
 
-**What doesn't sync:** Logs, auth, sync state (instance-specific)
+**What doesn't sync:** `.git/`, `.venv/`, `.env`, logs, auth, sync state
 
 ## Community
 
