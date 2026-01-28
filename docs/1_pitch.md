@@ -24,7 +24,7 @@ Euno sees patterns you can't see. Does work you don't have time to do. Finds opp
 
 ---
 
-## Capabilities
+## Concepts
 
 **Agents** — Autonomous workers with their own identities and memory
 - Work on your behalf while you sleep
