@@ -318,6 +318,19 @@ class Transport:
         temp_path.unlink(missing_ok=True)
         return None
 
+    def delete_remote_path(self, remote_relative_path: str) -> bool:
+        """Delete a file or directory on the remote server.
+
+        Args:
+            remote_relative_path: Path relative to remote data directory
+
+        Returns:
+            True if deletion successful, False otherwise
+        """
+        remote_full = f"{self.remote_path}/data/{remote_relative_path}"
+        success, stdout, stderr = self.run_remote_command(f"rm -rf {remote_full}")
+        return success
+
     def backup_remote_data(self) -> Tuple[bool, str]:
         """Create a backup of the remote data directory.
 

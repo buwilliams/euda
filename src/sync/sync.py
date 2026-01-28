@@ -95,6 +95,7 @@ def sync(
     dry_run: bool = False,
     backup: bool = True,
     verbose: bool = False,
+    delete: bool = False,
 ) -> SyncResult:
     """Perform sync with remote.
 
@@ -103,10 +104,21 @@ def sync(
         dry_run: If True, only show what would be done
         backup: If True, create backup before applying changes (default: True)
         verbose: If True, print progress messages
+        delete: If True, delete files that don't exist on source side (push/pull only)
 
     Returns:
         SyncResult with details of the operation
     """
+    # --delete only works with directional sync
+    if delete and direction == "bidirectional":
+        return SyncResult(
+            success=False,
+            direction=direction,
+            dry_run=dry_run,
+            error="--delete requires --push or --pull (not bidirectional)",
+            started_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+        )
     def log(msg: str):
         if verbose:
             print(f"  {msg}")
@@ -326,6 +338,24 @@ def sync(
                 started_at=started_at,
                 completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             )
+
+    # Phase 4: Delete files that don't exist on source (if --delete flag)
+    if delete and not dry_run:
+        log("Checking for deletions...")
+        for handler in handlers:
+            if hasattr(handler, 'apply_deletions'):
+                try:
+                    deleted = handler.apply_deletions(transport, direction, verbose=verbose)
+                    for item_id in deleted:
+                        all_changes.append(SyncChange(
+                            type="delete",
+                            handler=handler.name,
+                            item_id=item_id,
+                            description=f"Deleted: {item_id}",
+                            applied=True,
+                        ))
+                except Exception as e:
+                    log(f"  Error during deletion in {handler.name}: {e}")
 
     # Record sync
     completed_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")

@@ -35,6 +35,7 @@ Sync Commands:
   sync             Bidirectional sync with remote (default)
   sync --push      Push local data to remote
   sync --pull      Pull remote data to local
+  sync --delete    Delete files not on source (requires --push or --pull)
   sync --dry-run   Preview changes without applying
   sync init        Initialize sync with remote server
   sync status      Show sync state and pending conflicts
@@ -606,6 +607,8 @@ Usage:
     euno sync --dry-run           # Preview changes without applying
     euno sync --push              # Local -> remote only
     euno sync --pull              # Remote -> local only
+    euno sync --push --delete     # Push and delete remote files not in local
+    euno sync --pull --delete     # Pull and delete local files not in remote
     euno sync --no-backup         # Skip backup before sync
     euno sync init [server]       # Initialize sync with remote
     euno sync status              # Show sync state
@@ -616,7 +619,11 @@ Usage:
 
 Backups are created by default before applying changes:
     - Pull: backs up local data/ directory
-    - Push: backs up remote data/ directory""")
+    - Push: backs up remote data/ directory
+
+The --delete flag propagates deletions (requires --push or --pull):
+    - With --push: remote files not in local are deleted
+    - With --pull: local files not in remote are deleted""")
         return
 
     from src.sync import (
@@ -780,6 +787,7 @@ Backups are created by default before applying changes:
     # Parse flags
     dry_run = "--dry-run" in args or "-n" in args
     no_backup = "--no-backup" in args
+    delete = "--delete" in args
     direction = "bidirectional"
     if "--push" in args:
         direction = "push"
@@ -791,6 +799,12 @@ Backups are created by default before applying changes:
 
     if no_backup:
         print("BACKUP DISABLED\n")
+
+    if delete:
+        if direction == "bidirectional":
+            print("Error: --delete requires --push or --pull")
+            sys.exit(1)
+        print("DELETE MODE - files not on source will be removed\n")
 
     print(f"Direction: {direction}")
 
@@ -811,7 +825,7 @@ Backups are created by default before applying changes:
     print()
 
     # Perform sync
-    result = sync(direction=direction, dry_run=dry_run, backup=not no_backup, verbose=True)
+    result = sync(direction=direction, dry_run=dry_run, backup=not no_backup, verbose=True, delete=delete)
 
     # Handle errors (but not conflicts - those are shown separately)
     if not result.success and result.error:
