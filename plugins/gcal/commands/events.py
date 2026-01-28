@@ -110,12 +110,14 @@ def create_cmd(
     end: Optional[str] = typer.Option(None, "--end", "-e", help="End datetime (default: 1 hour after start)"),
     description: Optional[str] = typer.Option(None, "--desc", "-d", help="Event description"),
     location: Optional[str] = typer.Option(None, "--location", "-l", help="Event location"),
+    attendees: Optional[str] = typer.Option(None, "--attendees", "-i", help="Comma-separated attendee emails"),
     calendar: str = typer.Option("primary", "--calendar", "-c", help="Calendar name or ID"),
     account: Optional[str] = typer.Option(None, "--account", "-a", help="Account to use"),
 ):
     """Create a calendar event.
 
     Calendar can be a configured name (e.g., 'primary') or a raw calendar ID.
+    Attendees will receive email invitations.
     """
     client = _get_client()
     storage = _get_storage()
@@ -123,12 +125,18 @@ def create_cmd(
     # Resolve calendar name to ID
     calendar_id = storage.resolve_calendar(calendar)
 
+    # Parse attendees
+    attendee_list = None
+    if attendees:
+        attendee_list = [email.strip() for email in attendees.split(",") if email.strip()]
+
     result = client.create_event(
         title=title,
         start=start,
         end=end,
         description=description,
         location=location,
+        attendees=attendee_list,
         calendar_id=calendar_id,
         account_name=account,
     )

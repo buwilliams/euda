@@ -289,6 +289,7 @@ def create_event(
     end: Optional[str] = None,
     description: Optional[str] = None,
     location: Optional[str] = None,
+    attendees: Optional[list[str]] = None,
     calendar_id: str = "primary",
     account_name: Optional[str] = None,
 ) -> dict:
@@ -300,6 +301,7 @@ def create_event(
         end: End datetime (default: 1 hour after start)
         description: Event description
         location: Event location
+        attendees: List of attendee email addresses
         calendar_id: Calendar ID
         account_name: Account to use
 
@@ -339,9 +341,15 @@ def create_event(
             event_body["description"] = description
         if location:
             event_body["location"] = location
+        if attendees:
+            event_body["attendees"] = [{"email": email} for email in attendees]
 
-        # Create the event
-        event = service.events().insert(calendarId=calendar_id, body=event_body).execute()
+        # Create the event (sendUpdates sends invitation emails to attendees)
+        event = service.events().insert(
+            calendarId=calendar_id,
+            body=event_body,
+            sendUpdates="all" if attendees else "none",
+        ).execute()
 
         return {
             "account": resolved_account,
