@@ -25,8 +25,10 @@ from ...agent.cognition.metacognition import get_incident_tracker
 
 router = APIRouter()
 
-DOCS_DIR = Path(__file__).parent.parent.parent.parent / "docs"
-DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+DOCS_DIR = PROJECT_ROOT / "docs"
+SPECS_DIR = PROJECT_ROOT / "specs"
+DATA_DIR = PROJECT_ROOT / "data"
 
 
 class FreshStartRequest(BaseModel):
@@ -41,16 +43,57 @@ def health_check():
     return {"status": "ok", "version": "3.0.0"}
 
 
-# ============== About ==============
+# ============== Docs ==============
+
+@router.get("/docs")
+def get_doc(path: str = "README.md"):
+    """Get a documentation file by path.
+
+    Allowed paths:
+    - README.md (project root)
+    - docs/*.md
+    - specs/*.md
+    """
+    # Normalize and validate path
+    path = path.strip("/")
+
+    # Determine file location based on path
+    if path == "README.md":
+        file_path = PROJECT_ROOT / "README.md"
+    elif path.startswith("docs/"):
+        file_path = PROJECT_ROOT / path
+    elif path.startswith("specs/"):
+        file_path = PROJECT_ROOT / path
+    else:
+        return {"error": "Invalid path", "content": None}
+
+    # Security: ensure resolved path is within allowed directories
+    try:
+        resolved = file_path.resolve()
+        allowed_roots = [PROJECT_ROOT / "docs", PROJECT_ROOT / "specs", PROJECT_ROOT]
+        if not any(
+            resolved == root or str(resolved).startswith(str(root.resolve()) + "/")
+            for root in allowed_roots
+        ):
+            return {"error": "Access denied", "content": None}
+    except Exception:
+        return {"error": "Invalid path", "content": None}
+
+    # Only allow .md files
+    if not path.endswith(".md"):
+        return {"error": "Only markdown files allowed", "content": None}
+
+    if file_path.exists():
+        return {"content": file_path.read_text(), "path": path}
+    return {"error": "File not found", "content": None}
+
+
+# ============== About (legacy, redirects to docs) ==============
 
 @router.get("/about")
 def get_about():
-    """Get about/pitch content for the About tab."""
-    pitch_file = DOCS_DIR / "1_pitch.md"
-
-    if pitch_file.exists():
-        return {"content": pitch_file.read_text()}
-    return {"content": "# Euno\n\nPersonal Intelligence System"}
+    """Get about/vision content for the About tab (legacy endpoint)."""
+    return get_doc("docs/1_vision.md")
 
 
 # ============== Daily Quote ==============

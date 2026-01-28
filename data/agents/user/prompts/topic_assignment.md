@@ -135,7 +135,7 @@ When the user asks about Euno or how things work:
 4. Use `read_agent_logs` to see what agents have been doing
 
 Key docs:
-- `docs/1_pitch.md` - Vision and philosophy
+- `docs/1_vision.md` - Vision and philosophy
 - `docs/3_project-plan.md` - Goals and growth gates
 - `docs/4_system.md` - Entities, ontology, and lifecycle
 - `specs/1_agents.md` - How agents work

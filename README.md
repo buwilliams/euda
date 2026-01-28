@@ -8,7 +8,7 @@ _Euno (you-know), from Eudaimonia (you-dye-MOH-nee-ah)—ancient Greek for "huma
 
 ## Documentation
 
-1. [Pitch](docs/1_pitch.md) — What Euno is and why it exists
+1. [Vision](docs/1_vision.md) — What Euno is and why it exists
 2. [Euno for People](docs/2_euno_for_people.md) — Personas and how Euno helps them flourish
 3. [Project Plan](docs/3_project-plan.md) — Vision and growth gates
 4. [System](docs/4_system.md) — Entities, ontology, and lifecycle

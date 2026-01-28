@@ -85,7 +85,7 @@ After each file, briefly note what was changed.
 ## Key Euno Files
 
 **Docs (source of truth for concepts):**
-- `docs/1_pitch.md` - Product vision, core value prop
+- `docs/1_vision.md` - Product vision, core value prop
 - `docs/4_system.md` - Entities, properties, lifecycle
 
 **Specs (source of truth for behavior):**

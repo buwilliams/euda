@@ -1,31 +1,178 @@
-// Euno - About Tab
+// Euno - Docs Explorer
 
-// ============== About ==============
+// ============== Docs Navigation ==============
 
-let aboutContent = null;
+let docsHistory = [];  // Stack of {path, title} objects
+let currentDoc = null;
 
-async function loadAboutData() {
+async function loadDocsData() {
+    // Start on README.md
+    await navigateToDoc('README.md');
+}
+
+async function navigateToDoc(path) {
     try {
-        const response = await fetch('/api/about');
+        const response = await fetch(`/api/docs?path=${encodeURIComponent(path)}`);
         const data = await response.json();
-        aboutContent = data.content || '';
-        renderAbout();
+
+        if (data.error) {
+            document.getElementById('about-content').innerHTML =
+                `<div class="focus-empty">Error: ${data.error}</div>`;
+            return;
+        }
+
+        // Add current doc to history before navigating (if we have one)
+        if (currentDoc && currentDoc.path !== path) {
+            docsHistory.push(currentDoc);
+        }
+
+        // Extract title from first heading or filename
+        const title = extractTitle(data.content, path);
+
+        currentDoc = { path: path, title: title, content: data.content };
+        renderDoc();
     } catch (error) {
-        console.error('Failed to load about:', error);
+        console.error('Failed to load doc:', error);
         document.getElementById('about-content').innerHTML =
-            '<div class="focus-empty">Failed to load about content</div>';
+            '<div class="focus-empty">Failed to load documentation</div>';
     }
 }
 
-function renderAbout() {
-    const container = document.getElementById('about-content');
-    if (!aboutContent) {
-        container.innerHTML = '<div class="focus-empty">No content available</div>';
-        return;
+function extractTitle(content, path) {
+    // Try to extract title from first # heading
+    const match = content.match(/^#\s+(.+)$/m);
+    if (match) {
+        return match[1];
     }
-    // Use marked to convert markdown to HTML
-    container.innerHTML = marked.parse(aboutContent);
+    // Fall back to filename without extension
+    return path.split('/').pop().replace('.md', '');
 }
+
+function renderDoc() {
+    if (!currentDoc) return;
+
+    const container = document.getElementById('about-content');
+    const titleEl = document.getElementById('docs-title');
+    const breadcrumbsEl = document.getElementById('docs-breadcrumbs');
+
+    // Update header
+    titleEl.textContent = currentDoc.title;
+
+    // Build breadcrumbs
+    const pathParts = currentDoc.path.split('/');
+    let breadcrumbHtml = '<span>More</span><img src="/web/icons/chevron-right.svg" alt=">">';
+    breadcrumbHtml += '<span>Docs</span>';
+    if (currentDoc.path !== 'README.md') {
+        breadcrumbHtml += '<img src="/web/icons/chevron-right.svg" alt=">">';
+        breadcrumbHtml += `<span>${pathParts[pathParts.length - 1].replace('.md', '')}</span>`;
+    }
+    breadcrumbsEl.innerHTML = breadcrumbHtml;
+
+    // Render markdown
+    const html = marked.parse(currentDoc.content);
+    container.innerHTML = html;
+
+    // Intercept local markdown links
+    interceptDocLinks(container);
+
+    // Scroll to top
+    container.scrollTop = 0;
+}
+
+function interceptDocLinks(container) {
+    const links = container.querySelectorAll('a');
+    links.forEach(link => {
+        const href = link.getAttribute('href');
+        if (!href) return;
+
+        // Check if it's a local markdown link
+        if (isLocalDocLink(href)) {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const resolvedPath = resolveDocPath(href);
+                navigateToDoc(resolvedPath);
+            });
+            // Style as internal link
+            link.classList.add('doc-internal-link');
+        } else if (href.startsWith('http://') || href.startsWith('https://')) {
+            // External link - open in new tab
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+        }
+    });
+}
+
+function isLocalDocLink(href) {
+    // Local doc links are relative .md files or docs/specs paths
+    if (href.startsWith('http://') || href.startsWith('https://')) {
+        return false;
+    }
+    if (href.startsWith('#')) {
+        return false;  // Anchor link
+    }
+    if (href.endsWith('.md')) {
+        return true;
+    }
+    if (href.startsWith('docs/') || href.startsWith('specs/')) {
+        return true;
+    }
+    return false;
+}
+
+function resolveDocPath(href) {
+    // Resolve relative path based on current doc location
+    if (!currentDoc) return href;
+
+    // If already absolute-ish (starts with docs/ or specs/ or is README.md)
+    if (href.startsWith('docs/') || href.startsWith('specs/') || href === 'README.md') {
+        return href;
+    }
+
+    // Get current directory
+    const currentDir = currentDoc.path.includes('/')
+        ? currentDoc.path.substring(0, currentDoc.path.lastIndexOf('/'))
+        : '';
+
+    // Handle relative paths
+    if (href.startsWith('./')) {
+        href = href.substring(2);
+    }
+
+    // Handle parent directory references
+    let targetDir = currentDir;
+    while (href.startsWith('../')) {
+        href = href.substring(3);
+        targetDir = targetDir.includes('/')
+            ? targetDir.substring(0, targetDir.lastIndexOf('/'))
+            : '';
+    }
+
+    // Combine
+    if (targetDir) {
+        return `${targetDir}/${href}`;
+    }
+    return href;
+}
+
+function docsNavigateBack() {
+    if (docsHistory.length > 0) {
+        // Pop from history and navigate
+        const prev = docsHistory.pop();
+        currentDoc = prev;
+        renderDoc();
+    } else {
+        // No history, go back to More menu
+        navigateMoreMenuBack();
+    }
+}
+
+// Reset docs state when opening the tab
+function resetDocsExplorer() {
+    docsHistory = [];
+    currentDoc = null;
+}
+
+// ============== Legacy functions kept for compatibility ==============
 
 function discussTask(description) {
     contextInput.value = `Tell me about the task: ${description}`;
@@ -141,4 +288,3 @@ function updateTopicsBadge() {
     badge.textContent = count;
     badge.style.display = count > 0 ? 'inline' : 'none';
 }
-

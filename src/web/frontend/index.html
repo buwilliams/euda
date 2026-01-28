@@ -100,13 +100,13 @@
                         </div>
                     </div>
 
-                    <!-- About Tab -->
+                    <!-- Docs Tab -->
                     <div class="tab-pane" id="tab-about" data-testid="tab-about">
-                        <div class="focus-view-header" onclick="navigateMoreMenuBack()">
+                        <div class="focus-view-header" onclick="docsNavigateBack()">
                             <span class="focus-back-btn"><img src="/web/icons/chevron-left.svg" alt="Back" class="icon"></span>
                             <div class="focus-view-header-content">
-                                <span class="focus-view-title">About</span>
-                                <div class="focus-view-breadcrumbs"><span>More</span><img src="/web/icons/chevron-right.svg" alt=">"><span>About</span></div>
+                                <span class="focus-view-title" id="docs-title">Docs</span>
+                                <div class="focus-view-breadcrumbs" id="docs-breadcrumbs"><span>More</span><img src="/web/icons/chevron-right.svg" alt=">"><span>Docs</span></div>
                             </div>
                         </div>
                         <div class="about-content" id="about-content">
@@ -293,8 +293,8 @@
                         </button>
                         <div class="overflow-menu" id="overflow-menu" data-testid="overflow-menu">
                             <button class="overflow-item" data-tab="about" data-testid="overflow-about" onclick="openMoreMenuScreen('about'); closeOverflowMenu();">
-                                <img src="/web/icons/information-circle.svg" alt="About">
-                                <span>About</span>
+                                <img src="/web/icons/document.svg" alt="Docs">
+                                <span>Docs</span>
                             </button>
                             <button class="overflow-item" data-tab="settings" data-testid="overflow-settings" onclick="openMoreMenuScreen('settings'); closeOverflowMenu();">
                                 <img src="/web/icons/cog-6-tooth.svg" alt="Settings">
