@@ -72,7 +72,7 @@ Each gate below is a checkpoint. We must pass each gate before moving forward. T
 - Documentation
 - Community building
 
-**Reward:** The trophy is now shared with you—to put on resumes, talk about, and generally show off.
+**Reward:** We go public with our open source project. The trophy is now shared with you—to put on resumes, talk about, and generally show off.
 
 ---
 
