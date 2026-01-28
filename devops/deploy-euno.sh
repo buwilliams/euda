@@ -103,7 +103,7 @@ echo ""
 echo "Setting up SearXNG..."
 ssh "$SERVER" bash << REMOTE_SCRIPT
 set -e
-cd $REMOTE_DIR/devops/searxng
+cd $REMOTE_DIR
 
 # Generate secret key if not already set
 SEARXNG_CONFIG="$REMOTE_DIR/data/system/searxng.yml"
