@@ -9,8 +9,8 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import Optional
 
-from plugins.speech import get_speech_client, supports_tts
-from plugins.speech.openai import is_openai_configured
+from src.speech import get_speech_client, supports_tts
+from src.speech.openai import is_openai_configured
 from ...llms import get_provider
 
 

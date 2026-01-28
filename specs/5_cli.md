@@ -4,7 +4,7 @@ Rules for the command-line interface.
 
 ## Entry Point
 
-- Single entry point: `uv run euno {command}`
+- Single entry point: `euno {command}`
 - Default command is `help` if none specified
 - Unknown commands show help and exit with code 1
 
@@ -12,7 +12,7 @@ Rules for the command-line interface.
 
 - `web` — Run web server (port 8000) with agents in background
 - `chat [agent]` — Interactive chat with an agent (default: user)
-- `plugin` — Run plugin commands
+- `skills` — Run skill commands
 - `dev` — Developer tools for debugging agents
 - `points [name]` — Show contribution points, optionally filtered by name
 - `set-password` — Set access password for web UI (empty password disables auth)

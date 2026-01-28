@@ -244,9 +244,9 @@ These tests verify the memory flow works correctly. Run with dev CLI.
 Verifies chat conversations extract to short-term memory.
 
 ```bash
-uv run euno dev memory chat --json > /tmp/before.json
-uv run euno chat  # Say: "I'm planning to visit Tokyo for a conference"
-uv run euno dev memory chat --json > /tmp/after.json
+euno dev memory chat --json > /tmp/before.json
+euno chat  # Say: "I'm planning to visit Tokyo for a conference"
+euno dev memory chat --json > /tmp/after.json
 ```
 
 **Pass**: New items appear in chat's short-term memory for place/idea types.
@@ -256,9 +256,9 @@ uv run euno dev memory chat --json > /tmp/after.json
 Verifies user-relevant items from chat flow to user's memory.
 
 ```bash
-uv run euno dev memory user --short  # Check before
-uv run euno chat  # Mention: "Casey suggested we visit Paris next summer"
-uv run euno dev memory user --short  # Check after
+euno dev memory user --short  # Check before
+euno chat  # Mention: "Casey suggested we visit Paris next summer"
+euno dev memory user --short  # Check after
 ```
 
 **Pass**: User's short-term memory contains person (Casey) and place (Paris) items.
@@ -268,11 +268,11 @@ uv run euno dev memory user --short  # Check after
 Verifies identity updates from consolidation persist.
 
 ```bash
-uv run euno dev identity chat > /tmp/identity-before.md
-uv run euno dev consolidate chat --consolidate
-uv run euno dev identity chat > /tmp/identity-after.md
+euno dev identity chat > /tmp/identity-before.md
+euno dev consolidate chat --consolidate
+euno dev identity chat > /tmp/identity-after.md
 sleep 120  # Wait 2 minutes
-uv run euno dev identity chat > /tmp/identity-final.md
+euno dev identity chat > /tmp/identity-final.md
 ```
 
 **Pass**: Identity contains "Consolidation Update" section that persists (not overwritten).
@@ -282,7 +282,7 @@ uv run euno dev identity chat > /tmp/identity-final.md
 Verifies agents can search other agents' memories.
 
 ```bash
-uv run euno dev tool search_all_memory '{"query": "some_term"}'
+euno dev tool search_all_memory '{"query": "some_term"}'
 ```
 
 **Pass**: Returns results with `agent_id` field from multiple agents.
@@ -294,7 +294,7 @@ Verifies work cycles are paced to prevent runaway spinning.
 ```bash
 # Upload multiple files, observe agent doesn't spin continuously
 for i in 1 2 3; do curl -F "file=@test.txt" http://localhost:8000/api/upload; done
-uv run euno dev watch  # Observe work_cycle events with natural delays
+euno dev watch  # Observe work_cycle events with natural delays
 ```
 
 **Pass**: Work cycles have minimum 500ms delay between them, preventing CPU spinning.

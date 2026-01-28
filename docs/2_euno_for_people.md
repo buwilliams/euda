@@ -92,6 +92,20 @@ Earl was a union carpenter who built half the houses in his county. His hands do
 
 ---
 
+## Nina & James, 34 & 38 — The Estranged Siblings
+
+Nina and James haven't spoken in three years. It started with a fight about their mom's care—who was doing enough, who wasn't. Words were said that couldn't be unsaid. Now their mom is gone, and the silence has calcified. Both think about reaching out. Neither knows how. The longer it goes, the harder it gets.
+
+**How Euno helps Nina and James flourish:**
+
+- **Agents talk first.** Nina tells her Euno she misses her brother but can't face rejection. James tells his Euno he was wrong but doesn't know how to apologize. With permission, the agents connect: *"Both want to reconcile. Both are afraid. Neither blames the other anymore."* The agents share only what's approved—no ambushes, no surprises. They discover the door is already open.
+
+- **Drafts the impossible message.** James has started a hundred texts and deleted them all. His Euno offers: *"Here's a draft based on what you've told me you feel. It's simple: 'I miss you. I'm sorry. Can we talk?' You can edit it, or I can try again."* James stares at it for an hour. Then hits send. Nina's Euno had already told her a message might be coming—so she was ready.
+
+- **Rebuilds the bridge slowly.** The first call is awkward. But it happens. Euno helps both prepare: *"James tends to shut down when he feels criticized. Nina needs space to process before responding."* After the call, both agents check in: *"How did that feel? What would make the next one easier?"* Over months, the agents help them rebuild—not by doing the hard work, but by making it possible to start.
+
+---
+
 ## What This Means
 
 This is what a personal intelligence does. Not filtering your Twitter feed. *Knowing you well enough to anticipate what you need before you know you need it—and acting on your behalf to help you flourish.*

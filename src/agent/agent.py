@@ -267,37 +267,37 @@ class Agent:
         return {}
 
     def _build_system_prompt(self, voice_input: bool = False) -> str:
-        """Build the system prompt from identity, user context, and plugins.
+        """Build the system prompt from identity, user context, and skills.
 
         Includes:
         - Agent's identity (from identity.md)
         - User's identity (so agents know who they serve)
-        - Available plugins summary
+        - Available skills summary
 
         Note: User memory is NOT auto-injected (use memory commands for specifics).
 
         Args:
             voice_input: Whether input came from voice (enables conversational response style)
         """
-        from ..plugins import discover_plugins
+        from ..skills import discover_skills
         from .cognition.reasoning.prompts import render_template
 
-        # Get available plugins (filtered by excluded_plugins)
-        excluded = self.config.get("excluded_plugins", [])
-        plugins = [p for p in discover_plugins() if p.name not in excluded]
+        # Get available skills (filtered by excluded_skills)
+        excluded = self.config.get("excluded_skills", [])
+        skills = [s for s in discover_skills() if s.name not in excluded]
 
-        # Build plugins section
-        if plugins:
-            plugins_lines = ["### Available Plugins\n"]
-            for plugin in plugins:
-                desc = plugin.description or "(plugin)"
-                plugins_lines.append(f"- **{plugin.name}**: {desc}")
-            plugins_lines.append("")
-            plugins_lines.append("Use `list_plugins` to see plugins, `plugin_usage(plugin)` for help,")
-            plugins_lines.append("`execute_plugin(plugin, command)` to run commands.")
-            plugins_text = "\n".join(plugins_lines)
+        # Build skills section
+        if skills:
+            skills_lines = ["### Available Skills\n"]
+            for skill in skills:
+                desc = skill.description or "(skill)"
+                skills_lines.append(f"- **{skill.name}**: {desc}")
+            skills_lines.append("")
+            skills_lines.append("Use `list_skills` to see skills, `skill_usage(skill)` for help,")
+            skills_lines.append("`execute_skill(skill, command)` to run commands.")
+            skills_text = "\n".join(skills_lines)
         else:
-            plugins_text = "No plugins available."
+            skills_text = "No skills available."
 
         # Load user identity so agents know who they serve
         user_identity = self._get_user_identity()
@@ -306,7 +306,7 @@ class Agent:
             "agent/system",
             identity=self.identity,
             user_identity=user_identity,
-            tools_by_type=plugins_text  # Reuse the template variable
+            tools_by_type=skills_text  # Reuse the template variable
         )
 
         # Voice mode instructions
@@ -322,11 +322,11 @@ class Agent:
         return prompt
 
     def _get_tools(self) -> list:
-        """Get tool definitions for this agent (meta-tools for plugin system)."""
-        from ..plugins import get_meta_tools
+        """Get tool definitions for this agent (meta-tools for skill system)."""
+        from ..skills import get_meta_tools
         return get_meta_tools()
 
-    # Map of euno:* topic names to plugin commands for direct execution
+    # Map of euno:* topic names to skill commands for direct execution
     INTERNAL_TOPIC_COMMANDS = {
         "euno:consolidate": ("core", "consolidate run"),
         "euno:quote": ("core", "quote generate"),
@@ -335,7 +335,7 @@ class Agent:
     def _is_internal_topic(self, topic_name: str) -> bool:
         """Check if topic is an internal euno:* topic that should be executed directly.
 
-        Internal topics bypass the LLM chat loop and execute their mapped plugin command directly.
+        Internal topics bypass the LLM chat loop and execute their mapped skill command directly.
         """
         for prefix in self.INTERNAL_TOPIC_COMMANDS:
             if topic_name.startswith(prefix):
@@ -361,34 +361,34 @@ class Agent:
         return False
 
     def _execute_internal_topic(self, topic: dict):
-        """Execute an internal euno:* topic by calling its mapped plugin command.
+        """Execute an internal euno:* topic by calling its mapped skill command.
 
         Internal topics bypass the LLM chat loop entirely for efficiency.
-        The plugin command is executed and the topic is completed.
+        The skill command is executed and the topic is completed.
         """
-        from ..plugins import execute_plugin
+        from ..skills import execute_skill
         from src.core.data.topics import complete_topic
 
         topic_id = topic.get("id")
         topic_name = topic.get("name", "")
 
-        # Find matching plugin command
-        plugin_cmd = None
+        # Find matching skill command
+        skill_cmd = None
         for prefix, cmd in self.INTERNAL_TOPIC_COMMANDS.items():
             if topic_name.startswith(prefix):
-                plugin_cmd = cmd
+                skill_cmd = cmd
                 break
 
-        if not plugin_cmd:
+        if not skill_cmd:
             self._log("internal_topic_unknown", {"topic_id": topic_id, "topic_name": topic_name})
             return
 
-        plugin_name, base_command = plugin_cmd
+        skill_name, base_command = skill_cmd
 
         self._log("internal_topic_start", {
             "topic_id": topic_id,
             "topic_name": topic_name,
-            "plugin": plugin_name,
+            "skill": skill_name,
             "command": base_command
         })
 
@@ -410,9 +410,9 @@ class Agent:
             if "quote" in base_command:
                 command += f" --topic {topic_id}"
 
-            # Execute plugin command
-            result = execute_plugin(
-                plugin_name,
+            # Execute skill command
+            result = execute_skill(
+                skill_name,
                 command,
                 agent_id=self.id,
                 topic_id=topic_id
@@ -423,7 +423,7 @@ class Agent:
 
             self._log("internal_topic_complete", {
                 "topic_id": topic_id,
-                "plugin": plugin_name,
+                "skill": skill_name,
                 "command": command,
                 "success": result.success,
                 "output": result.output[:500] if result.output else ""
@@ -432,7 +432,7 @@ class Agent:
         except Exception as e:
             self._log("internal_topic_error", {
                 "topic_id": topic_id,
-                "plugin": plugin_name,
+                "skill": skill_name,
                 "command": command,
                 "error": str(e)
             })
@@ -602,9 +602,9 @@ class Agent:
         return text_response
 
     def _execute_tools(self, response) -> list:
-        """Execute tool calls (meta-tools for plugin system) and return results."""
+        """Execute tool calls (meta-tools for skill system) and return results."""
         import json
-        from ..plugins import execute_meta_tool
+        from ..skills import execute_meta_tool
         from src.core.system.system import set_agent_context, clear_agent_context
 
         # Set agent context so tools can access this agent
@@ -615,7 +615,7 @@ class Agent:
             "agent_id": self.id,
             "topic_id": self._current_topic_id,
             "session_id": self._session_id,
-            "excluded_plugins": self.config.get("excluded_plugins", [])
+            "excluded_skills": self.config.get("excluded_skills", [])
         }
 
         def _status(msg: str):
@@ -633,27 +633,27 @@ class Agent:
                 # Record for action/progress awareness
                 self.metacognition.record_tool_call(block.name, block.input)
 
-                # Report status for plugin execution
-                if block.name == "execute_plugin":
-                    plugin = block.input.get("plugin", "unknown")
+                # Report status for skill execution
+                if block.name == "execute_skill":
+                    skill = block.input.get("skill", "unknown")
                     cmd = block.input.get("command", "").split()[0] if block.input.get("command") else ""
-                    _status(f"Running {plugin} {cmd}...")
-                elif block.name == "list_plugins":
-                    _status("Listing plugins...")
-                elif block.name == "plugin_usage":
-                    plugin = block.input.get("plugin", "unknown")
-                    _status(f"Getting {plugin} help...")
+                    _status(f"Running {skill} {cmd}...")
+                elif block.name == "list_skills":
+                    _status("Listing skills...")
+                elif block.name == "skill_usage":
+                    skill = block.input.get("skill", "unknown")
+                    _status(f"Getting {skill} help...")
                 else:
                     _status(f"Calling {block.name}...")
 
                 # Execute meta-tool
                 result = execute_meta_tool(block.name, block.input, agent_context)
 
-                # Check for done_working signal in execute_plugin results
-                if block.name == "execute_plugin":
-                    plugin = block.input.get("plugin", "")
+                # Check for done_working signal in execute_skill results
+                if block.name == "execute_skill":
+                    skill = block.input.get("skill", "")
                     command = block.input.get("command", "")
-                    if plugin == "core" and command.strip() == "done":
+                    if skill == "core" and command.strip() == "done":
                         self._work_done = True
 
                 # Format result for LLM

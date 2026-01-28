@@ -24,7 +24,7 @@ def main():
 Commands:
   web              Start the web server with agents
   chat             Interactive chat with an agent
-  plugin           Run plugin commands
+  skills           Run skill commands
   dev              Developer tools for debugging agents
   points           Show contribution points summary
   set-password     Set the access password (empty to disable auth)
@@ -47,19 +47,19 @@ Server Commands:
   server-setup     Setup remote server
   server-remove    Remove remote server
 
-Plugin Commands:
-  euno plugin list                      List available plugins
-  euno plugin <name> --help             Show plugin help
-  euno plugin <name> <command> [args]   Run a plugin command
+Skill Commands:
+  euno skills list                      List available skills
+  euno skills <name> --help             Show skill help
+  euno skills <name> <command> [args]   Run a skill command
 
 Examples:
   euno web                              # Run web server + agents
   euno chat                             # Chat with default agent (user)
   euno chat worker                      # Chat with specific agent
-  euno plugin core topics list          # List topics
-  euno plugin core agents list          # List agents
-  euno plugin core store import ~/docs  # Import files to memory
-  euno plugin core memory list          # List memories
+  euno skills core topics list          # List topics
+  euno skills core agents list          # List agents
+  euno skills core store import ~/docs  # Import files to memory
+  euno skills core memory list          # List memories
   euno dev help                         # Show dev commands
   euno server-deploy                    # Deploy to remote server
 """
@@ -74,7 +74,7 @@ Examples:
     commands = {
         "web": cmd_web,
         "chat": cmd_chat,
-        "plugin": cmd_plugin,
+        "skills": cmd_skills,
         "dev": cmd_dev,
         "points": cmd_points,
         "set-password": cmd_set_password,
@@ -269,7 +269,7 @@ def cmd_chat(args):
 
         except AgentPausedError as e:
             print(f"\n\nAGENT PAUSED: {e.reason}")
-            print("\nThe agent has been paused. Use 'uv run euno agents enable <agent_id>' to resume.")
+            print("\nThe agent has been paused. Use 'euno agents enable <agent_id>' to resume.")
             break
         except KeyboardInterrupt:
             print("\n\nGoodbye!")
@@ -453,7 +453,7 @@ def cmd_remove_password(args):
 
 def cmd_fresh_start(args):
     """Reset all user data for a clean slate."""
-    from plugins.core.system.fresh_start import perform_fresh_start
+    from skills.core.system.fresh_start import perform_fresh_start
 
     print("=" * 60)
     print("Euno - Fresh Start")
@@ -518,63 +518,63 @@ def cmd_dev(args):
     dev_main(args)
 
 
-def cmd_plugin(args):
-    """Run plugin commands.
+def cmd_skills(args):
+    """Run skill commands.
 
     Usage:
-        euno plugin list                    # List available plugins
-        euno plugin <name> --help           # Show plugin help
-        euno plugin <name> <command>        # Execute plugin command
+        euno skills list                    # List available skills
+        euno skills <name> --help           # Show skill help
+        euno skills <name> <command>        # Execute skill command
     """
-    from src.plugins import discover_plugins, execute_plugin, get_plugin_usage
-    from src.plugins.exceptions import PluginError
+    from src.skills import discover_skills, execute_skill, get_skill_usage
+    from src.skills.exceptions import SkillError
 
     if not args or args[0] == "help":
         print("=" * 60)
-        print("Euno - Plugins")
+        print("Euno - Skills")
         print("=" * 60)
         print()
         print("Usage:")
-        print("  euno plugin list                    # List available plugins")
-        print("  euno plugin <name> --help           # Show plugin help")
-        print("  euno plugin <name> <command>        # Execute plugin command")
+        print("  euno skills list                    # List available skills")
+        print("  euno skills <name> --help           # Show skill help")
+        print("  euno skills <name> <command>        # Execute skill command")
         print()
         print("Examples:")
-        print("  euno plugin core topics list")
-        print("  euno plugin core topics create 'My topic'")
-        print("  euno plugin core memory list")
+        print("  euno skills core topics list")
+        print("  euno skills core topics create 'My topic'")
+        print("  euno skills core memory list")
         return
 
     if args[0] == "list":
-        plugins = discover_plugins()
+        skills = discover_skills()
         print("=" * 60)
-        print("Euno - Available Plugins")
+        print("Euno - Available Skills")
         print("=" * 60)
         print()
-        if not plugins:
-            print("No plugins found.")
+        if not skills:
+            print("No skills found.")
             return
-        for plugin in plugins:
-            if plugin.description:
-                print(f"  {plugin.name}: {plugin.description}")
+        for skill in skills:
+            if skill.description:
+                print(f"  {skill.name}: {skill.description}")
             else:
-                print(f"  {plugin.name}")
+                print(f"  {skill.name}")
         print()
-        print("Use 'euno plugin <name> --help' for plugin details.")
+        print("Use 'euno skills <name> --help' for skill details.")
         return
 
-    # Plugin name is first arg, rest is the command
+    # Skill name is first arg, rest is the command
     import shlex
-    plugin_name = args[0]
+    skill_name = args[0]
     # Quote args that contain spaces to preserve them through shlex.split in executor
     command = " ".join(shlex.quote(a) for a in args[1:]) if len(args) > 1 else "--help"
 
     try:
-        result = execute_plugin(plugin_name, command)
+        result = execute_skill(skill_name, command)
         print(result.output)
         if not result.success:
             sys.exit(result.exit_code)
-    except PluginError as e:
+    except SkillError as e:
         print(f"Error: {e}")
         sys.exit(1)
 

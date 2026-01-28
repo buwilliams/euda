@@ -1,0 +1,1 @@
+"""Mastodon skill commands."""

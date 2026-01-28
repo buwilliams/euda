@@ -83,7 +83,10 @@ data/system/sync/*
 # User data directory (personal data)
 data/user/
 
-# Plugin data (credentials, user config)
+# Skill data (credentials, user config)
+data/skills/
+
+# Old plugins data (before rename to skills)
 data/plugins/
 
 # Keep directory structure
@@ -123,6 +126,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+# But keep skills lib directories (implementation code)
+!skills/*/lib/
 parts/
 sdist/
 var/
