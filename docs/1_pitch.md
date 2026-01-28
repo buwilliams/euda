@@ -31,9 +31,9 @@ Euno sees patterns you can't see. Does work you don't have time to do. Finds opp
 - Learn your patterns and preferences over time
 - Proactive: research, draft, schedule—waiting for your approval
 
-**Topics** — Hierarchical tasks and projects
-- Break down complex goals into actionable steps
-- Timeline views: Today, Upcoming, Anytime, Someday
+**Topics** — Knowledge and information with optional workflow
+- Organize anything: ideas, projects, references, goals
+- Agents can process topics through configurable workflows
 - Attach files, notes, and context
 
 **Skills** — What agents can do
