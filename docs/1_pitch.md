@@ -14,11 +14,7 @@ Agents working for you day and night with their own unique identities, memories,
 
 **For the overwhelmed parent** who makes seventeen decisions before 8am—Euno handles the invisible work: schedules appointments, orders gifts, meal-plans the week, and creates space to reconnect with a spouse.
 
-**For the quietly struggling** who feel stuck but can't explain why—Euno rewrites the resume, customizes the cover letters, and schedules them to send. Just hit approve.
-
 **For the late bloomer** discovering who they are for the first time—Euno plans the solo trip to Portugal, books refundable reservations, and runs experiments to map preferences hidden for decades.
-
-**For those with unfinished work**—Euno transcribes the memoir, finds the audience for accumulated wisdom, and helps write letters that outlast a lifetime.
 
 Euno sees patterns you can't see. Does work you don't have time to do. Finds opportunities you'd never discover. Helps you become more than you were—not just solving problems, but opening doors you didn't know existed.
 
