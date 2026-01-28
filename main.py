@@ -33,16 +33,16 @@ Commands:
 
 Sync Commands:
   sync             Bidirectional sync with remote (default)
+  sync --push      Push local data to remote
+  sync --pull      Pull remote data to local
+  sync --dry-run   Preview changes without applying
   sync init        Initialize sync with remote server
   sync status      Show sync state and pending conflicts
   sync conflicts   List unresolved conflicts
   sync resolve     Resolve a conflict
 
-Server Commands (deprecated, use 'sync' instead):
-  server-deploy    Deploy to remote server
-  server-pull      Pull data from remote server (use 'sync --pull')
-  server-push      Push data to remote server (use 'sync --push')
-  server-push-agents  Push agent configs to remote server
+Server Commands:
+  server-deploy    Deploy code to remote server
   server-remote    SSH into remote server
   server-setup     Setup remote server
   server-remove    Remove remote server
@@ -82,9 +82,6 @@ Examples:
         "fresh-start": cmd_fresh_start,
         "sync": cmd_sync,
         "server-deploy": cmd_server_deploy,
-        "server-pull": cmd_server_pull,
-        "server-push": cmd_server_push,
-        "server-push-agents": cmd_server_push_agents,
         "server-remote": cmd_server_remote,
         "server-setup": cmd_server_setup,
         "server-remove": cmd_server_remove,
@@ -814,23 +811,8 @@ def _run_devops_script(script_name: str, args: list):
 
 
 def cmd_server_deploy(args):
-    """Deploy to remote server."""
+    """Deploy code to remote server."""
     _run_devops_script("deploy-euno.sh", args)
-
-
-def cmd_server_pull(args):
-    """Pull data from remote server."""
-    _run_devops_script("pull-data-remote.sh", args)
-
-
-def cmd_server_push(args):
-    """Push data to remote server."""
-    _run_devops_script("push-data-remote.sh", args)
-
-
-def cmd_server_push_agents(args):
-    """Push agent configs to remote server."""
-    _run_devops_script("push-agents-remote.sh", args)
 
 
 def cmd_server_remote(args):
