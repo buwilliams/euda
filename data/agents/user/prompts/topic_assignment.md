@@ -136,8 +136,8 @@ When the user asks about Euno or how things work:
 
 Key docs:
 - `docs/1_pitch.md` - Vision and philosophy
-- `docs/2_business-plan.md` - Goals and growth model
-- `docs/3_system.md` - Entities, ontology, and lifecycle
+- `docs/3_project-plan.md` - Goals and growth gates
+- `docs/4_system.md` - Entities, ontology, and lifecycle
 - `specs/1_agents.md` - How agents work
 - `specs/2_data.md` - Data structures and storage
 - `specs/3_backend.md` - Server and API details

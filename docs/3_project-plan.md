@@ -1,6 +1,6 @@
-# Euno Business Plan
+# Euno Project Plan
 
-*This is a living document that will be updated as the project matures. There is no formal business entity yet—this is an aspirational plan for how Euno will operate if and when it becomes a business.*
+*This is a living document that will be updated as the project matures.*
 
 ## Vision
 
@@ -8,7 +8,9 @@
 
 **Mission:** Help people grow into who they're meant to be—through purpose, meaning, and becoming. Data, integrations, and automations serve this mission; they are not the mission itself.
 
-This is the singular filter for all work on Euno. Any goal, task, or contribution that does not serve this purpose is out of bounds by default. Out-of-bound work may be considered if there is strong justification, but must be explicitly approved by Buddy Williams.
+**Why Open Source:** Meaning is too important to gatekeep. This technology should be available to everyone who wants to use it, learn from it, or build upon it.
+
+This is the singular filter for all work on Euno. Any goal, task, or contribution that does not serve this purpose is out of bounds by default.
 
 **Affordable Loss** ([effectuation principle](https://effectuation.org/))
 
@@ -22,7 +24,7 @@ Instead of chasing expected returns, we commit only what we can afford to lose. 
 
 **Crazy Quilt** ([effectuation principle](https://effectuation.org/))
 
-We don't recruit for predefined roles—we welcome self-selected contributors who bring what they have and shape the project with us. Your unique skills, perspective, and commitment become part of the quilt. The venture is co-created by those who show up.
+We don't recruit for predefined roles—we welcome self-selected contributors who bring what they have and shape the project with us. Your unique skills, perspective, and commitment become part of the quilt. The project is co-created by those who show up.
 
 **Gates**
 
@@ -65,12 +67,12 @@ Each gate below is a checkpoint. We must pass each gate before moving forward. T
 **Current Status:** Not met.
 
 **Forms of Contribution:**
-- Business
-- Product
+- Product direction
 - Design/UI/UX
 - Feature ideas
 - Feature implementation
-- Marketing/Sales
+- Documentation
+- Community building
 
 **Reward:** The trophy is now shared with you—to put on resumes, talk about, and generally show off.
 
@@ -84,36 +86,28 @@ Each gate below is a checkpoint. We must pass each gate before moving forward. T
 - Do they want it for themselves?
 - Is their reaction curiosity ("that's neat") or desire (inspired/longing/lust)?
 - Do people we don't know ask for Euno unprompted?
-- Are they willing to pay for it? How much? When do they want it?
 
 **Success Criteria:**
 - Each contributor has told 10 people about Euno, with at least 1 becoming a user.
-- 100 paying users.
+- 100 active users.
 
-Growth comes organically over time. Buddy will likely generate the most users given his sales experience. We stay at this gate until we reach the user target.
-
-**Pricing Model:** Users pay for hosting, AI API costs, and profit margin. Likely limit-based pricing similar to AI companies. Target price point is ~$100/month—if users aren't willing to pay that, Euno hasn't met its goal. Margin is TBD—too early to know.
-
-We stay at Gate 3 as long as needed to ensure we understand demand before scaling.
+Growth comes organically over time. We stay at this gate until we reach the user target.
 
 **Current Status:** Not met.
 
-**Reward:** Market validation. We start thinking about scaling.
+**Reward:** Validation. People find Euno valuable enough to run it themselves.
 
 ---
 
-## Gate 4: Scale
+## Gate 4: Community
 
-**Target:** Form a business to scale.
+**Target:** A thriving open source community.
 
-**Success Criteria (either/or):**
-- $500k ARR projected from 3 months of revenue (bootstrap path), OR
-- $500k aggregate investment (funding path)
+**Signals:**
+- Contributors we've never met submit quality pull requests
+- Users help each other in Discord/GitHub discussions
+- The project grows beyond any single contributor
 
 **Current Status:** Not met.
 
-**Reward:** We've created something the world wants. Time to scale and be rewarded.
-
-**Exit Strategy:** If Euno is acquired, Buddy's ownership stake at exit is split 40% to Buddy personally and 60% to contributors based on their point ratios. See the [Operating Agreement](6_operating-agreement.md) for details.
-
-*A new business plan will be drafted at this gate.*
+**Reward:** Euno has a life of its own. The mission continues regardless of any individual.
