@@ -72,11 +72,31 @@ function renderDoc() {
     const html = marked.parse(currentDoc.content);
     container.innerHTML = html;
 
+    // Rewrite image paths for local images
+    rewriteImagePaths(container);
+
     // Intercept local markdown links
     interceptDocLinks(container);
 
     // Scroll to top
     container.scrollTop = 0;
+}
+
+function rewriteImagePaths(container) {
+    const images = container.querySelectorAll('img');
+    images.forEach(img => {
+        const src = img.getAttribute('src');
+        if (!src) return;
+
+        // Rewrite src/web/frontend/images/ to /web/images/
+        if (src.startsWith('src/web/frontend/images/')) {
+            img.setAttribute('src', src.replace('src/web/frontend/images/', '/web/images/'));
+        }
+        // Rewrite src/web/frontend/ to /web/
+        else if (src.startsWith('src/web/frontend/')) {
+            img.setAttribute('src', src.replace('src/web/frontend/', '/web/'));
+        }
+    });
 }
 
 function interceptDocLinks(container) {
