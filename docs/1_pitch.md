@@ -16,6 +16,8 @@ Agents working for you day and night with their own unique identities, memories,
 
 **For the late bloomer** discovering who they are for the first time—Euno plans the solo trip to Portugal, books refundable reservations, and runs experiments to map preferences hidden for decades.
 
+**For people who struggle to connect**—Euno agents negotiate with each other, sharing what you're comfortable with to find common ground. They build bridges between people who want to communicate but don't know how.
+
 Euno sees patterns you can't see. Does work you don't have time to do. Finds opportunities you'd never discover. Helps you become more than you were—not just solving problems, but opening doors you didn't know existed.
 
 ---
