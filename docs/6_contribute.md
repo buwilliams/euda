@@ -35,7 +35,7 @@ The command-line interface for terminal users.
 
 Other ways to interact with Euno (mobile apps, voice, APIs).
 
-**Principle:** All interfaces share the same backend (AgentManager, plugins, topics). Only the presentation layer differs.
+**Principle:** All interfaces share the same backend (AgentManager, skills, topics). Only the presentation layer differs.
 
 ### 2. Agent Changes
 
@@ -64,29 +64,28 @@ Change how agents handle specific situations.
 
 Create a specialized agent for a new domain.
 
-**When to use:** Need a new domain of expertise or different trigger/plugin requirements.
+**When to use:** Need a new domain of expertise or different trigger/skill requirements.
 
 **Example:** Create `data/agents/researcher/` with appropriate identity and config.
 
-### 3. Plugins
-**Location:** `plugins/{name}/`
+### 3. Skills
+**Location:** `skills/{name}/`
 
-Add new capabilities as CLI-based plugins that agents can discover and execute.
+Add new capabilities as CLI-based skills that agents can discover and execute.
 
 **When to use:** Agents need to interact with external systems or perform new operations.
 
-**Environment variables** available to plugins:
+**Environment variables** available to skills:
 - `EUNO_DATA_DIR` — Path to data directory (always set)
 - `EUNO_AGENT_ID` — Current agent ID (set during agent execution)
 - `EUNO_TOPIC_ID` — Current topic ID (set during topic work)
 - `EUNO_SESSION_ID` — Current session ID (set during chat)
 
 **Examples:**
-- Create `plugins/calendar/cli.py` for calendar integration
-- Create `plugins/obsidian/cli.py` for note-taking integration
-- Use `scaffold plugin <name>` to generate boilerplate
+- Create `skills/calendar/cli.py` for calendar integration
+- Create `skills/obsidian/cli.py` for note-taking integration
 
-See `specs/8_plugins.md` for plugin development guide.
+See `specs/8_skills.md` for skill development guide.
 
 ### 4. Architecture Changes
 **Location:** `src/`, `specs/`
@@ -137,7 +136,7 @@ Euno follows a top-down information hierarchy. When making changes, update highe
 - [Backend](../specs/3_backend.md) — Server, API, storage
 - [UX & UI](../specs/4_ux_ui.md) — Interface patterns
 - [CLI](../specs/5_cli.md) — Command-line interface
-- [Plugins](../specs/8_plugins.md) — Plugin architecture and development
+- [Skills](../specs/8_skills.md) — Skill architecture and development
 
 ## Submitting Changes
 
