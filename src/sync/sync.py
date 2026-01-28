@@ -91,6 +91,7 @@ def sync(
     direction: str = "bidirectional",
     dry_run: bool = False,
     backup: bool = True,
+    verbose: bool = False,
 ) -> SyncResult:
     """Perform sync with remote.
 
@@ -98,10 +99,15 @@ def sync(
         direction: "push", "pull", or "bidirectional"
         dry_run: If True, only show what would be done
         backup: If True, create backup before applying changes (default: True)
+        verbose: If True, print progress messages
 
     Returns:
         SyncResult with details of the operation
     """
+    def log(msg: str):
+        if verbose:
+            print(f"  {msg}")
+
     started_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     local_backup_name = ""
     remote_backup_name = ""
@@ -142,6 +148,7 @@ def sync(
     transport = Transport(state.remote.host, state.remote.path)
 
     # Test connection
+    log("Testing connection...")
     connected, message = transport.test_connection()
     if not connected:
         return SyncResult(
@@ -152,8 +159,10 @@ def sync(
             started_at=started_at,
             completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         )
+    log("Connected")
 
     # Get remote instance ID
+    log("Getting remote instance ID...")
     remote_instance_id = transport.get_remote_instance_id()
     if not remote_instance_id:
         # Remote might not have sync initialized - that's OK for first sync
@@ -170,10 +179,12 @@ def sync(
 
     # Phase 1: Detect changes from all handlers
     for handler in handlers:
+        log(f"Detecting changes: {handler.name}...")
         try:
             changes, conflicts = handler.detect_changes(transport, direction)
             all_changes.extend(changes)
             all_conflicts.extend(conflicts)
+            log(f"  Found {len(changes)} change(s), {len(conflicts)} conflict(s)")
         except Exception as e:
             return SyncResult(
                 success=False,
@@ -203,6 +214,7 @@ def sync(
         if direction in ("pull", "bidirectional"):
             has_pull = any(c.type == "pull" for c in all_changes)
             if has_pull:
+                log("Creating local backup...")
                 success, result = backup_local_data()
                 if not success:
                     return SyncResult(
@@ -215,11 +227,13 @@ def sync(
                         completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
                     )
                 local_backup_name = result
+                log(f"Local backup: {local_backup_name}")
 
         # Backup remote if we're pushing
         if direction in ("push", "bidirectional"):
             has_push = any(c.type == "push" for c in all_changes)
             if has_push:
+                log("Creating remote backup...")
                 success, result = transport.backup_remote_data()
                 if not success:
                     return SyncResult(
@@ -232,9 +246,11 @@ def sync(
                         completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
                     )
                 remote_backup_name = result
+                log(f"Remote backup: {remote_backup_name}")
 
     # Phase 3: Apply changes
     for handler in handlers:
+        log(f"Applying changes: {handler.name}...")
         try:
             handler.apply_changes(transport, direction, all_changes)
         except Exception as e:

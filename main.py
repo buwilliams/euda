@@ -780,9 +780,10 @@ def cmd_sync(args):
     print()
 
     # Perform sync
-    result = sync(direction=direction, dry_run=dry_run, backup=not no_backup)
+    result = sync(direction=direction, dry_run=dry_run, backup=not no_backup, verbose=True)
 
-    if not result.success:
+    # Handle errors (but not conflicts - those are shown separately)
+    if not result.success and result.error:
         print(f"Error: {result.error}")
         sys.exit(1)
 
@@ -806,6 +807,7 @@ def cmd_sync(args):
     if result.conflicts:
         print(f"\n{len(result.conflicts)} conflict(s) detected.")
         print("Run 'euno sync conflicts' to view and resolve.")
+        sys.exit(1)
 
     if not dry_run and result.success:
         print("\nSync complete!")
