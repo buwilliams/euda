@@ -1,0 +1,26 @@
+# SearXNG settings for Euno
+# Uses default settings with JSON API enabled
+
+use_default_settings: true
+
+server:
+  # Generate a new secret key: openssl rand -hex 32
+  secret_key: "f300ea7861acdb2137dc52d9f0434a1e8be7aac1b2005cf47b065e8bddab7936"
+  bind_address: "0.0.0.0:8080"
+  limiter: false  # Disable rate limiting (we control access)
+
+search:
+  # Enable JSON format for API access
+  formats:
+    - html
+    - json
+
+ui:
+  # Disable unnecessary UI features for API-only use
+  default_theme: simple
+  static_use_hash: true
+
+# Disable outgoing request rate limiting for faster searches
+outgoing:
+  request_timeout: 10.0
+  max_request_timeout: 30.0

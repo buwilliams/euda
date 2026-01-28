@@ -1,4 +1,10 @@
 {
+  "searxng": {
+    "url": "http://localhost:8080",
+    "default_engines": null,
+    "default_categories": "general",
+    "timeout": 30
+  },
   "rlm": {
     "execution_timeout_seconds": 30,
     "output_truncation_chars": 10000

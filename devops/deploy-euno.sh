@@ -95,8 +95,47 @@ ssh "$SERVER" "sudo systemctl restart euno" || echo "Warning: Restart failed, ch
 # Check status
 sleep 2
 echo ""
-echo "Checking service status..."
+echo "Checking Euno service status..."
 ssh "$SERVER" "sudo systemctl status euno --no-pager -l" | head -15
+
+# Start/check SearXNG
+echo ""
+echo "Setting up SearXNG..."
+ssh "$SERVER" bash << REMOTE_SCRIPT
+set -e
+cd $REMOTE_DIR/devops/searxng
+
+# Generate secret key if not already set
+if grep -q "change-me-generate-with-openssl-rand-hex-32" settings.yml 2>/dev/null; then
+    echo "Generating SearXNG secret key..."
+    SECRET_KEY=\$(openssl rand -hex 32)
+    sed -i "s/change-me-generate-with-openssl-rand-hex-32/\$SECRET_KEY/" settings.yml
+fi
+
+# Check if SearXNG is running
+if docker ps | grep -q searxng; then
+    echo "SearXNG: Running"
+    # Test JSON API
+    if curl -s "http://localhost:8080/search?q=test&format=json" 2>/dev/null | grep -q results; then
+        echo "SearXNG API: OK"
+    else
+        echo "SearXNG API: Not responding, restarting..."
+        docker compose restart
+        sleep 5
+    fi
+else
+    echo "SearXNG: Starting..."
+    docker compose up -d
+    # Wait for it to be ready
+    for i in {1..15}; do
+        if curl -s "http://localhost:8080/search?q=test&format=json" 2>/dev/null | grep -q results; then
+            echo "SearXNG: Ready"
+            break
+        fi
+        sleep 1
+    done
+fi
+REMOTE_SCRIPT
 
 echo ""
 echo "==================================="
