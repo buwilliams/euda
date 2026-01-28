@@ -83,7 +83,7 @@ scp "$PROJECT_DIR/.env" "$SERVER:$REMOTE_DIR/.env"
 
 # Copy SearXNG config (data/ is excluded from rsync)
 echo "Copying SearXNG config..."
-ssh "$SERVER" "mkdir -p $REMOTE_DIR/data/system"
+ssh "$SERVER" "mkdir -p $REMOTE_DIR/data/system && [ -d $REMOTE_DIR/data/system/searxng.yml ] && rm -rf $REMOTE_DIR/data/system/searxng.yml || true"
 scp "$PROJECT_DIR/data/system/searxng.yml" "$SERVER:$REMOTE_DIR/data/system/searxng.yml" 2>/dev/null || echo "Note: searxng.yml not found locally, will use existing or create"
 
 # Install dependencies
@@ -147,7 +147,13 @@ if docker ps | grep -q searxng; then
     fi
 else
     echo "SearXNG: Starting..."
-    docker compose up -d
+    # Try to start, if it fails due to mount error, clean up and retry
+    if ! docker compose up -d 2>&1; then
+        echo "SearXNG: Start failed, cleaning up stale volume..."
+        docker rm -f searxng 2>/dev/null || true
+        docker volume rm euno_searxng-data 2>/dev/null || true
+        docker compose up -d
+    fi
     # Wait for it to be ready
     for i in {1..15}; do
         if curl -s "http://localhost:8080/search?q=test&format=json" 2>/dev/null | grep -q results; then
