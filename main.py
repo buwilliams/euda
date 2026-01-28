@@ -693,10 +693,13 @@ def cmd_sync(args):
         print("  euno sync resolve <id> --keep-local")
         print("  euno sync resolve <id> --keep-remote")
         print("  euno sync resolve --keep-remote       (all conflicts)")
+        print("  euno sync resolve --clear             (delete resolved conflicts)")
         return
 
     if subcommand == "resolve":
         # Resolve conflicts
+        from src.sync.conflicts import clear_resolved_conflicts
+
         resolution_map = {
             "--keep-local": Resolution.KEEP_LOCAL,
             "--keep-remote": Resolution.KEEP_REMOTE,
@@ -704,6 +707,12 @@ def cmd_sync(args):
             "--keep-both": Resolution.KEEP_BOTH,
             "--merge": Resolution.MERGE,
         }
+
+        # Check for --clear option to delete all resolved conflicts
+        if len(args) == 2 and args[1] == "--clear":
+            deleted = clear_resolved_conflicts()
+            print(f"Cleared {deleted} resolved conflict(s).")
+            return
 
         # Check for bulk resolution: euno sync resolve --keep-remote
         if len(args) == 2 and args[1] in resolution_map:
