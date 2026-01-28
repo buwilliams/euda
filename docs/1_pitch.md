@@ -16,7 +16,7 @@ Agents working for you day and night with their own unique identities, memories,
 
 **For the late bloomer** discovering who they are for the first time—Euno plans the solo trip to Portugal, books refundable reservations, and runs experiments to map preferences hidden for decades.
 
-**For the estranged siblings** who haven't spoken in three years—their Euno agents talk first, sharing only what each approves. They discover both want to reconnect but neither knows how to start. The agents draft the first message together.
+**For the estranged siblings** who haven't spoken in three years—their Euno agents talk first, sharing only what each approves. They discover both want to reconnect but neither knows how to start. The agents create a plan based on each person's unique personality.
 
 Euno sees patterns you can't see. Does work you don't have time to do. Finds opportunities you'd never discover. Helps you become more than you were—not just solving problems, but opening doors you didn't know existed.
 
