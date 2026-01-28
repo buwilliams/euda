@@ -211,7 +211,7 @@ class TopicsSyncHandler(SyncHandler):
         # Export topics on remote using plugin CLI
         success, stdout, stderr = transport.run_remote_command(
             f"cd {transport.remote_path} && "
-            "uv run python -c 'import json; from src.core.data.topics import export_topics; print(json.dumps(export_topics()))'"
+            ".venv/bin/python -c 'import json; from src.core.data.topics import export_topics; print(json.dumps(export_topics()))'"
         )
 
         if not success or not stdout.strip():
@@ -244,7 +244,7 @@ class TopicsSyncHandler(SyncHandler):
             # Import on remote
             success, stdout, stderr = transport.run_remote_command(
                 f"cd {transport.remote_path} && "
-                f"uv run python -c 'import json; from src.core.data.topics import import_topics; "
+                f".venv/bin/python -c 'import json; from src.core.data.topics import import_topics; "
                 f"data = json.load(open(\"{remote_temp}\")); print(json.dumps(import_topics(data)))'"
             )
 

@@ -274,6 +274,23 @@ class Transport:
             return [f for f in stdout.strip().split("\n") if f]
         return []
 
+    def list_remote_directories(self, remote_relative_path: str) -> List[str]:
+        """List only directories in a remote directory.
+
+        Args:
+            remote_relative_path: Path relative to remote data directory
+
+        Returns:
+            List of directory names (not full paths)
+        """
+        remote_path = f"{self.remote_data_path}/{remote_relative_path}"
+        success, stdout, _ = self.run_remote_command(
+            f"find {remote_path} -maxdepth 1 -mindepth 1 -type d -exec basename {{}} \\; 2>/dev/null"
+        )
+        if success and stdout.strip():
+            return [d for d in stdout.strip().split("\n") if d and ':' not in d]
+        return []
+
     def remote_file_exists(self, remote_relative_path: str) -> bool:
         """Check if a remote file exists.
 
@@ -318,6 +335,19 @@ class Transport:
         temp_path.unlink(missing_ok=True)
         return None
 
+    def delete_remote_path(self, remote_relative_path: str) -> bool:
+        """Delete a file or directory on the remote server.
+
+        Args:
+            remote_relative_path: Path relative to remote data directory
+
+        Returns:
+            True if deletion successful, False otherwise
+        """
+        remote_full = f"{self.remote_path}/data/{remote_relative_path}"
+        success, stdout, stderr = self.run_remote_command(f"rm -rf {remote_full}")
+        return success
+
     def backup_remote_data(self) -> Tuple[bool, str]:
         """Create a backup of the remote data directory.
 
@@ -340,6 +370,101 @@ class Transport:
             return True, ""  # No data to backup, that's OK
         else:
             return False, stderr or "Failed to create remote backup"
+
+    def stop_remote_server(self, timeout: int = 30) -> Tuple[bool, str]:
+        """Stop the remote Euno server.
+
+        Returns:
+            Tuple of (success, message)
+        """
+        success, stdout, stderr = self.run_remote_command(
+            "systemctl stop euno", timeout=timeout
+        )
+        if success:
+            return True, "Server stopped"
+        # Check if service doesn't exist (that's OK)
+        if "could not be found" in stderr.lower() or "not found" in stderr.lower():
+            return True, "Service not found (OK)"
+        return False, stderr.strip() or "Failed to stop server"
+
+    def start_remote_server(self, timeout: int = 30) -> Tuple[bool, str]:
+        """Start the remote Euno server.
+
+        Returns:
+            Tuple of (success, message)
+        """
+        success, stdout, stderr = self.run_remote_command(
+            "systemctl start euno", timeout=timeout
+        )
+        if success:
+            return True, "Server started"
+        return False, stderr.strip() or "Failed to start server"
+
+    def is_remote_server_running(self) -> bool:
+        """Check if the remote Euno server is running.
+
+        Returns:
+            True if running, False otherwise
+        """
+        success, stdout, stderr = self.run_remote_command(
+            "systemctl is-active euno"
+        )
+        return success and "active" in stdout.strip()
+
+    def sync_source_code(self, local_root: Path, verbose: bool = False) -> TransferResult:
+        """Sync source code from local to remote.
+
+        Pushes local source code to remote, excluding:
+        - .git/
+        - .venv/
+        - data/
+        - __pycache__/
+        - *.pyc
+        - .env
+
+        Args:
+            local_root: Local Euno root directory
+            verbose: If True, show transferred files
+
+        Returns:
+            TransferResult with sync details
+        """
+        if not local_root.exists():
+            return TransferResult(success=False, error=f"Local directory not found: {local_root}")
+
+        excludes = [
+            ".git/",
+            ".venv/",
+            "data/",
+            "__pycache__/",
+            "*.pyc",
+            ".env",
+            "*.egg-info/",
+            ".pytest_cache/",
+            ".mypy_cache/",
+            "node_modules/",
+            ".DS_Store",
+        ]
+
+        cmd = ["rsync", "-az", "--checksum", "--itemize-changes", "--delete"]
+        for exc in excludes:
+            cmd.extend(["--exclude", exc])
+
+        if verbose:
+            cmd.append("-v")
+
+        cmd.extend([str(local_root) + "/", f"{self.host}:{self.remote_path}/"])
+
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode == 0:
+                # Count transferred files from itemized output
+                lines = result.stdout.strip().split("\n") if result.stdout.strip() else []
+                files = len([l for l in lines if l and (l.startswith("<") or l.startswith(">") or l.startswith("*deleting"))])
+                return TransferResult(success=True, files_transferred=files)
+            return TransferResult(success=False, error=result.stderr.strip())
+        except Exception as e:
+            return TransferResult(success=False, error=str(e))
 
 
 def backup_local_data() -> Tuple[bool, str]:

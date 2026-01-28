@@ -452,3 +452,118 @@ class FilesSyncHandler(SyncHandler):
         result = transport.fetch_file(relative_path, local_path)
         if not result.success:
             raise Exception(result.error)
+
+    def apply_deletions(
+        self,
+        transport: Transport,
+        direction: str,
+        verbose: bool = False,
+    ) -> List[str]:
+        """Delete files that don't exist on the source side.
+
+        For push: delete remote files that don't exist locally
+        For pull: delete local files that don't exist remotely
+
+        Returns list of deleted item IDs.
+        """
+        deleted: List[str] = []
+
+        def log(msg: str):
+            if verbose:
+                print(f"    {msg}")
+
+        if direction == "push":
+            # Delete remote files that don't exist locally
+            deleted.extend(self._delete_remote_orphans(transport, "agents", log))
+            deleted.extend(self._delete_remote_orphans(transport, "topics/assets", log))
+        elif direction == "pull":
+            # Delete local files that don't exist remotely
+            deleted.extend(self._delete_local_orphans(transport, "agents", log))
+            deleted.extend(self._delete_local_orphans(transport, "topics/assets", log))
+
+        return deleted
+
+    def _delete_remote_orphans(
+        self,
+        transport: Transport,
+        base_path: str,
+        log,
+    ) -> List[str]:
+        """Delete remote files/dirs that don't exist locally."""
+        deleted = []
+        local_base = DATA_DIR / base_path
+
+        if not local_base.exists():
+            return deleted
+
+        # Get local items (directories only)
+        local_items = set()
+        if local_base.exists():
+            for item in local_base.iterdir():
+                if item.is_dir():
+                    local_items.add(item.name)
+
+        # Get remote items (directories only) using proper directory listing
+        remote_items = set()
+        if transport.remote_directory_exists(base_path):
+            remote_items = set(transport.list_remote_directories(base_path))
+
+        # Find orphans (remote only) - directories that exist on remote but not locally
+        orphans = remote_items - local_items
+
+        for orphan in orphans:
+            # Skip items with colons or other invalid characters (ls formatting artifacts)
+            if ':' in orphan or not orphan:
+                continue
+            orphan_path = f"{base_path}/{orphan}"
+            log(f"Deleting remote: {orphan_path}")
+            try:
+                transport.delete_remote_path(orphan_path)
+                deleted.append(orphan_path)
+            except Exception as e:
+                log(f"Failed to delete {orphan_path}: {e}")
+
+        return deleted
+
+    def _delete_local_orphans(
+        self,
+        transport: Transport,
+        base_path: str,
+        log,
+    ) -> List[str]:
+        """Delete local files/dirs that don't exist remotely."""
+        import shutil
+        deleted = []
+        local_base = DATA_DIR / base_path
+
+        if not local_base.exists():
+            return deleted
+
+        # Get local items (directories only)
+        local_items = set()
+        for item in local_base.iterdir():
+            if item.is_dir():
+                local_items.add(item.name)
+
+        # Get remote items (directories only)
+        remote_items = set()
+        if transport.remote_directory_exists(base_path):
+            remote_items = set(transport.list_remote_directories(base_path))
+
+        # Find orphans (local only) - directories that exist locally but not on remote
+        orphans = local_items - remote_items
+
+        for orphan in orphans:
+            orphan_path = f"{base_path}/{orphan}"
+            local_path = DATA_DIR / orphan_path
+            log(f"Deleting local: {orphan_path}")
+            try:
+                if local_path.is_dir():
+                    shutil.rmtree(local_path)
+                else:
+                    local_path.unlink()
+                deleted.append(orphan_path)
+            except Exception as e:
+                log(f"Failed to delete {orphan_path}: {e}")
+
+        return deleted

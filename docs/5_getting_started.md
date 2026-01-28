@@ -74,17 +74,16 @@ ssh-copy-id root@<ip>
 EUNO_SERVER=root@<ip>
 OPENAI_API_KEY=sk-...
 
-# 4. Run setup and deploy
+# 4. Run setup (first time only)
 ./devops/setup-server.sh
-./devops/deploy-euno.sh
 
-# 5. Push data to server
-euno sync --push
+# 5. Deploy code and sync data
+euno sync
 
 # 6. Access at http://<ip>
 ```
 
-**Syncing data:** Use `euno sync` to keep local and remote in sync. See [Contributing](6_contribute.md#syncing-data) for details.
+**Syncing:** `euno sync` deploys code and syncs data bidirectionally. Use `--data-only` to skip code deployment. See [Contributing](6_contribute.md#syncing-data) for details.
 
 ## Next Steps
 

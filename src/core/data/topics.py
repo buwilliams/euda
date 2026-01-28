@@ -1371,9 +1371,29 @@ def import_topics(data: dict, merge: bool = True) -> dict:
         existing[row["id"]] = row["updated_at"]
 
     # Import topics (order matters for parent_id relationships)
-    # Sort by parent_id to ensure parents are created first
-    # Topics with no parent come first
-    sorted_topics = sorted(topics, key=lambda t: (t.get("parent_id") or "", t.get("created_at", "")))
+    # Use topological sort to ensure parents are created before children
+    def topological_sort(topics_list):
+        """Sort topics so parents come before children."""
+        # Build lookup and dependency graph
+        by_id = {t["id"]: t for t in topics_list}
+        result = []
+        visited = set()
+
+        def visit(topic):
+            if topic["id"] in visited:
+                return
+            visited.add(topic["id"])
+            # Visit parent first if it's in our import set
+            parent_id = topic.get("parent_id")
+            if parent_id and parent_id in by_id:
+                visit(by_id[parent_id])
+            result.append(topic)
+
+        for topic in topics_list:
+            visit(topic)
+        return result
+
+    sorted_topics = topological_sort(topics)
 
     for topic in sorted_topics:
         topic_id = topic["id"]

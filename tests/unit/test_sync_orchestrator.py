@@ -42,6 +42,9 @@ class TestApplyResolvedConflicts:
         mock_instance.remote_directory_exists.return_value = False
         mock_instance.remote_file_exists.return_value = False
         mock_instance.backup_remote_data.return_value = (True, "backup-123")
+        mock_instance.stop_remote_server.return_value = (True, "Server stopped")
+        mock_instance.start_remote_server.return_value = (True, "Server started")
+        mock_instance.sync_source_code.return_value = MagicMock(success=True, files_transferred=0)
 
         mock_class = MagicMock(return_value=mock_instance)
         return mock_class, mock_instance
