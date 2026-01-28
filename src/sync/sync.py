@@ -12,7 +12,10 @@ from typing import List, Optional, Dict, Any
 
 from .state import get_sync_state, record_sync, SyncState
 from .transport import Transport, backup_local_data
-from .conflicts import has_unresolved_conflicts, list_conflicts, Conflict
+from .conflicts import (
+    has_unresolved_conflicts, list_conflicts, Conflict,
+    Resolution, delete_conflict
+)
 
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
@@ -144,6 +147,9 @@ def sync(
             completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         )
 
+    # Check for resolved conflicts that need to be applied
+    resolved_conflicts = [c for c in list_conflicts(resolved=True) if c.resolution is not None]
+
     # Create transport
     transport = Transport(state.remote.host, state.remote.path)
 
@@ -168,14 +174,66 @@ def sync(
         # Remote might not have sync initialized - that's OK for first sync
         remote_instance_id = "unknown"
 
-    # Collect all changes and conflicts
-    all_changes: List[SyncChange] = []
-    all_conflicts: List[Conflict] = []
-
     # Import handlers here to avoid circular imports
     from .handlers import get_all_handlers
 
     handlers = get_all_handlers()
+
+    # Phase 0: Apply resolved conflicts from previous sync
+    if resolved_conflicts and not dry_run:
+        log(f"Applying {len(resolved_conflicts)} resolved conflict(s)...")
+
+        for conflict in resolved_conflicts:
+            # Determine change type based on resolution
+            if conflict.resolution == Resolution.KEEP_LOCAL:
+                change_type = "push"
+            elif conflict.resolution == Resolution.KEEP_REMOTE:
+                change_type = "pull"
+            else:
+                # KEEP_NEWEST, MERGE - determine based on timestamps or content
+                if conflict.resolution == Resolution.KEEP_NEWEST:
+                    if conflict.local_timestamp and conflict.remote_timestamp:
+                        change_type = "push" if conflict.local_timestamp >= conflict.remote_timestamp else "pull"
+                    else:
+                        change_type = "push"  # Default to local if no timestamps
+                else:
+                    # For MERGE and KEEP_BOTH, skip for now (complex cases)
+                    log(f"  Skipping complex resolution: {conflict.id}")
+                    continue
+
+            # Determine handler from conflict type
+            handler_name = "files"  # Default
+            if conflict.type.value in ("topics", "topic_logs"):
+                handler_name = "topics"
+            elif conflict.type.value in ("memory_short_term", "memory_long_term"):
+                handler_name = "memory"
+
+            # Create a change to apply the resolution
+            resolution_change = SyncChange(
+                type=change_type,
+                handler=handler_name,
+                item_id=conflict.item_id,
+                description=f"Apply resolved conflict: {conflict.description}",
+            )
+
+            # Apply the change
+            for handler in handlers:
+                if handler.name == handler_name:
+                    try:
+                        handler.apply_changes(transport, change_type, [resolution_change])
+                        if resolution_change.applied:
+                            log(f"  Applied: {conflict.item_id} ({change_type})")
+                            # Delete the conflict file after successful application
+                            delete_conflict(conflict.id)
+                        else:
+                            log(f"  Failed to apply: {conflict.item_id}")
+                    except Exception as e:
+                        log(f"  Error applying {conflict.item_id}: {e}")
+                    break
+
+    # Collect all changes and conflicts
+    all_changes: List[SyncChange] = []
+    all_conflicts: List[Conflict] = []
 
     # Phase 1: Detect changes from all handlers
     for handler in handlers:
