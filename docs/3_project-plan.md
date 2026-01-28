@@ -20,7 +20,7 @@ Instead of chasing expected returns, we commit only what we can afford to lose. 
 - **Buddy's upstart costs (December 2024):** OpenAI API $120.24 + $20 subscription, Claude API $282.43 + $20 subscription, Cursor $20, DigitalOcean $6, ~80 hours personal time @ $500/hr ($40,000). **Total: ~$40,469**
 - **Contributor expectations:** Similar commitment level—your own time and any tools/API costs you choose to use.
 - **Timeline:** December 19, 2025 – June 30, 2026
-- **Exit criteria:** If by June 30, 2026 we do not have 100 users, we stop at whatever gate we've reached—unless there are significant reasons to continue. 100 users is ambitious for a new project with no initial interest. It may be tempting to continue, but pace of growth—not just some growth—must prove demand is real and worth pursuing.
+- **Exit criteria:** If by June 30, 2026 we do not reach 100 engagement points (see Gate 3), we stop at whatever gate we've reached—unless there are significant reasons to continue. 100 points is ambitious for a new project with no initial interest. It may be tempting to continue, but pace of growth—not just some growth—must prove demand is real and worth pursuing.
 
 **Crazy Quilt** ([effectuation principle](https://effectuation.org/))
 
@@ -78,24 +78,26 @@ Each gate below is a checkpoint. We must pass each gate before moving forward. T
 
 ---
 
-## Gate 3: Users
+## Gate 3: Adoption
 
-**Target:** Friends and strangers who want Euno for themselves.
+**Target:** People using Euno—through contributions or running it themselves.
 
 **Signals:**
-- Do they want it for themselves?
-- Is their reaction curiosity ("that's neat") or desire (inspired/longing/lust)?
-- Do people we don't know ask for Euno unprompted?
+- Do people we don't know contribute pull requests?
+- Are people cloning the repo to run Euno for themselves?
+- Is there organic growth without active promotion?
 
-**Success Criteria:**
-- Each contributor has told 10 people about Euno, with at least 1 becoming a user.
-- 100 active users.
+**Success Criteria:** 100 engagement points, where:
+- 1 merged pull request = 1 point
+- 25 unique clones = 1 point
 
-Growth comes organically over time. We stay at this gate until we reach the user target.
+This ratio acknowledges that contributing code requires significant effort, while cloning indicates real interest in running Euno. Both matter.
+
+Growth comes organically over time. We stay at this gate until we reach the target.
 
 **Current Status:** Not met.
 
-**Reward:** Validation. People find Euno valuable enough to run it themselves.
+**Reward:** Validation. People find Euno valuable enough to use it.
 
 ---
 
