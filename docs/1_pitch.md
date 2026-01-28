@@ -14,8 +14,6 @@ Agents working for you day and night with their own unique identities, memories,
 
 **For the overwhelmed parent** who makes seventeen decisions before 8am—Euno handles the invisible work: schedules appointments, orders gifts, meal-plans the week, and creates space to reconnect with a spouse.
 
-**For the late bloomer** discovering who they are for the first time—Euno plans the solo trip to Portugal, books refundable reservations, and runs experiments to map preferences hidden for decades.
-
 **For the estranged siblings** who haven't spoken in three years—their Euno agents talk first, sharing only what each approves. They discover both want to reconnect but neither knows how to start. The agents combine what they know—each person's personality, their shared history—to build a plan that works for both, create the steps, and guide them through.
 
 Euno sees patterns you can't see. Does work you don't have time to do. Finds opportunities you'd never discover. Helps you become more than you were—not just solving problems, but opening doors you didn't know existed.
