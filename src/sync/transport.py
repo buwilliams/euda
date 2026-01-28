@@ -291,6 +291,23 @@ class Transport:
             return [d for d in stdout.strip().split("\n") if d and ':' not in d]
         return []
 
+    def list_remote_files_recursive(self, remote_relative_path: str) -> List[str]:
+        """List all files in a remote directory recursively.
+
+        Args:
+            remote_relative_path: Path relative to remote data directory
+
+        Returns:
+            List of relative file paths (e.g., "subdir/file.txt")
+        """
+        remote_path = f"{self.remote_data_path}/{remote_relative_path}"
+        success, stdout, _ = self.run_remote_command(
+            f"find {remote_path} -type f 2>/dev/null | sed 's|^{remote_path}/||'"
+        )
+        if success and stdout.strip():
+            return [f for f in stdout.strip().split("\n") if f and not f.startswith("/")]
+        return []
+
     def remote_file_exists(self, remote_relative_path: str) -> bool:
         """Check if a remote file exists.
 

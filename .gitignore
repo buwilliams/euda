@@ -87,7 +87,8 @@ data/user/
 data/skills/
 
 # Old plugins data (before rename to skills)
-data/plugins/
+data/plugins/*
+!data/plugins/.keep
 
 # Keep directory structure
 !data/**/.gitkeep
@@ -156,6 +157,7 @@ env/
 # ===================
 .DS_Store
 Thumbs.db
+*:Zone.Identifier
 
 # ===================
 # DevOps / Diagnostics

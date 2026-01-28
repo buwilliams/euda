@@ -20,10 +20,7 @@ Euno is a personal intelligence for human flourishing. It helps you grow into wh
    cp .env.example .env
    ```
 
-2. Add your OpenAI API key to `.env`:
-   ```
-   OPENAI_API_KEY=your-actual-key
-   ```
+2. Add your LLM provider API key to `.env` (see `.env.example` for supported providers)
 
 3. Install dependencies (requires [uv](https://docs.astral.sh/uv/)):
    ```

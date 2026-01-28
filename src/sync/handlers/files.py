@@ -289,21 +289,21 @@ class FilesSyncHandler(SyncHandler):
                         rel_path = f.relative_to(local_path)
                         local_files.add(str(rel_path))
 
-            # For simplicity, just sync the whole directory if anything changed
-            # by comparing directory existence and modification
-            if local_files:
-                # Check if remote has this plugin
-                if not transport.remote_directory_exists(plugin_path):
-                    if direction in ("push", "bidirectional"):
-                        changes.append(SyncChange(
-                            type="push",
-                            handler=self.name,
-                            item_id=plugin_path,
-                            description=f"New plugin directory: {plugin_name}",
-                        ))
-                else:
-                    # Check a sample of files for changes
-                    for filename in list(local_files)[:5]:  # Sample up to 5 files
+            # Check each file in the plugin directory
+            for filename in local_files:
+                file_path = f"{plugin_path}/{filename}"
+                result = self._check_file(transport, file_path, direction)
+                if result:
+                    if isinstance(result, Conflict):
+                        conflicts.append(result)
+                    else:
+                        changes.append(result)
+
+            # Also check for remote-only files (pull direction)
+            if direction in ("pull", "bidirectional"):
+                if transport.remote_directory_exists(plugin_path):
+                    remote_files = set(transport.list_remote_files_recursive(plugin_path))
+                    for filename in remote_files - local_files:
                         file_path = f"{plugin_path}/{filename}"
                         result = self._check_file(transport, file_path, direction)
                         if result:
@@ -476,10 +476,12 @@ class FilesSyncHandler(SyncHandler):
             # Delete remote files that don't exist locally
             deleted.extend(self._delete_remote_orphans(transport, "agents", log))
             deleted.extend(self._delete_remote_orphans(transport, "topics/assets", log))
+            deleted.extend(self._delete_remote_orphans(transport, "plugins", log))
         elif direction == "pull":
             # Delete local files that don't exist remotely
             deleted.extend(self._delete_local_orphans(transport, "agents", log))
             deleted.extend(self._delete_local_orphans(transport, "topics/assets", log))
+            deleted.extend(self._delete_local_orphans(transport, "plugins", log))
 
         return deleted
 
