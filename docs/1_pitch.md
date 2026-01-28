@@ -2,7 +2,7 @@
 
 **A personal intelligence for human flourishing.**
 
-A personal intelligence is like having agents who work for you day and night—they have identities, memory, and skills. They learn who you are, anticipate what you need, and take action on your behalf.
+Agents working for you day and night with their own unique identities, memories, and skills. They learn who you are, anticipate what you need, and take action on your behalf.
 
 *Pronounced "you-know.", from Eudaimonia (you-dye-MOH-nee-ah)—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities.*
 
