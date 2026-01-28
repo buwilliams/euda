@@ -36,10 +36,10 @@ Euno sees patterns you can't see. Does work you don't have time to do. Finds opp
 - Agents can process topics through configurable workflows
 - Attach files, notes, and context
 
-**Skills** — What agents can do
-- Curate your information feeds—less noise, more signal
-- Connect to external services (calendar, files, social)
-- Travel with you—same intelligence across devices
+**Skills** — Extensible capabilities for agents
+- Core functionality: topics, memory, identity, consolidation
+- Integrations: calendar, files, social media
+- Analysis, automation, and custom extensions
 
 ---
 
