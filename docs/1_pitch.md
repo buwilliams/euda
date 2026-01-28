@@ -2,6 +2,8 @@
 
 **A personal intelligence for human flourishing.**
 
+A personal intelligence is like having agents who work for you day and night—they have identities, memory, and skills. They learn who you are, anticipate what you need, and take action on your behalf.
+
 ---
 
 ## The Name
@@ -10,122 +12,49 @@
 
 ---
 
+## The Vision
+
+**For the curious kid** whose brain moves faster than anyone can follow—Euno finds the thread connecting scattered obsessions and turns chaos into a portfolio of ideas.
+
+**For the overwhelmed parent** who makes seventeen decisions before 8am—Euno handles the invisible work: schedules appointments, orders gifts, meal-plans the week, and creates space to reconnect with a spouse.
+
+**For the quietly struggling** who feel stuck but can't explain why—Euno rewrites the resume, customizes the cover letters, and schedules them to send. Just hit approve.
+
+**For the late bloomer** discovering who they are for the first time—Euno plans the solo trip to Portugal, books refundable reservations, and runs experiments to map preferences hidden for decades.
+
+**For those with unfinished work**—Euno transcribes the memoir, finds the audience for accumulated wisdom, and helps write letters that outlast a lifetime.
+
+Euno sees patterns you can't see. Does work you don't have time to do. Finds opportunities you'd never discover. Helps you become more than you were—not just solving problems, but opening doors you didn't know existed.
+
+---
+
+## Capabilities
+
+**Agents** — Autonomous workers with their own identities and memory
+- Work on your behalf while you sleep
+- Learn your patterns and preferences over time
+- Proactive: research, draft, schedule—waiting for your approval
+
+**Topics** — Hierarchical tasks and projects
+- Break down complex goals into actionable steps
+- Timeline views: Today, Upcoming, Anytime, Someday
+- Attach files, notes, and context
+
+**Skills** — What agents can do
+- Curate your information feeds—less noise, more signal
+- Connect to external services (calendar, files, social)
+- Travel with you—same intelligence across devices
+
+---
+
 ## Human Flourishing
 
-Flourishing is subjective—a curious kid, an overwhelmed parent, and a late-blooming retiree all flourish differently.
+Euno is about making the best use of your time, not the most efficient use of your time. It's not about doing more. It's about living your best life.
 
-**Life**
-
-The only universal value is *life*—motion, growth, activity, awe. Dead things don't move.
-
-Flourishing can mean what you want it to mean, as long as it promotes life. That's the line. Beyond that, Euno stays out of morals on purpose—people diverge on values, and a platform shouldn't supplant human freedom.
+Flourishing is subjective—a curious kid, an overwhelmed parent, and a late-blooming retiree all flourish differently. The only universal value is *life*—motion, growth, activity, awe.
 
 **Safety and Surprise**
 
-The other principle: 90% security, 10% surprise. Walls of safety ground you in your values; bridges to the unfamiliar keep you from stagnating in an echo chamber.
+The guiding principle: 90% security, 10% surprise. Walls of safety ground you in your values; bridges to the unfamiliar keep you from stagnating in an echo chamber.
 
----
-
-## The Vision
-
-> Today's AI wants to be your assistant—doing tasks, managing schedules, optimizing productivity. But it doesn't know *why* any of that matters to you.
->
-> Euno is different.
->
-> **It's about becoming.** Euno isn't here to make you more efficient. It's here to help you grow. It learns who you actually are—from your writing, photos, and behaviors—and uses that understanding to help you thrive.
->
-> **It's personal.** Euno suggests a fun new activity for you to do next weekend. It notices when you're overwhelmed and suggests a self-care activity. It builds a real model of who you actually are from your writing, photos, and behaviors. Not who you say you are. Who you are.
->
-> **It's proactive.** You wake up to find Euno has already researched those books you mentioned, compared prices, and drafted an order—waiting for your approval. Real work, off your plate, before you think to ask.
->
-> **It curates.** Instead of scrolling Twitter for an hour, you get a 2-minute summary: one relevant thread, a friend's announcement, and a reminder that doomscrolling tanks your energy. Less screen time without losing touch.
->
-> **It travels.** Ask your earbuds about dinner plans, then pick up the same conversation on your laptop. One intelligence that knows you, present wherever you are.
->
-> The goal isn't productivity. It's flourishing—becoming who you're meant to be, with your concerns addressed and space to explore what matters.
-
----
-
-## How It Works
-
-1. **Learns** from your data and behaviors
-2. **Understands** who you really are—values, patterns, rhythms
-3. **Anticipates** what you need before you ask
-
----
-
-## What It Does Today
-
-Euno is in early development. It's a self-hosted web app with a conversational interface and task management.
-
-**The Foundation:**
-- **Chat** — Conversational interface powered by LLMs (Claude, OpenAI, Grok)
-- **Topics** — Hierarchical task/project management with timeline views (Today, Upcoming, Anytime, Someday)
-- **User Identity** — A markdown file that captures who you are, referenced in every conversation
-- **Long-term Memory** — Daily records of your interactions and reflections
-- **File Upload** — Attach documents, images, and files to any topic
-
-**The Agents:**
-- **Chat** — Your conversational interface; knows your identity; manages other agents
-- **Worker** — Can work on topics autonomously; still learning what's useful
-- **Create your own** — Ask Chat to create specialized agents for your needs
-- **Agent Library** — Pre-built agents available in `agent-lib/` (fun, growth, socialize)
-
-**What's Not Built Yet:**
-- No external integrations (calendar, email, social media, e-commerce)
-- No native mobile app — but the web app is mobile-first
-- No wearable or voice-first interfaces
-- Agents can't take actions outside the system
-- Limited proactive behavior — mostly responds when you initiate
-
----
-
-## Ways to Use Euno Today
-
-**Have Real Conversations:**
-- Talk through decisions, problems, or ideas with someone who knows your context
-- Ask "What do you know about me?" — see your identity and how Euno understands you
-- Your identity shapes every response — conversations feel personal, not generic
-
-**Organize Your Work:**
-- Create topics and sub-topics to break down projects
-- Use timeline views: Today, Upcoming, Anytime, Someday
-- Attach files and notes to any topic
-- Say "I need to..." or "Remind me to..." — watch topics get created
-
-**Build Your Record:**
-- Upload documents, photos, and files
-- Write to your long-term memory — capture thoughts, reflections, decisions
-- Over time, Euno learns your patterns and preferences
-
-**Let Agents Help:**
-- The Worker can pick up topics and make progress autonomously
-- Review what agents have done and guide their work
-- Agents are still learning — expect to teach them what's useful
-
----
-
-## Where It's Heading
-
-For the ambitious, Euno clears the path. It handles logistics—refills, appointments, follow-ups—so your attention stays on work that matters.
-
-For the overwhelmed, Euno creates space. It notices you're heading toward burnout before you do. It shields you from the infinite scroll designed to hijack your attention.
-
-For the curious, Euno connects the dots. It links an idea you had three years ago to something you're exploring now. It surfaces patterns in your thinking you couldn't see.
-
-For the connected, Euno helps you show up. It remembers your mom's surgery is next week and drafts a check-in. It holds what matters about each person so you can be present when you're with them.
-
-**A Traveling Intelligence:**
-What you're seeing today is one expression—a web app. But Euno isn't the interface. Euno is the intelligence behind it. Eventually, that intelligence could live anywhere: in your pocket, on your wrist, in your ears, in virtual worlds, in your home. The form factor changes. Euno doesn't.
-
----
-
-## Why Now
-
-Three capabilities make this possible today:
-
-1. **Deep context** — Models can now hold and reason over vast amounts of personal data
-2. **Tool use** — AI can take real actions: search, fetch, schedule, order, communicate
-3. **Continuous operation** — Agents can run persistently, working in the background while you live your life
-
-The building blocks exist. What's missing is software that puts them together in service of a single person's flourishing—not engagement metrics, not ad revenue, not aggregate user behavior.
+Flourishing can mean what you want it to mean, as long as it promotes life. Beyond that, Euno stays out of morals on purpose—people diverge on values, and a platform shouldn't supplant human freedom.
