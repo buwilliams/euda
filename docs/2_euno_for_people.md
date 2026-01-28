@@ -92,17 +92,17 @@ Earl was a union carpenter who built half the houses in his county. His hands do
 
 ---
 
-## Marcus & Elena — The Bridge Builders
+## Nina & James, 34 & 38 — The Estranged Siblings
 
-Marcus is an engineer who thinks in systems. Elena is a creative director who thinks in feelings. They're co-founders of a startup, and they're about to kill each other. Marcus thinks Elena is chaotic and unfocused. Elena thinks Marcus is cold and dismissive. They've stopped talking except through Slack, and even that's hostile.
+Nina and James haven't spoken in three years. It started with a fight about their mom's care—who was doing enough, who wasn't. Words were said that couldn't be unsaid. Now their mom is gone, and the silence has calcified. Both think about reaching out. Neither knows how. The longer it goes, the harder it gets.
 
-**How Euno helps Marcus and Elena flourish:**
+**How Euno helps Nina and James flourish:**
 
-- **Agents negotiate first.** Marcus's Euno knows he shuts down when he feels ambushed. Elena's Euno knows she needs acknowledgment before logic. Before their next meeting, the agents talk: *"Marcus needs an agenda 24 hours ahead. Elena needs the first five minutes to be heard, not solved. Both care deeply about the company—they just show it differently."* The agents draft a meeting structure that works for both. Neither human had to ask.
+- **Agents talk first.** Nina tells her Euno she misses her brother but can't face rejection. James tells his Euno he was wrong but doesn't know how to apologize. With permission, the agents connect: *"Both want to reconcile. Both are afraid. Neither blames the other anymore."* The agents share only what's approved—no ambushes, no surprises. They discover the door is already open.
 
-- **Translates between languages.** When Elena sends a frustrated voice memo, her Euno rewrites it for Marcus: *"Elena is concerned the product roadmap doesn't reflect user feedback from last month. She'd like to discuss priorities. Here's the data she's referencing."* When Marcus sends a terse email, his Euno adds context for Elena: *"Marcus agrees with your concern. He's proposing a framework to address it. He's not dismissing you—he's trying to help."* Both feel understood.
+- **Drafts the impossible message.** James has started a hundred texts and deleted them all. His Euno offers: *"Here's a draft based on what you've told me you feel. It's simple: 'I miss you. I'm sorry. Can we talk?' You can edit it, or I can try again."* James stares at it for an hour. Then hits send. Nina's Euno had already told her a message might be coming—so she was ready.
 
-- **Finds the common ground.** The agents share what each person has said they value—with permission. Marcus: *"I want this company to matter. I'm terrified of failing."* Elena: *"I want to make something beautiful that helps people. I'm terrified of being ignored."* Euno surfaces the overlap: *"You're both scared of the same thing—building something that doesn't matter. You're on the same side."* They have dinner that week. Not to talk business. Just to remember why they started.
+- **Rebuilds the bridge slowly.** The first call is awkward. But it happens. Euno helps both prepare: *"James tends to shut down when he feels criticized. Nina needs space to process before responding."* After the call, both agents check in: *"How did that feel? What would make the next one easier?"* Over months, the agents help them rebuild—not by doing the hard work, but by making it possible to start.
 
 ---
 
