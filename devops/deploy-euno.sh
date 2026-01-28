@@ -81,6 +81,11 @@ rsync -avz --delete \
 echo "[4/7] Copying .env file..."
 scp "$PROJECT_DIR/.env" "$SERVER:$REMOTE_DIR/.env"
 
+# Copy SearXNG config (data/ is excluded from rsync)
+echo "Copying SearXNG config..."
+ssh "$SERVER" "mkdir -p $REMOTE_DIR/data/system"
+scp "$PROJECT_DIR/data/system/searxng.yml" "$SERVER:$REMOTE_DIR/data/system/searxng.yml" 2>/dev/null || echo "Note: searxng.yml not found locally, will use existing or create"
+
 # Install dependencies
 echo "[5/7] Installing dependencies..."
 ssh -T "$SERVER" "cd $REMOTE_DIR && source ~/.local/bin/env && uv sync"
