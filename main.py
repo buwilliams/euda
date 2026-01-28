@@ -748,12 +748,18 @@ def cmd_sync(args):
 
     print(f"Direction: {direction}")
 
-    # Check if remote is configured
+    # Check if remote is configured, auto-configure from .env if needed
     state = get_sync_state()
     if not state.remote:
-        print("\nError: No remote configured.")
-        print("Run 'euno sync init <server>' first.")
-        sys.exit(1)
+        import os
+        server = os.environ.get("EUNO_SERVER")
+        if server:
+            state = init_sync(server)
+            print(f"Auto-configured from EUNO_SERVER: {server}")
+        else:
+            print("\nError: No remote configured.")
+            print("Set EUNO_SERVER in .env or run 'euno sync init <server>'.")
+            sys.exit(1)
 
     print(f"Remote: {state.remote.host}")
     print()

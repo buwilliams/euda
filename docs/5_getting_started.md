@@ -78,8 +78,7 @@ OPENAI_API_KEY=sk-...
 ./devops/setup-server.sh
 ./devops/deploy-euno.sh
 
-# 5. Initialize sync and push data
-euno sync init
+# 5. Push data to server
 euno sync --push
 
 # 6. Access at http://<ip>

@@ -156,10 +156,7 @@ gh pr create --title "Add my feature" --body "Description"
 Keep local and remote data in sync when developing on multiple machines or deploying to a server:
 
 ```bash
-# Initialize (first time only)
-euno sync init                     # Uses EUNO_SERVER from .env
-
-# Sync operations
+# Sync operations (auto-configures from EUNO_SERVER in .env)
 euno sync                          # Bidirectional merge
 euno sync --push                   # Local → remote
 euno sync --pull                   # Remote → local

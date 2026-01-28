@@ -108,15 +108,23 @@ def sync(
 
     # Get current state
     state = get_sync_state()
+
+    # Auto-configure from EUNO_SERVER env var if no remote set
     if not state.remote:
-        return SyncResult(
-            success=False,
-            direction=direction,
-            dry_run=dry_run,
-            error="No remote configured. Run 'sync init <server>' first.",
-            started_at=started_at,
-            completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
-        )
+        import os
+        server = os.environ.get("EUNO_SERVER")
+        if server:
+            from .state import init_sync
+            state = init_sync(server)
+        else:
+            return SyncResult(
+                success=False,
+                direction=direction,
+                dry_run=dry_run,
+                error="No remote configured. Set EUNO_SERVER in .env or run 'sync init <server>'.",
+                started_at=started_at,
+                completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            )
 
     # Check for unresolved conflicts from previous sync
     if has_unresolved_conflicts():
