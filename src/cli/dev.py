@@ -106,11 +106,11 @@ IDENTITY
   identity <agent>          Show agent's identity
     --history               Show historical identity snapshots
 
-PLUGINS
-  Use 'euno plugin' commands instead:
-    euno plugin list                    List available plugins
-    euno plugin <name> --help           Get plugin help
-    euno plugin <name> <command>        Execute plugin command
+SKILLS
+  Use 'euno skill' commands instead:
+    euno skill list                    List available skills
+    euno skill <name> --help           Get skill help
+    euno skill <name> <command>        Execute skill command
 
 PROMPTS
   prompt <agent> system     Show system prompt
@@ -136,5 +136,5 @@ Examples:
   python main.py dev topic user "List my current topics"
   python main.py dev reflect user --consolidate
   python main.py dev watch --agent user
-  uv run euno plugin core topics list --status todo
+  uv run euno skill core topics list --status todo
 """)

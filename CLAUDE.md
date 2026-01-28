@@ -63,20 +63,20 @@ uv run euno dev trace <topic_id>               # Show execution trace
 
 Use `--json` for machine-readable output. See `specs/7_dev_cli.md` for full documentation.
 
-### Testing Plugins
+### Testing Skills
 
 ```bash
-# List available plugins
-uv run euno plugin list
+# List available skills
+uv run euno skill list
 
-# Get help for a plugin
-uv run euno plugin core --help
-uv run euno plugin core topics --help
+# Get help for a skill
+uv run euno skill core --help
+uv run euno skill core topics --help
 
-# Run plugin commands directly
-uv run euno plugin core topics list
-uv run euno plugin core topics create "Test topic"
-uv run euno plugin core memory list
+# Run skill commands directly
+uv run euno skill core topics list
+uv run euno skill core topics create "Test topic"
+uv run euno skill core memory list
 ```
 
 ## Project Structure
@@ -84,8 +84,8 @@ uv run euno plugin core memory list
 ```
 euno/
 ├── main.py                 # Entry point, CLI
-├── plugins/                # Plugin CLI interfaces (for LLM agents)
-│   ├── core/               # Core plugin (CLI wrappers only)
+├── skills/                 # Skill CLI interfaces (for LLM agents)
+│   ├── core/               # Core skill (CLI wrappers only)
 │   │   ├── cli.py          # Typer CLI entry point
 │   │   └── commands/       # CLI commands (import from src/core/)
 │   │       ├── topics.py   # Topic commands
@@ -96,13 +96,13 @@ euno/
 │   ├── speech/             # Text-to-speech (self-contained)
 │   └── mastodon/           # Mastodon integration (self-contained)
 ├── src/
-│   ├── core/               # Business logic (shared by web + plugins)
+│   ├── core/               # Business logic (shared by web + skills)
 │   │   ├── data/           # Topics, assets, memory, identity
 │   │   ├── agents/         # Agent operations
 │   │   ├── system/         # Consolidation, notifications, dates
 │   │   └── integration/    # File processing
-│   ├── plugins/            # Plugin infrastructure
-│   │   ├── discovery.py    # Scan plugins/, validate
+│   ├── skills/             # Skill infrastructure
+│   │   ├── discovery.py    # Scan skills/, validate
 │   │   ├── executor.py     # Run CLI via subprocess
 │   │   ├── usage.py        # Extract --help text
 │   │   ├── context.py      # Build env vars
@@ -125,30 +125,30 @@ euno/
 
 ### Two Paths to Business Logic
 
-Both the web UI and plugin CLI use the same business logic in `src/core/`:
+Both the web UI and skill CLI use the same business logic in `src/core/`:
 
 1. **Web UI (fast)**: `src/web/routes/*.py` → direct import from `src/core/`
-2. **LLM Agents (CLI)**: `plugins/core/commands/*.py` → import from `src/core/` → subprocess execution
+2. **LLM Agents (CLI)**: `skills/core/commands/*.py` → import from `src/core/` → subprocess execution
 
 ## Core Concepts
 
-### Plugins
+### Skills
 
-Agents interact with Euno through **plugins** - CLI-based extensions that provide capabilities. The LLM uses three meta-tools:
+Agents interact with Euno through **skills** - CLI-based extensions that provide capabilities. The LLM uses three meta-tools:
 
-- `list_plugins` - Discover available plugins
-- `plugin_usage(plugin)` - Get help for a plugin
-- `execute_plugin(plugin, command)` - Run a plugin command
+- `list_skills` - Discover available skills
+- `skill_usage(skill)` - Get help for a skill
+- `execute_skill(skill, command)` - Run a skill command
 
-Built-in plugins:
+Built-in skills:
 - **core**: Topics, memory, agents, identity, consolidation, dates (CLI wrappers for `src/core/`)
 - **nextcloud**: Files, calendar, deck integration (self-contained)
 - **speech**: Text-to-speech (self-contained)
 - **mastodon**: Social media posts (self-contained)
 
-**Architecture note:** The `core` plugin is special—its CLI commands are thin wrappers that import business logic from `src/core/`. External plugins (nextcloud, speech, mastodon) are self-contained with their own logic.
+**Architecture note:** The `core` skill is special—its CLI commands are thin wrappers that import business logic from `src/core/`. External skills (nextcloud, speech, mastodon) are self-contained with their own logic.
 
-See `specs/8_plugins.md` for full plugin documentation.
+See `specs/8_skills.md` for full skill documentation.
 
 ### Agents
 An agent is: **Identity + Cognition + Memory + Behavior**
@@ -156,7 +156,7 @@ An agent is: **Identity + Cognition + Memory + Behavior**
 - **Identity** (`identity.md`): Purpose, values, voice, stable attractors, context
 - **Cognition**: Reasoning (system prompts) + Metacognition (self-regulation, reflection)
 - **Memory**: Short-term (90 days) + Long-term (permanent archive)
-- **Behavior** (`config.json`): Plugins + Triggers
+- **Behavior** (`config.json`): Skills + Triggers
 
 ### Metacognition
 Metacognition is the agent's self-regulation and self-improvement system:
@@ -209,7 +209,7 @@ The user is conceptually an agent too - just with a different interface (Web UI/
      "id": "myagent",
      "name": "My Agent",
      "state": "enabled",
-     "excluded_plugins": [],
+     "excluded_skills": [],
      "triggers": [],
      "consolidation": {
        "enabled": true,
@@ -222,15 +222,15 @@ The user is conceptually an agent too - just with a different interface (Web UI/
 
 No Python code needed for new agents.
 
-## Adding a New Plugin
+## Adding a New Skill
 
-1. Create directory: `plugins/{name}/`
+1. Create directory: `skills/{name}/`
 2. Create `cli.py`:
    ```python
-   """My plugin description."""
+   """My skill description."""
    import typer
 
-   app = typer.Typer(name="myplugin", help="My plugin help")
+   app = typer.Typer(name="myskill", help="My skill help")
 
    @app.command()
    def mycommand():
@@ -243,9 +243,9 @@ No Python code needed for new agents.
    if __name__ == "__main__":
        main()
    ```
-3. Plugins are auto-discovered on next invocation
+3. Skills are auto-discovered on next invocation
 
-See `specs/8_plugins.md` for full documentation.
+See `specs/8_skills.md` for full documentation.
 
 ## API Endpoints
 
@@ -284,4 +284,4 @@ Before submitting changes, review against `specs/*.md`:
 - `specs/4_ux_ui.md` — User experience and interface patterns
 - `specs/5_cli.md` — Command-line interface commands and behavior
 - `specs/7_dev_cli.md` — Developer CLI for debugging and improving agents
-- `specs/8_plugins.md` — Plugin architecture and commands
+- `specs/8_skills.md` — Skill architecture and commands
