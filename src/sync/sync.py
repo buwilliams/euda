@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any
 
 from .state import get_sync_state, record_sync, SyncState
-from .transport import Transport
+from .transport import Transport, backup_local_data
 from .conflicts import has_unresolved_conflicts, list_conflicts, Conflict
 
 
@@ -40,6 +40,8 @@ class SyncResult:
     error: Optional[str] = None
     started_at: str = ""
     completed_at: str = ""
+    local_backup: str = ""  # Name of local backup created (if any)
+    remote_backup: str = ""  # Name of remote backup created (if any)
 
     @property
     def changes_pushed(self) -> int:
@@ -88,17 +90,21 @@ class SyncResult:
 def sync(
     direction: str = "bidirectional",
     dry_run: bool = False,
+    backup: bool = True,
 ) -> SyncResult:
     """Perform sync with remote.
 
     Args:
         direction: "push", "pull", or "bidirectional"
         dry_run: If True, only show what would be done
+        backup: If True, create backup before applying changes (default: True)
 
     Returns:
         SyncResult with details of the operation
     """
     started_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    local_backup_name = ""
+    remote_backup_name = ""
 
     # Get current state
     state = get_sync_state()
@@ -183,7 +189,43 @@ def sync(
             completed_at=completed_at,
         )
 
-    # Phase 2: Apply changes
+    # Phase 2: Create backups before applying changes
+    if backup and all_changes:
+        # Backup local if we're pulling
+        if direction in ("pull", "bidirectional"):
+            has_pull = any(c.type == "pull" for c in all_changes)
+            if has_pull:
+                success, result = backup_local_data()
+                if not success:
+                    return SyncResult(
+                        success=False,
+                        direction=direction,
+                        dry_run=dry_run,
+                        changes=all_changes,
+                        error=f"Failed to create local backup: {result}",
+                        started_at=started_at,
+                        completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+                    )
+                local_backup_name = result
+
+        # Backup remote if we're pushing
+        if direction in ("push", "bidirectional"):
+            has_push = any(c.type == "push" for c in all_changes)
+            if has_push:
+                success, result = transport.backup_remote_data()
+                if not success:
+                    return SyncResult(
+                        success=False,
+                        direction=direction,
+                        dry_run=dry_run,
+                        changes=all_changes,
+                        error=f"Failed to create remote backup: {result}",
+                        started_at=started_at,
+                        completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+                    )
+                remote_backup_name = result
+
+    # Phase 3: Apply changes
     for handler in handlers:
         try:
             handler.apply_changes(transport, direction, all_changes)
@@ -217,6 +259,8 @@ def sync(
         conflicts=all_conflicts,
         started_at=started_at,
         completed_at=completed_at,
+        local_backup=local_backup_name,
+        remote_backup=remote_backup_name,
     )
 
 

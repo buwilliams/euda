@@ -318,6 +318,53 @@ class Transport:
         temp_path.unlink(missing_ok=True)
         return None
 
+    def backup_remote_data(self) -> Tuple[bool, str]:
+        """Create a backup of the remote data directory.
+
+        Creates a timestamped copy of the data directory on the remote server.
+
+        Returns:
+            Tuple of (success, backup_name or error message)
+        """
+        from datetime import datetime
+        backup_name = f"data_backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        backup_path = f"{self.remote_path}/{backup_name}"
+
+        success, stdout, stderr = self.run_remote_command(
+            f"cd {self.remote_path} && if [ -d data ]; then cp -r data {backup_name}; echo 'OK'; else echo 'NO_DATA'; fi"
+        )
+
+        if success and "OK" in stdout:
+            return True, backup_name
+        elif success and "NO_DATA" in stdout:
+            return True, ""  # No data to backup, that's OK
+        else:
+            return False, stderr or "Failed to create remote backup"
+
+
+def backup_local_data() -> Tuple[bool, str]:
+    """Create a backup of the local data directory.
+
+    Creates a timestamped copy of the data directory.
+
+    Returns:
+        Tuple of (success, backup_name or error message)
+    """
+    import shutil
+    from datetime import datetime
+
+    if not DATA_DIR.exists():
+        return True, ""  # No data to backup
+
+    backup_name = f"data_backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    backup_path = DATA_DIR.parent / backup_name
+
+    try:
+        shutil.copytree(DATA_DIR, backup_path)
+        return True, backup_name
+    except Exception as e:
+        return False, str(e)
+
 
 def test_connection(host: str, timeout: int = 10) -> Tuple[bool, str]:
     """Test SSH connectivity to a host.

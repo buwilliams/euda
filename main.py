@@ -590,10 +590,15 @@ def cmd_sync(args):
         euno sync --dry-run           # Preview changes without applying
         euno sync --push              # Local -> remote only
         euno sync --pull              # Remote -> local only
+        euno sync --no-backup         # Skip backup before sync
         euno sync init [server]       # Initialize sync with remote
         euno sync status              # Show sync state
         euno sync conflicts           # List unresolved conflicts
         euno sync resolve <id> --keep-local|--keep-remote
+
+    Backups are created by default before applying changes:
+    - Pull: backs up local data/ directory
+    - Push: backs up remote data/ directory
     """
     from src.sync import (
         sync, sync_status, get_sync_state, init_sync, test_connection,
@@ -731,6 +736,7 @@ def cmd_sync(args):
 
     # Parse flags
     dry_run = "--dry-run" in args or "-n" in args
+    no_backup = "--no-backup" in args
     direction = "bidirectional"
     if "--push" in args:
         direction = "push"
@@ -739,6 +745,9 @@ def cmd_sync(args):
 
     if dry_run:
         print("DRY RUN - no changes will be applied\n")
+
+    if no_backup:
+        print("BACKUP DISABLED\n")
 
     print(f"Direction: {direction}")
 
@@ -753,11 +762,19 @@ def cmd_sync(args):
     print()
 
     # Perform sync
-    result = sync(direction=direction, dry_run=dry_run)
+    result = sync(direction=direction, dry_run=dry_run, backup=not no_backup)
 
     if not result.success:
         print(f"Error: {result.error}")
         sys.exit(1)
+
+    # Show backup info
+    if result.local_backup:
+        print(f"Local backup: {result.local_backup}")
+    if result.remote_backup:
+        print(f"Remote backup: {result.remote_backup}")
+    if result.local_backup or result.remote_backup:
+        print()
 
     # Show results
     print(result.summary())
