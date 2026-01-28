@@ -14,7 +14,6 @@ Rules for the command-line interface.
 - `chat [agent]` — Interactive chat with an agent (default: user)
 - `skills` — Run skill commands
 - `dev` — Developer tools for debugging agents
-- `points [name]` — Show contribution points, optionally filtered by name
 - `set-password` — Set access password for web UI (empty password disables auth)
 - `remove-password` — Disable authentication
 - `fresh-start` — Reset all user data while keeping configs

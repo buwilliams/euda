@@ -26,7 +26,6 @@ Commands:
   chat             Interactive chat with an agent
   skills           Run skill commands
   dev              Developer tools for debugging agents
-  points           Show contribution points summary
   set-password     Set the access password (empty to disable auth)
   remove-password  Remove the password (disable auth)
   fresh-start      Reset all user data (memory, topics, logs, password)
@@ -77,7 +76,6 @@ Examples:
         "chat": cmd_chat,
         "skills": cmd_skills,
         "dev": cmd_dev,
-        "points": cmd_points,
         "set-password": cmd_set_password,
         "remove-password": cmd_remove_password,
         "fresh-start": cmd_fresh_start,
@@ -277,112 +275,6 @@ def cmd_chat(args):
         except EOFError:
             print("\nGoodbye!")
             break
-
-
-
-
-def cmd_points(args):
-    """Show contribution points summary."""
-    import re
-
-    # Optional fuzzy name filter
-    name_filter = args[0].lower() if args else None
-
-    print("=" * 60)
-    print("Euno - Contribution Points")
-    print("=" * 60)
-    print()
-
-    contrib_dir = Path(__file__).parent / "contrib"
-    if not contrib_dir.exists():
-        print("No contrib/ directory found.")
-        return
-
-    # Parse all contributor files (exclude README.md)
-    contributors = []
-    total_points = 0
-    filtered_points = 0
-
-    for file in sorted(contrib_dir.glob("*.md")):
-        if file.name.lower() == "readme.md":
-            continue
-
-        content = file.read_text()
-
-        # Extract name from filename (firstname-lastname.md)
-        name_parts = file.stem.split("-")
-        first_name = name_parts[0].title() if name_parts else "Unknown"
-        last_name = name_parts[1].title() if len(name_parts) > 1 else ""
-
-        # Parse point entries: [yyyy-mm-dd][points] or [yyyy-mm-dd][--]
-        # Match patterns like [2025-01-06][25] or [2025-01-06][--] or [2025-01-06][-]
-        pattern = r'\[[\d-]+\]\[([^\]]+)\]'
-        matches = re.findall(pattern, content)
-
-        user_points = 0
-        has_points = False
-        for match in matches:
-            # Skip non-numeric values like "--" or "-"
-            if match.strip() in ('--', '-', ''):
-                continue
-            try:
-                points = int(match)
-                user_points += points
-                has_points = True
-            except ValueError:
-                # Not a number, skip
-                continue
-
-        contributor = {
-            "first_name": first_name,
-            "last_name": last_name,
-            "points": user_points,
-            "has_points": has_points
-        }
-        contributors.append(contributor)
-        total_points += user_points
-
-        # Check if matches filter
-        if name_filter:
-            full_name = f"{first_name} {last_name}".lower()
-            if name_filter in full_name:
-                filtered_points += user_points
-                contributor["matches_filter"] = True
-            else:
-                contributor["matches_filter"] = False
-        else:
-            contributor["matches_filter"] = True
-
-    if not contributors:
-        print("No contributor files found.")
-        return
-
-    # Filter contributors if name filter provided
-    display_contributors = [c for c in contributors if c["matches_filter"]]
-
-    if name_filter and not display_contributors:
-        print(f"No contributors matching '{name_filter}' found.")
-        return
-
-    # Display results
-    print(f"Total Points: {total_points}")
-    if name_filter:
-        print(f"Filter: '{name_filter}' ({len(display_contributors)} match{'es' if len(display_contributors) != 1 else ''})")
-    print()
-    print(f"{'First Name':<15} {'Last Name':<15} {'Points':>10} {'Percent':>10}")
-    print("-" * 52)
-
-    for c in display_contributors:
-        if total_points > 0 and c["has_points"]:
-            percent = (c["points"] / total_points) * 100
-            percent_str = f"{percent:.1f}%"
-        elif not c["has_points"]:
-            percent_str = "--"
-        else:
-            percent_str = "0.0%"
-
-        points_str = str(c["points"]) if c["has_points"] else "--"
-        print(f"{c['first_name']:<15} {c['last_name']:<15} {points_str:>10} {percent_str:>10}")
 
 
 def cmd_set_password(args):

@@ -1,13 +1,5 @@
 # Euno for People
 
-**A personal intelligence that anticipates you.**
-
-When people hear about Euno, they often zero in on filtering social media. While Euno does that, it misses the deeper vision: Euno is a second brain, a wizard, a genie—a wiser version of yourself who knows how to speak your language, what you need now, and how to help you flourish.
-
----
-
-## Why These Stories
-
 In a world where AI handles more and more of the cognitive labor—the research, the scheduling, the coordination, the remembering—a question emerges: *what do you do with all that freed-up space?*
 
 The usual answers center on productivity. Do more. Optimize harder. But productivity toward what?

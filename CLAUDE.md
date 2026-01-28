@@ -8,7 +8,7 @@ Euno is a personal intelligence for human flourishing. It helps you grow into wh
 
 ## Key References
 
-- `docs/1_pitch.md` - Product vision
+- `docs/1_vision.md` - Product vision
 - `docs/4_system.md` - Entities, ontology, and lifecycle
 - `specs/*.md` - Design rules for drift detection
 - `main.py` - Entry point

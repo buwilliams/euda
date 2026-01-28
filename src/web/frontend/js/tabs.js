@@ -73,7 +73,10 @@ function openMoreMenuScreen(tabName) {
         historyViewHistory = [];
         loadHistoryData();
     }
-    if (tabName === 'about') loadAboutData();
+    if (tabName === 'about') {
+        resetDocsExplorer();
+        loadDocsData();
+    }
     if (tabName === 'settings') loadSettingsData();
 }
 
@@ -158,7 +161,10 @@ function switchTab(tabName) {
         historyViewHistory = [];
         loadHistoryData();
     }
-    if (tabName === 'about') loadAboutData();
+    if (tabName === 'about') {
+        resetDocsExplorer();
+        loadDocsData();
+    }
     if (tabName === 'settings') loadSettingsData();
 }
 

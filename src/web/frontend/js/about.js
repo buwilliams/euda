@@ -1,31 +1,258 @@
-// Euno - About Tab
+// Euno - Docs Explorer
 
-// ============== About ==============
+// ============== Docs Navigation ==============
 
-let aboutContent = null;
+let docsHistory = [];  // Stack of {path, title} objects
+let currentDoc = null;
+let docsSlideDirection = null;  // 'forward' or 'back'
 
-async function loadAboutData() {
+async function loadDocsData() {
+    // Start on README.md
+    docsSlideDirection = null;  // No animation for initial load
+    await navigateToDoc('README.md');
+}
+
+async function navigateToDoc(path, direction = 'forward') {
     try {
-        const response = await fetch('/api/about');
+        const response = await fetch(`/api/docs?path=${encodeURIComponent(path)}`);
         const data = await response.json();
-        aboutContent = data.content || '';
-        renderAbout();
+
+        if (data.error) {
+            document.getElementById('about-content').innerHTML =
+                `<div class="view-slide-container current"><div class="focus-empty">Error: ${data.error}</div></div>`;
+            return;
+        }
+
+        // Add current doc to history before navigating (if we have one)
+        if (currentDoc && currentDoc.path !== path) {
+            docsHistory.push(currentDoc);
+            docsSlideDirection = direction;
+        }
+
+        // Extract title from first heading or filename
+        const title = extractTitle(data.content, path);
+
+        currentDoc = { path: path, title: title, content: data.content };
+        renderDoc();
     } catch (error) {
-        console.error('Failed to load about:', error);
+        console.error('Failed to load doc:', error);
         document.getElementById('about-content').innerHTML =
-            '<div class="focus-empty">Failed to load about content</div>';
+            '<div class="view-slide-container current"><div class="focus-empty">Failed to load documentation</div></div>';
     }
 }
 
-function renderAbout() {
+function extractTitle(content, path) {
+    // Try to extract title from first # heading
+    const match = content.match(/^#\s+(.+)$/m);
+    if (match) {
+        return match[1];
+    }
+    // Fall back to filename without extension
+    return path.split('/').pop().replace('.md', '');
+}
+
+function renderDoc() {
+    if (!currentDoc) return;
+
     const container = document.getElementById('about-content');
-    if (!aboutContent) {
-        container.innerHTML = '<div class="focus-empty">No content available</div>';
+    const titleEl = document.getElementById('docs-title');
+    const breadcrumbsEl = document.getElementById('docs-breadcrumbs');
+
+    // Update header
+    titleEl.textContent = currentDoc.title;
+
+    // Build breadcrumbs
+    const pathParts = currentDoc.path.split('/');
+    let breadcrumbHtml = '<span>More</span><img src="/web/icons/chevron-right.svg" alt=">">';
+    breadcrumbHtml += '<span>About</span>';
+    if (currentDoc.path !== 'README.md') {
+        breadcrumbHtml += '<img src="/web/icons/chevron-right.svg" alt=">">';
+        breadcrumbHtml += `<span>${pathParts[pathParts.length - 1].replace('.md', '')}</span>`;
+    }
+    breadcrumbsEl.innerHTML = breadcrumbHtml;
+
+    // Render markdown content
+    const html = marked.parse(currentDoc.content);
+    const content = `<div class="docs-markdown-content">${html}</div>`;
+
+    // Apply slide animation if we have a direction and existing view
+    if (docsSlideDirection && container.querySelector('.view-slide-container')) {
+        animateSlideTransition(container, content, docsSlideDirection, processDocsContent);
+        docsSlideDirection = null;
+    } else {
+        container.innerHTML = `<div class="view-slide-container current">${content}</div>`;
+        processDocsContent(container.querySelector('.view-slide-container'));
+    }
+
+    // Scroll to top
+    container.scrollTop = 0;
+}
+
+function processDocsContent(viewContainer) {
+    const innerContainer = viewContainer.querySelector('.docs-markdown-content');
+    if (innerContainer) {
+        rewriteImagePaths(innerContainer);
+        interceptDocLinks(innerContainer);
+    }
+}
+
+// Generic slide transition animation (reusable)
+function animateSlideTransition(container, newContent, direction, onNewViewReady) {
+    const oldView = container.querySelector('.view-slide-container');
+    if (!oldView) {
+        container.innerHTML = `<div class="view-slide-container current">${newContent}</div>`;
+        if (onNewViewReady) onNewViewReady(container.querySelector('.view-slide-container'));
         return;
     }
-    // Use marked to convert markdown to HTML
-    container.innerHTML = marked.parse(aboutContent);
+
+    const newView = document.createElement('div');
+    newView.className = 'view-slide-container';
+    newView.innerHTML = newContent;
+
+    if (direction === 'forward') {
+        newView.classList.add('slide-in-right');
+    } else {
+        newView.classList.add('slide-in-left');
+    }
+
+    container.appendChild(newView);
+
+    // Process new content before animation completes
+    if (onNewViewReady) onNewViewReady(newView);
+
+    newView.offsetHeight; // Trigger reflow
+
+    if (direction === 'forward') {
+        oldView.classList.remove('current');
+        oldView.classList.add('slide-out-left');
+    } else {
+        oldView.classList.remove('current');
+        oldView.classList.add('slide-out-right');
+    }
+
+    newView.classList.remove('slide-in-left', 'slide-in-right');
+    newView.classList.add('current');
+
+    setTimeout(() => {
+        if (oldView.parentNode) oldView.remove();
+    }, 300);
 }
+
+function rewriteImagePaths(container) {
+    const images = container.querySelectorAll('img');
+    images.forEach(img => {
+        const src = img.getAttribute('src');
+        if (!src) return;
+
+        // Rewrite src/web/frontend/images/ to /web/images/
+        if (src.startsWith('src/web/frontend/images/')) {
+            img.setAttribute('src', src.replace('src/web/frontend/images/', '/web/images/'));
+        }
+        // Rewrite src/web/frontend/ to /web/
+        else if (src.startsWith('src/web/frontend/')) {
+            img.setAttribute('src', src.replace('src/web/frontend/', '/web/'));
+        }
+    });
+}
+
+function interceptDocLinks(container) {
+    const links = container.querySelectorAll('a');
+    links.forEach(link => {
+        const href = link.getAttribute('href');
+        if (!href) return;
+
+        // Check if it's a local markdown link
+        if (isLocalDocLink(href)) {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const resolvedPath = resolveDocPath(href);
+                navigateToDoc(resolvedPath);
+            });
+            // Style as internal link
+            link.classList.add('doc-internal-link');
+        } else if (href.startsWith('http://') || href.startsWith('https://')) {
+            // External link - open in new tab
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+        }
+    });
+}
+
+function isLocalDocLink(href) {
+    // Local doc links are relative .md files, docs/specs paths, or LICENSE
+    if (href.startsWith('http://') || href.startsWith('https://')) {
+        return false;
+    }
+    if (href.startsWith('#')) {
+        return false;  // Anchor link
+    }
+    if (href.endsWith('.md')) {
+        return true;
+    }
+    if (href.startsWith('docs/') || href.startsWith('specs/')) {
+        return true;
+    }
+    if (href === 'LICENSE') {
+        return true;
+    }
+    return false;
+}
+
+function resolveDocPath(href) {
+    // Resolve relative path based on current doc location
+    if (!currentDoc) return href;
+
+    // If already absolute-ish (starts with docs/ or specs/ or is README.md)
+    if (href.startsWith('docs/') || href.startsWith('specs/') || href === 'README.md') {
+        return href;
+    }
+
+    // Get current directory
+    const currentDir = currentDoc.path.includes('/')
+        ? currentDoc.path.substring(0, currentDoc.path.lastIndexOf('/'))
+        : '';
+
+    // Handle relative paths
+    if (href.startsWith('./')) {
+        href = href.substring(2);
+    }
+
+    // Handle parent directory references
+    let targetDir = currentDir;
+    while (href.startsWith('../')) {
+        href = href.substring(3);
+        targetDir = targetDir.includes('/')
+            ? targetDir.substring(0, targetDir.lastIndexOf('/'))
+            : '';
+    }
+
+    // Combine
+    if (targetDir) {
+        return `${targetDir}/${href}`;
+    }
+    return href;
+}
+
+function docsNavigateBack() {
+    if (docsHistory.length > 0) {
+        // Pop from history and navigate with back animation
+        const prev = docsHistory.pop();
+        currentDoc = prev;
+        docsSlideDirection = 'back';
+        renderDoc();
+    } else {
+        // No history, go back to More menu
+        navigateMoreMenuBack();
+    }
+}
+
+// Reset docs state when opening the tab
+function resetDocsExplorer() {
+    docsHistory = [];
+    currentDoc = null;
+}
+
+// ============== Legacy functions kept for compatibility ==============
 
 function discussTask(description) {
     contextInput.value = `Tell me about the task: ${description}`;
@@ -141,4 +368,3 @@ function updateTopicsBadge() {
     badge.textContent = count;
     badge.style.display = count > 0 ? 'inline' : 'none';
 }
-

@@ -8,15 +8,13 @@ _Euno (you-know), from Eudaimonia (you-dye-MOH-nee-ah)—ancient Greek for "huma
 
 ## Documentation
 
-1. [Pitch](docs/1_pitch.md) — What Euno is and why it exists
+1. [Vision](docs/1_vision.md) — What Euno is and why it exists
 2. [Euno for People](docs/2_euno_for_people.md) — Personas and how Euno helps them flourish
-3. [Business Plan](docs/3_business-plan.md) — Vision and growth gates
+3. [Project Plan](docs/3_project-plan.md) — Vision and growth gates
 4. [System](docs/4_system.md) — Entities, ontology, and lifecycle
 5. [Getting Started](docs/5_getting_started.md) — Local setup and deployment
 6. [Contributing](docs/6_contribute.md) — Extension hierarchy and PR process
-7. [Points](docs/7_points.md) — Contribution tracking and rewards
-8. [Operating Agreement](docs/8_operating-agreement.md) — Ownership and governance
-9. [Privacy](docs/9_privacy.md) — Privacy philosophy and current state
+7. [Privacy](docs/9_privacy.md) — Privacy philosophy and current state
 
 The [Getting Started Guide](docs/5_getting_started.md) will have you running Euno locally in minutes.
 
@@ -26,5 +24,4 @@ Join our [Discord](https://discord.gg/5B9VdQ6vYP) — where we meet, plan, and d
 
 ## License
 
-This project is proprietary software. See [LICENSE](LICENSE) for terms. By contributing, you agree to assign your contributions to the project.
-
+This project is open source under the [MIT License](LICENSE).
