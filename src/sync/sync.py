@@ -226,9 +226,14 @@ def sync(
                             # Delete the conflict file after successful application
                             delete_conflict(conflict.id)
                         else:
-                            log(f"  Failed to apply: {conflict.item_id}")
+                            error_msg = resolution_change.error or "unknown reason"
+                            log(f"  Failed to apply: {conflict.item_id} - {error_msg}")
+                            # Delete failed conflict to prevent infinite loop
+                            delete_conflict(conflict.id)
                     except Exception as e:
                         log(f"  Error applying {conflict.item_id}: {e}")
+                        # Delete failed conflict to prevent infinite loop
+                        delete_conflict(conflict.id)
                     break
 
     # Collect all changes and conflicts
