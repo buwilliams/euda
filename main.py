@@ -32,7 +32,8 @@ Commands:
   fresh-start      Reset all user data (memory, topics, logs, password)
 
 Sync Commands:
-  sync             Bidirectional sync with remote (default)
+  sync             Full sync: code + data (stops/restarts remote server)
+  sync --data-only Sync only data, skip code sync
   sync --push      Push local data to remote
   sync --pull      Pull remote data to local
   sync --delete    Delete files not on source (requires --push or --pull)
@@ -43,9 +44,8 @@ Sync Commands:
   sync resolve     Resolve a conflict
 
 Server Commands:
-  server-deploy    Deploy code to remote server
+  server-setup     Setup remote server (first time only)
   server-remote    SSH into remote server
-  server-setup     Setup remote server
   server-remove    Remove remote server
 
 Skill Commands:
@@ -62,7 +62,7 @@ Examples:
   euno skills core store import ~/docs  # Import files to memory
   euno skills core memory list          # List memories
   euno dev help                         # Show dev commands
-  euno server-deploy                    # Deploy to remote server
+  euno sync                             # Deploy code + sync data to remote
 """
     )
 
@@ -82,7 +82,6 @@ Examples:
         "remove-password": cmd_remove_password,
         "fresh-start": cmd_fresh_start,
         "sync": cmd_sync,
-        "server-deploy": cmd_server_deploy,
         "server-remote": cmd_server_remote,
         "server-setup": cmd_server_setup,
         "server-remove": cmd_server_remove,
@@ -583,8 +582,15 @@ def cmd_skills(args):
 def cmd_sync(args):
     """Bidirectional sync with remote server.
 
+    By default, sync will:
+    1. Stop the remote server
+    2. Sync source code (local -> remote)
+    3. Sync data (bidirectional, with conflict detection)
+    4. Restart the remote server (only if no conflicts)
+
     Usage:
-        euno sync                     # Bidirectional sync (default)
+        euno sync                     # Full sync (code + data)
+        euno sync --data-only         # Sync only data, skip code sync
         euno sync --dry-run           # Preview changes without applying
         euno sync --push              # Local -> remote only
         euno sync --pull              # Remote -> local only
@@ -594,7 +600,7 @@ def cmd_sync(args):
         euno sync conflicts           # List unresolved conflicts
         euno sync resolve <id> --keep-local|--keep-remote
 
-    Backups are created by default before applying changes:
+    Backups are created by default before applying data changes:
     - Pull: backs up local data/ directory
     - Push: backs up remote data/ directory
     """
@@ -609,6 +615,7 @@ Usage:
     euno sync --pull              # Remote -> local only
     euno sync --push --delete     # Push and delete remote files not in local
     euno sync --pull --delete     # Pull and delete local files not in remote
+    euno sync --data-only         # Sync only data, skip code sync
     euno sync --no-backup         # Skip backup before sync
     euno sync init [server]       # Initialize sync with remote
     euno sync status              # Show sync state
@@ -617,7 +624,15 @@ Usage:
     euno sync resolve --keep-local|--keep-remote  # Resolve all conflicts
     euno sync resolve --clear     # Delete resolved conflicts
 
-Backups are created by default before applying changes:
+By default, sync will:
+    1. Stop the remote server
+    2. Sync source code (local -> remote)
+    3. Sync data (bidirectional, with conflict detection)
+    4. Restart the remote server (only if no conflicts)
+
+Use --data-only to skip code sync (steps 1, 2, 4).
+
+Backups are created by default before applying data changes:
     - Pull: backs up local data/ directory
     - Push: backs up remote data/ directory
 
@@ -788,6 +803,7 @@ The --delete flag propagates deletions (requires --push or --pull):
     dry_run = "--dry-run" in args or "-n" in args
     no_backup = "--no-backup" in args
     delete = "--delete" in args
+    data_only = "--data-only" in args
     direction = "bidirectional"
     if "--push" in args:
         direction = "push"
@@ -799,6 +815,9 @@ The --delete flag propagates deletions (requires --push or --pull):
 
     if no_backup:
         print("BACKUP DISABLED\n")
+
+    if data_only:
+        print("DATA ONLY - skipping code sync\n")
 
     if delete:
         if direction == "bidirectional":
@@ -825,19 +844,23 @@ The --delete flag propagates deletions (requires --push or --pull):
     print()
 
     # Perform sync
-    result = sync(direction=direction, dry_run=dry_run, backup=not no_backup, verbose=True, delete=delete)
+    result = sync(direction=direction, dry_run=dry_run, backup=not no_backup, verbose=True, delete=delete, data_only=data_only)
 
     # Handle errors (but not conflicts - those are shown separately)
     if not result.success and result.error:
         print(f"Error: {result.error}")
         sys.exit(1)
 
+    # Show code sync info
+    if result.code_synced:
+        print(f"Code synced: {result.code_files_transferred} file(s) transferred")
+
     # Show backup info
     if result.local_backup:
         print(f"Local backup: {result.local_backup}")
     if result.remote_backup:
         print(f"Remote backup: {result.remote_backup}")
-    if result.local_backup or result.remote_backup:
+    if result.code_synced or result.local_backup or result.remote_backup:
         print()
 
     # Show results
@@ -852,7 +875,12 @@ The --delete flag propagates deletions (requires --push or --pull):
     if result.conflicts:
         print(f"\n{len(result.conflicts)} conflict(s) detected.")
         print("Run 'euno sync conflicts' to view and resolve.")
+        print("Server was restarted - resolve conflicts and run sync again.")
         sys.exit(1)
+
+    # Show server restart status
+    if result.server_restarted:
+        print("\nRemote server restarted.")
 
     if not dry_run and result.success:
         print("\nSync complete!")
@@ -876,11 +904,6 @@ def _run_devops_script(script_name: str, args: list):
     except KeyboardInterrupt:
         print("\nCancelled.")
         sys.exit(1)
-
-
-def cmd_server_deploy(args):
-    """Deploy code to remote server."""
-    _run_devops_script("deploy-euno.sh", args)
 
 
 def cmd_server_remote(args):

@@ -45,6 +45,9 @@ class SyncResult:
     completed_at: str = ""
     local_backup: str = ""  # Name of local backup created (if any)
     remote_backup: str = ""  # Name of remote backup created (if any)
+    code_synced: bool = False  # Whether source code was synced
+    code_files_transferred: int = 0  # Number of code files transferred
+    server_restarted: bool = False  # Whether remote server was restarted
 
     @property
     def changes_pushed(self) -> int:
@@ -96,6 +99,7 @@ def sync(
     backup: bool = True,
     verbose: bool = False,
     delete: bool = False,
+    data_only: bool = False,
 ) -> SyncResult:
     """Perform sync with remote.
 
@@ -105,6 +109,7 @@ def sync(
         backup: If True, create backup before applying changes (default: True)
         verbose: If True, print progress messages
         delete: If True, delete files that don't exist on source side (push/pull only)
+        data_only: If True, skip source code sync (only sync data)
 
     Returns:
         SyncResult with details of the operation
@@ -119,6 +124,7 @@ def sync(
             started_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         )
+
     def log(msg: str):
         if verbose:
             print(f"  {msg}")
@@ -178,6 +184,48 @@ def sync(
             completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         )
     log("Connected")
+
+    # Track server state for restart at end
+    server_was_stopped = False
+    code_synced = False
+    code_files_transferred = 0
+
+    # Stop remote server and sync code (unless data_only or dry_run)
+    if not data_only and not dry_run:
+        # Stop remote server
+        log("Stopping remote server...")
+        success, message = transport.stop_remote_server()
+        if not success:
+            return SyncResult(
+                success=False,
+                direction=direction,
+                dry_run=dry_run,
+                error=f"Failed to stop remote server: {message}",
+                started_at=started_at,
+                completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            )
+        server_was_stopped = True
+        log(f"Server stopped: {message}")
+
+        # Sync source code (local -> remote)
+        log("Syncing source code...")
+        local_root = DATA_DIR.parent  # Euno root directory
+        result = transport.sync_source_code(local_root, verbose=verbose)
+        if not result.success:
+            # Try to restart server before returning error
+            log("Code sync failed, attempting to restart server...")
+            transport.start_remote_server()
+            return SyncResult(
+                success=False,
+                direction=direction,
+                dry_run=dry_run,
+                error=f"Failed to sync source code: {result.error}",
+                started_at=started_at,
+                completed_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            )
+        code_synced = True
+        code_files_transferred = result.files_transferred
+        log(f"Code synced: {code_files_transferred} file(s) transferred")
 
     # Get remote instance ID
     log("Getting remote instance ID...")
@@ -273,6 +321,17 @@ def sync(
     # If dry run or conflicts, don't apply changes
     if dry_run or all_conflicts:
         completed_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        # If we stopped the server but have conflicts, restart it
+        # (user needs to resolve conflicts and re-run sync)
+        server_restarted = False
+        if server_was_stopped and all_conflicts:
+            log("Conflicts detected, restarting remote server...")
+            success, message = transport.start_remote_server()
+            if success:
+                server_restarted = True
+                log(f"Server restarted: {message}")
+            else:
+                log(f"Warning: Failed to restart server: {message}")
         return SyncResult(
             success=len(all_conflicts) == 0,
             direction=direction,
@@ -281,6 +340,9 @@ def sync(
             conflicts=all_conflicts,
             started_at=started_at,
             completed_at=completed_at,
+            code_synced=code_synced,
+            code_files_transferred=code_files_transferred,
+            server_restarted=server_restarted,
         )
 
     # Phase 2: Create backups before applying changes
@@ -368,6 +430,17 @@ def sync(
             changes_pulled=len([c for c in all_changes if c.type == "pull" and c.applied]),
         )
 
+    # Restart remote server if we stopped it and sync was successful with no conflicts
+    server_restarted = False
+    if server_was_stopped and not all_conflicts:
+        log("Restarting remote server...")
+        success, message = transport.start_remote_server()
+        if success:
+            server_restarted = True
+            log(f"Server restarted: {message}")
+        else:
+            log(f"Warning: Failed to restart server: {message}")
+
     return SyncResult(
         success=True,
         direction=direction,
@@ -378,6 +451,9 @@ def sync(
         completed_at=completed_at,
         local_backup=local_backup_name,
         remote_backup=remote_backup_name,
+        code_synced=code_synced,
+        code_files_transferred=code_files_transferred,
+        server_restarted=server_restarted,
     )
 
 
