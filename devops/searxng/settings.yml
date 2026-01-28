@@ -5,7 +5,7 @@ use_default_settings: true
 
 server:
   # Generate a new secret key: openssl rand -hex 32
-  secret_key: "f300ea7861acdb2137dc52d9f0434a1e8be7aac1b2005cf47b065e8bddab7936"
+  secret_key: "change-me-generate-with-openssl-rand-hex-32"
   bind_address: "0.0.0.0:8080"
   limiter: false  # Disable rate limiting (we control access)
 
