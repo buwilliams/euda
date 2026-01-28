@@ -86,6 +86,9 @@ data/user/
 # Skill data (credentials, user config)
 data/skills/
 
+# Old plugins data (before rename to skills)
+data/plugins/
+
 # Keep directory structure
 !data/**/.gitkeep
 
