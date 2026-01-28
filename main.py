@@ -24,7 +24,7 @@ def main():
 Commands:
   web              Start the web server with agents
   chat             Interactive chat with an agent
-  skill            Run skill commands
+  skills           Run skill commands
   dev              Developer tools for debugging agents
   points           Show contribution points summary
   set-password     Set the access password (empty to disable auth)
@@ -48,18 +48,18 @@ Server Commands:
   server-remove    Remove remote server
 
 Skill Commands:
-  euno skill list                      List available skills
-  euno skill <name> --help             Show skill help
-  euno skill <name> <command> [args]   Run a skill command
+  euno skills list                      List available skills
+  euno skills <name> --help             Show skill help
+  euno skills <name> <command> [args]   Run a skill command
 
 Examples:
   euno web                              # Run web server + agents
   euno chat                             # Chat with default agent (user)
   euno chat worker                      # Chat with specific agent
-  euno skill core topics list           # List topics
-  euno skill core agents list           # List agents
-  euno skill core store import ~/docs   # Import files to memory
-  euno skill core memory list           # List memories
+  euno skills core topics list          # List topics
+  euno skills core agents list          # List agents
+  euno skills core store import ~/docs  # Import files to memory
+  euno skills core memory list          # List memories
   euno dev help                         # Show dev commands
   euno server-deploy                    # Deploy to remote server
 """
@@ -74,7 +74,7 @@ Examples:
     commands = {
         "web": cmd_web,
         "chat": cmd_chat,
-        "skill": cmd_skill,
+        "skills": cmd_skills,
         "dev": cmd_dev,
         "points": cmd_points,
         "set-password": cmd_set_password,
@@ -518,13 +518,13 @@ def cmd_dev(args):
     dev_main(args)
 
 
-def cmd_skill(args):
+def cmd_skills(args):
     """Run skill commands.
 
     Usage:
-        euno skill list                    # List available skills
-        euno skill <name> --help           # Show skill help
-        euno skill <name> <command>        # Execute skill command
+        euno skills list                    # List available skills
+        euno skills <name> --help           # Show skill help
+        euno skills <name> <command>        # Execute skill command
     """
     from src.skills import discover_skills, execute_skill, get_skill_usage
     from src.skills.exceptions import SkillError
@@ -535,14 +535,14 @@ def cmd_skill(args):
         print("=" * 60)
         print()
         print("Usage:")
-        print("  euno skill list                    # List available skills")
-        print("  euno skill <name> --help           # Show skill help")
-        print("  euno skill <name> <command>        # Execute skill command")
+        print("  euno skills list                    # List available skills")
+        print("  euno skills <name> --help           # Show skill help")
+        print("  euno skills <name> <command>        # Execute skill command")
         print()
         print("Examples:")
-        print("  euno skill core topics list")
-        print("  euno skill core topics create 'My topic'")
-        print("  euno skill core memory list")
+        print("  euno skills core topics list")
+        print("  euno skills core topics create 'My topic'")
+        print("  euno skills core memory list")
         return
 
     if args[0] == "list":
@@ -560,7 +560,7 @@ def cmd_skill(args):
             else:
                 print(f"  {skill.name}")
         print()
-        print("Use 'euno skill <name> --help' for skill details.")
+        print("Use 'euno skills <name> --help' for skill details.")
         return
 
     # Skill name is first arg, rest is the command

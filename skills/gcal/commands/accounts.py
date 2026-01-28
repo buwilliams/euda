@@ -29,8 +29,8 @@ def list_cmd():
 
     if not accounts:
         print("No Google accounts configured.")
-        print("Add an account with: uv run euno skill gcal accounts add <name>")
-        print("Or add a service account: uv run euno skill gcal accounts add-service <name> --key-file <path>")
+        print("Add an account with: uv run euno skills gcal accounts add <name>")
+        print("Or add a service account: uv run euno skills gcal accounts add-service <name> --key-file <path>")
         return
 
     print("Configured Google accounts:")

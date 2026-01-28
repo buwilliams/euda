@@ -67,16 +67,16 @@ Use `--json` for machine-readable output. See `specs/7_dev_cli.md` for full docu
 
 ```bash
 # List available skills
-uv run euno skill list
+uv run euno skills list
 
 # Get help for a skill
-uv run euno skill core --help
-uv run euno skill core topics --help
+uv run euno skills core --help
+uv run euno skills core topics --help
 
 # Run skill commands directly
-uv run euno skill core topics list
-uv run euno skill core topics create "Test topic"
-uv run euno skill core memory list
+uv run euno skills core topics list
+uv run euno skills core topics create "Test topic"
+uv run euno skills core memory list
 ```
 
 ## Project Structure
