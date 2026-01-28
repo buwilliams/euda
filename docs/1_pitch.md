@@ -2,7 +2,7 @@
 
 **A personal intelligence for human flourishing.**
 
-Agents working for you day and night with their own unique identities, memories, and skills. They learn who you are, anticipate what you need, and take action on your behalf.
+Agents working for you day and night with their own unique identities, memories, and skills. They learn who you are, anticipate what you need, and take action on your behalf. Unlike other personal intelligences that stop at productivity, Euno keeps going to the real goal: human flourishing—living your best life.
 
 *Pronounced "you-know.", from Eudaimonia (you-dye-MOH-nee-ah)—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities.*
 
