@@ -1,4 +1,4 @@
-"""Web search plugin for Euno - Search the web and fetch pages using SearXNG."""
+"""Search the web for current information and fetch webpage content."""
 
 import sys
 from pathlib import Path
@@ -12,7 +12,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 app = typer.Typer(
     name="web_search",
-    help="Search the web and fetch pages using SearXNG.",
+    help="Search the web for information and/or to fetch webpage content.",
     no_args_is_help=True,
 )
 
@@ -34,11 +34,10 @@ def search_cmd(
         help="Filter by time: 'day', 'month', or 'year'"
     ),
 ):
-    """Search the web using SearXNG.
+    """Search the web.
 
     Returns a list of search results with titles, URLs, and snippets.
-
-    Configure SearXNG URL via SEARXNG_URL env var or data/system/config.json.
+    Useful for finding facts, recent events, or verifying information.
     """
     from plugins.web_search.lib.search import web_search
 
