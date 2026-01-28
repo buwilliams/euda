@@ -18,7 +18,7 @@ Instead of chasing expected returns, we commit only what we can afford to lose. 
 
 - **Buddy's commitment:** 6 months of time outside regular work hours (~20 hours/week), plus premium AI subscriptions (Claude Max and/or ChatGPT Pro), AI API costs (~$100/mo), Cursor subscription ($20/mo), and DigitalOcean hosting ($6/mo).
 - **Buddy's upstart costs (December 2025):** OpenAI API $120.24 + $20 subscription, Claude API $282.43 + $20 subscription, Cursor $20, DigitalOcean $6, ~80 hours personal time @ $500/hr ($40,000). **Total: ~$40,469**
-- **Contributor expectations:** Similar commitment level—your own time and any tools/API costs you choose to use.
+- **Contributor expectations:** Any contribution that brings you joy or meaning.
 - **Timeline:** December 19, 2025 – December 31, 2026
 - **Exit criteria:** If by December 31, 2026 we do not reach 100 engagement points (see Gate 3), we stop at whatever gate we've reached—unless there are significant reasons to continue. 100 points is ambitious for a new project with no initial interest. It may be tempting to continue, but pace of growth—not just some growth—must prove demand is real and worth pursuing.
 
