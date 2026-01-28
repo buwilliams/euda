@@ -24,20 +24,36 @@ from ..conflicts import Conflict, ConflictType, create_conflict
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 
-# Files that should never be synced
+# Paths that should never be synced
 NEVER_SYNC = {
     "system/auth.json",  # Site-specific passwords
     "system/sync/",  # Sync state is local
 }
 
-# Standard excludes for rsync
-RSYNC_EXCLUDES = [
-    "__pycache__/",
+# Patterns to ignore (checked against path components and filenames)
+IGNORE_PATTERNS = [
+    "__pycache__",
     ".DS_Store",
     "*.pyc",
-    "system/auth.json",
-    "system/sync/",
+    "*.pyo",
+    ".git",
+    ".gitkeep",
+    "node_modules",
 ]
+
+
+def _should_ignore(path: str) -> bool:
+    """Check if a path should be ignored based on patterns."""
+    parts = path.split("/")
+    for part in parts:
+        for pattern in IGNORE_PATTERNS:
+            if pattern.startswith("*"):
+                # Wildcard suffix match
+                if part.endswith(pattern[1:]):
+                    return True
+            elif part == pattern:
+                return True
+    return False
 
 
 class FilesSyncHandler(SyncHandler):
@@ -315,6 +331,10 @@ class FilesSyncHandler(SyncHandler):
         for never in NEVER_SYNC:
             if relative_path.startswith(never):
                 return None
+
+        # Skip ignored patterns (__pycache__, .DS_Store, etc.)
+        if _should_ignore(relative_path):
+            return None
 
         local_path = DATA_DIR / relative_path
         local_exists = local_path.exists()
