@@ -597,6 +597,28 @@ def cmd_sync(args):
     - Pull: backs up local data/ directory
     - Push: backs up remote data/ directory
     """
+    # Handle help early - before any state checks
+    if "--help" in args or "-h" in args:
+        print("""Bidirectional sync with remote server.
+
+Usage:
+    euno sync                     # Bidirectional sync (default)
+    euno sync --dry-run           # Preview changes without applying
+    euno sync --push              # Local -> remote only
+    euno sync --pull              # Remote -> local only
+    euno sync --no-backup         # Skip backup before sync
+    euno sync init [server]       # Initialize sync with remote
+    euno sync status              # Show sync state
+    euno sync conflicts           # List unresolved conflicts
+    euno sync resolve <id> --keep-local|--keep-remote|--keep-newest
+    euno sync resolve --keep-local|--keep-remote  # Resolve all conflicts
+    euno sync resolve --clear     # Delete resolved conflicts
+
+Backups are created by default before applying changes:
+    - Pull: backs up local data/ directory
+    - Push: backs up remote data/ directory""")
+        return
+
     from src.sync import (
         sync, sync_status, get_sync_state, init_sync, test_connection,
         list_conflicts, resolve_conflict, Conflict
