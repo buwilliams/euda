@@ -4,7 +4,19 @@
 
 When people hear about Euno, they often zero in on filtering social media. While Euno does that, it misses the deeper vision: Euno is a second brain, a wizard, a genie—a wiser version of yourself who knows how to speak your language, what you need now, and how to help you flourish.
 
-These six people show what a personal intelligence actually means.
+---
+
+## Why These Stories
+
+In a world where AI handles more and more of the cognitive labor—the research, the scheduling, the coordination, the remembering—a question emerges: *what do you do with all that freed-up space?*
+
+The usual answers center on productivity. Do more. Optimize harder. But productivity toward what?
+
+These seven people aren't looking for productivity hacks. They're looking for meaning. An 11-year-old who feels broken. A 67-year-old who's never been herself. Siblings who can't find their way back to each other. A parent drowning in invisible labor.
+
+Euno handles the logistics so they don't have to think about them. Then it goes further: surfacing joy, finding connection, opening doors they didn't know existed.
+
+This is what flourishing looks like in practice.
 
 ---
 
@@ -64,6 +76,20 @@ David got laid off six months ago. He hasn't told his extended family. He spends
 
 ---
 
+## Marcus, 45 — The Deprecated Expert
+
+Marcus spent twenty years becoming one of the best technical writers in his industry. He wrote documentation that engineers actually read. Last year, AI started doing his job—not perfectly, but well enough. His company kept him on to "review AI output," but everyone knows what that means. He's watching his expertise become a commodity in real time.
+
+**How Euno helps Marcus flourish:**
+
+- **Finds the next chapter.** Marcus keeps asking "how do I stay relevant?" Euno reframes: *"You're not a technical writer—you're someone who makes complex things clear. That's a rare skill. Here are three directions that skill could go: teaching, consulting for AI companies on what good documentation looks like, or building courses. Want to explore any of these?"* Marcus hadn't realized his skill was separable from his job title.
+
+- **Handles the transition logistics.** Changing careers at 45 feels impossible. Euno breaks it down: *"I've drafted a LinkedIn post announcing your pivot—not desperate, just honest. I found four AI companies actively hiring for 'human review' roles that pay well and need your exact expertise. And I scheduled coffee chats with three people in your network who made similar transitions."* Marcus doesn't have to figure out the steps. He just has to take them.
+
+- **Builds the safety net.** Marcus is terrified of losing income. Euno runs the numbers: *"If you freelance 15 hours a week at your current rate while building the course, you maintain 60% of your income. Here's a timeline. Here's a budget. Here's who to reach out to for your first three clients."* The fear doesn't disappear, but it becomes manageable.
+
+---
+
 ## Vivian, 67 — The Late Bloomer
 
 Vivian spent 35 years in a marriage that was "fine." When her husband died, she felt grief—and relief, then guilt about the relief. Now she's discovering who she is for the first time: taking art classes, considering travel, thinking about dating. But she doesn't know how. She went from her parents' house to her husband's house. At 67, she's a beginner at being herself.
@@ -108,8 +134,8 @@ Nina and James haven't spoken in three years. It started with a fight about thei
 
 ## What This Means
 
-This is what a personal intelligence does. Not filtering your Twitter feed. *Knowing you well enough to anticipate what you need before you know you need it—and acting on your behalf to help you flourish.*
+This is what a personal intelligence does. Not filtering your Twitter feed. Not optimizing your calendar. *Handling the logistics so you don't have to think about them—then helping you find what actually matters.*
 
-Euno sees patterns you can't see. Does work you don't have time to do. Finds opportunities you'd never discover. Carries what you're tired of carrying. Helps you become more than you were—not just solving problems, but opening doors you didn't know existed.
+Euno sees patterns you can't see. Does work you don't have time to do. Finds opportunities you'd never discover. Carries what you're tired of carrying. Creates the space for connection, curiosity, growth, joy.
 
 That's eudaimonia. That's Euno.
