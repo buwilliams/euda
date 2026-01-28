@@ -692,18 +692,11 @@ def cmd_sync(args):
         print("Resolve with:")
         print("  euno sync resolve <id> --keep-local")
         print("  euno sync resolve <id> --keep-remote")
-        print("  euno sync resolve <id> --keep-newest")
+        print("  euno sync resolve --keep-remote       (all conflicts)")
         return
 
     if subcommand == "resolve":
-        # Resolve a conflict
-        if len(args) < 3:
-            print("Usage: euno sync resolve <conflict-id> --keep-local|--keep-remote|--keep-newest")
-            sys.exit(1)
-
-        conflict_id = args[1]
-        resolution_arg = args[2]
-
+        # Resolve conflicts
         resolution_map = {
             "--keep-local": Resolution.KEEP_LOCAL,
             "--keep-remote": Resolution.KEEP_REMOTE,
@@ -711,6 +704,28 @@ def cmd_sync(args):
             "--keep-both": Resolution.KEEP_BOTH,
             "--merge": Resolution.MERGE,
         }
+
+        # Check for bulk resolution: euno sync resolve --keep-remote
+        if len(args) == 2 and args[1] in resolution_map:
+            resolution_arg = args[1]
+            conflicts = list_conflicts(resolved=False)
+            if not conflicts:
+                print("No unresolved conflicts.")
+                return
+            for c in conflicts:
+                resolve_conflict(c.id, resolution_map[resolution_arg])
+            print(f"Resolved {len(conflicts)} conflict(s): {resolution_arg}")
+            return
+
+        # Single resolution: euno sync resolve <id> --keep-remote
+        if len(args) < 3:
+            print("Usage:")
+            print("  euno sync resolve <id> --keep-local|--keep-remote|--keep-newest")
+            print("  euno sync resolve --keep-local|--keep-remote|--keep-newest  (all conflicts)")
+            sys.exit(1)
+
+        conflict_id = args[1]
+        resolution_arg = args[2]
 
         if resolution_arg not in resolution_map:
             print(f"Unknown resolution: {resolution_arg}")
