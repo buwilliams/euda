@@ -21,12 +21,16 @@ cp .env.example .env
 # Install dependencies
 uv sync
 
+# Optional: Add alias for convenience
+echo "alias euno='uv run euno'" >> ~/.bashrc  # or ~/.zshrc
+source ~/.bashrc
+
 # Set your password
-uv run euno set-password
+euno set-password
 
 # Start Euno (choose one)
-uv run euno web     # Web UI at http://localhost:8000
-uv run euno chat    # CLI chat interface
+euno web     # Web UI at http://localhost:8000
+euno chat    # CLI chat interface
 ```
 
 ## Verify It Works
@@ -39,19 +43,18 @@ uv run euno chat    # CLI chat interface
 
 ## Usage
 
+Commands below assume the alias. Without it, prefix with `uv run`.
+
 ```bash
-# Start Euno (choose one)
-uv run euno web                    # Web UI + agents
-uv run euno chat                   # CLI chat + agents
+euno web                           # Web UI + agents
+euno chat                          # CLI chat + agents
+euno dev watch                     # Stream all system events
+euno dev memory chat               # View agent's memory
+euno plugin core topics list       # List topics via plugin
 
 # Run tests
-uv run pytest                      # unit + integration tests (default)
+uv run pytest                      # unit + integration tests
 uv run pytest tests/e2e/           # e2e UI tests (requires running server)
-
-# Other commands
-uv run euno dev watch              # stream all system events
-uv run euno dev memory chat        # view agent's memory
-uv run euno plugin core topics list  # list topics via plugin
 ```
 
 ## Deploy to Server
@@ -74,10 +77,15 @@ OPENAI_API_KEY=sk-...
 # 4. Run setup and deploy
 ./devops/setup-server.sh
 ./devops/deploy-euno.sh
-./devops/push-data-remote.sh
 
-# 5. Access at http://<ip>
+# 5. Initialize sync and push data
+euno sync init
+euno sync --push
+
+# 6. Access at http://<ip>
 ```
+
+**Syncing data:** Use `euno sync` to keep local and remote in sync. See [Contributing](6_contribute.md#syncing-data) for details.
 
 ## Next Steps
 
