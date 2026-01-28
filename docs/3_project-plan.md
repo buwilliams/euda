@@ -6,11 +6,9 @@
 
 **A personal intelligence for human flourishing.**
 
-**Mission:** Help people grow into who they're meant to be—through purpose, meaning, and becoming. Data, integrations, and automations serve this mission; they are not the mission itself.
+**Mission:** Help people grow into who they're meant to be—through purpose, meaning, and becoming. Data, integrations, and automations serve this mission; they are not the mission itself. This is the singular filter for all work on Euno. Any goal, task, or contribution that does not serve this purpose is out of bounds by default.
 
 **Why Open Source:** Meaning is too important to gatekeep. This technology should be available to everyone who wants to use it, learn from it, or build upon it.
-
-This is the singular filter for all work on Euno. Any goal, task, or contribution that does not serve this purpose is out of bounds by default.
 
 **Affordable Loss** ([effectuation principle](https://effectuation.org/))
 
