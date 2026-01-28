@@ -7,6 +7,7 @@ Entry point for the application.
 
 import argparse
 import asyncio
+import readline  # noqa: F401 - enables arrow keys and history for input()
 import sys
 from pathlib import Path
 

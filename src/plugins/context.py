@@ -33,6 +33,7 @@ def build_plugin_env(
 
     # Add Euno-specific variables
     env["EUNO_DATA_DIR"] = str(DATA_DIR.resolve())
+    env["EUNO_CWD"] = os.getcwd()  # Original working directory for path resolution
 
     if agent_id:
         env["EUNO_AGENT_ID"] = agent_id
@@ -72,3 +73,30 @@ def get_topic_id_from_env() -> Optional[str]:
 def get_session_id_from_env() -> Optional[str]:
     """Get the session ID from environment (for use inside plugins)."""
     return os.environ.get("EUNO_SESSION_ID")
+
+
+def get_cwd_from_env() -> Path:
+    """Get the original working directory from environment (for use inside plugins).
+
+    Plugins run with cwd set to the plugin directory, but file path arguments
+    from the user are relative to their original working directory.
+    """
+    cwd = os.environ.get("EUNO_CWD")
+    if cwd:
+        return Path(cwd)
+    return Path.cwd()
+
+
+def resolve_user_path(path: str) -> Path:
+    """Resolve a user-provided path relative to their original working directory.
+
+    Args:
+        path: Path string from user (may be relative or absolute)
+
+    Returns:
+        Resolved absolute Path
+    """
+    p = Path(path).expanduser()
+    if p.is_absolute():
+        return p
+    return get_cwd_from_env() / p

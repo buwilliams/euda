@@ -81,6 +81,9 @@ data/system/token_usage/
 # User data directory (personal data)
 data/user/
 
+# Plugin data (credentials, user config)
+data/plugins/
+
 # Keep directory structure
 !data/**/.gitkeep
 
@@ -161,3 +164,4 @@ euno-diagnostics-*.tar.gz
 # Personal Data
 # ===================
 lifelog/
+
