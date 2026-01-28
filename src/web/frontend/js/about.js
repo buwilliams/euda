@@ -4,26 +4,29 @@
 
 let docsHistory = [];  // Stack of {path, title} objects
 let currentDoc = null;
+let docsSlideDirection = null;  // 'forward' or 'back'
 
 async function loadDocsData() {
     // Start on README.md
+    docsSlideDirection = null;  // No animation for initial load
     await navigateToDoc('README.md');
 }
 
-async function navigateToDoc(path) {
+async function navigateToDoc(path, direction = 'forward') {
     try {
         const response = await fetch(`/api/docs?path=${encodeURIComponent(path)}`);
         const data = await response.json();
 
         if (data.error) {
             document.getElementById('about-content').innerHTML =
-                `<div class="focus-empty">Error: ${data.error}</div>`;
+                `<div class="view-slide-container current"><div class="focus-empty">Error: ${data.error}</div></div>`;
             return;
         }
 
         // Add current doc to history before navigating (if we have one)
         if (currentDoc && currentDoc.path !== path) {
             docsHistory.push(currentDoc);
+            docsSlideDirection = direction;
         }
 
         // Extract title from first heading or filename
@@ -34,7 +37,7 @@ async function navigateToDoc(path) {
     } catch (error) {
         console.error('Failed to load doc:', error);
         document.getElementById('about-content').innerHTML =
-            '<div class="focus-empty">Failed to load documentation</div>';
+            '<div class="view-slide-container current"><div class="focus-empty">Failed to load documentation</div></div>';
     }
 }
 
@@ -61,25 +64,78 @@ function renderDoc() {
     // Build breadcrumbs
     const pathParts = currentDoc.path.split('/');
     let breadcrumbHtml = '<span>More</span><img src="/web/icons/chevron-right.svg" alt=">">';
-    breadcrumbHtml += '<span>Docs</span>';
+    breadcrumbHtml += '<span>About</span>';
     if (currentDoc.path !== 'README.md') {
         breadcrumbHtml += '<img src="/web/icons/chevron-right.svg" alt=">">';
         breadcrumbHtml += `<span>${pathParts[pathParts.length - 1].replace('.md', '')}</span>`;
     }
     breadcrumbsEl.innerHTML = breadcrumbHtml;
 
-    // Render markdown
+    // Render markdown content
     const html = marked.parse(currentDoc.content);
-    container.innerHTML = html;
+    const content = `<div class="docs-markdown-content">${html}</div>`;
 
-    // Rewrite image paths for local images
-    rewriteImagePaths(container);
-
-    // Intercept local markdown links
-    interceptDocLinks(container);
+    // Apply slide animation if we have a direction and existing view
+    if (docsSlideDirection && container.querySelector('.view-slide-container')) {
+        animateSlideTransition(container, content, docsSlideDirection, processDocsContent);
+        docsSlideDirection = null;
+    } else {
+        container.innerHTML = `<div class="view-slide-container current">${content}</div>`;
+        processDocsContent(container.querySelector('.view-slide-container'));
+    }
 
     // Scroll to top
     container.scrollTop = 0;
+}
+
+function processDocsContent(viewContainer) {
+    const innerContainer = viewContainer.querySelector('.docs-markdown-content');
+    if (innerContainer) {
+        rewriteImagePaths(innerContainer);
+        interceptDocLinks(innerContainer);
+    }
+}
+
+// Generic slide transition animation (reusable)
+function animateSlideTransition(container, newContent, direction, onNewViewReady) {
+    const oldView = container.querySelector('.view-slide-container');
+    if (!oldView) {
+        container.innerHTML = `<div class="view-slide-container current">${newContent}</div>`;
+        if (onNewViewReady) onNewViewReady(container.querySelector('.view-slide-container'));
+        return;
+    }
+
+    const newView = document.createElement('div');
+    newView.className = 'view-slide-container';
+    newView.innerHTML = newContent;
+
+    if (direction === 'forward') {
+        newView.classList.add('slide-in-right');
+    } else {
+        newView.classList.add('slide-in-left');
+    }
+
+    container.appendChild(newView);
+
+    // Process new content before animation completes
+    if (onNewViewReady) onNewViewReady(newView);
+
+    newView.offsetHeight; // Trigger reflow
+
+    if (direction === 'forward') {
+        oldView.classList.remove('current');
+        oldView.classList.add('slide-out-left');
+    } else {
+        oldView.classList.remove('current');
+        oldView.classList.add('slide-out-right');
+    }
+
+    newView.classList.remove('slide-in-left', 'slide-in-right');
+    newView.classList.add('current');
+
+    setTimeout(() => {
+        if (oldView.parentNode) oldView.remove();
+    }, 300);
 }
 
 function rewriteImagePaths(container) {
@@ -176,9 +232,10 @@ function resolveDocPath(href) {
 
 function docsNavigateBack() {
     if (docsHistory.length > 0) {
-        // Pop from history and navigate
+        // Pop from history and navigate with back animation
         const prev = docsHistory.pop();
         currentDoc = prev;
+        docsSlideDirection = 'back';
         renderDoc();
     } else {
         // No history, go back to More menu

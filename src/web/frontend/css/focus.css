@@ -62,7 +62,12 @@
     height: 100%;
 }
 
-.about-content,
+.about-content {
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
+
 .settings-content {
     flex: 1;
 }

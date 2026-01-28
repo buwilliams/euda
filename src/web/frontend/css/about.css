@@ -1,47 +1,48 @@
 /* ============== About Tab ============== */
 
-.about-content {
+.about-content .docs-markdown-content {
     padding: var(--spacing-xl);
     line-height: var(--line-height-relaxed);
     color: var(--color-text-primary);
 }
 
-.about-content h1 {
+.about-content .docs-markdown-content h1 {
     font-size: var(--font-size-4xl);
     margin: 0 0 var(--spacing-xl) 0;
     color: #222;
 }
 
-.about-content h2 {
+.about-content .docs-markdown-content h2 {
     font-size: 1.25rem;
     margin: var(--spacing-2xl) 0 var(--spacing-lg) 0;
     color: var(--color-text-primary);
 }
 
-.about-content h3 {
+.about-content .docs-markdown-content h3 {
     font-size: var(--font-size-2xl);
     margin: 1.25rem 0 var(--spacing-md) 0;
     color: #444;
 }
 
-.about-content p {
+.about-content .docs-markdown-content p {
     margin: var(--spacing-md) 0;
 }
 
-.about-content ul, .about-content ol {
+.about-content .docs-markdown-content ul,
+.about-content .docs-markdown-content ol {
     margin: var(--spacing-md) 0;
     padding-left: 1.5rem;
 }
 
-.about-content li {
+.about-content .docs-markdown-content li {
     margin: var(--spacing-xs) 0;
 }
 
-.about-content strong {
+.about-content .docs-markdown-content strong {
     color: #222;
 }
 
-.about-content blockquote {
+.about-content .docs-markdown-content blockquote {
     margin: var(--spacing-xl) 0;
     padding: var(--spacing-md) var(--spacing-xl);
     border-left: 3px solid #ddd;
@@ -49,7 +50,7 @@
     color: var(--color-text-secondary);
 }
 
-.about-content code {
+.about-content .docs-markdown-content code {
     background: var(--color-bg-muted);
     padding: 0.1rem 0.3rem;
     border-radius: var(--radius-sm);
