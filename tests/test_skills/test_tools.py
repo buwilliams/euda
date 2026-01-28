@@ -38,10 +38,10 @@ class TestListSkillsTool:
         """Should exclude skills in excluded_skills list."""
         from src.skills import list_skills_tool
 
-        result = list_skills_tool(excluded_skills=["speech", "mastodon"])
+        result = list_skills_tool(excluded_skills=["nextcloud", "mastodon"])
 
         skill_names = [s["name"] for s in result["skills"]]
-        assert "speech" not in skill_names
+        assert "nextcloud" not in skill_names
         assert "mastodon" not in skill_names
         assert "core" in skill_names
 
@@ -258,10 +258,10 @@ class TestExecuteMetaTool:
 
         context = {
             "agent_id": "test-agent",
-            "excluded_skills": ["speech"]
+            "excluded_skills": ["nextcloud"]
         }
 
         result = execute_meta_tool("list_skills", {}, agent_context=context)
 
         skill_names = [s["name"] for s in result["skills"]]
-        assert "speech" not in skill_names
+        assert "nextcloud" not in skill_names

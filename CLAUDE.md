@@ -143,10 +143,9 @@ Agents interact with Euno through **skills** - CLI-based extensions that provide
 Built-in skills:
 - **core**: Topics, memory, agents, identity, consolidation, dates (CLI wrappers for `src/core/`)
 - **nextcloud**: Files, calendar, deck integration (self-contained)
-- **speech**: Text-to-speech (self-contained)
 - **mastodon**: Social media posts (self-contained)
 
-**Architecture note:** The `core` skill is special—its CLI commands are thin wrappers that import business logic from `src/core/`. External skills (nextcloud, speech, mastodon) are self-contained with their own logic.
+**Architecture note:** The `core` skill is special—its CLI commands are thin wrappers that import business logic from `src/core/`. External skills (nextcloud, mastodon) are self-contained with their own logic.
 
 See `specs/8_skills.md` for full skill documentation.
 

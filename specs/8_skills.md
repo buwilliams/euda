@@ -36,8 +36,6 @@ skills/                    # Skill CLI interfaces (for LLM agents)
 ├── nextcloud/             # Self-contained external integration
 │   ├── cli.py
 │   └── commands/
-├── speech/                # Self-contained external integration
-│   └── cli.py
 └── mastodon/              # Self-contained external integration
     └── cli.py
 
@@ -57,7 +55,7 @@ The `core` skill is special: its CLI commands are thin wrappers that import busi
 - **Web UI**: Direct Python imports from `src/core/` (fast)
 - **LLM Agents**: Skill CLI subprocess calls (flexible)
 
-External skills (nextcloud, speech, mastodon) are self-contained with their own business logic.
+External skills (nextcloud, mastodon) are self-contained with their own business logic.
 
 ## Skill Contract
 
@@ -105,7 +103,7 @@ Agents configure skill access via `excluded_skills` in `config.json`:
 {
   "id": "myagent",
   "name": "My Agent",
-  "excluded_skills": ["speech", "mastodon"]
+  "excluded_skills": ["mastodon"]
 }
 ```
 

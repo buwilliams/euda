@@ -22,7 +22,6 @@ class TestSkillDiscovery:
         skill_names = [s.name for s in skills]
         assert "core" in skill_names
         assert "nextcloud" in skill_names
-        assert "speech" in skill_names
         assert "mastodon" in skill_names
 
     def test_discover_skills_returns_skill_info(self):
