@@ -165,8 +165,3 @@ euno-diagnostics-*.tar.gz
 # ===================
 lifelog/
 
-# ===================
-# Secrets
-# ===================
-secrets/*
-!secrets/.keep
