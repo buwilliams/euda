@@ -78,7 +78,7 @@ Trigger buttons for manual consolidation (append/consolidate/both).
 ## Settings Tab
 
 Collapsible sections:
-- **LLM Provider** — Select provider (OpenAI, Anthropic, Grok), view model
+- **LLM Provider** — Select provider, view model
 - **Budget** — Monthly spending limit
 - **Schedules** — Morning/evening trigger times
 - **Fresh Start** — Reset all data with backup

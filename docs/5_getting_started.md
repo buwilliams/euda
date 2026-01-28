@@ -6,7 +6,7 @@ Set up Euno for local development or deploy to your own server.
 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) package manager
-- OpenAI API key
+- API key for your LLM provider (see `.env.example` for supported providers)
 
 ## Local Development
 
@@ -16,7 +16,7 @@ git clone https://github.com/buwilliams/euno.git && cd euno
 
 # Configure environment
 cp .env.example .env
-# Edit .env and add your OPENAI_API_KEY
+# Edit .env and add your LLM provider API key
 
 # Install dependencies
 uv sync
@@ -72,7 +72,7 @@ ssh-copy-id root@<ip>
 
 # 3. Add to .env
 EUNO_SERVER=root@<ip>
-OPENAI_API_KEY=sk-...
+# Add your LLM provider API key (at least one required)
 
 # 4. Run setup (first time only)
 ./devops/setup-server.sh
