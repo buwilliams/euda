@@ -1,4 +1,4 @@
-"""Storage for Google Calendar plugin - config and token persistence."""
+"""Storage for Google Calendar skill - config and token persistence."""
 
 import json
 import os
@@ -12,33 +12,33 @@ ACCOUNT_TYPE_OAUTH = "oauth"
 ACCOUNT_TYPE_SERVICE = "service_account"
 
 
-def _get_plugin_dir() -> Path:
-    """Get the plugin data directory."""
+def _get_skill_dir() -> Path:
+    """Get the skill data directory."""
     data_dir = os.environ.get("EUNO_DATA_DIR")
     if data_dir:
         base = Path(data_dir)
     else:
         base = Path(__file__).parent.parent.parent / "data"
 
-    plugin_dir = base / "plugins" / "gcal"
-    plugin_dir.mkdir(parents=True, exist_ok=True)
-    return plugin_dir
+    skill_dir = base / "skills" / "gcal"
+    skill_dir.mkdir(parents=True, exist_ok=True)
+    return skill_dir
 
 
 def _get_accounts_dir() -> Path:
     """Get the accounts directory."""
-    accounts_dir = _get_plugin_dir() / "accounts"
+    accounts_dir = _get_skill_dir() / "accounts"
     accounts_dir.mkdir(parents=True, exist_ok=True)
     return accounts_dir
 
 
 def _get_config_path() -> Path:
     """Get the config file path."""
-    return _get_plugin_dir() / "config.json"
+    return _get_skill_dir() / "config.json"
 
 
 def load_config() -> dict:
-    """Load plugin configuration."""
+    """Load skill configuration."""
     config_path = _get_config_path()
     if config_path.exists():
         return json.loads(config_path.read_text())
@@ -46,7 +46,7 @@ def load_config() -> dict:
 
 
 def save_config(config: dict) -> None:
-    """Save plugin configuration."""
+    """Save skill configuration."""
     config_path = _get_config_path()
     config_path.write_text(json.dumps(config, indent=2))
 

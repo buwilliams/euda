@@ -226,7 +226,7 @@ class UnifiedSpeechClient:
         if self._provider is None:
             raise ValueError(f"Provider '{self.provider_name}' does not support speech-to-text")
 
-        from ...agent.cognition.metacognition import get_token_awareness
+        from src.agent.cognition.metacognition import get_token_awareness
 
         # Wait for any active backoff
         self._wait_for_backoff()
@@ -292,7 +292,7 @@ class UnifiedSpeechClient:
         if self._provider is None:
             raise ValueError(f"Provider '{self.provider_name}' does not support text-to-speech")
 
-        from ...agent.cognition.metacognition import get_token_awareness
+        from src.agent.cognition.metacognition import get_token_awareness
 
         # Wait for any active backoff
         self._wait_for_backoff()

@@ -83,8 +83,8 @@ data/system/sync/*
 # User data directory (personal data)
 data/user/
 
-# Plugin data (credentials, user config)
-data/plugins/
+# Skill data (credentials, user config)
+data/skills/
 
 # Keep directory structure
 !data/**/.gitkeep
@@ -123,6 +123,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+# But keep skills lib directories (implementation code)
+!skills/*/lib/
 parts/
 sdist/
 var/

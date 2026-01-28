@@ -93,11 +93,11 @@ The skill will copy the key file to its data directory and display the service a
 
 ## Data Storage
 
-Tokens and config are stored in `data/plugins/gcal/`:
+Tokens and config are stored in `data/skills/gcal/`:
 
 ```
-data/plugins/gcal/
-├── config.json                 # Plugin config (default account)
+data/skills/gcal/
+├── config.json                 # Skill config (default account)
 └── accounts/
     ├── personal/
     │   └── token.json          # OAuth2 tokens

@@ -13,8 +13,14 @@ sys.path.insert(0, str(PROJECT_ROOT))
 app = typer.Typer(
     name="mastodon",
     help="Read public posts from Mastodon accounts.",
-    no_args_is_help=True,
 )
+
+
+@app.callback(invoke_without_command=True)
+def main_callback(ctx: typer.Context):
+    """Mastodon skill - Read public posts from Mastodon accounts."""
+    if ctx.invoked_subcommand is None:
+        print(ctx.get_help())
 
 
 @app.command("posts")
