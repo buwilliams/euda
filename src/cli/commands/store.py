@@ -150,7 +150,7 @@ def cmd_store(args: List[str], json_mode: bool = False):
             print(f"  - {item.name}")
         print()
         print("The user agent will process this topic and import files to long-term memory.")
-        print("Run `uv run euno web` to trigger processing.")
+        print("Run `euno web` to trigger processing.")
 
 
 def _is_already_processed(content_hash: str) -> bool:

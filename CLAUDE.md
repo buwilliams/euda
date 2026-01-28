@@ -32,8 +32,8 @@ Euno is a personal intelligence for human flourishing. It helps you grow into wh
 
 4. Run Euno:
    ```
-   uv run euno web    # Web server + agents (run in background in Claude Code)
-   uv run euno chat     # Interactive chat with an agent
+   euno web    # Web server + agents (run in background in Claude Code)
+   euno chat   # Interactive chat with an agent
    ```
 
 **Important for Claude Code:** When starting Euno during development, run it as a background task so the conversation can continue while the server runs.
@@ -43,22 +43,22 @@ Euno is a personal intelligence for human flourishing. It helps you grow into wh
 Use the dev CLI for testing agent internals:
 
 ```bash
-uv run euno dev <command> [args] [--json]
+euno dev <command> [args] [--json]
 
 # Inspect agent state
-uv run euno dev memory chat          # View agent's memory
-uv run euno dev identity chat        # View agent's identity
-uv run euno dev prompt chat system   # View system prompt
+euno dev memory chat          # View agent's memory
+euno dev identity chat        # View agent's identity
+euno dev prompt chat system   # View system prompt
 
 # Test execution
-uv run euno dev topic chat "Test task" --dry-run   # See prompt without executing
+euno dev topic chat "Test task" --dry-run   # See prompt without executing
 
 # Trigger behaviors manually
-uv run euno dev reflect chat --consolidate   # Run only consolidate phase
+euno dev reflect chat --consolidate   # Run only consolidate phase
 
 # Live monitoring
-uv run euno dev watch                        # Stream all system events
-uv run euno dev trace <topic_id>               # Show execution trace
+euno dev watch                        # Stream all system events
+euno dev trace <topic_id>             # Show execution trace
 ```
 
 Use `--json` for machine-readable output. See `specs/7_dev_cli.md` for full documentation.
@@ -67,16 +67,16 @@ Use `--json` for machine-readable output. See `specs/7_dev_cli.md` for full docu
 
 ```bash
 # List available skills
-uv run euno skills list
+euno skills list
 
 # Get help for a skill
-uv run euno skills core --help
-uv run euno skills core topics --help
+euno skills core --help
+euno skills core topics --help
 
 # Run skill commands directly
-uv run euno skills core topics list
-uv run euno skills core topics create "Test topic"
-uv run euno skills core memory list
+euno skills core topics list
+euno skills core topics create "Test topic"
+euno skills core memory list
 ```
 
 ## Project Structure

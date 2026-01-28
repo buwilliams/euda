@@ -136,5 +136,5 @@ Examples:
   python main.py dev topic user "List my current topics"
   python main.py dev reflect user --consolidate
   python main.py dev watch --agent user
-  uv run euno skills core topics list --status todo
+  euno skills core topics list --status todo
 """)

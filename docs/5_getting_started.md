@@ -50,7 +50,7 @@ euno web                           # Web UI + agents
 euno chat                          # CLI chat + agents
 euno dev watch                     # Stream all system events
 euno dev memory chat               # View agent's memory
-euno plugin core topics list       # List topics via plugin
+euno skills core topics list       # List topics via skill
 
 # Run tests
 uv run pytest                      # unit + integration tests

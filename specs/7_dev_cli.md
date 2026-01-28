@@ -1,6 +1,6 @@
 # Dev CLI
 
-Rules for the developer experience CLI (`uv run euno dev`).
+Rules for the developer experience CLI (`euno dev`).
 
 ## Purpose
 
@@ -11,7 +11,7 @@ Rules for the developer experience CLI (`uv run euno dev`).
 
 ## Entry Point
 
-- `uv run euno dev <subcommand> [args]`
+- `euno dev <subcommand> [args]`
 - Global `--json` flag outputs JSON lines instead of human-readable text
 - Unknown subcommands show help and exit with code 1
 

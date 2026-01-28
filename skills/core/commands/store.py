@@ -90,7 +90,7 @@ def import_files(
         print(f"  - {item.name}")
     print()
     print("The user agent will process this topic and import files to long-term memory.")
-    print("Run `uv run euno web` to trigger processing.")
+    print("Run `euno web` to trigger processing.")
 
 
 @app.command("clear-manifest")

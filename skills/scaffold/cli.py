@@ -81,7 +81,7 @@ def create_skill(
     print()
     print("Next steps:")
     print(f"  1. Edit {skill_dir}/cli.py to add your commands")
-    print(f"  2. Test with: uv run euno skills {name} --help")
+    print(f"  2. Test with: euno skills {name} --help")
     print(f"  3. Use in chat: ask the agent to use the {name} skill")
 
 

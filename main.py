@@ -269,7 +269,7 @@ def cmd_chat(args):
 
         except AgentPausedError as e:
             print(f"\n\nAGENT PAUSED: {e.reason}")
-            print("\nThe agent has been paused. Use 'uv run euno agents enable <agent_id>' to resume.")
+            print("\nThe agent has been paused. Use 'euno agents enable <agent_id>' to resume.")
             break
         except KeyboardInterrupt:
             print("\n\nGoodbye!")

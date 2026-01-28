@@ -1,4 +1,4 @@
-# Google Calendar Plugin
+# Google Calendar Skill
 
 Google Calendar integration with multiple account support.
 
@@ -29,7 +29,7 @@ For personal use with interactive OAuth flow:
    ```
 4. Add an account:
    ```bash
-   uv run euno plugin gcal accounts add personal
+   euno skills gcal accounts add personal
    ```
 
 ### Option 2: Service Account (Backend-to-Backend)
@@ -86,10 +86,10 @@ This JSON file contains everything you need:
 #### 6. Add the Service Account to Euno
 
 ```bash
-uv run euno plugin gcal accounts add-service backend --key-file /path/to/service-account-key.json
+euno skills gcal accounts add-service backend --key-file /path/to/service-account-key.json
 ```
 
-The plugin will copy the key file to its data directory and display the service account email. Share your calendar with this email to grant access.
+The skill will copy the key file to its data directory and display the service account email. Share your calendar with this email to grant access.
 
 ## Data Storage
 

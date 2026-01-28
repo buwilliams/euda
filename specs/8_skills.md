@@ -72,7 +72,7 @@ Each skill MUST have:
 
 Skills are invoked via:
 ```bash
-uv run euno skills <name> <command>
+euno skills <name> <command>
 ```
 
 Or directly:
