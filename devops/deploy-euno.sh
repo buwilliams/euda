@@ -106,10 +106,11 @@ set -e
 cd $REMOTE_DIR/devops/searxng
 
 # Generate secret key if not already set
-if grep -q "change-me-generate-with-openssl-rand-hex-32" settings.yml 2>/dev/null; then
+SEARXNG_CONFIG="$REMOTE_DIR/data/system/searxng.yml"
+if grep -q "change-me-generate-with-openssl-rand-hex-32" "\$SEARXNG_CONFIG" 2>/dev/null; then
     echo "Generating SearXNG secret key..."
     SECRET_KEY=\$(openssl rand -hex 32)
-    sed -i "s/change-me-generate-with-openssl-rand-hex-32/\$SECRET_KEY/" settings.yml
+    sed -i "s/change-me-generate-with-openssl-rand-hex-32/\$SECRET_KEY/" "\$SEARXNG_CONFIG"
 fi
 
 # Check if SearXNG is running
