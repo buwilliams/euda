@@ -179,7 +179,7 @@ function interceptDocLinks(container) {
 }
 
 function isLocalDocLink(href) {
-    // Local doc links are relative .md files or docs/specs paths
+    // Local doc links are relative .md files, docs/specs paths, or LICENSE
     if (href.startsWith('http://') || href.startsWith('https://')) {
         return false;
     }
@@ -190,6 +190,9 @@ function isLocalDocLink(href) {
         return true;
     }
     if (href.startsWith('docs/') || href.startsWith('specs/')) {
+        return true;
+    }
+    if (href === 'LICENSE') {
         return true;
     }
     return false;

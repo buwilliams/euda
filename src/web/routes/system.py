@@ -51,6 +51,7 @@ def get_doc(path: str = "README.md"):
 
     Allowed paths:
     - README.md (project root)
+    - LICENSE (project root)
     - docs/*.md
     - specs/*.md
     """
@@ -60,6 +61,8 @@ def get_doc(path: str = "README.md"):
     # Determine file location based on path
     if path == "README.md":
         file_path = PROJECT_ROOT / "README.md"
+    elif path == "LICENSE":
+        file_path = PROJECT_ROOT / "LICENSE"
     elif path.startswith("docs/"):
         file_path = PROJECT_ROOT / path
     elif path.startswith("specs/"):
@@ -79,8 +82,8 @@ def get_doc(path: str = "README.md"):
     except Exception:
         return {"error": "Invalid path", "content": None}
 
-    # Only allow .md files
-    if not path.endswith(".md"):
+    # Only allow .md files and LICENSE
+    if not path.endswith(".md") and path != "LICENSE":
         return {"error": "Only markdown files allowed", "content": None}
 
     if file_path.exists():
