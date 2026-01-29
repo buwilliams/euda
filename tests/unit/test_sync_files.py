@@ -17,7 +17,7 @@ class TestShouldIgnore:
         """Ignores __pycache__ directories."""
         from src.sync.handlers.files import _should_ignore
 
-        assert _should_ignore("plugins/core/__pycache__/cli.cpython-311.pyc") is True
+        assert _should_ignore("skills/core/__pycache__/cli.cpython-311.pyc") is True
         assert _should_ignore("__pycache__/test.pyc") is True
         assert _should_ignore("src/__pycache__/module.py") is True
 
@@ -35,7 +35,7 @@ class TestShouldIgnore:
 
         assert _should_ignore("test.pyc") is True
         assert _should_ignore("src/module.pyc") is True
-        assert _should_ignore("plugins/plugin.pyc") is True
+        assert _should_ignore("skills/plugin.pyc") is True
 
     def test_ignore_pyo_files(self):
         """Ignores .pyo files."""
@@ -75,7 +75,7 @@ class TestShouldIgnore:
         assert _should_ignore("agents/chat/identity.md") is False
         assert _should_ignore("system/config.json") is False
         assert _should_ignore("topics/assets/topic-123/file.txt") is False
-        assert _should_ignore("plugins/core/cli.py") is False
+        assert _should_ignore("skills/core/cli.py") is False
 
     def test_allow_similar_names(self):
         """Allows files with similar but not matching names."""
@@ -153,7 +153,7 @@ class TestCheckFile:
 
         with patch.object(files_module, "DATA_DIR", temp_data_dir):
             handler = FilesSyncHandler()
-            result = handler._check_file(mock_transport, "plugins/__pycache__/test.pyc", "push")
+            result = handler._check_file(mock_transport, "skills/__pycache__/test.pyc", "push")
 
             assert result is None
 
@@ -283,7 +283,7 @@ class TestDetectChanges:
         (data_dir / "agents" / "worker").mkdir(parents=True)
         (data_dir / "system").mkdir(parents=True)
         (data_dir / "topics" / "assets").mkdir(parents=True)
-        (data_dir / "plugins" / "core").mkdir(parents=True)
+        (data_dir / "skills" / "core").mkdir(parents=True)
         return data_dir
 
     @pytest.fixture

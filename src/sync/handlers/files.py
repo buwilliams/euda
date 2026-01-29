@@ -1,20 +1,19 @@
 """
 Files Sync Handler - Hash-based file synchronization.
 
-Handles sync of:
-- Agent configs (data/agents/{id}/config.json)
-- Agent identities (data/agents/{id}/identity.md)
-- System config (data/system/config.json, llm.json)
-- Topic assets (data/topics/assets/{topic-id}/)
-- Plugin data (data/plugins/)
+Handles sync of all files under data/ directory, including:
+- Agent configs and identities (data/agents/)
+- System config (data/system/)
+- Topic assets (data/topics/assets/)
+- Skills data (data/skills/)
+- Any other data subdirectories
 
 Uses SHA256 hashes to detect changes and conflicts.
 """
 
-import hashlib
 import json
 from pathlib import Path
-from typing import List, Tuple, Set, Dict, Optional
+from typing import List, Tuple, Set, Optional
 
 from .base import SyncHandler
 from ..sync import SyncChange
@@ -24,10 +23,14 @@ from ..conflicts import Conflict, ConflictType, create_conflict
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 
-# Paths that should never be synced
+# Paths that should never be synced (relative to data/)
 NEVER_SYNC = {
     "system/auth.json",  # Site-specific passwords
     "system/sync/",  # Sync state is local
+    "topics/db.sqlite",  # Database synced separately by topics handler
+    "topics/db.sqlite-journal",
+    "topics/db.sqlite-wal",
+    "topics/db.sqlite-shm",
 }
 
 # Patterns to ignore (checked against path components and filenames)
@@ -38,6 +41,7 @@ IGNORE_PATTERNS = [
     "*.pyo",
     ".git",
     ".gitkeep",
+    ".keep",
     "node_modules",
 ]
 
@@ -56,8 +60,16 @@ def _should_ignore(path: str) -> bool:
     return False
 
 
+def _should_never_sync(path: str) -> bool:
+    """Check if a path should never be synced."""
+    for never in NEVER_SYNC:
+        if path == never or path.startswith(never):
+            return True
+    return False
+
+
 class FilesSyncHandler(SyncHandler):
-    """Handler for file-based sync (configs, identities, assets)."""
+    """Handler for file-based sync - syncs all files under data/."""
 
     @property
     def name(self) -> str:
@@ -70,36 +82,48 @@ class FilesSyncHandler(SyncHandler):
     ) -> Tuple[List[SyncChange], List[Conflict]]:
         """Detect file changes between local and remote.
 
-        Checks:
-        - Agent configs and identities
-        - System configs
-        - Topic assets
-        - Plugin data
+        Recursively scans all files under data/ directory.
         """
         changes: List[SyncChange] = []
         conflicts: List[Conflict] = []
 
-        # Check agent configs and identities
-        agent_changes, agent_conflicts = self._check_agents(transport, direction)
-        changes.extend(agent_changes)
-        conflicts.extend(agent_conflicts)
+        # Get all local files recursively
+        local_files = self._get_local_files()
 
-        # Check system configs
-        system_changes, system_conflicts = self._check_system_config(transport, direction)
-        changes.extend(system_changes)
-        conflicts.extend(system_conflicts)
+        # Get all remote files recursively
+        remote_files = self._get_remote_files(transport)
 
-        # Check topic assets
-        asset_changes, asset_conflicts = self._check_assets(transport, direction)
-        changes.extend(asset_changes)
-        conflicts.extend(asset_conflicts)
+        # Union of all files
+        all_files = local_files | remote_files
 
-        # Check plugin data
-        plugin_changes, plugin_conflicts = self._check_plugins(transport, direction)
-        changes.extend(plugin_changes)
-        conflicts.extend(plugin_conflicts)
+        # Check each file
+        for relative_path in sorted(all_files):
+            result = self._check_file(transport, relative_path, direction)
+            if result:
+                if isinstance(result, Conflict):
+                    conflicts.append(result)
+                else:
+                    changes.append(result)
 
         return changes, conflicts
+
+    def _get_local_files(self) -> Set[str]:
+        """Get all files under data/ directory."""
+        files = set()
+        if not DATA_DIR.exists():
+            return files
+
+        for path in DATA_DIR.rglob("*"):
+            if path.is_file():
+                relative_path = str(path.relative_to(DATA_DIR))
+                if not _should_ignore(relative_path) and not _should_never_sync(relative_path):
+                    files.add(relative_path)
+
+        return files
+
+    def _get_remote_files(self, transport: Transport) -> Set[str]:
+        """Get all files on remote under data/ directory."""
+        return set(transport.list_remote_files_recursive(""))
 
     def apply_changes(
         self,
@@ -123,197 +147,6 @@ class FilesSyncHandler(SyncHandler):
             except Exception as e:
                 change.error = str(e)
 
-    def _check_agents(
-        self,
-        transport: Transport,
-        direction: str,
-    ) -> Tuple[List[SyncChange], List[Conflict]]:
-        """Check agent config and identity files."""
-        changes: List[SyncChange] = []
-        conflicts: List[Conflict] = []
-
-        agents_dir = DATA_DIR / "agents"
-        if not agents_dir.exists():
-            return changes, conflicts
-
-        # Get local agent directories
-        local_agents = set()
-        for agent_dir in agents_dir.iterdir():
-            if agent_dir.is_dir():
-                local_agents.add(agent_dir.name)
-
-        # Get remote agent directories
-        remote_agents = set(transport.list_remote_files("agents"))
-
-        # Union of all agents
-        all_agents = local_agents | remote_agents
-
-        for agent_id in all_agents:
-            # Check config.json
-            config_path = f"agents/{agent_id}/config.json"
-            config_result = self._check_file(transport, config_path, direction)
-            if config_result:
-                if isinstance(config_result, Conflict):
-                    conflicts.append(config_result)
-                else:
-                    changes.append(config_result)
-
-            # Check identity.md
-            identity_path = f"agents/{agent_id}/identity.md"
-            identity_result = self._check_file(transport, identity_path, direction)
-            if identity_result:
-                if isinstance(identity_result, Conflict):
-                    conflicts.append(identity_result)
-                else:
-                    changes.append(identity_result)
-
-        return changes, conflicts
-
-    def _check_system_config(
-        self,
-        transport: Transport,
-        direction: str,
-    ) -> Tuple[List[SyncChange], List[Conflict]]:
-        """Check system config files."""
-        changes: List[SyncChange] = []
-        conflicts: List[Conflict] = []
-
-        # Files to check
-        config_files = [
-            "system/config.json",
-            "system/llm.json",
-        ]
-
-        for config_path in config_files:
-            result = self._check_file(transport, config_path, direction)
-            if result:
-                if isinstance(result, Conflict):
-                    conflicts.append(result)
-                else:
-                    changes.append(result)
-
-        return changes, conflicts
-
-    def _check_assets(
-        self,
-        transport: Transport,
-        direction: str,
-    ) -> Tuple[List[SyncChange], List[Conflict]]:
-        """Check topic asset files."""
-        changes: List[SyncChange] = []
-        conflicts: List[Conflict] = []
-
-        assets_dir = DATA_DIR / "topics" / "assets"
-        if not assets_dir.exists():
-            assets_dir.mkdir(parents=True, exist_ok=True)
-
-        # Get local topic asset directories
-        local_topics = set()
-        if assets_dir.exists():
-            for topic_dir in assets_dir.iterdir():
-                if topic_dir.is_dir():
-                    local_topics.add(topic_dir.name)
-
-        # Get remote topic asset directories
-        remote_topics = set()
-        if transport.remote_directory_exists("topics/assets"):
-            remote_topics = set(transport.list_remote_files("topics/assets"))
-
-        # Union of all topics with assets
-        all_topics = local_topics | remote_topics
-
-        for topic_id in all_topics:
-            topic_assets_path = f"topics/assets/{topic_id}"
-            local_path = DATA_DIR / topic_assets_path
-
-            # Get local files
-            local_files = set()
-            if local_path.exists():
-                for f in local_path.iterdir():
-                    if f.is_file():
-                        local_files.add(f.name)
-
-            # Get remote files
-            remote_files = set()
-            if transport.remote_directory_exists(topic_assets_path):
-                remote_files = set(transport.list_remote_files(topic_assets_path))
-
-            # Check each file
-            for filename in local_files | remote_files:
-                file_path = f"{topic_assets_path}/{filename}"
-                result = self._check_file(transport, file_path, direction)
-                if result:
-                    if isinstance(result, Conflict):
-                        conflicts.append(result)
-                    else:
-                        changes.append(result)
-
-        return changes, conflicts
-
-    def _check_plugins(
-        self,
-        transport: Transport,
-        direction: str,
-    ) -> Tuple[List[SyncChange], List[Conflict]]:
-        """Check plugin data files."""
-        changes: List[SyncChange] = []
-        conflicts: List[Conflict] = []
-
-        plugins_dir = DATA_DIR / "plugins"
-        if not plugins_dir.exists():
-            return changes, conflicts
-
-        # Get local plugin directories
-        local_plugins = set()
-        for plugin_dir in plugins_dir.iterdir():
-            if plugin_dir.is_dir():
-                local_plugins.add(plugin_dir.name)
-
-        # Get remote plugin directories
-        remote_plugins = set()
-        if transport.remote_directory_exists("plugins"):
-            remote_plugins = set(transport.list_remote_files("plugins"))
-
-        # Union of all plugins
-        all_plugins = local_plugins | remote_plugins
-
-        for plugin_name in all_plugins:
-            plugin_path = f"plugins/{plugin_name}"
-            local_path = DATA_DIR / plugin_path
-
-            # Get local files
-            local_files = set()
-            if local_path.exists():
-                for f in local_path.rglob("*"):
-                    if f.is_file():
-                        rel_path = f.relative_to(local_path)
-                        local_files.add(str(rel_path))
-
-            # Check each file in the plugin directory
-            for filename in local_files:
-                file_path = f"{plugin_path}/{filename}"
-                result = self._check_file(transport, file_path, direction)
-                if result:
-                    if isinstance(result, Conflict):
-                        conflicts.append(result)
-                    else:
-                        changes.append(result)
-
-            # Also check for remote-only files (pull direction)
-            if direction in ("pull", "bidirectional"):
-                if transport.remote_directory_exists(plugin_path):
-                    remote_files = set(transport.list_remote_files_recursive(plugin_path))
-                    for filename in remote_files - local_files:
-                        file_path = f"{plugin_path}/{filename}"
-                        result = self._check_file(transport, file_path, direction)
-                        if result:
-                            if isinstance(result, Conflict):
-                                conflicts.append(result)
-                            else:
-                                changes.append(result)
-
-        return changes, conflicts
-
     def _check_file(
         self,
         transport: Transport,
@@ -328,9 +161,8 @@ class FilesSyncHandler(SyncHandler):
             None if file is in sync
         """
         # Skip files that should never sync
-        for never in NEVER_SYNC:
-            if relative_path.startswith(never):
-                return None
+        if _should_never_sync(relative_path):
+            return None
 
         # Skip ignored patterns (__pycache__, .DS_Store, etc.)
         if _should_ignore(relative_path):
@@ -412,8 +244,6 @@ class FilesSyncHandler(SyncHandler):
                 remote_content = {"hash": remote_hash}
 
             # Get file modification times if possible
-            local_mtime = None
-            remote_mtime = None
             try:
                 local_mtime = local_path.stat().st_mtime
                 from datetime import datetime
@@ -472,16 +302,36 @@ class FilesSyncHandler(SyncHandler):
             if verbose:
                 print(f"    {msg}")
 
+        # Get all top-level directories under data/
+        local_top_dirs = set()
+        if DATA_DIR.exists():
+            for item in DATA_DIR.iterdir():
+                if item.is_dir() and not _should_ignore(item.name):
+                    local_top_dirs.add(item.name)
+
+        remote_top_dirs = set()
+        if transport.remote_directory_exists(""):
+            remote_top_dirs = set(transport.list_remote_directories(""))
+
+        # Union of all top-level directories
+        all_top_dirs = local_top_dirs | remote_top_dirs
+
         if direction == "push":
-            # Delete remote files that don't exist locally
-            deleted.extend(self._delete_remote_orphans(transport, "agents", log))
-            deleted.extend(self._delete_remote_orphans(transport, "topics/assets", log))
-            deleted.extend(self._delete_remote_orphans(transport, "plugins", log))
+            # Delete remote files/dirs that don't exist locally
+            for top_dir in all_top_dirs:
+                # Skip sync state directory
+                if top_dir == "system":
+                    # For system, only delete specific orphan subdirectories, not the whole thing
+                    deleted.extend(self._delete_remote_orphan_files(transport, top_dir, log))
+                else:
+                    deleted.extend(self._delete_remote_orphans(transport, top_dir, log))
         elif direction == "pull":
-            # Delete local files that don't exist remotely
-            deleted.extend(self._delete_local_orphans(transport, "agents", log))
-            deleted.extend(self._delete_local_orphans(transport, "topics/assets", log))
-            deleted.extend(self._delete_local_orphans(transport, "plugins", log))
+            # Delete local files/dirs that don't exist remotely
+            for top_dir in all_top_dirs:
+                if top_dir == "system":
+                    deleted.extend(self._delete_local_orphan_files(transport, top_dir, log))
+                else:
+                    deleted.extend(self._delete_local_orphans(transport, top_dir, log))
 
         return deleted
 
@@ -495,10 +345,7 @@ class FilesSyncHandler(SyncHandler):
         deleted = []
         local_base = DATA_DIR / base_path
 
-        if not local_base.exists():
-            return deleted
-
-        # Get local items (directories only)
+        # Get local items (directories only for top-level comparison)
         local_items = set()
         if local_base.exists():
             for item in local_base.iterdir():
@@ -567,5 +414,86 @@ class FilesSyncHandler(SyncHandler):
                 deleted.append(orphan_path)
             except Exception as e:
                 log(f"Failed to delete {orphan_path}: {e}")
+
+        return deleted
+
+    def _delete_remote_orphan_files(
+        self,
+        transport: Transport,
+        base_path: str,
+        log,
+    ) -> List[str]:
+        """Delete remote files (not directories) that don't exist locally."""
+        deleted = []
+        local_base = DATA_DIR / base_path
+
+        # Get local files
+        local_files = set()
+        if local_base.exists():
+            for path in local_base.rglob("*"):
+                if path.is_file():
+                    rel = str(path.relative_to(DATA_DIR))
+                    if not _should_never_sync(rel) and not _should_ignore(rel):
+                        local_files.add(rel)
+
+        # Get remote files
+        remote_files = set()
+        if transport.remote_directory_exists(base_path):
+            for f in transport.list_remote_files_recursive(base_path):
+                if not _should_never_sync(f) and not _should_ignore(f):
+                    remote_files.add(f)
+
+        # Find orphans
+        orphans = remote_files - local_files
+
+        for orphan in orphans:
+            log(f"Deleting remote file: {orphan}")
+            try:
+                transport.delete_remote_path(orphan)
+                deleted.append(orphan)
+            except Exception as e:
+                log(f"Failed to delete {orphan}: {e}")
+
+        return deleted
+
+    def _delete_local_orphan_files(
+        self,
+        transport: Transport,
+        base_path: str,
+        log,
+    ) -> List[str]:
+        """Delete local files (not directories) that don't exist remotely."""
+        deleted = []
+        local_base = DATA_DIR / base_path
+
+        if not local_base.exists():
+            return deleted
+
+        # Get local files
+        local_files = set()
+        for path in local_base.rglob("*"):
+            if path.is_file():
+                rel = str(path.relative_to(DATA_DIR))
+                if not _should_never_sync(rel) and not _should_ignore(rel):
+                    local_files.add(rel)
+
+        # Get remote files
+        remote_files = set()
+        if transport.remote_directory_exists(base_path):
+            for f in transport.list_remote_files_recursive(base_path):
+                if not _should_never_sync(f) and not _should_ignore(f):
+                    remote_files.add(f)
+
+        # Find orphans
+        orphans = local_files - remote_files
+
+        for orphan in orphans:
+            local_path = DATA_DIR / orphan
+            log(f"Deleting local file: {orphan}")
+            try:
+                local_path.unlink()
+                deleted.append(orphan)
+            except Exception as e:
+                log(f"Failed to delete {orphan}: {e}")
 
         return deleted
