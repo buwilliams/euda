@@ -56,12 +56,14 @@ def check_cmd(
     feed_id: Optional[str] = typer.Argument(None, help="Feed ID to check (or all if not specified)"),
     dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be surfaced without creating topics"),
     all_posts: bool = typer.Option(False, "--all", "-a", help="Surface all matching posts (ignore exploration matching for own blogs)"),
+    full_content: bool = typer.Option(False, "--full", "-F", help="Fetch full page content for matching (slower but more accurate)"),
     json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
 ):
     """Check feeds and surface relevant new posts as topics.
 
     Only posts matching active explorations are surfaced (unless --all).
     Own blog posts are always surfaced for memory/identity tracking.
+    Use --full to fetch complete article content for better matching.
     """
     m = _get_modules()
 
@@ -116,6 +118,15 @@ def check_cmd(
         for post in new_posts:
             post_title = post.get("title", "Untitled")
             post_link = post.get("link", "")
+
+            # Fetch full content if requested (for better matching)
+            if full_content and post_link:
+                if not json_output:
+                    print(f"  Fetching full content for: {post_title[:40]}...")
+                full_result = m["parser"].fetch_full_content(post_link)
+                if "error" not in full_result:
+                    post["content_text"] = full_result.get("content_text", post.get("content_text", ""))
+
             post_content = post.get("content_text", "")[:500]  # Truncate for description
 
             # Own blog posts always match

@@ -82,6 +82,7 @@ def list_cmd(
 def show_cmd(
     feed_id: str = typer.Argument(..., help="Feed ID"),
     post_index: int = typer.Option(0, "--index", "-i", help="Post index (0 = most recent)"),
+    full: bool = typer.Option(False, "--full", "-F", help="Fetch full content from post URL (not just RSS summary)"),
     json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
 ):
     """Show full content of a post."""
@@ -108,6 +109,18 @@ def show_cmd(
 
     post = posts[post_index]
 
+    # Fetch full content if requested
+    if full and post.get("link"):
+        if not json_output:
+            print(f"Fetching full content from {post['link']}...")
+        full_result = m["parser"].fetch_full_content(post["link"])
+        if "error" not in full_result:
+            post["content"] = full_result.get("content", post.get("content", ""))
+            post["content_text"] = full_result.get("content_text", post.get("content_text", ""))
+            post["full_content_fetched"] = True
+        elif not json_output:
+            print(f"Warning: Could not fetch full content: {full_result['error']}")
+
     if json_output:
         print(json.dumps(post, indent=2))
         return
@@ -116,6 +129,8 @@ def show_cmd(
     print(f"Published: {post.get('published', 'Unknown')}")
     print(f"Author: {post.get('author') or 'Unknown'}")
     print(f"Link: {post.get('link', 'None')}")
+    if post.get("full_content_fetched"):
+        print("(Full content fetched from URL)")
     print()
     print("=" * 60)
     print()
@@ -136,6 +151,52 @@ def show_cmd(
             print(line)
     else:
         print("(No content)")
+
+
+@app.command("content")
+def content_cmd(
+    url: str = typer.Argument(..., help="Post URL to fetch full content from"),
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+):
+    """Fetch full article content from a post URL.
+
+    RSS feeds often only include summaries. This fetches the actual
+    web page and extracts the main article content.
+    """
+    m = _get_modules()
+
+    if not json_output:
+        print(f"Fetching: {url}")
+
+    result = m["parser"].fetch_full_content(url)
+
+    if "error" in result:
+        print(f"Error: {result['error']}")
+        raise typer.Exit(1)
+
+    if json_output:
+        print(json.dumps(result, indent=2))
+        return
+
+    content = result.get("content_text", "")
+    print(f"\nContent ({len(content)} chars):\n")
+    print("=" * 60)
+    print()
+
+    if content:
+        # Word wrap at ~80 chars
+        words = content.split()
+        line = ""
+        for word in words:
+            if len(line) + len(word) + 1 > 80:
+                print(line)
+                line = word
+            else:
+                line = f"{line} {word}".strip()
+        if line:
+            print(line)
+    else:
+        print("(No content extracted)")
 
 
 @app.command("fetch")

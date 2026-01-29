@@ -232,6 +232,89 @@ def _parse_atom(root: ET.Element, url: str) -> dict:
     return feed
 
 
+def fetch_full_content(url: str, timeout: int = 30) -> dict:
+    """Fetch full article content from a post's URL.
+
+    RSS feeds often contain only summaries. This fetches the actual page
+    and extracts the main article content.
+
+    Args:
+        url: Post URL to fetch
+        timeout: Request timeout in seconds
+
+    Returns:
+        Dict with 'content' (HTML), 'content_text' (plain text), or 'error'
+    """
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Euno/1.0 (RSS Reader)",
+                "Accept": "text/html,application/xhtml+xml",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            html_content = response.read().decode("utf-8", errors="replace")
+
+    except urllib.error.HTTPError as e:
+        return {"error": f"HTTP error {e.code}: {e.reason}"}
+    except urllib.error.URLError as e:
+        return {"error": f"Could not connect: {e.reason}"}
+    except Exception as e:
+        return {"error": f"Fetch failed: {str(e)}"}
+
+    # Extract main content using BeautifulSoup
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError:
+        return {"error": "BeautifulSoup not available"}
+
+    soup = BeautifulSoup(html_content, "html.parser")
+
+    # Remove script, style, nav, header, footer, aside elements
+    for tag in soup.find_all(["script", "style", "nav", "header", "footer", "aside", "noscript"]):
+        tag.decompose()
+
+    # Try to find main content in order of preference
+    content_elem = None
+
+    # 1. Look for article tag
+    content_elem = soup.find("article")
+
+    # 2. Look for main tag
+    if not content_elem:
+        content_elem = soup.find("main")
+
+    # 3. Look for common content class/id patterns
+    if not content_elem:
+        for selector in ["post-content", "entry-content", "article-content",
+                         "post-body", "entry-body", "article-body",
+                         "content", "post", "entry"]:
+            content_elem = soup.find(class_=selector) or soup.find(id=selector)
+            if content_elem:
+                break
+
+    # 4. Fall back to body
+    if not content_elem:
+        content_elem = soup.find("body")
+
+    if not content_elem:
+        return {"error": "Could not find content"}
+
+    # Get HTML and text
+    content_html = str(content_elem)
+    content_text = content_elem.get_text(separator=" ", strip=True)
+
+    # Clean up excessive whitespace
+    content_text = re.sub(r"\s+", " ", content_text).strip()
+
+    return {
+        "content": content_html,
+        "content_text": content_text,
+        "url": url,
+    }
+
+
 def estimate_check_interval(posts: list[dict]) -> Optional[int]:
     """Estimate optimal check interval based on post frequency.
 
