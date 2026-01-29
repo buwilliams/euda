@@ -23,12 +23,6 @@
       "tool": "euno_quote",
       "topic_name": "euno:quote",
       "topic_description": "Generate personalized daily quote based on user identity"
-    },
-    {
-      "event": "hour_12",
-      "action": "llm",
-      "topic_name": "Check RSS feeds",
-      "topic_description": "Check followed RSS feeds for new posts. Use the rss skill: `rss surface check` to find and surface relevant new posts as topics."
     }
   ]
 }

@@ -318,11 +318,11 @@ function renderAgentDetailView(topic) {
 
             <!-- Topics Section (all topics sorted by status: working > todo > error > done > archived) -->
             <div class="topic-section">
-                <div class="topic-section-header collapsible ${topLevelTopics.length > 0 ? 'open' : ''}" onclick="togglePersonaSection(this, event)">
+                <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
                     <span>Topics${activeTopicsCount > 0 ? ` (${activeTopicsCount})` : ''}</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
-                <div class="collapsible-content ${topLevelTopics.length > 0 ? 'open' : ''}">
+                <div class="collapsible-content">
                     ${topLevelTopics.length === 0 ? '<div class="focus-empty">No topics assigned to this agent.</div>' :
                       topLevelTopics.map(child => renderTopicCard(child, true)).join('')
                     }

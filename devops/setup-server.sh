@@ -96,6 +96,14 @@ set -e
 sudo mkdir -p $REMOTE_DIR
 sudo chown \$USER:\$USER $REMOTE_DIR
 mkdir -p $REMOTE_DIR/data
+
+# Create euno wrapper script
+sudo tee /usr/local/bin/euno > /dev/null << 'EOF'
+#!/bin/bash
+cd /opt/euno && uv run euno "\$@"
+EOF
+sudo chmod +x /usr/local/bin/euno
+echo "Created /usr/local/bin/euno wrapper"
 REMOTE_SCRIPT
 
 # Create systemd service

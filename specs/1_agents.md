@@ -69,6 +69,58 @@ Triggers are objects with explicit `event` and `action` keys:
 - `morning`, `evening`, `hourly`, `hour_00`, `hour_04`, `hour_06`, `hour_12`, `hour_18`
 - Maps to times in `data/system/config.json` under `schedules`
 
+**Interval Events** (implemented):
+- Format: `interval:<duration>` (e.g., `interval:hourly`, `interval:daily`)
+- Fires at regular intervals regardless of time of day
+- State tracked per-trigger in `data/agents/{id}/state.json`
+
+Available intervals:
+| Interval | Duration |
+|----------|----------|
+| `minute` | 1 minute |
+| `hourly` | 1 hour |
+| `daily` | 24 hours |
+| `weekly` | 7 days |
+| `biweekly` | 14 days |
+| `monthly` | 30 days |
+| `bimonthly` | 60 days |
+| `quarterly` | 90 days |
+| `semiannually` | 180 days |
+| `annually` | 365 days |
+| `biennially` | 730 days |
+| `decadal` | 3650 days |
+| `generational` | 9125 days (25 years) |
+| `centennial` | 36500 days |
+| `millennial` | 365000 days |
+
+Example interval trigger configuration:
+```json
+{
+  "triggers": [
+    {
+      "event": "interval:hourly",
+      "action": "tool",
+      "tool": "euno_quote",
+      "topic_name": "euno:quote",
+      "topic_description": "Generate hourly quote"
+    }
+  ]
+}
+```
+
+Interval trigger state in `data/agents/{id}/state.json`:
+```json
+{
+  "last_ran": "2026-01-28T11:25:48.951260",
+  "triggers": {
+    "interval:hourly:euno:quote": {
+      "last_ran": "2026-01-28T11:00:00.000000",
+      "next_run": "2026-01-28T12:00:00.000000"
+    }
+  }
+}
+```
+
 **System Events** (implemented):
 - `system:start` - Fires once when Euno starts up
 - `chat:message_received` - Fires when user sends a chat message

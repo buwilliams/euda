@@ -72,7 +72,8 @@ def execute_skill_tool(
     command: str,
     agent_id: Optional[str] = None,
     topic_id: Optional[str] = None,
-    session_id: Optional[str] = None
+    session_id: Optional[str] = None,
+    env: Optional[dict] = None
 ) -> dict:
     """Execute a skill command.
 
@@ -82,6 +83,7 @@ def execute_skill_tool(
         agent_id: Current agent ID (optional, for context)
         topic_id: Current topic ID (optional, for context)
         session_id: Current session ID (optional, for context)
+        env: Additional environment variables (e.g., {"API_KEY": "abc123"})
 
     Returns:
         Dict with success status, output, and exit code
@@ -93,7 +95,8 @@ def execute_skill_tool(
             timeout=60,
             agent_id=agent_id,
             topic_id=topic_id,
-            session_id=session_id
+            session_id=session_id,
+            env_vars=env
         )
 
         return {
@@ -150,6 +153,11 @@ def get_meta_tools() -> list:
                     "command": {
                         "type": "string",
                         "description": "Command string including subcommands and arguments (e.g., 'topics list --status todo')"
+                    },
+                    "env": {
+                        "type": "object",
+                        "description": "Additional environment variables to set (e.g., {\"API_KEY\": \"abc123\"})",
+                        "additionalProperties": {"type": "string"}
                     }
                 },
                 "required": ["skill", "command"]
@@ -184,7 +192,8 @@ def execute_meta_tool(name: str, inputs: dict, agent_context: dict = None) -> di
             command=inputs.get("command", ""),
             agent_id=context.get("agent_id"),
             topic_id=context.get("topic_id"),
-            session_id=context.get("session_id")
+            session_id=context.get("session_id"),
+            env=inputs.get("env")
         )
 
     else:

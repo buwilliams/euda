@@ -24,7 +24,12 @@ BASE_TOOLS = [
 
 
 def list_agents() -> List[dict]:
-    """List all agents with their configurations."""
+    """List all agents with their configurations.
+
+    Uses layered config: config.defaults.json (base) + config.json (overrides).
+    """
+    from src.core.config import load_layered_config
+
     agents = []
 
     if not AGENTS_DIR.exists():
@@ -32,11 +37,9 @@ def list_agents() -> List[dict]:
 
     for agent_dir in AGENTS_DIR.iterdir():
         if agent_dir.is_dir():
-            config_path = agent_dir / "config.json"
-            if config_path.exists():
-                with open(config_path) as f:
-                    config = json.load(f)
-                    agents.append(config)
+            config = load_layered_config(agent_dir)
+            if config:
+                agents.append(config)
 
     return agents
 
@@ -49,7 +52,11 @@ def list_agents_for_routing() -> List[dict]:
     - name: Display name
     - purpose: First line/paragraph of identity (what they do)
     - enabled: Whether the agent is active
+
+    Uses layered config: config.defaults.json (base) + config.json (overrides).
     """
+    from src.core.config import load_layered_config
+
     agents = []
 
     if not AGENTS_DIR.exists():
@@ -57,12 +64,10 @@ def list_agents_for_routing() -> List[dict]:
 
     for agent_dir in AGENTS_DIR.iterdir():
         if agent_dir.is_dir():
-            config_path = agent_dir / "config.json"
             identity_path = agent_dir / "identity.md"
+            config = load_layered_config(agent_dir)
 
-            if config_path.exists():
-                with open(config_path) as f:
-                    config = json.load(f)
+            if config:
 
                 # Extract purpose from identity (first non-heading paragraph)
                 purpose = ""
@@ -86,7 +91,12 @@ def list_agents_for_routing() -> List[dict]:
 
 
 def get_agent(agent_id: str) -> Optional[dict]:
-    """Get detailed info about an agent."""
+    """Get detailed info about an agent.
+
+    Uses layered config: config.defaults.json (base) + config.json (overrides).
+    """
+    from src.core.config import load_layered_config
+
     agent_dir = AGENTS_DIR / agent_id
 
     if not agent_dir.exists():
@@ -94,11 +104,10 @@ def get_agent(agent_id: str) -> Optional[dict]:
 
     result = {"id": agent_id}
 
-    # Load config
-    config_path = agent_dir / "config.json"
-    if config_path.exists():
-        with open(config_path) as f:
-            result["config"] = json.load(f)
+    # Load config (layered)
+    config = load_layered_config(agent_dir)
+    if config:
+        result["config"] = config
 
     # Load identity
     identity_path = agent_dir / "identity.md"
@@ -129,30 +138,32 @@ def update_agent_identity_internal(agent_id: str, identity: str) -> dict:
 
 
 def get_agent_config(agent_id: str) -> Optional[dict]:
-    """Get an agent's configuration."""
-    config_path = AGENTS_DIR / agent_id / "config.json"
-    if config_path.exists():
-        with open(config_path) as f:
-            return json.load(f)
-    return None
+    """Get an agent's configuration.
+
+    Uses layered config: config.defaults.json (base) + config.json (overrides).
+    """
+    from src.core.config import load_layered_config
+
+    agent_dir = AGENTS_DIR / agent_id
+    return load_layered_config(agent_dir)
 
 
 def update_agent_config(agent_id: str, config: dict) -> dict:
     """Update an agent's configuration.
 
+    Writes to config.json (user overrides), preserving config.defaults.json.
     Note: Changes to triggers require a restart to take effect.
     """
+    from src.core.config import save_config_overrides
+
     agent_dir = AGENTS_DIR / agent_id
     if not agent_dir.exists():
         return {"error": f"Agent not found: {agent_id}"}
 
-    config_path = agent_dir / "config.json"
-
     # Preserve the id field
     config["id"] = agent_id
 
-    with open(config_path, "w") as f:
-        json.dump(config, f, indent=2)
+    save_config_overrides(agent_dir, config)
 
     return {"updated": True, "agent_id": agent_id, "config": config}
 
@@ -432,11 +443,240 @@ def list_available_tools() -> List[dict]:
     """List all available tools that can be assigned to agents.
 
     Returns a list of tool names and descriptions.
+    Note: Tools are now provided via skills, not a static registry.
     """
-    tools = []
-    for name, info in _TOOL_REGISTRY.items():
-        tools.append({
-            "name": name,
-            "description": info["description"]
-        })
-    return sorted(tools, key=lambda x: x["name"])
+    # Skills replaced the old tool registry - return the meta-tools
+    from src.skills.tools import get_meta_tools
+    return get_meta_tools()
+
+
+def pause_agent(agent_id: str, reason: str = None) -> dict:
+    """Pause an agent so it stops processing topics.
+
+    Unlike disable, a paused agent:
+    - Is still counted in budget calculations
+    - Can be auto-resumed when budget resets
+    - Is expected to be temporary
+
+    Args:
+        agent_id: The agent to pause
+        reason: Optional reason for pausing
+    """
+    from src.agent.cognition.metacognition.regulation.tokens import get_token_awareness, AgentState
+
+    config = get_agent_config(agent_id)
+    if not config:
+        return {"error": f"Agent not found: {agent_id}"}
+
+    token_awareness = get_token_awareness()
+    token_awareness.set_agent_state(agent_id, AgentState.PAUSED, reason or "manually paused")
+    return {"agent_id": agent_id, "state": "paused", "reason": reason or "manually paused"}
+
+
+def resume_agent(agent_id: str) -> dict:
+    """Resume a paused agent so it can process topics again.
+
+    Args:
+        agent_id: The agent to resume
+    """
+    from src.agent.cognition.metacognition.regulation.tokens import get_token_awareness, AgentState
+
+    config = get_agent_config(agent_id)
+    if not config:
+        return {"error": f"Agent not found: {agent_id}"}
+
+    token_awareness = get_token_awareness()
+    current_state = token_awareness.get_agent_state(agent_id)
+
+    if current_state != AgentState.PAUSED:
+        return {"error": f"Agent is not paused (current state: {current_state.value})"}
+
+    token_awareness.set_agent_state(agent_id, AgentState.ENABLED)
+    return {"agent_id": agent_id, "state": "enabled"}
+
+
+def get_agent_status(agent_id: str) -> dict:
+    """Get detailed status for an agent including pause info and usage.
+
+    Args:
+        agent_id: The agent to check
+
+    Returns:
+        Dict with state, pause_info, and usage summary
+    """
+    from src.agent.cognition.metacognition.regulation.tokens import get_token_awareness
+
+    config = get_agent_config(agent_id)
+    if not config:
+        return {"error": f"Agent not found: {agent_id}"}
+
+    token_awareness = get_token_awareness()
+
+    state = token_awareness.get_agent_state(agent_id)
+    pause_info = token_awareness.get_pause_info(agent_id)
+    usage = token_awareness.get_agent_usage(agent_id)
+    reset_info = token_awareness.get_time_until_reset(agent_id)
+
+    return {
+        "agent_id": agent_id,
+        "name": config.get("name", agent_id),
+        "state": state.value,
+        "pause_info": pause_info,
+        "usage": {
+            "input_tokens": usage.get("input_tokens", 0),
+            "output_tokens": usage.get("output_tokens", 0),
+            "input_percent": usage.get("input_percent", 0),
+            "output_percent": usage.get("output_percent", 0),
+            "frequency": usage.get("frequency", "daily"),
+        },
+        "budget_reset": reset_info
+    }
+
+
+def get_agent_triggers(agent_id: str) -> dict:
+    """Get triggers configured for an agent with their state.
+
+    Args:
+        agent_id: The agent to check
+
+    Returns:
+        Dict with triggers list and their state
+    """
+    config = get_agent_config(agent_id)
+    if not config:
+        return {"error": f"Agent not found: {agent_id}"}
+
+    # Load agent state for interval trigger info
+    state_path = AGENTS_DIR / agent_id / "state.json"
+    trigger_states = {}
+    if state_path.exists():
+        with open(state_path) as f:
+            state = json.load(f)
+            trigger_states = state.get("triggers", {})
+
+    triggers = config.get("triggers", [])
+    result = []
+
+    for trigger in triggers:
+        if not isinstance(trigger, dict):
+            continue
+
+        event = trigger.get("event", "")
+        topic_name = trigger.get("topic_name", "")
+        trigger_key = f"{event}:{topic_name}"
+
+        trigger_info = {
+            "event": event,
+            "action": trigger.get("action", "llm"),
+            "topic_name": topic_name,
+            "topic_description": trigger.get("topic_description", ""),
+        }
+
+        # Add tool if action is "tool"
+        if trigger.get("tool"):
+            trigger_info["tool"] = trigger.get("tool")
+
+        # Add state for interval triggers
+        if event.startswith("interval:"):
+            state = trigger_states.get(trigger_key, {})
+            trigger_info["last_ran"] = state.get("last_ran")
+            trigger_info["next_run"] = state.get("next_run")
+
+        result.append(trigger_info)
+
+    return {
+        "agent_id": agent_id,
+        "triggers": result,
+        "count": len(result)
+    }
+
+
+def trigger_agent(agent_id: str, topic_name: str, description: str = None) -> dict:
+    """Manually fire a trigger for an agent by creating a topic.
+
+    Args:
+        agent_id: The agent to trigger
+        topic_name: Name of the topic to create (e.g., "euno:consolidate")
+        description: Optional description for the topic
+
+    Returns:
+        Dict with topic info
+    """
+    from src.core.data.topics import create_topic, get_agent_inbox_topic
+
+    config = get_agent_config(agent_id)
+    if not config:
+        return {"error": f"Agent not found: {agent_id}"}
+
+    inbox = get_agent_inbox_topic(agent_id)
+    parent_id = inbox["id"] if inbox else None
+
+    topic = create_topic(
+        name=topic_name,
+        description=description or f"Manual trigger: {topic_name}",
+        parent_id=parent_id,
+        assignee=agent_id,
+        tags=["cli:manual", topic_name],
+        created_by="cli"
+    )
+
+    return {
+        "triggered": True,
+        "agent_id": agent_id,
+        "topic_name": topic_name,
+        "topic_id": topic["id"]
+    }
+
+
+def get_agent_token_usage(agent_id: str) -> dict:
+    """Get token usage statistics for an agent.
+
+    Args:
+        agent_id: The agent to check
+
+    Returns:
+        Dict with usage stats, budget info, and reset time
+    """
+    from src.agent.cognition.metacognition.regulation.tokens import get_token_awareness
+
+    config = get_agent_config(agent_id)
+    if not config:
+        return {"error": f"Agent not found: {agent_id}"}
+
+    token_awareness = get_token_awareness()
+    usage = token_awareness.get_agent_usage(agent_id)
+    reset_info = token_awareness.get_time_until_reset(agent_id)
+
+    return {
+        "agent_id": agent_id,
+        "period": usage.get("period"),
+        "frequency": usage.get("frequency", "daily"),
+        "input_tokens": usage.get("input_tokens", 0),
+        "output_tokens": usage.get("output_tokens", 0),
+        "input_budget": usage.get("input_budget", 0),
+        "output_budget": usage.get("output_budget", 0),
+        "input_percent": usage.get("input_percent", 0),
+        "output_percent": usage.get("output_percent", 0),
+        "reset_time": reset_info.get("reset_time"),
+        "time_until_reset": reset_info.get("time_until")
+    }
+
+
+def reset_agent_token_usage(agent_id: str) -> dict:
+    """Reset token usage for an agent to zero.
+
+    This also auto-resumes the agent if it was paused due to budget limits.
+
+    Args:
+        agent_id: The agent to reset
+    """
+    from src.agent.cognition.metacognition.regulation.tokens import get_token_awareness
+
+    config = get_agent_config(agent_id)
+    if not config:
+        return {"error": f"Agent not found: {agent_id}"}
+
+    token_awareness = get_token_awareness()
+    token_awareness.reset_agent_usage(agent_id)
+
+    return {"agent_id": agent_id, "reset": True}

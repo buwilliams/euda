@@ -12,7 +12,7 @@ Responsibilities:
 import json
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -29,6 +29,25 @@ DATA_DIR = Path(__file__).parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
 SYSTEM_STATE_PATH = DATA_DIR / "system" / "state.json"
 
+# Interval durations for interval-based triggers
+INTERVAL_DURATIONS = {
+    "minute": timedelta(minutes=1),
+    "hourly": timedelta(hours=1),
+    "daily": timedelta(days=1),
+    "weekly": timedelta(days=7),
+    "biweekly": timedelta(days=14),
+    "monthly": timedelta(days=30),
+    "bimonthly": timedelta(days=60),
+    "quarterly": timedelta(days=90),
+    "semiannually": timedelta(days=180),
+    "annually": timedelta(days=365),
+    "biennially": timedelta(days=730),
+    "decadal": timedelta(days=3650),
+    "generational": timedelta(days=9125),  # 25 years
+    "centennial": timedelta(days=36500),
+    "millennial": timedelta(days=365000),
+}
+
 # Global manager instance for tools to access
 _manager_instance: 'AgentManager' = None
 
@@ -42,6 +61,29 @@ def set_manager(manager: 'AgentManager'):
     """Set the global AgentManager instance."""
     global _manager_instance
     _manager_instance = manager
+
+
+def _get_config_mtime(agent_dir: Path) -> float:
+    """Get the latest mtime of config files for an agent.
+
+    Checks both config.defaults.json and config.json, returns the latest.
+    Returns 0 if neither file exists.
+    """
+    defaults_path = agent_dir / "config.defaults.json"
+    overrides_path = agent_dir / "config.json"
+
+    mtime = 0.0
+    if defaults_path.exists():
+        mtime = max(mtime, defaults_path.stat().st_mtime)
+    if overrides_path.exists():
+        mtime = max(mtime, overrides_path.stat().st_mtime)
+
+    return mtime
+
+
+def _has_config(agent_dir: Path) -> bool:
+    """Check if an agent directory has config files."""
+    return (agent_dir / "config.defaults.json").exists() or (agent_dir / "config.json").exists()
 
 
 class AgentManager:
@@ -72,17 +114,25 @@ class AgentManager:
         return self._startup_complete.wait(timeout=timeout)
 
     def load_agent_configs(self) -> List[dict]:
-        """Load all agent configurations from data/agents/*/config.json."""
+        """Load all agent configurations from data/agents/*/.
+
+        Uses layered config: config.defaults.json (base) + config.json (overrides).
+        """
+        from src.core.config import load_layered_config
+
         configs = []
         if not AGENTS_DIR.exists():
             return configs
 
         for agent_dir in AGENTS_DIR.iterdir():
             if agent_dir.is_dir():
-                config_path = agent_dir / "config.json"
-                if config_path.exists():
-                    with open(config_path) as f:
-                        config = json.load(f)
+                # Check if either config file exists
+                defaults_path = agent_dir / "config.defaults.json"
+                overrides_path = agent_dir / "config.json"
+
+                if defaults_path.exists() or overrides_path.exists():
+                    config = load_layered_config(agent_dir)
+                    if config:
                         config["_dir"] = str(agent_dir)
                         configs.append(config)
 
@@ -99,9 +149,10 @@ class AgentManager:
         self.agents[agent_id] = agent
 
         # Track config modification time for reload detection
-        config_path = AGENTS_DIR / agent_id / "config.json"
-        if config_path.exists():
-            self._config_mtimes[agent_id] = config_path.stat().st_mtime
+        agent_dir = AGENTS_DIR / agent_id
+        mtime = _get_config_mtime(agent_dir)
+        if mtime > 0:
+            self._config_mtimes[agent_id] = mtime
 
         # Subscribe agent to system event triggers
         system_events = ["system:start", "chat:message_received", "topic:created", "topic:completed"]
@@ -141,18 +192,21 @@ class AgentManager:
         if agent_id in self.agents:
             return {"error": f"Agent {agent_id} is already running"}
 
-        # Load the agent's config
-        config_path = AGENTS_DIR / agent_id / "config.json"
-        if not config_path.exists():
+        # Load the agent's config (layered: defaults + overrides)
+        from src.core.config import load_layered_config
+
+        agent_dir = AGENTS_DIR / agent_id
+        if not _has_config(agent_dir):
             return {"error": f"Agent config not found: {agent_id}"}
 
-        with open(config_path) as f:
-            config = json.load(f)
-            config["_dir"] = str(AGENTS_DIR / agent_id)
+        config = load_layered_config(agent_dir)
+        if not config:
+            return {"error": f"Agent config not found: {agent_id}"}
+        config["_dir"] = str(agent_dir)
 
         # Track config mtime so watcher knows this agent was seen
         # (even if disabled, we don't want to keep re-registering)
-        self._config_mtimes[agent_id] = config_path.stat().st_mtime
+        self._config_mtimes[agent_id] = _get_config_mtime(agent_dir)
 
         # Sync agent inbox topics to create the inbox for this agent
         from src.core.data.topics import sync_agent_inbox_topics
@@ -250,21 +304,24 @@ class AgentManager:
         return {"reloaded": True, "agent_id": agent_id, "started": False, "note": "Agent is disabled"}
 
     def _watch_configs(self):
-        """Background thread that watches for config changes and reloads agents."""
+        """Background thread that watches for config changes and reloads agents.
+
+        Watches both config.defaults.json and config.json for layered config.
+        """
         check_interval = 2.0  # Check every 2 seconds
 
         while self.running:
             try:
                 # Check each agent's config for changes
                 for agent_id in list(self._config_mtimes.keys()):
-                    config_path = AGENTS_DIR / agent_id / "config.json"
-                    if not config_path.exists():
-                        # Config deleted - stop the agent
+                    agent_dir = AGENTS_DIR / agent_id
+                    if not _has_config(agent_dir):
+                        # Both config files deleted - stop the agent
                         print(f"Config deleted for agent {agent_id}, stopping...")
                         self.stop_agent(agent_id)
                         continue
 
-                    current_mtime = config_path.stat().st_mtime
+                    current_mtime = _get_config_mtime(agent_dir)
                     last_mtime = self._config_mtimes.get(agent_id, 0)
 
                     if current_mtime > last_mtime:
@@ -276,9 +333,8 @@ class AgentManager:
                     for agent_dir in AGENTS_DIR.iterdir():
                         if agent_dir.is_dir():
                             agent_id = agent_dir.name
-                            config_path = agent_dir / "config.json"
                             # Only register if not already tracked (running or seen)
-                            if config_path.exists() and agent_id not in self._config_mtimes:
+                            if _has_config(agent_dir) and agent_id not in self._config_mtimes:
                                 # New agent found - register it
                                 print(f"New agent found: {agent_id}, registering...")
                                 self.register_new_agent(agent_id)
@@ -330,37 +386,120 @@ class AgentManager:
         state["last_ran"] = datetime.now().isoformat()
         self._save_agent_state(agent_id, state)
 
-    def _check_missed_triggers(self) -> set:
-        """Check if morning or evening triggers were missed since last run.
+    def _get_trigger_key(self, trigger: dict) -> str:
+        """Generate a unique key for a trigger.
 
-        Returns a set of trigger names that were missed (e.g., {'time:morning', 'time:evening'}).
+        Format: interval:hourly:euno:quote (event + topic_name)
+
+        Args:
+            trigger: Trigger configuration dict
+
+        Returns:
+            Unique trigger key string
         """
-        missed = set()
-        state = self._get_system_state()
-        config = self._get_system_config()
-        schedules = config.get("schedules", {})
+        event = trigger.get("event", "")
+        topic_name = trigger.get("topic_name", "")
+        return f"{event}:{topic_name}"
+
+    def _get_trigger_state(self, agent_id: str, trigger_key: str) -> dict:
+        """Get state for a specific trigger.
+
+        Args:
+            agent_id: The agent ID
+            trigger_key: The trigger key from _get_trigger_key()
+
+        Returns:
+            Trigger state dict with last_ran and next_run
+        """
+        state = self._get_agent_state(agent_id)
+        triggers_state = state.get("triggers", {})
+        return triggers_state.get(trigger_key, {})
+
+    def _save_trigger_state(self, agent_id: str, trigger_key: str, trigger_state: dict):
+        """Save state for a specific trigger.
+
+        Args:
+            agent_id: The agent ID
+            trigger_key: The trigger key from _get_trigger_key()
+            trigger_state: Dict with last_ran and next_run
+        """
+        state = self._get_agent_state(agent_id)
+        if "triggers" not in state:
+            state["triggers"] = {}
+        state["triggers"][trigger_key] = trigger_state
+        self._save_agent_state(agent_id, state)
+
+    def _calculate_next_run(self, interval: str, last_ran: datetime) -> datetime:
+        """Calculate the next run time for an interval trigger.
+
+        Args:
+            interval: Interval name (e.g., "hourly", "daily")
+            last_ran: When the trigger last ran
+
+        Returns:
+            Next run datetime
+        """
+        duration = INTERVAL_DURATIONS.get(interval)
+        if not duration:
+            return last_ran  # Unknown interval, don't schedule
+        return last_ran + duration
+
+    def _should_fire_interval_trigger(self, agent_id: str, trigger: dict) -> bool:
+        """Check if an interval trigger should fire.
+
+        Args:
+            agent_id: The agent ID
+            trigger: Trigger configuration dict
+
+        Returns:
+            True if the trigger should fire
+        """
+        event = trigger.get("event", "")
+        if not event.startswith("interval:"):
+            return False
+
+        interval = event.split(":", 1)[1]
+        if interval not in INTERVAL_DURATIONS:
+            return False
+
+        trigger_key = self._get_trigger_key(trigger)
+        trigger_state = self._get_trigger_state(agent_id, trigger_key)
 
         now = datetime.now()
-        today = now.strftime("%Y-%m-%d")
-        current_time = now.strftime("%H:%M")
 
-        for trigger_name in ["morning", "evening"]:
-            if trigger_name not in schedules:
-                continue
+        # If never run, fire immediately
+        if not trigger_state.get("last_ran"):
+            return True
 
-            schedule_time = schedules[trigger_name]
-            last_ran_key = f"last_{trigger_name}"
-            last_ran = state.get(last_ran_key)
+        # Check if we've passed next_run time
+        next_run_str = trigger_state.get("next_run")
+        if next_run_str:
+            next_run = datetime.fromisoformat(next_run_str)
+            return now >= next_run
 
-            # Check if trigger time has passed today
-            if current_time >= schedule_time:
-                # The trigger should have fired today
-                if last_ran != today:
-                    # It hasn't fired today - it was missed
-                    missed.add(f"time:{trigger_name}")
-                    print(f"[startup] Detected missed trigger: time:{trigger_name}")
+        # Fallback: calculate from last_ran
+        last_ran = datetime.fromisoformat(trigger_state["last_ran"])
+        next_run = self._calculate_next_run(interval, last_ran)
+        return now >= next_run
 
-        return missed
+    def _update_interval_trigger_state(self, agent_id: str, trigger: dict):
+        """Update the state for an interval trigger after it fires.
+
+        Args:
+            agent_id: The agent ID
+            trigger: Trigger configuration dict
+        """
+        event = trigger.get("event", "")
+        interval = event.split(":", 1)[1]
+
+        now = datetime.now()
+        next_run = self._calculate_next_run(interval, now)
+
+        trigger_key = self._get_trigger_key(trigger)
+        self._save_trigger_state(agent_id, trigger_key, {
+            "last_ran": now.isoformat(),
+            "next_run": next_run.isoformat()
+        })
 
     def _get_agent_triggers(self, config: dict) -> list:
         """Get triggers from agent config.
@@ -404,56 +543,6 @@ class AgentManager:
                 if topic.get("name") == topic_name:
                     return True
         return False
-
-    def _emit_startup_triggers(self):
-        """Create topics for any missed time triggers at startup."""
-        from src.core.data.topics import create_topic, get_agent_inbox_topic
-
-        today = datetime.now().strftime("%Y-%m-%d")
-
-        # Check for missed morning/evening triggers
-        missed = self._check_missed_triggers()
-
-        if missed:
-            for trigger in missed:
-                trigger_type = trigger.split(":")[1]  # "morning" or "evening"
-
-                for agent_id, agent in self.agents.items():
-                    config = agent.config
-                    if config.get("state", "enabled") == "disabled":
-                        continue
-
-                    # Get agent's inbox topic as parent for all trigger topics
-                    inbox = get_agent_inbox_topic(agent_id)
-                    parent_id = inbox["id"] if inbox else None
-
-                    # Handle object triggers
-                    triggers = self._get_agent_triggers(config)
-                    for t in triggers:
-                        if t.get("event") == trigger_type:
-                            topic_name = t.get("topic_name")
-                            topic_desc = t.get("topic_description", f"Missed scheduled {topic_name}")
-
-                            # Check for duplicate - only one pending at a time
-                            if not self._has_open_internal_topic(topic_name, agent_id):
-                                print(f"[startup] Creating missed topic: {topic_name} for {agent_id}")
-                                create_topic(
-                                    name=topic_name,
-                                    description=topic_desc,
-                                    parent_id=parent_id,
-                                    assignee=agent_id,
-                                    tags=[topic_name],  # Tag for querying
-                                    due_date=None,
-                                    created_by="system"
-                                )
-
-            # Update state to mark these as "handled" by setting them to today
-            state = self._get_system_state()
-            if "time:morning" in missed:
-                state["last_morning"] = today
-            if "time:evening" in missed:
-                state["last_evening"] = today
-            self._save_system_state(state)
 
     def _run_agent_loop(self, agent: Agent, stop_event: threading.Event):
         """Run an agent's work loop - monitors health while agent polls for topics.
@@ -613,6 +702,43 @@ class AgentManager:
                             state[f"last_{name}"] = today
                             self._save_system_state(state)
 
+                # Process interval-based triggers
+                for agent_id, agent in self.agents.items():
+                    config = agent.config
+                    if config.get("state", "enabled") == "disabled":
+                        continue
+
+                    # Get agent's inbox topic as parent for all trigger topics
+                    inbox = get_agent_inbox_topic(agent_id)
+                    parent_id = inbox["id"] if inbox else None
+
+                    triggers = self._get_agent_triggers(config)
+                    for trigger in triggers:
+                        event = trigger.get("event", "")
+                        if not event.startswith("interval:"):
+                            continue
+
+                        # Check if this interval trigger should fire
+                        if self._should_fire_interval_trigger(agent_id, trigger):
+                            topic_name = trigger.get("topic_name")
+                            topic_desc = trigger.get("topic_description", f"Interval {topic_name}")
+
+                            # Check for duplicate - only one pending at a time
+                            if not self._has_open_internal_topic(topic_name, agent_id):
+                                print(f"[scheduler] Creating interval topic: {topic_name} for {agent_id}")
+                                create_topic(
+                                    name=topic_name,
+                                    description=topic_desc,
+                                    parent_id=parent_id,
+                                    assignee=agent_id,
+                                    tags=[topic_name],
+                                    due_date=None,
+                                    created_by="system"
+                                )
+
+                            # Update trigger state (even if topic already exists, mark as handled)
+                            self._update_interval_trigger_state(agent_id, trigger)
+
             except Exception as e:
                 print(f"Scheduler error: {e}")
 
@@ -730,16 +856,13 @@ class AgentManager:
         # Track disabled agents so config watcher doesn't keep trying to register them
         for config in disabled:
             agent_id = config["id"]
-            config_path = AGENTS_DIR / agent_id / "config.json"
-            if config_path.exists():
-                self._config_mtimes[agent_id] = config_path.stat().st_mtime
+            agent_dir = AGENTS_DIR / agent_id
+            mtime = _get_config_mtime(agent_dir)
+            if mtime > 0:
+                self._config_mtimes[agent_id] = mtime
 
         if not enabled:
             print("No enabled agents. Waiting...")
-
-        # Emit startup triggers (any missed time triggers)
-        if enabled:
-            self._emit_startup_triggers()
 
         # Emit system:start event for agents subscribed to it
         emit_system_event("system:start", data={"agents": [c["id"] for c in enabled]})

@@ -46,12 +46,15 @@ Every agent (including the user) shares the same four-category structure:
 - **Behavior** → `config.json` (plugins, triggers, consolidation)
 
 Directory structure:
-- **Config:** `data/agents/{id}/config.json`
-  - id, name, enabled, state, order, tools[], triggers[]
+- **Config:** Layered config with defaults + overrides
+  - `data/agents/{id}/config.defaults.json` — Base config (tracked in git)
+  - `data/agents/{id}/config.json` — User overrides (gitignored, merged on top)
+  - Fields: id, name, enabled, state, order, tools[], triggers[]
   - token_budget{}: frequency ("daily"|"hourly"|"weekly"|"monthly"), input_ratio, output_ratio
   - consolidation{}: enabled, trigger (e.g., "time:evening")
   - State: "enabled", "disabled", "paused" (paused requires manual intervention)
   - Triggers define which trigger topics the agent receives
+  - At load time, defaults and overrides are deep-merged (nested dicts merged, arrays replaced)
 - **Identity:** `data/agents/{id}/identity.md`
   - Evolves over time based on long-term memory
   - For AI agents: purpose, behavioral rules, voice

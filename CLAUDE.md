@@ -199,7 +199,7 @@ The user is conceptually an agent too - just with a different interface (Web UI/
 ## Adding a New Agent
 
 1. Create directory: `data/agents/{agent-id}/`
-2. Create `config.json`:
+2. Create `config.json` (or `config.defaults.json` for tracked base config):
    ```json
    {
      "id": "myagent",
@@ -217,6 +217,15 @@ The user is conceptually an agent too - just with a different interface (Web UI/
 4. Restart the application
 
 No Python code needed for new agents.
+
+### Layered Config
+
+Agent config supports a layered pattern for separating tracked defaults from user overrides:
+- `config.defaults.json` - Base config tracked in git (read-only)
+- `config.json` - User overrides (gitignored, deep-merged on top of defaults)
+
+At load time, both files are deep-merged with `config.json` taking precedence.
+This allows plugins/skills to customize agent config without modifying tracked files.
 
 ## Adding a New Skill
 
