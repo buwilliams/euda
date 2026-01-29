@@ -217,6 +217,24 @@ Executes a skill command.
 
 ## Creating a New Skill
 
+Use the `autobot` skill to create and manage skills:
+
+```bash
+# Create a new skill
+euno skills autobot skill weather -d "Weather forecasts"
+
+# Create with commands/ subdirectory structure
+euno skills autobot skill github -d "GitHub integration" --with-commands
+
+# Add a command to an existing skill
+euno skills autobot command weather forecast -d "Get weather forecast"
+
+# Validate skill structure
+euno skills autobot validate weather
+```
+
+### Manual Creation
+
 1. Create directory: `skills/{name}/`
 2. Create `cli.py`:
    ```python
@@ -237,6 +255,47 @@ Executes a skill command.
        main()
    ```
 3. Skills are auto-discovered on next invocation
+
+## Autobot Skill
+
+The autobot skill provides full skill lifecycle management. Use it to create, update, debug, and manage all skills.
+
+### Autobot Commands
+
+**Skill Creation**
+- `autobot skill <name> [-d desc] [--with-commands] [--force]` - Create a new skill
+- `autobot command <skill> <command> [-d desc] [--dry-run]` - Add a command to an existing skill
+
+**File Operations**
+- `autobot read <skill> [file]` - Read a skill file (default: cli.py)
+- `autobot write <skill> <file> <content>` - Write content to a skill file
+- `autobot append <skill> <file> <content>` - Append content to a skill file
+- `autobot edit <skill> <file> --find <text> --replace <text> [--all]` - Find/replace in a file
+- `autobot files <skill>` - List files in a skill directory
+
+**Management**
+- `autobot list` - List all available skills
+- `autobot delete <skill> [file] [--force]` - Delete a skill or file within a skill
+- `autobot validate <skill> [--fix]` - Validate skill structure and conventions
+- `autobot test <skill>` - Test a skill by running its --help command
+
+### Examples
+
+```bash
+# Create and populate a new skill
+euno skills autobot skill weather -d "Weather forecasts"
+euno skills autobot command weather forecast -d "Get weather forecast"
+euno skills autobot test weather
+
+# Edit an existing skill
+euno skills autobot edit weather cli.py --find "old_name" --replace "new_name" --all
+
+# Validate and fix issues
+euno skills autobot validate weather --fix
+
+# Clean up a test skill
+euno skills autobot delete testskill --force
+```
 
 ## Error Handling
 

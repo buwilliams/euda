@@ -12,7 +12,7 @@ Responsibilities:
 import json
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -28,6 +28,25 @@ from ..events import EventBus, set_event_bus, get_event_bus, emit_system_event
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
 SYSTEM_STATE_PATH = DATA_DIR / "system" / "state.json"
+
+# Interval durations for interval-based triggers
+INTERVAL_DURATIONS = {
+    "minute": timedelta(minutes=1),
+    "hourly": timedelta(hours=1),
+    "daily": timedelta(days=1),
+    "weekly": timedelta(days=7),
+    "biweekly": timedelta(days=14),
+    "monthly": timedelta(days=30),
+    "bimonthly": timedelta(days=60),
+    "quarterly": timedelta(days=90),
+    "semiannually": timedelta(days=180),
+    "annually": timedelta(days=365),
+    "biennially": timedelta(days=730),
+    "decadal": timedelta(days=3650),
+    "generational": timedelta(days=9125),  # 25 years
+    "centennial": timedelta(days=36500),
+    "millennial": timedelta(days=365000),
+}
 
 # Global manager instance for tools to access
 _manager_instance: 'AgentManager' = None
@@ -330,6 +349,121 @@ class AgentManager:
         state["last_ran"] = datetime.now().isoformat()
         self._save_agent_state(agent_id, state)
 
+    def _get_trigger_key(self, trigger: dict) -> str:
+        """Generate a unique key for a trigger.
+
+        Format: interval:hourly:euno:quote (event + topic_name)
+
+        Args:
+            trigger: Trigger configuration dict
+
+        Returns:
+            Unique trigger key string
+        """
+        event = trigger.get("event", "")
+        topic_name = trigger.get("topic_name", "")
+        return f"{event}:{topic_name}"
+
+    def _get_trigger_state(self, agent_id: str, trigger_key: str) -> dict:
+        """Get state for a specific trigger.
+
+        Args:
+            agent_id: The agent ID
+            trigger_key: The trigger key from _get_trigger_key()
+
+        Returns:
+            Trigger state dict with last_ran and next_run
+        """
+        state = self._get_agent_state(agent_id)
+        triggers_state = state.get("triggers", {})
+        return triggers_state.get(trigger_key, {})
+
+    def _save_trigger_state(self, agent_id: str, trigger_key: str, trigger_state: dict):
+        """Save state for a specific trigger.
+
+        Args:
+            agent_id: The agent ID
+            trigger_key: The trigger key from _get_trigger_key()
+            trigger_state: Dict with last_ran and next_run
+        """
+        state = self._get_agent_state(agent_id)
+        if "triggers" not in state:
+            state["triggers"] = {}
+        state["triggers"][trigger_key] = trigger_state
+        self._save_agent_state(agent_id, state)
+
+    def _calculate_next_run(self, interval: str, last_ran: datetime) -> datetime:
+        """Calculate the next run time for an interval trigger.
+
+        Args:
+            interval: Interval name (e.g., "hourly", "daily")
+            last_ran: When the trigger last ran
+
+        Returns:
+            Next run datetime
+        """
+        duration = INTERVAL_DURATIONS.get(interval)
+        if not duration:
+            return last_ran  # Unknown interval, don't schedule
+        return last_ran + duration
+
+    def _should_fire_interval_trigger(self, agent_id: str, trigger: dict) -> bool:
+        """Check if an interval trigger should fire.
+
+        Args:
+            agent_id: The agent ID
+            trigger: Trigger configuration dict
+
+        Returns:
+            True if the trigger should fire
+        """
+        event = trigger.get("event", "")
+        if not event.startswith("interval:"):
+            return False
+
+        interval = event.split(":", 1)[1]
+        if interval not in INTERVAL_DURATIONS:
+            return False
+
+        trigger_key = self._get_trigger_key(trigger)
+        trigger_state = self._get_trigger_state(agent_id, trigger_key)
+
+        now = datetime.now()
+
+        # If never run, fire immediately
+        if not trigger_state.get("last_ran"):
+            return True
+
+        # Check if we've passed next_run time
+        next_run_str = trigger_state.get("next_run")
+        if next_run_str:
+            next_run = datetime.fromisoformat(next_run_str)
+            return now >= next_run
+
+        # Fallback: calculate from last_ran
+        last_ran = datetime.fromisoformat(trigger_state["last_ran"])
+        next_run = self._calculate_next_run(interval, last_ran)
+        return now >= next_run
+
+    def _update_interval_trigger_state(self, agent_id: str, trigger: dict):
+        """Update the state for an interval trigger after it fires.
+
+        Args:
+            agent_id: The agent ID
+            trigger: Trigger configuration dict
+        """
+        event = trigger.get("event", "")
+        interval = event.split(":", 1)[1]
+
+        now = datetime.now()
+        next_run = self._calculate_next_run(interval, now)
+
+        trigger_key = self._get_trigger_key(trigger)
+        self._save_trigger_state(agent_id, trigger_key, {
+            "last_ran": now.isoformat(),
+            "next_run": next_run.isoformat()
+        })
+
     def _check_missed_triggers(self) -> set:
         """Check if morning or evening triggers were missed since last run.
 
@@ -406,7 +540,7 @@ class AgentManager:
         return False
 
     def _emit_startup_triggers(self):
-        """Create topics for any missed time triggers at startup."""
+        """Create topics for any missed time triggers and interval triggers at startup."""
         from src.core.data.topics import create_topic, get_agent_inbox_topic
 
         today = datetime.now().strftime("%Y-%m-%d")
@@ -454,6 +588,43 @@ class AgentManager:
             if "time:evening" in missed:
                 state["last_evening"] = today
             self._save_system_state(state)
+
+        # Check for missed interval triggers at startup
+        for agent_id, agent in self.agents.items():
+            config = agent.config
+            if config.get("state", "enabled") == "disabled":
+                continue
+
+            # Get agent's inbox topic as parent for all trigger topics
+            inbox = get_agent_inbox_topic(agent_id)
+            parent_id = inbox["id"] if inbox else None
+
+            triggers = self._get_agent_triggers(config)
+            for trigger in triggers:
+                event = trigger.get("event", "")
+                if not event.startswith("interval:"):
+                    continue
+
+                # Check if this interval trigger should have fired
+                if self._should_fire_interval_trigger(agent_id, trigger):
+                    topic_name = trigger.get("topic_name")
+                    topic_desc = trigger.get("topic_description", f"Missed interval {topic_name}")
+
+                    # Check for duplicate - only one pending at a time
+                    if not self._has_open_internal_topic(topic_name, agent_id):
+                        print(f"[startup] Creating missed interval topic: {topic_name} for {agent_id}")
+                        create_topic(
+                            name=topic_name,
+                            description=topic_desc,
+                            parent_id=parent_id,
+                            assignee=agent_id,
+                            tags=[topic_name],
+                            due_date=None,
+                            created_by="system"
+                        )
+
+                    # Update trigger state
+                    self._update_interval_trigger_state(agent_id, trigger)
 
     def _run_agent_loop(self, agent: Agent, stop_event: threading.Event):
         """Run an agent's work loop - monitors health while agent polls for topics.
@@ -612,6 +783,43 @@ class AgentManager:
                             state = self._get_system_state()
                             state[f"last_{name}"] = today
                             self._save_system_state(state)
+
+                # Process interval-based triggers
+                for agent_id, agent in self.agents.items():
+                    config = agent.config
+                    if config.get("state", "enabled") == "disabled":
+                        continue
+
+                    # Get agent's inbox topic as parent for all trigger topics
+                    inbox = get_agent_inbox_topic(agent_id)
+                    parent_id = inbox["id"] if inbox else None
+
+                    triggers = self._get_agent_triggers(config)
+                    for trigger in triggers:
+                        event = trigger.get("event", "")
+                        if not event.startswith("interval:"):
+                            continue
+
+                        # Check if this interval trigger should fire
+                        if self._should_fire_interval_trigger(agent_id, trigger):
+                            topic_name = trigger.get("topic_name")
+                            topic_desc = trigger.get("topic_description", f"Interval {topic_name}")
+
+                            # Check for duplicate - only one pending at a time
+                            if not self._has_open_internal_topic(topic_name, agent_id):
+                                print(f"[scheduler] Creating interval topic: {topic_name} for {agent_id}")
+                                create_topic(
+                                    name=topic_name,
+                                    description=topic_desc,
+                                    parent_id=parent_id,
+                                    assignee=agent_id,
+                                    tags=[topic_name],
+                                    due_date=None,
+                                    created_by="system"
+                                )
+
+                            # Update trigger state (even if topic already exists, mark as handled)
+                            self._update_interval_trigger_state(agent_id, trigger)
 
             except Exception as e:
                 print(f"Scheduler error: {e}")
