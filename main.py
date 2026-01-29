@@ -605,7 +605,7 @@ The --delete flag propagates deletions (requires --push or --pull):
         return
 
     if subcommand == "conflicts":
-        interactive = "-i" in args or "--interactive" in args
+        non_interactive = "--non-interactive" in args
 
         # List unresolved conflicts
         conflicts = list_conflicts(resolved=False)
@@ -618,34 +618,26 @@ The --delete flag propagates deletions (requires --push or --pull):
             print("No unresolved conflicts.")
             return
 
-        if interactive:
-            resolved_count = 0
-            skipped_count = 0
+        if non_interactive:
+            print(f"Found {len(conflicts)} unresolved conflict(s):\n")
             for c in conflicts:
                 print(f"  [{c.id}] {c.type.value}: {c.description}")
                 print(f"    Item: {c.item_id}")
                 if c.local_timestamp and c.remote_timestamp:
                     print(f"    Local: {c.local_timestamp}")
                     print(f"    Remote: {c.remote_timestamp}")
-                try:
-                    choice = input("  [l]ocal / [r]emote / [s]kip (l/r/s): ").strip().lower()
-                except (EOFError, KeyboardInterrupt):
-                    print("\nAborted.")
-                    break
-                if choice == "l":
-                    resolve_conflict(c.id, Resolution.KEEP_LOCAL)
-                    resolved_count += 1
-                    print("  -> Kept local\n")
-                elif choice == "r":
-                    resolve_conflict(c.id, Resolution.KEEP_REMOTE)
-                    resolved_count += 1
-                    print("  -> Kept remote\n")
-                else:
-                    skipped_count += 1
-                    print("  -> Skipped\n")
-            print(f"Done: {resolved_count} resolved, {skipped_count} skipped.")
+                print()
+
+            print("Resolve with:")
+            print("  euno sync resolve <id> --keep-local")
+            print("  euno sync resolve <id> --keep-remote")
+            print("  euno sync resolve --keep-remote       (all conflicts)")
+            print("  euno sync resolve --clear             (delete resolved conflicts)")
             return
 
+        # Interactive mode (default)
+        resolved_count = 0
+        skipped_count = 0
         print(f"Found {len(conflicts)} unresolved conflict(s):\n")
         for c in conflicts:
             print(f"  [{c.id}] {c.type.value}: {c.description}")
@@ -653,13 +645,23 @@ The --delete flag propagates deletions (requires --push or --pull):
             if c.local_timestamp and c.remote_timestamp:
                 print(f"    Local: {c.local_timestamp}")
                 print(f"    Remote: {c.remote_timestamp}")
-            print()
-
-        print("Resolve with:")
-        print("  euno sync resolve <id> --keep-local")
-        print("  euno sync resolve <id> --keep-remote")
-        print("  euno sync resolve --keep-remote       (all conflicts)")
-        print("  euno sync resolve --clear             (delete resolved conflicts)")
+            try:
+                choice = input("  [l]ocal / [r]emote / [s]kip (l/r/s): ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                print("\nAborted.")
+                break
+            if choice == "l":
+                resolve_conflict(c.id, Resolution.KEEP_LOCAL)
+                resolved_count += 1
+                print("  -> Kept local\n")
+            elif choice == "r":
+                resolve_conflict(c.id, Resolution.KEEP_REMOTE)
+                resolved_count += 1
+                print("  -> Kept remote\n")
+            else:
+                skipped_count += 1
+                print("  -> Skipped\n")
+        print(f"Done: {resolved_count} resolved, {skipped_count} skipped.")
         return
 
     if subcommand == "resolve":
@@ -795,10 +797,46 @@ The --delete flag propagates deletions (requires --push or --pull):
             print(f"  [{change.type}] {change.handler}: {change.description} ({status})")
 
     if result.conflicts:
+        non_interactive = "--non-interactive" in args
         print(f"\n{len(result.conflicts)} conflict(s) detected.")
-        print("Run 'euno sync conflicts' to view and resolve.")
-        print("Server was restarted - resolve conflicts and run sync again.")
-        sys.exit(1)
+
+        if non_interactive:
+            print("Run 'euno sync conflicts' to view and resolve.")
+            print("Server was restarted - resolve conflicts and run sync again.")
+            sys.exit(1)
+
+        # Interactive conflict resolution
+        conflicts = list_conflicts(resolved=False)
+        if conflicts:
+            print()
+            resolved_count = 0
+            skipped_count = 0
+            for c in conflicts:
+                print(f"  [{c.id}] {c.type.value}: {c.description}")
+                print(f"    Item: {c.item_id}")
+                if c.local_timestamp and c.remote_timestamp:
+                    print(f"    Local: {c.local_timestamp}")
+                    print(f"    Remote: {c.remote_timestamp}")
+                try:
+                    choice = input("  [l]ocal / [r]emote / [s]kip (l/r/s): ").strip().lower()
+                except (EOFError, KeyboardInterrupt):
+                    print("\nAborted.")
+                    break
+                if choice == "l":
+                    resolve_conflict(c.id, Resolution.KEEP_LOCAL)
+                    resolved_count += 1
+                    print("  -> Kept local\n")
+                elif choice == "r":
+                    resolve_conflict(c.id, Resolution.KEEP_REMOTE)
+                    resolved_count += 1
+                    print("  -> Kept remote\n")
+                else:
+                    skipped_count += 1
+                    print("  -> Skipped\n")
+            print(f"Done: {resolved_count} resolved, {skipped_count} skipped.")
+            if skipped_count > 0:
+                print("Run 'euno sync conflicts' to resolve remaining.")
+                sys.exit(1)
 
     # Show server restart status
     if result.server_restarted:
