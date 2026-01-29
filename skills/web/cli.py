@@ -1,4 +1,7 @@
-"""Web skill for Euno - Fetch, extract, and monitor web content."""
+"""Web skill for Euno - Save and monitor web content.
+
+For fetching/extracting web content, use: web_search extract <url>
+"""
 
 import sys
 from pathlib import Path
@@ -9,16 +12,15 @@ import typer
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from skills.web.commands import fetch, save, watch
+from skills.web.commands import save, watch
 
 app = typer.Typer(
     name="web",
-    help="Fetch, extract, and monitor web content.",
+    help="Save and monitor web content. For extraction, use: web_search extract <url>",
     no_args_is_help=True,
 )
 
 # Register commands
-app.command(name="fetch")(fetch.fetch)
 app.command(name="save")(save.save)
 app.add_typer(watch.app, name="watch", help="Monitor pages for changes")
 

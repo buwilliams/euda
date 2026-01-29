@@ -1,40 +1,45 @@
 # Web Skill Specification
 
-Fetch, extract, and monitor web content for Euno agents.
+Save and monitor web content for Euno agents.
 
 ## Overview
 
-The web skill enables agents to retrieve information from the web. It is **not** a general search engine (that's handled by the Tavily skill) but rather a tool for:
-- Fetching specific URLs
-- Extracting readable content from pages
-- Saving reference material to topics
-- Monitoring pages for changes
+The web skill enables agents to save reference material and monitor pages for changes. It works alongside the **web_search** skill:
 
-Euno is a polite web citizen: all requests are rate-limited (1s minimum between requests per host, max 2 concurrent per host).
+- **web_search search** — Search the web using Tavily API
+- **web_search extract** — Extract content from URLs using Tavily API
+- **web save** — Save extracted content to topic assets (uses Tavily)
+- **web watch** — Monitor pages for changes (uses local HTTP + BeautifulSoup, free)
+
+Euno is a polite web citizen: watch requests are rate-limited (1s minimum between requests per host, max 2 concurrent per host).
 
 ## Use Cases
 
-| Pattern | Persistence | Example |
-|---------|-------------|---------|
-| **Lookup** | None (chat only) | Fetch a page to answer a question |
-| **Search** | Short-term memory | Query a job board, compare options |
-| **Reference** | Topic asset | Save documentation for later |
-| **Monitor** | Trigger + memory | Watch for job postings, track changes |
+| Pattern | Skill | Persistence | Example |
+|---------|-------|-------------|---------|
+| **Search** | web_search search | Short-term memory | Find job postings, news |
+| **Lookup** | web_search extract | None (chat only) | Extract a page to answer a question |
+| **Reference** | web save | Topic asset | Save documentation for later |
+| **Monitor** | web watch | Trigger + memory | Watch for job postings, track changes |
 
 ## Directory Structure
 
 ```
 skills/
 ├── common/              # Shared utilities (HTTPClient, content extraction)
-└── web/
+├── web/                 # Save and monitor commands
+│   ├── cli.py           # Typer CLI entry point
+│   ├── commands/
+│   │   ├── save.py      # Save content to topic assets (uses Tavily)
+│   │   └── watch.py     # Monitor pages for changes (uses HTTPClient)
+│   └── lib/
+│       ├── storage.py   # Watch list persistence
+│       └── diff.py      # Change detection
+└── web_search/          # Search and extract commands
     ├── cli.py           # Typer CLI entry point
-    ├── commands/
-    │   ├── fetch.py     # Fetch and extract content
-    │   ├── save.py      # Save content to topic assets
-    │   └── watch.py     # Monitor pages for changes
     └── lib/
-        ├── storage.py   # Watch list persistence
-        └── diff.py      # Change detection
+        ├── search.py    # Tavily Search API
+        └── extract.py   # Tavily Extract API
 ```
 
 Data storage:
@@ -48,49 +53,20 @@ data/skills/web/
 
 ## Commands
 
-### fetch
-
-Fetch a URL and extract readable content.
-
-```bash
-web fetch <url> [--raw] [--timeout SECONDS] [--credentials ID]
-```
-
-**Arguments:**
-- `url` — URL to fetch (required)
-- `--raw` — Return raw HTML instead of extracted content
-- `--timeout` — Request timeout in seconds (default: 30)
-- `--credentials` — Credential ID for authenticated sites (future, currently ignored)
-
-**Output:**
-```
-Title: Example Article
-URL: https://example.com/article
-
----
-
-[Extracted plain text content...]
-```
-
-**Errors:**
-- Connection failed → exit 1, stderr message
-- HTTP error (4xx/5xx) → exit 1, stderr with status code
-- Content extraction failed → exit 1, stderr message
-
 ### save
 
-Fetch a URL and save content as a topic asset.
+Extract content from a URL and save as a topic asset.
 
 ```bash
-web save <url> <topic_id> [--filename NAME] [--format FORMAT] [--credentials ID]
+web save <url> <topic_id> [--filename NAME] [--format FORMAT] [--depth DEPTH]
 ```
 
 **Arguments:**
-- `url` — URL to fetch (required)
+- `url` — URL to extract (required)
 - `topic_id` — Topic to attach asset to (required)
-- `--filename` — Asset filename (default: derived from URL/title)
-- `--format` — Output format: `text`, `markdown`, `html` (default: markdown)
-- `--credentials` — Credential ID for authenticated sites (future, currently ignored)
+- `--filename` — Asset filename (default: derived from URL)
+- `--format` — Output format: `text` or `markdown` (default: markdown)
+- `--depth` — Extraction depth: `basic` or `advanced` (default: basic)
 
 **Output:**
 ```
@@ -99,10 +75,14 @@ Topic: abc123
 ```
 
 **Behavior:**
-- Fetches URL and extracts content
+- Uses Tavily Extract API for high-quality content extraction
 - Converts to requested format
 - Saves as topic asset via core skill
 - Returns confirmation with filename and size
+
+**Cost:** 1 credit per 5 URLs (basic) or 2 credits per 5 URLs (advanced)
+
+> **Note:** For one-time content extraction without saving, use `web_search extract <url>`
 
 ### watch add
 
@@ -320,11 +300,20 @@ The `web save` command integrates with the core topic/asset system:
 
 ### Content Extraction
 
-Uses `skills.common.extract_main_content()` which:
-1. Removes script, style, nav, header, footer, aside elements
-2. Looks for semantic containers: `<article>`, `<main>`
-3. Falls back to common class patterns: `.post-content`, `.entry-content`, etc.
-4. Last resort: `<body>` content
+Two extraction methods are used:
+
+**Tavily Extract API** (used by `web save` and `web_search extract`):
+- High-quality extraction via Tavily's infrastructure
+- Costs credits (1 credit per 5 URLs basic, 2 credits per 5 URLs advanced)
+- Better handling of complex page structures
+
+**Local extraction** (used by `web watch`):
+- Uses `skills.common.extract_main_content()` with BeautifulSoup
+- Free, no API credits required
+- Good enough for change detection
+- Removes script, style, nav, header, footer, aside elements
+- Looks for semantic containers: `<article>`, `<main>`
+- Falls back to common class patterns: `.post-content`, `.entry-content`, etc.
 
 ### Change Detection
 
@@ -365,9 +354,9 @@ and let you know when new positions are posted.
 > web watch check
 
 Agent: Good news! The Python Jobs page has 3 new postings since yesterday.
-Would you like me to fetch the details?
+Would you like me to extract the details?
 
-> web fetch "https://jobs.example.com/posting/123"
+> web_search extract "https://jobs.example.com/posting/123"
 ```
 
 ### Reference Documentation Workflow
@@ -375,7 +364,7 @@ Would you like me to fetch the details?
 ```
 User: Save the React hooks documentation to my "Learning React" topic.
 
-Agent: I'll fetch and save that documentation.
+Agent: I'll extract and save that documentation.
 
 > web save "https://react.dev/reference/react/hooks" topic-abc123 --filename "hooks-reference.md"
 
@@ -390,7 +379,7 @@ User: What does the Euno project README say about installation?
 
 Agent: Let me check.
 
-> web fetch "https://github.com/example/euno/blob/main/README.md"
+> web_search extract "https://github.com/example/euno/blob/main/README.md"
 
 Agent: According to the README, installation requires...
 [Agent summarizes content, doesn't persist anywhere]
