@@ -75,7 +75,7 @@ EUNO_SERVER=root@<ip>
 # Add your LLM provider API key (at least one required)
 
 # 4. Run setup (first time only)
-./devops/setup-server.sh
+euno server-setup
 
 # 5. Deploy code and sync data
 euno sync

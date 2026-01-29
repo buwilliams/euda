@@ -452,10 +452,9 @@ class Transport:
         excludes = [
             ".git/",
             ".venv/",
-            "data/",
+            "/data/",
             "__pycache__/",
             "*.pyc",
-            ".env",
             "*.egg-info/",
             ".pytest_cache/",
             ".mypy_cache/",
