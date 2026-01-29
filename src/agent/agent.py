@@ -74,11 +74,19 @@ class Agent:
         return bus.wait_for_event(self.id, timeout=timeout)
 
     def _load_config(self) -> dict:
-        """Load agent configuration from disk."""
-        config_path = AGENTS_DIR / self.id / "config.json"
-        if config_path.exists():
-            with open(config_path) as f:
-                return json.load(f)
+        """Load agent configuration from disk.
+
+        Uses layered config: config.defaults.json (base) + config.json (overrides).
+        """
+        from src.core.config import load_layered_config
+
+        agent_dir = AGENTS_DIR / self.id
+        config = load_layered_config(agent_dir)
+
+        if config:
+            return config
+
+        # Fallback defaults if no config files exist
         return {
             "id": self.id,
             "name": self.id.title(),

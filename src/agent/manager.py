@@ -63,6 +63,29 @@ def set_manager(manager: 'AgentManager'):
     _manager_instance = manager
 
 
+def _get_config_mtime(agent_dir: Path) -> float:
+    """Get the latest mtime of config files for an agent.
+
+    Checks both config.defaults.json and config.json, returns the latest.
+    Returns 0 if neither file exists.
+    """
+    defaults_path = agent_dir / "config.defaults.json"
+    overrides_path = agent_dir / "config.json"
+
+    mtime = 0.0
+    if defaults_path.exists():
+        mtime = max(mtime, defaults_path.stat().st_mtime)
+    if overrides_path.exists():
+        mtime = max(mtime, overrides_path.stat().st_mtime)
+
+    return mtime
+
+
+def _has_config(agent_dir: Path) -> bool:
+    """Check if an agent directory has config files."""
+    return (agent_dir / "config.defaults.json").exists() or (agent_dir / "config.json").exists()
+
+
 class AgentManager:
     """Manages the lifecycle of all agents."""
 
@@ -91,17 +114,25 @@ class AgentManager:
         return self._startup_complete.wait(timeout=timeout)
 
     def load_agent_configs(self) -> List[dict]:
-        """Load all agent configurations from data/agents/*/config.json."""
+        """Load all agent configurations from data/agents/*/.
+
+        Uses layered config: config.defaults.json (base) + config.json (overrides).
+        """
+        from src.core.config import load_layered_config
+
         configs = []
         if not AGENTS_DIR.exists():
             return configs
 
         for agent_dir in AGENTS_DIR.iterdir():
             if agent_dir.is_dir():
-                config_path = agent_dir / "config.json"
-                if config_path.exists():
-                    with open(config_path) as f:
-                        config = json.load(f)
+                # Check if either config file exists
+                defaults_path = agent_dir / "config.defaults.json"
+                overrides_path = agent_dir / "config.json"
+
+                if defaults_path.exists() or overrides_path.exists():
+                    config = load_layered_config(agent_dir)
+                    if config:
                         config["_dir"] = str(agent_dir)
                         configs.append(config)
 
@@ -118,9 +149,10 @@ class AgentManager:
         self.agents[agent_id] = agent
 
         # Track config modification time for reload detection
-        config_path = AGENTS_DIR / agent_id / "config.json"
-        if config_path.exists():
-            self._config_mtimes[agent_id] = config_path.stat().st_mtime
+        agent_dir = AGENTS_DIR / agent_id
+        mtime = _get_config_mtime(agent_dir)
+        if mtime > 0:
+            self._config_mtimes[agent_id] = mtime
 
         # Subscribe agent to system event triggers
         system_events = ["system:start", "chat:message_received", "topic:created", "topic:completed"]
@@ -160,18 +192,21 @@ class AgentManager:
         if agent_id in self.agents:
             return {"error": f"Agent {agent_id} is already running"}
 
-        # Load the agent's config
-        config_path = AGENTS_DIR / agent_id / "config.json"
-        if not config_path.exists():
+        # Load the agent's config (layered: defaults + overrides)
+        from src.core.config import load_layered_config
+
+        agent_dir = AGENTS_DIR / agent_id
+        if not _has_config(agent_dir):
             return {"error": f"Agent config not found: {agent_id}"}
 
-        with open(config_path) as f:
-            config = json.load(f)
-            config["_dir"] = str(AGENTS_DIR / agent_id)
+        config = load_layered_config(agent_dir)
+        if not config:
+            return {"error": f"Agent config not found: {agent_id}"}
+        config["_dir"] = str(agent_dir)
 
         # Track config mtime so watcher knows this agent was seen
         # (even if disabled, we don't want to keep re-registering)
-        self._config_mtimes[agent_id] = config_path.stat().st_mtime
+        self._config_mtimes[agent_id] = _get_config_mtime(agent_dir)
 
         # Sync agent inbox topics to create the inbox for this agent
         from src.core.data.topics import sync_agent_inbox_topics
@@ -269,21 +304,24 @@ class AgentManager:
         return {"reloaded": True, "agent_id": agent_id, "started": False, "note": "Agent is disabled"}
 
     def _watch_configs(self):
-        """Background thread that watches for config changes and reloads agents."""
+        """Background thread that watches for config changes and reloads agents.
+
+        Watches both config.defaults.json and config.json for layered config.
+        """
         check_interval = 2.0  # Check every 2 seconds
 
         while self.running:
             try:
                 # Check each agent's config for changes
                 for agent_id in list(self._config_mtimes.keys()):
-                    config_path = AGENTS_DIR / agent_id / "config.json"
-                    if not config_path.exists():
-                        # Config deleted - stop the agent
+                    agent_dir = AGENTS_DIR / agent_id
+                    if not _has_config(agent_dir):
+                        # Both config files deleted - stop the agent
                         print(f"Config deleted for agent {agent_id}, stopping...")
                         self.stop_agent(agent_id)
                         continue
 
-                    current_mtime = config_path.stat().st_mtime
+                    current_mtime = _get_config_mtime(agent_dir)
                     last_mtime = self._config_mtimes.get(agent_id, 0)
 
                     if current_mtime > last_mtime:
@@ -295,9 +333,8 @@ class AgentManager:
                     for agent_dir in AGENTS_DIR.iterdir():
                         if agent_dir.is_dir():
                             agent_id = agent_dir.name
-                            config_path = agent_dir / "config.json"
                             # Only register if not already tracked (running or seen)
-                            if config_path.exists() and agent_id not in self._config_mtimes:
+                            if _has_config(agent_dir) and agent_id not in self._config_mtimes:
                                 # New agent found - register it
                                 print(f"New agent found: {agent_id}, registering...")
                                 self.register_new_agent(agent_id)
@@ -938,9 +975,10 @@ class AgentManager:
         # Track disabled agents so config watcher doesn't keep trying to register them
         for config in disabled:
             agent_id = config["id"]
-            config_path = AGENTS_DIR / agent_id / "config.json"
-            if config_path.exists():
-                self._config_mtimes[agent_id] = config_path.stat().st_mtime
+            agent_dir = AGENTS_DIR / agent_id
+            mtime = _get_config_mtime(agent_dir)
+            if mtime > 0:
+                self._config_mtimes[agent_id] = mtime
 
         if not enabled:
             print("No enabled agents. Waiting...")

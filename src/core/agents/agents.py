@@ -24,7 +24,12 @@ BASE_TOOLS = [
 
 
 def list_agents() -> List[dict]:
-    """List all agents with their configurations."""
+    """List all agents with their configurations.
+
+    Uses layered config: config.defaults.json (base) + config.json (overrides).
+    """
+    from src.core.config import load_layered_config
+
     agents = []
 
     if not AGENTS_DIR.exists():
@@ -32,11 +37,9 @@ def list_agents() -> List[dict]:
 
     for agent_dir in AGENTS_DIR.iterdir():
         if agent_dir.is_dir():
-            config_path = agent_dir / "config.json"
-            if config_path.exists():
-                with open(config_path) as f:
-                    config = json.load(f)
-                    agents.append(config)
+            config = load_layered_config(agent_dir)
+            if config:
+                agents.append(config)
 
     return agents
 
@@ -49,7 +52,11 @@ def list_agents_for_routing() -> List[dict]:
     - name: Display name
     - purpose: First line/paragraph of identity (what they do)
     - enabled: Whether the agent is active
+
+    Uses layered config: config.defaults.json (base) + config.json (overrides).
     """
+    from src.core.config import load_layered_config
+
     agents = []
 
     if not AGENTS_DIR.exists():
@@ -57,12 +64,10 @@ def list_agents_for_routing() -> List[dict]:
 
     for agent_dir in AGENTS_DIR.iterdir():
         if agent_dir.is_dir():
-            config_path = agent_dir / "config.json"
             identity_path = agent_dir / "identity.md"
+            config = load_layered_config(agent_dir)
 
-            if config_path.exists():
-                with open(config_path) as f:
-                    config = json.load(f)
+            if config:
 
                 # Extract purpose from identity (first non-heading paragraph)
                 purpose = ""
@@ -86,7 +91,12 @@ def list_agents_for_routing() -> List[dict]:
 
 
 def get_agent(agent_id: str) -> Optional[dict]:
-    """Get detailed info about an agent."""
+    """Get detailed info about an agent.
+
+    Uses layered config: config.defaults.json (base) + config.json (overrides).
+    """
+    from src.core.config import load_layered_config
+
     agent_dir = AGENTS_DIR / agent_id
 
     if not agent_dir.exists():
@@ -94,11 +104,10 @@ def get_agent(agent_id: str) -> Optional[dict]:
 
     result = {"id": agent_id}
 
-    # Load config
-    config_path = agent_dir / "config.json"
-    if config_path.exists():
-        with open(config_path) as f:
-            result["config"] = json.load(f)
+    # Load config (layered)
+    config = load_layered_config(agent_dir)
+    if config:
+        result["config"] = config
 
     # Load identity
     identity_path = agent_dir / "identity.md"
@@ -129,30 +138,32 @@ def update_agent_identity_internal(agent_id: str, identity: str) -> dict:
 
 
 def get_agent_config(agent_id: str) -> Optional[dict]:
-    """Get an agent's configuration."""
-    config_path = AGENTS_DIR / agent_id / "config.json"
-    if config_path.exists():
-        with open(config_path) as f:
-            return json.load(f)
-    return None
+    """Get an agent's configuration.
+
+    Uses layered config: config.defaults.json (base) + config.json (overrides).
+    """
+    from src.core.config import load_layered_config
+
+    agent_dir = AGENTS_DIR / agent_id
+    return load_layered_config(agent_dir)
 
 
 def update_agent_config(agent_id: str, config: dict) -> dict:
     """Update an agent's configuration.
 
+    Writes to config.json (user overrides), preserving config.defaults.json.
     Note: Changes to triggers require a restart to take effect.
     """
+    from src.core.config import save_config_overrides
+
     agent_dir = AGENTS_DIR / agent_id
     if not agent_dir.exists():
         return {"error": f"Agent not found: {agent_id}"}
 
-    config_path = agent_dir / "config.json"
-
     # Preserve the id field
     config["id"] = agent_id
 
-    with open(config_path, "w") as f:
-        json.dump(config, f, indent=2)
+    save_config_overrides(agent_dir, config)
 
     return {"updated": True, "agent_id": agent_id, "config": config}
 
