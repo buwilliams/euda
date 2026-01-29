@@ -279,6 +279,9 @@ The autobot skill provides full skill lifecycle management. Use it to create, up
 - `autobot validate <skill> [--fix]` - Validate skill structure and conventions
 - `autobot test <skill>` - Test a skill by running its --help command
 
+**Execution & Debugging**
+- `autobot run <skill> <command> [-t timeout] [-e KEY=val]` - Execute a command and show output/errors
+
 ### Examples
 
 ```bash
@@ -286,6 +289,14 @@ The autobot skill provides full skill lifecycle management. Use it to create, up
 euno skills autobot skill weather -d "Weather forecasts"
 euno skills autobot command weather forecast -d "Get weather forecast"
 euno skills autobot test weather
+
+# Run a command and see output/errors
+euno skills autobot run weather forecast
+euno skills autobot run weather "forecast --city NYC"
+euno skills autobot run core "topics list --status todo"
+
+# Debug with custom environment variables
+euno skills autobot run myskill cmd -e API_KEY=abc123 -e DEBUG=1
 
 # Edit an existing skill
 euno skills autobot edit weather cli.py --find "old_name" --replace "new_name" --all

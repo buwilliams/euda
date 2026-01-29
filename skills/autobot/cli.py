@@ -611,6 +611,110 @@ def test_skill(
         raise typer.Exit(1)
 
 
+@app.command("run")
+def run_skill(
+    skill: str = typer.Argument(..., help="Skill name to run"),
+    command: str = typer.Argument(..., help="Command and arguments (e.g., 'forecast --city NYC')"),
+    timeout: int = typer.Option(
+        60, "--timeout", "-t",
+        help="Timeout in seconds (default: 60)"
+    ),
+    env: Optional[list[str]] = typer.Option(
+        None, "--env", "-e",
+        help="Environment variables (KEY=value format, can repeat)"
+    ),
+):
+    """Execute a skill command and show the output.
+
+    This is the primary debugging tool - run actual commands to see if they work.
+    Shows stdout, stderr, and exit code.
+
+    Examples:
+        autobot run weather forecast
+        autobot run weather "forecast --city NYC"
+        autobot run core "topics list --status todo"
+        autobot run myskill cmd -e API_KEY=abc123 -e DEBUG=1
+    """
+    import shlex
+    import subprocess
+
+    skill_dir = SKILLS_DIR / skill
+    cli_path = skill_dir / "cli.py"
+
+    if not cli_path.exists():
+        print(f"Error: Skill '{skill}' not found or missing cli.py")
+        raise typer.Exit(1)
+
+    # Parse command string into arguments
+    try:
+        cmd_args = shlex.split(command)
+    except ValueError as e:
+        print(f"Error parsing command: {e}")
+        raise typer.Exit(1)
+
+    # Build environment
+    run_env = os.environ.copy()
+
+    # Add Euno context variables
+    data_dir = os.environ.get("EUNO_DATA_DIR", str(Path(__file__).parent.parent.parent / "data"))
+    run_env["EUNO_DATA_DIR"] = data_dir
+    run_env["EUNO_SKILLS_DIR"] = str(SKILLS_DIR)
+
+    # Add any custom env vars
+    if env:
+        for e in env:
+            if "=" in e:
+                key, value = e.split("=", 1)
+                run_env[key] = value
+            else:
+                print(f"Warning: Invalid env format '{e}', expected KEY=value")
+
+    # Build full command
+    full_cmd = [sys.executable, str(cli_path)] + cmd_args
+
+    print(f"Running: {skill} {command}")
+    print("-" * 40)
+
+    try:
+        result = subprocess.run(
+            full_cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            cwd=str(skill_dir),
+            env=run_env
+        )
+
+        # Show output
+        if result.stdout:
+            print(result.stdout)
+
+        if result.stderr:
+            if result.stdout:
+                print()  # Blank line between stdout and stderr
+            print("STDERR:")
+            print(result.stderr)
+
+        # Show exit code
+        print("-" * 40)
+        if result.returncode == 0:
+            print(f"Exit code: 0 (success)")
+        else:
+            print(f"Exit code: {result.returncode} (error)")
+            raise typer.Exit(result.returncode)
+
+    except subprocess.TimeoutExpired:
+        print("-" * 40)
+        print(f"Error: Command timed out after {timeout} seconds")
+        raise typer.Exit(124)  # Standard timeout exit code
+    except FileNotFoundError:
+        print(f"Error: Python interpreter not found")
+        raise typer.Exit(1)
+    except Exception as e:
+        print(f"Error running command: {e}")
+        raise typer.Exit(1)
+
+
 def _list_skill_files(skill_dir: Path) -> list[str]:
     """List relevant files in a skill directory."""
     files = []
