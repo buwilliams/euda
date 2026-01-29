@@ -1,4 +1,4 @@
-"""Search the web for current information and fetch webpage content."""
+"""Search the web for current information and extract webpage content."""
 
 import sys
 from pathlib import Path
@@ -12,7 +12,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 app = typer.Typer(
     name="web_search",
-    help="Search the web for information and/or fetch webpage content.",
+    help="Search the web for information and extract webpage content.",
     no_args_is_help=True,
 )
 
@@ -80,55 +80,51 @@ def search_cmd(
         print()
 
 
-@app.command("fetch")
-def fetch_cmd(
-    url: str = typer.Argument(..., help="URL to fetch"),
+@app.command("extract")
+def extract_cmd(
+    url: str = typer.Argument(..., help="URL to extract content from"),
     query: Optional[str] = typer.Option(
         None, "--query", "-q",
-        help="Extract paragraphs relevant to this query"
+        help="Rerank extracted content by relevance to this query"
     ),
-    max_chars: int = typer.Option(
-        8000, "--max-chars", "-m",
-        help="Maximum characters to return (default: 8000)"
+    format: str = typer.Option(
+        "markdown", "--format", "-f",
+        help="Output format: 'markdown' or 'text'"
     ),
-    offset: int = typer.Option(
-        0, "--offset", "-o",
-        help="Character offset for sequential pagination (ignored if --query is set)"
+    depth: str = typer.Option(
+        "basic", "--depth", "-d",
+        help="Extraction depth: 'basic' (1 credit/5 URLs) or 'advanced' (2 credits/5 URLs)"
     ),
 ):
-    """Fetch a webpage and extract its main text content.
+    """Extract content from a webpage using Tavily Extract API.
 
-    Two modes:
-    - With --query: Returns most relevant paragraphs matching the query
-    - Without --query: Returns sequential chunks, use --offset to paginate
+    Extracts the main content from a URL in markdown or text format.
+    Use --query to rerank content chunks by relevance.
+
+    Cost: 1 credit per 5 URLs (basic) or 2 credits per 5 URLs (advanced)
+
+    Requires TAVILY_API_KEY environment variable to be set.
     """
-    from skills.web_search.lib.fetch import fetch_url
+    from skills.web_search.lib.extract import extract_url
 
-    result = fetch_url(url=url, max_chars=max_chars, offset=offset, query=query)
+    result = extract_url(
+        url=url,
+        query=query,
+        format=format,
+        extract_depth=depth,
+    )
 
     if "error" in result:
         print(f"Error: {result['error']}")
         raise typer.Exit(1)
 
-    total = result.get('total_chars', 0)
-    mode = result.get('mode', 'sequential')
-
     print(f"URL: {result.get('url', url)}")
-    print(f"Title: {result.get('title', 'Unknown')}")
-
-    if mode == "relevance":
-        paras_returned = result.get('paragraphs_returned', 0)
-        paras_total = result.get('paragraphs_total', 0)
-        print(f"Query: {result.get('query', '')}")
-        print(f"Paragraphs: {paras_returned} of {paras_total} (relevance mode)")
-        print(f"Total page: {total:,} chars")
-    else:
-        current_offset = result.get('offset', 0)
-        content_len = len(result.get('content', ''))
-        print(f"Content: {current_offset:,}-{current_offset + content_len:,} of {total:,} chars (sequential mode)")
+    print(f"Total: {result.get('total_chars', 0):,} chars")
+    if query:
+        print(f"Query: {query}")
 
     print()
-    print(result.get("content", "No content found"))
+    print(result.get("content", "No content extracted"))
 
 
 def main():
