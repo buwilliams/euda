@@ -195,11 +195,19 @@ Executes a skill command.
 
 ### Agents
 - `agents list`
-- `agents show <id>`
-- `agents create <id> <name> <purpose>`
-- `agents enable <id>`
-- `agents disable <id>`
-- `agents delete <id>`
+- `agents show <agent_name>`
+- `agents create <agent_name> <name> <purpose>`
+- `agents enable <agent_name>`
+- `agents disable <agent_name>`
+- `agents pause <agent_name> [--reason]`
+- `agents resume <agent_name>`
+- `agents status <agent_name>`
+- `agents triggers <agent_name>`
+- `agents trigger <agent_name> <topic_name> [-d desc]`
+- `agents usage <agent_name>`
+- `agents reset-usage <agent_name>`
+- `agents config <agent_name>`
+- `agents delete <agent_name>`
 - `agents tools`
 
 ### Store
