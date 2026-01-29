@@ -611,89 +611,58 @@ def test_skill(
         raise typer.Exit(1)
 
 
-@app.command("run")
-def run_skill(
-    skill: str = typer.Argument(..., help="Skill name to run"),
-    command: str = typer.Argument(..., help="Command and arguments (e.g., 'forecast --city NYC')"),
+@app.command("shell")
+def shell_command(
+    skill: str = typer.Argument(..., help="Skill name (determines working directory)"),
+    command: str = typer.Argument(..., help="Shell command to execute"),
     timeout: int = typer.Option(
         60, "--timeout", "-t",
         help="Timeout in seconds (default: 60)"
     ),
-    env: Optional[list[str]] = typer.Option(
-        None, "--env", "-e",
-        help="Environment variables (KEY=value format, can repeat)"
-    ),
 ):
-    """Execute a skill command and show the output.
+    """Execute a shell command in the skill's directory.
 
-    This is the primary debugging tool - run actual commands to see if they work.
-    Shows stdout, stderr, and exit code.
+    Use this for development tasks like checking imports, running tests,
+    or any terminal operation needed while building a skill.
 
     Examples:
-        autobot run weather forecast
-        autobot run weather "forecast --city NYC"
-        autobot run core "topics list --status todo"
-        autobot run myskill cmd -e API_KEY=abc123 -e DEBUG=1
+        autobot shell weather "python -c 'import requests; print(requests.__version__)'"
+        autobot shell weather "python cli.py forecast --city NYC"
+        autobot shell weather "ls -la"
+        autobot shell weather "python -m py_compile cli.py"
     """
     import shlex
     import subprocess
 
     skill_dir = SKILLS_DIR / skill
-    cli_path = skill_dir / "cli.py"
 
-    if not cli_path.exists():
-        print(f"Error: Skill '{skill}' not found or missing cli.py")
+    if not skill_dir.exists():
+        print(f"Error: Skill '{skill}' not found")
         raise typer.Exit(1)
 
-    # Parse command string into arguments
-    try:
-        cmd_args = shlex.split(command)
-    except ValueError as e:
-        print(f"Error parsing command: {e}")
-        raise typer.Exit(1)
-
-    # Build environment
-    run_env = os.environ.copy()
-
-    # Add Euno context variables
-    data_dir = os.environ.get("EUNO_DATA_DIR", str(Path(__file__).parent.parent.parent / "data"))
-    run_env["EUNO_DATA_DIR"] = data_dir
-    run_env["EUNO_SKILLS_DIR"] = str(SKILLS_DIR)
-
-    # Add any custom env vars
-    if env:
-        for e in env:
-            if "=" in e:
-                key, value = e.split("=", 1)
-                run_env[key] = value
-            else:
-                print(f"Warning: Invalid env format '{e}', expected KEY=value")
-
-    # Build full command
-    full_cmd = [sys.executable, str(cli_path)] + cmd_args
-
-    print(f"Running: {skill} {command}")
+    print(f"$ {command}")
     print("-" * 40)
 
     try:
+        # Run command through shell for full shell features
         result = subprocess.run(
-            full_cmd,
+            command,
+            shell=True,
             capture_output=True,
             text=True,
             timeout=timeout,
-            cwd=str(skill_dir),
-            env=run_env
+            cwd=str(skill_dir)
         )
 
         # Show output
         if result.stdout:
-            print(result.stdout)
+            print(result.stdout, end="")
 
         if result.stderr:
-            if result.stdout:
-                print()  # Blank line between stdout and stderr
-            print("STDERR:")
-            print(result.stderr)
+            if result.stdout and not result.stdout.endswith('\n'):
+                print()
+            print("STDERR:", file=sys.stderr)
+            print(result.stderr, end="", file=sys.stderr)
 
         # Show exit code
         print("-" * 40)
@@ -706,12 +675,159 @@ def run_skill(
     except subprocess.TimeoutExpired:
         print("-" * 40)
         print(f"Error: Command timed out after {timeout} seconds")
-        raise typer.Exit(124)  # Standard timeout exit code
-    except FileNotFoundError:
-        print(f"Error: Python interpreter not found")
-        raise typer.Exit(1)
+        raise typer.Exit(124)
     except Exception as e:
         print(f"Error running command: {e}")
+        raise typer.Exit(1)
+
+
+@app.command("deps")
+def manage_deps(
+    action: str = typer.Argument(..., help="Action: add, remove, list, check"),
+    package: Optional[str] = typer.Argument(None, help="Package name (for add/remove)"),
+):
+    """Manage project dependencies using uv.
+
+    Actions:
+      add <package>    - Add a package (e.g., 'requests', 'httpx>=0.25')
+      remove <package> - Remove a package
+      list             - List installed packages
+      check <skill>    - Check if a skill's imports are available
+
+    Examples:
+        autobot deps add requests
+        autobot deps add "httpx>=0.25"
+        autobot deps remove requests
+        autobot deps list
+        autobot deps check weather
+    """
+    import subprocess
+
+    # Get project root (parent of skills/)
+    project_root = SKILLS_DIR.parent
+
+    if action == "add":
+        if not package:
+            print("Error: Package name required for 'add'")
+            raise typer.Exit(1)
+
+        print(f"Adding package: {package}")
+        result = subprocess.run(
+            ["uv", "add", package],
+            capture_output=True,
+            text=True,
+            cwd=str(project_root)
+        )
+        if result.returncode == 0:
+            print(result.stdout or f"Added {package}")
+        else:
+            print(f"Error: {result.stderr or result.stdout}")
+            raise typer.Exit(1)
+
+    elif action == "remove":
+        if not package:
+            print("Error: Package name required for 'remove'")
+            raise typer.Exit(1)
+
+        print(f"Removing package: {package}")
+        result = subprocess.run(
+            ["uv", "remove", package],
+            capture_output=True,
+            text=True,
+            cwd=str(project_root)
+        )
+        if result.returncode == 0:
+            print(result.stdout or f"Removed {package}")
+        else:
+            print(f"Error: {result.stderr or result.stdout}")
+            raise typer.Exit(1)
+
+    elif action == "list":
+        result = subprocess.run(
+            ["uv", "pip", "list"],
+            capture_output=True,
+            text=True,
+            cwd=str(project_root)
+        )
+        if result.returncode == 0:
+            print(result.stdout)
+        else:
+            print(f"Error: {result.stderr or result.stdout}")
+            raise typer.Exit(1)
+
+    elif action == "check":
+        if not package:
+            print("Error: Skill name required for 'check'")
+            raise typer.Exit(1)
+
+        skill = package  # In check mode, 'package' is actually the skill name
+        skill_dir = SKILLS_DIR / skill
+
+        if not skill_dir.exists():
+            print(f"Error: Skill '{skill}' not found")
+            raise typer.Exit(1)
+
+        # Find all imports in the skill
+        imports = set()
+        for py_file in skill_dir.rglob("*.py"):
+            if "__pycache__" in str(py_file):
+                continue
+            try:
+                content = py_file.read_text()
+                # Simple import detection
+                for line in content.split('\n'):
+                    line = line.strip()
+                    if line.startswith('import '):
+                        # import foo, bar
+                        parts = line[7:].split(',')
+                        for p in parts:
+                            mod = p.strip().split('.')[0].split(' ')[0]
+                            if mod:
+                                imports.add(mod)
+                    elif line.startswith('from ') and ' import ' in line:
+                        # from foo import bar
+                        mod = line[5:].split(' import ')[0].split('.')[0].strip()
+                        if mod:
+                            imports.add(mod)
+            except Exception:
+                pass
+
+        # Filter out standard library and local imports
+        stdlib = {'os', 'sys', 'typing', 'pathlib', 'json', 'datetime', 're',
+                  'shutil', 'subprocess', 'ast', 'collections', 'functools',
+                  'itertools', 'dataclasses', 'enum', 'abc', 'contextlib',
+                  'threading', 'time', 'hashlib', 'base64', 'urllib', 'http'}
+
+        external = {i for i in imports if i not in stdlib and not i.startswith('skills') and not i.startswith('src')}
+
+        if not external:
+            print(f"Skill '{skill}' has no external dependencies detected")
+            return
+
+        print(f"External imports in '{skill}':")
+        missing = []
+        for imp in sorted(external):
+            # Try to import it
+            result = subprocess.run(
+                [sys.executable, "-c", f"import {imp}"],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode == 0:
+                print(f"  {imp}: OK")
+            else:
+                print(f"  {imp}: MISSING")
+                missing.append(imp)
+
+        if missing:
+            print()
+            print(f"Missing packages: {', '.join(missing)}")
+            print(f"Install with: autobot deps add <package>")
+            raise typer.Exit(1)
+
+    else:
+        print(f"Error: Unknown action '{action}'")
+        print("Valid actions: add, remove, list, check")
         raise typer.Exit(1)
 
 

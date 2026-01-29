@@ -279,8 +279,12 @@ The autobot skill provides full skill lifecycle management. Use it to create, up
 - `autobot validate <skill> [--fix]` - Validate skill structure and conventions
 - `autobot test <skill>` - Test a skill by running its --help command
 
-**Execution & Debugging**
-- `autobot run <skill> <command> [-t timeout] [-e KEY=val]` - Execute a command and show output/errors
+**Shell & Dependencies**
+- `autobot shell <skill> <command> [-t timeout]` - Run shell command in skill directory
+- `autobot deps add <package>` - Add a package via uv
+- `autobot deps remove <package>` - Remove a package via uv
+- `autobot deps list` - List installed packages
+- `autobot deps check <skill>` - Check if skill's imports are available
 
 ### Examples
 
@@ -290,13 +294,16 @@ euno skills autobot skill weather -d "Weather forecasts"
 euno skills autobot command weather forecast -d "Get weather forecast"
 euno skills autobot test weather
 
-# Run a command and see output/errors
-euno skills autobot run weather forecast
-euno skills autobot run weather "forecast --city NYC"
-euno skills autobot run core "topics list --status todo"
+# Run shell commands in skill directory
+euno skills autobot shell weather "python cli.py forecast --city NYC"
+euno skills autobot shell weather "python -c 'import requests; print(requests.__version__)'"
+euno skills autobot shell weather "python -m py_compile cli.py"
 
-# Debug with custom environment variables
-euno skills autobot run myskill cmd -e API_KEY=abc123 -e DEBUG=1
+# Manage dependencies
+euno skills autobot deps add requests
+euno skills autobot deps add "httpx>=0.25"
+euno skills autobot deps check weather
+euno skills autobot deps list
 
 # Edit an existing skill
 euno skills autobot edit weather cli.py --find "old_name" --replace "new_name" --all

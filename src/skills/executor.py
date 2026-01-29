@@ -43,7 +43,8 @@ def execute_skill(
     timeout: int = 60,
     agent_id: Optional[str] = None,
     topic_id: Optional[str] = None,
-    session_id: Optional[str] = None
+    session_id: Optional[str] = None,
+    env_vars: Optional[dict] = None
 ) -> SkillResult:
     """Execute a skill command.
 
@@ -54,6 +55,7 @@ def execute_skill(
         agent_id: Current agent ID for context
         topic_id: Current topic ID for context
         session_id: Current session ID for context
+        env_vars: Additional environment variables to set
 
     Returns:
         SkillResult with execution details
@@ -76,6 +78,10 @@ def execute_skill(
         topic_id=topic_id,
         session_id=session_id
     )
+
+    # Add custom environment variables
+    if env_vars:
+        env.update(env_vars)
 
     # Build command - use uv run to ensure correct environment
     # Parse the command string safely
