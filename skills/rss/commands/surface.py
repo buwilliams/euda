@@ -14,12 +14,41 @@ def _get_modules():
     """Lazy import of modules."""
     from skills.rss.lib import storage, parser, matching
     from src.core.data.topics import create_topic
+    from src.core.data.memory import add_memory
     return {
         "storage": storage,
         "parser": parser,
         "matching": matching,
         "create_topic": create_topic,
+        "add_memory": add_memory,
     }
+
+
+def _create_blog_post_memory(m: dict, post: dict, feed_title: str) -> dict:
+    """Create a short-term memory for a blog post.
+
+    Args:
+        m: Modules dict
+        post: Post dict with title, link, content_text, published
+        feed_title: Name of the blog
+
+    Returns:
+        Created memory entry
+    """
+    post_title = post.get("title", "Untitled")
+    post_link = post.get("link", "")
+    published = post.get("published", "")[:10] if post.get("published") else ""
+
+    # Create a concise description for memory
+    description = f"Wrote blog post: {post_title}"
+    if post_link:
+        description += f" ({post_link})"
+
+    return m["add_memory"](
+        short_description=description,
+        type="idea",  # Blog posts represent ideas you've articulated
+        agent_id="user",
+    )
 
 
 @app.command("check")
@@ -139,6 +168,11 @@ def check_cmd(
                 topic_name = f"New blog post: {post_title}"
                 topic_desc = f"You published a new post on your blog.\n\n**{post_title}**\n\n{post_content}\n\nLink: {post_link}"
                 tags = ["rss", "own-blog", "notification"]
+
+                # Also add to memory - own blog posts represent your ideas
+                memory = _create_blog_post_memory(m, post, title)
+                if not json_output:
+                    print(f"    Added to memory: {memory.get('id')}")
             else:
                 # Include exploration context in the topic
                 exp_context = ""
@@ -167,7 +201,7 @@ def check_cmd(
                 if match_result.exploration_name:
                     print(f"    Matched: {match_result.exploration_name}")
 
-            surfaced.append({
+            surfaced_entry = {
                 "feed_id": fid,
                 "feed_title": title,
                 "feed_type": feed_type,
@@ -176,7 +210,10 @@ def check_cmd(
                 "topic_id": topic.get("id"),
                 "match_reason": match_result.match_reason,
                 "exploration": match_result.exploration_name,
-            })
+            }
+            if feed_type == "own":
+                surfaced_entry["memory_id"] = memory.get("id") if memory else None
+            surfaced.append(surfaced_entry)
 
         # Update feed metadata
         m["storage"].update_feed(fid, {
@@ -269,8 +306,21 @@ def import_cmd(
         for post in posts:
             print(f"  - {post.get('title', 'Untitled')[:60]}")
         print()
+        print(f"Would create {len(posts)} memory entries (type: idea)")
         print("To import, run without --dry-run")
         return
+
+    # Create memories for each blog post
+    print("\nCreating memories for blog posts...")
+    memories_created = 0
+    for post in posts:
+        try:
+            memory = _create_blog_post_memory(m, post, feed.get("title"))
+            memories_created += 1
+            if not json_output:
+                print(f"  + {post.get('title', 'Untitled')[:50]} -> {memory.get('id')}")
+        except Exception as e:
+            print(f"  ! Failed to create memory for '{post.get('title')}': {e}")
 
     # Create a topic with all the content for identity processing
     combined_content = "\n\n---\n\n".join(all_text)
@@ -279,12 +329,14 @@ def import_cmd(
         name=f"Blog import: {feed.get('title')}",
         description=f"""Import {len(posts)} posts from your blog for identity bootstrapping.
 
+{memories_created} memories created (type: idea) to track these posts.
+
 The posts have been collected below. Review them to extract themes, interests,
 and writing style that represent who you are.
 
 ---
 
-{combined_content[:8000]}  # Truncate to reasonable size
+{combined_content[:8000]}
 """,
         tags=["rss", "own-blog", "identity-bootstrap"],
         assignee="user",
@@ -297,8 +349,9 @@ and writing style that represent who you are.
             m["storage"].mark_post_seen(feed_id, post["id"])
 
     print()
+    print(f"Created {memories_created} memories")
     print(f"Created import topic: {topic.get('id')}")
-    print("Review this topic to extract themes for your identity.")
+    print("Review the topic to extract themes for your identity.")
 
 
 @app.command("analyze")
