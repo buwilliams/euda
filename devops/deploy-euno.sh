@@ -81,11 +81,6 @@ rsync -avz --delete \
 echo "[4/7] Copying .env file..."
 scp "$PROJECT_DIR/.env" "$SERVER:$REMOTE_DIR/.env"
 
-# Copy SearXNG config (data/ is excluded from rsync)
-echo "Copying SearXNG config..."
-ssh "$SERVER" "mkdir -p $REMOTE_DIR/data/system && [ -d $REMOTE_DIR/data/system/searxng.yml ] && rm -rf $REMOTE_DIR/data/system/searxng.yml || true"
-scp "$PROJECT_DIR/data/system/searxng.yml" "$SERVER:$REMOTE_DIR/data/system/searxng.yml" 2>/dev/null || echo "Note: searxng.yml not found locally, will use existing or create"
-
 # Install dependencies
 echo "[5/7] Installing dependencies..."
 ssh -T "$SERVER" "cd $REMOTE_DIR && source ~/.local/bin/env && uv sync"
@@ -103,67 +98,6 @@ sleep 2
 echo ""
 echo "Checking Euno service status..."
 ssh "$SERVER" "sudo systemctl status euno --no-pager -l" | head -15
-
-# Install Docker if not present
-echo ""
-echo "Checking Docker..."
-ssh "$SERVER" bash << 'REMOTE_DOCKER'
-if ! command -v docker &> /dev/null; then
-    echo "Installing Docker..."
-    curl -fsSL https://get.docker.com | sh
-    systemctl enable docker
-    systemctl start docker
-    echo "Docker installed: $(docker --version)"
-else
-    echo "Docker: $(docker --version)"
-fi
-REMOTE_DOCKER
-
-# Start/check SearXNG
-echo ""
-echo "Setting up SearXNG..."
-ssh "$SERVER" bash << REMOTE_SCRIPT
-set -e
-cd $REMOTE_DIR
-
-# Generate secret key if not already set
-SEARXNG_CONFIG="$REMOTE_DIR/data/system/searxng.yml"
-if grep -q "change-me-generate-with-openssl-rand-hex-32" "\$SEARXNG_CONFIG" 2>/dev/null; then
-    echo "Generating SearXNG secret key..."
-    SECRET_KEY=\$(openssl rand -hex 32)
-    sed -i "s/change-me-generate-with-openssl-rand-hex-32/\$SECRET_KEY/" "\$SEARXNG_CONFIG"
-fi
-
-# Check if SearXNG is running
-if docker ps | grep -q searxng; then
-    echo "SearXNG: Running"
-    # Test JSON API
-    if curl -s "http://localhost:8080/search?q=test&format=json" 2>/dev/null | grep -q results; then
-        echo "SearXNG API: OK"
-    else
-        echo "SearXNG API: Not responding, restarting..."
-        docker compose restart
-        sleep 5
-    fi
-else
-    echo "SearXNG: Starting..."
-    # Try to start, if it fails due to mount error, clean up and retry
-    if ! docker compose up -d 2>&1; then
-        echo "SearXNG: Start failed, cleaning up stale volume..."
-        docker rm -f searxng 2>/dev/null || true
-        docker volume rm euno_searxng-data 2>/dev/null || true
-        docker compose up -d
-    fi
-    # Wait for it to be ready
-    for i in {1..15}; do
-        if curl -s "http://localhost:8080/search?q=test&format=json" 2>/dev/null | grep -q results; then
-            echo "SearXNG: Ready"
-            break
-        fi
-        sleep 1
-    done
-fi
-REMOTE_SCRIPT
 
 echo ""
 echo "==================================="

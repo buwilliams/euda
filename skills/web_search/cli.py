@@ -12,7 +12,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 app = typer.Typer(
     name="web_search",
-    help="Search the web for information and/or to fetch webpage content.",
+    help="Search the web for information and/or fetch webpage content.",
     no_args_is_help=True,
 )
 
@@ -21,32 +21,39 @@ app = typer.Typer(
 def search_cmd(
     query: str = typer.Argument(..., help="Search query"),
     limit: int = typer.Option(5, "--limit", "-l", help="Number of results (default: 5, max: 20)"),
-    engines: Optional[str] = typer.Option(
-        None, "--engines", "-e",
-        help="Comma-separated engines (e.g., 'google,bing,duckduckgo')"
-    ),
-    categories: Optional[str] = typer.Option(
-        None, "--categories", "-c",
-        help="Comma-separated categories (e.g., 'general,news,science')"
+    topic: Optional[str] = typer.Option(
+        None, "--topic", "-t",
+        help="Search topic: 'general', 'news', or 'finance'"
     ),
     time_range: Optional[str] = typer.Option(
-        None, "--time-range", "-t",
-        help="Filter by time: 'day', 'month', or 'year'"
+        None, "--time-range", "-r",
+        help="Filter by time: 'day', 'week', 'month', or 'year'"
+    ),
+    depth: Optional[str] = typer.Option(
+        None, "--depth", "-d",
+        help="Search depth: 'basic', 'advanced', 'fast', or 'ultra-fast'"
+    ),
+    answer: bool = typer.Option(
+        False, "--answer", "-a",
+        help="Include AI-generated answer summary"
     ),
 ):
-    """Search the web.
+    """Search the web using Tavily API.
 
     Returns a list of search results with titles, URLs, and snippets.
     Useful for finding facts, recent events, or verifying information.
+
+    Requires TAVILY_API_KEY environment variable to be set.
     """
-    from plugins.web_search.lib.search import web_search
+    from skills.web_search.lib.search import web_search
 
     result = web_search(
         query=query,
         limit=min(limit, 20),
-        engines=engines,
-        categories=categories,
+        topic=topic,
         time_range=time_range,
+        search_depth=depth,
+        include_answer=answer,
     )
 
     if "error" in result:
@@ -55,6 +62,13 @@ def search_cmd(
 
     print(f"Search results for: {query}")
     print(f"Found: {result.get('count', 0)} results")
+
+    # Show AI answer if available
+    if result.get("answer"):
+        print()
+        print("Answer:")
+        print(result["answer"])
+
     print()
 
     for i, item in enumerate(result.get("results", []), 1):
@@ -63,9 +77,6 @@ def search_cmd(
         snippet = item.get("snippet", "")
         if snippet:
             print(f"   {snippet[:200]}")
-        engine = item.get("engine", "")
-        if engine:
-            print(f"   [via {engine}]")
         print()
 
 
@@ -91,7 +102,7 @@ def fetch_cmd(
     - With --query: Returns most relevant paragraphs matching the query
     - Without --query: Returns sequential chunks, use --offset to paginate
     """
-    from plugins.web_search.lib.fetch import fetch_url
+    from skills.web_search.lib.fetch import fetch_url
 
     result = fetch_url(url=url, max_chars=max_chars, offset=offset, query=query)
 
@@ -121,7 +132,7 @@ def fetch_cmd(
 
 
 def main():
-    """Entry point for the web-search plugin CLI."""
+    """Entry point for the web_search skill CLI."""
     app()
 
 

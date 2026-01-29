@@ -51,14 +51,14 @@ fi
 echo ""
 
 # Check SSH connectivity
-echo "[1/7] Testing SSH connection..."
+echo "[1/6] Testing SSH connection..."
 ssh -o ConnectTimeout=10 "$SERVER" "echo 'SSH connection successful'" || {
     echo "Error: Cannot connect to $SERVER"
     exit 1
 }
 
 # Install dependencies
-echo "[2/7] Installing system dependencies..."
+echo "[2/6] Installing system dependencies..."
 ssh "$SERVER" bash << 'REMOTE_SCRIPT'
 set -e
 
@@ -90,7 +90,7 @@ echo "uv version: $(uv --version)"
 REMOTE_SCRIPT
 
 # Create directory structure
-echo "[3/7] Creating directory structure..."
+echo "[3/6] Creating directory structure..."
 ssh "$SERVER" bash << REMOTE_SCRIPT
 set -e
 sudo mkdir -p $REMOTE_DIR
@@ -99,7 +99,7 @@ mkdir -p $REMOTE_DIR/data
 REMOTE_SCRIPT
 
 # Create systemd service
-echo "[4/7] Setting up systemd service..."
+echo "[4/6] Setting up systemd service..."
 ssh "$SERVER" bash << REMOTE_SCRIPT
 set -e
 
@@ -129,7 +129,7 @@ sudo systemctl enable euno
 REMOTE_SCRIPT
 
 # Install and configure nginx
-echo "[5/7] Setting up nginx reverse proxy..."
+echo "[5/6] Setting up nginx reverse proxy..."
 ssh "$SERVER" bash << 'REMOTE_SCRIPT'
 set -e
 
@@ -228,7 +228,7 @@ echo "nginx configured to proxy port 80 -> 8000"
 REMOTE_SCRIPT
 
 # Configure firewall (if ufw is available)
-echo "[6/7] Configuring firewall..."
+echo "[6/6] Configuring firewall..."
 ssh "$SERVER" bash << 'REMOTE_SCRIPT'
 if command -v ufw &> /dev/null; then
     sudo ufw allow 80/tcp 2>/dev/null || true
@@ -239,23 +239,6 @@ else
 fi
 REMOTE_SCRIPT
 
-# Install Docker (SearXNG will be started by deploy-euno.sh after rsync)
-echo "[7/7] Installing Docker..."
-ssh "$SERVER" bash << 'REMOTE_SCRIPT'
-set -e
-
-# Install Docker if not present
-if ! command -v docker &> /dev/null; then
-    echo "Installing Docker..."
-    curl -fsSL https://get.docker.com | sh
-    sudo systemctl enable docker
-    sudo systemctl start docker
-    echo "Docker installed: $(docker --version)"
-else
-    echo "Docker already installed: $(docker --version)"
-fi
-REMOTE_SCRIPT
-
 echo ""
 echo "==================================="
 echo "Server setup complete!"
@@ -263,7 +246,6 @@ echo "==================================="
 echo ""
 echo "Next steps:"
 echo "  1. Run ./deploy-euno.sh $SERVER to deploy the application"
-echo "     (This will sync files and start SearXNG automatically)"
 echo "  2. SSH in and run: cd $REMOTE_DIR && uv run euno set-password"
 echo "  3. Access at http://<server-ip>"
 echo ""

@@ -1,8 +1,7 @@
 {
-  "searxng": {
-    "url": "http://localhost:8080",
-    "default_engines": null,
-    "default_categories": "general",
+  "tavily": {
+    "default_topic": "general",
+    "default_depth": "basic",
     "timeout": 30
   },
   "rlm": {

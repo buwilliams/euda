@@ -117,6 +117,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!skills/*/lib/
 lib64/
 parts/
 sdist/
