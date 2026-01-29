@@ -605,6 +605,8 @@ The --delete flag propagates deletions (requires --push or --pull):
         return
 
     if subcommand == "conflicts":
+        interactive = "-i" in args or "--interactive" in args
+
         # List unresolved conflicts
         conflicts = list_conflicts(resolved=False)
         print("=" * 60)
@@ -614,6 +616,34 @@ The --delete flag propagates deletions (requires --push or --pull):
 
         if not conflicts:
             print("No unresolved conflicts.")
+            return
+
+        if interactive:
+            resolved_count = 0
+            skipped_count = 0
+            for c in conflicts:
+                print(f"  [{c.id}] {c.type.value}: {c.description}")
+                print(f"    Item: {c.item_id}")
+                if c.local_timestamp and c.remote_timestamp:
+                    print(f"    Local: {c.local_timestamp}")
+                    print(f"    Remote: {c.remote_timestamp}")
+                try:
+                    choice = input("  [l]ocal / [r]emote / [s]kip (l/r/s): ").strip().lower()
+                except (EOFError, KeyboardInterrupt):
+                    print("\nAborted.")
+                    break
+                if choice == "l":
+                    resolve_conflict(c.id, Resolution.KEEP_LOCAL)
+                    resolved_count += 1
+                    print("  -> Kept local\n")
+                elif choice == "r":
+                    resolve_conflict(c.id, Resolution.KEEP_REMOTE)
+                    resolved_count += 1
+                    print("  -> Kept remote\n")
+                else:
+                    skipped_count += 1
+                    print("  -> Skipped\n")
+            print(f"Done: {resolved_count} resolved, {skipped_count} skipped.")
             return
 
         print(f"Found {len(conflicts)} unresolved conflict(s):\n")

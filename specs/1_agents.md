@@ -18,6 +18,7 @@ Rules for how agents work and coordinate through topics.
 
 - Agents poll for actionable topics every 100ms (configurable via `poll_interval`)
 - Topic cache prevents database queries when no topics are pending
+- Cache is refreshed every 60 seconds to catch due-date transitions (topics whose `due_date` becomes current)
 - Cache is shared across all agent threads — when agent A assigns a topic to agent B, the cache is notified immediately
 - Agents work one topic at a time — no polling during work cycle
 - Disabled agents never process topics

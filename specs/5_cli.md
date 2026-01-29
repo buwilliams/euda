@@ -30,6 +30,7 @@ Rules for the command-line interface.
 - `sync init [server]` — Initialize sync with remote server
 - `sync status` — Show sync state and pending conflicts
 - `sync conflicts` — List unresolved conflicts
+- `sync conflicts -i` / `sync conflicts --interactive` — Walk through each conflict, prompting to keep local, keep remote, or skip
 - `sync resolve <id> --keep-local|--keep-remote|--keep-newest` — Resolve a conflict
 
 ### Server Commands

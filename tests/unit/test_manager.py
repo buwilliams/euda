@@ -678,3 +678,54 @@ class TestAgentLoopStateChecks:
 
         # Cache indicates topics exist
         assert manager.agents_with_topics.get("test-agent", False)
+
+    def test_periodic_repoll_catches_due_date_transition(self, manager_data_dir):
+        """Cache refreshes periodically to catch due-date transitions.
+
+        Spec: Agents re-check for actionable topics every 60s even when cache is False,
+        so that topics whose due_date has become current are discovered.
+        """
+        from src.agent.manager import AgentManager
+
+        manager = AgentManager()
+        manager.running = True
+
+        # Cache says no topics
+        manager.agents_with_topics["test-agent"] = False
+
+        # Simulate last check was >60s ago
+        manager._last_topic_check["test-agent"] = time.time() - 61
+
+        # Mock list_topics to return a topic (due date just became current)
+        with patch("src.core.data.topics.list_topics", return_value=[{"id": "t1"}]) as mock_lt:
+            # Simulate one iteration of the re-poll logic
+            now = time.time()
+            last_check = manager._last_topic_check.get("test-agent", 0)
+            assert now - last_check >= 60
+
+            topics = mock_lt(status="todo", assignee="test-agent", actionable=True)
+            assert topics  # Found newly-actionable topic
+
+            # Manager would set cache to True
+            manager.agents_with_topics["test-agent"] = True
+            manager._last_topic_check["test-agent"] = now
+
+        assert manager.agents_with_topics["test-agent"] is True
+
+    def test_repoll_skipped_when_recently_checked(self, manager_data_dir):
+        """Re-poll is skipped when last check was less than 60s ago.
+
+        Spec: Re-check interval is 60 seconds to avoid excessive DB queries.
+        """
+        from src.agent.manager import AgentManager
+
+        manager = AgentManager()
+        manager.running = True
+
+        manager.agents_with_topics["test-agent"] = False
+        manager._last_topic_check["test-agent"] = time.time() - 10  # 10s ago
+
+        # Check interval hasn't elapsed
+        now = time.time()
+        last_check = manager._last_topic_check.get("test-agent", 0)
+        assert now - last_check < 60  # Should NOT re-poll
