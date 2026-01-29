@@ -523,21 +523,6 @@ async def events():
 
 # ============== Server Restart ==============
 
-# Global restart flag - checked by main.py after server stops
-_restart_requested = False
-_restart_reason = None
-
-
-def is_restart_requested() -> bool:
-    """Check if a restart was requested."""
-    return _restart_requested
-
-
-def get_restart_reason() -> str:
-    """Get the reason for the restart request."""
-    return _restart_reason
-
-
 class RestartRequest(BaseModel):
     reason: str = None
 
@@ -546,8 +531,8 @@ class RestartRequest(BaseModel):
 async def restart_server(request: RestartRequest = None):
     """Request a server restart.
 
-    The server will shut down gracefully and exit with code 42.
-    When running with the run-euno.sh wrapper, this triggers an automatic restart.
+    The server will shut down gracefully. On remote servers managed by systemd,
+    the service will automatically restart due to the Restart=always setting.
 
     Args:
         reason: Optional reason for the restart (for logging)
@@ -555,12 +540,9 @@ async def restart_server(request: RestartRequest = None):
     Returns:
         Confirmation that restart was requested
     """
-    global _restart_requested, _restart_reason
     from ..events import trigger_shutdown
 
     reason = request.reason if request else None
-    _restart_requested = True
-    _restart_reason = reason
 
     # Log the restart request
     emit_system_event("system:restart_requested", data={"reason": reason})
@@ -581,6 +563,6 @@ async def restart_server(request: RestartRequest = None):
 
     return {
         "success": True,
-        "message": "Restart requested",
+        "message": "Restart requested - server will restart via systemd",
         "reason": reason
     }

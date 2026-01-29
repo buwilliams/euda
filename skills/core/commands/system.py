@@ -27,8 +27,8 @@ def restart_cmd(
     """Restart the Euno server.
 
     This triggers a graceful restart by calling the restart API endpoint.
-    The server must be running with the run-euno.sh wrapper script for
-    automatic restart to work.
+    On remote servers managed by systemd, the service will automatically
+    restart due to the Restart=always setting in the service configuration.
     """
     import requests
 
