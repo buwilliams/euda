@@ -29,6 +29,131 @@ app = typer.Typer(
 
 # Get skills directory from environment or default
 SKILLS_DIR = Path(os.environ.get("EUNO_SKILLS_DIR", Path(__file__).parent.parent))
+PROJECT_ROOT = SKILLS_DIR.parent
+
+
+@app.command("env")
+def show_environment():
+    """Show development environment and architecture information.
+
+    Displays Python version, dependency management, project structure,
+    and coding conventions. Use this before creating new skills to
+    understand how to write code that fits the architecture.
+
+    Example:
+        autobot env
+    """
+    import subprocess
+
+    print("=" * 60)
+    print("EUNO DEVELOPMENT ENVIRONMENT")
+    print("=" * 60)
+
+    # Python version
+    print(f"\nPython: {sys.version.split()[0]}")
+    print(f"Executable: {sys.executable}")
+
+    # uv version
+    try:
+        result = subprocess.run(["uv", "--version"], capture_output=True, text=True)
+        if result.returncode == 0:
+            print(f"uv: {result.stdout.strip()}")
+    except FileNotFoundError:
+        print("uv: not found")
+
+    # Project paths
+    print(f"\nProject root: {PROJECT_ROOT}")
+    print(f"Skills directory: {SKILLS_DIR}")
+    data_dir = PROJECT_ROOT / "data"
+    print(f"Data directory: {data_dir}")
+
+    # Architecture overview
+    print("\n" + "-" * 60)
+    print("PROJECT ARCHITECTURE")
+    print("-" * 60)
+    print("""
+src/
+├── core/           # Business logic (shared by web + skills)
+│   ├── data/       # Topics, assets, memory, identity
+│   ├── agents/     # Agent operations
+│   └── system/     # Consolidation, notifications
+├── skills/         # Skill infrastructure (discovery, executor, tools)
+├── agent/          # Agent runtime (Identity + Cognition + Memory)
+├── llms/           # LLM clients
+└── web/            # FastAPI application
+
+skills/             # Skill CLI interfaces (for LLM agents)
+├── core/           # Core skill (wraps src/core/)
+├── autobot/        # This skill - skill management
+└── <your-skill>/   # Your new skills go here
+
+data/
+├── agents/         # Agent configs, state, memory
+├── topics/         # SQLite database + assets
+└── system/         # System config and logs
+""")
+
+    # Environment variables
+    print("-" * 60)
+    print("ENVIRONMENT VARIABLES (available in skills)")
+    print("-" * 60)
+    print("""
+EUNO_DATA_DIR      - Path to data/ directory
+EUNO_SKILLS_DIR    - Path to skills/ directory
+EUNO_AGENT_ID      - Current agent ID (if running in agent context)
+EUNO_TOPIC_ID      - Current topic ID (if processing a topic)
+EUNO_SESSION_ID    - Current session ID (if in a chat session)
+""")
+
+    # Coding conventions
+    print("-" * 60)
+    print("SKILL CODING CONVENTIONS")
+    print("-" * 60)
+    print("""
+1. STRUCTURE: Each skill is a directory with cli.py using Typer
+   - cli.py must have main() function and if __name__ == "__main__" block
+   - Use app = typer.Typer(name="skillname", help="description")
+
+2. DEPENDENCIES: Use uv for package management
+   - Add packages: autobot deps add <package>
+   - All skills share project dependencies (no per-skill requirements)
+
+3. CONTEXT: Access Euno context via environment variables
+   ```python
+   import os
+   data_dir = os.environ.get("EUNO_DATA_DIR")
+   agent_id = os.environ.get("EUNO_AGENT_ID")
+   ```
+
+4. IMPORTS: For accessing core functionality
+   ```python
+   # From skills, import src modules:
+   import sys
+   from pathlib import Path
+   sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+   from src.core.data.topics import list_topics, create_topic
+   ```
+
+5. OUTPUT: Print results to stdout, errors to stderr
+   - Success: exit code 0
+   - Failure: exit code non-zero with error message
+
+6. COMMANDS: Use clear, verb-based names
+   - list, get, create, update, delete, run, sync, etc.
+""")
+
+    # Current skills
+    print("-" * 60)
+    print("INSTALLED SKILLS")
+    print("-" * 60)
+    skills = []
+    for path in sorted(SKILLS_DIR.iterdir()):
+        if path.is_dir() and not path.name.startswith((".", "_")):
+            cli_py = path / "cli.py"
+            if cli_py.exists():
+                skills.append(path.name)
+    print(f"  {', '.join(skills)}")
+    print()
 
 
 @app.command("skill")

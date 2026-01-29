@@ -279,6 +279,9 @@ The autobot skill provides full skill lifecycle management. Use it to create, up
 - `autobot validate <skill> [--fix]` - Validate skill structure and conventions
 - `autobot test <skill>` - Test a skill by running its --help command
 
+**Environment & Architecture**
+- `autobot env` - Show Python version, project structure, coding conventions
+
 **Shell & Dependencies**
 - `autobot shell <skill> <command> [-t timeout]` - Run shell command in skill directory
 - `autobot deps add <package>` - Add a package via uv
