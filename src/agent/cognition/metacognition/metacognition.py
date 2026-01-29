@@ -190,6 +190,32 @@ class Metacognition:
             return None
         return self._progress.check_stuck(self._current_session_id)
 
+    def should_check_progress(self) -> bool:
+        """Check if it's time for an LLM progress check.
+
+        Delegates to ProgressTracker if a session is active.
+        """
+        if not self._current_session_id:
+            return False
+        return self._progress.should_check_progress(self._current_session_id)
+
+    def get_activity_summary(self) -> dict:
+        """Get recent activity summary for progress check.
+
+        Delegates to ProgressTracker if a session is active.
+        """
+        if not self._current_session_id:
+            return {}
+        return self._progress.get_recent_activity_summary(self._current_session_id)
+
+    def mark_progress_checked(self):
+        """Mark that progress was checked this iteration.
+
+        Delegates to ProgressTracker if a session is active.
+        """
+        if self._current_session_id:
+            self._progress.mark_progress_checked(self._current_session_id)
+
     def increment_iteration(self) -> int:
         """Increment iteration count and check limits.
 

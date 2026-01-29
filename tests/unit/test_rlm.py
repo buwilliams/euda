@@ -243,21 +243,24 @@ FINAL("Found 3 entries in memory")
 
     def test_recall_respects_max_iterations(self):
         """Recall stops after max_iterations (via progress tracker)."""
+        from unittest.mock import patch
         from src.agent.rlm.client import RLMClient
-        from src.agent.cognition.metacognition.regulation import get_progress_tracker
 
         # LLM that never produces FINAL
         mock = MockLLMClient.simple(text='''```python
 print("Still searching...")
 ```''')
 
-        with mock.patch():
+        # Patch max_iterations to a small value for fast testing
+        test_max_iterations = 5
+        with mock.patch(), \
+             patch('src.agent.rlm.client.DEFAULT_MAX_ITERATIONS', test_max_iterations):
             client = RLMClient(agent_id="test")
             memory = self._create_memory()
             result = client.recall("Endless query", memory)
 
-        # Progress tracker enforces max iterations (default 20)
-        assert result.iterations <= 20
+        # Progress tracker enforces max iterations
+        assert result.iterations <= test_max_iterations
         assert "Max iterations" in (result.error or "") or result.iterations > 0
 
     def test_recall_tracks_iterations(self):
