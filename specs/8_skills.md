@@ -276,7 +276,6 @@ The autobot skill provides full skill lifecycle management. Use it to create, up
 **Management**
 - `autobot delete <skill> [file] [--force]` - Delete a skill or file within a skill
 - `autobot validate <skill> [--fix]` - Validate skill structure and conventions
-- `autobot test <skill>` - Test a skill by running its --help command
 
 **Environment & Architecture**
 - `autobot env` - Show Python version, project structure, coding conventions
@@ -294,7 +293,7 @@ The autobot skill provides full skill lifecycle management. Use it to create, up
 # Create and populate a new skill
 euno skills autobot skill weather -d "Weather forecasts"
 euno skills autobot command weather forecast -d "Get weather forecast"
-euno skills autobot test weather
+skill_usage("weather")  # Use meta-tool to verify skill loads
 
 # Run shell commands in skill directory
 euno skills autobot shell weather "python cli.py forecast --city NYC"

@@ -661,52 +661,6 @@ def list_files(
         print(f"  {f}")
 
 
-@app.command("test")
-def test_skill(
-    skill: str = typer.Argument(..., help="Skill name to test"),
-):
-    """Test a skill by running its --help command.
-
-    Verifies the skill can be loaded and executed.
-
-    Example:
-        autobot test weather
-    """
-    import subprocess
-
-    skill_dir = SKILLS_DIR / skill
-    cli_path = skill_dir / "cli.py"
-
-    if not cli_path.exists():
-        print(f"Error: Skill '{skill}' not found or missing cli.py")
-        raise typer.Exit(1)
-
-    try:
-        result = subprocess.run(
-            [sys.executable, str(cli_path), "--help"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            cwd=str(skill_dir)
-        )
-
-        if result.returncode == 0:
-            print(f"Skill '{skill}' is working!")
-            print()
-            print(result.stdout)
-        else:
-            print(f"Skill '{skill}' has errors:")
-            print(result.stderr or result.stdout)
-            raise typer.Exit(1)
-
-    except subprocess.TimeoutExpired:
-        print(f"Error: Skill '{skill}' timed out")
-        raise typer.Exit(1)
-    except Exception as e:
-        print(f"Error testing skill: {e}")
-        raise typer.Exit(1)
-
-
 @app.command("shell")
 def shell_command(
     skill: str = typer.Argument(..., help="Skill name (determines working directory)"),
