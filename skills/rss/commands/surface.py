@@ -12,11 +12,12 @@ app = typer.Typer(no_args_is_help=True)
 
 def _get_modules():
     """Lazy import of modules."""
-    from skills.rss.lib import storage, parser
+    from skills.rss.lib import storage, parser, matching
     from src.core.data.topics import create_topic
     return {
         "storage": storage,
         "parser": parser,
+        "matching": matching,
         "create_topic": create_topic,
     }
 
@@ -25,12 +26,13 @@ def _get_modules():
 def check_cmd(
     feed_id: Optional[str] = typer.Argument(None, help="Feed ID to check (or all if not specified)"),
     dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be surfaced without creating topics"),
+    all_posts: bool = typer.Option(False, "--all", "-a", help="Surface all matching posts (ignore exploration matching for own blogs)"),
     json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
 ):
-    """Check feeds and surface new posts as topics for the user.
+    """Check feeds and surface relevant new posts as topics.
 
-    This creates topics for new posts so Euno can notify the user
-    and potentially match them against interests.
+    Only posts matching active explorations are surfaced (unless --all).
+    Own blog posts are always surfaced for memory/identity tracking.
     """
     m = _get_modules()
 
@@ -46,7 +48,14 @@ def check_cmd(
             print(f"Feed not found: {feed_id}")
             raise typer.Exit(1)
 
+    # Load explorations for matching
+    explorations = m["matching"].load_explorations()
+    if not explorations and not all_posts:
+        print("No active explorations found. Posts will only be surfaced from --own feeds.")
+        print("Create explorations or use --all to surface everything.")
+
     surfaced = []
+    skipped = []
     now = datetime.now()
 
     for feed in feeds:
@@ -80,38 +89,73 @@ def check_cmd(
             post_link = post.get("link", "")
             post_content = post.get("content_text", "")[:500]  # Truncate for description
 
+            # Own blog posts always match
+            if feed_type == "own":
+                match_result = m["matching"].MatchResult(
+                    matched=True,
+                    match_reason="Own blog - always surfaced",
+                )
+            elif all_posts:
+                match_result = m["matching"].MatchResult(
+                    matched=True,
+                    match_reason="--all flag set",
+                )
+            else:
+                # Check if post matches any exploration
+                match_result = m["matching"].match_post(post, explorations)
+
+            if not match_result.matched:
+                # Skip non-matching posts
+                if not json_output and not dry_run:
+                    print(f"  Skipped: {post_title[:50]}... ({match_result.match_reason})")
+                skipped.append({
+                    "feed_id": fid,
+                    "post_title": post_title,
+                    "reason": match_result.match_reason,
+                    "score": match_result.score,
+                })
+                # Still mark as seen so we don't re-check
+                m["storage"].mark_post_seen(fid, post["id"])
+                continue
+
             if dry_run:
                 if not json_output:
-                    print(f"  Would surface: {post_title}")
+                    print(f"  Would surface: {post_title[:50]}")
+                    print(f"    Match: {match_result.match_reason}")
                 surfaced.append({
                     "feed_id": fid,
                     "feed_title": title,
                     "feed_type": feed_type,
                     "post_title": post_title,
                     "post_link": post_link,
+                    "match_reason": match_result.match_reason,
+                    "exploration": match_result.exploration_name,
                     "dry_run": True,
                 })
                 continue
 
             # Create topic for this post
-            # Different handling for own blog vs followed feeds
             if feed_type == "own":
-                # Own blog posts go to memory, not topics
-                # For now, just create a topic - memory integration comes later
                 topic_name = f"New blog post: {post_title}"
                 topic_desc = f"You published a new post on your blog.\n\n**{post_title}**\n\n{post_content}\n\nLink: {post_link}"
                 tags = ["rss", "own-blog", "notification"]
             else:
-                # Followed feeds create notification topics
+                # Include exploration context in the topic
+                exp_context = ""
+                if match_result.exploration_name:
+                    exp_context = f"\n\n*Matched exploration: {match_result.exploration_name}*\n*{match_result.match_reason}*"
+
                 topic_name = f"RSS: {post_title}"
-                topic_desc = f"New post from {title}:\n\n**{post_title}**\n\n{post_content}\n\nLink: {post_link}"
+                topic_desc = f"New post from {title}:\n\n**{post_title}**\n\n{post_content}{exp_context}\n\nLink: {post_link}"
                 tags = ["rss", "notification", f"feed:{fid}"]
+                if match_result.exploration_id:
+                    tags.append(f"exploration:{match_result.exploration_id}")
 
             topic = m["create_topic"](
                 name=topic_name,
                 description=topic_desc,
                 tags=tags,
-                assignee="user",  # Notify the user
+                assignee="user",
                 created_by="rss-skill",
             )
 
@@ -119,7 +163,9 @@ def check_cmd(
             m["storage"].mark_post_seen(fid, post["id"])
 
             if not json_output:
-                print(f"  Surfaced: {post_title} -> topic {topic.get('id')}")
+                print(f"  Surfaced: {post_title[:50]} -> topic {topic.get('id')}")
+                if match_result.exploration_name:
+                    print(f"    Matched: {match_result.exploration_name}")
 
             surfaced.append({
                 "feed_id": fid,
@@ -128,6 +174,8 @@ def check_cmd(
                 "post_title": post_title,
                 "post_link": post_link,
                 "topic_id": topic.get("id"),
+                "match_reason": match_result.match_reason,
+                "exploration": match_result.exploration_name,
             })
 
         # Update feed metadata
@@ -136,11 +184,14 @@ def check_cmd(
         })
 
     if json_output:
-        print(json.dumps(surfaced, indent=2))
-    elif not surfaced:
-        print("No new posts to surface.")
+        print(json.dumps({"surfaced": surfaced, "skipped": skipped}, indent=2))
     else:
-        print(f"\nSurfaced {len(surfaced)} post(s) as topics.")
+        if surfaced:
+            print(f"\nSurfaced {len(surfaced)} post(s) as topics.")
+        if skipped:
+            print(f"Skipped {len(skipped)} non-matching post(s).")
+        if not surfaced and not skipped:
+            print("No new posts found.")
 
 
 @app.command("import")
@@ -248,3 +299,146 @@ and writing style that represent who you are.
     print()
     print(f"Created import topic: {topic.get('id')}")
     print("Review this topic to extract themes for your identity.")
+
+
+@app.command("analyze")
+def analyze_cmd(
+    feed_id: Optional[str] = typer.Argument(None, help="Feed ID to analyze (or all if not specified)"),
+    limit: int = typer.Option(20, "--limit", "-l", help="Number of posts to analyze per feed"),
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+):
+    """Analyze how feed posts match against explorations.
+
+    Shows which posts would match and why, useful for tuning.
+    Does not mark posts as seen or create topics.
+    """
+    m = _get_modules()
+
+    feeds = m["storage"].load_feeds()
+    if not feeds:
+        print("No feeds configured.")
+        return
+
+    if feed_id:
+        feeds = [f for f in feeds if f.get("id") == feed_id]
+        if not feeds:
+            print(f"Feed not found: {feed_id}")
+            raise typer.Exit(1)
+
+    # Load explorations
+    explorations = m["matching"].load_explorations()
+
+    if not json_output:
+        print(f"Active explorations ({len(explorations)}):")
+        for exp in explorations:
+            print(f"  - {exp['name']}")
+            themes = exp['themes']
+            if themes['phrases']:
+                print(f"    Phrases: {', '.join(themes['phrases'][:3])}")
+            if themes['name_tokens']:
+                print(f"    Keywords: {', '.join(sorted(themes['name_tokens'])[:5])}")
+        print()
+
+    all_results = []
+
+    for feed in feeds:
+        title = feed.get("title") or feed.get("url")
+        feed_type = feed.get("type", "follow")
+
+        if not json_output:
+            print(f"Analyzing: {title} (type: {feed_type})")
+
+        result = m["parser"].fetch_feed(feed["url"])
+        if "error" in result:
+            if not json_output:
+                print(f"  Error: {result['error']}")
+            continue
+
+        posts = result.get("posts", [])[:limit]
+        analysis = m["matching"].analyze_feed_matches(posts, explorations)
+
+        if json_output:
+            analysis["feed_id"] = feed["id"]
+            analysis["feed_title"] = title
+            analysis["feed_type"] = feed_type
+            all_results.append(analysis)
+            continue
+
+        print(f"  Total posts: {analysis['total_posts']}")
+        print(f"  Matched: {analysis['matched_posts']}")
+        print(f"  Unmatched: {analysis['unmatched_posts']}")
+
+        if analysis['matches']:
+            print(f"\n  Matches:")
+            for match in analysis['matches'][:5]:
+                print(f"    + {match['title'][:50]}")
+                print(f"      -> {match['exploration']} (score: {match['score']:.1f})")
+                print(f"      {match['reason']}")
+
+        if analysis['non_matches']:
+            print(f"\n  Non-matches (showing first 3):")
+            for non in analysis['non_matches'][:3]:
+                print(f"    - {non['title'][:50]}")
+                print(f"      {non['reason']}")
+
+        print()
+
+    if json_output:
+        print(json.dumps(all_results, indent=2))
+
+
+@app.command("explorations")
+def explorations_cmd(
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+):
+    """Show active explorations and their matching themes.
+
+    Displays what keywords and phrases will be used for matching.
+    """
+    m = _get_modules()
+
+    explorations = m["matching"].load_explorations()
+
+    if not explorations:
+        print("No active explorations found.")
+        print("Create explorations in Euno to enable content matching.")
+        return
+
+    if json_output:
+        # Include theme details
+        output = []
+        for exp in explorations:
+            output.append({
+                "id": exp["id"],
+                "name": exp["name"],
+                "description": exp["description"][:200] if exp["description"] else "",
+                "themes": {
+                    "phrases": exp["themes"]["phrases"],
+                    "keywords": sorted(exp["themes"]["keywords"]),
+                    "name_keywords": sorted(exp["themes"]["name_tokens"]),
+                },
+            })
+        print(json.dumps(output, indent=2))
+        return
+
+    print(f"Active explorations ({len(explorations)}):\n")
+
+    for exp in explorations:
+        print(f"  {exp['name']}")
+        print(f"  ID: {exp['id']}")
+        if exp["description"]:
+            print(f"  Description: {exp['description'][:100]}...")
+
+        themes = exp["themes"]
+        print(f"  Matching:")
+        if themes["phrases"]:
+            print(f"    Phrases: {', '.join(themes['phrases'])}")
+        if themes["name_tokens"]:
+            print(f"    From name: {', '.join(sorted(themes['name_tokens']))}")
+        desc_keywords = themes["keywords"] - themes["name_tokens"]
+        if desc_keywords:
+            kw_list = sorted(desc_keywords)[:10]
+            print(f"    From description: {', '.join(kw_list)}")
+            if len(desc_keywords) > 10:
+                print(f"    ... and {len(desc_keywords) - 10} more")
+        print()
