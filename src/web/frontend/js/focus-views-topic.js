@@ -481,11 +481,11 @@ function renderTopicDetailView(topicId) {
             <!-- Child Topics Section - shows all topics sorted by status -->
             ${allChildTopics.length > 0 ? `
             <div class="topic-section">
-                <div class="topic-section-header collapsible open" onclick="togglePersonaSection(this, event)">
+                <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
                     <span>Topics (${allChildTopics.length})</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
-                <div class="collapsible-content open">
+                <div class="collapsible-content">
                     ${allChildTopics.map(child => renderTopicCard(child, true)).join('')}
                 </div>
             </div>

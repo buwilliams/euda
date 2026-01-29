@@ -501,38 +501,6 @@ class AgentManager:
             "next_run": next_run.isoformat()
         })
 
-    def _check_missed_triggers(self) -> set:
-        """Check if morning or evening triggers were missed since last run.
-
-        Returns a set of trigger names that were missed (e.g., {'time:morning', 'time:evening'}).
-        """
-        missed = set()
-        state = self._get_system_state()
-        config = self._get_system_config()
-        schedules = config.get("schedules", {})
-
-        now = datetime.now()
-        today = now.strftime("%Y-%m-%d")
-        current_time = now.strftime("%H:%M")
-
-        for trigger_name in ["morning", "evening"]:
-            if trigger_name not in schedules:
-                continue
-
-            schedule_time = schedules[trigger_name]
-            last_ran_key = f"last_{trigger_name}"
-            last_ran = state.get(last_ran_key)
-
-            # Check if trigger time has passed today
-            if current_time >= schedule_time:
-                # The trigger should have fired today
-                if last_ran != today:
-                    # It hasn't fired today - it was missed
-                    missed.add(f"time:{trigger_name}")
-                    print(f"[startup] Detected missed trigger: time:{trigger_name}")
-
-        return missed
-
     def _get_agent_triggers(self, config: dict) -> list:
         """Get triggers from agent config.
 
@@ -575,93 +543,6 @@ class AgentManager:
                 if topic.get("name") == topic_name:
                     return True
         return False
-
-    def _emit_startup_triggers(self):
-        """Create topics for any missed time triggers and interval triggers at startup."""
-        from src.core.data.topics import create_topic, get_agent_inbox_topic
-
-        today = datetime.now().strftime("%Y-%m-%d")
-
-        # Check for missed morning/evening triggers
-        missed = self._check_missed_triggers()
-
-        if missed:
-            for trigger in missed:
-                trigger_type = trigger.split(":")[1]  # "morning" or "evening"
-
-                for agent_id, agent in self.agents.items():
-                    config = agent.config
-                    if config.get("state", "enabled") == "disabled":
-                        continue
-
-                    # Get agent's inbox topic as parent for all trigger topics
-                    inbox = get_agent_inbox_topic(agent_id)
-                    parent_id = inbox["id"] if inbox else None
-
-                    # Handle object triggers
-                    triggers = self._get_agent_triggers(config)
-                    for t in triggers:
-                        if t.get("event") == trigger_type:
-                            topic_name = t.get("topic_name")
-                            topic_desc = t.get("topic_description", f"Missed scheduled {topic_name}")
-
-                            # Check for duplicate - only one pending at a time
-                            if not self._has_open_internal_topic(topic_name, agent_id):
-                                print(f"[startup] Creating missed topic: {topic_name} for {agent_id}")
-                                create_topic(
-                                    name=topic_name,
-                                    description=topic_desc,
-                                    parent_id=parent_id,
-                                    assignee=agent_id,
-                                    tags=[topic_name],  # Tag for querying
-                                    due_date=None,
-                                    created_by="system"
-                                )
-
-            # Update state to mark these as "handled" by setting them to today
-            state = self._get_system_state()
-            if "time:morning" in missed:
-                state["last_morning"] = today
-            if "time:evening" in missed:
-                state["last_evening"] = today
-            self._save_system_state(state)
-
-        # Check for missed interval triggers at startup
-        for agent_id, agent in self.agents.items():
-            config = agent.config
-            if config.get("state", "enabled") == "disabled":
-                continue
-
-            # Get agent's inbox topic as parent for all trigger topics
-            inbox = get_agent_inbox_topic(agent_id)
-            parent_id = inbox["id"] if inbox else None
-
-            triggers = self._get_agent_triggers(config)
-            for trigger in triggers:
-                event = trigger.get("event", "")
-                if not event.startswith("interval:"):
-                    continue
-
-                # Check if this interval trigger should have fired
-                if self._should_fire_interval_trigger(agent_id, trigger):
-                    topic_name = trigger.get("topic_name")
-                    topic_desc = trigger.get("topic_description", f"Missed interval {topic_name}")
-
-                    # Check for duplicate - only one pending at a time
-                    if not self._has_open_internal_topic(topic_name, agent_id):
-                        print(f"[startup] Creating missed interval topic: {topic_name} for {agent_id}")
-                        create_topic(
-                            name=topic_name,
-                            description=topic_desc,
-                            parent_id=parent_id,
-                            assignee=agent_id,
-                            tags=[topic_name],
-                            due_date=None,
-                            created_by="system"
-                        )
-
-                    # Update trigger state
-                    self._update_interval_trigger_state(agent_id, trigger)
 
     def _run_agent_loop(self, agent: Agent, stop_event: threading.Event):
         """Run an agent's work loop - monitors health while agent polls for topics.
@@ -982,10 +863,6 @@ class AgentManager:
 
         if not enabled:
             print("No enabled agents. Waiting...")
-
-        # Emit startup triggers (any missed time triggers)
-        if enabled:
-            self._emit_startup_triggers()
 
         # Emit system:start event for agents subscribed to it
         emit_system_event("system:start", data={"agents": [c["id"] for c in enabled]})
