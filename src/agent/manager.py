@@ -94,6 +94,7 @@ class AgentManager:
         self.threads: Dict[str, threading.Thread] = {}
         self.running = False
         self.agents_with_topics: Dict[str, bool] = {}  # Cache: agent_id -> has_topics
+        self._last_topic_check: Dict[str, float] = {}  # agent_id -> last re-poll timestamp
         self.event_bus = EventBus()
         # Config watching
         self._config_mtimes: Dict[str, float] = {}  # agent_id -> last mtime
@@ -580,6 +581,15 @@ class AgentManager:
 
                 # Check cache first (fast) - skip work cycle if no topics pending
                 if not self.agents_with_topics.get(agent.id, False):
+                    # Periodically re-query to catch due-date transitions
+                    now = time.time()
+                    last_check = self._last_topic_check.get(agent.id, 0)
+                    if now - last_check >= 60:
+                        self._last_topic_check[agent.id] = now
+                        topics = list_topics(status="todo", assignee=agent.id, actionable=True)
+                        if topics:
+                            self.agents_with_topics[agent.id] = True
+                            continue  # Wake up and work
                     if stop_event.wait(poll_interval):
                         break  # Stop requested
                     continue

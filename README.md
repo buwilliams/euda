@@ -14,7 +14,7 @@ _Euno (you-know), from Eudaimonia (you-dye-MOH-nee-ah)—ancient Greek for "huma
 4. [System](docs/4_system.md) — Entities, ontology, and lifecycle
 5. [Getting Started](docs/5_getting_started.md) — Local setup and deployment
 6. [Contributing](docs/6_contribute.md) — Extension hierarchy and PR process
-7. [Privacy](docs/9_privacy.md) — Privacy philosophy and current state
+7. [Privacy](docs/7_privacy.md) — Privacy philosophy and current state
 
 The [Getting Started Guide](docs/5_getting_started.md) will have you running Euno locally in minutes.
 
