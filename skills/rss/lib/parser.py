@@ -1,73 +1,10 @@
 """RSS and Atom feed parser."""
 
-import html
-import re
-import urllib.request
-import urllib.error
 from datetime import datetime
 from typing import Optional
 from xml.etree import ElementTree as ET
 
-
-# Namespace mappings for Atom and common RSS extensions
-NAMESPACES = {
-    "atom": "http://www.w3.org/2005/Atom",
-    "content": "http://purl.org/rss/1.0/modules/content/",
-    "dc": "http://purl.org/dc/elements/1.1/",
-}
-
-
-def _clean_html(text: str) -> str:
-    """Strip HTML tags and decode entities."""
-    if not text:
-        return ""
-    # Remove HTML tags
-    text = re.sub(r"<[^>]+>", "", text)
-    # Decode HTML entities
-    text = html.unescape(text)
-    # Normalize whitespace
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
-
-
-def _parse_date(date_str: str) -> Optional[str]:
-    """Parse various date formats to ISO format.
-
-    Handles common RSS/Atom date formats.
-    """
-    if not date_str:
-        return None
-
-    date_str = date_str.strip()
-
-    # Common date formats in RSS/Atom feeds
-    formats = [
-        "%a, %d %b %Y %H:%M:%S %z",  # RFC 822 (RSS)
-        "%a, %d %b %Y %H:%M:%S %Z",  # RFC 822 with timezone name
-        "%Y-%m-%dT%H:%M:%S%z",       # ISO 8601 (Atom)
-        "%Y-%m-%dT%H:%M:%SZ",        # ISO 8601 UTC
-        "%Y-%m-%d %H:%M:%S",         # Simple datetime
-        "%Y-%m-%d",                  # Simple date
-    ]
-
-    for fmt in formats:
-        try:
-            dt = datetime.strptime(date_str, fmt)
-            return dt.isoformat()
-        except ValueError:
-            continue
-
-    # Try parsing without timezone for malformed dates
-    try:
-        # Handle dates like "2024-01-15T10:30:00+00:00"
-        if "+" in date_str or date_str.endswith("Z"):
-            clean = re.sub(r"[Z+].*$", "", date_str)
-            dt = datetime.fromisoformat(clean)
-            return dt.isoformat()
-    except ValueError:
-        pass
-
-    return None
+from skills.common import HTTPClient, clean_html, extract_main_content, parse_date, parse_xml
 
 
 def fetch_feed(url: str, timeout: int = 30) -> dict:
@@ -81,27 +18,21 @@ def fetch_feed(url: str, timeout: int = 30) -> dict:
         Dict with feed metadata and posts, or error
     """
     try:
-        req = urllib.request.Request(
+        response = HTTPClient.fetch(
             url,
-            headers={
-                "User-Agent": "Euno/1.0 (RSS Reader)",
-                "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml",
-            },
+            headers={"Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml"},
+            timeout=timeout,
+            user_agent="Euno/1.0 (RSS Reader)",
         )
-        with urllib.request.urlopen(req, timeout=timeout) as response:
-            content = response.read()
+    except ConnectionError as e:
+        return {"error": f"Could not connect: {e}"}
 
-    except urllib.error.HTTPError as e:
-        return {"error": f"HTTP error {e.code}: {e.reason}"}
-    except urllib.error.URLError as e:
-        return {"error": f"Could not connect: {e.reason}"}
-    except Exception as e:
-        return {"error": f"Fetch failed: {str(e)}"}
+    if not response.ok:
+        return {"error": f"HTTP error {response.status}"}
 
-    try:
-        root = ET.fromstring(content)
-    except ET.ParseError as e:
-        return {"error": f"Invalid XML: {str(e)}"}
+    root, error = parse_xml(response.body)
+    if error:
+        return {"error": error}
 
     # Detect feed type and parse accordingly
     if root.tag == "{http://www.w3.org/2005/Atom}feed" or root.tag == "feed":
@@ -121,8 +52,8 @@ def _parse_rss(root: ET.Element, url: str) -> dict:
     feed = {
         "url": url,
         "format": "rss",
-        "title": _clean_html(channel.findtext("title", "")),
-        "description": _clean_html(channel.findtext("description", "")),
+        "title": clean_html(channel.findtext("title", "")),
+        "description": clean_html(channel.findtext("description", "")),
         "link": channel.findtext("link", ""),
         "posts": [],
     }
@@ -137,11 +68,11 @@ def _parse_rss(root: ET.Element, url: str) -> dict:
 
         post = {
             "id": post_id,
-            "title": _clean_html(item.findtext("title", "")),
+            "title": clean_html(item.findtext("title", "")),
             "link": item.findtext("link", ""),
             "content": content,
-            "content_text": _clean_html(content),
-            "published": _parse_date(item.findtext("pubDate", "")),
+            "content_text": clean_html(content),
+            "published": parse_date(item.findtext("pubDate", "")),
             "author": item.findtext("author") or item.findtext("{http://purl.org/dc/elements/1.1/}creator", ""),
         }
         feed["posts"].append(post)
@@ -188,8 +119,8 @@ def _parse_atom(root: ET.Element, url: str) -> dict:
     feed = {
         "url": url,
         "format": "atom",
-        "title": _clean_html(findtext(root, "title")),
-        "description": _clean_html(findtext(root, "subtitle")),
+        "title": clean_html(findtext(root, "title")),
+        "description": clean_html(findtext(root, "subtitle")),
         "link": feed_link,
         "posts": [],
     }
@@ -220,11 +151,11 @@ def _parse_atom(root: ET.Element, url: str) -> dict:
 
         post = {
             "id": post_id,
-            "title": _clean_html(findtext(entry, "title")),
+            "title": clean_html(findtext(entry, "title")),
             "link": post_link,
             "content": content,
-            "content_text": _clean_html(content),
-            "published": _parse_date(findtext(entry, "published")) or _parse_date(findtext(entry, "updated")),
+            "content_text": clean_html(content),
+            "published": parse_date(findtext(entry, "published")) or parse_date(findtext(entry, "updated")),
             "author": author,
         }
         feed["posts"].append(post)
@@ -246,71 +177,27 @@ def fetch_full_content(url: str, timeout: int = 30) -> dict:
         Dict with 'content' (HTML), 'content_text' (plain text), or 'error'
     """
     try:
-        req = urllib.request.Request(
+        response = HTTPClient.fetch(
             url,
-            headers={
-                "User-Agent": "Euno/1.0 (RSS Reader)",
-                "Accept": "text/html,application/xhtml+xml",
-            },
+            headers={"Accept": "text/html,application/xhtml+xml"},
+            timeout=timeout,
+            user_agent="Euno/1.0 (RSS Reader)",
         )
-        with urllib.request.urlopen(req, timeout=timeout) as response:
-            html_content = response.read().decode("utf-8", errors="replace")
+    except ConnectionError as e:
+        return {"error": f"Could not connect: {e}"}
 
-    except urllib.error.HTTPError as e:
-        return {"error": f"HTTP error {e.code}: {e.reason}"}
-    except urllib.error.URLError as e:
-        return {"error": f"Could not connect: {e.reason}"}
-    except Exception as e:
-        return {"error": f"Fetch failed: {str(e)}"}
+    if not response.ok:
+        return {"error": f"HTTP error {response.status}"}
 
-    # Extract main content using BeautifulSoup
-    try:
-        from bs4 import BeautifulSoup
-    except ImportError:
-        return {"error": "BeautifulSoup not available"}
+    html_content = response.text()
+    result = extract_main_content(html_content)
 
-    soup = BeautifulSoup(html_content, "html.parser")
-
-    # Remove script, style, nav, header, footer, aside elements
-    for tag in soup.find_all(["script", "style", "nav", "header", "footer", "aside", "noscript"]):
-        tag.decompose()
-
-    # Try to find main content in order of preference
-    content_elem = None
-
-    # 1. Look for article tag
-    content_elem = soup.find("article")
-
-    # 2. Look for main tag
-    if not content_elem:
-        content_elem = soup.find("main")
-
-    # 3. Look for common content class/id patterns
-    if not content_elem:
-        for selector in ["post-content", "entry-content", "article-content",
-                         "post-body", "entry-body", "article-body",
-                         "content", "post", "entry"]:
-            content_elem = soup.find(class_=selector) or soup.find(id=selector)
-            if content_elem:
-                break
-
-    # 4. Fall back to body
-    if not content_elem:
-        content_elem = soup.find("body")
-
-    if not content_elem:
-        return {"error": "Could not find content"}
-
-    # Get HTML and text
-    content_html = str(content_elem)
-    content_text = content_elem.get_text(separator=" ", strip=True)
-
-    # Clean up excessive whitespace
-    content_text = re.sub(r"\s+", " ", content_text).strip()
+    if result is None:
+        return {"error": "BeautifulSoup not available or could not find content"}
 
     return {
-        "content": content_html,
-        "content_text": content_text,
+        "content": result["content"],
+        "content_text": result["content_text"],
         "url": url,
     }
 
