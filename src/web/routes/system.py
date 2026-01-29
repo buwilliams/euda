@@ -21,6 +21,7 @@ from src.core.system.fresh_start import (
     delete_backup as _delete_backup,
 )
 from ...agent.cognition.metacognition import get_incident_tracker
+from ..events import emit_system_event
 
 
 router = APIRouter()
@@ -518,3 +519,68 @@ async def events():
             "X-Accel-Buffering": "no",
         }
     )
+
+
+# ============== Server Restart ==============
+
+# Global restart flag - checked by main.py after server stops
+_restart_requested = False
+_restart_reason = None
+
+
+def is_restart_requested() -> bool:
+    """Check if a restart was requested."""
+    return _restart_requested
+
+
+def get_restart_reason() -> str:
+    """Get the reason for the restart request."""
+    return _restart_reason
+
+
+class RestartRequest(BaseModel):
+    reason: str = None
+
+
+@router.post("/restart")
+async def restart_server(request: RestartRequest = None):
+    """Request a server restart.
+
+    The server will shut down gracefully and exit with code 42.
+    When running with the run-euno.sh wrapper, this triggers an automatic restart.
+
+    Args:
+        reason: Optional reason for the restart (for logging)
+
+    Returns:
+        Confirmation that restart was requested
+    """
+    global _restart_requested, _restart_reason
+    from ..events import trigger_shutdown
+
+    reason = request.reason if request else None
+    _restart_requested = True
+    _restart_reason = reason
+
+    # Log the restart request
+    emit_system_event("system:restart_requested", data={"reason": reason})
+
+    # Trigger SSE shutdown to close all connections
+    trigger_shutdown()
+
+    # Schedule the actual server shutdown
+    import asyncio
+
+    async def shutdown_after_response():
+        await asyncio.sleep(0.5)  # Give time for response to be sent
+        import os
+        import signal
+        os.kill(os.getpid(), signal.SIGTERM)
+
+    asyncio.create_task(shutdown_after_response())
+
+    return {
+        "success": True,
+        "message": "Restart requested",
+        "reason": reason
+    }

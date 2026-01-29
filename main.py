@@ -153,6 +153,14 @@ def cmd_web(args):
 
     asyncio.run(serve())
 
+    # Check if restart was requested
+    from src.web.routes.system import is_restart_requested, get_restart_reason
+    if is_restart_requested():
+        reason = get_restart_reason()
+        print(f"\nRestart requested{f': {reason}' if reason else ''}")
+        print("Exiting with code 42 for restart...")
+        sys.exit(42)
+
 
 class Spinner:
     """Simple text spinner for CLI feedback with dynamic messages."""

@@ -114,3 +114,82 @@ def send_notifications_batch(notifications: list) -> dict:
         "count": len(results)
     }
 
+
+def set_nested_config(key: str, value) -> dict:
+    """Update a nested system configuration value using dot notation.
+
+    Args:
+        key: Dot-notation key (e.g., 'logging.level' or 'schedules.morning')
+        value: Value to set (can be any JSON-serializable type)
+
+    Returns:
+        Status dict with key and previous value
+    """
+    _ensure_system_dir()
+
+    config_path = SYSTEM_DIR / "config.json"
+
+    config = {}
+    if config_path.exists():
+        with open(config_path) as f:
+            config = json.load(f)
+
+    # Navigate to parent and set the value
+    parts = key.split(".")
+    current = config
+    for part in parts[:-1]:
+        if part not in current:
+            current[part] = {}
+        current = current[part]
+
+    # Store previous value for reporting
+    previous = current.get(parts[-1])
+
+    # Set the new value
+    current[parts[-1]] = value
+
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=2)
+
+    return {"status": "updated", "key": key, "previous": previous}
+
+
+def trigger_config_reload() -> dict:
+    """Trigger reload of all cached configurations.
+
+    Invalidates caches for:
+    - Prompt templates
+    - LLM client
+    - Token awareness config
+
+    Returns:
+        Dict with list of invalidated caches
+    """
+    invalidated = []
+
+    # Clear prompt template cache
+    try:
+        from src.agent.cognition.reasoning.prompts import clear_cache as clear_prompt_cache
+        clear_prompt_cache()
+        invalidated.append("prompt_templates")
+    except ImportError:
+        pass
+
+    # Invalidate LLM client cache
+    try:
+        from src.llms import invalidate_client
+        invalidate_client()
+        invalidated.append("llm_client")
+    except ImportError:
+        pass
+
+    # Invalidate token awareness config
+    try:
+        from src.agent.cognition.metacognition import get_token_awareness
+        get_token_awareness().invalidate_config()
+        invalidated.append("token_awareness")
+    except ImportError:
+        pass
+
+    return {"invalidated": invalidated}
+
