@@ -770,10 +770,49 @@ The --delete flag propagates deletions (requires --push or --pull):
     # Perform sync
     result = sync(direction=direction, dry_run=dry_run, backup=not no_backup, verbose=True, delete=delete, data_only=data_only)
 
-    # Handle errors (but not conflicts - those are shown separately)
+    # Handle errors — for pre-existing conflicts, drop into interactive resolution
     if not result.success and result.error:
-        print(f"Error: {result.error}")
-        sys.exit(1)
+        non_interactive = "--non-interactive" in args
+        has_pre_existing = not non_interactive and list_conflicts(resolved=False)
+        if has_pre_existing:
+            print(f"\n{len(has_pre_existing)} unresolved conflict(s) from previous sync.\n")
+            resolved_count = 0
+            skipped_count = 0
+            for c in has_pre_existing:
+                print(f"  [{c.id}] {c.type.value}: {c.description}")
+                print(f"    Item: {c.item_id}")
+                if c.local_timestamp and c.remote_timestamp:
+                    print(f"    Local: {c.local_timestamp}")
+                    print(f"    Remote: {c.remote_timestamp}")
+                try:
+                    choice = input("  [l]ocal / [r]emote / [s]kip (l/r/s): ").strip().lower()
+                except (EOFError, KeyboardInterrupt):
+                    print("\nAborted.")
+                    break
+                if choice == "l":
+                    resolve_conflict(c.id, Resolution.KEEP_LOCAL)
+                    resolved_count += 1
+                    print("  -> Kept local\n")
+                elif choice == "r":
+                    resolve_conflict(c.id, Resolution.KEEP_REMOTE)
+                    resolved_count += 1
+                    print("  -> Kept remote\n")
+                else:
+                    skipped_count += 1
+                    print("  -> Skipped\n")
+            print(f"Done: {resolved_count} resolved, {skipped_count} skipped.")
+            if skipped_count > 0:
+                print("Run 'euno sync' again after resolving remaining conflicts.")
+                sys.exit(1)
+            # All resolved — re-run sync
+            print("\nAll conflicts resolved. Re-running sync...\n")
+            result = sync(direction=direction, dry_run=dry_run, backup=not no_backup, verbose=True, delete=delete, data_only=data_only)
+            if not result.success and result.error:
+                print(f"Error: {result.error}")
+                sys.exit(1)
+        else:
+            print(f"Error: {result.error}")
+            sys.exit(1)
 
     # Show code sync info
     if result.code_synced:
