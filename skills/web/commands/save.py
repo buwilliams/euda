@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 
 import typer
 
-from skills.web_search.lib.extract import extract_url
+from skills.web.lib.extract import extract_url
 
 
 def save(

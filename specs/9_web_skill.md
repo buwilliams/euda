@@ -1,13 +1,13 @@
 # Web Skill Specification
 
-Save and monitor web content for Euno agents.
+Search, extract, save, and monitor web content for Euno agents.
 
 ## Overview
 
-The web skill enables agents to save reference material and monitor pages for changes. It works alongside the **web_search** skill:
+The web skill provides comprehensive web interaction capabilities:
 
-- **web_search search** — Search the web using Tavily API
-- **web_search extract** — Extract content from URLs using Tavily API
+- **web search** — Search the web using Tavily API
+- **web extract** — Extract content from URLs using Tavily API
 - **web save** — Save extracted content to topic assets (uses Tavily)
 - **web watch** — Monitor pages for changes (uses local HTTP + BeautifulSoup, free)
 
@@ -15,10 +15,10 @@ Euno is a polite web citizen: watch requests are rate-limited (1s minimum betwee
 
 ## Use Cases
 
-| Pattern | Skill | Persistence | Example |
-|---------|-------|-------------|---------|
-| **Search** | web_search search | Short-term memory | Find job postings, news |
-| **Lookup** | web_search extract | None (chat only) | Extract a page to answer a question |
+| Pattern | Command | Persistence | Example |
+|---------|---------|-------------|---------|
+| **Search** | web search | Short-term memory | Find job postings, news |
+| **Lookup** | web extract | None (chat only) | Extract a page to answer a question |
 | **Reference** | web save | Topic asset | Save documentation for later |
 | **Monitor** | web watch | Trigger + memory | Watch for job postings, track changes |
 
@@ -27,19 +27,17 @@ Euno is a polite web citizen: watch requests are rate-limited (1s minimum betwee
 ```
 skills/
 ├── common/              # Shared utilities (HTTPClient, content extraction)
-├── web/                 # Save and monitor commands
-│   ├── cli.py           # Typer CLI entry point
-│   ├── commands/
-│   │   ├── save.py      # Save content to topic assets (uses Tavily)
-│   │   └── watch.py     # Monitor pages for changes (uses HTTPClient)
-│   └── lib/
-│       ├── storage.py   # Watch list persistence
-│       └── diff.py      # Change detection
-└── web_search/          # Search and extract commands
+└── web/                 # All web commands
     ├── cli.py           # Typer CLI entry point
+    ├── commands/
+    │   ├── search.py    # Search the web (Tavily API)
+    │   ├── extract.py   # Extract content from URLs (Tavily API)
+    │   ├── save.py      # Save content to topic assets (uses Tavily)
+    │   └── watch.py     # Monitor pages for changes (uses HTTPClient)
     └── lib/
-        ├── search.py    # Tavily Search API
-        └── extract.py   # Tavily Extract API
+        ├── search.py    # Tavily Search API client
+        ├── extract.py   # Tavily Extract API client
+        └── storage.py   # Watch list persistence
 ```
 
 Data storage:
@@ -52,6 +50,58 @@ data/skills/web/
 ```
 
 ## Commands
+
+### search
+
+Search the web using Tavily API.
+
+```bash
+web search <query> [--limit N] [--topic TOPIC] [--time-range RANGE] [--depth DEPTH] [--answer]
+```
+
+**Arguments:**
+- `query` — Search query (required)
+- `--limit, -l` — Number of results (default: 5, max: 20)
+- `--topic, -t` — Search topic: `general`, `news`, or `finance`
+- `--time-range, -r` — Filter by time: `day`, `week`, `month`, or `year`
+- `--depth, -d` — Search depth: `basic`, `advanced`, `fast`, or `ultra-fast`
+- `--answer, -a` — Include AI-generated answer summary
+
+**Output:**
+```
+Search results for: python web scraping
+Found: 5 results
+
+1. Beautiful Soup Documentation
+   URL: https://www.crummy.com/software/BeautifulSoup/
+   Beautiful Soup is a Python library for pulling data out of HTML...
+```
+
+**Cost:** 1 credit per search (basic) or 2 credits (advanced)
+
+### extract
+
+Extract content from a webpage using Tavily Extract API.
+
+```bash
+web extract <url> [--query QUERY] [--format FORMAT] [--depth DEPTH]
+```
+
+**Arguments:**
+- `url` — URL to extract content from (required)
+- `--query, -q` — Rerank extracted content by relevance to this query
+- `--format, -f` — Output format: `markdown` or `text` (default: markdown)
+- `--depth, -d` — Extraction depth: `basic` or `advanced` (default: basic)
+
+**Output:**
+```
+URL: https://example.com/article
+Total: 5,432 chars
+
+[Extracted content in markdown format...]
+```
+
+**Cost:** 1 credit per 5 URLs (basic) or 2 credits per 5 URLs (advanced)
 
 ### save
 
@@ -82,7 +132,7 @@ Topic: abc123
 
 **Cost:** 1 credit per 5 URLs (basic) or 2 credits per 5 URLs (advanced)
 
-> **Note:** For one-time content extraction without saving, use `web_search extract <url>`
+> **Note:** For one-time content extraction without saving, use `web extract <url>`
 
 ### watch add
 
@@ -302,7 +352,7 @@ The `web save` command integrates with the core topic/asset system:
 
 Two extraction methods are used:
 
-**Tavily Extract API** (used by `web save` and `web_search extract`):
+**Tavily Extract API** (used by `web extract` and `web save`):
 - High-quality extraction via Tavily's infrastructure
 - Costs credits (1 credit per 5 URLs basic, 2 credits per 5 URLs advanced)
 - Better handling of complex page structures
@@ -356,7 +406,7 @@ and let you know when new positions are posted.
 Agent: Good news! The Python Jobs page has 3 new postings since yesterday.
 Would you like me to extract the details?
 
-> web_search extract "https://jobs.example.com/posting/123"
+> web extract "https://jobs.example.com/posting/123"
 ```
 
 ### Reference Documentation Workflow
@@ -379,7 +429,7 @@ User: What does the Euno project README say about installation?
 
 Agent: Let me check.
 
-> web_search extract "https://github.com/example/euno/blob/main/README.md"
+> web extract "https://github.com/example/euno/blob/main/README.md"
 
 Agent: According to the README, installation requires...
 [Agent summarizes content, doesn't persist anywhere]
