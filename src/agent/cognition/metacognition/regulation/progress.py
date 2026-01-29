@@ -25,10 +25,11 @@ from .incidents import (
 
 
 # Default limits - can be overridden per-session
-DEFAULT_MAX_ITERATIONS = 20
+DEFAULT_MAX_ITERATIONS = 500  # Safety net (raised from 20 - primary control is LLM progress checks)
 DEFAULT_MAX_RECURSION_DEPTH = 3
 DEFAULT_STUCK_THRESHOLD = 5  # Same tool+input N times = stuck
 DEFAULT_TOOL_HISTORY_LIMIT = 100  # Max tool calls to track per session
+DEFAULT_PROGRESS_CHECK_INTERVAL = 10  # LLM progress check every N iterations
 
 
 @dataclass
@@ -48,6 +49,8 @@ class SessionProgress:
     max_iterations: int = DEFAULT_MAX_ITERATIONS
     max_recursion_depth: int = DEFAULT_MAX_RECURSION_DEPTH
     stuck_threshold: int = DEFAULT_STUCK_THRESHOLD
+    progress_check_interval: int = DEFAULT_PROGRESS_CHECK_INTERVAL
+    last_progress_check: int = 0  # Last iteration where we checked
     tool_history: List[ToolCall] = field(default_factory=list)
     started_at: str = field(default_factory=lambda: datetime.now().isoformat())
     last_activity: str = field(default_factory=lambda: datetime.now().isoformat())
@@ -95,15 +98,17 @@ class ProgressTracker:
         max_iterations: int = DEFAULT_MAX_ITERATIONS,
         max_recursion_depth: int = DEFAULT_MAX_RECURSION_DEPTH,
         stuck_threshold: int = DEFAULT_STUCK_THRESHOLD,
+        progress_check_interval: int = DEFAULT_PROGRESS_CHECK_INTERVAL,
         session_type: str = "generic"
     ) -> str:
         """Start tracking a new session.
 
         Args:
             agent_id: ID of the agent running the session
-            max_iterations: Maximum allowed iterations (default 20)
+            max_iterations: Maximum allowed iterations (default 500, safety net)
             max_recursion_depth: Maximum recursion depth (default 3)
             stuck_threshold: Number of identical tool calls before stuck (default 5)
+            progress_check_interval: LLM progress check every N iterations (default 10)
             session_type: Type of session for logging (e.g., "rlm", "work_cycle")
 
         Returns:
@@ -118,7 +123,8 @@ class ProgressTracker:
                 agent_id=agent_id,
                 max_iterations=max_iterations,
                 max_recursion_depth=max_recursion_depth,
-                stuck_threshold=stuck_threshold
+                stuck_threshold=stuck_threshold,
+                progress_check_interval=progress_check_interval
             )
 
             self._logger.debug({
@@ -211,6 +217,53 @@ class ProgressTracker:
             if not session:
                 return None
             return self._check_stuck_pattern(session)
+
+    def should_check_progress(self, session_id: str) -> bool:
+        """Check if it's time for an LLM progress check.
+
+        Returns True every progress_check_interval iterations.
+        """
+        with self._lock:
+            session = self._sessions.get(session_id)
+            if not session:
+                return False
+
+            iterations_since_check = session.iteration_count - session.last_progress_check
+            return iterations_since_check >= session.progress_check_interval
+
+    def mark_progress_checked(self, session_id: str):
+        """Mark that a progress check was performed."""
+        with self._lock:
+            session = self._sessions.get(session_id)
+            if session:
+                session.last_progress_check = session.iteration_count
+
+    def get_recent_activity_summary(self, session_id: str, last_n: int = 10) -> dict:
+        """Get summary of recent activity for progress check prompt.
+
+        Args:
+            session_id: Session to get summary for
+            last_n: Number of recent tool calls to consider
+
+        Returns:
+            Dict with iteration_count, total_tool_calls, recent_tools_used, tool_variety
+        """
+        with self._lock:
+            session = self._sessions.get(session_id)
+            if not session:
+                return {}
+
+            recent_tools = session.tool_history[-last_n:]
+            tool_names = [t.tool for t in recent_tools]
+            unique_tools = list(set(tool_names))
+
+            return {
+                "iteration_count": session.iteration_count,
+                "total_tool_calls": len(session.tool_history),
+                "recent_tool_calls": len(recent_tools),
+                "recent_tools_used": unique_tools,
+                "tool_variety": len(unique_tools),
+            }
 
     def _check_stuck_pattern(self, session: SessionProgress) -> Optional[str]:
         """Check for stuck patterns in tool history.

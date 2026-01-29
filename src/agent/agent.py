@@ -679,6 +679,62 @@ class Agent:
         finally:
             clear_agent_context()
 
+    def _check_progress_with_llm(self, topic: dict) -> bool:
+        """Ask LLM if it's making progress. Returns True if should continue.
+
+        Makes a lightweight LLM call (no tools, small max_tokens) to evaluate
+        whether the agent is making meaningful progress on the current topic.
+
+        Args:
+            topic: The current topic being worked on
+
+        Returns:
+            True if making progress (should continue), False if stuck (should exit)
+        """
+        from .cognition.reasoning.prompts import render_template
+
+        # Get activity summary
+        summary = self.metacognition.get_activity_summary()
+
+        # Load and format prompt
+        recent_tools = summary.get("recent_tools_used", [])
+        prompt = render_template(
+            "agent/progress_check",
+            iteration_count=summary.get("iteration_count", 0),
+            total_tool_calls=summary.get("total_tool_calls", 0),
+            recent_tools_used=", ".join(recent_tools) if recent_tools else "none",
+            tool_variety=summary.get("tool_variety", 0),
+            recent_tool_calls=summary.get("recent_tool_calls", 0),
+        )
+
+        # Lightweight LLM call (no tools, small max_tokens)
+        client = get_client()
+        response = client.create(
+            system="You are evaluating whether an agent is making progress on a task.",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=200,
+            tools=None,
+            agent_id=self.id,
+            topic_id=topic.get("id"),
+        )
+
+        # Parse response
+        response_text = ""
+        for block in response.content:
+            if hasattr(block, "text"):
+                response_text += block.text
+
+        # Mark that we checked
+        self.metacognition.mark_progress_checked()
+
+        # Check for PROGRESS:YES or PROGRESS:NO
+        if "PROGRESS:NO" in response_text.upper():
+            self._log("progress_check_negative", {"response": response_text[:200]})
+            return False
+
+        self._log("progress_check_positive", {"response": response_text[:200]})
+        return True
+
     def work_cycle_sync(self, trigger_context: dict = None):
         """Perform one cycle of autonomous work (synchronous version for threads).
 
@@ -764,6 +820,17 @@ class Agent:
 
                     # Increment progress tracker to enforce iteration limits
                     self.metacognition.increment_iteration()
+
+                    # LLM progress check every N iterations
+                    if self.metacognition.should_check_progress():
+                        self._log("progress_check_triggered", {"iteration": iteration})
+                        if not self._check_progress_with_llm(current_topic):
+                            # LLM says we're not making progress - graceful exit
+                            self._log("progress_check_exit", {"iteration": iteration})
+                            from src.core.data.topics import update_topic
+                            update_topic(topic_id, notes="Agent stopped: not making progress after progress check")
+                            print(f"[{self.id}] Progress check: not making progress, stopping work")
+                            break  # Exit loop gracefully, don't raise exception
 
                     # Check if topic was cancelled (archived/deleted) by user
                     if iteration > 1 and self._is_topic_cancelled(topic_id):
