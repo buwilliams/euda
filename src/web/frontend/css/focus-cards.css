@@ -101,11 +101,6 @@
     background: #e8f0f8;
 }
 
-.card-assignee-label.card-unassigned {
-    color: #999;
-    background: #f0f0f0;
-}
-
 .card-arrow {
     color: #ccc;
     font-size: var(--font-size-xl);

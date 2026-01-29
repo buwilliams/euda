@@ -77,9 +77,18 @@ data/system/api_calls.json
 data/system/api_calls.jsonl
 data/system/store/
 data/system/token_usage/
+data/system/sync/*
+!data/system/sync/.gitkeep
 
 # User data directory (personal data)
 data/user/
+
+# Skill data (credentials, user config)
+data/skills/
+
+# Old plugins data (before rename to skills)
+data/plugins/*
+!data/plugins/.keep
 
 # Keep directory structure
 !data/**/.gitkeep
@@ -119,6 +128,8 @@ eggs/
 lib/
 !skills/*/lib/
 lib64/
+# But keep skills lib directories (implementation code)
+!skills/*/lib/
 parts/
 sdist/
 var/
@@ -147,6 +158,7 @@ env/
 # ===================
 .DS_Store
 Thumbs.db
+*:Zone.Identifier
 
 # ===================
 # DevOps / Diagnostics
@@ -162,3 +174,4 @@ euno-diagnostics-*.tar.gz
 # Personal Data
 # ===================
 lifelog/
+

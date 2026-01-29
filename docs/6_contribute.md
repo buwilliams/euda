@@ -151,6 +151,32 @@ git push -u origin feature/my-feature
 gh pr create --title "Add my feature" --body "Description"
 ```
 
+## Syncing Data
+
+Keep local and remote in sync when developing on multiple machines or deploying to a server:
+
+```bash
+# Full sync (code + data, stops/restarts server)
+euno sync                          # Deploy code + bidirectional data merge
+euno sync --data-only              # Skip code sync, data only
+euno sync --push                   # Local → remote only
+euno sync --pull                   # Remote → local only
+euno sync --dry-run                # Preview changes
+
+# Conflict resolution
+euno sync status                   # Show sync state
+euno sync conflicts                # List unresolved conflicts
+euno sync resolve <id> --keep-local
+euno sync resolve <id> --keep-remote
+```
+
+By default, sync: (1) stops remote server, (2) syncs code, (3) syncs data, (4) restarts server.
+Use `--data-only` to skip code deployment. Backups are created automatically before data sync.
+
+**What syncs:** Source code (local → remote), topics, memory, agent configs/identities, assets
+
+**What doesn't sync:** `.git/`, `.venv/`, `.env`, logs, auth, sync state
+
 ## Community
 
 **[Discord](https://discord.gg/5B9VdQ6vYP)** — where we meet, plan, and discuss. Come say hi!

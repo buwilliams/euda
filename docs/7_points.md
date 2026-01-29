@@ -59,8 +59,8 @@ Points are retroactively assigned for contributions made before Gate 4, so early
 ## Checking Your Points
 
 ```bash
-uv run euno points           # Show all contributors
-uv run euno points logan     # Filter by name (fuzzy match)
+euno points           # Show all contributors
+euno points logan     # Filter by name (fuzzy match)
 ```
 
 ## Related Documents

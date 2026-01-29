@@ -225,10 +225,10 @@ class TestAgentChat:
 class TestAgentToolExecution:
     """Test Agent._execute_tools() method.
 
-    The agent now uses meta-tools for plugin execution:
-    - list_plugins: Discover available plugins
-    - plugin_usage: Get help for a plugin
-    - execute_plugin: Run a plugin command
+    The agent now uses meta-tools for skill execution:
+    - list_skills: Discover available skills
+    - skill_usage: Get help for a skill
+    - execute_skill: Run a skill command
     """
 
     def _create_agent(self, tmp_path, tools=None):
@@ -253,16 +253,16 @@ class TestAgentToolExecution:
         """_execute_tools returns tool results for each call."""
         agent = self._create_agent(tmp_path)
 
-        # Create mock response with meta-tool use (execute_plugin)
+        # Create mock response with meta-tool use (execute_skill)
         from tests.fixtures.llm.mock_client import ToolUseBlock
 
         mock_response = MagicMock()
         mock_response.content = [
-            ToolUseBlock(id="tool_1", name="execute_plugin", input={"plugin": "core", "command": "date now"})
+            ToolUseBlock(id="tool_1", name="execute_skill", input={"skill": "core", "command": "date now"})
         ]
 
         # Mock the meta-tool execution
-        with patch("src.plugins.execute_meta_tool", return_value={"success": True, "output": "2025-01-23", "exit_code": 0}):
+        with patch("src.skills.execute_meta_tool", return_value={"success": True, "output": "2025-01-23", "exit_code": 0}):
             results = agent._execute_tools(mock_response)
 
         assert len(results) == 1
@@ -278,46 +278,46 @@ class TestAgentToolExecution:
 
         mock_response = MagicMock()
         mock_response.content = [
-            ToolUseBlock(id="tool_1", name="execute_plugin", input={"plugin": "nonexistent", "command": "test"})
+            ToolUseBlock(id="tool_1", name="execute_skill", input={"skill": "nonexistent", "command": "test"})
         ]
 
-        # execute_meta_tool returns error dict for failed plugins
-        with patch("src.plugins.execute_meta_tool", return_value={"error": "Plugin not found: nonexistent"}):
+        # execute_meta_tool returns error dict for failed skills
+        with patch("src.skills.execute_meta_tool", return_value={"error": "Skill not found: nonexistent"}):
             results = agent._execute_tools(mock_response)
 
         assert len(results) == 1
         assert "error" in results[0]["content"].lower()
 
-    def test_execute_tools_list_plugins(self, tmp_path):
-        """_execute_tools handles list_plugins meta-tool."""
+    def test_execute_tools_list_skills(self, tmp_path):
+        """_execute_tools handles list_skills meta-tool."""
         agent = self._create_agent(tmp_path)
 
         from tests.fixtures.llm.mock_client import ToolUseBlock
 
         mock_response = MagicMock()
         mock_response.content = [
-            ToolUseBlock(id="tool_1", name="list_plugins", input={})
+            ToolUseBlock(id="tool_1", name="list_skills", input={})
         ]
 
-        with patch("src.plugins.execute_meta_tool", return_value={"plugins": [{"name": "core", "description": "Core functionality"}], "count": 1}):
+        with patch("src.skills.execute_meta_tool", return_value={"skills": [{"name": "core", "description": "Core functionality"}], "count": 1}):
             results = agent._execute_tools(mock_response)
 
         assert len(results) == 1
         assert results[0]["type"] == "tool_result"
         assert "core" in results[0]["content"]
 
-    def test_execute_tools_plugin_usage(self, tmp_path):
-        """_execute_tools handles plugin_usage meta-tool."""
+    def test_execute_tools_skill_usage(self, tmp_path):
+        """_execute_tools handles skill_usage meta-tool."""
         agent = self._create_agent(tmp_path)
 
         from tests.fixtures.llm.mock_client import ToolUseBlock
 
         mock_response = MagicMock()
         mock_response.content = [
-            ToolUseBlock(id="tool_1", name="plugin_usage", input={"plugin": "core"})
+            ToolUseBlock(id="tool_1", name="skill_usage", input={"skill": "core"})
         ]
 
-        with patch("src.plugins.execute_meta_tool", return_value={"plugin": "core", "usage": "Usage: core topics list"}):
+        with patch("src.skills.execute_meta_tool", return_value={"skill": "core", "usage": "Usage: core topics list"}):
             results = agent._execute_tools(mock_response)
 
         assert len(results) == 1

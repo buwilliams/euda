@@ -4,7 +4,7 @@ Rules for the command-line interface.
 
 ## Entry Point
 
-- Single entry point: `uv run euno {command}`
+- Single entry point: `euno {command}`
 - Default command is `help` if none specified
 - Unknown commands show help and exit with code 1
 
@@ -12,21 +12,31 @@ Rules for the command-line interface.
 
 - `web` — Run web server (port 8000) with agents in background
 - `chat [agent]` — Interactive chat with an agent (default: user)
-- `plugin` — Run plugin commands
+- `skills` — Run skill commands
 - `dev` — Developer tools for debugging agents
 - `points [name]` — Show contribution points, optionally filtered by name
 - `set-password` — Set access password for web UI (empty password disables auth)
 - `remove-password` — Disable authentication
 - `fresh-start` — Reset all user data while keeping configs
 
+### Sync Commands
+
+- `sync` — Full sync: stop server, sync code, sync data, restart server
+- `sync --data-only` — Sync only data, skip code sync
+- `sync --push` — Push local data to remote only
+- `sync --pull` — Pull remote data to local only
+- `sync --delete` — Delete files not on source (requires --push or --pull)
+- `sync --dry-run` — Preview changes without applying
+- `sync --no-backup` — Skip backup before sync
+- `sync init [server]` — Initialize sync with remote server
+- `sync status` — Show sync state and pending conflicts
+- `sync conflicts` — List unresolved conflicts
+- `sync resolve <id> --keep-local|--keep-remote|--keep-newest` — Resolve a conflict
+
 ### Server Commands
 
-- `server-deploy` — Deploy to remote server
-- `server-pull` — Pull data from remote server
-- `server-push` — Push data to remote server
-- `server-push-agents` — Push agent configs to remote server
+- `server-setup` — Setup remote server (first time only)
 - `server-remote` — SSH into remote server
-- `server-setup` — Setup remote server
 - `server-remove` — Remove remote server
 
 ## web
@@ -44,24 +54,45 @@ Rules for the command-line interface.
 - Handles budget exceeded gracefully
 - Type 'quit', 'exit', or 'q' to end session
 
-## plugin
+## skills
 
-- `plugin list` — List all available plugins
-- `plugin <name> --help` — Show plugin help
-- `plugin <name> <command> [args]` — Execute plugin command
+- `skills list` — List all available skills
+- `skills <name> --help` — Show skill help
+- `skills <name> <command> [args]` — Execute skill command
 
-Plugin commands replace direct CLI commands for topics, agents, memory, etc.
+Skill commands replace direct CLI commands for topics, agents, memory, etc.
 
 Examples:
 ```
-euno plugin core topics list
-euno plugin core agents list
-euno plugin core memory list
-euno plugin core store import ~/docs
-euno plugin scaffold plugin weather -d "Weather data"
+euno skills core topics list
+euno skills core agents list
+euno skills core memory list
+euno skills core store import ~/docs
 ```
 
-See `specs/8_plugins.md` for full plugin documentation.
+See `specs/8_skills.md` for full skill documentation.
+
+## sync
+
+By default, sync performs full deployment:
+1. Stops remote server (`systemctl stop euno`)
+2. Syncs source code (local → remote, one-way with `--delete`)
+3. Syncs data (bidirectional, non-destructive with conflict detection)
+4. Restarts remote server (only if no conflicts)
+
+Key behaviors:
+- Uses `--checksum` for reliable file comparison across time zones
+- Creates backups before applying changes (local backup for pull, remote for push)
+- Topological sort ensures parent topics are imported before children
+- Server restart skipped if conflicts detected (user must resolve and re-run)
+- Use `--data-only` to skip code sync (steps 1, 2, 4)
+
+Code sync excludes: `.git/`, `.venv/`, `data/`, `__pycache__/`, `*.pyc`, `.env`
+
+Conflict resolution:
+- `--keep-local` — Use local version
+- `--keep-remote` — Use remote version
+- `--keep-newest` — Use whichever has newer timestamp
 
 ## fresh-start
 

@@ -6,7 +6,7 @@ Set up Euno for local development or deploy to your own server.
 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) package manager
-- OpenAI API key
+- API key for your LLM provider (see `.env.example` for supported providers)
 
 ## Local Development
 
@@ -16,17 +16,21 @@ git clone https://github.com/buwilliams/euno.git && cd euno
 
 # Configure environment
 cp .env.example .env
-# Edit .env and add your OPENAI_API_KEY
+# Edit .env and add your LLM provider API key
 
 # Install dependencies
 uv sync
 
+# Optional: Add alias for convenience
+echo "alias euno='uv run euno'" >> ~/.bashrc  # or ~/.zshrc
+source ~/.bashrc
+
 # Set your password
-uv run euno set-password
+euno set-password
 
 # Start Euno (choose one)
-uv run euno web     # Web UI at http://localhost:8000
-uv run euno chat    # CLI chat interface
+euno web     # Web UI at http://localhost:8000
+euno chat    # CLI chat interface
 ```
 
 ## Verify It Works
@@ -39,19 +43,18 @@ uv run euno chat    # CLI chat interface
 
 ## Usage
 
+Commands below assume the alias. Without it, prefix with `uv run`.
+
 ```bash
-# Start Euno (choose one)
-uv run euno web                    # Web UI + agents
-uv run euno chat                   # CLI chat + agents
+euno web                           # Web UI + agents
+euno chat                          # CLI chat + agents
+euno dev watch                     # Stream all system events
+euno dev memory chat               # View agent's memory
+euno skills core topics list       # List topics via skill
 
 # Run tests
-uv run pytest                      # unit + integration tests (default)
+uv run pytest                      # unit + integration tests
 uv run pytest tests/e2e/           # e2e UI tests (requires running server)
-
-# Other commands
-uv run euno dev watch              # stream all system events
-uv run euno dev memory chat        # view agent's memory
-uv run euno plugin core topics list  # list topics via plugin
 ```
 
 ## Deploy to Server
@@ -69,15 +72,18 @@ ssh-copy-id root@<ip>
 
 # 3. Add to .env
 EUNO_SERVER=root@<ip>
-OPENAI_API_KEY=sk-...
+# Add your LLM provider API key (at least one required)
 
-# 4. Run setup and deploy
+# 4. Run setup (first time only)
 ./devops/setup-server.sh
-./devops/deploy-euno.sh
-./devops/push-data-remote.sh
 
-# 5. Access at http://<ip>
+# 5. Deploy code and sync data
+euno sync
+
+# 6. Access at http://<ip>
 ```
+
+**Syncing:** `euno sync` deploys code and syncs data bidirectionally. Use `--data-only` to skip code deployment. See [Contributing](6_contribute.md#syncing-data) for details.
 
 ## Next Steps
 

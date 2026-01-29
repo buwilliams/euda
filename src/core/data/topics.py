@@ -1301,3 +1301,186 @@ def get_topics_completed_by_agent(agent_id: str, limit: int = 20) -> List[dict]:
     return topics
 
 
+# =============================================================================
+# SYNC FUNCTIONS - Export/Import for bidirectional sync
+# =============================================================================
+
+def export_topics() -> dict:
+    """Export all topics and logs for sync.
+
+    Returns a dict with:
+    - topics: List of all topic records
+    - logs: List of all log entries
+    - exported_at: Timestamp of export
+    """
+    from datetime import datetime, UTC
+
+    conn = _get_connection()
+
+    # Export all topics
+    cursor = conn.execute("SELECT * FROM topics ORDER BY created_at")
+    topics = []
+    for row in cursor:
+        topic = dict(row)
+        # Convert tags from JSON string to list
+        if topic.get("tags"):
+            topic["tags"] = json.loads(topic["tags"])
+        else:
+            topic["tags"] = []
+        # Convert someday to bool
+        topic["someday"] = bool(topic.get("someday", 0))
+        topics.append(topic)
+
+    # Export all logs
+    cursor = conn.execute(
+        "SELECT topic_id, timestamp, agent, action FROM topic_logs ORDER BY id"
+    )
+    logs = [dict(row) for row in cursor]
+
+    return {
+        "topics": topics,
+        "logs": logs,
+        "exported_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+    }
+
+
+def import_topics(data: dict, merge: bool = True) -> dict:
+    """Import topics and logs from sync data.
+
+    Args:
+        data: Dict with 'topics' and 'logs' keys from export_topics()
+        merge: If True, merge with existing data. If False, replace.
+
+    Returns:
+        Dict with import results: created, updated, skipped counts
+    """
+    topics = data.get("topics", [])
+    logs = data.get("logs", [])
+
+    created = 0
+    updated = 0
+    skipped = 0
+    log_count = 0
+
+    conn = _get_connection()
+
+    # Get existing topic IDs and their updated_at timestamps
+    existing = {}
+    cursor = conn.execute("SELECT id, updated_at FROM topics")
+    for row in cursor:
+        existing[row["id"]] = row["updated_at"]
+
+    # Import topics (order matters for parent_id relationships)
+    # Use topological sort to ensure parents are created before children
+    def topological_sort(topics_list):
+        """Sort topics so parents come before children."""
+        # Build lookup and dependency graph
+        by_id = {t["id"]: t for t in topics_list}
+        result = []
+        visited = set()
+
+        def visit(topic):
+            if topic["id"] in visited:
+                return
+            visited.add(topic["id"])
+            # Visit parent first if it's in our import set
+            parent_id = topic.get("parent_id")
+            if parent_id and parent_id in by_id:
+                visit(by_id[parent_id])
+            result.append(topic)
+
+        for topic in topics_list:
+            visit(topic)
+        return result
+
+    sorted_topics = topological_sort(topics)
+
+    for topic in sorted_topics:
+        topic_id = topic["id"]
+        tags_json = json.dumps(topic.get("tags", []))
+        someday_int = int(topic.get("someday", False))
+
+        if topic_id in existing:
+            if merge:
+                # Compare updated_at to decide if we should update
+                local_updated = existing[topic_id]
+                remote_updated = topic.get("updated_at", "")
+
+                if remote_updated > local_updated:
+                    # Remote is newer, update
+                    with _transaction() as conn:
+                        conn.execute('''
+                            UPDATE topics SET
+                                name = ?, parent_id = ?, status = ?, updated_at = ?,
+                                created_by = ?, description = ?, due_date = ?,
+                                someday = ?, tags = ?, assignee = ?, agent_id = ?,
+                                pending_from = ?, completed_at = ?
+                            WHERE id = ?
+                        ''', (
+                            topic["name"], topic.get("parent_id"), topic["status"],
+                            topic["updated_at"], topic.get("created_by", "user"),
+                            topic.get("description"), topic.get("due_date"),
+                            someday_int, tags_json, topic.get("assignee"),
+                            topic.get("agent_id"), topic.get("pending_from"),
+                            topic.get("completed_at"), topic_id
+                        ))
+                    updated += 1
+                else:
+                    skipped += 1
+            else:
+                skipped += 1
+        else:
+            # New topic - insert
+            with _transaction() as conn:
+                conn.execute('''
+                    INSERT INTO topics (
+                        id, name, parent_id, status, created_at, updated_at,
+                        created_by, description, due_date, someday, tags,
+                        assignee, agent_id, pending_from, completed_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    topic_id, topic["name"], topic.get("parent_id"), topic["status"],
+                    topic["created_at"], topic["updated_at"],
+                    topic.get("created_by", "user"), topic.get("description"),
+                    topic.get("due_date"), someday_int, tags_json,
+                    topic.get("assignee"), topic.get("agent_id"),
+                    topic.get("pending_from"), topic.get("completed_at")
+                ))
+            created += 1
+
+    # Import logs (deduplicate by topic_id + timestamp + agent + action)
+    existing_logs = set()
+    cursor = conn.execute(
+        "SELECT topic_id, timestamp, agent, action FROM topic_logs"
+    )
+    for row in cursor:
+        key = (row["topic_id"], row["timestamp"], row["agent"], row["action"])
+        existing_logs.add(key)
+
+    for log in logs:
+        key = (log["topic_id"], log["timestamp"], log["agent"], log["action"])
+        if key not in existing_logs:
+            # Check that topic exists
+            if log["topic_id"] in existing or any(t["id"] == log["topic_id"] for t in topics):
+                with _transaction() as conn:
+                    try:
+                        conn.execute('''
+                            INSERT INTO topic_logs (topic_id, timestamp, agent, action)
+                            VALUES (?, ?, ?, ?)
+                        ''', (log["topic_id"], log["timestamp"], log["agent"], log["action"]))
+                        log_count += 1
+                    except Exception:
+                        pass  # Skip if topic doesn't exist
+
+    # Notify UI if changes were made
+    if created > 0 or updated > 0:
+        _emit_topics_update()
+
+    return {
+        "created": created,
+        "updated": updated,
+        "skipped": skipped,
+        "logs_imported": log_count,
+    }
+
+

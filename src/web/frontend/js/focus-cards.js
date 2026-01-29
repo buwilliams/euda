@@ -53,10 +53,10 @@ function renderMinimalTopicCard(topic) {
         statusIndicator = '<span class="card-status-indicator card-assigned-indicator" title="Assigned to ' + escapeHtml(assignee) + '">' + icon('user') + '</span>';
     }
 
-    // Assignee label shown before the arrow (shows agent name or "unassigned")
+    // Assignee label shown before the arrow (only when assigned to an agent)
     const assigneeLabel = assignee
         ? `<span class="card-assignee-label">${escapeHtml(assignee)}</span>`
-        : '<span class="card-assignee-label card-unassigned">unassigned</span>';
+        : '';
 
     return `
         <div class="card card-minimal${topic.status === 'done' ? ' card-completed' : ''}${topic.status === 'archived' ? ' card-archived' : ''}${topic.status === 'error' ? ' card-error' : ''}" data-topic-id="${topic.id}" data-testid="topic-card" onclick="navigateFocus('topic-${topic.id}')">
