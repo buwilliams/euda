@@ -9,7 +9,7 @@ import typer
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from skills.core.commands import topics, assets, memory, identity, agents, consolidate, dates, notifications, quote, done, store, delegation
+from skills.core.commands import topics, assets, memory, identity, agents, consolidate, dates, notifications, quote, done, store, delegation, system, prompts
 
 app = typer.Typer(
     name="core",
@@ -29,6 +29,8 @@ app.add_typer(notifications.app, name="notify", help="Notification commands")
 app.add_typer(quote.app, name="quote", help="Quote generation")
 app.add_typer(store.app, name="store", help="Import files to long-term memory")
 app.add_typer(delegation.app, name="delegation", help="Task delegation to other agents")
+app.add_typer(system.app, name="system", help="System management and configuration")
+app.add_typer(prompts.app, name="prompts", help="Prompt template management")
 
 # Register standalone commands
 app.command(name="done")(done.done_working)
