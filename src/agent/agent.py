@@ -304,6 +304,7 @@ class Agent:
 
         prompt = render_template(
             "agent/system",
+            current_date=datetime.now().strftime("%A, %B %d, %Y"),
             identity=self.identity,
             user_identity=user_identity,
             tools_by_type=skills_text  # Reuse the template variable
