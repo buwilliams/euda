@@ -274,7 +274,6 @@ The autobot skill provides full skill lifecycle management. Use it to create, up
 - `autobot files <skill>` - List files in a skill directory
 
 **Management**
-- `autobot list` - List all available skills
 - `autobot delete <skill> [file] [--force]` - Delete a skill or file within a skill
 - `autobot validate <skill> [--fix]` - Validate skill structure and conventions
 - `autobot test <skill>` - Test a skill by running its --help command

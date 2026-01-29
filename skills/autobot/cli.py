@@ -554,35 +554,6 @@ if __name__ == "__main__":
         print(f"Skill '{skill}' is valid")
 
 
-@app.command("list")
-def list_skills():
-    """List all available skills."""
-    if not SKILLS_DIR.exists():
-        print("No skills directory found.")
-        raise typer.Exit(1)
-
-    skills = []
-    for path in sorted(SKILLS_DIR.iterdir()):
-        if path.is_dir() and not path.name.startswith((".", "_")):
-            cli_py = path / "cli.py"
-            if cli_py.exists():
-                # Extract description from docstring
-                desc = _extract_description(cli_py)
-                skills.append((path.name, desc))
-
-    if not skills:
-        print("No skills found.")
-        return
-
-    print("Available skills:")
-    print()
-    for name, desc in skills:
-        if desc:
-            print(f"  {name}: {desc}")
-        else:
-            print(f"  {name}")
-
-
 @app.command("read")
 def read_file(
     skill: str = typer.Argument(..., help="Skill name"),
