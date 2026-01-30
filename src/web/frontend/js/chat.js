@@ -9,6 +9,7 @@ async function initializeConversation() {
     inlineMessages.innerHTML = '<div class="chat-loading">Loading...</div>';
 
     try {
+        bindTopicContextLabel();
         const convResponse = await fetch('/api/chat/conversations/recent?count=1');
         const data = await convResponse.json();
 
@@ -310,6 +311,24 @@ function updateInputContext() {
         label.onclick = null;
         label.title = '';
     }
+}
+
+function bindTopicContextLabel() {
+    const label = document.getElementById('topic-context-label');
+    if (!label) return;
+    if (label.dataset.bound === 'true') return;
+    label.dataset.bound = 'true';
+    label.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (chatTopicContext) {
+            clearChatTopicContext();
+            return;
+        }
+        if (currentTopicContext) {
+            clearTopicContext();
+        }
+    });
 }
 
 async function enterTopicChatMode(topicId, topicName) {

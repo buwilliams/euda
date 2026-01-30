@@ -307,6 +307,8 @@
     cursor: pointer;
     display: none;
     white-space: nowrap;
+    z-index: 2;
+    pointer-events: auto;
 }
 
 .topic-context-exit {
