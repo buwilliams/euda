@@ -1,0 +1,48 @@
+{
+  "topics": {
+    "topic-525cad32": {
+      "deleted_at": "2026-01-30T09:18:06.484065Z",
+      "delete_children": false
+    },
+    "topic-d5d52e99": {
+      "deleted_at": "2026-01-30T09:18:06.523910Z",
+      "delete_children": true
+    },
+    "topic-c18ba5eb": {
+      "deleted_at": "2026-01-30T09:18:06.526411Z",
+      "delete_children": true
+    },
+    "topic-2da615ac": {
+      "deleted_at": "2026-01-30T09:43:31.984594Z",
+      "delete_children": false
+    },
+    "topic-63480258": {
+      "deleted_at": "2026-01-30T09:43:32.027550Z",
+      "delete_children": true
+    },
+    "topic-3466d642": {
+      "deleted_at": "2026-01-30T09:43:32.030389Z",
+      "delete_children": true
+    },
+    "topic-d942bee9": {
+      "deleted_at": "2026-01-30T09:47:43.380747Z",
+      "delete_children": false
+    },
+    "topic-ce2e51c5": {
+      "deleted_at": "2026-01-30T09:47:43.423631Z",
+      "delete_children": true
+    },
+    "topic-f1e7a95e": {
+      "deleted_at": "2026-01-30T09:47:43.426612Z",
+      "delete_children": true
+    }
+  },
+  "memory": {
+    "test-agent": {
+      "mem-9b77bb91": "2026-01-30T09:18:04.496867Z",
+      "mem-expired": "2026-01-30T09:18:04.536089Z",
+      "mem-2f48589e": "2026-01-30T09:43:29.979046Z",
+      "mem-47a72912": "2026-01-30T09:47:41.418170Z"
+    }
+  }
+}

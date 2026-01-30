@@ -181,7 +181,9 @@ def list_memory(agent_id: str = "user") -> List[dict]:
 
     # Archive expired entries to long-term memory before removing them
     if expired:
+        from src.core.data.deletions import record_memory_deletions
         _archive_expired_memories(expired, agent_id)
+        record_memory_deletions(agent_id, [e.get("id") for e in expired if e.get("id")])
         _save_entries(valid, agent_id)
 
     return valid
@@ -201,7 +203,9 @@ def remove_memory(entry_id: str, agent_id: str = "user") -> dict:
     if len(entries) == original_count:
         return {"error": f"Entry not found: {entry_id}"}
 
+    from src.core.data.deletions import record_memory_deletion
     _save_entries(entries, agent_id)
+    record_memory_deletion(agent_id, entry_id)
     return {"removed": entry_id}
 
 

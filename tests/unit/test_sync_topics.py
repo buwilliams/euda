@@ -30,6 +30,7 @@ class TestDetectChanges:
         """Create a mock transport."""
         transport = MagicMock()
         transport.run_remote_command.return_value = (False, "", "")
+        transport.get_remote_file_content.return_value = None
         return transport
 
     @pytest.fixture
@@ -101,6 +102,34 @@ class TestDetectChanges:
             assert len(changes) == 1
             assert changes[0].type == "pull"
             assert changes[0].item_id == "topic-remote456"
+
+    def test_detect_tombstoned_topic_ignored(self, mock_transport):
+        """Tombstoned topics are not re-pulled."""
+        from src.sync.handlers.topics import TopicsSyncHandler
+
+        local_data = {
+            "exported_at": "2026-01-28T10:00:00Z",
+            "topics": [],
+            "logs": [],
+        }
+        remote_data = {
+            "exported_at": "2026-01-28T10:00:00Z",
+            "topics": [{"id": "topic-deleted", "name": "Old", "updated_at": "2026-01-28T10:00:00Z"}],
+            "logs": [],
+        }
+
+        with patch("src.core.data.topics.export_topics", return_value=local_data):
+            with patch("src.core.data.deletions.get_deletions", return_value={
+                "topics": {"topic-deleted": {"deleted_at": "2026-01-30T00:00:00Z"}},
+                "memory": {},
+            }):
+                handler = TopicsSyncHandler()
+                with patch.object(handler, "_fetch_remote_topics", return_value=remote_data):
+                    with patch.object(handler, "_get_remote_deletions", return_value={}):
+                        changes, conflicts = handler.detect_changes(mock_transport, "bidirectional")
+
+        assert changes == []
+        assert conflicts == []
 
     def test_detect_both_sides_same_no_change(self, mock_transport):
         """No change when topic unchanged on both sides."""

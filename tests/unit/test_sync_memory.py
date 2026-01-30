@@ -128,6 +128,32 @@ class TestShortTermMemoryCheck:
                 assert changes[0].type == "push"
                 assert "chat:short-term" in changes[0].item_id
 
+    def test_check_short_term_tombstone_prevents_repull(self, temp_data_dir, mock_transport):
+        """Tombstones suppress remote-only entries and trigger deletion push."""
+        from src.sync.handlers import memory as memory_module
+        from src.sync.handlers.memory import MemorySyncHandler
+
+        # Remote short-term memory contains an entry that is tombstoned locally
+        mock_transport.remote_file_exists.return_value = True
+        mock_transport.get_remote_file_content.return_value = (
+            '{"id": "mem-1", "type": "idea", "date_mentioned": "2026-01-01"}\n'
+        )
+
+        with patch.object(memory_module, "DATA_DIR", temp_data_dir):
+            with patch.object(memory_module, "AGENTS_DIR", temp_data_dir / "agents"):
+                with patch("src.core.data.deletions.get_deletions", return_value={
+                    "memory": {"chat": {"mem-1": "2026-01-30T00:00:00Z"}},
+                    "topics": {},
+                }):
+                    handler = MemorySyncHandler()
+                    with patch.object(handler, "_get_remote_deletions", return_value={}):
+                        changes, conflicts = handler._check_short_term(mock_transport, "chat", "bidirectional")
+
+                        assert conflicts == []
+                        assert len(changes) == 1
+                        assert changes[0].type == "push"
+                        assert "Remove deleted short-term memory" in changes[0].description
+
     def test_check_short_term_remote_only(self, temp_data_dir, mock_transport):
         """Pull change when remote has entries local doesn't."""
         from src.sync.handlers import memory as memory_module

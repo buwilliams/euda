@@ -200,7 +200,14 @@ def _get_topic_logs(topic_id: str) -> List[dict]:
 def _load_topic(topic_id: str) -> Optional[dict]:
     """Load a topic by ID."""
     conn = _get_connection()
-    cursor = conn.execute("SELECT * FROM topics WHERE id = ?", (topic_id,))
+    try:
+        cursor = conn.execute("SELECT * FROM topics WHERE id = ?", (topic_id,))
+    except sqlite3.OperationalError as exc:
+        if "no such table" in str(exc):
+            _ensure_schema()
+            cursor = conn.execute("SELECT * FROM topics WHERE id = ?", (topic_id,))
+        else:
+            raise
     row = cursor.fetchone()
     if row:
         logs = _get_topic_logs(topic_id)
@@ -692,6 +699,7 @@ def get_child_topics(parent_id: str) -> List[dict]:
 
 def delete_topic(topic_id: str, delete_children: bool = False) -> dict:
     """Delete a topic. Optionally delete child topics too."""
+    from src.core.data.deletions import record_topic_deletion
     topic = _load_topic(topic_id)
     if not topic:
         return {"error": f"Topic not found: {topic_id}"}
@@ -714,6 +722,7 @@ def delete_topic(topic_id: str, delete_children: bool = False) -> dict:
     # Notify UI clients
     _emit_topics_update()
 
+    record_topic_deletion(topic_id, delete_children=delete_children)
     return {"deleted": topic_id, "children_deleted": delete_children}
 
 
@@ -1521,5 +1530,3 @@ def import_topics(data: dict, merge: bool = True) -> dict:
         "skipped": skipped,
         "logs_imported": log_count,
     }
-
-

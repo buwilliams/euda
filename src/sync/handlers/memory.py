@@ -129,6 +129,7 @@ class MemorySyncHandler(SyncHandler):
         direction: str,
     ) -> Tuple[List[SyncChange], List[Conflict]]:
         """Check short-term memory for an agent."""
+        from src.core.data.deletions import get_deletions
         changes: List[SyncChange] = []
         conflicts: List[Conflict] = []
 
@@ -168,6 +169,19 @@ class MemorySyncHandler(SyncHandler):
                         except (json.JSONDecodeError, KeyError):
                             continue
 
+        # Apply tombstones (local + remote)
+        local_deletions = get_deletions()
+        remote_deletions = self._get_remote_deletions(transport)
+        tombstones = self._merge_memory_tombstones(local_deletions, remote_deletions, agent_id)
+
+        remote_has_deleted = False
+        local_has_deleted = False
+        if tombstones:
+            remote_has_deleted = bool(set(remote_entries.keys()) & tombstones)
+            local_has_deleted = bool(set(local_entries.keys()) & tombstones)
+            local_entries = {k: v for k, v in local_entries.items() if k not in tombstones}
+            remote_entries = {k: v for k, v in remote_entries.items() if k not in tombstones}
+
         # Find differences
         local_only = set(local_entries.keys()) - set(remote_entries.keys())
         remote_only = set(remote_entries.keys()) - set(local_entries.keys())
@@ -195,6 +209,22 @@ class MemorySyncHandler(SyncHandler):
                 handler=self.name,
                 item_id=f"{agent_id}:short-term",
                 description=f"Pull {len(remote_only)} short-term memory entries for {agent_id}",
+            ))
+
+        if remote_has_deleted and direction in ("push", "bidirectional"):
+            changes.append(SyncChange(
+                type="push",
+                handler=self.name,
+                item_id=f"{agent_id}:short-term",
+                description=f"Remove deleted short-term memory entries for {agent_id}",
+            ))
+
+        if local_has_deleted and direction in ("pull", "bidirectional"):
+            changes.append(SyncChange(
+                type="pull",
+                handler=self.name,
+                item_id=f"{agent_id}:short-term",
+                description=f"Apply deleted short-term memory entries for {agent_id}",
             ))
 
         if modified:
@@ -381,6 +411,7 @@ class MemorySyncHandler(SyncHandler):
 
     def _push_short_term(self, transport: Transport, agent_id: str):
         """Push short-term memory to remote (merge)."""
+        from src.core.data.deletions import get_deletions
         local_path = AGENTS_DIR / agent_id / "memory" / "short-term.jsonl"
         remote_path = f"agents/{agent_id}/memory/short-term.jsonl"
 
@@ -411,6 +442,12 @@ class MemorySyncHandler(SyncHandler):
                     except (json.JSONDecodeError, KeyError):
                         continue
 
+        # Apply tombstones
+        tombstones = self._merge_memory_tombstones(get_deletions(), self._get_remote_deletions(transport), agent_id)
+        if tombstones:
+            local_entries = {k: v for k, v in local_entries.items() if k not in tombstones}
+            remote_entries = {k: v for k, v in remote_entries.items() if k not in tombstones}
+
         # Merge (local wins for conflicts by date)
         merged = dict(remote_entries)
         for entry_id, entry in local_entries.items():
@@ -436,6 +473,7 @@ class MemorySyncHandler(SyncHandler):
 
     def _pull_short_term(self, transport: Transport, agent_id: str):
         """Pull short-term memory from remote (merge)."""
+        from src.core.data.deletions import get_deletions
         local_path = AGENTS_DIR / agent_id / "memory" / "short-term.jsonl"
         remote_path = f"agents/{agent_id}/memory/short-term.jsonl"
 
@@ -465,6 +503,12 @@ class MemorySyncHandler(SyncHandler):
                         remote_entries[entry["id"]] = entry
                     except (json.JSONDecodeError, KeyError):
                         continue
+
+        # Apply tombstones
+        tombstones = self._merge_memory_tombstones(get_deletions(), self._get_remote_deletions(transport), agent_id)
+        if tombstones:
+            local_entries = {k: v for k, v in local_entries.items() if k not in tombstones}
+            remote_entries = {k: v for k, v in remote_entries.items() if k not in tombstones}
 
         # Merge (remote wins for new entries, local wins for conflicts)
         merged = dict(local_entries)
@@ -587,3 +631,23 @@ class MemorySyncHandler(SyncHandler):
 
         # Write
         local_full.write_text(merged_content)
+
+    def _get_remote_deletions(self, transport: Transport) -> dict:
+        content = transport.get_remote_file_content("system/deletions.json")
+        if not content:
+            return {}
+        try:
+            data = json.loads(content)
+            return data if isinstance(data, dict) else {}
+        except json.JSONDecodeError:
+            return {}
+
+    def _merge_memory_tombstones(self, local: dict, remote: dict, agent_id: str) -> Set[str]:
+        merged: Set[str] = set()
+        for source in (local, remote):
+            memory = source.get("memory", {})
+            if isinstance(memory, dict):
+                agent_map = memory.get(agent_id, {})
+                if isinstance(agent_map, dict):
+                    merged.update(agent_map.keys())
+        return merged

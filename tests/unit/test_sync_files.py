@@ -133,6 +133,7 @@ class TestCheckFile:
         transport.remote_file_exists.return_value = False
         transport.get_remote_file_hash.return_value = None
         transport.get_remote_file_content.return_value = None
+        transport.get_remote_file_mtime.return_value = None
         return transport
 
     def test_check_file_skips_never_sync(self, temp_data_dir, mock_transport):
@@ -263,6 +264,7 @@ class TestCheckFile:
         mock_transport.remote_file_exists.return_value = True
         mock_transport.get_remote_file_hash.return_value = "different_hash_abc123"
         mock_transport.get_remote_file_content.return_value = '{"id": "chat", "remote": true}'
+        mock_transport.get_remote_file_mtime.return_value = "2026-01-30T00:00:00Z"
 
         with patch.object(files_module, "DATA_DIR", temp_data_dir):
             handler = FilesSyncHandler()
@@ -270,6 +272,7 @@ class TestCheckFile:
 
             assert isinstance(result, Conflict)
             assert "modified on both sides" in result.description
+            assert result.remote_timestamp == "2026-01-30T00:00:00Z"
 
 
 class TestDetectChanges:
@@ -293,6 +296,7 @@ class TestDetectChanges:
         transport.list_remote_files.return_value = []
         transport.remote_directory_exists.return_value = False
         transport.remote_file_exists.return_value = False
+        transport.get_remote_file_mtime.return_value = None
         return transport
 
     def test_detect_changes_empty(self, temp_data_dir, mock_transport):
@@ -351,6 +355,7 @@ class TestApplyChanges:
         transport = MagicMock()
         transport.push_file.return_value = MagicMock(success=True)
         transport.fetch_file.return_value = MagicMock(success=True)
+        transport.get_remote_file_mtime.return_value = None
         return transport
 
     def test_apply_changes_push(self, temp_data_dir, mock_transport):

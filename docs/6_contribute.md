@@ -174,7 +174,7 @@ Use `--data-only` to skip code deployment. Backups are created automatically bef
 
 **What syncs:** Source code (local → remote), topics, memory, agent configs/identities, assets
 
-**What doesn't sync:** `.git/`, `.venv/`, `.env`, logs, auth, sync state
+**What doesn't sync:** `.git/`, `.venv/`, `.env`, `data/system/logs/`, auth, sync state
 
 ## Community
 
