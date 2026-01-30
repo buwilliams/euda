@@ -93,7 +93,10 @@ class NextcloudClient:
         self.instance_id = config.get("id")
         self.url = config.get("url", "").rstrip("/")
         self.username = config.get("username")
-        self.password = config.get("password")
+        # Password from env var (preferred) or config (fallback)
+        # Env var format: NEXTCLOUD_{INSTANCE_ID}_PASSWORD
+        env_key = f"NEXTCLOUD_{self.instance_id.upper()}_PASSWORD" if self.instance_id else None
+        self.password = (env_key and os.environ.get(env_key)) or config.get("password")
 
         if not self.url:
             raise ValueError(f"Nextcloud instance '{self.instance_id}' has no URL")

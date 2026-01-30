@@ -64,8 +64,9 @@ def board_cmd(
     for stack in result.get("stacks", []):
         print(f"\n  [{stack.get('id')}] {stack.get('title')} ({stack.get('card_count', 0)} cards)")
         for card in stack.get("cards", []):
+            done = "[done] " if card.get("done") else ""
             due = f" (due: {card.get('due_date')})" if card.get("due_date") else ""
-            print(f"    - [{card.get('id')}] {card.get('title')}{due}")
+            print(f"    - [{card.get('id')}] {done}{card.get('title')}{due}")
 
 
 @app.command("cards")
@@ -87,9 +88,10 @@ def cards_cmd(
     print(f"Cards ({result.get('count', 0)}):")
 
     for card in result.get("cards", []):
+        done = "[done] " if card.get("done") else ""
         labels = f" [{', '.join(card.get('labels', []))}]" if card.get("labels") else ""
         due = f" (due: {card.get('due_date')})" if card.get("due_date") else ""
-        print(f"  [{card.get('id')}] {card.get('title')}{labels}{due}")
+        print(f"  [{card.get('id')}] {done}{card.get('title')}{labels}{due}")
 
 
 @app.command("create-card")

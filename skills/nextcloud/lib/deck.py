@@ -127,6 +127,7 @@ def nc_get_board(board_id: int, instance: Optional[str] = None) -> dict:
             cards.append({
                 "id": card.get("id"),
                 "title": card.get("title"),
+                "done": card.get("done", False),
                 "due_date": card.get("duedate"),
                 "labels": [l.get("title") for l in card.get("labels", [])],
             })
@@ -188,6 +189,7 @@ def nc_list_cards(
         cards.append({
             "id": card.get("id"),
             "title": card.get("title"),
+            "done": card.get("done", False),
             "description": card.get("description"),
             "due_date": card.get("duedate"),
             "labels": [l.get("title") for l in card.get("labels", [])],
