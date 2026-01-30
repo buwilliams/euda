@@ -36,7 +36,9 @@ function renderMinimalTopicCard(topic) {
     const dueDateLabel = dueDate ? `<span class="card-due-date">${formatFriendlyDueDate(dueDate)}</span>` : '';
     // Use context-aware descendant count (all descendants matching timeline)
     const childCount = getDescendantCountForContext(topic.id);
-    const childBadge = childCount > 0 ? `<span class="card-badge">${childCount}</span>` : '';
+    const childBadge = childCount > 0
+        ? `<span class="card-badge">${childCount}</span>`
+        : '<span class="card-badge"></span>';
     const assignee = topic.assignee;
 
     // Status indicator based on topic state
