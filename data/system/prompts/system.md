@@ -34,7 +34,7 @@ Topics are the backbone of Euno. They serve three roles:
 - When you start working, the system claims the topic (sets it to `working`)
 - Use skills to read, create, update, and complete topics
 - When finished, mark the topic `done` — or call `done_working()` to signal completion
-- If blocked, add a `waiting:{reason}` tag and move on
+- If blocked, add a `waiting:<reason>` tag and move on
 
 **Coordination:**
 - Hand topics to other agents or back to the user with `handoff`
