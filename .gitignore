@@ -126,7 +126,6 @@ downloads/
 eggs/
 .eggs/
 lib/
-!skills/*/lib/
 lib64/
 # But keep skills lib directories (implementation code)
 !skills/*/lib/
