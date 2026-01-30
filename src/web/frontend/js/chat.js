@@ -293,13 +293,13 @@ function updateInputContext() {
 
     if (chatTopicContext && label) {
         contextInput.placeholder = "Message @topic...";
-        label.textContent = '@topic';
+        label.innerHTML = '@topic <span class="topic-context-exit">×</span>';
         label.classList.add('active');
         label.onclick = clearChatTopicContext;
         label.title = `Topic chat: ${chatTopicName || 'Topic'} (click to exit)`;
     } else if (currentTopicContext && label) {
         contextInput.placeholder = "Send feedback about this topic...";
-        label.textContent = '@topic';
+        label.innerHTML = '@topic <span class="topic-context-exit">×</span>';
         label.classList.add('active');
         label.onclick = clearTopicContext;
         label.title = `Replying to: ${currentTopicName || 'Topic'} (click to clear)`;
