@@ -260,6 +260,7 @@ function setTopicContext(topicId) {
         const tags = topic.tags || [];
         // Only exclude the container topics themselves, not their descendants
         const isSystemContainer = tags.includes('system:agents') ||
+                                  tags.includes('system:tasks') ||
                                   tags.includes('system:projects');
         // Agent inbox topics are the root topics for each agent (have agent_id or agent-inbox tag)
         const isAgentInbox = tags.includes('agent-inbox') || topic.agent_id;

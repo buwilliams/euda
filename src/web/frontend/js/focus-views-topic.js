@@ -107,7 +107,7 @@ function renderFocusMenu() {
     const counts = getFocusCounts();
     const todayTopics = getRootTopicsForCategory('today');
 
-    // For completed count, only show Projects descendants (exclude Agents and System)
+    // For completed count, only show work descendants (exclude Agents and agent inboxes)
     const allTopics = [...topicsData, ...completedTopicsData];
     const projectsCompletedTopics = completedTopicsData.filter(j => isProjectsDescendant(j, allTopics));
     const completedTopicIds = new Set(projectsCompletedTopics.map(j => j.id));
@@ -115,11 +115,13 @@ function renderFocusMenu() {
 
     // Find system containers
     const agentsContainer = topicsData.find(j => j.tags && j.tags.includes('system:agents') && !j.parent_id);
+    const tasksContainer = topicsData.find(j => j.tags && j.tags.includes('system:tasks') && !j.parent_id);
     const projectsContainer = topicsData.find(j => j.tags && j.tags.includes('system:projects') && !j.parent_id);
     const assetsContainer = topicsData.find(j => j.tags && j.tags.includes('system:assets') && !j.parent_id);
 
     // Count children of each container
     const agentsCount = agentsContainer ? topicsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
+    const tasksCount = tasksContainer ? topicsData.filter(j => j.parent_id === tasksContainer.id).length : 0;
     const projectsCount = projectsContainer ? topicsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
     // Assets count comes from the cache (loaded separately)
     // Load assets if not cached yet (for count display)
@@ -154,8 +156,8 @@ function renderFocusMenu() {
         `;
     }
 
-    // Build system section (Agents + Projects + Assets) if any exist
-    const hasSystemSection = agentsContainer || projectsContainer || assetsContainer;
+    // Build system section (Agents + Tasks + Projects + Assets) if any exist
+    const hasSystemSection = agentsContainer || tasksContainer || projectsContainer || assetsContainer;
     const systemSection = hasSystemSection ? `
         <div class="focus-menu-section">
             <div class="focus-menu-section-label collapsible ${collectionsOpen ? 'open' : ''}" onclick="toggleSection('collections')">
@@ -163,11 +165,11 @@ function renderFocusMenu() {
                 <span class="section-toggle">${icon('chevron-right')}</span>
             </div>
             <div class="focus-menu collapsible-content ${collectionsOpen ? 'open' : ''}">
-                ${agentsContainer ? `
-                <div class="focus-menu-item" onclick="navigateFocus('topic-${agentsContainer.id}')">
-                    <span class="focus-menu-icon">${icon('bolt')}</span>
-                    <span class="focus-menu-label">Agents</span>
-                    <span class="focus-menu-count">${agentsCount}</span>
+                ${tasksContainer ? `
+                <div class="focus-menu-item" onclick="navigateFocus('topic-${tasksContainer.id}')">
+                    <span class="focus-menu-icon">${icon('queue-list')}</span>
+                    <span class="focus-menu-label">Tasks</span>
+                    <span class="focus-menu-count">${tasksCount}</span>
                     <span class="focus-menu-arrow">›</span>
                 </div>
                 ` : ''}
@@ -184,6 +186,14 @@ function renderFocusMenu() {
                     <span class="focus-menu-icon">${icon('document')}</span>
                     <span class="focus-menu-label">Assets</span>
                     <span class="focus-menu-count">${assetsCount}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                ` : ''}
+                ${agentsContainer ? `
+                <div class="focus-menu-item" onclick="navigateFocus('topic-${agentsContainer.id}')">
+                    <span class="focus-menu-icon">${icon('bolt')}</span>
+                    <span class="focus-menu-label">Agents</span>
+                    <span class="focus-menu-count">${agentsCount}</span>
                     <span class="focus-menu-arrow">›</span>
                 </div>
                 ` : ''}
@@ -270,7 +280,7 @@ function renderCompletedTopicsView() {
     // Combine active and completed topics for ancestor traversal
     const allTopics = [...topicsData, ...completedTopicsData];
 
-    // Filter to only Projects descendants (exclude Agents and System topics)
+    // Filter to only work descendants (exclude Agents and agent inboxes)
     const projectsCompletedTopics = completedTopicsData.filter(j => isProjectsDescendant(j, allTopics));
 
     // Root completed topics: no parent OR parent is not in completed list
@@ -299,8 +309,11 @@ function renderCompletedTopicsView() {
 
 // ============== System Container Views ==============
 
-function renderSystemContainerView(topic, isAgentsContainer) {
+function renderSystemContainerView(topic) {
     const childTopics = topicsData.filter(j => j.parent_id === topic.id);
+    const tags = topic.tags || [];
+    const isAgentsContainer = tags.includes('system:agents');
+    const isTasksContainer = tags.includes('system:tasks');
 
     // Determine container type and styling
     let titleIcon, containerName, emptyMessage;
@@ -308,13 +321,17 @@ function renderSystemContainerView(topic, isAgentsContainer) {
         titleIcon = icon('bolt');
         containerName = 'Agents';
         emptyMessage = 'No agent inboxes yet.';
+    } else if (isTasksContainer) {
+        titleIcon = icon('queue-list');
+        containerName = 'Tasks';
+        emptyMessage = 'No tasks yet.';
     } else {
         titleIcon = icon('folder');
         containerName = 'Projects';
         emptyMessage = 'No projects yet.';
     }
 
-    // For Projects containers, render children as swipeable topic cards
+    // For Tasks/Projects containers, render children as swipeable topic cards
     // For Agents container, render children as non-swipeable agent cards
     const renderChildTopics = () => {
         if (childTopics.length === 0) {
@@ -346,7 +363,7 @@ function renderSystemContainerView(topic, isAgentsContainer) {
                 </div>
             `;
         } else {
-            // Projects - swipeable topic cards
+            // Tasks/Projects - swipeable topic cards
             return `
                 <div class="child-topics-list">
                     ${childTopics.map(child => renderTopicCard(child, true)).join('')}
@@ -392,12 +409,13 @@ function renderTopicDetailView(topicId) {
 
     // Check if this is a system container
     const isAgentsContainer = topic.tags && topic.tags.includes('system:agents');
+    const isTasksContainer = topic.tags && topic.tags.includes('system:tasks');
     const isProjectsContainer = topic.tags && topic.tags.includes('system:projects');
-    const isSystemContainer = isAgentsContainer || isProjectsContainer;
+    const isSystemContainer = isAgentsContainer || isTasksContainer || isProjectsContainer;
 
     // For system containers, render a simplified view
     if (isSystemContainer) {
-        return renderSystemContainerView(topic, isAgentsContainer);
+        return renderSystemContainerView(topic);
     }
 
     // For agent inbox topics, render the agent detail view

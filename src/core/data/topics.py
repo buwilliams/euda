@@ -253,7 +253,7 @@ def list_topics(status: str = None, parent_id: str = None, tag: str = None, assi
         query += " AND assignee = ?"
         params.append(assignee)
         # Exclude system topics - only their descendants should be processed by agents
-        query += " AND NOT EXISTS (SELECT 1 FROM json_each(tags) WHERE json_each.value IN ('system:agents', 'system:projects', 'system:assets', 'agent-inbox'))"
+        query += " AND NOT EXISTS (SELECT 1 FROM json_each(tags) WHERE json_each.value IN ('system:agents', 'system:tasks', 'system:projects', 'system:assets', 'agent-inbox'))"
 
     if actionable:
         # Only topics that are due today, past, or have no due date (and not someday)
@@ -291,31 +291,50 @@ def get_agent_inbox_topic(agent_id: str) -> Optional[dict]:
     return None
 
 
-def _get_default_parent_for_creator(created_by: str) -> Optional[str]:
+def _get_default_parent_for_creator(
+    created_by: str,
+    name: str,
+    description: Optional[str],
+    tags: Optional[list],
+    assignee: Optional[str]
+) -> Optional[str]:
     """Get the default parent topic ID based on who is creating the topic.
 
-    - user/system -> Projects container
-    - other agents -> their agent inbox topic
+    - user/system -> Tasks container
+    - agents -> their inbox (unless explicitly creating Tasks or Projects)
     """
     from ..agents.agents import list_agents
 
-    # User or system -> Projects
+    # User or system -> Tasks
     if created_by in ("user", "system"):
-        projects = get_projects_container()
-        return projects["id"] if projects else None
+        tasks = get_tasks_container()
+        return tasks["id"] if tasks else None
 
     # Check if created_by is a known agent
     agents = list_agents()
     agent_ids = {a["id"] for a in agents}
 
     if created_by in agent_ids:
-        # Agent -> their inbox topic
+        # If assigning to an agent, default to that agent's inbox
+        if assignee and assignee in agent_ids:
+            inbox = get_agent_inbox_topic(assignee)
+            return inbox["id"] if inbox else None
+
+        normalized_tags = {t.lower() for t in (tags or [])}
+        if "collection:projects" in normalized_tags or "project" in normalized_tags:
+            projects = get_projects_container()
+            return projects["id"] if projects else None
+        if "collection:tasks" in normalized_tags or "task" in normalized_tags:
+            tasks = get_tasks_container()
+            return tasks["id"] if tasks else None
+
+        # Default agent-created topics to their inbox
         inbox = get_agent_inbox_topic(created_by)
         return inbox["id"] if inbox else None
 
-    # Unknown creator -> Projects as fallback
-    projects = get_projects_container()
-    return projects["id"] if projects else None
+    # Unknown creator -> Tasks as fallback
+    tasks = get_tasks_container()
+    return tasks["id"] if tasks else None
 
 
 def create_topic(
@@ -331,8 +350,8 @@ def create_topic(
     """Create a new topic.
 
     If no parent_id is provided:
-    - Topics created by user/system go under Projects
-    - Topics created by other agents go under their agent inbox
+    - Topics created by user/system go under Tasks
+    - Topics created by agents go under their inbox (unless explicitly marked as Tasks or Projects)
     """
     now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     topic_id = f"topic-{uuid.uuid4().hex[:8]}"
@@ -340,7 +359,13 @@ def create_topic(
     # Set default parent if none provided
     effective_parent_id = parent_id
     if effective_parent_id is None:
-        effective_parent_id = _get_default_parent_for_creator(created_by)
+        effective_parent_id = _get_default_parent_for_creator(
+            created_by=created_by,
+            name=name,
+            description=description,
+            tags=tags,
+            assignee=assignee
+        )
 
     with _transaction() as conn:
         conn.execute('''
@@ -394,7 +419,7 @@ def update_topic(
         return {"error": "Cannot set status to 'working' directly. Use claim_topic instead."}
 
     # Prevent status changes on system topics
-    system_tags = {"system:agents", "system:projects", "system:assets", "agent-inbox"}
+    system_tags = {"system:agents", "system:tasks", "system:projects", "system:assets", "agent-inbox"}
     if status is not None and any(tag in system_tags for tag in topic.get("tags", [])):
         return {"error": "Cannot change status of system topics"}
 
@@ -512,7 +537,7 @@ def complete_topic(topic_id: str, agent: str = "user") -> Optional[dict]:
     # Exception: Allow completing internal euno:* topics even if they have system tags
     is_internal = topic.get("name", "").startswith("euno:")
     if not is_internal:
-        system_tags = {"system:agents", "system:projects", "system:assets", "agent-inbox"}
+        system_tags = {"system:agents", "system:tasks", "system:projects", "system:assets", "agent-inbox"}
         if any(tag in system_tags for tag in topic.get("tags", [])):
             return {"error": "Cannot complete system topics"}
 
@@ -625,7 +650,7 @@ def archive_topic(topic_id: str, agent: str = "user") -> Optional[dict]:
         return {"error": f"Topic not found: {topic_id}"}
 
     # Prevent archiving system topics (containers and agent inboxes)
-    system_tags = {"system:agents", "system:projects", "system:assets", "agent-inbox"}
+    system_tags = {"system:agents", "system:tasks", "system:projects", "system:assets", "agent-inbox"}
     if any(tag in system_tags for tag in topic.get("tags", [])):
         return {"error": "Cannot archive system topics"}
 
@@ -705,7 +730,7 @@ def delete_topic(topic_id: str, delete_children: bool = False) -> dict:
         return {"error": f"Topic not found: {topic_id}"}
 
     # Prevent deletion of system topics (containers and agent inboxes)
-    system_tags = {"system:agents", "system:projects", "system:assets", "agent-inbox"}
+    system_tags = {"system:agents", "system:tasks", "system:projects", "system:assets", "agent-inbox"}
     if any(tag in system_tags for tag in topic.get("tags", [])):
         return {"error": "Cannot delete system topics"}
 
@@ -981,7 +1006,7 @@ def claim_topic(topic_id: str, agent_id: str) -> dict:
 
     # Prevent claiming system topics (containers and agent inboxes)
     # Only their descendants should be processed
-    system_tags = {"system:agents", "system:projects", "system:assets", "agent-inbox"}
+    system_tags = {"system:agents", "system:tasks", "system:projects", "system:assets", "agent-inbox"}
     if any(tag in system_tags for tag in topic.get("tags", [])):
         return {"error": "Cannot claim system topics - only their descendants can be processed"}
 
@@ -1010,7 +1035,7 @@ def claim_topic(topic_id: str, agent_id: str) -> dict:
 
 
 def get_or_create_system_topic(name: str, system_tag: str) -> dict:
-    """Get or create a system container topic (Agents or Projects).
+    """Get or create a system container topic (Agents, Tasks, Projects, Assets).
 
     Args:
         name: Display name for the topic
@@ -1081,6 +1106,11 @@ def get_agents_container() -> dict:
     return get_or_create_system_topic("Agents", "system:agents")
 
 
+def get_tasks_container() -> dict:
+    """Get or create the Tasks container topic."""
+    return get_or_create_system_topic("Tasks", "system:tasks")
+
+
 def get_projects_container() -> dict:
     """Get or create the Projects container topic."""
     return get_or_create_system_topic("Projects", "system:projects")
@@ -1096,13 +1126,14 @@ def sync_agent_inbox_topics():
 
     Creates inbox topics for new agents under the Agents container,
     archives orphaned ones, and updates names if agents were renamed.
-    Also migrates any orphaned user topics under Projects.
+    Also migrates any orphaned user topics under Tasks.
     """
     from ..agents.agents import list_agents
 
     # Ensure system containers exist
     agents_container = get_agents_container()
-    projects_container = get_projects_container()
+    tasks_container = get_tasks_container()
+    get_projects_container()
     get_assets_container()  # Create Assets container if it doesn't exist
 
     agents = list_agents()
@@ -1198,9 +1229,9 @@ def sync_agent_inbox_topics():
             print(f"Archived inbox topic for deleted agent: {agent_id}")
             changes_made = True
 
-    # Migrate orphaned root topics (user-created, not system) under Projects
-    system_tags = {"system:agents", "system:projects", "system:assets"}
-    system_container_names = {"Agents", "Projects", "Assets", "System"}
+    # Migrate orphaned root topics (user-created, not system) under Tasks
+    system_tags = {"system:agents", "system:tasks", "system:projects", "system:assets"}
+    system_container_names = {"Agents", "Tasks", "Projects", "Assets", "System"}
     for topic in all_topics:
         # Skip if not a root topic
         if topic["parent_id"] is not None:
@@ -1225,13 +1256,13 @@ def sync_agent_inbox_topics():
         if topic.get("agent_id"):
             continue
 
-        # This is a user root topic - move it under Projects
+        # This is a user root topic - move it under Tasks
         with _transaction() as conn:
             conn.execute(
                 "UPDATE topics SET parent_id = ?, updated_at = ? WHERE id = ?",
-                (projects_container["id"], now, topic["id"])
+                (tasks_container["id"], now, topic["id"])
             )
-        print(f"Moved topic '{topic['name']}' under Projects")
+        print(f"Moved topic '{topic['name']}' under Tasks")
         changes_made = True
 
     if changes_made:

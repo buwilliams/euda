@@ -347,9 +347,9 @@ async function loadAgentMonitoring(agentId, offset = 0, limit = 20) {
 function isContainerTopic(topic) {
     // Agent inbox topics have agent_id set
     if (topic.agent_id) return true;
-    // System containers have system:agents, system:projects, or system:assets tags
+    // System containers have system:agents, system:tasks, system:projects, or system:assets tags
     const tags = topic.tags || [];
-    if (tags.includes('system:agents') || tags.includes('system:projects') || tags.includes('system:assets')) return true;
+    if (tags.includes('system:agents') || tags.includes('system:tasks') || tags.includes('system:projects') || tags.includes('system:assets')) return true;
     return false;
 }
 
@@ -376,8 +376,8 @@ function hasAgentOrSystemAncestor(topic, allTopics) {
 }
 
 function isProjectsDescendant(topic, allTopics) {
-    // A topic is a Projects descendant if it's NOT under Agents or System containers
-    // This includes topics with no container parent (user-created root topics)
+    // A topic is a work descendant if it's NOT under Agents or agent inbox containers
+    // This includes topics under Tasks/Projects or root user topics
     if (isAgentOrSystemTopic(topic)) return false;
     if (hasAgentOrSystemAncestor(topic, allTopics)) return false;
     return true;

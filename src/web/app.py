@@ -35,8 +35,9 @@ PUBLIC_PATHS = {
 async def lifespan(app: FastAPI):
     """Handle app startup and shutdown."""
     # Startup - ensure system containers exist
-    from src.core.data.topics import get_agents_container, get_projects_container, get_assets_container
+    from src.core.data.topics import get_agents_container, get_tasks_container, get_projects_container, get_assets_container
     get_agents_container()
+    get_tasks_container()
     get_projects_container()
     get_assets_container()
     # Start background bridge for system events -> SSE

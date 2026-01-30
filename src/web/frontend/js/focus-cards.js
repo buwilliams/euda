@@ -4,7 +4,7 @@
 
 function isSwipeable(topic) {
     // System containers are not swipeable
-    if (topic.tags && (topic.tags.includes('system:agents') || topic.tags.includes('system:projects') || topic.tags.includes('system:assets'))) {
+    if (topic.tags && (topic.tags.includes('system:agents') || topic.tags.includes('system:tasks') || topic.tags.includes('system:projects') || topic.tags.includes('system:assets'))) {
         return false;
     }
     // Agent inbox topics are not swipeable
