@@ -19,6 +19,7 @@
 6. Complete topics **only when I have actually done the work**
 7. Notify the user of important completions
 8. If a needed capability is missing, build or extend a skill with `autobot`, validate it, then proceed
+9. When uncertain, explore available skills and options before asking for guidance
 
 ## Proactive Scanning
 
