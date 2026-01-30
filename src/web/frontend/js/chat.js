@@ -303,6 +303,42 @@ function updateInputContext() {
     }
 }
 
+function parseTopicCommand(message) {
+    const trimmed = message.trim();
+    const renameMatch = trimmed.match(/^rename to\s+(.+)$/i);
+    if (renameMatch) {
+        let name = renameMatch[1].trim();
+        name = name.replace(/^["']|["']$/g, '');
+        if (name) {
+            return { action: 'rename', name };
+        }
+    }
+    return null;
+}
+
+async function renameTopicFromChat(topicId, newName) {
+    addInlineThinking();
+    try {
+        const response = await fetch(`/api/topics/${topicId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName })
+        });
+        if (response.ok) {
+            await loadTopicsData();
+            removeInlineThinking();
+            addInlineMessage(`Renamed topic to "${newName}".`, 'friend');
+            return;
+        }
+        removeInlineThinking();
+        addInlineMessage('Failed to rename topic. Please try again.', 'friend');
+    } catch (error) {
+        console.error('Failed to rename topic:', error);
+        removeInlineThinking();
+        addInlineMessage('Failed to rename topic. Please try again.', 'friend');
+    }
+}
+
 async function sendTopicFeedback(topicId, message) {
     // Show user message with topic context indicator
     const topicName = currentTopicName || 'topic';
@@ -380,6 +416,15 @@ function sendContextMessage() {
 
     // If viewing a topic, route to topic feedback endpoint
     if (currentTopicContext) {
+        const command = parseTopicCommand(message);
+        if (command?.action === 'rename') {
+            const topicName = currentTopicName || 'topic';
+            addInlineMessage(message, 'you', `Re: ${topicName}`);
+            contextInput.value = '';
+            contextInput.style.height = 'auto';
+            renameTopicFromChat(currentTopicContext, command.name);
+            return;
+        }
         sendTopicFeedback(currentTopicContext, message);
         return;
     }

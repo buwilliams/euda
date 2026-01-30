@@ -452,30 +452,15 @@ function renderTopicDetailView(topicId) {
             <!-- Name Section -->
             <div class="topic-section" data-testid="topic-name">
                 <div class="topic-section-header">Name</div>
-                ${isEditingName ? `
-                    <input type="text" class="topic-name-input" id="edit-name-${topic.id}" value="${escapeHtml(displayName)}"
-                        onkeydown="handleEditKeypress(event, '${topic.id}', 'name')"
-                        onblur="saveTopicField('${topic.id}', 'name', this.value)">
-                ` : `
-                    <div class="topic-name-display" onclick="startEditingField('${topic.id}', 'name')">${escapeHtml(displayName)}</div>
-                `}
+                <div class="topic-name-display">${escapeHtml(displayName)}</div>
             </div>
 
             <!-- Description Section -->
             <div class="topic-section" data-testid="topic-description">
-                <div class="topic-section-header">
-                    Description
-                    ${isEditingDesc ? `<span class="topic-section-action" onclick="saveTopicField('${topic.id}', 'description', document.getElementById('edit-description-${topic.id}').value)">Save</span>` : ''}
+                <div class="topic-section-header">Description</div>
+                <div class="topic-description-display ${hasDescription ? '' : 'empty'}">
+                    ${hasDescription ? marked.parse(topic.description) : 'No description.'}
                 </div>
-                ${isEditingDesc ? `
-                    <textarea class="topic-description-input" id="edit-description-${topic.id}"
-                        onkeydown="handleDescriptionKeypress(event, '${topic.id}')"
-                        placeholder="Add a description...">${escapeHtml(topic.description || '')}</textarea>
-                ` : `
-                    <div class="topic-description-display ${hasDescription ? '' : 'empty'}" onclick="startEditingField('${topic.id}', 'description')">
-                        ${hasDescription ? marked.parse(topic.description) : 'Click to add description...'}
-                    </div>
-                `}
             </div>
 
             <!-- Child Topics Section - shows all topics sorted by status -->
@@ -605,30 +590,15 @@ function renderCompletedTopicDetailView(topicId) {
             <!-- Name Section -->
             <div class="topic-section">
                 <div class="topic-section-header">Name</div>
-                ${isEditingName ? `
-                    <input type="text" class="topic-name-input" id="edit-name-${topic.id}" value="${escapeHtml(displayName)}"
-                        onkeydown="handleEditKeypress(event, '${topic.id}', 'name')"
-                        onblur="saveCompletedTopicField('${topic.id}', 'name', this.value)">
-                ` : `
-                    <div class="topic-name-display" onclick="startEditingField('${topic.id}', 'name')">${escapeHtml(displayName)}</div>
-                `}
+                <div class="topic-name-display">${escapeHtml(displayName)}</div>
             </div>
 
             <!-- Description Section -->
             <div class="topic-section">
-                <div class="topic-section-header">
-                    Description
-                    ${isEditingDesc ? `<span class="topic-section-action" onclick="saveCompletedTopicField('${topic.id}', 'description', document.getElementById('edit-description-${topic.id}').value)">Save</span>` : ''}
+                <div class="topic-section-header">Description</div>
+                <div class="topic-description-display ${hasDescription ? '' : 'empty'}">
+                    ${hasDescription ? marked.parse(topic.description) : 'No description.'}
                 </div>
-                ${isEditingDesc ? `
-                    <textarea class="topic-description-input" id="edit-description-${topic.id}"
-                        onkeydown="handleCompletedDescriptionKeypress(event, '${topic.id}')"
-                        placeholder="Add a description...">${escapeHtml(topic.description || '')}</textarea>
-                ` : `
-                    <div class="topic-description-display ${hasDescription ? '' : 'empty'}" onclick="startEditingField('${topic.id}', 'description')">
-                        ${hasDescription ? marked.parse(topic.description) : 'Click to add description...'}
-                    </div>
-                `}
             </div>
 
             <!-- Active Child Topics Section (rare but possible) - open by default -->
