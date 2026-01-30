@@ -27,6 +27,12 @@ Pay special attention to memory items of type `learning` and `behavior`:
 
 - **behavior**: These represent user preferences about how the agent should act. Each should become a standing rule in the identity. For example: "user prefers concise responses" -> add to Voice section
 
+**Voice as style guide:** When behavior items describe communication patterns, synthesize them into the Voice section as a practical style guide. Think of Voice as the agent's writing manual — specific enough that another agent could replicate the style. Track:
+- **Tone & register**: warmth, formality, humor, directness
+- **Structure**: sentence length, paragraph density, use of lists vs. prose
+- **Vocabulary**: technical depth, jargon, characteristic expressions
+- **Adaptation**: how style should shift across contexts (task updates vs. reflections vs. casual chat)
+
 Always graduate learning and behavior items to long-term memory so patterns are preserved.
 
 ## Output Format
@@ -49,7 +55,7 @@ Example profile_updates:
 ```json
 {
   "behavioral_rules": "I must:\n- Create topics immediately for 'remind me' requests; clarify only if truly ambiguous",
-  "voice": "I am:\n- Concise by default per user preference"
+  "voice": "- Warm but direct — no filler, no hedging\n- Short paragraphs, one idea each\n- Uses analogies to explain complex topics\n- Task updates: bullet points, status-first\n- Reflections: longer sentences, more exploratory tone"
 }
 ```
 

@@ -12,6 +12,8 @@ Memory types:
 - learning: Corrections, mistakes, or task failures to learn from (e.g., "user wanted X but I did Y", "asked too many questions instead of acting", "missed an obvious request")
 - behavior: User preferences about how the assistant should act or operate (e.g., "prefers concise responses", "wants proactive topic creation and delegation to Soul for actionable tasks", "dislikes being asked too many clarifying questions", "prefers assistant to take action rather than ask for confirmation")
 
+**Voice patterns:** When processing user-authored content (documents, topic descriptions, notes), use `behavior` type to capture distinctive writing style — formality, sentence structure, characteristic phrases, tone. Example: `{"type": "behavior", "short_description": "In writing, user favors short paragraphs, uses rhetorical questions, and avoids jargon"}`
+
 Return a JSON array of items to remember. Each item must have:
 - type: One of the types above
 - short_description: Brief description (1-2 sentences)

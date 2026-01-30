@@ -5,6 +5,7 @@ The file "{filename}" has been stored in user's long-term memory. Read the conte
 - Goals, concerns, ideas mentioned
 - People, places, things of importance
 - Upcoming dates or deadlines
+- Communication style patterns (formality, tone, sentence structure, characteristic phrases) — use `behavior` type
 
 Content:
 {content}
