@@ -8,6 +8,16 @@ from typing import Any, Optional
 import requests
 
 
+def _get_skill_data_dir() -> Path:
+    """Get the web skill data directory."""
+    data_dir = os.environ.get("EUNO_DATA_DIR")
+    if data_dir:
+        base = Path(data_dir)
+    else:
+        base = Path(__file__).parent.parent.parent.parent / "data"
+    return base / "skills" / "web"
+
+
 def _get_tavily_config() -> dict[str, Any]:
     """Get Tavily configuration from environment or config file."""
     config = {
@@ -18,11 +28,11 @@ def _get_tavily_config() -> dict[str, Any]:
     config["api_key"] = os.environ.get("TAVILY_API_KEY")
 
     try:
-        config_path = Path(__file__).parent.parent.parent.parent / "data" / "system" / "config.json"
+        config_path = _get_skill_data_dir() / "config.json"
         if config_path.exists():
             with open(config_path) as f:
-                system_config = json.load(f)
-                tavily_config = system_config.get("tavily", {})
+                skill_config = json.load(f)
+                tavily_config = skill_config.get("tavily", {})
                 config["timeout"] = tavily_config.get("timeout", config["timeout"])
     except Exception:
         pass

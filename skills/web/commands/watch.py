@@ -14,7 +14,8 @@ from skills.web.lib.storage import (
     load_snapshot,
     save_snapshot,
 )
-from skills.common import HTTPClient, extract_main_content, clean_html
+from skills.web.lib.http import HTTPClient
+from skills.web.lib.content import extract_main_content, clean_html
 
 
 app = typer.Typer(no_args_is_help=True)

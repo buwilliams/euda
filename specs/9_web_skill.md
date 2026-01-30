@@ -26,18 +26,19 @@ Euno is a polite web citizen: watch requests are rate-limited (1s minimum betwee
 
 ```
 skills/
-├── common/              # Shared utilities (HTTPClient, content extraction)
-└── web/                 # All web commands
+└── web/                 # All web commands (self-contained)
     ├── cli.py           # Typer CLI entry point
     ├── commands/
     │   ├── search.py    # Search the web (Tavily API)
     │   ├── extract.py   # Extract content from URLs (Tavily API)
     │   ├── save.py      # Save content to topic assets (uses Tavily)
-    │   └── watch.py     # Monitor pages for changes (uses HTTPClient)
+    │   └── watch.py     # Monitor pages for changes (uses local HTTP)
     └── lib/
         ├── search.py    # Tavily Search API client
         ├── extract.py   # Tavily Extract API client
-        └── storage.py   # Watch list persistence
+        ├── storage.py   # Watch list persistence
+        ├── http.py      # HTTP client with rate limiting
+        └── content.py   # HTML content extraction
 ```
 
 Data storage:
@@ -358,7 +359,7 @@ Two extraction methods are used:
 - Better handling of complex page structures
 
 **Local extraction** (used by `web watch`):
-- Uses `skills.common.extract_main_content()` with BeautifulSoup
+- Uses `skills.web.lib.content.extract_main_content()` with BeautifulSoup
 - Free, no API credits required
 - Good enough for change detection
 - Removes script, style, nav, header, footer, aside elements
