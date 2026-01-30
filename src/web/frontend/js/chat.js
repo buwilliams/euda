@@ -321,6 +321,9 @@ function bindTopicContextLabel() {
     label.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
+        if (typeof activeTab !== 'undefined' && activeTab !== 'chat') {
+            return;
+        }
         if (chatTopicContext) {
             clearChatTopicContext();
             return;
