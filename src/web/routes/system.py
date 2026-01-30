@@ -21,6 +21,7 @@ from src.core.system.fresh_start import (
     delete_backup as _delete_backup,
 )
 from ...agent.cognition.metacognition import get_incident_tracker
+from ..events import emit_system_event
 
 
 router = APIRouter()
@@ -518,3 +519,50 @@ async def events():
             "X-Accel-Buffering": "no",
         }
     )
+
+
+# ============== Server Restart ==============
+
+class RestartRequest(BaseModel):
+    reason: str = None
+
+
+@router.post("/restart")
+async def restart_server(request: RestartRequest = None):
+    """Request a server restart.
+
+    The server will shut down gracefully. On remote servers managed by systemd,
+    the service will automatically restart due to the Restart=always setting.
+
+    Args:
+        reason: Optional reason for the restart (for logging)
+
+    Returns:
+        Confirmation that restart was requested
+    """
+    from ..events import trigger_shutdown
+
+    reason = request.reason if request else None
+
+    # Log the restart request
+    emit_system_event("system:restart_requested", data={"reason": reason})
+
+    # Trigger SSE shutdown to close all connections
+    trigger_shutdown()
+
+    # Schedule the actual server shutdown
+    import asyncio
+
+    async def shutdown_after_response():
+        await asyncio.sleep(0.5)  # Give time for response to be sent
+        import os
+        import signal
+        os.kill(os.getpid(), signal.SIGTERM)
+
+    asyncio.create_task(shutdown_after_response())
+
+    return {
+        "success": True,
+        "message": "Restart requested - server will restart via systemd",
+        "reason": reason
+    }

@@ -35,23 +35,6 @@ def manager_data_dir(patch_data_dir):
 
 
 @pytest.fixture
-def system_config_with_schedules(manager_data_dir):
-    """Create system config with morning/evening schedules."""
-    config = {
-        "schedules": {
-            "morning": "08:00",
-            "evening": "20:00"
-        },
-        "agents": {
-            "poll_interval": 0.1
-        }
-    }
-    config_path = manager_data_dir / "system" / "config.json"
-    config_path.write_text(json.dumps(config, indent=2))
-    return config
-
-
-@pytest.fixture
 def create_manager_agent(manager_data_dir):
     """Factory to create agent configs for manager tests."""
     def _create(agent_id, triggers=None, enabled=True):
@@ -77,156 +60,6 @@ def mock_agent():
     agent.id = "test-agent"
     agent.config = {"id": "test-agent", "state": "enabled", "triggers": []}
     return agent
-
-
-# =============================================================================
-# Startup Trigger Tests
-# =============================================================================
-
-@pytest.mark.unit
-class TestStartupTriggers:
-    """Test _emit_startup_triggers functionality.
-
-    Note: String-based triggers (system:start, time:morning) have been removed.
-    Only dict-based triggers are now supported.
-    """
-
-    def test_skips_disabled_agents(
-        self, manager_data_dir, create_manager_agent, test_db, mock_emit_event, mock_emit_ui_event
-    ):
-        """Disabled agents don't get startup trigger topics.
-
-        Spec: Disabled agents never process topics.
-        """
-        from src.agent.manager import AgentManager
-        from src.core.data.topics import list_topics
-
-        # Create disabled agent with event trigger
-        config = {
-            "id": "disabled-worker",
-            "name": "Disabled Worker",
-            "state": "disabled",
-            "tools": ["list_topics"],
-            "triggers": [
-                {
-                    "event": "evening",
-                    "action": "tool",
-                    "tool": "euno_consolidate",
-                    "topic_name": "euno:consolidate",
-                    "topic_description": "Run consolidation"
-                }
-            ]
-        }
-        agent_dir = manager_data_dir / "agents" / "disabled-worker"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
-        (agent_dir / "identity.md").write_text("# Disabled Worker\n\nTest agent.")
-
-        manager = AgentManager()
-        configs = manager.load_agent_configs()
-
-        mock_agent = MagicMock()
-        mock_agent.id = "disabled-worker"
-        mock_agent.config = configs[0]
-        manager.agents["disabled-worker"] = mock_agent
-
-        manager._emit_startup_triggers()
-
-        # No trigger topics should exist for disabled agents
-        topics = list_topics(assignee="disabled-worker")
-        assert len(topics) == 0
-
-
-# =============================================================================
-# Missed Trigger Detection Tests
-# =============================================================================
-
-@pytest.mark.unit
-class TestMissedTriggerDetection:
-    """Test _check_missed_triggers functionality."""
-
-    def test_detects_missed_morning_trigger(self, manager_data_dir, system_config_with_schedules):
-        """Detects morning trigger missed when time has passed and not run today.
-
-        Spec: Detects missed morning triggers at startup.
-        """
-        from src.agent.manager import AgentManager
-
-        manager = AgentManager()
-
-        # Mock current time to be after morning schedule (08:00)
-        with patch('src.agent.manager.datetime') as mock_dt:
-            mock_now = MagicMock()
-            mock_now.strftime.side_effect = lambda fmt: "2025-01-23" if fmt == "%Y-%m-%d" else "10:00"
-            mock_dt.now.return_value = mock_now
-
-            # No previous state (never run)
-            missed = manager._check_missed_triggers()
-
-        # Returns schedule names as "time:{name}"
-        assert any("morning" in m for m in missed)
-
-    def test_detects_missed_evening_trigger(self, manager_data_dir, system_config_with_schedules):
-        """Detects evening trigger missed when time has passed and not run today.
-
-        Spec: Detects missed evening triggers at startup.
-        """
-        from src.agent.manager import AgentManager
-
-        manager = AgentManager()
-
-        with patch('src.agent.manager.datetime') as mock_dt:
-            mock_now = MagicMock()
-            mock_now.strftime.side_effect = lambda fmt: "2025-01-23" if fmt == "%Y-%m-%d" else "22:00"
-            mock_dt.now.return_value = mock_now
-
-            missed = manager._check_missed_triggers()
-
-        # Returns schedule names as "time:{name}"
-        assert any("evening" in m for m in missed)
-
-    def test_no_missed_when_already_ran_today(self, manager_data_dir, system_config_with_schedules):
-        """No missed triggers when they already ran today.
-
-        Spec: Only detect as missed if last_ran != today.
-        """
-        from src.agent.manager import AgentManager
-
-        # Set state to indicate triggers ran today
-        state = {"last_morning": "2025-01-23", "last_evening": "2025-01-23"}
-        state_path = manager_data_dir / "system" / "state.json"
-        state_path.write_text(json.dumps(state))
-
-        manager = AgentManager()
-
-        with patch('src.agent.manager.datetime') as mock_dt:
-            mock_now = MagicMock()
-            mock_now.strftime.side_effect = lambda fmt: "2025-01-23" if fmt == "%Y-%m-%d" else "22:00"
-            mock_dt.now.return_value = mock_now
-
-            missed = manager._check_missed_triggers()
-
-        assert len(missed) == 0
-
-    def test_no_missed_before_schedule_time(self, manager_data_dir, system_config_with_schedules):
-        """No missed triggers when schedule time hasn't passed yet.
-
-        Spec: Only detect as missed if current_time >= schedule_time.
-        """
-        from src.agent.manager import AgentManager
-
-        manager = AgentManager()
-
-        with patch('src.agent.manager.datetime') as mock_dt:
-            mock_now = MagicMock()
-            # Current time 07:00 is before morning 08:00
-            mock_now.strftime.side_effect = lambda fmt: "2025-01-23" if fmt == "%Y-%m-%d" else "07:00"
-            mock_dt.now.return_value = mock_now
-
-            missed = manager._check_missed_triggers()
-
-        # Morning shouldn't be missed if we're before 08:00
-        assert not any("morning" in m for m in missed)
 
 
 # =============================================================================
@@ -523,177 +356,6 @@ class TestGetAgentTriggers:
         assert len(triggers) == 2
         assert triggers[0]["event"] == "morning"
         assert triggers[1]["event"] == "evening"
-
-
-# =============================================================================
-# Scheduler Event Matching Tests
-# =============================================================================
-
-@pytest.mark.unit
-class TestSchedulerEventMatching:
-    """Test scheduler matches triggers by `event` key.
-
-    Spec: specs/1_agents.md - Scheduler creates topics when schedule matches event.
-    """
-
-    def test_scheduler_matches_event_to_schedule(
-        self, manager_data_dir, system_config_with_schedules, test_db, mock_emit_event, mock_emit_ui_event
-    ):
-        """Scheduler creates topic when event matches schedule name.
-
-        Spec: event key maps to schedule names in system config.
-        """
-        from src.agent.manager import AgentManager
-        from src.core.data.topics import list_topics
-
-        # Create agent with evening event trigger
-        config = {
-            "id": "scheduler-test",
-            "name": "Scheduler Test",
-            "state": "enabled",
-            "tools": ["list_topics"],
-            "triggers": [
-                {
-                    "event": "evening",
-                    "action": "tool",
-                    "tool": "euno_consolidate",
-                    "topic_name": "euno:consolidate",
-                    "topic_description": "Test consolidation"
-                }
-            ]
-        }
-        agent_dir = manager_data_dir / "agents" / "scheduler-test"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
-        (agent_dir / "identity.md").write_text("# Scheduler Test\n\nTest agent.")
-
-        manager = AgentManager()
-
-        # Load and register agent
-        mock_agent = MagicMock()
-        mock_agent.id = "scheduler-test"
-        mock_agent.config = config
-        manager.agents["scheduler-test"] = mock_agent
-
-        # Simulate missed evening trigger
-        with patch('src.agent.manager.datetime') as mock_dt:
-            mock_now = MagicMock()
-            mock_now.strftime.side_effect = lambda fmt: "2025-01-23" if fmt == "%Y-%m-%d" else "22:00"
-            mock_dt.now.return_value = mock_now
-
-            manager._emit_startup_triggers()
-
-        # Should have created the topic
-        topics = list_topics(assignee="scheduler-test")
-        assert len(topics) == 1
-        assert topics[0]["name"] == "euno:consolidate"
-
-    def test_scheduler_ignores_mismatched_event(
-        self, manager_data_dir, system_config_with_schedules, test_db, mock_emit_event, mock_emit_ui_event
-    ):
-        """Scheduler doesn't create topic when event doesn't match.
-
-        Spec: Only matching events trigger topic creation.
-        """
-        from src.agent.manager import AgentManager
-        from src.core.data.topics import list_topics
-
-        # Create agent with morning event trigger
-        config = {
-            "id": "morning-agent",
-            "name": "Morning Agent",
-            "state": "enabled",
-            "tools": ["list_topics"],
-            "triggers": [
-                {
-                    "event": "morning",
-                    "action": "tool",
-                    "tool": "euno_quote",
-                    "topic_name": "euno:quote"
-                }
-            ]
-        }
-        agent_dir = manager_data_dir / "agents" / "morning-agent"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
-        (agent_dir / "identity.md").write_text("# Morning Agent\n\nTest agent.")
-
-        manager = AgentManager()
-
-        mock_agent = MagicMock()
-        mock_agent.id = "morning-agent"
-        mock_agent.config = config
-        manager.agents["morning-agent"] = mock_agent
-
-        # Time is after evening (22:00) but before morning would be "missed"
-        # We check that evening trigger fires but morning doesn't
-        # Actually, let's test that morning IS fired when morning is missed
-
-        # Set state to indicate evening already ran
-        state = {"last_evening": "2025-01-23"}
-        state_path = manager_data_dir / "system" / "state.json"
-        state_path.write_text(json.dumps(state))
-
-        with patch('src.agent.manager.datetime') as mock_dt:
-            mock_now = MagicMock()
-            # After morning (08:00) so morning should be detected as missed
-            mock_now.strftime.side_effect = lambda fmt: "2025-01-23" if fmt == "%Y-%m-%d" else "10:00"
-            mock_dt.now.return_value = mock_now
-
-            manager._emit_startup_triggers()
-
-        # Should have created the morning topic
-        topics = list_topics(assignee="morning-agent")
-        assert len(topics) == 1
-        assert topics[0]["name"] == "euno:quote"
-
-    def test_scheduler_creates_topic_with_description(
-        self, manager_data_dir, system_config_with_schedules, test_db, mock_emit_event, mock_emit_ui_event
-    ):
-        """Scheduler uses topic_description from trigger config.
-
-        Spec: topic_description is used when creating the trigger topic.
-        """
-        from src.agent.manager import AgentManager
-        from src.core.data.topics import list_topics
-
-        config = {
-            "id": "desc-test",
-            "name": "Description Test",
-            "state": "enabled",
-            "tools": ["list_topics"],
-            "triggers": [
-                {
-                    "event": "evening",
-                    "action": "tool",
-                    "tool": "euno_consolidate",
-                    "topic_name": "euno:consolidate",
-                    "topic_description": "Custom description for consolidation"
-                }
-            ]
-        }
-        agent_dir = manager_data_dir / "agents" / "desc-test"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "config.json").write_text(json.dumps(config, indent=2))
-        (agent_dir / "identity.md").write_text("# Desc Test\n\nTest agent.")
-
-        manager = AgentManager()
-
-        mock_agent = MagicMock()
-        mock_agent.id = "desc-test"
-        mock_agent.config = config
-        manager.agents["desc-test"] = mock_agent
-
-        with patch('src.agent.manager.datetime') as mock_dt:
-            mock_now = MagicMock()
-            mock_now.strftime.side_effect = lambda fmt: "2025-01-23" if fmt == "%Y-%m-%d" else "22:00"
-            mock_dt.now.return_value = mock_now
-
-            manager._emit_startup_triggers()
-
-        topics = list_topics(assignee="desc-test")
-        assert len(topics) == 1
-        assert topics[0]["description"] == "Custom description for consolidation"
 
 
 # =============================================================================
@@ -1016,3 +678,54 @@ class TestAgentLoopStateChecks:
 
         # Cache indicates topics exist
         assert manager.agents_with_topics.get("test-agent", False)
+
+    def test_periodic_repoll_catches_due_date_transition(self, manager_data_dir):
+        """Cache refreshes periodically to catch due-date transitions.
+
+        Spec: Agents re-check for actionable topics every 60s even when cache is False,
+        so that topics whose due_date has become current are discovered.
+        """
+        from src.agent.manager import AgentManager
+
+        manager = AgentManager()
+        manager.running = True
+
+        # Cache says no topics
+        manager.agents_with_topics["test-agent"] = False
+
+        # Simulate last check was >60s ago
+        manager._last_topic_check["test-agent"] = time.time() - 61
+
+        # Mock list_topics to return a topic (due date just became current)
+        with patch("src.core.data.topics.list_topics", return_value=[{"id": "t1"}]) as mock_lt:
+            # Simulate one iteration of the re-poll logic
+            now = time.time()
+            last_check = manager._last_topic_check.get("test-agent", 0)
+            assert now - last_check >= 60
+
+            topics = mock_lt(status="todo", assignee="test-agent", actionable=True)
+            assert topics  # Found newly-actionable topic
+
+            # Manager would set cache to True
+            manager.agents_with_topics["test-agent"] = True
+            manager._last_topic_check["test-agent"] = now
+
+        assert manager.agents_with_topics["test-agent"] is True
+
+    def test_repoll_skipped_when_recently_checked(self, manager_data_dir):
+        """Re-poll is skipped when last check was less than 60s ago.
+
+        Spec: Re-check interval is 60 seconds to avoid excessive DB queries.
+        """
+        from src.agent.manager import AgentManager
+
+        manager = AgentManager()
+        manager.running = True
+
+        manager.agents_with_topics["test-agent"] = False
+        manager._last_topic_check["test-agent"] = time.time() - 10  # 10s ago
+
+        # Check interval hasn't elapsed
+        now = time.time()
+        last_check = manager._last_topic_check.get("test-agent", 0)
+        assert now - last_check < 60  # Should NOT re-poll

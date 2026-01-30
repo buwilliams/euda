@@ -1,40 +1,44 @@
 # Web Skill Specification
 
-Fetch, extract, and monitor web content for Euno agents.
+Search, extract, save, and monitor web content for Euno agents.
 
 ## Overview
 
-The web skill enables agents to retrieve information from the web. It is **not** a general search engine (that's handled by the Tavily skill) but rather a tool for:
-- Fetching specific URLs
-- Extracting readable content from pages
-- Saving reference material to topics
-- Monitoring pages for changes
+The web skill provides comprehensive web interaction capabilities:
 
-Euno is a polite web citizen: all requests are rate-limited (1s minimum between requests per host, max 2 concurrent per host).
+- **web search** — Search the web using Tavily API
+- **web extract** — Extract content from URLs using Tavily API
+- **web save** — Save extracted content to topic assets (uses Tavily)
+- **web watch** — Monitor pages for changes (uses local HTTP + BeautifulSoup, free)
+
+Euno is a polite web citizen: watch requests are rate-limited (1s minimum between requests per host, max 2 concurrent per host).
 
 ## Use Cases
 
-| Pattern | Persistence | Example |
-|---------|-------------|---------|
-| **Lookup** | None (chat only) | Fetch a page to answer a question |
-| **Search** | Short-term memory | Query a job board, compare options |
-| **Reference** | Topic asset | Save documentation for later |
-| **Monitor** | Trigger + memory | Watch for job postings, track changes |
+| Pattern | Command | Persistence | Example |
+|---------|---------|-------------|---------|
+| **Search** | web search | Short-term memory | Find job postings, news |
+| **Lookup** | web extract | None (chat only) | Extract a page to answer a question |
+| **Reference** | web save | Topic asset | Save documentation for later |
+| **Monitor** | web watch | Trigger + memory | Watch for job postings, track changes |
 
 ## Directory Structure
 
 ```
 skills/
-├── common/              # Shared utilities (HTTPClient, content extraction)
-└── web/
+└── web/                 # All web commands (self-contained)
     ├── cli.py           # Typer CLI entry point
     ├── commands/
-    │   ├── fetch.py     # Fetch and extract content
-    │   ├── save.py      # Save content to topic assets
-    │   └── watch.py     # Monitor pages for changes
+    │   ├── search.py    # Search the web (Tavily API)
+    │   ├── extract.py   # Extract content from URLs (Tavily API)
+    │   ├── save.py      # Save content to topic assets (uses Tavily)
+    │   └── watch.py     # Monitor pages for changes (uses local HTTP)
     └── lib/
+        ├── search.py    # Tavily Search API client
+        ├── extract.py   # Tavily Extract API client
         ├── storage.py   # Watch list persistence
-        └── diff.py      # Change detection
+        ├── http.py      # HTTP client with rate limiting
+        └── content.py   # HTML content extraction
 ```
 
 Data storage:
@@ -48,49 +52,72 @@ data/skills/web/
 
 ## Commands
 
-### fetch
+### search
 
-Fetch a URL and extract readable content.
+Search the web using Tavily API.
 
 ```bash
-web fetch <url> [--raw] [--timeout SECONDS] [--credentials ID]
+web search <query> [--limit N] [--topic TOPIC] [--time-range RANGE] [--depth DEPTH] [--answer]
 ```
 
 **Arguments:**
-- `url` — URL to fetch (required)
-- `--raw` — Return raw HTML instead of extracted content
-- `--timeout` — Request timeout in seconds (default: 30)
-- `--credentials` — Credential ID for authenticated sites (future, currently ignored)
+- `query` — Search query (required)
+- `--limit, -l` — Number of results (default: 5, max: 20)
+- `--topic, -t` — Search topic: `general`, `news`, or `finance`
+- `--time-range, -r` — Filter by time: `day`, `week`, `month`, or `year`
+- `--depth, -d` — Search depth: `basic`, `advanced`, `fast`, or `ultra-fast`
+- `--answer, -a` — Include AI-generated answer summary
 
 **Output:**
 ```
-Title: Example Article
-URL: https://example.com/article
+Search results for: python web scraping
+Found: 5 results
 
----
-
-[Extracted plain text content...]
+1. Beautiful Soup Documentation
+   URL: https://www.crummy.com/software/BeautifulSoup/
+   Beautiful Soup is a Python library for pulling data out of HTML...
 ```
 
-**Errors:**
-- Connection failed → exit 1, stderr message
-- HTTP error (4xx/5xx) → exit 1, stderr with status code
-- Content extraction failed → exit 1, stderr message
+**Cost:** 1 credit per search (basic) or 2 credits (advanced)
 
-### save
+### extract
 
-Fetch a URL and save content as a topic asset.
+Extract content from a webpage using Tavily Extract API.
 
 ```bash
-web save <url> <topic_id> [--filename NAME] [--format FORMAT] [--credentials ID]
+web extract <url> [--query QUERY] [--format FORMAT] [--depth DEPTH]
 ```
 
 **Arguments:**
-- `url` — URL to fetch (required)
+- `url` — URL to extract content from (required)
+- `--query, -q` — Rerank extracted content by relevance to this query
+- `--format, -f` — Output format: `markdown` or `text` (default: markdown)
+- `--depth, -d` — Extraction depth: `basic` or `advanced` (default: basic)
+
+**Output:**
+```
+URL: https://example.com/article
+Total: 5,432 chars
+
+[Extracted content in markdown format...]
+```
+
+**Cost:** 1 credit per 5 URLs (basic) or 2 credits per 5 URLs (advanced)
+
+### save
+
+Extract content from a URL and save as a topic asset.
+
+```bash
+web save <url> <topic_id> [--filename NAME] [--format FORMAT] [--depth DEPTH]
+```
+
+**Arguments:**
+- `url` — URL to extract (required)
 - `topic_id` — Topic to attach asset to (required)
-- `--filename` — Asset filename (default: derived from URL/title)
-- `--format` — Output format: `text`, `markdown`, `html` (default: markdown)
-- `--credentials` — Credential ID for authenticated sites (future, currently ignored)
+- `--filename` — Asset filename (default: derived from URL)
+- `--format` — Output format: `text` or `markdown` (default: markdown)
+- `--depth` — Extraction depth: `basic` or `advanced` (default: basic)
 
 **Output:**
 ```
@@ -99,10 +126,14 @@ Topic: abc123
 ```
 
 **Behavior:**
-- Fetches URL and extracts content
+- Uses Tavily Extract API for high-quality content extraction
 - Converts to requested format
 - Saves as topic asset via core skill
 - Returns confirmation with filename and size
+
+**Cost:** 1 credit per 5 URLs (basic) or 2 credits per 5 URLs (advanced)
+
+> **Note:** For one-time content extraction without saving, use `web extract <url>`
 
 ### watch add
 
@@ -320,11 +351,20 @@ The `web save` command integrates with the core topic/asset system:
 
 ### Content Extraction
 
-Uses `skills.common.extract_main_content()` which:
-1. Removes script, style, nav, header, footer, aside elements
-2. Looks for semantic containers: `<article>`, `<main>`
-3. Falls back to common class patterns: `.post-content`, `.entry-content`, etc.
-4. Last resort: `<body>` content
+Two extraction methods are used:
+
+**Tavily Extract API** (used by `web extract` and `web save`):
+- High-quality extraction via Tavily's infrastructure
+- Costs credits (1 credit per 5 URLs basic, 2 credits per 5 URLs advanced)
+- Better handling of complex page structures
+
+**Local extraction** (used by `web watch`):
+- Uses `skills.web.lib.content.extract_main_content()` with BeautifulSoup
+- Free, no API credits required
+- Good enough for change detection
+- Removes script, style, nav, header, footer, aside elements
+- Looks for semantic containers: `<article>`, `<main>`
+- Falls back to common class patterns: `.post-content`, `.entry-content`, etc.
 
 ### Change Detection
 
@@ -365,9 +405,9 @@ and let you know when new positions are posted.
 > web watch check
 
 Agent: Good news! The Python Jobs page has 3 new postings since yesterday.
-Would you like me to fetch the details?
+Would you like me to extract the details?
 
-> web fetch "https://jobs.example.com/posting/123"
+> web extract "https://jobs.example.com/posting/123"
 ```
 
 ### Reference Documentation Workflow
@@ -375,7 +415,7 @@ Would you like me to fetch the details?
 ```
 User: Save the React hooks documentation to my "Learning React" topic.
 
-Agent: I'll fetch and save that documentation.
+Agent: I'll extract and save that documentation.
 
 > web save "https://react.dev/reference/react/hooks" topic-abc123 --filename "hooks-reference.md"
 
@@ -390,7 +430,7 @@ User: What does the Euno project README say about installation?
 
 Agent: Let me check.
 
-> web fetch "https://github.com/example/euno/blob/main/README.md"
+> web extract "https://github.com/example/euno/blob/main/README.md"
 
 Agent: According to the README, installation requires...
 [Agent summarizes content, doesn't persist anywhere]

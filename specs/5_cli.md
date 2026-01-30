@@ -29,7 +29,8 @@ Rules for the command-line interface.
 - `sync --no-backup` — Skip backup before sync
 - `sync init [server]` — Initialize sync with remote server
 - `sync status` — Show sync state and pending conflicts
-- `sync conflicts` — List unresolved conflicts
+- `sync conflicts` — Interactively walk through each conflict, prompting to keep local, keep remote, or skip
+- `sync conflicts --non-interactive` — List unresolved conflicts without prompting
 - `sync resolve <id> --keep-local|--keep-remote|--keep-newest` — Resolve a conflict
 
 ### Server Commands
@@ -83,7 +84,8 @@ Key behaviors:
 - Uses `--checksum` for reliable file comparison across time zones
 - Creates backups before applying changes (local backup for pull, remote for push)
 - Topological sort ensures parent topics are imported before children
-- Server restart skipped if conflicts detected (user must resolve and re-run)
+- When conflicts are detected, drops into interactive resolution by default (prompt per conflict: keep local, keep remote, or skip)
+- Use `--non-interactive` to skip interactive resolution and list conflicts instead
 - Use `--data-only` to skip code sync (steps 1, 2, 4)
 
 Code sync excludes: `.git/`, `.venv/`, `data/`, `__pycache__/`, `*.pyc`, `.env`

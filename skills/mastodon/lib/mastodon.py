@@ -1,9 +1,9 @@
 """Mastodon API client for fetching public posts."""
 
 from typing import Optional
+import urllib.request
+import urllib.error
 import json
-
-from skills.common import HTTPClient
 
 
 def get_mastodon_posts(
@@ -23,45 +23,40 @@ def get_mastodon_posts(
     """
     limit = min(limit, 40)  # API max is 40
 
-    client = HTTPClient(
-        base_url=f"https://{instance}",
-        timeout=10,
-        user_agent="Euno/1.0 (Mastodon)",
-    )
-
     # First, look up the account ID
-    try:
-        response = client.get(f"/api/v1/accounts/lookup?acct={username}")
-    except ConnectionError as e:
-        return {"error": f"Could not connect to {instance}: {e}"}
-
-    if response.status == 404:
-        return {"error": f"Account @{username}@{instance} not found"}
-    if not response.ok:
-        return {"error": f"HTTP error looking up account: {response.status}"}
+    lookup_url = f"https://{instance}/api/v1/accounts/lookup?acct={username}"
 
     try:
-        account_data = response.json()
-        account_id = account_data.get("id")
-        if not account_id:
+        with urllib.request.urlopen(lookup_url, timeout=10) as response:
+            account_data = json.loads(response.read().decode())
+            account_id = account_data.get("id")
+
+            if not account_id:
+                return {"error": f"Account @{username}@{instance} not found"}
+
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
             return {"error": f"Account @{username}@{instance} not found"}
+        return {"error": f"HTTP error looking up account: {e.code}"}
+    except urllib.error.URLError as e:
+        return {"error": f"Could not connect to {instance}: {e.reason}"}
     except json.JSONDecodeError:
         return {"error": "Invalid response from Mastodon API"}
 
     # Fetch the account's statuses (public only)
-    try:
-        response = client.get(
-            f"/api/v1/accounts/{account_id}/statuses"
-            f"?limit={limit}&exclude_replies=true&exclude_reblogs=true"
-        )
-    except ConnectionError as e:
-        return {"error": f"Could not connect to {instance}: {e}"}
-
-    if not response.ok:
-        return {"error": f"HTTP error fetching posts: {response.status}"}
+    statuses_url = (
+        f"https://{instance}/api/v1/accounts/{account_id}/statuses"
+        f"?limit={limit}&exclude_replies=true&exclude_reblogs=true"
+    )
 
     try:
-        statuses = response.json()
+        with urllib.request.urlopen(statuses_url, timeout=10) as response:
+            statuses = json.loads(response.read().decode())
+
+    except urllib.error.HTTPError as e:
+        return {"error": f"HTTP error fetching posts: {e.code}"}
+    except urllib.error.URLError as e:
+        return {"error": f"Could not connect to {instance}: {e.reason}"}
     except json.JSONDecodeError:
         return {"error": "Invalid response from Mastodon API"}
 

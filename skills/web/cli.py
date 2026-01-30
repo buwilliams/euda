@@ -1,4 +1,4 @@
-"""Web skill for Euno - Fetch, extract, and monitor web content."""
+"""Web skill for Euno - Search, extract, save, and monitor web content."""
 
 import sys
 from pathlib import Path
@@ -9,16 +9,17 @@ import typer
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from skills.web.commands import fetch, save, watch
+from skills.web.commands import search, extract, save, watch
 
 app = typer.Typer(
     name="web",
-    help="Fetch, extract, and monitor web content.",
+    help="Search, extract, save, and monitor web content.",
     no_args_is_help=True,
 )
 
 # Register commands
-app.command(name="fetch")(fetch.fetch)
+app.command(name="search")(search.search)
+app.command(name="extract")(extract.extract)
 app.command(name="save")(save.save)
 app.add_typer(watch.app, name="watch", help="Monitor pages for changes")
 

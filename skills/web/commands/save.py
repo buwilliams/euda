@@ -1,4 +1,4 @@
-"""Save command - fetch and save content as topic asset."""
+"""Save command - extract and save web content as topic asset."""
 
 import sys
 import re
@@ -7,62 +7,50 @@ from urllib.parse import urlparse
 
 import typer
 
-from skills.common import HTTPClient, extract_main_content, clean_html
+from skills.web.lib.extract import extract_url
 
 
 def save(
     url: str = typer.Argument(..., help="URL to fetch"),
     topic_id: str = typer.Argument(..., help="Topic to attach asset to"),
     filename: Optional[str] = typer.Option(None, "--filename", help="Asset filename"),
-    format: str = typer.Option("markdown", "--format", help="Output format: text, markdown, html"),
-    credentials: Optional[str] = typer.Option(None, "--credentials", help="Credential ID (future, currently ignored)"),
+    format: str = typer.Option("markdown", "--format", help="Output format: text or markdown"),
+    depth: str = typer.Option("basic", "--depth", help="Extraction depth: basic or advanced"),
 ):
-    """Fetch a URL and save content as a topic asset."""
-    # credentials parameter accepted but not used yet
-    _ = credentials
+    """Extract content from a URL and save as a topic asset.
 
-    if format not in ("text", "markdown", "html"):
-        print(f"Invalid format: {format}. Use text, markdown, or html.", file=sys.stderr)
+    Uses Tavily Extract API for high-quality content extraction.
+    Cost: 1 credit per 5 URLs (basic) or 2 credits per 5 URLs (advanced)
+    """
+    if format not in ("text", "markdown"):
+        print(f"Invalid format: {format}. Use text or markdown.", file=sys.stderr)
         raise typer.Exit(1)
 
-    # Fetch the page
-    try:
-        response = HTTPClient.fetch(
-            url,
-            headers={"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
-            timeout=30,
-            user_agent="Euno/1.0 (Web Skill)",
-        )
-    except ConnectionError as e:
-        print(f"Connection failed: {e}", file=sys.stderr)
+    # Extract content using Tavily
+    result = extract_url(
+        url=url,
+        format=format,
+        extract_depth=depth,
+    )
+
+    if "error" in result:
+        print(f"Extraction failed: {result['error']}", file=sys.stderr)
         raise typer.Exit(1)
 
-    if not response.ok:
-        print(f"HTTP error: {response.status}", file=sys.stderr)
+    extracted_content = result.get("content", "")
+    if not extracted_content:
+        print("No content extracted", file=sys.stderr)
         raise typer.Exit(1)
-
-    html_content = response.text()
-
-    # Extract content
-    result = extract_main_content(html_content)
-    if result is None:
-        print("Could not extract content", file=sys.stderr)
-        raise typer.Exit(1)
-
-    # Get title for filename generation
-    title = _extract_title(html_content)
 
     # Generate filename if not provided
     if not filename:
-        filename = _generate_filename(url, title, format)
+        filename = _generate_filename(url, format)
 
     # Format content
-    if format == "html":
-        content = result["content"]
-    elif format == "text":
-        content = result["content_text"]
+    if format == "text":
+        content = extracted_content
     else:  # markdown
-        content = _to_markdown(url, title, result["content_text"])
+        content = _to_markdown(url, extracted_content)
 
     # Save via core skill
     from subprocess import run, PIPE
@@ -83,46 +71,25 @@ def save(
     print(f"Topic: {topic_id}")
 
 
-def _extract_title(html: str) -> Optional[str]:
-    """Extract page title from HTML."""
-    try:
-        from bs4 import BeautifulSoup
-        soup = BeautifulSoup(html, "html.parser")
-        title_tag = soup.find("title")
-        if title_tag:
-            return clean_html(title_tag.get_text())
-    except ImportError:
-        pass
-    return None
+def _generate_filename(url: str, format: str) -> str:
+    """Generate a filename from URL."""
+    ext = {"text": "txt", "markdown": "md"}[format]
 
-
-def _generate_filename(url: str, title: Optional[str], format: str) -> str:
-    """Generate a filename from URL or title."""
-    ext = {"text": "txt", "markdown": "md", "html": "html"}[format]
-
-    if title:
-        # Sanitize title for filename
-        name = re.sub(r"[^\w\s-]", "", title.lower())
-        name = re.sub(r"[\s]+", "-", name)
-        name = name[:50]  # Limit length
-    else:
-        # Use URL path
-        parsed = urlparse(url)
-        name = parsed.path.strip("/").replace("/", "-") or "page"
-        name = re.sub(r"[^\w-]", "", name)[:50]
+    # Use URL path for filename
+    parsed = urlparse(url)
+    name = parsed.path.strip("/").replace("/", "-") or "page"
+    name = re.sub(r"[^\w-]", "", name)[:50]
 
     return f"{name}.{ext}"
 
 
-def _to_markdown(url: str, title: Optional[str], text: str) -> str:
-    """Convert to simple markdown format."""
-    lines = []
-    if title:
-        lines.append(f"# {title}")
-        lines.append("")
-    lines.append(f"Source: {url}")
-    lines.append("")
-    lines.append("---")
-    lines.append("")
-    lines.append(text)
+def _to_markdown(url: str, content: str) -> str:
+    """Format content as markdown with source URL."""
+    lines = [
+        f"Source: {url}",
+        "",
+        "---",
+        "",
+        content,
+    ]
     return "\n".join(lines)
