@@ -296,6 +296,7 @@ class Agent:
         prompt = render_template(
             "agent/system",
             agent_id=self.id,
+            current_date=datetime.now().strftime("%A, %B %d, %Y"),
             identity=self.identity,
             user_identity=user_identity,
         )
