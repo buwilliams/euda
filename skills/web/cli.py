@@ -9,7 +9,7 @@ import typer
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from skills.web.commands import search, extract, save, watch
+from skills.web.commands import search, extract, save, watch, preview
 
 app = typer.Typer(
     name="web",
@@ -21,6 +21,7 @@ app = typer.Typer(
 app.command(name="search")(search.search)
 app.command(name="extract")(extract.extract)
 app.command(name="save")(save.save)
+app.command(name="preview")(preview.preview)
 app.add_typer(watch.app, name="watch", help="Monitor pages for changes")
 
 

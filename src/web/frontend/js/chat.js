@@ -583,12 +583,39 @@ function addInlineMessage(content, role, context = null) {
     const div = document.createElement('div');
     div.className = `inline-message inline-message-${role}`;
     div.setAttribute('data-testid', role === 'you' ? 'message-user' : 'message-agent');
-    const html = role === 'friend' ? marked.parse(content) : escapeHtml(content);
 
     // Add context label if provided (e.g., "Re: Topic Name")
     const contextHtml = context ? `<div class="message-context">${escapeHtml(context)}</div>` : '';
 
-    div.innerHTML = `${contextHtml}<div class="message-content">${html}</div>`;
+    // Create message content container
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    // For agent messages, check if content is a render envelope
+    if (role === 'friend') {
+        const envelope = parseRenderEnvelope(content);
+        if (envelope) {
+            // Render envelope asynchronously
+            div.innerHTML = contextHtml;
+            div.appendChild(contentDiv);
+            inlineMessages.appendChild(div);
+            scrollChatToBottom();
+
+            // Async render - the container is already in the DOM
+            renderEnvelope(envelope, contentDiv, { display: 'embed' }).catch(err => {
+                console.error('Failed to render envelope:', err);
+                contentDiv.innerHTML = marked.parse(content);
+            });
+            return;
+        }
+    }
+
+    // Standard rendering: markdown for agent, escaped HTML for user
+    const html = role === 'friend' ? marked.parse(content) : escapeHtml(content);
+    contentDiv.innerHTML = html;
+
+    div.innerHTML = contextHtml;
+    div.appendChild(contentDiv);
     inlineMessages.appendChild(div);
     scrollChatToBottom();
 }
