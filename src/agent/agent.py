@@ -305,6 +305,14 @@ class Agent:
         if topic_context:
             prompt += "\n\n" + topic_context
 
+        if getattr(self, "_topic_chat_mode", False):
+            prompt += (
+                "\n\n## Topic Chat Mode\n"
+                "This is a conversational thread about the current topic. "
+                "Do not claim, reassign, or change topic state. "
+                "Focus on discussion, clarification, and guidance only."
+            )
+
         # Voice mode instructions
         if voice_input:
             prompt += "\n\n## Voice Response Mode\n"

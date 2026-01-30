@@ -525,6 +525,25 @@ async function loadConversation(oldConversationId) {
         conversationId = data.new_conversation_id;
         viewingHistoryConversationId = oldConversationId;
 
+        if (oldConversationId && oldConversationId.startsWith('topic-')) {
+            const topicId = oldConversationId.substring(6);
+            const topic = typeof topicsData !== 'undefined' ? topicsData.find(j => j.id === topicId) : null;
+            chatTopicContext = topicId;
+            chatTopicName = topic ? topic.name : 'Topic';
+            if (typeof topicConversationIds !== 'undefined') {
+                topicConversationIds[topicId] = conversationId;
+            }
+            if (typeof updateInputContext === 'function') {
+                updateInputContext();
+            }
+        } else {
+            chatTopicContext = null;
+            chatTopicName = null;
+            if (typeof updateInputContext === 'function') {
+                updateInputContext();
+            }
+        }
+
         inlineMessages.innerHTML = '';
         for (const msg of data.messages) {
             addInlineMessage(msg.content, msg.role === 'user' ? 'you' : 'friend');

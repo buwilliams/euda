@@ -412,6 +412,9 @@ function renderTopicDetailView(topicId) {
     // Get ALL child topics sorted by status priority (working > todo > error > done > archived)
     const allChildTopics = getAllChildTopicsSorted(topic.id);
     const assets = topicAssetsCache[topicId] || [];
+    const chatAssets = assets
+        .filter(asset => asset.filename.startsWith('topic-chat-') || asset.filename === 'topic-chat.md')
+        .sort((a, b) => a.filename.localeCompare(b.filename));
     const isAgentTopic = !!topic.agent_id;
     const titleIcon = isAgentTopic ? icon('bolt') : '';
 
@@ -481,6 +484,33 @@ function renderTopicDetailView(topicId) {
             <div class="topic-section">
                 <div class="topic-section-header">Parent</div>
                 <div class="card-project-link" onclick="navigateFocus('topic-${topic.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
+            </div>
+            ` : ''}
+
+            <!-- Topic Chats Section -->
+            ${chatAssets.length > 0 ? `
+            <div class="topic-section">
+                <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>Topic Chats (${chatAssets.length})</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="child-topics-list">
+                        ${chatAssets.map(asset => {
+                            const displayName = asset.filename
+                                .replace(/^topic-chat-/, '')
+                                .replace(/\.md$/, '');
+                            return `
+                                <div class="child-topic-card" onclick="navigateFocus('asset-${topic.id}-${asset.filename}')">
+                                    <span class="child-topic-icon">${icon('chat-bubble-left')}</span>
+                                    <span class="child-topic-name">${escapeHtml(displayName)}</span>
+                                    <span class="child-topic-count"></span>
+                                    <span class="child-topic-arrow">${icon('chevron-right')}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
             </div>
             ` : ''}
 

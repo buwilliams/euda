@@ -206,9 +206,22 @@ def api_topic_feedback(topic_id: str, request: TopicFeedbackRequest):
 @router.get("/{topic_id}/chat/history")
 def api_topic_chat_history(topic_id: str):
     """Get topic chat history from the topic asset."""
-    asset = read_asset(topic_id, "topic-chat.md")
+    from src.core.data.assets import ASSETS_DIR
+    assets_dir = ASSETS_DIR / topic_id
+
+    asset_name = None
+    if assets_dir.exists():
+        chat_assets = [p for p in assets_dir.iterdir() if p.is_file() and p.name.startswith("topic-chat-") and p.name.endswith(".md")]
+        if chat_assets:
+            chat_assets.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+            asset_name = chat_assets[0].name
+
+    if not asset_name:
+        asset_name = "topic-chat.md"
+
+    asset = read_asset(topic_id, asset_name)
     if not asset or not asset.get("content"):
-        return {"topic_id": topic_id, "messages": []}
+        return {"topic_id": topic_id, "messages": [], "conversation_id": None}
 
     content = asset["content"]
     parts = re.split(r'^## (User|Assistant) \([^)]+\)\n\n', content, flags=re.MULTILINE)
@@ -221,7 +234,13 @@ def api_topic_chat_history(topic_id: str):
             messages.append({"role": role, "content": msg_content})
         i += 2
 
-    return {"topic_id": topic_id, "messages": messages}
+    conversation_id = None
+    if asset_name.startswith("topic-chat-") and asset_name.endswith(".md"):
+        conversation_id = asset_name[len("topic-chat-"):-3]
+    elif asset_name == "topic-chat.md":
+        conversation_id = f"topic-{topic_id}"
+
+    return {"topic_id": topic_id, "messages": messages, "conversation_id": conversation_id}
 
 
 @router.get("/{topic_id}/children")

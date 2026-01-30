@@ -165,12 +165,6 @@
     padding: var(--spacing-md);
     border: 1px solid transparent;
     border-radius: var(--radius-md);
-    cursor: pointer;
-}
-
-.topic-name-display:hover {
-    background: var(--color-bg-subtle);
-    border-color: var(--color-border-light);
 }
 
 .topic-name-input {
@@ -188,14 +182,8 @@
     padding: var(--spacing-md);
     border: 1px solid transparent;
     border-radius: var(--radius-md);
-    cursor: pointer;
     min-height: 2rem;
     color: var(--color-text-muted);
-}
-
-.topic-description-display:hover {
-    background: var(--color-bg-subtle);
-    border-color: var(--color-border-light);
 }
 
 .topic-description-display.empty {

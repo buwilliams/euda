@@ -334,15 +334,22 @@ function bindTopicContextLabel() {
     });
 }
 
-async function enterTopicChatMode(topicId, topicName) {
+async function enterTopicChatMode(topicId, topicName, options = {}) {
+    const { switchTabToChat = true } = options;
     chatTopicContext = topicId;
     chatTopicName = topicName || 'Topic';
     updateInputContext();
-    switchTab('chat');
+    if (switchTabToChat) {
+        switchTab('chat');
+    }
     inlineMessages.innerHTML = '<div class="chat-loading">Loading...</div>';
     try {
         const response = await fetch(`/api/topics/${topicId}/chat/history`, { credentials: 'same-origin' });
         const data = await response.json();
+        if (data?.conversation_id) {
+            topicConversationIds[topicId] = data.conversation_id;
+            conversationId = data.conversation_id;
+        }
         inlineMessages.innerHTML = '';
         const messages = data.messages || [];
         if (messages.length === 0) {
@@ -507,7 +514,7 @@ function sendContextMessage() {
         const topicName = currentTopicName || 'topic';
         contextInput.value = '';
         contextInput.style.height = 'auto';
-        enterTopicChatMode(currentTopicContext, topicName).then(() => {
+        enterTopicChatMode(currentTopicContext, topicName, { switchTabToChat: false }).then(() => {
             addInlineMessage(message, 'you', `Re: ${topicName}`);
             messageQueue.push(message);
             processMessageQueue();

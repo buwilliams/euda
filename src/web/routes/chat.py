@@ -54,10 +54,17 @@ def api_chat(request: ChatRequest) -> ChatResponse:
     if request.topic_id:
         agent.set_topic_context(request.topic_id)
         if not request.conversation_id:
-            request.conversation_id = f"topic-{request.topic_id}"
+            request.conversation_id = f"topic-{request.topic_id}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
 
     # Set conversation - if None, agent will create a new one on first save
     agent.set_session(request.conversation_id)
+
+    original_get_tools = None
+    if request.topic_id:
+        # Topic chat should be conversational only (no tool calls or topic state changes)
+        agent._topic_chat_mode = True
+        original_get_tools = agent._get_tools
+        agent._get_tools = lambda: []
 
     try:
         response = agent.chat(request.message, voice_input=request.voice_input)
@@ -76,6 +83,10 @@ def api_chat(request: ChatRequest) -> ChatResponse:
                 "retry": False
             }
         )
+    finally:
+        if request.topic_id and original_get_tools:
+            agent._get_tools = original_get_tools
+            agent._topic_chat_mode = False
 
     # Emit chat:message_received event for agent triggers
     from ...events import emit_system_event
@@ -100,7 +111,7 @@ def api_chat(request: ChatRequest) -> ChatResponse:
                 f"## User ({timestamp})\n\n{request.message}\n\n"
                 f"## Assistant ({timestamp})\n\n{response}\n"
             )
-            asset_name = "topic-chat.md"
+            asset_name = f"topic-chat-{request.conversation_id}.md"
             existing = read_asset(request.topic_id, asset_name)
             if existing and existing.get("content"):
                 new_content = f"{existing['content'].rstrip()}\n\n{entry}"
