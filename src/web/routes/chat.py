@@ -26,6 +26,7 @@ class ChatRequest(BaseModel):
     agent_id: str = "user"
     conversation_id: Optional[str] = None
     voice_input: bool = False
+    topic_id: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
@@ -49,8 +50,21 @@ def api_chat(request: ChatRequest) -> ChatResponse:
     """Send a message and get a response."""
     agent = get_agent_instance(request.agent_id)
 
+    # Topic-aware chat session (optional)
+    if request.topic_id:
+        agent.set_topic_context(request.topic_id)
+        if not request.conversation_id:
+            request.conversation_id = f"topic-{request.topic_id}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+
     # Set conversation - if None, agent will create a new one on first save
     agent.set_session(request.conversation_id)
+
+    original_get_tools = None
+    if request.topic_id:
+        # Topic chat should be conversational only (no tool calls or topic state changes)
+        agent._topic_chat_mode = True
+        original_get_tools = agent._get_tools
+        agent._get_tools = lambda: []
 
     try:
         response = agent.chat(request.message, voice_input=request.voice_input)
@@ -69,6 +83,10 @@ def api_chat(request: ChatRequest) -> ChatResponse:
                 "retry": False
             }
         )
+    finally:
+        if request.topic_id and original_get_tools:
+            agent._get_tools = original_get_tools
+            agent._topic_chat_mode = False
 
     # Emit chat:message_received event for agent triggers
     from ...events import emit_system_event
@@ -80,6 +98,29 @@ def api_chat(request: ChatRequest) -> ChatResponse:
         "agent_id": request.agent_id,
         "conversation_id": agent.get_session_id()
     })
+
+    # Append topic chat to asset for persistence/context
+    if request.topic_id:
+        try:
+            from src.core.data.assets import read_asset, write_asset
+            from src.core.data.topics import get_topic
+            topic = get_topic(request.topic_id)
+            topic_name = topic.get("name") if topic else request.topic_id
+            timestamp = datetime.now().strftime("%H:%M")
+            entry = (
+                f"## User ({timestamp})\n\n{request.message}\n\n"
+                f"## Assistant ({timestamp})\n\n{response}\n"
+            )
+            asset_name = f"topic-chat-{request.conversation_id}.md"
+            existing = read_asset(request.topic_id, asset_name)
+            if existing and existing.get("content"):
+                new_content = f"{existing['content'].rstrip()}\n\n{entry}"
+            else:
+                new_content = f"# Topic Chat — {topic_name}\n\n{entry}"
+            write_asset(request.topic_id, asset_name, new_content)
+        except Exception:
+            # Non-fatal; chat still succeeds
+            pass
 
     # Generate TTS audio if voice input and TTS available
     audio_base64 = None
@@ -142,7 +183,7 @@ def get_recent_conversations(count: int = 20):
             preview = ""
             user_match = re.search(r'## User \([^)]+\)\n\n(.+?)(?:\n\n##|\Z)', content, re.DOTALL)
             if user_match:
-                preview = user_match.group(1).strip()[:100]
+                preview = user_match.group(1).strip()[:300]
 
             message_count = len(re.findall(r'^## (User|Assistant)', content, re.MULTILINE))
 
@@ -153,6 +194,9 @@ def get_recent_conversations(count: int = 20):
                 "preview": preview,
                 "message_count": message_count
             }
+            if conversation_id.startswith("topic-"):
+                conv_data["is_topic"] = True
+                conv_data["topic_id"] = conversation_id.split("-")[1]
             # Include last_message_timestamp only for the most recent conversation
             if i == 0:
                 conv_data["last_message_timestamp"] = int(mtime)

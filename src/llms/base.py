@@ -23,6 +23,7 @@ from src.logger import get_logger
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 CONFIG_PATH = DATA_DIR / "system" / "config.json"
 LLM_CONFIG_PATH = DATA_DIR / "system" / "llm.json"
+INJECTION_CONFIG_PATH = DATA_DIR / "system" / "prompt_injection.json"
 
 # Prompt logger instance (lazy loaded)
 _prompt_logger = None
@@ -34,6 +35,31 @@ def _get_prompt_logger():
     if _prompt_logger is None:
         _prompt_logger = get_logger("system/logs/prompts")
     return _prompt_logger
+
+
+def _load_injection_config() -> dict:
+    """Load prompt injection scanning config with safe defaults."""
+    config = {
+        "enabled": True,
+        "append_guardrail": True,
+        "append_min_level": "low",
+        "log": True,
+    }
+    if not INJECTION_CONFIG_PATH.exists():
+        return config
+    try:
+        with open(INJECTION_CONFIG_PATH) as f:
+            overrides = json.load(f)
+        if isinstance(overrides, dict):
+            config.update(overrides)
+    except (json.JSONDecodeError, OSError):
+        return config
+    return config
+
+
+def _injection_level_rank(level: str) -> int:
+    order = {"none": 0, "low": 1, "medium": 2, "high": 3}
+    return order.get(level, 0)
 
 
 def _log_prompt(agent_id: str, model: str, system: str, messages: list, tools: list = None,
@@ -380,6 +406,23 @@ class UnifiedClient:
         # 5. Pre-call: wait for any active backoff
         self._wait_for_backoff()
 
+        # 5.5 Pre-call: prompt injection scan (best-effort)
+        injection_result = None
+        injection_config = _load_injection_config()
+        if injection_config.get("enabled", True):
+            from .prompt_injection import scan_messages, format_guardrail
+
+            try:
+                injection_result = scan_messages(messages)
+            except Exception:
+                injection_result = None
+
+            if injection_result and injection_config.get("append_guardrail", True):
+                if _injection_level_rank(injection_result.level) >= _injection_level_rank(
+                    injection_config.get("append_min_level", "low")
+                ):
+                    system = f"{system}\n\n{format_guardrail()}"
+
         # 6. Generate timestamp for correlation between prompt and cost logs
         call_timestamp = datetime.now().isoformat()
 
@@ -420,5 +463,22 @@ class UnifiedClient:
         # 10. Post-call: log prompt and response together
         _log_prompt(agent_id, self.model_name, system, messages, tools,
                     timestamp=call_timestamp, response=response)
+
+        if injection_result and injection_config.get("log", True):
+            try:
+                _get_prompt_logger().write_raw({
+                    "timestamp": call_timestamp,
+                    "agent": agent_id,
+                    "model": self.model_name,
+                    "event": "prompt_injection_scan",
+                    "level": injection_result.level,
+                    "score": injection_result.score,
+                    "matches": [
+                        {"category": m.category, "count": m.count, "weight": m.weight}
+                        for m in injection_result.matches
+                    ],
+                })
+            except Exception:
+                pass
 
         return response

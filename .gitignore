@@ -8,7 +8,7 @@
 # ===================
 # Base Agents (data/agents/)
 # ===================
-# Only user, chat, and worker are committed - other agents are user-created
+# Only user, chat, soul, and worker are committed - other agents are user-created
 # Layered config: config.defaults.json (tracked) + config.json (user overrides, ignored)
 # identity.template.md is tracked, identity.md is user data (ignored)
 
@@ -17,6 +17,7 @@
 data/agents/user/config.json
 !data/agents/user/identity.template.md
 data/agents/user/identity.md
+!data/agents/user/prompts/
 
 # Chat agent
 !data/agents/chat/config.defaults.json
@@ -25,7 +26,14 @@ data/agents/chat/config.json
 data/agents/chat/identity.md
 !data/agents/chat/prompts/
 
-# Worker agent
+# Soul agent
+!data/agents/soul/config.defaults.json
+data/agents/soul/config.json
+!data/agents/soul/identity.template.md
+data/agents/soul/identity.md
+!data/agents/soul/prompts/
+
+# Worker agent (disabled/legacy)
 !data/agents/worker/config.defaults.json
 data/agents/worker/config.json
 !data/agents/worker/identity.template.md
@@ -80,6 +88,7 @@ data/system/sessions.json
 data/system/quotes.json
 data/system/prompts.jsonl
 data/system/prompts/*.jsonl
+data/system/deletions.json
 data/system/logs/
 data/system/incidents/
 data/system/api_calls.json
@@ -182,4 +191,3 @@ euno-diagnostics-*.tar.gz
 # Personal Data
 # ===================
 lifelog/
-

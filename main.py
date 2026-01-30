@@ -55,7 +55,7 @@ Skill Commands:
 Examples:
   euno web                              # Run web server + agents
   euno chat                             # Chat with default agent (user)
-  euno chat worker                      # Chat with specific agent
+  euno chat soul                       # Chat with specific agent
   euno skills core topics list          # List topics
   euno skills core agents list          # List agents
   euno skills core store import ~/docs  # Import files to memory
@@ -359,7 +359,7 @@ def cmd_fresh_start(args):
     print("  - All system logs (prompts, incidents, token usage, progress, etc.)")
     print("  - System trigger state")
     print("  - Password (if set)")
-    print("  - Non-core agents (anything except chat, user, worker)")
+    print("  - Non-core agents (anything except chat, user, soul)")
     print()
     print("This will RESET:")
     print("  - Core agent identities (from identity.template.md templates)")

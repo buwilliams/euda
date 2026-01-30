@@ -275,48 +275,43 @@ class Agent:
         return {}
 
     def _build_system_prompt(self, voice_input: bool = False) -> str:
-        """Build the system prompt from identity, user context, and skills.
+        """Build the system prompt from identity and user context.
 
         Includes:
         - Agent's identity (from identity.md)
         - User's identity (so agents know who they serve)
-        - Available skills summary
+
+        Skills are discovered dynamically at runtime via meta-tools.
 
         Note: User memory is NOT auto-injected (use memory commands for specifics).
 
         Args:
             voice_input: Whether input came from voice (enables conversational response style)
         """
-        from ..skills import discover_skills
         from .cognition.reasoning.prompts import render_template
-
-        # Get available skills (filtered by excluded_skills)
-        excluded = self.config.get("excluded_skills", [])
-        skills = [s for s in discover_skills() if s.name not in excluded]
-
-        # Build skills section
-        if skills:
-            skills_lines = ["### Available Skills\n"]
-            for skill in skills:
-                desc = skill.description or "(skill)"
-                skills_lines.append(f"- **{skill.name}**: {desc}")
-            skills_lines.append("")
-            skills_lines.append("Use `list_skills` to see skills, `skill_usage(skill)` for help,")
-            skills_lines.append("`execute_skill(skill, command)` to run commands.")
-            skills_text = "\n".join(skills_lines)
-        else:
-            skills_text = "No skills available."
 
         # Load user identity so agents know who they serve
         user_identity = self._get_user_identity()
 
         prompt = render_template(
             "agent/system",
+            agent_id=self.id,
             current_date=datetime.now().strftime("%A, %B %d, %Y"),
             identity=self.identity,
             user_identity=user_identity,
-            tools_by_type=skills_text  # Reuse the template variable
         )
+
+        topic_context = self._get_topic_context_for_prompt()
+        if topic_context:
+            prompt += "\n\n" + topic_context
+
+        if getattr(self, "_topic_chat_mode", False):
+            prompt += (
+                "\n\n## Topic Chat Mode\n"
+                "This is a conversational thread about the current topic. "
+                "Do not claim, reassign, or change topic state. "
+                "Focus on discussion, clarification, and guidance only."
+            )
 
         # Voice mode instructions
         if voice_input:
@@ -701,6 +696,7 @@ class Agent:
         recent_tools = summary.get("recent_tools_used", [])
         prompt = render_template(
             "agent/progress_check",
+            agent_id=self.id,
             iteration_count=summary.get("iteration_count", 0),
             total_tool_calls=summary.get("total_tool_calls", 0),
             recent_tools_used=", ".join(recent_tools) if recent_tools else "none",
@@ -884,7 +880,7 @@ class Agent:
                     if progress_ctx.get("stuck_warning"):
                         stuck_warning = f"**Warning:** {progress_ctx['stuck_warning']}"
 
-                    prompt = load_template("agent/continue_with_context").format(
+                    prompt = load_template("agent/continue_with_context", agent_id=self.id).format(
                         iteration=progress_ctx.get("iteration", iteration),
                         tool_calls_this_cycle=progress_ctx.get("tool_calls_this_cycle", 0),
                         stuck_warning=stuck_warning

@@ -26,6 +26,92 @@ let agentDataCache = {};     // Cache of agent identity and config
 let isViewAnimating = false; // Track if view animation is in progress
 let pendingRender = false;   // Track if a render is pending after animation
 
+// ============== SSE Partial Updates ==============
+
+function applyTopicsUpdateToFocusView(prevAllTopics, nextAllTopics) {
+    const container = document.getElementById('focus-content');
+    if (!container || typeof focusView === 'undefined') return false;
+
+    // Timeline views: update only the list content to avoid full re-render flicker
+    if (focusView === 'today' || focusView === 'upcoming' || focusView === 'anytime' || focusView === 'someday') {
+        return patchTimelineViewList(container, focusView);
+    }
+
+    // Completed view: update only the list content
+    if (focusView === 'completed') {
+        return patchCompletedViewList(container);
+    }
+
+    // Topic detail view: avoid re-render if the active topic itself didn't change
+    if (focusView.startsWith('topic-')) {
+        const topicId = focusView.substring(6);
+        const prev = (prevAllTopics || []).find(t => t.id === topicId);
+        const next = (nextAllTopics || []).find(t => t.id === topicId);
+        if (!next) return false; // topic removed, let full render show not found
+        if (!prev || topicRecordChanged(prev, next)) return false;
+        return true;
+    }
+
+    return false;
+}
+
+function patchTimelineViewList(container, category) {
+    const contentEl = container.querySelector('.focus-view-content');
+    if (!contentEl) return false;
+
+    let topics = getRootTopicsForCategory(category);
+    if (category === 'upcoming') {
+        topics = topics.slice().sort((a, b) => {
+            const dateA = a.due_date || '9999-12-31';
+            const dateB = b.due_date || '9999-12-31';
+            return dateA.localeCompare(dateB);
+        });
+    }
+
+    if (topics.length === 0) {
+        contentEl.innerHTML = '<div class="focus-empty">No topics</div>';
+        return true;
+    }
+
+    contentEl.innerHTML = topics.map(topic => renderTopicCard(topic, isSwipeable(topic))).join('');
+    return true;
+}
+
+function patchCompletedViewList(container) {
+    const contentEl = container.querySelector('.focus-view-content');
+    if (!contentEl) return false;
+
+    const allTopics = [...topicsData, ...completedTopicsData];
+    const projectsCompletedTopics = completedTopicsData.filter(j => isProjectsDescendant(j, allTopics));
+    const completedTopicIds = new Set(projectsCompletedTopics.map(j => j.id));
+    const rootCompletedTopics = projectsCompletedTopics.filter(j => !j.parent_id || !completedTopicIds.has(j.parent_id));
+
+    if (rootCompletedTopics.length === 0) {
+        contentEl.innerHTML = '<div class="focus-empty">No completed topics</div>';
+        return true;
+    }
+
+    contentEl.innerHTML = rootCompletedTopics.map(topic => {
+        const childCount = projectsCompletedTopics.filter(j => j.parent_id === topic.id).length;
+        return renderCompletedTopicCard(topic, childCount, true);
+    }).join('');
+    return true;
+}
+
+function topicRecordChanged(prev, next) {
+    if (!prev || !next) return true;
+    const keys = [
+        'name', 'status', 'due_date', 'someday', 'assignee', 'agent_id', 'description',
+        'parent_id', 'completed_at', 'updated_at'
+    ];
+    for (const key of keys) {
+        if ((prev[key] || null) !== (next[key] || null)) return true;
+    }
+    const prevTags = Array.isArray(prev.tags) ? prev.tags.join(',') : '';
+    const nextTags = Array.isArray(next.tags) ? next.tags.join(',') : '';
+    return prevTags !== nextTags;
+}
+
 // ============== Icons ==============
 
 function icon(name, className = '') {
@@ -137,9 +223,13 @@ function renderFocusTab() {
     } else if (focusView.startsWith('identity-')) {
         const agentId = focusView.substring(9);
         content = renderIdentityView(agentId);
-    } else if (focusView.startsWith('config-')) {
-        const agentId = focusView.substring(7);
-        content = renderConfigurationView(agentId);
+    } else if (focusView.startsWith('trigger-')) {
+        // trigger-{agentId}-{index}
+        const rest = focusView.substring(8);
+        const dashIndex = rest.indexOf('-');
+        const agentId = rest.substring(0, dashIndex);
+        const triggerIndex = rest.substring(dashIndex + 1);
+        content = renderTriggerDetailView(agentId, triggerIndex);
     } else if (focusView.startsWith('rate-limits-')) {
         const agentId = focusView.substring(12);
         content = renderRateLimitEventsView(agentId);
@@ -150,6 +240,22 @@ function renderFocusTab() {
         focusSlideDirection = null;
     } else {
         container.innerHTML = `<div class="view-slide-container current">${content}</div>`;
+    }
+
+    if (focusView && focusView.startsWith('long-term-memory-detail-') && typeof initLongTermMemoryScroll === 'function') {
+        const rest = focusView.substring(24);
+        const dashIndex = rest.indexOf('-');
+        const agentId = rest.substring(0, dashIndex);
+        const date = rest.substring(dashIndex + 1);
+        setTimeout(() => initLongTermMemoryScroll(agentId, date), 0);
+    }
+
+    if (focusView === 'menu' && typeof maybeRenderDailyQuote === 'function') {
+        if (isViewAnimating) {
+            setTimeout(() => maybeRenderDailyQuote(), 320);
+        } else {
+            maybeRenderDailyQuote();
+        }
     }
 }
 

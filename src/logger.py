@@ -78,11 +78,11 @@ class Logger:
     """JSONL logger with daily rolling and auto-cleanup.
 
     Usage:
-        logger = Logger("agents/worker/logs")
+        logger = Logger("agents/soul/logs")
         logger.info({"event": "task_start", "topic_id": "abc123"})
 
         # Or with singleton pattern:
-        logger = get_logger("agents/worker/logs")
+        logger = get_logger("agents/soul/logs")
     """
 
     def __init__(self, base_path: str):
@@ -226,7 +226,7 @@ def get_logger(base_path: str) -> Logger:
 
     Args:
         base_path: Path relative to data/ directory.
-                  e.g., "agents/worker/logs" -> data/agents/worker/logs/{date}.jsonl
+                  e.g., "agents/soul/logs" -> data/agents/soul/logs/{date}.jsonl
 
     Returns:
         Logger instance (cached, so same path returns same logger)

@@ -256,6 +256,27 @@ class Transport:
         )
         return stdout.strip() if success and stdout.strip() else None
 
+    def get_remote_file_mtime(self, remote_relative_path: str) -> Optional[str]:
+        """Get ISO timestamp of a remote file's mtime.
+
+        Args:
+            remote_relative_path: Path relative to remote data directory
+
+        Returns:
+            ISO timestamp string or None if not available
+        """
+        remote_path = f"{self.remote_data_path}/{remote_relative_path}"
+        success, stdout, _ = self.run_remote_command(
+            f"stat -c %Y {remote_path} 2>/dev/null"
+        )
+        if success and stdout.strip():
+            try:
+                from datetime import datetime, UTC
+                return datetime.fromtimestamp(int(stdout.strip()), UTC).isoformat().replace("+00:00", "Z")
+            except Exception:
+                return None
+        return None
+
     def list_remote_files(self, remote_relative_path: str, pattern: str = "*") -> List[str]:
         """List files in a remote directory.
 
@@ -453,6 +474,7 @@ class Transport:
             ".git/",
             ".venv/",
             "/data/",
+            "/data_backup*/",
             "__pycache__/",
             "*.pyc",
             "*.egg-info/",

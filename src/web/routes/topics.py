@@ -2,6 +2,7 @@
 Topics API Routes
 """
 
+import re
 from typing import Optional, List
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -200,6 +201,45 @@ def api_topic_feedback(topic_id: str, request: TopicFeedbackRequest):
         raise HTTPException(status_code=400, detail=result["error"])
 
     return {"status": "sent", "to_agent": target_agent, "topic_id": topic_id}
+
+
+@router.get("/{topic_id}/chat/history")
+def api_topic_chat_history(topic_id: str):
+    """Get topic chat history from the topic asset."""
+    from src.core.data.assets import ASSETS_DIR
+    assets_dir = ASSETS_DIR / topic_id
+
+    asset_name = None
+    if assets_dir.exists():
+        chat_assets = [
+            p for p in assets_dir.iterdir()
+            if p.is_file() and p.name.startswith("topic-chat-") and p.name.endswith(".md")
+        ]
+        if chat_assets:
+            chat_assets.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+            asset_name = chat_assets[0].name
+
+    if not asset_name:
+        return {"topic_id": topic_id, "messages": [], "conversation_id": None}
+
+    asset = read_asset(topic_id, asset_name)
+    if not asset or not asset.get("content"):
+        return {"topic_id": topic_id, "messages": [], "conversation_id": None}
+
+    content = asset["content"]
+    parts = re.split(r'^## (User|Assistant) \([^)]+\)\n\n', content, flags=re.MULTILINE)
+    messages = []
+    i = 1
+    while i < len(parts) - 1:
+        role = parts[i].lower()
+        msg_content = parts[i + 1].strip()
+        if msg_content:
+            messages.append({"role": role, "content": msg_content})
+        i += 2
+
+    conversation_id = asset_name[len("topic-chat-"):-3]
+
+    return {"topic_id": topic_id, "messages": messages, "conversation_id": conversation_id}
 
 
 @router.get("/{topic_id}/children")

@@ -4,7 +4,7 @@
 
 function isSwipeable(topic) {
     // System containers are not swipeable
-    if (topic.tags && (topic.tags.includes('system:agents') || topic.tags.includes('system:projects') || topic.tags.includes('system:assets'))) {
+    if (topic.tags && (topic.tags.includes('system:agents') || topic.tags.includes('system:tasks') || topic.tags.includes('system:projects') || topic.tags.includes('system:assets'))) {
         return false;
     }
     // Agent inbox topics are not swipeable
@@ -36,8 +36,11 @@ function renderMinimalTopicCard(topic) {
     const dueDateLabel = dueDate ? `<span class="card-due-date">${formatFriendlyDueDate(dueDate)}</span>` : '';
     // Use context-aware descendant count (all descendants matching timeline)
     const childCount = getDescendantCountForContext(topic.id);
-    const childBadge = childCount > 0 ? `<span class="card-badge">${childCount}</span>` : '';
+    const childBadge = childCount > 0
+        ? `<span class="card-badge">${childCount}</span>`
+        : '<span class="card-badge"></span>';
     const assignee = topic.assignee;
+    const displayAssignee = formatAssigneeDisplay(assignee);
 
     // Status indicator based on topic state
     let statusIndicator = '';
@@ -50,25 +53,35 @@ function renderMinimalTopicCard(topic) {
     } else if (topic.status === 'done') {
         statusIndicator = '<span class="card-status-indicator card-done-indicator" title="Completed">' + icon('check') + '</span>';
     } else if (assignee) {
-        statusIndicator = '<span class="card-status-indicator card-assigned-indicator" title="Assigned to ' + escapeHtml(assignee) + '">' + icon('user') + '</span>';
+        statusIndicator = '<span class="card-status-indicator card-assigned-indicator" title="Assigned to ' + escapeHtml(displayAssignee) + '">' + icon('user') + '</span>';
     }
 
     // Assignee label shown before the arrow (only when assigned to an agent)
     const assigneeLabel = assignee
-        ? `<span class="card-assignee-label">${escapeHtml(assignee)}</span>`
+        ? `<span class="card-assignee-label">${escapeHtml(displayAssignee)}</span>`
         : '';
 
     return `
         <div class="card card-minimal${topic.status === 'done' ? ' card-completed' : ''}${topic.status === 'archived' ? ' card-archived' : ''}${topic.status === 'error' ? ' card-error' : ''}" data-topic-id="${topic.id}" data-testid="topic-card" onclick="navigateFocus('topic-${topic.id}')">
             ${statusIndicator}
             <span class="card-title">${escapeHtml(displayName)}</span>
-            ${childBadge}
-            ${dueDateLabel}
             ${assigneeLabel}
+            ${dueDateLabel}
             <button class="card-trash-btn" onclick="quickDeleteTopic(event, '${topic.id}')" title="Delete topic">${icon('trash')}</button>
+            ${childBadge}
             <span class="card-arrow">›</span>
         </div>
     `;
+}
+
+function formatAssigneeDisplay(assignee) {
+    if (!assignee) return '';
+    if (typeof agentsCache !== 'undefined' && Array.isArray(agentsCache) && agentsCache.length > 0) {
+        const agent = agentsCache.find(a => a.id === assignee);
+        if (!agent) return `Unknown (${assignee})`;
+        return agent.name || agent.id || assignee;
+    }
+    return assignee;
 }
 
 function renderFullTopicCard(topic) {

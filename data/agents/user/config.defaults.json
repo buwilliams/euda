@@ -12,17 +12,13 @@
   "triggers": [
     {
       "event": "evening",
-      "action": "tool",
-      "tool": "euno_consolidate",
       "topic_name": "euno:consolidate",
-      "topic_description": "Review memories, evolve identity, graduate learnings"
+      "instructions": "Review memories, evolve identity, graduate learnings. Use core consolidation skill to update identity and graduate memories. Summarize any user-facing changes in a topic log."
     },
     {
       "event": "morning",
-      "action": "tool",
-      "tool": "euno_quote",
       "topic_name": "euno:quote",
-      "topic_description": "Generate personalized daily quote based on user identity"
+      "instructions": "Generate personalized daily quote based on user identity. Use core quote skill to generate a daily quote based on current identity. Store output as an asset or topic log."
     }
   ]
 }

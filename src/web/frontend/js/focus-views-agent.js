@@ -11,6 +11,7 @@ let monitoringCache = {};
 let monitoringPagination = {};  // { agentId: { offset: 0, limit: 20 } }
 let monitoringLoading = {};     // { agentId: true } - prevents duplicate requests
 let rateLimitViewCache = {};
+let monitoringPromptDetailCache = {};
 
 // ============== Agent Detail View ==============
 
@@ -77,6 +78,32 @@ function renderAgentDetailView(topic) {
     const activeTriggerTopics = topLevelTopics
         .filter(j => triggerTopicNames.includes(j.name) && (j.status === 'todo' || j.status === 'working'))
         .map(j => j.name);
+
+    const renderTriggerList = () => {
+        if (triggers.length === 0) {
+            return '<div class="config-value"><em class="text-muted">None configured</em></div>';
+        }
+        return `
+            <div class="child-topics-list">
+                ${triggers.map((trigger, index) => {
+                    const topicName = trigger?.topic_name || '';
+                    const eventName = trigger?.event || '';
+                    const displayName = topicName
+                        ? (topicName.includes(':') ? topicName.split(':').pop().replace(/^\w/, c => c.toUpperCase()) : topicName)
+                        : (eventName || 'Trigger');
+                    const subtitle = eventName ? `Event: ${eventName}` : '';
+                    return `
+                        <div class="child-topic-card" onclick="navigateFocus('trigger-${agentId}-${index}')">
+                            <span class="child-topic-icon">${icon('bolt')}</span>
+                            <span class="child-topic-name">${escapeHtml(displayName)}</span>
+                            ${subtitle ? `<span class="child-topic-count">${escapeHtml(subtitle)}</span>` : '<span class="child-topic-count"></span>'}
+                            <span class="child-topic-arrow">${icon('chevron-right')}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    };
 
     // Render trigger button with picker
     const renderTriggerButton = () => {
@@ -340,11 +367,14 @@ function renderAgentDetailView(topic) {
                 </div>
             </div>
 
-            <!-- Configuration Section -->
+            <!-- Triggers Section -->
             <div class="topic-section">
-                <div class="topic-section-header collapsible clickable" onclick="navigateFocus('config-${agentId}')">
-                    <span>Configuration</span>
+                <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>Triggers</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    ${renderTriggerList()}
                 </div>
             </div>
 
@@ -474,11 +504,6 @@ function renderMemoryListView(agentId) {
             </div>
         </div>
         <div class="focus-view-content">
-            <!-- Action Menu -->
-            <div class="task-detail-actions">
-                <button class="task-detail-action" onclick="addMemoryItem('${agentId}')">+ Add Memory</button>
-            </div>
-
             <!-- Memory Items -->
             <div data-testid="memory-list">
             ${items.length === 0 ? '<div class="focus-empty">No short-term memory items.</div>' :
@@ -675,7 +700,7 @@ function renderLongTermMemoryDetailView(agentId, date) {
     }
 
     if (!entry || !entry.content) {
-        loadLongTermMemoryContent(agentId, date).then(data => {
+        loadLongTermMemoryContent(agentId, date, 0, LONG_TERM_MEMORY_PAGE_LINES).then(data => {
             longTermMemoryDetailCache[cacheKey] = data;
             renderFocusTab();
         });
@@ -693,6 +718,17 @@ function renderLongTermMemoryDetailView(agentId, date) {
         `;
     }
 
+    const lineCount = entry?.line_count || null;
+    const totalLines = entry?.total_lines || null;
+    const hasMoreAbove = entry?.has_more_above;
+    const hasMoreBelow = entry?.has_more_below;
+    const paginationInfo = (lineCount !== null && totalLines !== null)
+        ? `<div class="memory-pagination-info">Showing ${lineCount} / ${totalLines} lines</div>`
+        : '';
+    const loadMoreHint = (hasMoreAbove || hasMoreBelow)
+        ? `<div class="memory-scroll-hint">Scroll to load more</div>`
+        : '';
+
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
@@ -702,9 +738,11 @@ function renderLongTermMemoryDetailView(agentId, date) {
             </div>
         </div>
         <div class="focus-view-content">
-            <div class="long-term-memory-content">
+            <div class="long-term-memory-content long-term-content-scroll" data-agent-id="${agentId}" data-memory-date="${date}">
                 ${marked.parse(entry.content || '')}
             </div>
+            ${paginationInfo}
+            ${loadMoreHint}
         </div>
     `;
 }
@@ -795,7 +833,7 @@ function renderMonitoringView(agentId) {
             <!-- Prompts List -->
             ${promptsList.length === 0 ? '<div class="focus-empty">No recent prompts</div>' :
               promptsList.map((p, index) => `
-                <div class="prompt-list-item" onclick="navigateFocus('prompt-${agentId}-${index}')">
+                <div class="prompt-list-item" onclick="openAgentPromptDetail('${agentId}', ${index})">
                     <span class="prompt-time">${formatPromptTime(p.timestamp)}</span>
                     <span class="prompt-tokens">${p.input_tokens}/${p.output_tokens}</span>
                     <span class="prompt-model">${escapeHtml(p.model || 'unknown')}</span>
@@ -840,7 +878,23 @@ function monitoringPageNext(agentId) {
 
 // ============== Prompt Detail View ==============
 
+function openAgentPromptDetail(agentId, promptIndex) {
+    const cached = monitoringCache[agentId];
+    const promptsList = cached?.prompts || cached?.recent_prompts;
+    const prompt = promptsList?.[promptIndex];
+    if (prompt) {
+        monitoringPromptDetailCache[`${agentId}:${promptIndex}`] = prompt;
+    }
+    navigateFocus(`prompt-${agentId}-${promptIndex}`);
+}
+
 function renderPromptDetailView(agentId, promptIndex) {
+    const detailKey = `${agentId}:${promptIndex}`;
+    const cachedDetail = monitoringPromptDetailCache[detailKey];
+    if (cachedDetail) {
+        return renderPromptDetailContent(cachedDetail);
+    }
+
     const cached = monitoringCache[agentId];
     // Support both old (recent_prompts) and new (prompts) format
     const promptsList = cached?.prompts || cached?.recent_prompts;
@@ -881,6 +935,10 @@ function renderPromptDetailView(agentId, promptIndex) {
         `;
     }
 
+    return renderPromptDetailContent(prompt);
+}
+
+function renderPromptDetailContent(prompt) {
     // Helper to render messages nicely
     const renderMessages = (messages) => {
         if (!Array.isArray(messages)) {
@@ -1052,12 +1110,6 @@ function renderIdentityView(agentId) {
     const identity = agentData.identity || '';
     const hasIdentity = identity.length > 0;
 
-    // Find the topic for this agent (for editing state)
-    const agentTopic = topicsData.find(j => j.agent_id === agentId);
-    const topicId = agentTopic?.id || agentId;
-
-    const isEditingIdentity = editingTopicField?.topicId === topicId && editingTopicField?.field === 'identity';
-
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
@@ -1067,50 +1119,22 @@ function renderIdentityView(agentId) {
             </div>
         </div>
         <div class="focus-view-content">
-            ${isEditingIdentity ? `
-                <!-- Edit Mode -->
-                <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="saveAgentIdentityField('${agentId}', '${topicId}')">
-                        ${icon('check')} Save
-                    </button>
-                    <button class="task-detail-action" onclick="cancelEditing()">
-                        ${icon('x-mark')} Cancel
-                    </button>
-                </div>
-
-                <div class="identity-edit">
-                    <textarea class="topic-description-input" id="edit-identity-${topicId}"
-                        placeholder="Define the agent's identity and behavioral rules..."
-                        style="min-height: 300px;">${escapeHtml(identity)}</textarea>
-                </div>
-            ` : `
-                <!-- View Mode -->
-                <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="startEditingField('${topicId}', 'identity')">
-                        ${icon('pencil')} Edit
-                    </button>
-                </div>
-
-                <div class="identity-content ${hasIdentity ? '' : 'empty'}" data-testid="identity-content">
-                    ${hasIdentity ? marked.parse(identity) : '<em class="text-muted">No identity defined. Click Edit to define the agent\'s identity and behavioral rules.</em>'}
-                </div>
-            `}
+            <div class="identity-content ${hasIdentity ? '' : 'empty'}" data-testid="identity-content">
+                ${hasIdentity ? marked.parse(identity) : '<em class="text-muted">No identity defined.</em>'}
+            </div>
         </div>
     `;
 }
 
-// ============== Configuration View ==============
-
-function renderConfigurationView(agentId) {
+function renderTriggerDetailView(agentId, triggerIndex) {
     const agentData = agentDataCache[agentId];
-
     if (!agentData) {
         loadAgentData(agentId).then(() => renderFocusTab());
         return `
             <div class="focus-view-header" onclick="navigateFocusBack()">
                 <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
                 <div class="focus-view-header-content">
-                    <span class="focus-view-title">Configuration</span>
+                    <span class="focus-view-title">Trigger</span>
                     ${renderBreadcrumbs()}
                 </div>
             </div>
@@ -1120,92 +1144,52 @@ function renderConfigurationView(agentId) {
         `;
     }
 
-    const config = agentData.config || {};
-    const triggers = config.triggers || [];
-    const tools = config.tools || [];
+    const triggers = agentData.config?.triggers || [];
+    const trigger = triggers[parseInt(triggerIndex)];
+    if (!trigger) {
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Trigger</span>
+                    ${renderBreadcrumbs()}
+                </div>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Trigger not found</div>
+            </div>
+        `;
+    }
 
-    // Find the topic for this agent (for editing state)
-    const agentTopic = topicsData.find(j => j.agent_id === agentId);
-    const topicId = agentTopic?.id || agentId;
-
-    const isEditingConfig = editingTopicField?.topicId === topicId && editingTopicField?.field === 'config';
+    const eventName = trigger.event || '';
+    const topicName = trigger.topic_name || '';
+    const instructions = trigger.instructions || '';
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
-                <span class="focus-view-title">Configuration</span>
+                <span class="focus-view-title">Trigger</span>
                 ${renderBreadcrumbs()}
             </div>
         </div>
         <div class="focus-view-content">
-            ${isEditingConfig ? `
-                <!-- Edit Mode -->
-                <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="saveAgentConfigField('${agentId}', '${topicId}')">
-                        ${icon('check')} Save
-                    </button>
-                    <button class="task-detail-action" onclick="cancelEditing()">
-                        ${icon('x-mark')} Cancel
-                    </button>
-                </div>
+            <div class="topic-section">
+                <div class="topic-section-header">Event</div>
+                <div class="config-value">${escapeHtml(eventName || '—')}</div>
+            </div>
 
-                <div class="agent-config-edit">
-                    <label class="agent-config-label">
-                        <span>Triggers (comma-separated)</span>
-                        <input type="text" class="agent-config-input" id="edit-triggers-${topicId}"
-                            value="${escapeHtml(triggers.join(', '))}"
-                            placeholder="Object triggers (edit config.json directly)">
-                    </label>
-                    <label class="agent-config-label">
-                        <span>Tools (comma-separated)</span>
-                        <input type="text" class="agent-config-input" id="edit-tools-${topicId}"
-                            value="${escapeHtml(tools.join(', '))}"
-                            placeholder="e.g., list_topics, create_topic">
-                    </label>
-                    <div class="agent-config-group">
-                        <div class="agent-config-group-title">Consolidation</div>
-                        <label class="agent-config-checkbox">
-                            <input type="checkbox" id="edit-consolidation-enabled-${topicId}"
-                                ${config.consolidation?.enabled !== false ? 'checked' : ''}>
-                            <span>Enabled</span>
-                        </label>
-                        <label class="agent-config-label">
-                            <span>Trigger</span>
-                            <input type="text" class="agent-config-input" id="edit-consolidation-trigger-${topicId}"
-                                value="${escapeHtml(config.consolidation?.trigger || 'time:evening')}"
-                                placeholder="e.g., time:evening">
-                        </label>
-                    </div>
-                </div>
-            ` : `
-                <!-- View Mode -->
-                <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="startEditingField('${topicId}', 'config')">
-                        ${icon('pencil')} Edit
-                    </button>
-                </div>
+            <div class="topic-section">
+                <div class="topic-section-header">Topic</div>
+                <div class="config-value">${escapeHtml(topicName || '—')}</div>
+            </div>
 
-                <div class="topic-section">
-                    <div class="topic-section-header">Triggers</div>
-                    <div class="config-value">${triggers.length > 0 ? escapeHtml(triggers.join(', ')) : '<em class="text-muted">None configured</em>'}</div>
+            <div class="topic-section">
+                <div class="topic-section-header">Instructions</div>
+                <div class="config-value">
+                    ${instructions ? `<div class="prompt-rendered-content">${marked.parse(instructions)}</div>` : '<em class="text-muted">None</em>'}
                 </div>
-
-                <div class="topic-section">
-                    <div class="topic-section-header">Tools</div>
-                    <div class="config-value">${tools.length > 0 ? escapeHtml(tools.join(', ')) : '<em class="text-muted">None configured</em>'}</div>
-                </div>
-
-                <div class="topic-section">
-                    <div class="topic-section-header">Consolidation</div>
-                    <div class="config-value">
-                        <span class="config-status ${config.consolidation?.enabled !== false ? 'enabled' : 'disabled'}">
-                            ${config.consolidation?.enabled !== false ? 'Enabled' : 'Disabled'}
-                        </span>
-                        <span class="config-trigger">${escapeHtml(config.consolidation?.trigger || 'time:evening')}</span>
-                    </div>
-                </div>
-            `}
+            </div>
         </div>
     `;
 }

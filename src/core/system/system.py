@@ -85,6 +85,20 @@ def done_working(summary: str = "") -> dict:
     if agent:
         agent._work_done = True
         agent._log("done_working", {"summary": summary} if summary else None)
+        try:
+            topic_id = getattr(agent, "_current_topic_id", None)
+            if topic_id:
+                from src.core.data.topics import get_topic
+                from src.core.data.assets import write_asset
+
+                topic = get_topic(topic_id)
+                topic_name = topic.get("name", "") if topic else ""
+                if "heartbeat" in topic_name:
+                    content = summary.strip() if summary else "No actions taken or summary provided."
+                    write_asset(topic_id, "heartbeat-summary.md", content)
+        except Exception:
+            # Best-effort: don't block done_working on summary asset failures
+            pass
 
     return {
         "status": "acknowledged",
@@ -192,4 +206,3 @@ def trigger_config_reload() -> dict:
         pass
 
     return {"invalidated": invalidated}
-

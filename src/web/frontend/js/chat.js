@@ -9,24 +9,8 @@ async function initializeConversation() {
     inlineMessages.innerHTML = '<div class="chat-loading">Loading...</div>';
 
     try {
-        // Fetch quote and conversations in parallel
-        const [quoteResponse, convResponse] = await Promise.all([
-            fetch('/api/daily-quote', { credentials: 'same-origin' }).catch(() => null),
-            fetch('/api/chat/conversations/recent?count=1')
-        ]);
-
-        // Cache the quote if available
-        if (quoteResponse && quoteResponse.ok) {
-            try {
-                const quoteData = await quoteResponse.json();
-                if (quoteData.quote) {
-                    cachedChatQuote = quoteData;
-                }
-            } catch (e) {
-                // Ignore quote parsing errors
-            }
-        }
-
+        bindTopicContextLabel();
+        const convResponse = await fetch('/api/chat/conversations/recent?count=1');
         const data = await convResponse.json();
 
         // Remove loading
@@ -84,44 +68,11 @@ async function loadConversationById(convId) {
 // Cache the quote data for reuse
 let focusQuoteData = null;
 
-async function loadDailyQuote(retries = 3) {
-    // Check if quote was dismissed this session
-    if (sessionStorage.getItem('quoteDismissed')) {
-        const container = document.getElementById('daily-quote-container');
-        if (container) container.innerHTML = '';
-        return;
-    }
-
-    // Find the quote container in Focus tab (may not exist yet if Focus hasn't rendered)
+function maybeRenderDailyQuote() {
+    if (!focusQuoteData || !focusQuoteData.quote) return;
     const container = document.getElementById('daily-quote-container');
-    if (!container) {
-        // Retry after a short delay if container doesn't exist yet
-        if (retries > 0) {
-            setTimeout(() => loadDailyQuote(retries - 1), 200);
-        }
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/daily-quote', {
-            credentials: 'same-origin'
-        });
-        if (!response.ok) {
-            container.innerHTML = '';
-            return;
-        }
-        const data = await response.json();
-        if (data.quote) {
-            focusQuoteData = data;
-            renderQuote(data);
-        } else {
-            // No quote available yet - don't show anything
-            container.innerHTML = '';
-        }
-    } catch (error) {
-        console.error('Failed to load daily quote:', error);
-        container.innerHTML = '';
-    }
+    if (!container) return;
+    renderQuote(focusQuoteData);
 }
 
 function renderQuote(data) {
@@ -295,6 +246,9 @@ function retryLastMessage() {
 
 let currentTopicContext = null;
 let currentTopicName = null;
+let chatTopicContext = null;
+let chatTopicName = null;
+const topicConversationIds = {};
 
 function setTopicContext(topicId) {
     // Get topic to check if it's a system container
@@ -306,6 +260,7 @@ function setTopicContext(topicId) {
         const tags = topic.tags || [];
         // Only exclude the container topics themselves, not their descendants
         const isSystemContainer = tags.includes('system:agents') ||
+                                  tags.includes('system:tasks') ||
                                   tags.includes('system:projects');
         // Agent inbox topics are the root topics for each agent (have agent_id or agent-inbox tag)
         const isAgentInbox = tags.includes('agent-inbox') || topic.agent_id;
@@ -337,12 +292,29 @@ function clearTopicContext() {
 function updateInputContext() {
     if (!contextInput) return;
     const label = document.getElementById('topic-context-label');
+    const isClosable = (() => {
+        if (typeof activeTab === 'undefined') return false;
+        if (activeTab === 'focus') {
+            return typeof focusView !== 'undefined' && focusView === 'menu';
+        }
+        if (activeTab === 'chat') {
+            return typeof viewingHistoryConversationId === 'undefined' || viewingHistoryConversationId === null;
+        }
+        return false;
+    })();
+    const exitHtml = isClosable ? ' <span class="topic-context-exit">×</span>' : '';
 
-    if (currentTopicContext && label) {
-        contextInput.placeholder = "Send feedback about this topic...";
-        label.textContent = '@topic';
+    if (chatTopicContext && label) {
+        contextInput.placeholder = "Chat about this topic...";
+        label.innerHTML = `@topic${exitHtml}`;
         label.classList.add('active');
-        label.onclick = clearTopicContext;
+        label.onclick = isClosable ? clearChatTopicContext : null;
+        label.title = `Topic chat: ${chatTopicName || 'Topic'} (click to exit)`;
+    } else if (currentTopicContext && label) {
+        contextInput.placeholder = "Chat about this topic...";
+        label.innerHTML = `@topic${exitHtml}`;
+        label.classList.add('active');
+        label.onclick = isClosable ? clearTopicContext : null;
         label.title = `Replying to: ${currentTopicName || 'Topic'} (click to clear)`;
     } else if (label) {
         contextInput.placeholder = "What's on your mind?";
@@ -350,6 +322,111 @@ function updateInputContext() {
         label.textContent = '';
         label.onclick = null;
         label.title = '';
+    }
+}
+
+function bindTopicContextLabel() {
+    const label = document.getElementById('topic-context-label');
+    if (!label) return;
+    if (label.dataset.bound === 'true') return;
+    label.dataset.bound = 'true';
+    label.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const isClosable = (() => {
+            if (typeof activeTab === 'undefined') return false;
+            if (activeTab === 'focus') {
+                return typeof focusView !== 'undefined' && focusView === 'menu';
+            }
+            if (activeTab === 'chat') {
+                return typeof viewingHistoryConversationId === 'undefined' || viewingHistoryConversationId === null;
+            }
+            return false;
+        })();
+        if (!isClosable) {
+            return;
+        }
+        if (chatTopicContext) {
+            clearChatTopicContext();
+            return;
+        }
+        if (currentTopicContext) {
+            clearTopicContext();
+        }
+    });
+}
+
+async function enterTopicChatMode(topicId, topicName, options = {}) {
+    const { switchTabToChat = true } = options;
+    chatTopicContext = topicId;
+    chatTopicName = topicName || 'Topic';
+    updateInputContext();
+    if (switchTabToChat) {
+        switchTab('chat');
+    }
+    inlineMessages.innerHTML = '<div class="chat-loading">Loading...</div>';
+    try {
+        const response = await fetch(`/api/topics/${topicId}/chat/history`, { credentials: 'same-origin' });
+        const data = await response.json();
+        if (data?.conversation_id) {
+            topicConversationIds[topicId] = data.conversation_id;
+            conversationId = data.conversation_id;
+        }
+        inlineMessages.innerHTML = '';
+        const messages = data.messages || [];
+        if (messages.length === 0) {
+            inlineMessages.innerHTML = '<div class="chat-empty-state">Start chatting about this topic.</div>';
+            return;
+        }
+        for (const msg of messages) {
+            addInlineMessage(msg.content, msg.role === 'user' ? 'you' : 'friend');
+        }
+    } catch (error) {
+        console.error('Failed to load topic chat history:', error);
+        inlineMessages.innerHTML = '<div class="chat-empty-state">Failed to load topic chat.</div>';
+    }
+}
+
+function clearChatTopicContext() {
+    chatTopicContext = null;
+    chatTopicName = null;
+    updateInputContext();
+    initializeConversation();
+}
+
+function parseTopicCommand(message) {
+    const trimmed = message.trim();
+    const renameMatch = trimmed.match(/^rename to\s+(.+)$/i);
+    if (renameMatch) {
+        let name = renameMatch[1].trim();
+        name = name.replace(/^["']|["']$/g, '');
+        if (name) {
+            return { action: 'rename', name };
+        }
+    }
+    return null;
+}
+
+async function renameTopicFromChat(topicId, newName) {
+    addInlineThinking();
+    try {
+        const response = await fetch(`/api/topics/${topicId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName })
+        });
+        if (response.ok) {
+            await loadTopicsData();
+            removeInlineThinking();
+            addInlineMessage(`Renamed topic to "${newName}".`, 'friend');
+            return;
+        }
+        removeInlineThinking();
+        addInlineMessage('Failed to rename topic. Please try again.', 'friend');
+    } catch (error) {
+        console.error('Failed to rename topic:', error);
+        removeInlineThinking();
+        addInlineMessage('Failed to rename topic. Please try again.', 'friend');
     }
 }
 
@@ -416,26 +493,6 @@ function showChatEmptyState() {
     `;
 }
 
-// Load quote for chat empty state
-async function loadChatQuote() {
-    try {
-        const response = await fetch('/api/daily-quote', { credentials: 'same-origin' });
-        if (response.ok) {
-            const data = await response.json();
-            if (data.quote) {
-                cachedChatQuote = data;
-                // Re-render empty state if it's showing
-                const emptyState = document.getElementById('chat-empty-state');
-                if (emptyState) {
-                    showChatEmptyState();
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Failed to load chat quote:', error);
-    }
-}
-
 // Remove empty state when messages are added
 function removeChatEmptyState() {
     const emptyState = document.getElementById('chat-empty-state');
@@ -448,9 +505,42 @@ function sendContextMessage() {
     const message = contextInput.value.trim();
     if (!message) return;
 
+    if (chatTopicContext) {
+        const command = parseTopicCommand(message);
+        if (command?.action === 'rename') {
+            addInlineMessage(message, 'you', `Re: ${chatTopicName || 'topic'}`);
+            contextInput.value = '';
+            contextInput.style.height = 'auto';
+            renameTopicFromChat(chatTopicContext, command.name);
+            return;
+        }
+        addInlineMessage(message, 'you', `Re: ${chatTopicName || 'topic'}`);
+        contextInput.value = '';
+        contextInput.style.height = 'auto';
+        messageQueue.push(message);
+        processMessageQueue();
+        return;
+    }
+
     // If viewing a topic, route to topic feedback endpoint
     if (currentTopicContext) {
-        sendTopicFeedback(currentTopicContext, message);
+        const command = parseTopicCommand(message);
+        if (command?.action === 'rename') {
+            const topicName = currentTopicName || 'topic';
+            addInlineMessage(message, 'you', `Re: ${topicName}`);
+            contextInput.value = '';
+            contextInput.style.height = 'auto';
+            renameTopicFromChat(currentTopicContext, command.name);
+            return;
+        }
+        const topicName = currentTopicName || 'topic';
+        contextInput.value = '';
+        contextInput.style.height = 'auto';
+        enterTopicChatMode(currentTopicContext, topicName, { switchTabToChat: false }).then(() => {
+            addInlineMessage(message, 'you', `Re: ${topicName}`);
+            messageQueue.push(message);
+            processMessageQueue();
+        });
         return;
     }
 
@@ -478,15 +568,21 @@ async function processMessageQueue() {
         const voiceInput = typeof window.wasLastInputVoice === 'function' ? window.wasLastInputVoice() : false;
 
         try {
+            const requestBody = {
+                message,
+                agent_id: 'user',
+                conversation_id: conversationId,
+                voice_input: voiceInput
+            };
+            if (chatTopicContext) {
+                requestBody.topic_id = chatTopicContext;
+                requestBody.conversation_id = topicConversationIds[chatTopicContext] || null;
+            }
+
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message,
-                    agent_id: 'user',
-                    conversation_id: conversationId,
-                    voice_input: voiceInput
-                })
+                body: JSON.stringify(requestBody)
             });
 
             const data = await response.json();
@@ -543,6 +639,9 @@ async function processMessageQueue() {
 
             removeInlineThinking();
             addInlineMessage(data.response, 'friend');
+            if (chatTopicContext && data.conversation_id) {
+                topicConversationIds[chatTopicContext] = data.conversation_id;
+            }
             showChatNotification();
 
             // Play TTS audio if included in response
@@ -680,4 +779,3 @@ async function resetUI() {
     // Clear expanded cards state
     expandedCards.clear();
 }
-

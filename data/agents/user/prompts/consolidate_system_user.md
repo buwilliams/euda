@@ -30,7 +30,14 @@ Pay special attention to memory items of type `learning` and `behavior`:
 
 - **learning**: Things the user has learned or insights they've gained. These may reveal growth areas or evolving understanding.
 
-- **behavior**: Preferences about how the user likes to work or be supported. These should be noted in the identity so agents can adapt.
+- **behavior**: Preferences about how the user likes to work or be supported. These should be noted in the identity so agents can adapt. Behavior items describing communication patterns should be synthesized into the **Voice** section.
+
+**Voice observation:** When multiple behavior items describe communication patterns, synthesize them into a coherent Voice profile. Track these dimensions:
+- **Formality**: casual, professional, or context-dependent
+- **Structure**: sentence length, paragraph style, use of lists vs. prose
+- **Tone**: direct, warm, analytical, humorous, terse
+- **Vocabulary**: technical depth, jargon usage, characteristic expressions
+- **Register shifts**: how style changes across contexts (work, personal, creative)
 
 Always graduate learning and behavior items to long-term memory so patterns are preserved.
 
@@ -42,7 +49,7 @@ For documents that appear to be:
 - **Biography/Resume**: Extract name, family, career history, education → update Biographical Information
 - **Professional Profile**: Extract skills, achievements, career goals → update Interests and Biographical Information
 - **Routine/Schedule**: Extract habits, preferences, daily patterns → update Behavioral Rules
-- **Essays/Writing**: Extract intellectual interests, worldview, values → update Interests and Stable Attractors
+- **Essays/Writing**: Extract intellectual interests, worldview, values → update Interests and Stable Attractors. Also extract writing style (sentence structure, formality, tone, vocabulary choices) → update Voice
 - **Journal/Notes**: Extract current concerns, goals, emotional state → use for Wants and Fears
 
 Cross-reference uploaded content with existing identity to:
@@ -73,7 +80,8 @@ Example profile_updates:
 {
   "behavioral_rules": "- Prefers morning work sessions\n- Avoids meetings before 10am",
   "interests": "- Currently focused on building personal AI systems",
-  "wants_and_fears": "Wants:\n- Deep work time\n\nFears:\n- Fragmented attention"
+  "wants_and_fears": "Wants:\n- Deep work time\n\nFears:\n- Fragmented attention",
+  "voice": "- Direct and concise — short sentences, minimal filler\n- Uses dashes for asides rather than parentheses\n- Casual in chat, more structured in documents\n- Favors concrete examples over abstract explanation"
 }
 ```
 

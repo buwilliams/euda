@@ -27,6 +27,7 @@ DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 NEVER_SYNC = {
     "system/auth.json",  # Site-specific passwords
     "system/sync/",  # Sync state is local
+    "system/logs/",  # Local-only logs
     "topics/db.sqlite",  # Database synced separately by topics handler
     "topics/db.sqlite-journal",
     "topics/db.sqlite-wal",
@@ -246,10 +247,12 @@ class FilesSyncHandler(SyncHandler):
             # Get file modification times if possible
             try:
                 local_mtime = local_path.stat().st_mtime
-                from datetime import datetime
-                local_timestamp = datetime.fromtimestamp(local_mtime).isoformat()
+                from datetime import datetime, UTC
+                local_timestamp = datetime.fromtimestamp(local_mtime, UTC).isoformat().replace("+00:00", "Z")
             except Exception:
                 local_timestamp = None
+
+            remote_timestamp = transport.get_remote_file_mtime(relative_path)
 
             # Determine conflict type
             if "config.json" in relative_path:
@@ -266,6 +269,7 @@ class FilesSyncHandler(SyncHandler):
                 local=local_content,
                 remote=remote_content,
                 local_timestamp=local_timestamp,
+                remote_timestamp=remote_timestamp,
             )
 
     def _push_file(self, transport: Transport, relative_path: str):

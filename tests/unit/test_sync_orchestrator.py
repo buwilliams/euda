@@ -139,9 +139,10 @@ class TestApplyResolvedConflicts:
             with patch.object(state_module, "STATE_PATH", state_file):
                 with patch.object(conflicts_module, "CONFLICTS_DIR", temp_sync_dir["conflicts_dir"]):
                     with patch.object(files_module, "DATA_DIR", temp_sync_dir["data_dir"]):
-                        with patch("src.sync.sync.Transport", mock_class):
-                            from src.sync.sync import sync
-                            result = sync(direction="bidirectional", dry_run=False, backup=False, verbose=False)
+                        with patch("src.sync.sync.DATA_DIR", temp_sync_dir["data_dir"]):
+                            with patch("src.sync.sync.Transport", mock_class):
+                                from src.sync.sync import sync
+                                result = sync(direction="bidirectional", dry_run=False, backup=False, verbose=False)
 
         # The conflict should have been applied (push) and deleted
         assert not conflict_file.exists(), "Conflict file should be deleted after applying"

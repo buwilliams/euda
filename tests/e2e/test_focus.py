@@ -123,7 +123,7 @@ class TestTopicDetail:
     """Tests for topicdetail view elements."""
 
     def test_topic_detail_elements(self, authenticated_page: Page):
-        """Topic detail should show name and description sections."""
+        """Topic detail should show description section."""
         page = authenticated_page
 
         # Navigate to a topicif one exists
@@ -134,6 +134,32 @@ class TestTopicDetail:
             # Wait for detail view
             expect(page.locator('[data-testid="topic-detail"]')).to_be_visible(timeout=5000)
 
-            # Check for name and description sections
-            expect(page.locator('[data-testid="topic-name"]')).to_be_visible()
+            # Check for description section
             expect(page.locator('[data-testid="topic-description"]')).to_be_visible()
+
+
+class TestTopicChats:
+    """Tests for topic chat assets section."""
+
+    def test_topic_chats_section(self, authenticated_page: Page):
+        page = authenticated_page
+
+        # Navigate to a topic if one exists
+        topic_cards = page.locator('[data-testid="topic-card"]')
+        if topic_cards.count() == 0:
+            pytest.skip("No topic cards available")
+
+        topic_cards.first.click()
+        expect(page.locator('[data-testid="topic-detail"]')).to_be_visible(timeout=5000)
+
+        chats_section = page.locator('.topic-section', has_text="Topic Chats")
+        if chats_section.count() == 0:
+            pytest.skip("No topic chats section available")
+
+        # Expand section
+        chats_section.locator('.topic-section-header').first.click()
+        chat_cards = chats_section.locator('.child-topic-card')
+        if chat_cards.count() == 0:
+            pytest.skip("No topic chat assets available")
+
+        expect(chat_cards.first).to_be_visible()

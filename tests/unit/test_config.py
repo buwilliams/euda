@@ -150,12 +150,12 @@ class TestLoadLayeredConfig:
         defaults = {
             "id": "test",
             "triggers": [
-                {"event": "morning", "action": "consolidate"}
+                {"event": "morning", "topic_name": "euno:consolidate"}
             ]
         }
         overrides = {
             "triggers": [
-                {"event": "evening", "action": "quote"}
+                {"event": "evening", "topic_name": "euno:quote"}
             ]
         }
 
@@ -163,7 +163,7 @@ class TestLoadLayeredConfig:
         (tmp_path / "config.json").write_text(json.dumps(overrides))
 
         result = load_layered_config(tmp_path)
-        assert result["triggers"] == [{"event": "evening", "action": "quote"}]
+        assert result["triggers"] == [{"event": "evening", "topic_name": "euno:quote"}]
 
     def test_custom_filenames(self, tmp_path):
         """Can use custom filenames."""

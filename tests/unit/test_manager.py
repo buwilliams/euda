@@ -169,7 +169,7 @@ class TestConfigHotReload:
 class TestEventBasedTriggers:
     """Test handling of event-based trigger format.
 
-    Spec: specs/1_agents.md - Trigger format uses objects with event, action, tool, topic_name.
+    Spec: specs/1_agents.md - Trigger format uses objects with event, topic_name, instructions.
     Triggers are handled by the scheduler based on the `event` key.
     """
 
@@ -190,10 +190,8 @@ class TestEventBasedTriggers:
             "triggers": [
                 {
                     "event": "evening",
-                    "action": "tool",
-                    "tool": "euno_consolidate",
                     "topic_name": "euno:consolidate",
-                    "topic_description": "Run consolidation"
+                    "instructions": "Run consolidation"
                 }
             ]
         }
@@ -226,14 +224,10 @@ class TestEventBasedTriggers:
             "triggers": [
                 {
                     "event": "evening",
-                    "action": "tool",
-                    "tool": "euno_consolidate",
                     "topic_name": "euno:consolidate"
                 },
                 {
                     "event": "morning",
-                    "action": "tool",
-                    "tool": "euno_quote",
                     "topic_name": "euno:quote"
                 }
             ]
@@ -259,7 +253,7 @@ class TestEventBasedTriggers:
 class TestGetAgentTriggers:
     """Test _get_agent_triggers() method.
 
-    Spec: specs/1_agents.md - Triggers are objects with event, action, tool, topic_name.
+    Spec: specs/1_agents.md - Triggers are objects with event, topic_name, instructions.
     """
 
     def test_returns_dict_triggers_only(self, manager_data_dir):
@@ -315,9 +309,8 @@ class TestGetAgentTriggers:
             "triggers": [
                 {
                     "event": "evening",
-                    "action": "tool",
-                    "tool": "euno_consolidate",
-                    "topic_name": "euno:consolidate"
+                    "topic_name": "euno:consolidate",
+                    "instructions": "Review memories. Use consolidation skill"
                 }
             ]
         }
@@ -326,8 +319,7 @@ class TestGetAgentTriggers:
 
         assert len(triggers) == 1
         assert triggers[0].get("event") == "evening"
-        assert triggers[0].get("action") == "tool"
-        assert triggers[0].get("tool") == "euno_consolidate"
+        assert triggers[0].get("instructions") == "Review memories. Use consolidation skill"
 
     def test_filters_non_dict_entries(self, manager_data_dir):
         """_get_agent_triggers filters out non-dict entries.
@@ -359,48 +351,18 @@ class TestGetAgentTriggers:
 
 
 # =============================================================================
-# Trigger Action Type Tests
+# Trigger Instruction Tests
 # =============================================================================
 
 @pytest.mark.unit
-class TestTriggerActionTypes:
-    """Test trigger action types (tool vs llm).
+class TestTriggerInstructions:
+    """Test trigger instruction passthrough.
 
-    Spec: specs/1_agents.md - action: "tool" executes directly, "llm" uses agent loop.
+    Spec: specs/1_agents.md - optional instructions are carried through for UI and inspection.
     """
 
-    def test_tool_action_includes_tool_field(self, manager_data_dir):
-        """Triggers with action=tool should have tool field.
-
-        Spec: action: "tool" requires tool field.
-        """
-        from src.agent.manager import AgentManager
-
-        manager = AgentManager()
-
-        config = {
-            "id": "test",
-            "triggers": [
-                {
-                    "event": "evening",
-                    "action": "tool",
-                    "tool": "euno_consolidate",
-                    "topic_name": "euno:consolidate"
-                }
-            ]
-        }
-
-        triggers = manager._get_agent_triggers(config)
-
-        assert len(triggers) == 1
-        assert triggers[0]["action"] == "tool"
-        assert triggers[0]["tool"] == "euno_consolidate"
-
-    def test_llm_action_no_tool_field_required(self, manager_data_dir):
-        """Triggers with action=llm don't need tool field.
-
-        Spec: action: "llm" creates topic for agent to process via LLM loop.
-        """
+    def test_instructions_preserved(self, manager_data_dir):
+        """Instructions are preserved in returned triggers."""
         from src.agent.manager import AgentManager
 
         manager = AgentManager()
@@ -410,9 +372,8 @@ class TestTriggerActionTypes:
             "triggers": [
                 {
                     "event": "morning",
-                    "action": "llm",
                     "topic_name": "daily:review",
-                    "topic_description": "Review daily goals"
+                    "instructions": "Review daily goals. Use core topics list and summarize"
                 }
             ]
         }
@@ -420,33 +381,7 @@ class TestTriggerActionTypes:
         triggers = manager._get_agent_triggers(config)
 
         assert len(triggers) == 1
-        assert triggers[0]["action"] == "llm"
-        assert "tool" not in triggers[0]
-
-    def test_default_action_is_llm(self, manager_data_dir):
-        """Triggers without action field default to llm.
-
-        Spec: action defaults to "llm" if not specified.
-        """
-        from src.agent.manager import AgentManager
-
-        manager = AgentManager()
-
-        config = {
-            "id": "test",
-            "triggers": [
-                {
-                    "event": "morning",
-                    "topic_name": "daily:task"
-                }
-            ]
-        }
-
-        triggers = manager._get_agent_triggers(config)
-
-        assert len(triggers) == 1
-        # No action field means it defaults to llm behavior
-        assert triggers[0].get("action") is None  # Not set, defaults to llm
+        assert triggers[0]["instructions"] == "Review daily goals. Use core topics list and summarize"
 
 
     def test_has_open_internal_topic_detects_working_status(

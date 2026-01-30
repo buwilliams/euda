@@ -134,7 +134,7 @@ def get_meta_tools() -> list:
                 "properties": {
                     "skill": {
                         "type": "string",
-                        "description": "Skill name (e.g., 'core', 'nextcloud')"
+                        "description": "Skill name (use list_skills to discover available skills)"
                     }
                 },
                 "required": ["skill"]
@@ -148,7 +148,7 @@ def get_meta_tools() -> list:
                 "properties": {
                     "skill": {
                         "type": "string",
-                        "description": "Skill name (e.g., 'core', 'nextcloud')"
+                        "description": "Skill name (use list_skills to discover available skills)"
                     },
                     "command": {
                         "type": "string",

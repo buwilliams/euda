@@ -217,13 +217,24 @@ async function setWhen(type, id, whenType, date = null) {
 
 function getAssigneesLabel(topic) {
     const assignee = topic.assignee;
+    const displayAssignee = formatAssigneeDisplay(assignee);
     if (topic.status === 'working') {
-        return `${icon('bolt')} ${assignee || 'Working'}`;
+        return `${icon('bolt')} ${displayAssignee || 'Working'}`;
     }
     if (!assignee) {
         return `${icon('user')} Assign`;
     }
-    return `${icon('user')} ${assignee}`;
+    return `${icon('user')} ${displayAssignee}`;
+}
+
+function formatAssigneeDisplay(assignee) {
+    if (!assignee) return '';
+    if (typeof agentsCache !== 'undefined' && Array.isArray(agentsCache) && agentsCache.length > 0) {
+        const agent = agentsCache.find(a => a.id === assignee);
+        if (!agent) return `Unknown (${assignee})`;
+        return agent.name || agent.id || assignee;
+    }
+    return assignee;
 }
 
 async function openAssigneesPicker(topicId) {
@@ -243,7 +254,7 @@ async function openAssigneesPicker(topicId) {
             ${topic.status === 'working' ? `
                 <div class="assignees-picker-working">
                     <span class="assignees-picker-working-icon">${icon('bolt')}</span>
-                    <span>Currently working: <strong>${escapeHtml(currentAssignee || 'unknown')}</strong></span>
+                    <span>Currently working: <strong>${escapeHtml(formatAssigneeDisplay(currentAssignee) || 'unknown')}</strong></span>
                 </div>
             ` : ''}
             ${agents.map(agent => {
@@ -544,7 +555,7 @@ function openTriggerPicker(agentId, triggers, disabledTriggers = []) {
 
     const triggerOptions = triggers.map(trigger => {
         const topicName = trigger.topic_name || trigger;
-        const description = trigger.topic_description || '';
+        const description = trigger.instructions || '';
         const schedule = trigger.schedule || '';
         const isDisabled = disabledTriggers.includes(topicName);
         const disabledAttr = isDisabled ? 'disabled' : '';
@@ -582,7 +593,7 @@ function closeTriggerPicker() {
     if (picker) picker.remove();
 }
 
-async function triggerEvent(agentId, topicName, topicDescription) {
+async function triggerEvent(agentId, topicName, instructions) {
     closeTriggerPicker();
 
     try {
@@ -592,7 +603,7 @@ async function triggerEvent(agentId, topicName, topicDescription) {
             credentials: 'same-origin',
             body: JSON.stringify({
                 topic_name: topicName,
-                topic_description: topicDescription || undefined
+                instructions: instructions || undefined
             })
         });
 

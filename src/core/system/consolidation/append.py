@@ -65,7 +65,8 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
         agent_identity=agent_identity,
         existing_memory=existing_memory,
         user_message=user_message,
-        assistant_response=assistant_response
+        assistant_response=assistant_response,
+        agent_id=agent_id
     )
 
     emit_progress("calling_llm", "Extracting memories...")
@@ -73,7 +74,7 @@ def append_phase(consolidation: "Consolidation", user_message: str, assistant_re
     # Call LLM
     client = get_client()
     response = client.create(
-        system=get_append_system_prompt(),
+        system=get_append_system_prompt(agent_id=agent_id),
         messages=[{"role": "user", "content": prompt}],
         agent_id=f"{agent_id}/reflection"
     )
@@ -289,7 +290,8 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
     prompt = build_append_batch_prompt(
         agent_identity=agent_identity,
         existing_memory=existing_memory,
-        exchanges=exchanges
+        exchanges=exchanges,
+        agent_id=agent_id
     )
 
     emit_progress("calling_llm", "Extracting memories from exchanges...")
@@ -297,7 +299,7 @@ def append_batch_phase(consolidation: "Consolidation", exchanges: list, executio
     # Call LLM
     client = get_client()
     response = client.create(
-        system=get_append_system_prompt(),
+        system=get_append_system_prompt(agent_id=agent_id),
         messages=[{"role": "user", "content": prompt}],
         agent_id=f"{agent_id}/reflection"
     )

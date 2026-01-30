@@ -502,6 +502,7 @@ Compare recent memory against this identity and find:
 3. **Notable events** - significant happenings that shaped who this person is
 4. **New stable attractors** - topics/activities they consistently return to
 5. **Emerging interests** - new areas of curiosity or engagement
+6. **Communication style evolution** - changes in tone, formality, word choices, sentence patterns, or register shifts across contexts
 
 ## Important Guidelines
 - Only suggest ADDITIONS, not removals
@@ -518,7 +519,8 @@ Return a JSON object with section updates:
         "interests": ["emerging interest seen in memory"],
         "notable_events": ["significant event: brief description"],
         "wants_and_fears": ["newly apparent want or fear"],
-        "biographical_information": ["factual information learned"]
+        "biographical_information": ["factual information learned"],
+        "voice": ["observed communication pattern with evidence"]
     }},
     "reasoning": "Brief explanation of why these updates are warranted based on memory evidence"
 }}

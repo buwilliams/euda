@@ -23,6 +23,10 @@ async function loadAgentPauseStatus(agentId) {
         });
         if (response.ok) {
             const data = await response.json();
+            if (typeof data.offset === 'number' && typeof data.line_count === 'number' && typeof data.total_lines === 'number') {
+                data.has_more_above = data.offset > 0;
+                data.has_more_below = (data.offset + data.line_count) < data.total_lines;
+            }
             const pauseInfo = data.pause_info || {};
             agentPauseStatus[agentId] = {
                 state: data.state || 'enabled',
@@ -194,10 +198,6 @@ async function loadTopicsData() {
 
         renderFocusTab();
         updateTopicsBadge();
-        // Load daily quote when showing the focus menu
-        if (focusView === 'menu') {
-            loadDailyQuote();
-        }
     } catch (error) {
         console.error('Failed to load topics data:', error);
     }
@@ -347,9 +347,9 @@ async function loadAgentMonitoring(agentId, offset = 0, limit = 20) {
 function isContainerTopic(topic) {
     // Agent inbox topics have agent_id set
     if (topic.agent_id) return true;
-    // System containers have system:agents, system:projects, or system:assets tags
+    // System containers have system:agents, system:tasks, system:projects, or system:assets tags
     const tags = topic.tags || [];
-    if (tags.includes('system:agents') || tags.includes('system:projects') || tags.includes('system:assets')) return true;
+    if (tags.includes('system:agents') || tags.includes('system:tasks') || tags.includes('system:projects') || tags.includes('system:assets')) return true;
     return false;
 }
 
@@ -376,8 +376,8 @@ function hasAgentOrSystemAncestor(topic, allTopics) {
 }
 
 function isProjectsDescendant(topic, allTopics) {
-    // A topic is a Projects descendant if it's NOT under Agents or System containers
-    // This includes topics with no container parent (user-created root topics)
+    // A topic is a work descendant if it's NOT under Agents or agent inbox containers
+    // This includes topics under Tasks/Projects or root user topics
     if (isAgentOrSystemTopic(topic)) return false;
     if (hasAgentOrSystemAncestor(topic, allTopics)) return false;
     return true;
@@ -741,18 +741,65 @@ async function loadLongTermMemoryDates(agentId) {
     return [];
 }
 
-async function loadLongTermMemoryContent(agentId, date) {
+const LONG_TERM_MEMORY_PAGE_LINES = 200;
+const LONG_TERM_MEMORY_MAX_LINES = 400;
+
+async function loadLongTermMemoryContent(agentId, date, offset = 0, limit = null, append = false, prepend = false) {
     try {
-        const response = await fetch(`/api/agents/${agentId}/memory/long-term?date=${date}`, {
+        const params = new URLSearchParams({ date });
+        if (offset) params.set('offset', String(offset));
+        if (limit !== null && limit !== undefined) params.set('limit', String(limit));
+
+        const response = await fetch(`/api/agents/${agentId}/memory/long-term?${params.toString()}`, {
             credentials: 'same-origin'
         });
         if (response.ok) {
             const data = await response.json();
+            if ((append || prepend) && typeof longTermMemoryDetailCache !== 'undefined') {
+                const cacheKey = `${agentId}-${date}`;
+                const existing = longTermMemoryDetailCache[cacheKey];
+                if (existing && existing.content) {
+                    const existingLines = existing.content.split('\n');
+                    const newLines = (data.content || '').split('\n');
+                    let mergedLines;
+                    let mergedOffset = existing.offset ?? 0;
+
+                    if (append) {
+                        mergedLines = existingLines.concat(newLines);
+                    } else if (prepend) {
+                        mergedLines = newLines.concat(existingLines);
+                        mergedOffset = data.offset ?? mergedOffset;
+                    }
+
+                    if (mergedLines.length > LONG_TERM_MEMORY_MAX_LINES) {
+                        if (append) {
+                            const trimCount = mergedLines.length - LONG_TERM_MEMORY_MAX_LINES;
+                            mergedLines = mergedLines.slice(trimCount);
+                            mergedOffset = (existing.offset ?? 0) + trimCount;
+                        } else if (prepend) {
+                            mergedLines = mergedLines.slice(0, LONG_TERM_MEMORY_MAX_LINES);
+                        }
+                    }
+
+                    data.content = mergedLines.join('\n');
+                    data.offset = mergedOffset;
+                    data.line_count = mergedLines.length;
+                    if (typeof data.total_lines === 'number') {
+                        data.has_more_above = mergedOffset > 0;
+                        data.has_more_below = (mergedOffset + mergedLines.length) < data.total_lines;
+                    }
+                    data.limit = limit;
+                }
+            }
             // Cache the content
             if (!longTermMemoryCache[agentId]) {
                 longTermMemoryCache[agentId] = {};
             }
             longTermMemoryCache[agentId][date] = data;
+            if (typeof longTermMemoryDetailCache !== 'undefined') {
+                const cacheKey = `${agentId}-${date}`;
+                longTermMemoryDetailCache[cacheKey] = data;
+            }
             return data;
         }
     } catch (error) {
@@ -837,31 +884,6 @@ async function loadTopicTrace(topicId) {
 
 // ============== Memory Actions ==============
 
-async function addMemoryItem(agentId) {
-    const description = prompt('Memory description:');
-    if (!description) return;
-
-    const type = prompt('Type (person, place, thing, goal, concern, idea, learning, behavior):') || 'thing';
-
-    try {
-        const response = await fetch(`/api/agents/${agentId}/memory/short-term`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({
-                short_description: description,
-                type: type
-            })
-        });
-
-        if (response.ok) {
-            await refreshMemorySection(agentId, 'short-term-memory');
-        }
-    } catch (error) {
-        console.error('Failed to add memory item:', error);
-    }
-}
-
 async function deleteMemoryItem(agentId, entryId) {
     try {
         const response = await fetch(`/api/agents/${agentId}/memory/short-term/${entryId}`, {
@@ -912,7 +934,7 @@ function pageMemory(agentId, direction) {
 }
 
 async function loadLongTermMemoryDate(agentId, date) {
-    const content = await loadLongTermMemoryContent(agentId, date);
+    const content = await loadLongTermMemoryContent(agentId, date, 0, LONG_TERM_MEMORY_PAGE_LINES);
     const dates = longTermMemoryCache[agentId]?.dates || [];
 
     // Find and update the long-term memory section
@@ -922,11 +944,78 @@ async function loadLongTermMemoryDate(agentId, date) {
         if (header && header.textContent.includes('Long-term Memory')) {
             const contentDiv = header.nextElementSibling;
             if (contentDiv && contentDiv.classList.contains('collapsible-content')) {
+                if (contentDiv.dataset.bound) {
+                    delete contentDiv.dataset.bound;
+                }
                 contentDiv.innerHTML = renderLongTermMemoryContent(dates, date, content, agentId);
+                initLongTermMemoryScroll(agentId, date);
             }
             break;
         }
     }
+}
+
+async function loadLongTermMemoryMore(agentId, date) {
+    const cacheKey = `${agentId}-${date}`;
+    const entry = typeof longTermMemoryDetailCache !== 'undefined' ? longTermMemoryDetailCache[cacheKey] : null;
+    const loadedLines = entry?.line_count || 0;
+    const limit = entry?.limit ?? LONG_TERM_MEMORY_PAGE_LINES;
+    if (entry && entry.has_more_below === false) return;
+
+    const offset = (entry?.offset ?? 0) + loadedLines;
+    const data = await loadLongTermMemoryContent(agentId, date, offset, limit, true, false);
+    if (data && typeof longTermMemoryDetailCache !== 'undefined') {
+        longTermMemoryDetailCache[cacheKey] = data;
+        renderFocusTab();
+    }
+}
+
+async function loadLongTermMemoryPrev(agentId, date) {
+    const cacheKey = `${agentId}-${date}`;
+    const entry = typeof longTermMemoryDetailCache !== 'undefined' ? longTermMemoryDetailCache[cacheKey] : null;
+    const limit = entry?.limit ?? LONG_TERM_MEMORY_PAGE_LINES;
+    if (entry && entry.has_more_above === false) return;
+    const newOffset = Math.max(0, (entry?.offset ?? 0) - limit);
+    const data = await loadLongTermMemoryContent(agentId, date, newOffset, limit, false, true);
+    if (data && typeof longTermMemoryDetailCache !== 'undefined') {
+        longTermMemoryDetailCache[cacheKey] = data;
+        renderFocusTab();
+    }
+}
+
+function initLongTermMemoryScroll(agentId, date) {
+    const container = document.querySelector('.long-term-content-scroll');
+    if (!container) return;
+    if (container.dataset.bound === 'true' && container.dataset.agentId === agentId && container.dataset.memoryDate === date) return;
+    container.dataset.bound = 'true';
+    container.dataset.agentId = agentId;
+    container.dataset.memoryDate = date;
+
+    container.addEventListener('scroll', async () => {
+        if (container.dataset.loading === 'true') return;
+        const entry = typeof longTermMemoryDetailCache !== 'undefined'
+            ? longTermMemoryDetailCache[`${agentId}-${date}`]
+            : null;
+        if (!entry) return;
+
+        const nearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 80;
+        if (nearBottom && entry.has_more_below) {
+            container.dataset.loading = 'true';
+            await loadLongTermMemoryMore(agentId, date);
+            container.dataset.loading = 'false';
+            return;
+        }
+
+        const nearTop = container.scrollTop <= 80;
+        if (nearTop && entry.has_more_above) {
+            const previousHeight = container.scrollHeight;
+            container.dataset.loading = 'true';
+            await loadLongTermMemoryPrev(agentId, date);
+            container.dataset.loading = 'false';
+            const newHeight = container.scrollHeight;
+            container.scrollTop = (newHeight - previousHeight) + container.scrollTop;
+        }
+    });
 }
 
 // ============== Trigger Actions ==============
@@ -998,4 +1087,3 @@ async function setTopicStatus(topicId, status) {
     }
     return false;
 }
-

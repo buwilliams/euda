@@ -13,6 +13,7 @@ function connectSSE() {
     eventSource.addEventListener('init', (e) => {
         const data = JSON.parse(e.data);
         const allTopics = data.topics || [];
+        const dailyQuote = data.daily_quote || null;
         // Store all topics for detail views (including archived)
         allTopicsData = allTopics;
         // Split topics into active (todo, working) - exclude done, archived, error
@@ -21,9 +22,19 @@ function connectSSE() {
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
             .slice(0, 20);
         updateTopicsBadge();
+        if (dailyQuote && dailyQuote.quote) {
+            if (typeof focusQuoteData !== 'undefined') {
+                focusQuoteData = dailyQuote;
+            }
+            if (typeof cachedChatQuote !== 'undefined') {
+                cachedChatQuote = dailyQuote;
+            }
+        }
         if (activeTab === 'focus') {
             renderFocusTab();
-            if (focusView === 'menu') loadDailyQuote();
+        }
+        if (typeof maybeRenderDailyQuote === 'function') {
+            maybeRenderDailyQuote();
         }
         reconnectAttempts = 0;
     });
@@ -31,6 +42,8 @@ function connectSSE() {
     eventSource.addEventListener('topics_update', (e) => {
         const data = JSON.parse(e.data);
         const allTopics = data.topics || [];
+        const prevAllTopics = allTopicsData || [];
+
         // Store all topics for detail views (including archived)
         allTopicsData = allTopics;
         // Split topics into active (todo, working) - exclude done, archived, error
@@ -38,10 +51,16 @@ function connectSSE() {
         completedTopicsData = allTopics.filter(j => j.status === 'done')
             .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
             .slice(0, 20);
+
         if (activeTab === 'focus') {
-            renderFocusTab();
-            if (focusView === 'menu') loadDailyQuote();
+            const didPatch = typeof applyTopicsUpdateToFocusView === 'function'
+                ? applyTopicsUpdateToFocusView(prevAllTopics, allTopics)
+                : false;
+            if (!didPatch) {
+                renderFocusTab();
+            }
         }
+
         updateTopicsBadge();
     });
 
@@ -94,6 +113,34 @@ function connectSSE() {
         const data = JSON.parse(e.data);
         if (typeof handleReflectionError === 'function') {
             handleReflectionError(data);
+        }
+    });
+
+    // Handle completed-topic SSE events (frontend can opt-in by key)
+    eventSource.addEventListener('topic_done', (e) => {
+        const data = JSON.parse(e.data);
+        const key = data.key || '';
+        const metadata = data.metadata || {};
+        const topicId = data.topic_id || null;
+        if (key.startsWith('euno:quote') && metadata.quote) {
+            const quoteData = {
+                quote: metadata.quote,
+                author: metadata.author || 'Unknown'
+            };
+            if (typeof focusQuoteData !== 'undefined') {
+                focusQuoteData = quoteData;
+            }
+            if (typeof cachedChatQuote !== 'undefined') {
+                cachedChatQuote = quoteData;
+            }
+            if (typeof renderQuote === 'function') {
+                renderQuote(quoteData);
+            }
+        }
+        if (activeTab === 'focus' && topicId && typeof focusView !== 'undefined') {
+            if (focusView === `topic-${topicId}`) {
+                renderFocusTab();
+            }
         }
     });
 

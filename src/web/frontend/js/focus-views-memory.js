@@ -7,9 +7,6 @@ function renderShortTermMemoryContent(items, agentId) {
     if (!items || items.length === 0) {
         return `
             <div class="focus-empty">No short-term memory items.</div>
-            <div class="memory-actions">
-                <button class="btn-secondary memory-add" onclick="addMemoryItem('${agentId}')">+ Add Memory</button>
-            </div>
         `;
     }
 
@@ -47,9 +44,6 @@ function renderShortTermMemoryContent(items, agentId) {
             <button class="memory-page-btn" onclick="pageMemory('${agentId}', 'next')" ${end >= items.length ? 'disabled' : ''}>Next</button>
         </div>
         ` : ''}
-        <div class="memory-actions">
-            <button class="btn-secondary memory-add" onclick="addMemoryItem('${agentId}')">+ Add Memory</button>
-        </div>
     `;
 }
 
@@ -63,6 +57,16 @@ function renderLongTermMemoryContent(dates, currentDate, content, agentId) {
     const hasNext = currentIndex > 0;
 
     const memoryContent = content?.content || content?.entries?.join('\n\n') || 'No content for this date.';
+    const lineCount = content?.line_count ?? null;
+    const totalLines = content?.total_lines ?? null;
+    const hasMoreAbove = content?.has_more_above;
+    const hasMoreBelow = content?.has_more_below;
+    const paginationInfo = (lineCount !== null && totalLines !== null)
+        ? `<div class="memory-pagination-info">Showing ${lineCount} / ${totalLines} lines</div>`
+        : '';
+    const loadMoreHint = (hasMoreAbove || hasMoreBelow)
+        ? '<div class="memory-scroll-hint">Scroll to load more</div>'
+        : '';
 
     return `
         <div class="long-term-memory">
@@ -71,7 +75,11 @@ function renderLongTermMemoryContent(dates, currentDate, content, agentId) {
                 <span class="memory-date-current">${currentDate}</span>
                 <button class="memory-page-btn" onclick="loadLongTermMemoryDate('${agentId}', '${dates[currentIndex - 1] || currentDate}')" ${!hasNext ? 'disabled' : ''}>Newer</button>
             </div>
-            <div class="long-term-content">${escapeHtml(memoryContent)}</div>
+            <div class="long-term-content long-term-content-scroll" data-agent-id="${agentId}" data-memory-date="${currentDate}">
+                ${escapeHtml(memoryContent)}
+            </div>
+            ${paginationInfo}
+            ${loadMoreHint}
         </div>
     `;
 }
@@ -107,4 +115,3 @@ function renderReflectionContent(data, agentId) {
         </div>
     `;
 }
-

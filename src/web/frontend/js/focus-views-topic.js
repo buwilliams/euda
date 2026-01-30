@@ -107,7 +107,7 @@ function renderFocusMenu() {
     const counts = getFocusCounts();
     const todayTopics = getRootTopicsForCategory('today');
 
-    // For completed count, only show Projects descendants (exclude Agents and System)
+    // For completed count, only show work descendants (exclude Agents and agent inboxes)
     const allTopics = [...topicsData, ...completedTopicsData];
     const projectsCompletedTopics = completedTopicsData.filter(j => isProjectsDescendant(j, allTopics));
     const completedTopicIds = new Set(projectsCompletedTopics.map(j => j.id));
@@ -115,11 +115,13 @@ function renderFocusMenu() {
 
     // Find system containers
     const agentsContainer = topicsData.find(j => j.tags && j.tags.includes('system:agents') && !j.parent_id);
+    const tasksContainer = topicsData.find(j => j.tags && j.tags.includes('system:tasks') && !j.parent_id);
     const projectsContainer = topicsData.find(j => j.tags && j.tags.includes('system:projects') && !j.parent_id);
     const assetsContainer = topicsData.find(j => j.tags && j.tags.includes('system:assets') && !j.parent_id);
 
     // Count children of each container
     const agentsCount = agentsContainer ? topicsData.filter(j => j.parent_id === agentsContainer.id).length : 0;
+    const tasksCount = tasksContainer ? topicsData.filter(j => j.parent_id === tasksContainer.id).length : 0;
     const projectsCount = projectsContainer ? topicsData.filter(j => j.parent_id === projectsContainer.id).length : 0;
     // Assets count comes from the cache (loaded separately)
     // Load assets if not cached yet (for count display)
@@ -154,8 +156,8 @@ function renderFocusMenu() {
         `;
     }
 
-    // Build system section (Agents + Projects + Assets) if any exist
-    const hasSystemSection = agentsContainer || projectsContainer || assetsContainer;
+    // Build system section (Agents + Tasks + Projects + Assets) if any exist
+    const hasSystemSection = agentsContainer || tasksContainer || projectsContainer || assetsContainer;
     const systemSection = hasSystemSection ? `
         <div class="focus-menu-section">
             <div class="focus-menu-section-label collapsible ${collectionsOpen ? 'open' : ''}" onclick="toggleSection('collections')">
@@ -163,11 +165,11 @@ function renderFocusMenu() {
                 <span class="section-toggle">${icon('chevron-right')}</span>
             </div>
             <div class="focus-menu collapsible-content ${collectionsOpen ? 'open' : ''}">
-                ${agentsContainer ? `
-                <div class="focus-menu-item" onclick="navigateFocus('topic-${agentsContainer.id}')">
-                    <span class="focus-menu-icon">${icon('bolt')}</span>
-                    <span class="focus-menu-label">Agents</span>
-                    <span class="focus-menu-count">${agentsCount}</span>
+                ${tasksContainer ? `
+                <div class="focus-menu-item" onclick="navigateFocus('topic-${tasksContainer.id}')">
+                    <span class="focus-menu-icon">${icon('queue-list')}</span>
+                    <span class="focus-menu-label">Tasks</span>
+                    <span class="focus-menu-count">${tasksCount}</span>
                     <span class="focus-menu-arrow">›</span>
                 </div>
                 ` : ''}
@@ -184,6 +186,14 @@ function renderFocusMenu() {
                     <span class="focus-menu-icon">${icon('document')}</span>
                     <span class="focus-menu-label">Assets</span>
                     <span class="focus-menu-count">${assetsCount}</span>
+                    <span class="focus-menu-arrow">›</span>
+                </div>
+                ` : ''}
+                ${agentsContainer ? `
+                <div class="focus-menu-item" onclick="navigateFocus('topic-${agentsContainer.id}')">
+                    <span class="focus-menu-icon">${icon('bolt')}</span>
+                    <span class="focus-menu-label">Agents</span>
+                    <span class="focus-menu-count">${agentsCount}</span>
                     <span class="focus-menu-arrow">›</span>
                 </div>
                 ` : ''}
@@ -270,7 +280,7 @@ function renderCompletedTopicsView() {
     // Combine active and completed topics for ancestor traversal
     const allTopics = [...topicsData, ...completedTopicsData];
 
-    // Filter to only Projects descendants (exclude Agents and System topics)
+    // Filter to only work descendants (exclude Agents and agent inboxes)
     const projectsCompletedTopics = completedTopicsData.filter(j => isProjectsDescendant(j, allTopics));
 
     // Root completed topics: no parent OR parent is not in completed list
@@ -299,8 +309,11 @@ function renderCompletedTopicsView() {
 
 // ============== System Container Views ==============
 
-function renderSystemContainerView(topic, isAgentsContainer) {
+function renderSystemContainerView(topic) {
     const childTopics = topicsData.filter(j => j.parent_id === topic.id);
+    const tags = topic.tags || [];
+    const isAgentsContainer = tags.includes('system:agents');
+    const isTasksContainer = tags.includes('system:tasks');
 
     // Determine container type and styling
     let titleIcon, containerName, emptyMessage;
@@ -308,13 +321,17 @@ function renderSystemContainerView(topic, isAgentsContainer) {
         titleIcon = icon('bolt');
         containerName = 'Agents';
         emptyMessage = 'No agent inboxes yet.';
+    } else if (isTasksContainer) {
+        titleIcon = icon('queue-list');
+        containerName = 'Tasks';
+        emptyMessage = 'No tasks yet.';
     } else {
         titleIcon = icon('folder');
         containerName = 'Projects';
         emptyMessage = 'No projects yet.';
     }
 
-    // For Projects containers, render children as swipeable topic cards
+    // For Tasks/Projects containers, render children as swipeable topic cards
     // For Agents container, render children as non-swipeable agent cards
     const renderChildTopics = () => {
         if (childTopics.length === 0) {
@@ -346,7 +363,7 @@ function renderSystemContainerView(topic, isAgentsContainer) {
                 </div>
             `;
         } else {
-            // Projects - swipeable topic cards
+            // Tasks/Projects - swipeable topic cards
             return `
                 <div class="child-topics-list">
                     ${childTopics.map(child => renderTopicCard(child, true)).join('')}
@@ -392,12 +409,13 @@ function renderTopicDetailView(topicId) {
 
     // Check if this is a system container
     const isAgentsContainer = topic.tags && topic.tags.includes('system:agents');
+    const isTasksContainer = topic.tags && topic.tags.includes('system:tasks');
     const isProjectsContainer = topic.tags && topic.tags.includes('system:projects');
-    const isSystemContainer = isAgentsContainer || isProjectsContainer;
+    const isSystemContainer = isAgentsContainer || isTasksContainer || isProjectsContainer;
 
     // For system containers, render a simplified view
     if (isSystemContainer) {
-        return renderSystemContainerView(topic, isAgentsContainer);
+        return renderSystemContainerView(topic);
     }
 
     // For agent inbox topics, render the agent detail view
@@ -412,6 +430,9 @@ function renderTopicDetailView(topicId) {
     // Get ALL child topics sorted by status priority (working > todo > error > done > archived)
     const allChildTopics = getAllChildTopicsSorted(topic.id);
     const assets = topicAssetsCache[topicId] || [];
+    const chatAssets = assets
+        .filter(asset => asset.filename.startsWith('topic-chat-'))
+        .sort((a, b) => (b.modified_at || '').localeCompare(a.modified_at || ''));
     const isAgentTopic = !!topic.agent_id;
     const titleIcon = isAgentTopic ? icon('bolt') : '';
 
@@ -449,33 +470,12 @@ function renderTopicDetailView(topicId) {
                 ${isAgentTopic ? '' : `<button class="task-detail-action" onclick="openMorePicker('${topic.id}')">Actions</button>`}
             </div>
 
-            <!-- Name Section -->
-            <div class="topic-section" data-testid="topic-name">
-                <div class="topic-section-header">Name</div>
-                ${isEditingName ? `
-                    <input type="text" class="topic-name-input" id="edit-name-${topic.id}" value="${escapeHtml(displayName)}"
-                        onkeydown="handleEditKeypress(event, '${topic.id}', 'name')"
-                        onblur="saveTopicField('${topic.id}', 'name', this.value)">
-                ` : `
-                    <div class="topic-name-display" onclick="startEditingField('${topic.id}', 'name')">${escapeHtml(displayName)}</div>
-                `}
-            </div>
-
             <!-- Description Section -->
             <div class="topic-section" data-testid="topic-description">
-                <div class="topic-section-header">
-                    Description
-                    ${isEditingDesc ? `<span class="topic-section-action" onclick="saveTopicField('${topic.id}', 'description', document.getElementById('edit-description-${topic.id}').value)">Save</span>` : ''}
+                <div class="topic-section-header">Description</div>
+                <div class="topic-description-display ${hasDescription ? '' : 'empty'}">
+                    ${hasDescription ? marked.parse(topic.description) : 'No description.'}
                 </div>
-                ${isEditingDesc ? `
-                    <textarea class="topic-description-input" id="edit-description-${topic.id}"
-                        onkeydown="handleDescriptionKeypress(event, '${topic.id}')"
-                        placeholder="Add a description...">${escapeHtml(topic.description || '')}</textarea>
-                ` : `
-                    <div class="topic-description-display ${hasDescription ? '' : 'empty'}" onclick="startEditingField('${topic.id}', 'description')">
-                        ${hasDescription ? marked.parse(topic.description) : 'Click to add description...'}
-                    </div>
-                `}
             </div>
 
             <!-- Child Topics Section - shows all topics sorted by status -->
@@ -491,11 +491,33 @@ function renderTopicDetailView(topicId) {
             </div>
             ` : ''}
 
-            <!-- Parent Link -->
-            ${parentName ? `
+            <!-- Topic Chats Section -->
+            ${chatAssets.length > 0 ? `
             <div class="topic-section">
-                <div class="topic-section-header">Parent</div>
-                <div class="card-project-link" onclick="navigateFocus('topic-${topic.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
+                <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>Topic Chats (${chatAssets.length})</span>
+                    <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="child-topics-list">
+                        ${chatAssets.map(asset => {
+                            const displayName = asset.filename
+                                .replace(/^topic-chat-/, '')
+                                .replace(/\.md$/, '');
+                            const updatedAt = asset.modified_at
+                                ? new Date(asset.modified_at).toLocaleString()
+                                : '';
+                            return `
+                                <div class="child-topic-card" onclick="navigateFocus('asset-${topic.id}-${asset.filename}')">
+                                    <span class="child-topic-icon">${icon('chat-bubble-left')}</span>
+                                    <span class="child-topic-name">${escapeHtml(displayName)}</span>
+                                    <span class="child-topic-count">${escapeHtml(updatedAt)}</span>
+                                    <span class="child-topic-arrow">${icon('chevron-right')}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
             </div>
             ` : ''}
 
@@ -533,6 +555,14 @@ function renderTopicDetailView(topicId) {
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
             </div>
+
+            <!-- Parent Link -->
+            ${parentName ? `
+            <div class="topic-section">
+                <div class="topic-section-header">Parent</div>
+                <div class="card-project-link" onclick="navigateFocus('topic-${topic.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
+            </div>
+            ` : ''}
         </div>
     `;
 }
@@ -602,33 +632,12 @@ function renderCompletedTopicDetailView(topicId) {
                 <span style="color: #4a8; font-weight: 500;">${icon('check')} Completed ${escapeHtml(completedDate)}</span>
             </div>
 
-            <!-- Name Section -->
-            <div class="topic-section">
-                <div class="topic-section-header">Name</div>
-                ${isEditingName ? `
-                    <input type="text" class="topic-name-input" id="edit-name-${topic.id}" value="${escapeHtml(displayName)}"
-                        onkeydown="handleEditKeypress(event, '${topic.id}', 'name')"
-                        onblur="saveCompletedTopicField('${topic.id}', 'name', this.value)">
-                ` : `
-                    <div class="topic-name-display" onclick="startEditingField('${topic.id}', 'name')">${escapeHtml(displayName)}</div>
-                `}
-            </div>
-
             <!-- Description Section -->
             <div class="topic-section">
-                <div class="topic-section-header">
-                    Description
-                    ${isEditingDesc ? `<span class="topic-section-action" onclick="saveCompletedTopicField('${topic.id}', 'description', document.getElementById('edit-description-${topic.id}').value)">Save</span>` : ''}
+                <div class="topic-section-header">Description</div>
+                <div class="topic-description-display ${hasDescription ? '' : 'empty'}">
+                    ${hasDescription ? marked.parse(topic.description) : 'No description.'}
                 </div>
-                ${isEditingDesc ? `
-                    <textarea class="topic-description-input" id="edit-description-${topic.id}"
-                        onkeydown="handleCompletedDescriptionKeypress(event, '${topic.id}')"
-                        placeholder="Add a description...">${escapeHtml(topic.description || '')}</textarea>
-                ` : `
-                    <div class="topic-description-display ${hasDescription ? '' : 'empty'}" onclick="startEditingField('${topic.id}', 'description')">
-                        ${hasDescription ? marked.parse(topic.description) : 'Click to add description...'}
-                    </div>
-                `}
             </div>
 
             <!-- Active Child Topics Section (rare but possible) - open by default -->
@@ -660,14 +669,6 @@ function renderCompletedTopicDetailView(topicId) {
             </div>
             ` : ''}
 
-            <!-- Parent Link -->
-            ${parentName ? `
-            <div class="topic-section">
-                <div class="topic-section-header">Parent</div>
-                <div class="card-project-link" onclick="navigateFocus('${parentIsCompleted ? 'completed' : 'topic'}-${topic.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
-            </div>
-            ` : ''}
-
             <!-- Assets Section -->
             ${assets.length > 0 ? `
             <div class="topic-section">
@@ -692,6 +693,14 @@ function renderCompletedTopicDetailView(topicId) {
                         `;
                     }).join('')}
                 </div>
+            </div>
+            ` : ''}
+
+            <!-- Parent Link -->
+            ${parentName ? `
+            <div class="topic-section">
+                <div class="topic-section-header">Parent</div>
+                <div class="card-project-link" onclick="navigateFocus('${parentIsCompleted ? 'completed' : 'topic'}-${topic.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
             </div>
             ` : ''}
         </div>

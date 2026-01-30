@@ -57,7 +57,7 @@ Change how agents handle specific situations.
 
 **When to use:** Specific workflow needs different handling or detailed instructions.
 
-**Example:** Create `data/agents/worker/prompts/research.md` for research task handling.
+**Example:** Create `data/agents/soul/prompts/research.md` for research task handling.
 
 #### New Agents
 **Location:** `data/agents/{new-agent}/`
@@ -174,7 +174,7 @@ Use `--data-only` to skip code deployment. Backups are created automatically bef
 
 **What syncs:** Source code (local → remote), topics, memory, agent configs/identities, assets
 
-**What doesn't sync:** `.git/`, `.venv/`, `.env`, logs, auth, sync state
+**What doesn't sync:** `.git/`, `.venv/`, `.env`, `data/system/logs/`, auth, sync state
 
 ## Community
 

@@ -13,10 +13,13 @@ There are three core concepts in Euno: **Agents**, **Skills**, and **Topics**.
 An agent is an actor in the system. Agents can be AI or human—the user is also an agent, just with a different interface.
 
 **What makes up an agent:**
-- **Identity** — purpose, values, voice, behavioral rules
+- **Identity** — purpose, values, behavioral rules
+- **Voice** — communication style, tone, word choices, sentence patterns
 - **Memory** — short-term (90 days rolling) and long-term (permanent archive)
 - **Cognition** — reasoning + metacognition (self-regulation)
 - **Behavior** — skills they can use, triggers that activate them
+
+**Voice** is how an agent communicates — their formality level, sentence structure, characteristic phrases, tone, and register shifts across contexts. For AI agents, voice is configured in identity and refined through consolidation. For users, voice is *discovered* — consolidation observes how they write in conversations, documents, and notes, then builds a style profile so agents can mirror their natural language.
 
 **Agent states:**
 - `enabled` — normal operation, polling for topics

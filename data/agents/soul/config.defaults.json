@@ -1,0 +1,30 @@
+{
+  "id": "soul",
+  "name": "Soul",
+  "state": "enabled",
+  "order": 10,
+  "token_budget": {
+    "frequency": "daily",
+    "input_ratio": 0.8,
+    "output_ratio": 0.2
+  },
+  "excluded_plugins": [],
+  "triggers": [
+    {
+      "event": "evening",
+      "topic_name": "euno:consolidate",
+      "instructions": "Review memories, evolve identity, graduate learnings. Use core consolidation skill to run reflection and identity updates. If results require user attention, create topics with clear summaries."
+    },
+    {
+      "event": "interval:hourly",
+      "topic_name": "soul:heartbeat",
+      "instructions": "Check for proactive insights or anticipations that help the user reach Eudaimonia. Create actionable topics if needed; otherwise record a brief note and complete. Always call done_working with a short summary of what you did.",
+      "only_one": true
+    },
+    {
+      "event": "evening",
+      "topic_name": "soul:deep-review",
+      "instructions": "Review memory, recent conversations, open topics, and assets. Identify patterns, stale work, and upcoming needs. Create actionable topics for anything that would help the user today. Workflow: list short/long-term memory, scan recent topic logs + assets, review unassigned and todo topics (including subtopics), then decide what to create. Use CLI skills to retrieve these sources. Only create new topics when evidence supports it, and avoid duplicating existing work."
+    }
+  ]
+}

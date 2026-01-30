@@ -87,6 +87,8 @@
     font-size: var(--font-size-base);
     color: var(--color-text-light);
     flex-shrink: 0;
+    min-width: 24px;
+    text-align: center;
 }
 
 .card-assignee-label {

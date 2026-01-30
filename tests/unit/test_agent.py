@@ -18,6 +18,48 @@ import json
 from tests.fixtures.llm import MockLLMClient, MockResponse
 
 
+def _write_test_prompts(agent_dir):
+    """Create minimal prompt templates for a test agent and pre-populate the cache.
+
+    Templates are written to the agent's prompts directory on disk.
+    All templates (including the system-level one) are pre-populated in the
+    cache so tests don't hit the real data/system/prompts/ directory.
+    """
+    from src.agent.cognition.reasoning.prompts import _template_cache
+
+    prompts_dir = agent_dir / "prompts"
+    prompts_dir.mkdir(parents=True, exist_ok=True)
+
+    # System-level template (cache-only — not written to real data/system/prompts/)
+    system_content = "## Euno\n\nEuno is a personal intelligence for human flourishing.\n\n## Agent Identity\n\n{identity}\n\n## User Context\n\n{user_identity}\n\n## Topics\n\nTopics are the primary unit of work.\n\n## Skills\n\nDiscover skills with list_skills.\n"
+
+    # Agent-level templates
+    templates = {
+        "topic": "Topic: {topic_id} {topic_name}\n{topic_description}\nDue: {topic_due_date}\nTags: {topic_tags}\nContext: {topic_attachments}\n{remaining_topics_notice}\n",
+        "topic_assignment": "Assignment: {topic_id} {topic_name}\n{topic_description}\nDue: {topic_due_date}\nTags: {topic_tags}\nContext: {topic_attachments}\n{remaining_topics_notice}\n",
+        "consolidation": "Reflection: {topic_name}\nTrigger: {topic_id}\n",
+        "continue": "Continue working.\n",
+        "continue_with_context": "Iteration: {iteration}\nTool calls: {tool_calls_this_cycle}\n{stuck_warning}\n",
+        "progress_check": "{iteration_count} {total_tool_calls} {recent_tools_used} {tool_variety} {recent_tool_calls}\nPROGRESS:YES\n",
+    }
+
+    agent_id = agent_dir.name
+    _template_cache[f"{agent_id}:agent/system"] = system_content
+
+    for name, content in templates.items():
+        (prompts_dir / f"{name}.md").write_text(content)
+        _template_cache[f"{agent_id}:agent/{name}"] = content
+
+
+@pytest.fixture(autouse=True)
+def _clear_prompt_cache():
+    """Clear prompt template cache between tests."""
+    from src.agent.cognition.reasoning.prompts import clear_cache
+    clear_cache()
+    yield
+    clear_cache()
+
+
 class TestAgentInitialization:
     """Test Agent initialization and configuration loading."""
 
@@ -67,6 +109,7 @@ class TestAgentInitialization:
         agent_dir = tmp_path / "agents" / "test-agent"
         agent_dir.mkdir(parents=True)
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         custom_config = {
             "id": "test-agent",
@@ -88,6 +131,7 @@ class TestAgentInitialization:
         agent_dir.mkdir(parents=True)
         (agent_dir / "config.json").write_text('{"id": "test-agent", "state": "enabled", "tools": []}')
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             agent = Agent("test-agent")
@@ -108,6 +152,7 @@ class TestAgentInitialization:
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             agent = Agent("test-agent")
@@ -128,6 +173,7 @@ class TestAgentInitialization:
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             agent = Agent("test-agent")
@@ -153,6 +199,7 @@ class TestAgentChat:
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test Agent\n\nI am a helpful test agent.")
+        _write_test_prompts(agent_dir)
 
         # Create conversation history directory
         state_dir = agent_dir / "state" / "conversation"
@@ -160,7 +207,8 @@ class TestAgentChat:
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             with patch("src.agent.agent.DATA_DIR", tmp_path):
-                return Agent("test-agent")
+                with patch("src.agent.cognition.reasoning.prompts.AGENTS_DIR", tmp_path / "agents"):
+                    return Agent("test-agent")
 
     def test_chat_returns_llm_response(self, tmp_path):
         """chat() returns the LLM's text response."""
@@ -245,6 +293,7 @@ class TestAgentToolExecution:
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             return Agent("test-agent")
@@ -336,13 +385,15 @@ class TestAgentConversationHistory:
         config = {"id": "test-agent", "state": "enabled", "tools": [], "consolidation": {"enabled": False}}
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         state_dir = agent_dir / "state" / "conversation"
         state_dir.mkdir(parents=True)
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             with patch("src.agent.agent.DATA_DIR", tmp_path):
-                return Agent("test-agent")
+                with patch("src.agent.cognition.reasoning.prompts.AGENTS_DIR", tmp_path / "agents"):
+                    return Agent("test-agent")
 
     def test_chat_saves_to_history(self, tmp_path):
         """chat() saves conversation turns to history when enabled."""
@@ -385,6 +436,7 @@ class TestAgentLogging:
         config = {"id": "test-agent", "state": "enabled", "tools": [], "consolidation": {"enabled": False}}
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             return Agent("test-agent")
@@ -450,6 +502,7 @@ class TestAgentState:
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             return Agent("test-agent")
@@ -527,6 +580,7 @@ class TestUserIdentityContext:
         agent_dir.mkdir(parents=True)
         (agent_dir / "config.json").write_text('{"id": "test-agent", "state": "enabled", "tools": []}')
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         # Create user identity
         user_dir = tmp_path / "agents" / "user"
@@ -551,6 +605,7 @@ class TestUserIdentityContext:
         agent_dir.mkdir(parents=True)
         (agent_dir / "config.json").write_text('{"id": "test-agent", "state": "enabled", "tools": []}')
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         # Don't create user directory
 
@@ -606,6 +661,7 @@ class TestTopicPromptType:
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             return Agent("test-agent")
@@ -657,6 +713,7 @@ class TestWorkCycle:
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         # Create system config
         system_dir = tmp_path / "system"
@@ -666,7 +723,8 @@ class TestWorkCycle:
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             with patch("src.agent.agent.DATA_DIR", tmp_path):
-                return Agent("test-agent")
+                with patch("src.agent.cognition.reasoning.prompts.AGENTS_DIR", tmp_path / "agents"):
+                    return Agent("test-agent")
 
     def test_work_cycle_claims_topic(self, tmp_path):
         """work_cycle_sync() claims topic before working.
@@ -817,6 +875,7 @@ class TestWorkCyclePlanning:
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         system_dir = tmp_path / "system"
         system_dir.mkdir(parents=True)
@@ -824,7 +883,8 @@ class TestWorkCyclePlanning:
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             with patch("src.agent.agent.DATA_DIR", tmp_path):
-                return Agent("test-agent")
+                with patch("src.agent.cognition.reasoning.prompts.AGENTS_DIR", tmp_path / "agents"):
+                    return Agent("test-agent")
 
     def test_work_cycle_calls_planner_should_plan(self, tmp_path):
         """work_cycle_sync() checks if planning is needed for topic.
@@ -913,6 +973,7 @@ class TestWorkCycleStuckDetection:
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         system_dir = tmp_path / "system"
         system_dir.mkdir(parents=True)
@@ -920,7 +981,8 @@ class TestWorkCycleStuckDetection:
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             with patch("src.agent.agent.DATA_DIR", tmp_path):
-                return Agent("test-agent")
+                with patch("src.agent.cognition.reasoning.prompts.AGENTS_DIR", tmp_path / "agents"):
+                    return Agent("test-agent")
 
     def test_work_cycle_starts_progress_session(self, tmp_path):
         """work_cycle_sync() starts a progress tracking session.
@@ -1016,6 +1078,7 @@ class TestWorkCycleDeferredConsolidation:
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         system_dir = tmp_path / "system"
         system_dir.mkdir(parents=True)
@@ -1023,7 +1086,8 @@ class TestWorkCycleDeferredConsolidation:
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             with patch("src.agent.agent.DATA_DIR", tmp_path):
-                return Agent("test-agent")
+                with patch("src.agent.cognition.reasoning.prompts.AGENTS_DIR", tmp_path / "agents"):
+                    return Agent("test-agent")
 
     def test_work_cycle_defers_consolidation_when_enabled(self, tmp_path):
         """work_cycle_sync() passes defer_consolidation=True to chat when deferred.
@@ -1115,6 +1179,7 @@ class TestMinimalResponseDetection:
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         system_dir = tmp_path / "system"
         system_dir.mkdir(parents=True)
@@ -1122,7 +1187,8 @@ class TestMinimalResponseDetection:
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             with patch("src.agent.agent.DATA_DIR", tmp_path):
-                return Agent("test-agent")
+                with patch("src.agent.cognition.reasoning.prompts.AGENTS_DIR", tmp_path / "agents"):
+                    return Agent("test-agent")
 
     def test_detects_consecutive_minimal_responses(self, tmp_path):
         """work_cycle_sync() detects 5 consecutive minimal responses as stuck.
@@ -1284,6 +1350,7 @@ class TestMetacognitionIncrementIteration:
         }
         (agent_dir / "config.json").write_text(json.dumps(config))
         (agent_dir / "identity.md").write_text("# Test\n")
+        _write_test_prompts(agent_dir)
 
         with patch("src.agent.agent.AGENTS_DIR", tmp_path / "agents"):
             return Agent("test-agent")

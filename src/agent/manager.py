@@ -507,10 +507,8 @@ class AgentManager:
 
         Triggers are objects with:
         - event: schedule name (e.g., "morning", "evening") or future system event
-        - action: "tool" (direct execution) or "llm" (agent processes via LLM loop)
-        - tool: tool to execute directly (required when action="tool")
         - topic_name: e.g., "euno:consolidate", "euno:quote"
-        - topic_description: description for the topic (optional)
+        - instructions: full topic description/guidance (optional)
 
         Args:
             config: Agent configuration dict
@@ -544,6 +542,59 @@ class AgentManager:
                 if topic.get("name") == topic_name:
                     return True
         return False
+
+    def _get_existing_topic(self, topic_name: str, agent_id: str) -> Optional[dict]:
+        """Get the most recently updated topic with a matching name for an agent."""
+        from src.core.data.topics import list_topics
+
+        topics = list_topics(assignee=agent_id)
+        for topic in topics:
+            if topic.get("name") == topic_name:
+                return topic
+        return None
+
+    def _ensure_trigger_topic(
+        self,
+        agent_id: str,
+        topic_name: str,
+        topic_desc: str,
+        parent_id: Optional[str],
+        created_by: str,
+        only_one: bool
+    ) -> Optional[dict]:
+        """Create or reuse a trigger topic based on only_one behavior."""
+        from src.core.data.topics import create_topic, update_topic, _notify_agent_has_topics
+
+        if only_one:
+            existing = self._get_existing_topic(topic_name, agent_id)
+            if existing:
+                status = existing.get("status")
+                if status in ["todo", "working"]:
+                    return existing
+                updated = update_topic(
+                    existing["id"],
+                    description=topic_desc,
+                    status="todo",
+                    assignee=agent_id,
+                    due_date=None,
+                    someday=False
+                )
+                _notify_agent_has_topics(agent_id)
+                return updated
+
+        # Default behavior: avoid duplicates only when one is already open
+        if self._has_open_internal_topic(topic_name, agent_id):
+            return None
+
+        return create_topic(
+            name=topic_name,
+            description=topic_desc,
+            parent_id=parent_id,
+            assignee=agent_id,
+            tags=[topic_name],
+            due_date=None,
+            created_by=created_by
+        )
 
     def _run_agent_loop(self, agent: Agent, stop_event: threading.Event):
         """Run an agent's work loop - monitors health while agent polls for topics.
@@ -642,9 +693,15 @@ class AgentManager:
 
     def _run_time_scheduler(self):
         """Background thread that creates trigger topics based on schedules."""
-        from src.core.data.topics import create_topic, get_agent_inbox_topic
+        from src.core.data.topics import get_agent_inbox_topic
 
         last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
+
+        def build_trigger_description(trigger: dict, fallback: str) -> str:
+            instructions = trigger.get("instructions")
+            if instructions:
+                return instructions
+            return fallback
 
         while self.running:
             try:
@@ -691,20 +748,24 @@ class AgentManager:
                             for trigger in triggers:
                                 if trigger.get("event") == name:
                                     topic_name = trigger.get("topic_name")
-                                    topic_desc = trigger.get("topic_description", f"Scheduled {topic_name}")
+                                    topic_desc = build_trigger_description(
+                                        trigger,
+                                        f"Scheduled {topic_name}"
+                                    )
+                                    only_one = bool(trigger.get("only_one", False))
 
-                                    # Check for duplicate - only one pending at a time
-                                    if not self._has_open_internal_topic(topic_name, agent_id):
+                                    if only_one:
+                                        print(f"[scheduler] Ensuring singleton topic: {topic_name} for {agent_id}")
+                                    else:
                                         print(f"[scheduler] Creating topic: {topic_name} for {agent_id}")
-                                        create_topic(
-                                            name=topic_name,
-                                            description=topic_desc,
-                                            parent_id=parent_id,
-                                            assignee=agent_id,
-                                            tags=[topic_name],  # Tag for querying
-                                            due_date=None,
-                                            created_by="system"
-                                        )
+                                    self._ensure_trigger_topic(
+                                        agent_id=agent_id,
+                                        topic_name=topic_name,
+                                        topic_desc=topic_desc,
+                                        parent_id=parent_id,
+                                        created_by="system",
+                                        only_one=only_one
+                                    )
 
                         # Save state for morning/evening triggers
                         if name in ["morning", "evening"]:
@@ -731,20 +792,24 @@ class AgentManager:
                         # Check if this interval trigger should fire
                         if self._should_fire_interval_trigger(agent_id, trigger):
                             topic_name = trigger.get("topic_name")
-                            topic_desc = trigger.get("topic_description", f"Interval {topic_name}")
+                            topic_desc = build_trigger_description(
+                                trigger,
+                                f"Interval {topic_name}"
+                            )
+                            only_one = bool(trigger.get("only_one", False))
 
-                            # Check for duplicate - only one pending at a time
-                            if not self._has_open_internal_topic(topic_name, agent_id):
+                            if only_one:
+                                print(f"[scheduler] Ensuring singleton interval topic: {topic_name} for {agent_id}")
+                            else:
                                 print(f"[scheduler] Creating interval topic: {topic_name} for {agent_id}")
-                                create_topic(
-                                    name=topic_name,
-                                    description=topic_desc,
-                                    parent_id=parent_id,
-                                    assignee=agent_id,
-                                    tags=[topic_name],
-                                    due_date=None,
-                                    created_by="system"
-                                )
+                            self._ensure_trigger_topic(
+                                agent_id=agent_id,
+                                topic_name=topic_name,
+                                topic_desc=topic_desc,
+                                parent_id=parent_id,
+                                created_by="system",
+                                only_one=only_one
+                            )
 
                             # Update trigger state (even if topic already exists, mark as handled)
                             self._update_interval_trigger_state(agent_id, trigger)
@@ -756,7 +821,7 @@ class AgentManager:
 
     def _run_event_handler(self):
         """Background thread that handles system events and creates trigger topics."""
-        from src.core.data.topics import create_topic, get_agent_inbox_topic
+        from src.core.data.topics import get_agent_inbox_topic
 
         while self.running:
             try:
@@ -797,6 +862,12 @@ class AgentManager:
         config = agent.config
         event_name = event.event
 
+        def build_trigger_description(trigger: dict, fallback: str) -> str:
+            instructions = trigger.get("instructions")
+            if instructions:
+                return instructions
+            return fallback
+
         # Get agent's inbox topic as parent for trigger topics
         inbox = get_agent_inbox_topic(agent_id)
         parent_id = inbox["id"] if inbox else None
@@ -808,20 +879,24 @@ class AgentManager:
                 continue
 
             topic_name = trigger.get("topic_name")
-            topic_desc = trigger.get("topic_description", f"Triggered by {event_name}")
+            topic_desc = build_trigger_description(
+                trigger,
+                f"Triggered by {event_name}"
+            )
+            only_one = bool(trigger.get("only_one", False))
 
-            # Check for duplicate - only one pending at a time
-            if not self._has_open_internal_topic(topic_name, agent_id):
+            if only_one:
+                print(f"[event-handler] Ensuring singleton topic: {topic_name} for {agent_id} (event: {event_name})")
+            else:
                 print(f"[event-handler] Creating topic: {topic_name} for {agent_id} (event: {event_name})")
-                create_topic(
-                    name=topic_name,
-                    description=topic_desc,
-                    parent_id=parent_id,
-                    assignee=agent_id,
-                    tags=[topic_name],
-                    due_date=None,
-                    created_by="trigger"  # Mark as trigger-created for loop prevention
-                )
+            self._ensure_trigger_topic(
+                agent_id=agent_id,
+                topic_name=topic_name,
+                topic_desc=topic_desc,
+                parent_id=parent_id,
+                created_by="trigger",  # Mark as trigger-created for loop prevention
+                only_one=only_one
+            )
 
     def run(self):
         """Run the agent manager."""

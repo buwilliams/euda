@@ -72,8 +72,9 @@ async function toggleAgentSection(header, event, sectionType, agentId) {
                 } else if (sectionType === 'long-term-memory') {
                     const dates = await loadLongTermMemoryDates(agentId);
                     if (dates.length > 0) {
-                        const contentData = await loadLongTermMemoryContent(agentId, dates[0]);
+                        const contentData = await loadLongTermMemoryContent(agentId, dates[0], 0, LONG_TERM_MEMORY_PAGE_LINES);
                         content.innerHTML = renderLongTermMemoryContent(dates, dates[0], contentData, agentId);
+                        initLongTermMemoryScroll(agentId, dates[0]);
                     } else {
                         content.innerHTML = '<div class="focus-empty">No long-term memory entries.</div>';
                     }
@@ -268,6 +269,7 @@ function formatPromptTime(timestamp) {
 // Cache for topic API calls data
 let topicApiCallsCache = {};
 let topicApiCallsLoading = {};
+let topicPromptDetailCache = {};
 
 function renderTopicApiCallsView(topicId) {
     const topic = allTopicsData.find(t => t.id === topicId);
@@ -335,7 +337,7 @@ function renderTopicApiCallsView(topicId) {
             <!-- Calls List -->
             ${callList.length === 0 ? '<div class="focus-empty">No API calls</div>' :
               callList.map((call, index) => `
-                <div class="prompt-list-item" onclick="navigateFocus('topic-prompt-${topicId}-${index}')">
+                <div class="prompt-list-item" onclick="openTopicPromptDetail('${topicId}', ${index})">
                     <span class="prompt-time">${formatPromptTime(call.timestamp)}</span>
                     <span class="prompt-tokens">${call.input_tokens || 0}/${call.output_tokens || 0}</span>
                     <span class="prompt-model">${escapeHtml(call.model || 'unknown')}</span>
@@ -347,7 +349,22 @@ function renderTopicApiCallsView(topicId) {
     `;
 }
 
+function openTopicPromptDetail(topicId, promptIndex) {
+    const cached = topicApiCallsCache[topicId];
+    const call = cached?.calls?.[promptIndex];
+    if (call) {
+        topicPromptDetailCache[`${topicId}:${promptIndex}`] = call;
+    }
+    navigateFocus(`topic-prompt-${topicId}-${promptIndex}`);
+}
+
 function renderTopicPromptDetailView(topicId, promptIndex) {
+    const detailKey = `${topicId}:${promptIndex}`;
+    const cachedDetail = topicPromptDetailCache[detailKey];
+    if (cachedDetail) {
+        return renderTopicPromptDetailContent(cachedDetail);
+    }
+
     const cached = topicApiCallsCache[topicId];
     if (!cached || !cached.calls) {
         // Need to load data first
@@ -373,6 +390,10 @@ function renderTopicPromptDetailView(topicId, promptIndex) {
         `;
     }
 
+    return renderTopicPromptDetailContent(call);
+}
+
+function renderTopicPromptDetailContent(call) {
     // Helper to render messages nicely
     const renderMessages = (messages) => {
         if (!Array.isArray(messages)) {

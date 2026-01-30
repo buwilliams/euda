@@ -16,7 +16,7 @@ def _get_topics_module():
 @app.command("delegate")
 def delegate_task(
     task: str = typer.Argument(..., help="Description of the task to delegate"),
-    to_agent: str = typer.Option("worker", "--to", "-t", help="Target agent (default: worker)"),
+    to_agent: str = typer.Option("soul", "--to", "-t", help="Target agent (default: soul)"),
     response: Optional[str] = typer.Option(None, "--response", "-r", help="Conversational response to show the user"),
     description: Optional[str] = typer.Option(None, "--description", "-d", help="Detailed task description"),
 ):
@@ -34,7 +34,7 @@ def delegate_task(
 
     Examples:
         delegate "Research RAG best practices 2026" --response "I'll research that for you."
-        delegate "Write a summary of the meeting notes" --to worker
+        delegate "Write a summary of the meeting notes" --to soul
         delegate "Analyze the codebase structure" -d "Map out all modules and their dependencies"
     """
     m = _get_topics_module()

@@ -44,7 +44,7 @@ class TriggerReflectionRequest(BaseModel):
 
 class TriggerRequest(BaseModel):
     topic_name: str  # e.g., "euno:consolidate", "euno:quote"
-    topic_description: Optional[str] = None
+    instructions: Optional[str] = None
 
 
 class AddMemoryRequest(BaseModel):
@@ -255,10 +255,15 @@ def api_remove_short_term_memory(agent_id: str, entry_id: str):
 
 # Long-term memory endpoints
 @router.get("/{agent_id}/memory/long-term")
-def api_get_long_term_memory(agent_id: str, date: Optional[str] = None):
+def api_get_long_term_memory(
+    agent_id: str,
+    date: Optional[str] = None,
+    offset: int = 0,
+    limit: Optional[int] = None
+):
     """Get agent's long-term memory entries."""
     if date:
-        return read_memory_date(agent_id, date)
+        return read_memory_date(agent_id, date, offset=offset, limit=limit)
     else:
         # Return empty result if no date specified
         return {"error": "date parameter required"}
@@ -353,7 +358,7 @@ def api_trigger(agent_id: str, request: TriggerRequest):
 
     Args:
         agent_id: The agent to trigger
-        request: Contains topic_name (required) and topic_description (optional)
+        request: Contains topic_name (required) and instructions (optional)
 
     Returns an execution_id for SSE progress tracking.
     """
@@ -368,7 +373,7 @@ def api_trigger(agent_id: str, request: TriggerRequest):
     inbox = get_agent_inbox_topic(agent_id)
     parent_id = inbox["id"] if inbox else None
 
-    description = request.topic_description or f"Manual trigger (execution_id: {execution_id})"
+    description = request.instructions or f"Manual trigger (execution_id: {execution_id})"
 
     topic = create_topic(
         name=request.topic_name,

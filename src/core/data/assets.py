@@ -4,6 +4,7 @@ Asset Tools - Manage files and assets attached to topics.
 
 import base64
 import mimetypes
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
@@ -29,10 +30,12 @@ def list_assets(topic_id: str) -> List[dict]:
     for path in assets_dir.iterdir():
         if path.is_file():
             mime_type, _ = mimetypes.guess_type(str(path))
+            modified_at = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
             assets.append({
                 "filename": path.name,
                 "size": path.stat().st_size,
-                "mime_type": mime_type
+                "mime_type": mime_type,
+                "modified_at": modified_at.isoformat().replace("+00:00", "Z")
             })
 
     return assets

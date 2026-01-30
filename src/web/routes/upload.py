@@ -77,6 +77,7 @@ async def upload_file(file: UploadFile = File(...)):
             name=f"euno:extract-memories:{filename}",
             description=render_template(
                 "upload/extract_memories",
+                agent_id="user",
                 filename=filename,
                 content=truncated_content
             ),

@@ -93,6 +93,25 @@ def _ensure_conflicts_dir():
     CONFLICTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def _find_existing_conflict(item_id: str, conflict_type: ConflictType) -> Optional[tuple]:
+    """Find an existing unresolved conflict for the same item_id and type.
+
+    Returns:
+        Tuple of (filepath, Conflict) if found, None otherwise
+    """
+    for filepath in CONFLICTS_DIR.glob("*.json"):
+        try:
+            with open(filepath) as f:
+                data = json.load(f)
+            if (data.get("item_id") == item_id
+                    and data.get("type") == conflict_type.value
+                    and data.get("resolution") is None):
+                return filepath, Conflict.from_dict(data)
+        except (json.JSONDecodeError, KeyError):
+            continue
+    return None
+
+
 def create_conflict(
     conflict_type: ConflictType,
     item_id: str,
@@ -102,7 +121,10 @@ def create_conflict(
     local_timestamp: str = None,
     remote_timestamp: str = None,
 ) -> Conflict:
-    """Create and save a new conflict.
+    """Create and save a new conflict, or update an existing one for the same item.
+
+    If an unresolved conflict already exists for the same item_id and type,
+    it is updated in-place instead of creating a duplicate.
 
     Args:
         conflict_type: Type of conflict
@@ -114,9 +136,29 @@ def create_conflict(
         remote_timestamp: When remote version was last modified
 
     Returns:
-        The created Conflict
+        The created or updated Conflict
     """
     _ensure_conflicts_dir()
+
+    # Check for existing unresolved conflict on the same item_id and type
+    existing = _find_existing_conflict(item_id, conflict_type)
+    if existing:
+        filepath, conflict = existing
+        # Update in-place: refresh data, clear any stale resolution
+        now = datetime.now(UTC)
+        conflict.detected_at = now.isoformat().replace("+00:00", "Z")
+        conflict.description = description
+        conflict.local = local
+        conflict.remote = remote
+        conflict.local_timestamp = local_timestamp
+        conflict.remote_timestamp = remote_timestamp
+        conflict.resolution = None
+        conflict.resolved_at = None
+
+        with open(filepath, "w") as f:
+            json.dump(conflict.to_dict(), f, indent=2)
+
+        return conflict
 
     now = datetime.now(UTC)
     timestamp_str = now.strftime("%Y%m%d-%H%M%S")

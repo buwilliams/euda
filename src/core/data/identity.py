@@ -14,6 +14,14 @@ from typing import List, Optional
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
 
+def _normalize_identity_content(content: str) -> str:
+    """Normalize escaped newlines to real newlines for markdown rendering."""
+    if content is None:
+        return ""
+    normalized = content.replace("\\r\\n", "\n")
+    normalized = normalized.replace("\\n", "\n")
+    return normalized
+
 
 def _get_identity_path(agent_id: str = "user") -> Path:
     """Get path to an agent's identity."""
@@ -40,9 +48,13 @@ def get_identity(agent_id: str = "user") -> dict:
 
     identity_path = _get_identity_path(agent_id)
     if identity_path.exists():
+        raw = identity_path.read_text()
+        normalized = _normalize_identity_content(raw)
+        if normalized != raw:
+            identity_path.write_text(normalized)
         return {
             "agent_id": agent_id,
-            "content": identity_path.read_text(),
+            "content": normalized,
             "exists": True
         }
     return {
@@ -65,7 +77,7 @@ def update_identity(agent_id: str = "user", content: str = None) -> dict:
     _ensure_agent_dir(agent_id)
 
     identity_path = _get_identity_path(agent_id)
-    identity_path.write_text(content)
+    identity_path.write_text(_normalize_identity_content(content))
 
     return {"agent_id": agent_id, "status": "updated"}
 
@@ -111,7 +123,7 @@ def save_historical_identity(agent_id: str, year: str, content: str):
     """
     _ensure_agent_dir(agent_id)
     identity_path = _get_historical_identity_path(agent_id, year)
-    identity_path.write_text(content)
+    identity_path.write_text(_normalize_identity_content(content))
 
 
 def list_historical_identities(agent_id: str) -> List[str]:
