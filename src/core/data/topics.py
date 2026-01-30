@@ -1133,7 +1133,7 @@ def sync_agent_inbox_topics():
     # Ensure system containers exist
     agents_container = get_agents_container()
     tasks_container = get_tasks_container()
-    get_projects_container()
+    projects_container = get_projects_container()
     get_assets_container()  # Create Assets container if it doesn't exist
 
     agents = list_agents()
@@ -1229,8 +1229,22 @@ def sync_agent_inbox_topics():
             print(f"Archived inbox topic for deleted agent: {agent_id}")
             changes_made = True
 
-    # Migrate orphaned root topics (user-created, not system) under Tasks
+    # Migrate existing Projects children into Tasks (they are tasks, not projects)
     system_tags = {"system:agents", "system:tasks", "system:projects", "system:assets"}
+    for topic in all_topics:
+        if topic.get("parent_id") != projects_container["id"]:
+            continue
+        if any(tag in system_tags for tag in topic.get("tags", [])):
+            continue
+        with _transaction() as conn:
+            conn.execute(
+                "UPDATE topics SET parent_id = ?, updated_at = ? WHERE id = ?",
+                (tasks_container["id"], now, topic["id"])
+            )
+        print(f"Moved project topic '{topic['name']}' under Tasks")
+        changes_made = True
+
+    # Migrate orphaned root topics (user-created, not system) under Tasks
     system_container_names = {"Agents", "Tasks", "Projects", "Assets", "System"}
     for topic in all_topics:
         # Skip if not a root topic

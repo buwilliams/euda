@@ -58,7 +58,6 @@ function connectSSE() {
                 : false;
             if (!didPatch) {
                 renderFocusTab();
-                if (focusView === 'menu') loadDailyQuote();
             }
         }
 
