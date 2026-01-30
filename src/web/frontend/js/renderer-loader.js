@@ -71,25 +71,49 @@ async function loadRenderer(name) {
  * @returns {Object|null} Parsed envelope or null if not valid
  */
 function parseRenderEnvelope(content) {
+    console.log('[Renderer] parseRenderEnvelope called with:', content?.substring?.(0, 100));
+
     if (!content || typeof content !== 'string') {
+        console.log('[Renderer] Content is not a string');
         return null;
     }
 
-    // Quick check - must start with { to be JSON
-    const trimmed = content.trim();
-    if (!trimmed.startsWith('{')) {
+    let jsonStr = content.trim();
+
+    // Check for ```render code block (LLM-preserved format)
+    const codeBlockMatch = content.match(/```render\s*\n([\s\S]*?)\n```/);
+    if (codeBlockMatch) {
+        console.log('[Renderer] Found ```render code block');
+        jsonStr = codeBlockMatch[1].trim();
+    } else if (!jsonStr.startsWith('{')) {
+        console.log('[Renderer] Content does not start with { and no render code block found');
         return null;
     }
 
     try {
-        const parsed = JSON.parse(trimmed);
+        const parsed = JSON.parse(jsonStr);
 
-        // Validate envelope structure
+        // Validate envelope structure - standard format
         if (parsed && typeof parsed.renderer === 'string' && parsed.data !== undefined) {
+            console.log('[Renderer] Valid envelope detected:', parsed.renderer);
             return parsed;
         }
+
+        // Accept LLM-modified format: {"type": "renderer-name", ...data fields...}
+        // LLMs sometimes flatten the structure and rename "renderer" to "type"
+        if (parsed && typeof parsed.type === 'string' && parsed.url !== undefined) {
+            console.log('[Renderer] Found LLM-flattened format, converting:', parsed.type);
+            const { type, ...data } = parsed;
+            return {
+                renderer: type,
+                data: data,
+                display: 'embed'
+            };
+        }
+
+        console.log('[Renderer] JSON parsed but not a valid envelope');
     } catch (e) {
-        // Not valid JSON
+        console.log('[Renderer] JSON parse failed:', e.message);
     }
 
     return null;
@@ -103,12 +127,17 @@ function parseRenderEnvelope(content) {
  * @returns {Promise<boolean>} True if rendered successfully, false otherwise
  */
 async function renderEnvelope(envelope, container, context = {}) {
+    console.log('[Renderer] renderEnvelope called for:', envelope?.renderer);
+
     if (!envelope || !envelope.renderer || !container) {
+        console.log('[Renderer] Missing envelope, renderer name, or container');
         return false;
     }
 
+    console.log('[Renderer] Loading renderer:', envelope.renderer);
     const renderer = await loadRenderer(envelope.renderer);
     if (!renderer) {
+        console.log('[Renderer] Failed to load renderer');
         // Renderer not found - show fallback
         container.innerHTML = `<div class="renderer-error">Renderer '${escapeHtml(envelope.renderer)}' not available</div>`;
         return false;
@@ -121,11 +150,13 @@ async function renderEnvelope(envelope, container, context = {}) {
             ...context,
         };
 
+        console.log('[Renderer] Calling render() with data:', envelope.data);
         // Call the renderer's render function
         await renderer.render(container, envelope.data, ctx);
+        console.log('[Renderer] Render complete');
         return true;
     } catch (error) {
-        console.error(`Error rendering with '${envelope.renderer}':`, error);
+        console.error(`[Renderer] Error rendering with '${envelope.renderer}':`, error);
         container.innerHTML = `<div class="renderer-error">Error rendering content</div>`;
         return false;
     }

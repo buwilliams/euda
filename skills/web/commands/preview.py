@@ -110,29 +110,29 @@ def _extract_og_metadata(html: str, url: str) -> dict:
 
 def preview(
     url: str = typer.Argument(..., help="URL to extract preview metadata from"),
-    render: bool = typer.Option(
-        False, "--render", "-r",
-        help="Output as render envelope for link-preview renderer"
+    text: bool = typer.Option(
+        False, "--text", "-t",
+        help="Output as plain text instead of render envelope"
     ),
     json_output: bool = typer.Option(
         False, "--json", "-j",
-        help="Output as JSON"
+        help="Output as JSON instead of render envelope"
     ),
     timeout: int = typer.Option(
-        15, "--timeout", "-t",
+        15, "--timeout",
         help="Request timeout in seconds"
     ),
 ):
     """Extract Open Graph metadata for link previews.
 
     Fetches a URL and extracts Open Graph, Twitter Card, and standard
-    meta tags to build a link preview. Use --render to output a render
+    meta tags to build a link preview. By default, outputs a render
     envelope for the link-preview renderer.
 
     Examples:
-        web preview https://example.com
-        web preview https://example.com --render
-        web preview https://example.com --json
+        web preview https://example.com          # Render envelope (default)
+        web preview https://example.com --text   # Human-readable text
+        web preview https://example.com --json   # Raw JSON
     """
     # Fetch the page
     try:
@@ -153,16 +153,9 @@ def preview(
     metadata = _extract_og_metadata(html, url)
 
     # Output based on format
-    if render:
-        envelope = {
-            "renderer": "link-preview",
-            "data": metadata,
-            "display": "embed"
-        }
-        typer.echo(json.dumps(envelope))
-    elif json_output:
+    if json_output:
         typer.echo(json.dumps(metadata, indent=2))
-    else:
+    elif text:
         # Human-readable output
         typer.echo(f"URL: {metadata.get('url', url)}")
         if metadata.get("title"):
@@ -175,3 +168,14 @@ def preview(
             typer.echo(f"Site: {metadata['site_name']}")
         if metadata.get("type"):
             typer.echo(f"Type: {metadata['type']}")
+    else:
+        # Default: render envelope wrapped in code block
+        envelope = {
+            "renderer": "link-preview",
+            "data": metadata,
+            "display": "embed"
+        }
+        # Wrap in code block so LLM preserves it and frontend can extract it
+        typer.echo("```render")
+        typer.echo(json.dumps(envelope))
+        typer.echo("```")
