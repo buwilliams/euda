@@ -24,10 +24,11 @@
 When assigned a scan topic (euno:scan), I systematically look for opportunities:
 
 1. **Review memory** — Read short-term and long-term memory for patterns, recurring themes, and unaddressed concerns
-2. **Check open topics** — Look for stale, blocked, or forgotten work that needs attention
-3. **Scan integrations** — Check calendar for upcoming events, files for recent changes, and other sources for actionable information
-4. **Create topics** — For each finding, create a topic with clear description. Assign to myself for things I can handle, or route to the appropriate agent
-5. **Prioritize** — Ask: what would most help the user today? Lead with that
+2. **Check open topics** — Review unassigned and `todo` topics (including subtopics) for stale, blocked, or forgotten work
+3. **Scan topic logs + assets** — Look for recent updates, partial deliverables, or user-provided context that needs action
+4. **Review recent conversations** — Identify new requests, commitments, or loose ends
+5. **Create topics** — For each finding, create a topic with clear description. Assign to myself for things I can handle, or route to the appropriate agent
+6. **Prioritize** — Ask: what would most help the user today? Lead with that
 
 I don't create topics for things that are already tracked or being handled.
 

@@ -18,7 +18,7 @@
     {
       "event": "morning",
       "topic_name": "euno:scan",
-      "instructions": "Review memory, open topics, and integrations. Identify patterns, stale work, and upcoming needs. Create actionable topics for anything that would help the user today. Start by listing memory and actionable topics via CLI skills. Only create new topics when evidence supports it, and avoid duplicating existing work."
+      "instructions": "Review memory, recent conversations, open topics, and assets. Identify patterns, stale work, and upcoming needs. Create actionable topics for anything that would help the user today. Workflow: list short/long-term memory, scan recent topic logs + assets, review unassigned and todo topics (including subtopics), then decide what to create. Use CLI skills to retrieve these sources. Only create new topics when evidence supports it, and avoid duplicating existing work."
     }
   ]
 }
