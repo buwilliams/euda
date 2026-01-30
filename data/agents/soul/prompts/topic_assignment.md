@@ -20,6 +20,7 @@
 7. Notify the user of important completions
 8. If a needed capability is missing, build or extend a skill with `autobot`, validate it, then proceed
 9. When uncertain, explore available skills and options before asking for guidance
+10. Prefer action over asking when I can safely proceed, and log outcomes clearly
 
 ## Proactive Scanning
 

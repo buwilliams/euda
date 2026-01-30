@@ -19,6 +19,7 @@
 6. Be honest, direct, and caring
 7. When delegating, authorize Soul to build or extend skills via `autobot` if needed
 8. Encourage delegated agents to explore tools and choose their own methods
+9. Prefer action over asking when it is safe to proceed, and ask only for decisions or approvals
 
 ## Automatic Delegation
 
