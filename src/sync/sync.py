@@ -241,9 +241,36 @@ def sync(
 
     # Phase 0: Apply resolved conflicts from previous sync
     if resolved_conflicts and not dry_run:
-        log(f"Applying {len(resolved_conflicts)} resolved conflict(s)...")
-
+        # Deduplicate: keep only the most recently resolved conflict per (item_id, handler)
+        seen: Dict[tuple, Conflict] = {}
+        stale_ids: List[str] = []
         for conflict in resolved_conflicts:
+            handler_name = "files"
+            if conflict.type.value in ("topics", "topic_logs"):
+                handler_name = "topics"
+            elif conflict.type.value in ("memory_short_term", "memory_long_term"):
+                handler_name = "memory"
+            key = (conflict.item_id, handler_name)
+            if key in seen:
+                # Keep the one resolved more recently
+                prev = seen[key]
+                if (conflict.resolved_at or "") > (prev.resolved_at or ""):
+                    stale_ids.append(prev.id)
+                    seen[key] = conflict
+                else:
+                    stale_ids.append(conflict.id)
+            else:
+                seen[key] = conflict
+
+        # Delete stale duplicates
+        for stale_id in stale_ids:
+            delete_conflict(stale_id)
+            log(f"  Deleted stale duplicate conflict: {stale_id}")
+
+        deduped_conflicts = list(seen.values())
+        log(f"Applying {len(deduped_conflicts)} resolved conflict(s) ({len(stale_ids)} stale duplicate(s) removed)...")
+
+        for conflict in deduped_conflicts:
             # Determine change type based on resolution
             if conflict.resolution == Resolution.KEEP_LOCAL:
                 change_type = "push"
@@ -267,6 +294,14 @@ def sync(
                 handler_name = "topics"
             elif conflict.type.value in ("memory_short_term", "memory_long_term"):
                 handler_name = "memory"
+
+            # Skip push conflicts where the local file no longer exists
+            if change_type == "push" and handler_name == "files":
+                local_path = DATA_DIR / conflict.item_id
+                if not local_path.exists():
+                    log(f"  Skipping {conflict.item_id}: local file no longer exists")
+                    delete_conflict(conflict.id)
+                    continue
 
             # Create a change to apply the resolution
             resolution_change = SyncChange(
@@ -404,6 +439,7 @@ def sync(
     # Phase 4: Delete files that don't exist on source (if --delete flag)
     if delete and not dry_run:
         log("Checking for deletions...")
+        deletion_count = 0
         for handler in handlers:
             if hasattr(handler, 'apply_deletions'):
                 try:
@@ -416,8 +452,10 @@ def sync(
                             description=f"Deleted: {item_id}",
                             applied=True,
                         ))
+                        deletion_count += 1
                 except Exception as e:
                     log(f"  Error during deletion in {handler.name}: {e}")
+        log(f"Deletions: {deletion_count} file(s) deleted")
 
     # Record sync
     completed_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
