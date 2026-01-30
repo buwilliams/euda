@@ -23,9 +23,9 @@ Note: Workflow details belong in prompts, not identity. Identity captures who th
 
 Pay special attention to memory items of type `learning` and `behavior`:
 
-- **learning**: These represent mistakes, corrections, or task failures. Each learning item should translate into a concrete behavioral rule to prevent the same mistake. For example: "asked too many clarifying questions instead of creating topic" → add rule "Create topics immediately for 'remind me' requests; clarify only if truly ambiguous"
+- **learning**: These represent mistakes, corrections, or task failures. Each learning item should translate into a concrete behavioral rule to prevent the same mistake. For example: "asked too many clarifying questions instead of creating topic" -> add rule "Create topics immediately for 'remind me' requests; clarify only if truly ambiguous"
 
-- **behavior**: These represent user preferences about how the agent should act. Each should become a standing rule in the identity. For example: "user prefers concise responses" → add to Voice section
+- **behavior**: These represent user preferences about how the agent should act. Each should become a standing rule in the identity. For example: "user prefers concise responses" -> add to Voice section
 
 Always graduate learning and behavior items to long-term memory so patterns are preserved.
 

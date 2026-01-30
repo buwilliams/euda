@@ -216,7 +216,7 @@ def write_long_term_memory(content: str, date: str = None, agent_id: str = "user
         content: The content to add
         date: Specific date (YYYY-MM-DD) or None for today
         agent_id: Agent ID (defaults to "user")
-        source: Who/what is writing the entry (e.g., "User", "Worker", "Friend")
+        source: Who/what is writing the entry (e.g., "User", "Soul", "Friend")
     """
     _ensure_memory_dirs(agent_id)
 

@@ -57,7 +57,7 @@ Change how agents handle specific situations.
 
 **When to use:** Specific workflow needs different handling or detailed instructions.
 
-**Example:** Create `data/agents/worker/prompts/research.md` for research task handling.
+**Example:** Create `data/agents/soul/prompts/research.md` for research task handling.
 
 #### New Agents
 **Location:** `data/agents/{new-agent}/`

@@ -312,6 +312,7 @@ class Agent:
 
         prompt = render_template(
             "agent/system",
+            agent_id=self.id,
             identity=self.identity,
             user_identity=user_identity,
             tools_by_type=skills_text  # Reuse the template variable
@@ -700,6 +701,7 @@ class Agent:
         recent_tools = summary.get("recent_tools_used", [])
         prompt = render_template(
             "agent/progress_check",
+            agent_id=self.id,
             iteration_count=summary.get("iteration_count", 0),
             total_tool_calls=summary.get("total_tool_calls", 0),
             recent_tools_used=", ".join(recent_tools) if recent_tools else "none",
@@ -883,7 +885,7 @@ class Agent:
                     if progress_ctx.get("stuck_warning"):
                         stuck_warning = f"**Warning:** {progress_ctx['stuck_warning']}"
 
-                    prompt = load_template("agent/continue_with_context").format(
+                    prompt = load_template("agent/continue_with_context", agent_id=self.id).format(
                         iteration=progress_ctx.get("iteration", iteration),
                         tool_calls_this_cycle=progress_ctx.get("tool_calls_this_cycle", 0),
                         stuck_warning=stuck_warning

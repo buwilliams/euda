@@ -168,7 +168,7 @@ These topics:
 ## Agent Creation & Management
 
 - Users create agents through the Chat agent (via chat)
-- Core agents are protected: chat, worker, user
+- Core agents are protected: chat, soul, user
 - All agents have access to all plugins by default (use `excluded_plugins[]` to restrict)
 - Changes to triggers require a restart to take effect
 - Agent files: `config.json` (settings) and `identity.md` (identity/instructions)

@@ -1,7 +1,7 @@
 {
-  "id": "worker",
-  "name": "Worker",
-  "state": "disabled",
+  "id": "soul",
+  "name": "Soul",
+  "state": "enabled",
   "order": 10,
   "token_budget": {
     "frequency": "daily",
@@ -16,6 +16,13 @@
       "tool": "euno_consolidate",
       "topic_name": "euno:consolidate",
       "topic_description": "Review memories, evolve identity, graduate learnings"
+    },
+    {
+      "event": "morning",
+      "action": "tool",
+      "tool": "euno_scan",
+      "topic_name": "euno:scan",
+      "topic_description": "Review memory, open topics, and integrations. Identify patterns, stale work, and upcoming needs. Create actionable topics for anything that would help the user today."
     }
   ]
 }

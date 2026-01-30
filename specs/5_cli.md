@@ -106,7 +106,7 @@ Conflict resolution:
   - Consolidation logs
   - System trigger state
   - Password (if set)
-  - Non-core agents (anything except chat, user, worker)
+  - Non-core agents (anything except chat, user, soul)
   - User uploads
 - Resets: Core agent identities from `identity.template.md` templates
 - Keeps: Agent configurations, system configuration

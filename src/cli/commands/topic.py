@@ -183,7 +183,7 @@ def _run_topic(agent_id: str, topic: dict, no_reflect: bool, max_iterations: int
                 break
 
             # Continue prompt for subsequent iterations
-            prompt = load_template("agent/continue")
+            prompt = load_template("agent/continue", agent_id=agent.id)
 
         # Final status
         reason = "done_working" if agent._work_done else "max_iterations"

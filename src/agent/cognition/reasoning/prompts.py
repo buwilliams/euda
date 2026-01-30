@@ -1,8 +1,10 @@
 """
 Prompt Templates - Load and render prompt templates.
 
-Templates are stored in data/system/prompts/ as markdown files.
-Agent-specific overrides can be placed in data/agents/{agent_id}/prompts/
+Templates are stored in agent-level directories: data/agents/{agent_id}/prompts/
+When agent_id is provided, the agent's prompts directory is checked first.
+Falls back to data/system/prompts/ for legacy compatibility (but system prompts
+have been removed — all prompts are now agent-owned).
 Variables use Python format string syntax: {variable_name}
 """
 

@@ -12,7 +12,7 @@ from typing import List, Optional
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 BACKUP_PREFIX = "data_backup-"
-CORE_AGENTS = {"user", "worker"}
+CORE_AGENTS = {"user", "soul"}
 
 
 def create_backup() -> str:
