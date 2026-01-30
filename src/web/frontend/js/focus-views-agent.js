@@ -79,6 +79,32 @@ function renderAgentDetailView(topic) {
         .filter(j => triggerTopicNames.includes(j.name) && (j.status === 'todo' || j.status === 'working'))
         .map(j => j.name);
 
+    const renderTriggerList = () => {
+        if (triggers.length === 0) {
+            return '<div class="config-value"><em class="text-muted">None configured</em></div>';
+        }
+        return `
+            <div class="child-topics-list">
+                ${triggers.map((trigger, index) => {
+                    const topicName = trigger?.topic_name || '';
+                    const eventName = trigger?.event || '';
+                    const displayName = topicName
+                        ? (topicName.includes(':') ? topicName.split(':').pop().replace(/^\w/, c => c.toUpperCase()) : topicName)
+                        : (eventName || 'Trigger');
+                    const subtitle = eventName ? `Event: ${eventName}` : '';
+                    return `
+                        <div class="child-topic-card" onclick="navigateFocus('trigger-${agentId}-${index}')">
+                            <span class="child-topic-icon">${icon('bolt')}</span>
+                            <span class="child-topic-name">${escapeHtml(displayName)}</span>
+                            ${subtitle ? `<span class="child-topic-count">${escapeHtml(subtitle)}</span>` : '<span class="child-topic-count"></span>'}
+                            <span class="child-topic-arrow">${icon('chevron-right')}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    };
+
     // Render trigger button with picker
     const renderTriggerButton = () => {
         if (triggers.length === 0) return '';
@@ -341,11 +367,14 @@ function renderAgentDetailView(topic) {
                 </div>
             </div>
 
-            <!-- Configuration Section -->
+            <!-- Triggers Section -->
             <div class="topic-section">
-                <div class="topic-section-header collapsible clickable" onclick="navigateFocus('config-${agentId}')">
-                    <span>Configuration</span>
+                <div class="topic-section-header collapsible" onclick="togglePersonaSection(this, event)">
+                    <span>Triggers</span>
                     <span class="section-toggle">${icon('chevron-right')}</span>
+                </div>
+                <div class="collapsible-content">
+                    ${renderTriggerList()}
                 </div>
             </div>
 
@@ -696,12 +725,13 @@ function renderLongTermMemoryDetailView(agentId, date) {
 
     const lineCount = entry?.line_count || null;
     const totalLines = entry?.total_lines || null;
-    const hasMore = entry?.has_more;
+    const hasMoreAbove = entry?.has_more_above;
+    const hasMoreBelow = entry?.has_more_below;
     const paginationInfo = (lineCount !== null && totalLines !== null)
         ? `<div class="memory-pagination-info">Showing ${lineCount} / ${totalLines} lines</div>`
         : '';
-    const loadMoreBtn = hasMore
-        ? `<button class="memory-page-btn" onclick="loadLongTermMemoryMore('${agentId}', '${date}')">Load more</button>`
+    const loadMoreHint = (hasMoreAbove || hasMoreBelow)
+        ? `<div class="memory-scroll-hint">Scroll to load more</div>`
         : '';
 
     return `
@@ -717,7 +747,7 @@ function renderLongTermMemoryDetailView(agentId, date) {
                 ${marked.parse(entry.content || '')}
             </div>
             ${paginationInfo}
-            ${loadMoreBtn}
+            ${loadMoreHint}
         </div>
     `;
 }
@@ -1128,83 +1158,6 @@ function renderIdentityView(agentId) {
                     ${hasIdentity ? marked.parse(identity) : '<em class="text-muted">No identity defined. Click Edit to define the agent\'s identity and behavioral rules.</em>'}
                 </div>
             `}
-        </div>
-    `;
-}
-
-// ============== Configuration View ==============
-
-function renderConfigurationView(agentId) {
-    const agentData = agentDataCache[agentId];
-
-    if (!agentData) {
-        loadAgentData(agentId).then(() => renderFocusTab());
-        return `
-            <div class="focus-view-header" onclick="navigateFocusBack()">
-                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
-                <div class="focus-view-header-content">
-                    <span class="focus-view-title">Configuration</span>
-                    ${renderBreadcrumbs()}
-                </div>
-            </div>
-            <div class="focus-view-content">
-                <div class="focus-empty">Loading...</div>
-            </div>
-        `;
-    }
-
-    const config = agentData.config || {};
-    const triggers = config.triggers || [];
-    const triggerItems = triggers.map((trigger, index) => {
-        const topicName = trigger?.topic_name || '';
-        const eventName = trigger?.event || '';
-        const displayName = topicName
-            ? (topicName.includes(':') ? topicName.split(':').pop().replace(/^\w/, c => c.toUpperCase()) : topicName)
-            : (eventName || 'Trigger');
-        const subtitle = eventName ? `Event: ${eventName}` : '';
-        return `
-            <div class="child-topic-card" onclick="navigateFocus('trigger-${agentId}-${index}')">
-                <span class="child-topic-icon">${icon('bolt')}</span>
-                <span class="child-topic-name">${escapeHtml(displayName)}</span>
-                ${subtitle ? `<span class="child-topic-count">${escapeHtml(subtitle)}</span>` : '<span class="child-topic-count"></span>'}
-                <span class="child-topic-arrow">${icon('chevron-right')}</span>
-            </div>
-        `;
-    }).join('');
-
-    // Find the topic for this agent (for editing state)
-    const agentTopic = topicsData.find(j => j.agent_id === agentId);
-    const topicId = agentTopic?.id || agentId;
-
-    return `
-        <div class="focus-view-header" onclick="navigateFocusBack()">
-            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
-            <div class="focus-view-header-content">
-                <span class="focus-view-title">Configuration</span>
-                ${renderBreadcrumbs()}
-            </div>
-        </div>
-        <div class="focus-view-content">
-            <div class="config-hint">Ask Chat to update configuration.</div>
-
-            <div class="topic-section">
-                <div class="topic-section-header">Triggers</div>
-                ${triggers.length > 0 ? `
-                    <div class="child-topics-list">
-                        ${triggerItems}
-                    </div>
-                ` : '<div class="config-value"><em class="text-muted">None configured</em></div>'}
-            </div>
-
-            <div class="topic-section">
-                <div class="topic-section-header">Consolidation</div>
-                <div class="config-value">
-                    <span class="config-status ${config.consolidation?.enabled !== false ? 'enabled' : 'disabled'}">
-                        ${config.consolidation?.enabled !== false ? 'Enabled' : 'Disabled'}
-                    </span>
-                    <span class="config-trigger">${escapeHtml(config.consolidation?.trigger || 'time:evening')}</span>
-                </div>
-            </div>
         </div>
     `;
 }

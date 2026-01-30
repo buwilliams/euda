@@ -65,11 +65,14 @@ function renderLongTermMemoryContent(dates, currentDate, content, agentId) {
     const memoryContent = content?.content || content?.entries?.join('\n\n') || 'No content for this date.';
     const lineCount = content?.line_count ?? null;
     const totalLines = content?.total_lines ?? null;
-    const hasMore = content?.has_more;
+    const hasMoreAbove = content?.has_more_above;
+    const hasMoreBelow = content?.has_more_below;
     const paginationInfo = (lineCount !== null && totalLines !== null)
         ? `<div class="memory-pagination-info">Showing ${lineCount} / ${totalLines} lines</div>`
         : '';
-    const loadMoreHint = hasMore ? '<div class="memory-scroll-hint">Scroll to load more</div>' : '';
+    const loadMoreHint = (hasMoreAbove || hasMoreBelow)
+        ? '<div class="memory-scroll-hint">Scroll to load more</div>'
+        : '';
 
     return `
         <div class="long-term-memory">

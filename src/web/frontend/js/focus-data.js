@@ -23,6 +23,10 @@ async function loadAgentPauseStatus(agentId) {
         });
         if (response.ok) {
             const data = await response.json();
+            if (typeof data.offset === 'number' && typeof data.line_count === 'number' && typeof data.total_lines === 'number') {
+                data.has_more_above = data.offset > 0;
+                data.has_more_below = (data.offset + data.line_count) < data.total_lines;
+            }
             const pauseInfo = data.pause_info || {};
             agentPauseStatus[agentId] = {
                 state: data.state || 'enabled',
@@ -738,8 +742,9 @@ async function loadLongTermMemoryDates(agentId) {
 }
 
 const LONG_TERM_MEMORY_PAGE_LINES = 200;
+const LONG_TERM_MEMORY_MAX_LINES = 400;
 
-async function loadLongTermMemoryContent(agentId, date, offset = 0, limit = null, append = false) {
+async function loadLongTermMemoryContent(agentId, date, offset = 0, limit = null, append = false, prepend = false) {
     try {
         const params = new URLSearchParams({ date });
         if (offset) params.set('offset', String(offset));
@@ -750,19 +755,40 @@ async function loadLongTermMemoryContent(agentId, date, offset = 0, limit = null
         });
         if (response.ok) {
             const data = await response.json();
-            if (append && typeof longTermMemoryDetailCache !== 'undefined') {
+            if ((append || prepend) && typeof longTermMemoryDetailCache !== 'undefined') {
                 const cacheKey = `${agentId}-${date}`;
                 const existing = longTermMemoryDetailCache[cacheKey];
                 if (existing && existing.content) {
-                    const nextContent = data.content || '';
-                    data.content = existing.content + (nextContent ? `\n${nextContent}` : '');
-                    const existingCount = existing.line_count || 0;
-                    const newCount = data.line_count || 0;
-                    data.offset = 0;
-                    data.line_count = existingCount + newCount;
-                    if (typeof data.total_lines === 'number') {
-                        data.has_more = data.line_count < data.total_lines;
+                    const existingLines = existing.content.split('\n');
+                    const newLines = (data.content || '').split('\n');
+                    let mergedLines;
+                    let mergedOffset = existing.offset ?? 0;
+
+                    if (append) {
+                        mergedLines = existingLines.concat(newLines);
+                    } else if (prepend) {
+                        mergedLines = newLines.concat(existingLines);
+                        mergedOffset = data.offset ?? mergedOffset;
                     }
+
+                    if (mergedLines.length > LONG_TERM_MEMORY_MAX_LINES) {
+                        if (append) {
+                            const trimCount = mergedLines.length - LONG_TERM_MEMORY_MAX_LINES;
+                            mergedLines = mergedLines.slice(trimCount);
+                            mergedOffset = (existing.offset ?? 0) + trimCount;
+                        } else if (prepend) {
+                            mergedLines = mergedLines.slice(0, LONG_TERM_MEMORY_MAX_LINES);
+                        }
+                    }
+
+                    data.content = mergedLines.join('\n');
+                    data.offset = mergedOffset;
+                    data.line_count = mergedLines.length;
+                    if (typeof data.total_lines === 'number') {
+                        data.has_more_above = mergedOffset > 0;
+                        data.has_more_below = (mergedOffset + mergedLines.length) < data.total_lines;
+                    }
+                    data.limit = limit;
                 }
             }
             // Cache the content
@@ -943,6 +969,9 @@ async function loadLongTermMemoryDate(agentId, date) {
         if (header && header.textContent.includes('Long-term Memory')) {
             const contentDiv = header.nextElementSibling;
             if (contentDiv && contentDiv.classList.contains('collapsible-content')) {
+                if (contentDiv.dataset.bound) {
+                    delete contentDiv.dataset.bound;
+                }
                 contentDiv.innerHTML = renderLongTermMemoryContent(dates, date, content, agentId);
                 initLongTermMemoryScroll(agentId, date);
             }
@@ -956,9 +985,23 @@ async function loadLongTermMemoryMore(agentId, date) {
     const entry = typeof longTermMemoryDetailCache !== 'undefined' ? longTermMemoryDetailCache[cacheKey] : null;
     const loadedLines = entry?.line_count || 0;
     const limit = entry?.limit ?? LONG_TERM_MEMORY_PAGE_LINES;
-    if (entry && entry.has_more === false) return;
+    if (entry && entry.has_more_below === false) return;
 
-    const data = await loadLongTermMemoryContent(agentId, date, loadedLines, limit, true);
+    const offset = (entry?.offset ?? 0) + loadedLines;
+    const data = await loadLongTermMemoryContent(agentId, date, offset, limit, true, false);
+    if (data && typeof longTermMemoryDetailCache !== 'undefined') {
+        longTermMemoryDetailCache[cacheKey] = data;
+        renderFocusTab();
+    }
+}
+
+async function loadLongTermMemoryPrev(agentId, date) {
+    const cacheKey = `${agentId}-${date}`;
+    const entry = typeof longTermMemoryDetailCache !== 'undefined' ? longTermMemoryDetailCache[cacheKey] : null;
+    const limit = entry?.limit ?? LONG_TERM_MEMORY_PAGE_LINES;
+    if (entry && entry.has_more_above === false) return;
+    const newOffset = Math.max(0, (entry?.offset ?? 0) - limit);
+    const data = await loadLongTermMemoryContent(agentId, date, newOffset, limit, false, true);
     if (data && typeof longTermMemoryDetailCache !== 'undefined') {
         longTermMemoryDetailCache[cacheKey] = data;
         renderFocusTab();
@@ -968,22 +1011,35 @@ async function loadLongTermMemoryMore(agentId, date) {
 function initLongTermMemoryScroll(agentId, date) {
     const container = document.querySelector('.long-term-content-scroll');
     if (!container) return;
-    if (container.dataset.bound === 'true') return;
+    if (container.dataset.bound === 'true' && container.dataset.agentId === agentId && container.dataset.memoryDate === date) return;
     container.dataset.bound = 'true';
+    container.dataset.agentId = agentId;
+    container.dataset.memoryDate = date;
 
     container.addEventListener('scroll', async () => {
         if (container.dataset.loading === 'true') return;
         const entry = typeof longTermMemoryDetailCache !== 'undefined'
             ? longTermMemoryDetailCache[`${agentId}-${date}`]
             : null;
-        if (!entry || !entry.has_more) return;
+        if (!entry) return;
 
         const nearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 80;
-        if (!nearBottom) return;
+        if (nearBottom && entry.has_more_below) {
+            container.dataset.loading = 'true';
+            await loadLongTermMemoryMore(agentId, date);
+            container.dataset.loading = 'false';
+            return;
+        }
 
-        container.dataset.loading = 'true';
-        await loadLongTermMemoryMore(agentId, date);
-        container.dataset.loading = 'false';
+        const nearTop = container.scrollTop <= 80;
+        if (nearTop && entry.has_more_above) {
+            const previousHeight = container.scrollHeight;
+            container.dataset.loading = 'true';
+            await loadLongTermMemoryPrev(agentId, date);
+            container.dataset.loading = 'false';
+            const newHeight = container.scrollHeight;
+            container.scrollTop = (newHeight - previousHeight) + container.scrollTop;
+        }
     });
 }
 

@@ -230,9 +230,6 @@ function renderFocusTab() {
         const agentId = rest.substring(0, dashIndex);
         const triggerIndex = rest.substring(dashIndex + 1);
         content = renderTriggerDetailView(agentId, triggerIndex);
-    } else if (focusView.startsWith('config-')) {
-        const agentId = focusView.substring(7);
-        content = renderConfigurationView(agentId);
     } else if (focusView.startsWith('rate-limits-')) {
         const agentId = focusView.substring(12);
         content = renderRateLimitEventsView(agentId);

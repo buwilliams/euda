@@ -591,6 +591,11 @@
     line-height: var(--line-height-base);
 }
 
+.long-term-content-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
 /* ============== Reflection Section ============== */
 
 .reflection-section {
@@ -1313,6 +1318,18 @@
     color: var(--color-text-primary);
 }
 
+.memory-pagination-info {
+    margin-top: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-tertiary);
+}
+
+.memory-scroll-hint {
+    margin-top: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-tertiary);
+}
+
 .long-term-memory-content h1,
 .long-term-memory-content h2,
 .long-term-memory-content h3 {
@@ -1370,6 +1387,17 @@
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
     line-height: var(--line-height-base);
+}
+
+.config-json {
+    white-space: pre-wrap;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.config-hint {
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-sm);
 }
 
 .config-value .text-muted {
@@ -1566,4 +1594,3 @@
     overflow-x: auto;
     background: transparent;
 }
-
