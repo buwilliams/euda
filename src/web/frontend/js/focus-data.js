@@ -770,6 +770,10 @@ async function loadLongTermMemoryContent(agentId, date, offset = 0, limit = null
                 longTermMemoryCache[agentId] = {};
             }
             longTermMemoryCache[agentId][date] = data;
+            if (typeof longTermMemoryDetailCache !== 'undefined') {
+                const cacheKey = `${agentId}-${date}`;
+                longTermMemoryDetailCache[cacheKey] = data;
+            }
             return data;
         }
     } catch (error) {
@@ -929,7 +933,7 @@ function pageMemory(agentId, direction) {
 }
 
 async function loadLongTermMemoryDate(agentId, date) {
-    const content = await loadLongTermMemoryContent(agentId, date);
+    const content = await loadLongTermMemoryContent(agentId, date, 0, LONG_TERM_MEMORY_PAGE_LINES);
     const dates = longTermMemoryCache[agentId]?.dates || [];
 
     // Find and update the long-term memory section
@@ -940,6 +944,7 @@ async function loadLongTermMemoryDate(agentId, date) {
             const contentDiv = header.nextElementSibling;
             if (contentDiv && contentDiv.classList.contains('collapsible-content')) {
                 contentDiv.innerHTML = renderLongTermMemoryContent(dates, date, content, agentId);
+                initLongTermMemoryScroll(agentId, date);
             }
             break;
         }
@@ -958,6 +963,28 @@ async function loadLongTermMemoryMore(agentId, date) {
         longTermMemoryDetailCache[cacheKey] = data;
         renderFocusTab();
     }
+}
+
+function initLongTermMemoryScroll(agentId, date) {
+    const container = document.querySelector('.long-term-content-scroll');
+    if (!container) return;
+    if (container.dataset.bound === 'true') return;
+    container.dataset.bound = 'true';
+
+    container.addEventListener('scroll', async () => {
+        if (container.dataset.loading === 'true') return;
+        const entry = typeof longTermMemoryDetailCache !== 'undefined'
+            ? longTermMemoryDetailCache[`${agentId}-${date}`]
+            : null;
+        if (!entry || !entry.has_more) return;
+
+        const nearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 80;
+        if (!nearBottom) return;
+
+        container.dataset.loading = 'true';
+        await loadLongTermMemoryMore(agentId, date);
+        container.dataset.loading = 'false';
+    });
 }
 
 // ============== Trigger Actions ==============

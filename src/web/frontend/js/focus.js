@@ -223,6 +223,13 @@ function renderFocusTab() {
     } else if (focusView.startsWith('identity-')) {
         const agentId = focusView.substring(9);
         content = renderIdentityView(agentId);
+    } else if (focusView.startsWith('trigger-')) {
+        // trigger-{agentId}-{index}
+        const rest = focusView.substring(8);
+        const dashIndex = rest.indexOf('-');
+        const agentId = rest.substring(0, dashIndex);
+        const triggerIndex = rest.substring(dashIndex + 1);
+        content = renderTriggerDetailView(agentId, triggerIndex);
     } else if (focusView.startsWith('config-')) {
         const agentId = focusView.substring(7);
         content = renderConfigurationView(agentId);
@@ -236,6 +243,14 @@ function renderFocusTab() {
         focusSlideDirection = null;
     } else {
         container.innerHTML = `<div class="view-slide-container current">${content}</div>`;
+    }
+
+    if (focusView && focusView.startsWith('long-term-memory-detail-') && typeof initLongTermMemoryScroll === 'function') {
+        const rest = focusView.substring(24);
+        const dashIndex = rest.indexOf('-');
+        const agentId = rest.substring(0, dashIndex);
+        const date = rest.substring(dashIndex + 1);
+        setTimeout(() => initLongTermMemoryScroll(agentId, date), 0);
     }
 
     if (focusView === 'menu' && typeof maybeRenderDailyQuote === 'function') {

@@ -713,7 +713,7 @@ function renderLongTermMemoryDetailView(agentId, date) {
             </div>
         </div>
         <div class="focus-view-content">
-            <div class="long-term-memory-content">
+            <div class="long-term-memory-content long-term-content-scroll" data-agent-id="${agentId}" data-memory-date="${date}">
                 ${marked.parse(entry.content || '')}
             </div>
             ${paginationInfo}
@@ -1155,14 +1155,26 @@ function renderConfigurationView(agentId) {
 
     const config = agentData.config || {};
     const triggers = config.triggers || [];
-    const tools = config.tools || [];
-    const triggersDisplay = triggers.length > 0 ? escapeHtml(JSON.stringify(triggers, null, 2)) : '<em class="text-muted">None configured</em>';
+    const triggerItems = triggers.map((trigger, index) => {
+        const topicName = trigger?.topic_name || '';
+        const eventName = trigger?.event || '';
+        const displayName = topicName
+            ? (topicName.includes(':') ? topicName.split(':').pop().replace(/^\w/, c => c.toUpperCase()) : topicName)
+            : (eventName || 'Trigger');
+        const subtitle = eventName ? `Event: ${eventName}` : '';
+        return `
+            <div class="child-topic-card" onclick="navigateFocus('trigger-${agentId}-${index}')">
+                <span class="child-topic-icon">${icon('bolt')}</span>
+                <span class="child-topic-name">${escapeHtml(displayName)}</span>
+                ${subtitle ? `<span class="child-topic-count">${escapeHtml(subtitle)}</span>` : '<span class="child-topic-count"></span>'}
+                <span class="child-topic-arrow">${icon('chevron-right')}</span>
+            </div>
+        `;
+    }).join('');
 
     // Find the topic for this agent (for editing state)
     const agentTopic = topicsData.find(j => j.agent_id === agentId);
     const topicId = agentTopic?.id || agentId;
-
-    const isEditingConfig = editingTopicField?.topicId === topicId && editingTopicField?.field === 'config';
 
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
@@ -1173,69 +1185,94 @@ function renderConfigurationView(agentId) {
             </div>
         </div>
         <div class="focus-view-content">
-            ${isEditingConfig ? `
-                <!-- Edit Mode -->
-                <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="saveAgentConfigField('${agentId}', '${topicId}')">
-                        ${icon('check')} Save
-                    </button>
-                    <button class="task-detail-action" onclick="cancelEditing()">
-                        ${icon('x-mark')} Cancel
-                    </button>
-                </div>
+            <div class="config-hint">Ask Chat to update configuration.</div>
 
-                <div class="agent-config-edit">
-                    <label class="agent-config-label">
-                        <span>Triggers (comma-separated)</span>
-                        <input type="text" class="agent-config-input" id="edit-triggers-${topicId}"
-                            value="${escapeHtml(triggers.join(', '))}"
-                            placeholder="Object triggers (edit config.json directly)">
-                    </label>
-                    <label class="agent-config-label">
-                        <span>Tools (comma-separated)</span>
-                        <input type="text" class="agent-config-input" id="edit-tools-${topicId}"
-                            value="${escapeHtml(tools.join(', '))}"
-                            placeholder="e.g., list_topics, create_topic">
-                    </label>
-                    <div class="agent-config-group">
-                        <div class="agent-config-group-title">Consolidation</div>
-                        <label class="agent-config-checkbox">
-                            <input type="checkbox" id="edit-consolidation-enabled-${topicId}"
-                                ${config.consolidation?.enabled !== false ? 'checked' : ''}>
-                            <span>Enabled</span>
-                        </label>
-                        <label class="agent-config-label">
-                            <span>Trigger</span>
-                            <input type="text" class="agent-config-input" id="edit-consolidation-trigger-${topicId}"
-                                value="${escapeHtml(config.consolidation?.trigger || 'time:evening')}"
-                                placeholder="e.g., time:evening">
-                        </label>
+            <div class="topic-section">
+                <div class="topic-section-header">Triggers</div>
+                ${triggers.length > 0 ? `
+                    <div class="child-topics-list">
+                        ${triggerItems}
                     </div>
-                </div>
-            ` : `
-                <!-- View Mode -->
-                <div class="config-hint">Ask Chat to update configuration.</div>
+                ` : '<div class="config-value"><em class="text-muted">None configured</em></div>'}
+            </div>
 
-                <div class="topic-section">
-                    <div class="topic-section-header">Triggers</div>
-                    <pre class="config-value config-json">${triggersDisplay}</pre>
+            <div class="topic-section">
+                <div class="topic-section-header">Consolidation</div>
+                <div class="config-value">
+                    <span class="config-status ${config.consolidation?.enabled !== false ? 'enabled' : 'disabled'}">
+                        ${config.consolidation?.enabled !== false ? 'Enabled' : 'Disabled'}
+                    </span>
+                    <span class="config-trigger">${escapeHtml(config.consolidation?.trigger || 'time:evening')}</span>
                 </div>
+            </div>
+        </div>
+    `;
+}
 
-                <div class="topic-section">
-                    <div class="topic-section-header">Tools</div>
-                    <div class="config-value">${tools.length > 0 ? escapeHtml(tools.join(', ')) : '<em class="text-muted">None configured</em>'}</div>
+function renderTriggerDetailView(agentId, triggerIndex) {
+    const agentData = agentDataCache[agentId];
+    if (!agentData) {
+        loadAgentData(agentId).then(() => renderFocusTab());
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Trigger</span>
+                    ${renderBreadcrumbs()}
                 </div>
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Loading...</div>
+            </div>
+        `;
+    }
 
-                <div class="topic-section">
-                    <div class="topic-section-header">Consolidation</div>
-                    <div class="config-value">
-                        <span class="config-status ${config.consolidation?.enabled !== false ? 'enabled' : 'disabled'}">
-                            ${config.consolidation?.enabled !== false ? 'Enabled' : 'Disabled'}
-                        </span>
-                        <span class="config-trigger">${escapeHtml(config.consolidation?.trigger || 'time:evening')}</span>
-                    </div>
+    const triggers = agentData.config?.triggers || [];
+    const trigger = triggers[parseInt(triggerIndex)];
+    if (!trigger) {
+        return `
+            <div class="focus-view-header" onclick="navigateFocusBack()">
+                <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
+                <div class="focus-view-header-content">
+                    <span class="focus-view-title">Trigger</span>
+                    ${renderBreadcrumbs()}
                 </div>
-            `}
+            </div>
+            <div class="focus-view-content">
+                <div class="focus-empty">Trigger not found</div>
+            </div>
+        `;
+    }
+
+    const eventName = trigger.event || '';
+    const topicName = trigger.topic_name || '';
+    const instructions = trigger.instructions || '';
+
+    return `
+        <div class="focus-view-header" onclick="navigateFocusBack()">
+            <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
+            <div class="focus-view-header-content">
+                <span class="focus-view-title">Trigger</span>
+                ${renderBreadcrumbs()}
+            </div>
+        </div>
+        <div class="focus-view-content">
+            <div class="topic-section">
+                <div class="topic-section-header">Event</div>
+                <div class="config-value">${escapeHtml(eventName || '—')}</div>
+            </div>
+
+            <div class="topic-section">
+                <div class="topic-section-header">Topic</div>
+                <div class="config-value">${escapeHtml(topicName || '—')}</div>
+            </div>
+
+            <div class="topic-section">
+                <div class="topic-section-header">Instructions</div>
+                <div class="config-value">
+                    ${instructions ? `<div class="prompt-rendered-content">${marked.parse(instructions)}</div>` : '<em class="text-muted">None</em>'}
+                </div>
+            </div>
         </div>
     `;
 }
