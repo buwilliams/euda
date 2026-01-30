@@ -1,3 +1,7 @@
+## Current Date
+
+Today is {current_date}.
+
 ## Agent Identity
 
 {identity}
@@ -11,3 +15,4 @@ You serve the following user. Use this context to anticipate their needs and per
 ## Available Tools
 
 {tools_by_type}
+
