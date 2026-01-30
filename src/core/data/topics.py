@@ -1105,7 +1105,32 @@ def sync_agent_inbox_topics():
     changes_made = False
 
     # Get existing agent inbox topics (topics with agent_id set)
-    inbox_topics = {j["agent_id"]: j for j in all_topics if j.get("agent_id")}
+    # Group by agent_id to detect duplicates
+    inbox_by_agent: dict = {}
+    for t in all_topics:
+        aid = t.get("agent_id")
+        if aid:
+            inbox_by_agent.setdefault(aid, []).append(t)
+
+    # Remove duplicate inbox topics (keep the oldest by created_at)
+    inbox_topics = {}
+    for aid, topics_list in inbox_by_agent.items():
+        if len(topics_list) > 1:
+            topics_list.sort(key=lambda t: t.get("created_at", ""))
+            inbox_topics[aid] = topics_list[0]
+            for dup in topics_list[1:]:
+                # Reparent children of the duplicate to the kept topic
+                kept_id = topics_list[0]["id"]
+                with _transaction() as conn:
+                    conn.execute(
+                        "UPDATE topics SET parent_id = ?, updated_at = ? WHERE parent_id = ?",
+                        (kept_id, now, dup["id"])
+                    )
+                    conn.execute("DELETE FROM topics WHERE id = ?", (dup["id"],))
+                print(f"Removed duplicate inbox topic {dup['id']} for agent {aid}")
+                changes_made = True
+        else:
+            inbox_topics[aid] = topics_list[0]
 
     # Create inbox topics for agents that don't have one
     for agent in agents:
@@ -1370,6 +1395,12 @@ def import_topics(data: dict, merge: bool = True) -> dict:
     for row in cursor:
         existing[row["id"]] = row["updated_at"]
 
+    # Get existing agent_id values to prevent duplicate agent inbox topics
+    existing_agent_ids = set()
+    cursor = conn.execute("SELECT agent_id FROM topics WHERE agent_id IS NOT NULL AND agent_id != ''")
+    for row in cursor:
+        existing_agent_ids.add(row["agent_id"])
+
     # Import topics (order matters for parent_id relationships)
     # Use topological sort to ensure parents are created before children
     def topological_sort(topics_list):
@@ -1430,7 +1461,13 @@ def import_topics(data: dict, merge: bool = True) -> dict:
             else:
                 skipped += 1
         else:
-            # New topic - insert
+            # New topic - skip if it would create a duplicate agent inbox
+            agent_id_value = topic.get("agent_id")
+            if agent_id_value and agent_id_value in existing_agent_ids:
+                skipped += 1
+                continue
+
+            # Insert new topic
             with _transaction() as conn:
                 conn.execute('''
                     INSERT INTO topics (
@@ -1446,6 +1483,8 @@ def import_topics(data: dict, merge: bool = True) -> dict:
                     topic.get("assignee"), topic.get("agent_id"),
                     topic.get("pending_from"), topic.get("completed_at")
                 ))
+            if agent_id_value:
+                existing_agent_ids.add(agent_id_value)
             created += 1
 
     # Import logs (deduplicate by topic_id + timestamp + agent + action)

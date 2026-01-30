@@ -453,6 +453,7 @@ class Transport:
             ".git/",
             ".venv/",
             "/data/",
+            "/data_backup*/",
             "__pycache__/",
             "*.pyc",
             "*.egg-info/",
