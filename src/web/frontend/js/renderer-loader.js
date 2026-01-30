@@ -45,8 +45,8 @@ async function loadRenderer(name) {
 
     try {
         // Dynamic import of the renderer's component.js
-        // Note: Using a cache-busting query param for development hot-reload
-        const cacheBuster = window.RENDERER_HOT_RELOAD ? `?v=${Date.now()}` : '';
+        // Always use cache-busting during development to ensure fresh content
+        const cacheBuster = `?v=${Date.now()}`;
         const module = await import(`/api/renderers/${name}/component.js${cacheBuster}`);
 
         // Validate the module has required exports

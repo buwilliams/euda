@@ -7,7 +7,7 @@ rich UI components that the frontend can dynamically load.
 
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import FileResponse
 
 from src.renderers import (
@@ -101,7 +101,16 @@ def serve_renderer_file(name: str, file_path: str):
     }
     media_type = media_types.get(suffix, "application/octet-stream")
 
-    return FileResponse(full_path, media_type=media_type)
+    # Add cache-control headers to ensure fresh content during development
+    return FileResponse(
+        full_path,
+        media_type=media_type,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
+    )
 
 
 @router.post("/refresh")
