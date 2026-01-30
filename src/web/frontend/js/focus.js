@@ -203,6 +203,9 @@ function navigateFocus(view) {
     focusView = view;
     focusSlideDirection = 'forward';
 
+    // Sync with browser history for back button support
+    history.pushState({ tab: 'focus', view: view }, '');
+
     // Invalidate assets cache when navigating to assets view to show fresh data
     if (view === 'recent-assets') {
         recentAssetsCache = null;
@@ -253,6 +256,35 @@ function navigateFocusBack() {
 
     renderFocusTab();
 }
+
+// Handle browser back/forward buttons
+window.addEventListener('popstate', (event) => {
+    // Only handle focus tab navigation
+    if (activeTab !== 'focus') return;
+    if (focusViewHistory.length === 0) return;
+
+    focusView = focusViewHistory.pop();
+    focusSlideDirection = 'back';
+
+    // Update topic context for chat input
+    if (focusView.startsWith('topic-')) {
+        if (typeof setTopicContext === 'function') {
+            setTopicContext(focusView.substring(6));
+        }
+    } else if (typeof clearTopicContext === 'function') {
+        clearTopicContext();
+    }
+
+    // Handle moreMenuReturnTab case
+    if (focusView === 'menu' && moreMenuReturnTab) {
+        const returnTab = moreMenuReturnTab;
+        moreMenuReturnTab = null;
+        switchTab(returnTab);
+        return;
+    }
+
+    renderFocusTab();
+});
 
 // ============== Breadcrumbs ==============
 
@@ -379,7 +411,7 @@ function renderViewHeader(title, options = {}) {
     }
 
     return `
-        <div class="focus-view-header" onclick="navigateFocusBack()">
+        <div class="focus-view-header" onclick="history.back()">
             <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
             <div class="focus-view-header-content">
                 <span class="focus-view-title">${titleIconHtml}${title}</span>

@@ -72,6 +72,9 @@ function initApp() {
     // Reset scroll positions to top (mobile browsers try to restore previous scroll)
     resetScrollPositions();
 
+    // Set initial browser history state for back button support
+    history.replaceState({ tab: 'focus', view: 'menu' }, '');
+
     // Initialize with default tab (focus)
     switchTab(activeTab);
 
