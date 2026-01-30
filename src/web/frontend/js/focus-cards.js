@@ -62,10 +62,10 @@ function renderMinimalTopicCard(topic) {
         <div class="card card-minimal${topic.status === 'done' ? ' card-completed' : ''}${topic.status === 'archived' ? ' card-archived' : ''}${topic.status === 'error' ? ' card-error' : ''}" data-topic-id="${topic.id}" data-testid="topic-card" onclick="navigateFocus('topic-${topic.id}')">
             ${statusIndicator}
             <span class="card-title">${escapeHtml(displayName)}</span>
-            ${childBadge}
-            ${dueDateLabel}
             ${assigneeLabel}
+            ${dueDateLabel}
             <button class="card-trash-btn" onclick="quickDeleteTopic(event, '${topic.id}')" title="Delete topic">${icon('trash')}</button>
+            ${childBadge}
             <span class="card-arrow">›</span>
         </div>
     `;
