@@ -23,7 +23,16 @@ app.add_typer(calendar.app, name="calendar", help="CalDAV calendar operations")
 app.add_typer(deck.app, name="deck", help="Deck kanban board operations")
 
 
-@app.command("instances")
+# Instances command group
+instances_app = typer.Typer(
+    name="instances",
+    help="Manage Nextcloud instances.",
+    no_args_is_help=True,
+)
+app.add_typer(instances_app, name="instances", help="Manage Nextcloud instances")
+
+
+@instances_app.command("list")
 def list_instances():
     """List configured Nextcloud instances."""
     from skills.nextcloud.lib.client import list_instances
