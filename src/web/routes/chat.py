@@ -26,6 +26,7 @@ class ChatRequest(BaseModel):
     agent_id: str = "user"
     conversation_id: Optional[str] = None
     voice_input: bool = False
+    topic_id: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
@@ -48,6 +49,12 @@ def get_agent_instance(agent_id: str) -> Agent:
 def api_chat(request: ChatRequest) -> ChatResponse:
     """Send a message and get a response."""
     agent = get_agent_instance(request.agent_id)
+
+    # Topic-aware chat session (optional)
+    if request.topic_id:
+        agent.set_topic_context(request.topic_id)
+        if not request.conversation_id:
+            request.conversation_id = f"topic-{request.topic_id}"
 
     # Set conversation - if None, agent will create a new one on first save
     agent.set_session(request.conversation_id)
@@ -80,6 +87,29 @@ def api_chat(request: ChatRequest) -> ChatResponse:
         "agent_id": request.agent_id,
         "conversation_id": agent.get_session_id()
     })
+
+    # Append topic chat to asset for persistence/context
+    if request.topic_id:
+        try:
+            from src.core.data.assets import read_asset, write_asset
+            from src.core.data.topics import get_topic
+            topic = get_topic(request.topic_id)
+            topic_name = topic.get("name") if topic else request.topic_id
+            timestamp = datetime.now().strftime("%H:%M")
+            entry = (
+                f"## User ({timestamp})\n\n{request.message}\n\n"
+                f"## Assistant ({timestamp})\n\n{response}\n"
+            )
+            asset_name = "topic-chat.md"
+            existing = read_asset(request.topic_id, asset_name)
+            if existing and existing.get("content"):
+                new_content = f"{existing['content'].rstrip()}\n\n{entry}"
+            else:
+                new_content = f"# Topic Chat — {topic_name}\n\n{entry}"
+            write_asset(request.topic_id, asset_name, new_content)
+        except Exception:
+            # Non-fatal; chat still succeeds
+            pass
 
     # Generate TTS audio if voice input and TTS available
     audio_base64 = None

@@ -245,6 +245,9 @@ function retryLastMessage() {
 
 let currentTopicContext = null;
 let currentTopicName = null;
+let chatTopicContext = null;
+let chatTopicName = null;
+const topicConversationIds = {};
 
 function setTopicContext(topicId) {
     // Get topic to check if it's a system container
@@ -288,7 +291,13 @@ function updateInputContext() {
     if (!contextInput) return;
     const label = document.getElementById('topic-context-label');
 
-    if (currentTopicContext && label) {
+    if (chatTopicContext && label) {
+        contextInput.placeholder = "Message @topic...";
+        label.textContent = '@topic';
+        label.classList.add('active');
+        label.onclick = clearChatTopicContext;
+        label.title = `Topic chat: ${chatTopicName || 'Topic'} (click to exit)`;
+    } else if (currentTopicContext && label) {
         contextInput.placeholder = "Send feedback about this topic...";
         label.textContent = '@topic';
         label.classList.add('active');
@@ -301,6 +310,37 @@ function updateInputContext() {
         label.onclick = null;
         label.title = '';
     }
+}
+
+async function enterTopicChatMode(topicId, topicName) {
+    chatTopicContext = topicId;
+    chatTopicName = topicName || 'Topic';
+    updateInputContext();
+    switchTab('chat');
+    inlineMessages.innerHTML = '<div class="chat-loading">Loading...</div>';
+    try {
+        const response = await fetch(`/api/topics/${topicId}/chat/history`, { credentials: 'same-origin' });
+        const data = await response.json();
+        inlineMessages.innerHTML = '';
+        const messages = data.messages || [];
+        if (messages.length === 0) {
+            inlineMessages.innerHTML = '<div class="chat-empty-state">Start chatting about this topic.</div>';
+            return;
+        }
+        for (const msg of messages) {
+            addInlineMessage(msg.content, msg.role === 'user' ? 'you' : 'friend');
+        }
+    } catch (error) {
+        console.error('Failed to load topic chat history:', error);
+        inlineMessages.innerHTML = '<div class="chat-empty-state">Failed to load topic chat.</div>';
+    }
+}
+
+function clearChatTopicContext() {
+    chatTopicContext = null;
+    chatTopicName = null;
+    updateInputContext();
+    initializeConversation();
 }
 
 function parseTopicCommand(message) {
@@ -414,6 +454,23 @@ function sendContextMessage() {
     const message = contextInput.value.trim();
     if (!message) return;
 
+    if (chatTopicContext) {
+        const command = parseTopicCommand(message);
+        if (command?.action === 'rename') {
+            addInlineMessage(message, 'you', `Re: ${chatTopicName || 'topic'}`);
+            contextInput.value = '';
+            contextInput.style.height = 'auto';
+            renameTopicFromChat(chatTopicContext, command.name);
+            return;
+        }
+        addInlineMessage(message, 'you', `Re: ${chatTopicName || 'topic'}`);
+        contextInput.value = '';
+        contextInput.style.height = 'auto';
+        messageQueue.push(message);
+        processMessageQueue();
+        return;
+    }
+
     // If viewing a topic, route to topic feedback endpoint
     if (currentTopicContext) {
         const command = parseTopicCommand(message);
@@ -425,7 +482,14 @@ function sendContextMessage() {
             renameTopicFromChat(currentTopicContext, command.name);
             return;
         }
-        sendTopicFeedback(currentTopicContext, message);
+        const topicName = currentTopicName || 'topic';
+        contextInput.value = '';
+        contextInput.style.height = 'auto';
+        enterTopicChatMode(currentTopicContext, topicName).then(() => {
+            addInlineMessage(message, 'you', `Re: ${topicName}`);
+            messageQueue.push(message);
+            processMessageQueue();
+        });
         return;
     }
 
@@ -453,15 +517,21 @@ async function processMessageQueue() {
         const voiceInput = typeof window.wasLastInputVoice === 'function' ? window.wasLastInputVoice() : false;
 
         try {
+            const requestBody = {
+                message,
+                agent_id: 'user',
+                conversation_id: conversationId,
+                voice_input: voiceInput
+            };
+            if (chatTopicContext) {
+                requestBody.topic_id = chatTopicContext;
+                requestBody.conversation_id = topicConversationIds[chatTopicContext] || null;
+            }
+
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message,
-                    agent_id: 'user',
-                    conversation_id: conversationId,
-                    voice_input: voiceInput
-                })
+                body: JSON.stringify(requestBody)
             });
 
             const data = await response.json();
@@ -518,6 +588,9 @@ async function processMessageQueue() {
 
             removeInlineThinking();
             addInlineMessage(data.response, 'friend');
+            if (chatTopicContext && data.conversation_id) {
+                topicConversationIds[chatTopicContext] = data.conversation_id;
+            }
             showChatNotification();
 
             // Play TTS audio if included in response

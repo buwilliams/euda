@@ -2,6 +2,7 @@
 Topics API Routes
 """
 
+import re
 from typing import Optional, List
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -200,6 +201,27 @@ def api_topic_feedback(topic_id: str, request: TopicFeedbackRequest):
         raise HTTPException(status_code=400, detail=result["error"])
 
     return {"status": "sent", "to_agent": target_agent, "topic_id": topic_id}
+
+
+@router.get("/{topic_id}/chat/history")
+def api_topic_chat_history(topic_id: str):
+    """Get topic chat history from the topic asset."""
+    asset = read_asset(topic_id, "topic-chat.md")
+    if not asset or not asset.get("content"):
+        return {"topic_id": topic_id, "messages": []}
+
+    content = asset["content"]
+    parts = re.split(r'^## (User|Assistant) \([^)]+\)\n\n', content, flags=re.MULTILINE)
+    messages = []
+    i = 1
+    while i < len(parts) - 1:
+        role = parts[i].lower()
+        msg_content = parts[i + 1].strip()
+        if msg_content:
+            messages.append({"role": role, "content": msg_content})
+        i += 2
+
+    return {"topic_id": topic_id, "messages": messages}
 
 
 @router.get("/{topic_id}/children")

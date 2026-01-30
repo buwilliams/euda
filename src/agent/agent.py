@@ -301,6 +301,10 @@ class Agent:
             user_identity=user_identity,
         )
 
+        topic_context = self._get_topic_context_for_prompt()
+        if topic_context:
+            prompt += "\n\n" + topic_context
+
         # Voice mode instructions
         if voice_input:
             prompt += "\n\n## Voice Response Mode\n"
