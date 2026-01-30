@@ -224,6 +224,45 @@ class TestAgentTopics:
         # Wait for agent detail
         expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
 
+
+class TestAgentTriggers:
+    """Tests for agent triggers list and detail view."""
+
+    def test_triggers_list_and_detail(self, authenticated_page: Page):
+        page = authenticated_page
+
+        navigate_to_agents(page)
+
+        # Wait for agents container
+        expect(page.locator('[data-testid="agents-container"]')).to_be_visible(timeout=5000)
+
+        # Click first agent card
+        agent_cards = page.locator('[data-testid="agent-card"]')
+        if agent_cards.count() == 0:
+            pytest.skip("No agent cards available")
+
+        agent_cards.first.click()
+
+        # Wait for agent detail
+        expect(page.locator('[data-testid="agent-detail"]')).to_be_visible(timeout=5000)
+
+        triggers_section = page.locator('.topic-section', has_text="Triggers")
+        if triggers_section.count() == 0:
+            pytest.skip("Triggers section not visible")
+
+        # Expand triggers section
+        triggers_section.locator('.topic-section-header').first.click()
+
+        trigger_cards = triggers_section.locator('.child-topic-card')
+        if trigger_cards.count() == 0:
+            pytest.skip("No triggers configured")
+
+        trigger_cards.first.click()
+
+        # Expect trigger detail view
+        expect(page.get_by_text("Event")).to_be_visible(timeout=5000)
+        expect(page.get_by_text("Topic")).to_be_visible(timeout=5000)
+
         # Topics section should be visible
         topics_section = page.get_by_text("Topics", exact=False)
         expect(topics_section.first).to_be_visible(timeout=5000)
