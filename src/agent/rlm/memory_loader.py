@@ -250,7 +250,7 @@ def get_memory_summary(agent_id: str = "user") -> dict:
 # Lightweight utilities for API file access (UI browsing)
 # =============================================================================
 
-def read_memory_date(agent_id: str, date: str) -> dict:
+def read_memory_date(agent_id: str, date: str, offset: int = 0, limit: int = None) -> dict:
     """Read a single date's memory file for UI display.
 
     This is a lightweight utility for API routes that need to display
@@ -264,7 +264,12 @@ def read_memory_date(agent_id: str, date: str) -> dict:
         {
             "date": "2026-01-19",
             "content": "# Long-term Memory\n\n...",
-            "exists": true
+            "exists": true,
+            "offset": 0,
+            "limit": 200,
+            "line_count": 200,
+            "total_lines": 950,
+            "has_more": true
         }
     """
     year = date[:4]
@@ -275,21 +280,46 @@ def read_memory_date(agent_id: str, date: str) -> dict:
         return {
             "date": date,
             "content": "",
-            "exists": False
+            "exists": False,
+            "offset": offset,
+            "limit": limit,
+            "line_count": 0,
+            "total_lines": 0,
+            "has_more": False
         }
 
     try:
         content = file_path.read_text()
+        lines = content.splitlines()
+        total_lines = len(lines)
+        start = max(0, offset)
+        if limit is None:
+            slice_lines = lines[start:]
+        else:
+            slice_lines = lines[start:start + max(0, limit)]
+        slice_content = "\n".join(slice_lines)
+        line_count = len(slice_lines)
+        has_more = (start + line_count) < total_lines
         return {
             "date": date,
-            "content": content,
-            "exists": True
+            "content": slice_content,
+            "exists": True,
+            "offset": start,
+            "limit": limit,
+            "line_count": line_count,
+            "total_lines": total_lines,
+            "has_more": has_more
         }
     except Exception as e:
         return {
             "date": date,
             "content": "",
             "exists": False,
+            "offset": offset,
+            "limit": limit,
+            "line_count": 0,
+            "total_lines": 0,
+            "has_more": False,
             "error": str(e)
         }
 

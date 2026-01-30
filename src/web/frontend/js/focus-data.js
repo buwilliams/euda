@@ -737,13 +737,34 @@ async function loadLongTermMemoryDates(agentId) {
     return [];
 }
 
-async function loadLongTermMemoryContent(agentId, date) {
+const LONG_TERM_MEMORY_PAGE_LINES = 200;
+
+async function loadLongTermMemoryContent(agentId, date, offset = 0, limit = null, append = false) {
     try {
-        const response = await fetch(`/api/agents/${agentId}/memory/long-term?date=${date}`, {
+        const params = new URLSearchParams({ date });
+        if (offset) params.set('offset', String(offset));
+        if (limit !== null && limit !== undefined) params.set('limit', String(limit));
+
+        const response = await fetch(`/api/agents/${agentId}/memory/long-term?${params.toString()}`, {
             credentials: 'same-origin'
         });
         if (response.ok) {
             const data = await response.json();
+            if (append && typeof longTermMemoryDetailCache !== 'undefined') {
+                const cacheKey = `${agentId}-${date}`;
+                const existing = longTermMemoryDetailCache[cacheKey];
+                if (existing && existing.content) {
+                    const nextContent = data.content || '';
+                    data.content = existing.content + (nextContent ? `\n${nextContent}` : '');
+                    const existingCount = existing.line_count || 0;
+                    const newCount = data.line_count || 0;
+                    data.offset = 0;
+                    data.line_count = existingCount + newCount;
+                    if (typeof data.total_lines === 'number') {
+                        data.has_more = data.line_count < data.total_lines;
+                    }
+                }
+            }
             // Cache the content
             if (!longTermMemoryCache[agentId]) {
                 longTermMemoryCache[agentId] = {};
@@ -922,6 +943,20 @@ async function loadLongTermMemoryDate(agentId, date) {
             }
             break;
         }
+    }
+}
+
+async function loadLongTermMemoryMore(agentId, date) {
+    const cacheKey = `${agentId}-${date}`;
+    const entry = typeof longTermMemoryDetailCache !== 'undefined' ? longTermMemoryDetailCache[cacheKey] : null;
+    const loadedLines = entry?.line_count || 0;
+    const limit = entry?.limit ?? LONG_TERM_MEMORY_PAGE_LINES;
+    if (entry && entry.has_more === false) return;
+
+    const data = await loadLongTermMemoryContent(agentId, date, loadedLines, limit, true);
+    if (data && typeof longTermMemoryDetailCache !== 'undefined') {
+        longTermMemoryDetailCache[cacheKey] = data;
+        renderFocusTab();
     }
 }
 

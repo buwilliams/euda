@@ -11,6 +11,7 @@ let monitoringCache = {};
 let monitoringPagination = {};  // { agentId: { offset: 0, limit: 20 } }
 let monitoringLoading = {};     // { agentId: true } - prevents duplicate requests
 let rateLimitViewCache = {};
+let monitoringPromptDetailCache = {};
 
 // ============== Agent Detail View ==============
 
@@ -675,7 +676,7 @@ function renderLongTermMemoryDetailView(agentId, date) {
     }
 
     if (!entry || !entry.content) {
-        loadLongTermMemoryContent(agentId, date).then(data => {
+        loadLongTermMemoryContent(agentId, date, 0, LONG_TERM_MEMORY_PAGE_LINES).then(data => {
             longTermMemoryDetailCache[cacheKey] = data;
             renderFocusTab();
         });
@@ -693,6 +694,16 @@ function renderLongTermMemoryDetailView(agentId, date) {
         `;
     }
 
+    const lineCount = entry?.line_count || null;
+    const totalLines = entry?.total_lines || null;
+    const hasMore = entry?.has_more;
+    const paginationInfo = (lineCount !== null && totalLines !== null)
+        ? `<div class="memory-pagination-info">Showing ${lineCount} / ${totalLines} lines</div>`
+        : '';
+    const loadMoreBtn = hasMore
+        ? `<button class="memory-page-btn" onclick="loadLongTermMemoryMore('${agentId}', '${date}')">Load more</button>`
+        : '';
+
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
@@ -705,6 +716,8 @@ function renderLongTermMemoryDetailView(agentId, date) {
             <div class="long-term-memory-content">
                 ${marked.parse(entry.content || '')}
             </div>
+            ${paginationInfo}
+            ${loadMoreBtn}
         </div>
     `;
 }
@@ -795,7 +808,7 @@ function renderMonitoringView(agentId) {
             <!-- Prompts List -->
             ${promptsList.length === 0 ? '<div class="focus-empty">No recent prompts</div>' :
               promptsList.map((p, index) => `
-                <div class="prompt-list-item" onclick="navigateFocus('prompt-${agentId}-${index}')">
+                <div class="prompt-list-item" onclick="openAgentPromptDetail('${agentId}', ${index})">
                     <span class="prompt-time">${formatPromptTime(p.timestamp)}</span>
                     <span class="prompt-tokens">${p.input_tokens}/${p.output_tokens}</span>
                     <span class="prompt-model">${escapeHtml(p.model || 'unknown')}</span>
@@ -840,7 +853,23 @@ function monitoringPageNext(agentId) {
 
 // ============== Prompt Detail View ==============
 
+function openAgentPromptDetail(agentId, promptIndex) {
+    const cached = monitoringCache[agentId];
+    const promptsList = cached?.prompts || cached?.recent_prompts;
+    const prompt = promptsList?.[promptIndex];
+    if (prompt) {
+        monitoringPromptDetailCache[`${agentId}:${promptIndex}`] = prompt;
+    }
+    navigateFocus(`prompt-${agentId}-${promptIndex}`);
+}
+
 function renderPromptDetailView(agentId, promptIndex) {
+    const detailKey = `${agentId}:${promptIndex}`;
+    const cachedDetail = monitoringPromptDetailCache[detailKey];
+    if (cachedDetail) {
+        return renderPromptDetailContent(cachedDetail);
+    }
+
     const cached = monitoringCache[agentId];
     // Support both old (recent_prompts) and new (prompts) format
     const promptsList = cached?.prompts || cached?.recent_prompts;
@@ -881,6 +910,10 @@ function renderPromptDetailView(agentId, promptIndex) {
         `;
     }
 
+    return renderPromptDetailContent(prompt);
+}
+
+function renderPromptDetailContent(prompt) {
     // Helper to render messages nicely
     const renderMessages = (messages) => {
         if (!Array.isArray(messages)) {
@@ -1123,6 +1156,7 @@ function renderConfigurationView(agentId) {
     const config = agentData.config || {};
     const triggers = config.triggers || [];
     const tools = config.tools || [];
+    const triggersDisplay = triggers.length > 0 ? escapeHtml(JSON.stringify(triggers, null, 2)) : '<em class="text-muted">None configured</em>';
 
     // Find the topic for this agent (for editing state)
     const agentTopic = topicsData.find(j => j.agent_id === agentId);
@@ -1180,15 +1214,11 @@ function renderConfigurationView(agentId) {
                 </div>
             ` : `
                 <!-- View Mode -->
-                <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="startEditingField('${topicId}', 'config')">
-                        ${icon('pencil')} Edit
-                    </button>
-                </div>
+                <div class="config-hint">Ask Chat to update configuration.</div>
 
                 <div class="topic-section">
                     <div class="topic-section-header">Triggers</div>
-                    <div class="config-value">${triggers.length > 0 ? escapeHtml(triggers.join(', ')) : '<em class="text-muted">None configured</em>'}</div>
+                    <pre class="config-value config-json">${triggersDisplay}</pre>
                 </div>
 
                 <div class="topic-section">

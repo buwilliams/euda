@@ -69,10 +69,10 @@ def api_remove_memory(entry_id: str):
 
 # Long-term memory endpoints
 @router.get("/memory/long-term")
-def api_get_long_term_memory(date: Optional[str] = None):
+def api_get_long_term_memory(date: Optional[str] = None, offset: int = 0, limit: Optional[int] = None):
     """Get long-term memory entries."""
     if date:
-        return read_memory_date("user", date)
+        return read_memory_date("user", date, offset=offset, limit=limit)
     else:
         return {"error": "date parameter required"}
 
