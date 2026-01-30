@@ -26,7 +26,7 @@ def _write_test_prompts(agent_dir):
     prompts_dir.mkdir(parents=True, exist_ok=True)
 
     templates = {
-        "system": "## Agent Identity\n\n{identity}\n\n## User Context\n\n{user_identity}\n\n## Available Tools\n\n{tools_by_type}\n",
+        "system": "## Agent Identity\n\n{identity}\n\n## User Context\n\n{user_identity}\n\n## Skills\n\nDiscover skills with list_skills.\n",
         "topic": "Topic: {topic_id} {topic_name}\n{topic_description}\nDue: {topic_due_date}\nTags: {topic_tags}\nContext: {topic_attachments}\n{remaining_topics_notice}\n",
         "topic_assignment": "Assignment: {topic_id} {topic_name}\n{topic_description}\nDue: {topic_due_date}\nTags: {topic_tags}\nContext: {topic_attachments}\n{remaining_topics_notice}\n",
         "consolidation": "Reflection: {topic_name}\nTrigger: {topic_id}\n",
