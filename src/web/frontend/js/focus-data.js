@@ -194,10 +194,6 @@ async function loadTopicsData() {
 
         renderFocusTab();
         updateTopicsBadge();
-        // Load daily quote when showing the focus menu
-        if (focusView === 'menu') {
-            loadDailyQuote();
-        }
     } catch (error) {
         console.error('Failed to load topics data:', error);
     }
@@ -998,4 +994,3 @@ async function setTopicStatus(topicId, status) {
     }
     return false;
 }
-

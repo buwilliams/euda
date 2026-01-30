@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from ...llms import get_model, get_provider, get_providers_config, invalidate_client
 from ...llms.base import _load_config, LLM_CONFIG_PATH, VALID_PROVIDERS
 from src.core.data.topics import list_topics
+from src.core.data.assets import read_asset
 from src.core.system.fresh_start import (
     perform_fresh_start,
     list_backups as _list_backups,
@@ -98,49 +99,6 @@ def get_doc(path: str = "README.md"):
 def get_about():
     """Get about/vision content for the About tab (legacy endpoint)."""
     return get_doc("docs/1_vision.md")
-
-
-# ============== Daily Quote ==============
-
-def _get_latest_quote_from_topics() -> dict:
-    """Get the most recent completed euno:quote topic's quote asset.
-
-    Returns:
-        Dict with 'quote' and 'author' keys, or None if no quote found
-    """
-    from src.core.data.assets import read_asset
-
-    # Get completed topics and filter for quote topics
-    all_topics = list_topics(status="done")
-    quote_topics = [t for t in all_topics if t.get("name", "").startswith("euno:quote")]
-
-    for topic in quote_topics:
-        try:
-            asset = read_asset(topic["id"], "quote.json")
-            if asset and asset.get("content"):
-                quote_data = json.loads(asset["content"])
-                if quote_data.get("quote") and quote_data.get("author"):
-                    return quote_data
-        except (json.JSONDecodeError, KeyError):
-            continue
-
-    return None
-
-
-@router.get("/daily-quote")
-def daily_quote():
-    """Get a personalized daily quote.
-
-    Returns quote from completed euno:quote topics. If none exists yet,
-    returns empty. Quote generation happens via the euno:quote topic
-    (scheduled for morning).
-    """
-    quote = _get_latest_quote_from_topics()
-    if quote:
-        return quote
-
-    # No quote yet - return empty (UI should handle this gracefully)
-    return {}
 
 
 # ============== Costs ==============
@@ -443,13 +401,30 @@ def acknowledge_all_incidents(agent_id: str = None):
 
 # ============== SSE Events ==============
 
+def _get_latest_quote_from_topics() -> dict:
+    """Get the most recent completed euno:quote topic's quote asset."""
+    all_topics = list_topics(status="done")
+    quote_topics = [t for t in all_topics if t.get("name", "").startswith("euno:quote")]
+
+    for topic in quote_topics:
+        try:
+            asset = read_asset(topic["id"], "quote.json")
+            if asset and asset.get("content"):
+                quote_data = json.loads(asset["content"])
+                if quote_data.get("quote") and quote_data.get("author"):
+                    return quote_data
+        except (json.JSONDecodeError, KeyError):
+            continue
+    return None
+
 async def event_generator():
     """Generate SSE events for real-time updates."""
     from ..events import subscribe_ui, unsubscribe_ui
 
     # Send initial state
     all_topics = list_topics()
-    yield f"event: init\ndata: {json.dumps({'topics': all_topics})}\n\n"
+    latest_quote = _get_latest_quote_from_topics()
+    yield f"event: init\ndata: {json.dumps({'topics': all_topics, 'daily_quote': latest_quote})}\n\n"
 
     # Subscribe to UI events (returns queue and shutdown event)
     event_queue, shutdown_event = subscribe_ui()

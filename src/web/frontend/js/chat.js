@@ -9,24 +9,7 @@ async function initializeConversation() {
     inlineMessages.innerHTML = '<div class="chat-loading">Loading...</div>';
 
     try {
-        // Fetch quote and conversations in parallel
-        const [quoteResponse, convResponse] = await Promise.all([
-            fetch('/api/daily-quote', { credentials: 'same-origin' }).catch(() => null),
-            fetch('/api/chat/conversations/recent?count=1')
-        ]);
-
-        // Cache the quote if available
-        if (quoteResponse && quoteResponse.ok) {
-            try {
-                const quoteData = await quoteResponse.json();
-                if (quoteData.quote) {
-                    cachedChatQuote = quoteData;
-                }
-            } catch (e) {
-                // Ignore quote parsing errors
-            }
-        }
-
+        const convResponse = await fetch('/api/chat/conversations/recent?count=1');
         const data = await convResponse.json();
 
         // Remove loading
@@ -84,44 +67,11 @@ async function loadConversationById(convId) {
 // Cache the quote data for reuse
 let focusQuoteData = null;
 
-async function loadDailyQuote(retries = 3) {
-    // Check if quote was dismissed this session
-    if (sessionStorage.getItem('quoteDismissed')) {
-        const container = document.getElementById('daily-quote-container');
-        if (container) container.innerHTML = '';
-        return;
-    }
-
-    // Find the quote container in Focus tab (may not exist yet if Focus hasn't rendered)
+function maybeRenderDailyQuote() {
+    if (!focusQuoteData || !focusQuoteData.quote) return;
     const container = document.getElementById('daily-quote-container');
-    if (!container) {
-        // Retry after a short delay if container doesn't exist yet
-        if (retries > 0) {
-            setTimeout(() => loadDailyQuote(retries - 1), 200);
-        }
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/daily-quote', {
-            credentials: 'same-origin'
-        });
-        if (!response.ok) {
-            container.innerHTML = '';
-            return;
-        }
-        const data = await response.json();
-        if (data.quote) {
-            focusQuoteData = data;
-            renderQuote(data);
-        } else {
-            // No quote available yet - don't show anything
-            container.innerHTML = '';
-        }
-    } catch (error) {
-        console.error('Failed to load daily quote:', error);
-        container.innerHTML = '';
-    }
+    if (!container) return;
+    renderQuote(focusQuoteData);
 }
 
 function renderQuote(data) {
@@ -416,26 +366,6 @@ function showChatEmptyState() {
     `;
 }
 
-// Load quote for chat empty state
-async function loadChatQuote() {
-    try {
-        const response = await fetch('/api/daily-quote', { credentials: 'same-origin' });
-        if (response.ok) {
-            const data = await response.json();
-            if (data.quote) {
-                cachedChatQuote = data;
-                // Re-render empty state if it's showing
-                const emptyState = document.getElementById('chat-empty-state');
-                if (emptyState) {
-                    showChatEmptyState();
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Failed to load chat quote:', error);
-    }
-}
-
 // Remove empty state when messages are added
 function removeChatEmptyState() {
     const emptyState = document.getElementById('chat-empty-state');
@@ -680,4 +610,3 @@ async function resetUI() {
     // Clear expanded cards state
     expandedCards.clear();
 }
-

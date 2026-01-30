@@ -5,6 +5,9 @@ Provides REST API for the Euno system.
 """
 
 from contextlib import asynccontextmanager
+import json
+import threading
+import time
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -36,8 +39,66 @@ async def lifespan(app: FastAPI):
     get_agents_container()
     get_projects_container()
     get_assets_container()
+    # Start background bridge for system events -> SSE
+    stop_event = threading.Event()
+
+    def _system_event_bridge():
+        from src.events import get_event_bus
+        from src.core.data.topics import get_topic
+        from src.core.data.assets import read_asset
+        from .events import emit_ui_event
+
+        subscribed = False
+        while not stop_event.is_set():
+            bus = get_event_bus()
+            if not bus:
+                time.sleep(0.25)
+                continue
+            if not subscribed:
+                bus.subscribe("web-ui", ["topic:completed"])
+                subscribed = True
+            event = bus.wait_for_event("web-ui", timeout=0.5)
+            if not event:
+                continue
+            if event.get("event") != "topic:completed":
+                continue
+            data = event.get("data") or {}
+            topic_id = data.get("topic_id")
+            topic = get_topic(topic_id) if topic_id else None
+            key = "topic:completed"
+            if topic and topic.get("name", "").startswith("euno:"):
+                key = topic.get("name")
+            metadata = {}
+
+            if key and key.startswith("euno:quote"):
+                asset = read_asset(topic_id, "quote.json") if topic_id else None
+                if asset and asset.get("content"):
+                    try:
+                        quote_data = json.loads(asset["content"])
+                        if quote_data.get("quote"):
+                            metadata["quote"] = quote_data.get("quote")
+                            metadata["author"] = quote_data.get("author")
+                    except json.JSONDecodeError:
+                        pass
+
+            emit_ui_event("topic_done", {
+                "key": key,
+                "topic_id": topic_id,
+                "name": topic.get("name") if topic else None,
+                "tags": topic.get("tags") if topic else None,
+                "completed_at": topic.get("completed_at") if topic else None,
+                "metadata": metadata
+            })
+
+        bus = get_event_bus()
+        if bus and subscribed:
+            bus.unsubscribe("web-ui")
+
+    bridge_thread = threading.Thread(target=_system_event_bridge, daemon=True)
+    bridge_thread.start()
     yield
     # Shutdown - signal all SSE connections to close
+    stop_event.set()
     trigger_shutdown()
 
 

@@ -75,11 +75,7 @@ function initApp() {
     // Initialize with default tab (focus)
     switchTab(activeTab);
 
-    // Load daily quote for Focus tab
-    loadDailyQuote();
-
-    // Load quote and initialize conversation for Chat tab
-    loadChatQuote();
+    // Initialize conversation for Chat tab
     initializeConversation();
 
     // Initialize swipe gesture handlers
@@ -652,4 +648,3 @@ async function handleDeleteBackup(backupName) {
         messageEl.className = 'settings-message error';
     }
 }
-
