@@ -19,14 +19,23 @@ from tests.fixtures.llm import MockLLMClient, MockResponse
 
 
 def _write_test_prompts(agent_dir):
-    """Create minimal prompt templates for a test agent and pre-populate the cache."""
-    from src.agent.cognition.reasoning.prompts import _template_cache
+    """Create minimal prompt templates for a test agent and pre-populate the cache.
+
+    Writes the system template to data/system/prompts/ (shared) and
+    agent-specific templates to the agent's prompts directory.
+    """
+    from src.agent.cognition.reasoning.prompts import _template_cache, PROMPTS_DIR
 
     prompts_dir = agent_dir / "prompts"
     prompts_dir.mkdir(parents=True, exist_ok=True)
 
+    # System-level template (written to data/system/prompts/)
+    system_content = "## Euno\n\nEuno is a personal intelligence for human flourishing.\n\n## Agent Identity\n\n{identity}\n\n## User Context\n\n{user_identity}\n\n## Topics\n\nTopics are the primary unit of work.\n\n## Skills\n\nDiscover skills with list_skills.\n"
+    PROMPTS_DIR.mkdir(parents=True, exist_ok=True)
+    (PROMPTS_DIR / "system.md").write_text(system_content)
+
+    # Agent-level templates
     templates = {
-        "system": "## Euno\n\nEuno is a personal intelligence for human flourishing.\n\n## Agent Identity\n\n{identity}\n\n## User Context\n\n{user_identity}\n\n## Topics\n\nTopics are the primary unit of work.\n\n## Skills\n\nDiscover skills with list_skills.\n",
         "topic": "Topic: {topic_id} {topic_name}\n{topic_description}\nDue: {topic_due_date}\nTags: {topic_tags}\nContext: {topic_attachments}\n{remaining_topics_notice}\n",
         "topic_assignment": "Assignment: {topic_id} {topic_name}\n{topic_description}\nDue: {topic_due_date}\nTags: {topic_tags}\nContext: {topic_attachments}\n{remaining_topics_notice}\n",
         "consolidation": "Reflection: {topic_name}\nTrigger: {topic_id}\n",
@@ -36,9 +45,11 @@ def _write_test_prompts(agent_dir):
     }
 
     agent_id = agent_dir.name
+    # Cache the system template
+    _template_cache[f"{agent_id}:agent/system"] = system_content
+
     for name, content in templates.items():
         (prompts_dir / f"{name}.md").write_text(content)
-        # Pre-populate the template cache so tests work without AGENTS_DIR patching
         _template_cache[f"{agent_id}:agent/{name}"] = content
 
 

@@ -2,7 +2,9 @@
 Prompt Management - CRUD operations for agent prompt templates.
 
 Prompts live in agent-level directories: data/agents/{agent_id}/prompts/.
-There are no system-level defaults — each agent owns its own prompts.
+System-level templates in data/system/prompts/ serve as shared defaults
+(e.g., system.md). When reading a prompt, the system directory is checked
+as a fallback if the agent doesn't have one.
 """
 
 from pathlib import Path
@@ -10,6 +12,7 @@ from typing import Optional, List, Dict
 
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
+SYSTEM_PROMPTS_DIR = DATA_DIR / "system" / "prompts"
 
 # Available prompts that can be customized per-agent
 AVAILABLE_PROMPTS = {
@@ -62,7 +65,7 @@ def list_prompts(agent_id: Optional[str] = None) -> List[Dict]:
 
 
 def get_prompt(agent_id: str, name: str) -> Dict:
-    """Get a prompt's content from the agent's prompts directory.
+    """Get a prompt's content, checking agent directory then system directory.
 
     Args:
         agent_id: Agent ID
@@ -75,14 +78,24 @@ def get_prompt(agent_id: str, name: str) -> Dict:
         return {"error": f"Unknown prompt: {name}. Available: {', '.join(AVAILABLE_PROMPTS.keys())}"}
 
     filename = AVAILABLE_PROMPTS[name]
-    prompt_path = AGENTS_DIR / agent_id / "prompts" / filename
+    agent_path = AGENTS_DIR / agent_id / "prompts" / filename
 
-    if prompt_path.exists():
+    if agent_path.exists():
         return {
             "name": name,
-            "content": prompt_path.read_text(),
+            "content": agent_path.read_text(),
             "source": "agent",
-            "path": str(prompt_path.relative_to(DATA_DIR)),
+            "path": str(agent_path.relative_to(DATA_DIR)),
+        }
+
+    # Fall back to system-level template
+    system_path = SYSTEM_PROMPTS_DIR / filename
+    if system_path.exists():
+        return {
+            "name": name,
+            "content": system_path.read_text(),
+            "source": "system",
+            "path": str(system_path.relative_to(DATA_DIR)),
         }
 
     return {"error": f"Prompt not found: {name} for agent {agent_id}"}

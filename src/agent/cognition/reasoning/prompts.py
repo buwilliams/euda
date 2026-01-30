@@ -1,10 +1,11 @@
 """
 Prompt Templates - Load and render prompt templates.
 
-Templates are stored in agent-level directories: data/agents/{agent_id}/prompts/
-When agent_id is provided, the agent's prompts directory is checked first.
-Falls back to data/system/prompts/ for legacy compatibility (but system prompts
-have been removed — all prompts are now agent-owned).
+System-level templates live in data/system/prompts/ and are always loaded first.
+If an agent also has a template with the same filename in data/agents/{agent_id}/prompts/,
+that content is appended to the system-level base.
+
+For templates that only exist at the agent level, agent-only lookup applies.
 Variables use Python format string syntax: {variable_name}
 """
 
@@ -19,11 +20,17 @@ _template_cache: Dict[str, str] = {}
 
 
 def load_template(name: str, agent_id: Optional[str] = None) -> str:
-    """Load a prompt template by name, checking agent-specific overrides first.
+    """Load a prompt template by name.
+
+    For templates that exist in data/system/prompts/, the system-level file is
+    always loaded as the base. If the agent also has a file with the same name
+    in data/agents/{agent_id}/prompts/, its content is appended.
+
+    For templates that only exist at the agent level, agent-only lookup applies.
 
     Args:
         name: Template name/path without extension (e.g., 'agent/system' or 'reflection/append_system')
-        agent_id: Optional agent ID to check for agent-specific overrides
+        agent_id: Optional agent ID to check for agent-specific templates
 
     Returns:
         Template content as string
@@ -31,28 +38,30 @@ def load_template(name: str, agent_id: Optional[str] = None) -> str:
     Raises:
         FileNotFoundError: If template doesn't exist
     """
-    # Create cache key that includes agent_id for agent-specific templates
     cache_key = f"{agent_id}:{name}" if agent_id else name
 
     if cache_key not in _template_cache:
-        template_path = None
+        # Extract just the template filename from paths like "agent/system"
+        template_filename = name.split("/")[-1] if "/" in name else name
 
-        # Check agent-specific prompts first
+        # Check system-level template
+        system_path = PROMPTS_DIR / f"{template_filename}.md"
+        system_content = system_path.read_text() if system_path.exists() else None
+
+        # Check agent-level template
+        agent_content = None
         if agent_id:
-            # Extract just the template filename from paths like "agent/task_work"
-            template_filename = name.split("/")[-1] if "/" in name else name
             agent_path = AGENTS_DIR / agent_id / "prompts" / f"{template_filename}.md"
             if agent_path.exists():
-                template_path = agent_path
+                agent_content = agent_path.read_text()
 
-        # Fall back to system prompts
-        if not template_path:
-            system_path = PROMPTS_DIR / f"{name}.md"
-            if system_path.exists():
-                template_path = system_path
-
-        if template_path:
-            _template_cache[cache_key] = template_path.read_text()
+        # Combine: system base + agent append
+        if system_content and agent_content:
+            _template_cache[cache_key] = system_content + "\n\n" + agent_content
+        elif system_content:
+            _template_cache[cache_key] = system_content
+        elif agent_content:
+            _template_cache[cache_key] = agent_content
         else:
             raise FileNotFoundError(f"Template not found: {name}")
 
