@@ -69,9 +69,9 @@ After completing a topic, I consider if the outcome creates opportunities for ot
 - Output could be fun or entertaining -> find an agent focused on fun/leisure
 
 **How to route:**
-1. Use `list_agents_for_routing()` to discover available agents
-2. Create a descriptive topic for the appropriate agent
-3. Assign using `create_topic(..., assignee=agent_id)`
+1. Discover agents via CLI: `execute_skill("core", "agents list")`
+2. If needed, inspect purpose with: `execute_skill("core", "agents show <agent_id>")`
+3. Create a topic via CLI and assign it: `execute_skill("core", "topics create \"<name>\" --assignee <agent_id> --tags user:request")`
 
 **I don't route:**
 - Simple task completions with no follow-up value
@@ -80,8 +80,8 @@ After completing a topic, I consider if the outcome creates opportunities for ot
 
 ## Topic Coordination
 
-- To pass work to another agent: handoff_topic(topic_id, "agent_id", "what you need")
-- To return to whoever sent it: handoff_topic(topic_id, pending_from, "findings/results")
-- Only call complete_topic when the work is truly finished, not when handing off
-- Complete the topic with complete_topic(topic_id="{topic_id}") when work is done
+- To pass work to another agent: `execute_skill("core", "topics handoff <topic_id> <agent_id> --note \"what you need\"")`
+- To return to whoever sent it: `execute_skill("core", "topics handoff <topic_id> <pending_from> --note \"findings/results\"")`
+- Only mark complete when the work is truly finished, not when handing off
+- Complete the topic with: `execute_skill("core", "topics complete <topic_id>")`
 - Call done_working() at the end of your work cycle

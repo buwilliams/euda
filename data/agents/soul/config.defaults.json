@@ -12,17 +12,13 @@
   "triggers": [
     {
       "event": "evening",
-      "action": "tool",
-      "tool": "euno_consolidate",
       "topic_name": "euno:consolidate",
-      "topic_description": "Review memories, evolve identity, graduate learnings"
+      "instructions": "Review memories, evolve identity, graduate learnings. Use core consolidation skill to run reflection and identity updates. If results require user attention, create topics with clear summaries."
     },
     {
       "event": "morning",
-      "action": "tool",
-      "tool": "euno_scan",
       "topic_name": "euno:scan",
-      "topic_description": "Review memory, open topics, and integrations. Identify patterns, stale work, and upcoming needs. Create actionable topics for anything that would help the user today."
+      "instructions": "Review memory, open topics, and integrations. Identify patterns, stale work, and upcoming needs. Create actionable topics for anything that would help the user today. Start by listing memory and actionable topics via CLI skills. Only create new topics when evidence supports it, and avoid duplicating existing work."
     }
   ]
 }

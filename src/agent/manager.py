@@ -507,10 +507,8 @@ class AgentManager:
 
         Triggers are objects with:
         - event: schedule name (e.g., "morning", "evening") or future system event
-        - action: "tool" (direct execution) or "llm" (agent processes via LLM loop)
-        - tool: tool to execute directly (required when action="tool")
         - topic_name: e.g., "euno:consolidate", "euno:quote"
-        - topic_description: description for the topic (optional)
+        - instructions: full topic description/guidance (optional)
 
         Args:
             config: Agent configuration dict
@@ -646,6 +644,12 @@ class AgentManager:
 
         last_fired: Dict[str, str] = {}  # schedule_name -> last fired date-hour-minute
 
+        def build_trigger_description(trigger: dict, fallback: str) -> str:
+            instructions = trigger.get("instructions")
+            if instructions:
+                return instructions
+            return fallback
+
         while self.running:
             try:
                 now = datetime.now()
@@ -691,7 +695,10 @@ class AgentManager:
                             for trigger in triggers:
                                 if trigger.get("event") == name:
                                     topic_name = trigger.get("topic_name")
-                                    topic_desc = trigger.get("topic_description", f"Scheduled {topic_name}")
+                                    topic_desc = build_trigger_description(
+                                        trigger,
+                                        f"Scheduled {topic_name}"
+                                    )
 
                                     # Check for duplicate - only one pending at a time
                                     if not self._has_open_internal_topic(topic_name, agent_id):
@@ -731,7 +738,10 @@ class AgentManager:
                         # Check if this interval trigger should fire
                         if self._should_fire_interval_trigger(agent_id, trigger):
                             topic_name = trigger.get("topic_name")
-                            topic_desc = trigger.get("topic_description", f"Interval {topic_name}")
+                            topic_desc = build_trigger_description(
+                                trigger,
+                                f"Interval {topic_name}"
+                            )
 
                             # Check for duplicate - only one pending at a time
                             if not self._has_open_internal_topic(topic_name, agent_id):
@@ -797,6 +807,12 @@ class AgentManager:
         config = agent.config
         event_name = event.event
 
+        def build_trigger_description(trigger: dict, fallback: str) -> str:
+            instructions = trigger.get("instructions")
+            if instructions:
+                return instructions
+            return fallback
+
         # Get agent's inbox topic as parent for trigger topics
         inbox = get_agent_inbox_topic(agent_id)
         parent_id = inbox["id"] if inbox else None
@@ -808,7 +824,10 @@ class AgentManager:
                 continue
 
             topic_name = trigger.get("topic_name")
-            topic_desc = trigger.get("topic_description", f"Triggered by {event_name}")
+            topic_desc = build_trigger_description(
+                trigger,
+                f"Triggered by {event_name}"
+            )
 
             # Check for duplicate - only one pending at a time
             if not self._has_open_internal_topic(topic_name, agent_id):

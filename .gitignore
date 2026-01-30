@@ -88,6 +88,7 @@ data/system/sessions.json
 data/system/quotes.json
 data/system/prompts.jsonl
 data/system/prompts/*.jsonl
+data/system/deletions.json
 data/system/logs/
 data/system/incidents/
 data/system/api_calls.json
@@ -190,4 +191,3 @@ euno-diagnostics-*.tar.gz
 # Personal Data
 # ===================
 lifelog/
-

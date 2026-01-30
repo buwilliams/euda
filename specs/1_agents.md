@@ -33,24 +33,20 @@ Rules for how agents work and coordinate through topics.
 
 ### Trigger Format
 
-Triggers are objects with explicit `event` and `action` keys:
+Triggers are objects with explicit `event` and topic fields:
 
 ```json
 {
   "triggers": [
     {
       "event": "evening",
-      "action": "tool",
-      "tool": "euno_consolidate",
       "topic_name": "euno:consolidate",
-      "topic_description": "Review memories, evolve identity"
+      "instructions": "Review memories, evolve identity. Use the core consolidation skill and summarize outcomes"
     },
     {
       "event": "morning",
-      "action": "tool",
-      "tool": "euno_quote",
       "topic_name": "euno:quote",
-      "topic_description": "Generate daily quote"
+      "instructions": "Generate daily quote. Use the core quote skill and record the result"
     }
   ]
 }
@@ -59,10 +55,8 @@ Triggers are objects with explicit `event` and `action` keys:
 ### Trigger Fields
 
 - `event`: What causes the trigger (schedule name or future system event)
-- `action`: How to handle it—`tool` (direct execution) or `llm` (agent processes via LLM loop)
-- `tool`: Tool to execute directly (required when `action: "tool"`)
 - `topic_name`: The name of the topic to create (e.g., `euno:consolidate`, `euno:quote`)
-- `topic_description`: Description for the created topic (optional)
+- `instructions`: The full topic description (and guidance) that is written as the created topic description (optional)
 
 ### Event Types
 
@@ -100,10 +94,8 @@ Example interval trigger configuration:
   "triggers": [
     {
       "event": "interval:hourly",
-      "action": "tool",
-      "tool": "euno_quote",
       "topic_name": "euno:quote",
-      "topic_description": "Generate hourly quote"
+      "instructions": "Generate hourly quote. Use the core quote skill and log the result"
     }
   ]
 }
@@ -406,10 +398,8 @@ Consolidation is scheduled via the trigger system (see Triggers section):
   "triggers": [
     {
       "event": "evening",
-      "action": "tool",
-      "tool": "euno_consolidate",
       "topic_name": "euno:consolidate",
-      "topic_description": "Review memories, evolve identity"
+      "instructions": "Review memories, evolve identity. Use the core consolidation skill and summarize outcomes"
     }
   ]
 }
@@ -468,7 +458,7 @@ See the main Triggers section above for full documentation.
 
 - Triggers are configured per-agent in `config.json` under `triggers[]`
 - Triggers create topics, they do not wake agents directly
-- Format: objects with `event`, `action`, `tool` (if action=tool), `topic_name`, `topic_description`
+- Format: objects with `event`, `topic_name`, and optional `instructions`
 
 ### Triggers vs Processes
 

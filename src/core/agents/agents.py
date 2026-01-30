@@ -179,7 +179,7 @@ def create_agent(agent_id: str, name: str, purpose: str, tools: list = None, tri
                If not provided, uses minimal base tools.
         triggers: Optional list of trigger objects. Each trigger should have:
                   - topic_name: Name of topic to create (e.g., 'euno:consolidate')
-                  - topic_description: Description for the topic
+                  - instructions: Full topic description/guidance (optional)
                   - schedule: When to fire ('morning', 'evening')
 
     Returns:
@@ -397,7 +397,7 @@ def update_agent_triggers(agent_id: str, triggers: list) -> dict:
         agent_id: The agent to update
         triggers: List of trigger objects. Each trigger should have:
                   - topic_name: Name of topic to create (e.g., 'euno:consolidate')
-                  - topic_description: Description for the topic
+                  - instructions: Full topic description/guidance (optional)
                   - schedule: When to fire ('morning', 'evening')
 
     Note: Changes require a restart to take effect.
@@ -567,14 +567,9 @@ def get_agent_triggers(agent_id: str) -> dict:
 
         trigger_info = {
             "event": event,
-            "action": trigger.get("action", "llm"),
             "topic_name": topic_name,
-            "topic_description": trigger.get("topic_description", ""),
+            "instructions": trigger.get("instructions", ""),
         }
-
-        # Add tool if action is "tool"
-        if trigger.get("tool"):
-            trigger_info["tool"] = trigger.get("tool")
 
         # Add state for interval triggers
         if event.startswith("interval:"):

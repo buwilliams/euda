@@ -44,7 +44,7 @@ class TriggerReflectionRequest(BaseModel):
 
 class TriggerRequest(BaseModel):
     topic_name: str  # e.g., "euno:consolidate", "euno:quote"
-    topic_description: Optional[str] = None
+    instructions: Optional[str] = None
 
 
 class AddMemoryRequest(BaseModel):
@@ -353,7 +353,7 @@ def api_trigger(agent_id: str, request: TriggerRequest):
 
     Args:
         agent_id: The agent to trigger
-        request: Contains topic_name (required) and topic_description (optional)
+        request: Contains topic_name (required) and instructions (optional)
 
     Returns an execution_id for SSE progress tracking.
     """
@@ -368,7 +368,7 @@ def api_trigger(agent_id: str, request: TriggerRequest):
     inbox = get_agent_inbox_topic(agent_id)
     parent_id = inbox["id"] if inbox else None
 
-    description = request.topic_description or f"Manual trigger (execution_id: {execution_id})"
+    description = request.instructions or f"Manual trigger (execution_id: {execution_id})"
 
     topic = create_topic(
         name=request.topic_name,

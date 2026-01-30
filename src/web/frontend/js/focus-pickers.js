@@ -544,7 +544,7 @@ function openTriggerPicker(agentId, triggers, disabledTriggers = []) {
 
     const triggerOptions = triggers.map(trigger => {
         const topicName = trigger.topic_name || trigger;
-        const description = trigger.topic_description || '';
+        const description = trigger.instructions || '';
         const schedule = trigger.schedule || '';
         const isDisabled = disabledTriggers.includes(topicName);
         const disabledAttr = isDisabled ? 'disabled' : '';
@@ -582,7 +582,7 @@ function closeTriggerPicker() {
     if (picker) picker.remove();
 }
 
-async function triggerEvent(agentId, topicName, topicDescription) {
+async function triggerEvent(agentId, topicName, instructions) {
     closeTriggerPicker();
 
     try {
@@ -592,7 +592,7 @@ async function triggerEvent(agentId, topicName, topicDescription) {
             credentials: 'same-origin',
             body: JSON.stringify({
                 topic_name: topicName,
-                topic_description: topicDescription || undefined
+                instructions: instructions || undefined
             })
         });
 
