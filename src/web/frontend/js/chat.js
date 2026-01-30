@@ -291,18 +291,29 @@ function clearTopicContext() {
 function updateInputContext() {
     if (!contextInput) return;
     const label = document.getElementById('topic-context-label');
+    const isClosable = (() => {
+        if (typeof activeTab === 'undefined') return false;
+        if (activeTab === 'focus') {
+            return typeof focusView !== 'undefined' && focusView === 'menu';
+        }
+        if (activeTab === 'chat') {
+            return typeof viewingHistoryConversationId === 'undefined' || viewingHistoryConversationId === null;
+        }
+        return false;
+    })();
+    const exitHtml = isClosable ? ' <span class="topic-context-exit">×</span>' : '';
 
     if (chatTopicContext && label) {
-        contextInput.placeholder = "Message @topic...";
-        label.innerHTML = '@topic <span class="topic-context-exit">×</span>';
+        contextInput.placeholder = "Chat about this topic...";
+        label.innerHTML = `@topic${exitHtml}`;
         label.classList.add('active');
-        label.onclick = clearChatTopicContext;
+        label.onclick = isClosable ? clearChatTopicContext : null;
         label.title = `Topic chat: ${chatTopicName || 'Topic'} (click to exit)`;
     } else if (currentTopicContext && label) {
-        contextInput.placeholder = "Send feedback about this topic...";
-        label.innerHTML = '@topic <span class="topic-context-exit">×</span>';
+        contextInput.placeholder = "Chat about this topic...";
+        label.innerHTML = `@topic${exitHtml}`;
         label.classList.add('active');
-        label.onclick = clearTopicContext;
+        label.onclick = isClosable ? clearTopicContext : null;
         label.title = `Replying to: ${currentTopicName || 'Topic'} (click to clear)`;
     } else if (label) {
         contextInput.placeholder = "What's on your mind?";
@@ -321,7 +332,17 @@ function bindTopicContextLabel() {
     label.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
-        if (typeof activeTab !== 'undefined' && activeTab !== 'chat') {
+        const isClosable = (() => {
+            if (typeof activeTab === 'undefined') return false;
+            if (activeTab === 'focus') {
+                return typeof focusView !== 'undefined' && focusView === 'menu';
+            }
+            if (activeTab === 'chat') {
+                return typeof viewingHistoryConversationId === 'undefined' || viewingHistoryConversationId === null;
+            }
+            return false;
+        })();
+        if (!isClosable) {
             return;
         }
         if (chatTopicContext) {

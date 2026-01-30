@@ -217,13 +217,24 @@ async function setWhen(type, id, whenType, date = null) {
 
 function getAssigneesLabel(topic) {
     const assignee = topic.assignee;
+    const displayAssignee = formatAssigneeDisplay(assignee);
     if (topic.status === 'working') {
-        return `${icon('bolt')} ${assignee || 'Working'}`;
+        return `${icon('bolt')} ${displayAssignee || 'Working'}`;
     }
     if (!assignee) {
         return `${icon('user')} Assign`;
     }
-    return `${icon('user')} ${assignee}`;
+    return `${icon('user')} ${displayAssignee}`;
+}
+
+function formatAssigneeDisplay(assignee) {
+    if (!assignee) return '';
+    if (typeof agentsCache !== 'undefined' && Array.isArray(agentsCache) && agentsCache.length > 0) {
+        const agent = agentsCache.find(a => a.id === assignee);
+        if (!agent) return `Unknown (${assignee})`;
+        return agent.name || agent.id || assignee;
+    }
+    return assignee;
 }
 
 async function openAssigneesPicker(topicId) {
@@ -243,7 +254,7 @@ async function openAssigneesPicker(topicId) {
             ${topic.status === 'working' ? `
                 <div class="assignees-picker-working">
                     <span class="assignees-picker-working-icon">${icon('bolt')}</span>
-                    <span>Currently working: <strong>${escapeHtml(currentAssignee || 'unknown')}</strong></span>
+                    <span>Currently working: <strong>${escapeHtml(formatAssigneeDisplay(currentAssignee) || 'unknown')}</strong></span>
                 </div>
             ` : ''}
             ${agents.map(agent => {

@@ -175,10 +175,12 @@ function renderHistoryCard(item) {
     const friendlyDate = formatHistoryDate(item.date);
     const friendlyTime = formatHistoryTime(item.time);
     const preview = item.preview || 'No preview';
+    const topicLabel = item.is_topic ? '<span class="history-topic-label">@topic</span>' : '';
 
     const cardHtml = `
         <div class="card card-minimal" data-testid="history-card" onclick="navigateHistory('conversation-${item.conversation_id}')">
             <span class="card-title">${friendlyDate} ${friendlyTime}</span>
+            ${topicLabel}
             <span class="card-preview">${escapeHtml(preview)}</span>
             <span class="card-arrow">${icon('chevron-right')}</span>
         </div>
@@ -220,6 +222,28 @@ function renderHistoryDetail(conversationId) {
 
     const friendlyDate = formatHistoryDate(item.date);
     const friendlyTime = formatHistoryTime(item.time);
+    const cached = historyConversationDetailCache[conversationId];
+    if (!cached) {
+        loadHistoryConversationDetail(conversationId).then(() => renderHistory());
+    }
+
+    const messages = cached?.messages || [];
+    const transcript = cached
+        ? (messages.length === 0
+            ? '<div class="focus-empty">No messages found.</div>'
+            : messages.map(msg => {
+                const role = msg.role || 'unknown';
+                const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content, null, 2);
+                const html = role === 'assistant' ? marked.parse(content) : escapeHtml(content);
+                const roleLabel = role === 'assistant' ? 'Assistant' : (role === 'user' ? 'User' : role);
+                return `
+                    <div class="prompt-message">
+                        <div class="prompt-message-role">${escapeHtml(roleLabel)}</div>
+                        <div class="prompt-message-content">${html}</div>
+                    </div>
+                `;
+            }).join(''))
+        : '<div class="focus-empty">Loading conversation...</div>';
 
     return `
         <div class="focus-view-header" onclick="navigateHistoryBack()">
@@ -235,8 +259,27 @@ function renderHistoryDetail(conversationId) {
                 <button class="task-detail-action" data-testid="continue-btn" onclick="loadConversation('${item.conversation_id}')">${icon('chat-bubble-left')} Continue</button>
                 <button class="task-detail-action danger" data-testid="delete-btn" onclick="deleteConversation('${item.conversation_id}')">${icon('trash')} Delete</button>
             </div>
+            <div class="prompt-messages-list">
+                ${transcript}
+            </div>
         </div>
     `;
+}
+
+async function loadHistoryConversationDetail(conversationId) {
+    try {
+        const response = await fetch('/api/chat/conversations/fork', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversation_id: conversationId })
+        });
+        if (!response.ok) throw new Error('Failed to fork');
+        const data = await response.json();
+        historyConversationDetailCache[conversationId] = data || { messages: [] };
+    } catch (error) {
+        console.error('Failed to load conversation detail:', error);
+        historyConversationDetailCache[conversationId] = { messages: [] };
+    }
 }
 
 // ============== History Swipe Handlers ==============
@@ -246,6 +289,7 @@ let historySwipeCard = null;
 let historySwipeConversationId = null;
 
 let historySwipeHandlersInitialized = false;
+let historyConversationDetailCache = {};
 
 function initHistorySwipeHandlers() {
     const historyContent = document.getElementById('history-content');

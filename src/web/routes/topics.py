@@ -211,13 +211,16 @@ def api_topic_chat_history(topic_id: str):
 
     asset_name = None
     if assets_dir.exists():
-        chat_assets = [p for p in assets_dir.iterdir() if p.is_file() and p.name.startswith("topic-chat-") and p.name.endswith(".md")]
+        chat_assets = [
+            p for p in assets_dir.iterdir()
+            if p.is_file() and p.name.startswith("topic-chat-") and p.name.endswith(".md")
+        ]
         if chat_assets:
             chat_assets.sort(key=lambda p: p.stat().st_mtime, reverse=True)
             asset_name = chat_assets[0].name
 
     if not asset_name:
-        asset_name = "topic-chat.md"
+        return {"topic_id": topic_id, "messages": [], "conversation_id": None}
 
     asset = read_asset(topic_id, asset_name)
     if not asset or not asset.get("content"):
@@ -234,11 +237,7 @@ def api_topic_chat_history(topic_id: str):
             messages.append({"role": role, "content": msg_content})
         i += 2
 
-    conversation_id = None
-    if asset_name.startswith("topic-chat-") and asset_name.endswith(".md"):
-        conversation_id = asset_name[len("topic-chat-"):-3]
-    elif asset_name == "topic-chat.md":
-        conversation_id = f"topic-{topic_id}"
+    conversation_id = asset_name[len("topic-chat-"):-3]
 
     return {"topic_id": topic_id, "messages": messages, "conversation_id": conversation_id}
 

@@ -40,6 +40,7 @@ function renderMinimalTopicCard(topic) {
         ? `<span class="card-badge">${childCount}</span>`
         : '<span class="card-badge"></span>';
     const assignee = topic.assignee;
+    const displayAssignee = formatAssigneeDisplay(assignee);
 
     // Status indicator based on topic state
     let statusIndicator = '';
@@ -52,12 +53,12 @@ function renderMinimalTopicCard(topic) {
     } else if (topic.status === 'done') {
         statusIndicator = '<span class="card-status-indicator card-done-indicator" title="Completed">' + icon('check') + '</span>';
     } else if (assignee) {
-        statusIndicator = '<span class="card-status-indicator card-assigned-indicator" title="Assigned to ' + escapeHtml(assignee) + '">' + icon('user') + '</span>';
+        statusIndicator = '<span class="card-status-indicator card-assigned-indicator" title="Assigned to ' + escapeHtml(displayAssignee) + '">' + icon('user') + '</span>';
     }
 
     // Assignee label shown before the arrow (only when assigned to an agent)
     const assigneeLabel = assignee
-        ? `<span class="card-assignee-label">${escapeHtml(assignee)}</span>`
+        ? `<span class="card-assignee-label">${escapeHtml(displayAssignee)}</span>`
         : '';
 
     return `
@@ -71,6 +72,16 @@ function renderMinimalTopicCard(topic) {
             <span class="card-arrow">›</span>
         </div>
     `;
+}
+
+function formatAssigneeDisplay(assignee) {
+    if (!assignee) return '';
+    if (typeof agentsCache !== 'undefined' && Array.isArray(agentsCache) && agentsCache.length > 0) {
+        const agent = agentsCache.find(a => a.id === assignee);
+        if (!agent) return `Unknown (${assignee})`;
+        return agent.name || agent.id || assignee;
+    }
+    return assignee;
 }
 
 function renderFullTopicCard(topic) {

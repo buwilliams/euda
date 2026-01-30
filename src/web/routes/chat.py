@@ -183,7 +183,7 @@ def get_recent_conversations(count: int = 20):
             preview = ""
             user_match = re.search(r'## User \([^)]+\)\n\n(.+?)(?:\n\n##|\Z)', content, re.DOTALL)
             if user_match:
-                preview = user_match.group(1).strip()[:100]
+                preview = user_match.group(1).strip()[:300]
 
             message_count = len(re.findall(r'^## (User|Assistant)', content, re.MULTILINE))
 
@@ -194,6 +194,9 @@ def get_recent_conversations(count: int = 20):
                 "preview": preview,
                 "message_count": message_count
             }
+            if conversation_id.startswith("topic-"):
+                conv_data["is_topic"] = True
+                conv_data["topic_id"] = conversation_id.split("-")[1]
             # Include last_message_timestamp only for the most recent conversation
             if i == 0:
                 conv_data["last_message_timestamp"] = int(mtime)

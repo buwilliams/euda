@@ -413,8 +413,8 @@ function renderTopicDetailView(topicId) {
     const allChildTopics = getAllChildTopicsSorted(topic.id);
     const assets = topicAssetsCache[topicId] || [];
     const chatAssets = assets
-        .filter(asset => asset.filename.startsWith('topic-chat-') || asset.filename === 'topic-chat.md')
-        .sort((a, b) => a.filename.localeCompare(b.filename));
+        .filter(asset => asset.filename.startsWith('topic-chat-'))
+        .sort((a, b) => (b.modified_at || '').localeCompare(a.modified_at || ''));
     const isAgentTopic = !!topic.agent_id;
     const titleIcon = isAgentTopic ? icon('bolt') : '';
 
@@ -452,12 +452,6 @@ function renderTopicDetailView(topicId) {
                 ${isAgentTopic ? '' : `<button class="task-detail-action" onclick="openMorePicker('${topic.id}')">Actions</button>`}
             </div>
 
-            <!-- Name Section -->
-            <div class="topic-section" data-testid="topic-name">
-                <div class="topic-section-header">Name</div>
-                <div class="topic-name-display">${escapeHtml(displayName)}</div>
-            </div>
-
             <!-- Description Section -->
             <div class="topic-section" data-testid="topic-description">
                 <div class="topic-section-header">Description</div>
@@ -479,14 +473,6 @@ function renderTopicDetailView(topicId) {
             </div>
             ` : ''}
 
-            <!-- Parent Link -->
-            ${parentName ? `
-            <div class="topic-section">
-                <div class="topic-section-header">Parent</div>
-                <div class="card-project-link" onclick="navigateFocus('topic-${topic.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
-            </div>
-            ` : ''}
-
             <!-- Topic Chats Section -->
             ${chatAssets.length > 0 ? `
             <div class="topic-section">
@@ -500,11 +486,14 @@ function renderTopicDetailView(topicId) {
                             const displayName = asset.filename
                                 .replace(/^topic-chat-/, '')
                                 .replace(/\.md$/, '');
+                            const updatedAt = asset.modified_at
+                                ? new Date(asset.modified_at).toLocaleString()
+                                : '';
                             return `
                                 <div class="child-topic-card" onclick="navigateFocus('asset-${topic.id}-${asset.filename}')">
                                     <span class="child-topic-icon">${icon('chat-bubble-left')}</span>
                                     <span class="child-topic-name">${escapeHtml(displayName)}</span>
-                                    <span class="child-topic-count"></span>
+                                    <span class="child-topic-count">${escapeHtml(updatedAt)}</span>
                                     <span class="child-topic-arrow">${icon('chevron-right')}</span>
                                 </div>
                             `;
@@ -548,6 +537,14 @@ function renderTopicDetailView(topicId) {
                     <span class="section-toggle">${icon('chevron-right')}</span>
                 </div>
             </div>
+
+            <!-- Parent Link -->
+            ${parentName ? `
+            <div class="topic-section">
+                <div class="topic-section-header">Parent</div>
+                <div class="card-project-link" onclick="navigateFocus('topic-${topic.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
+            </div>
+            ` : ''}
         </div>
     `;
 }
@@ -617,12 +614,6 @@ function renderCompletedTopicDetailView(topicId) {
                 <span style="color: #4a8; font-weight: 500;">${icon('check')} Completed ${escapeHtml(completedDate)}</span>
             </div>
 
-            <!-- Name Section -->
-            <div class="topic-section">
-                <div class="topic-section-header">Name</div>
-                <div class="topic-name-display">${escapeHtml(displayName)}</div>
-            </div>
-
             <!-- Description Section -->
             <div class="topic-section">
                 <div class="topic-section-header">Description</div>
@@ -660,14 +651,6 @@ function renderCompletedTopicDetailView(topicId) {
             </div>
             ` : ''}
 
-            <!-- Parent Link -->
-            ${parentName ? `
-            <div class="topic-section">
-                <div class="topic-section-header">Parent</div>
-                <div class="card-project-link" onclick="navigateFocus('${parentIsCompleted ? 'completed' : 'topic'}-${topic.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
-            </div>
-            ` : ''}
-
             <!-- Assets Section -->
             ${assets.length > 0 ? `
             <div class="topic-section">
@@ -692,6 +675,14 @@ function renderCompletedTopicDetailView(topicId) {
                         `;
                     }).join('')}
                 </div>
+            </div>
+            ` : ''}
+
+            <!-- Parent Link -->
+            ${parentName ? `
+            <div class="topic-section">
+                <div class="topic-section-header">Parent</div>
+                <div class="card-project-link" onclick="navigateFocus('${parentIsCompleted ? 'completed' : 'topic'}-${topic.parent_id}')" style="padding: 0.5rem; cursor: pointer;">${icon('folder')} ${escapeHtml(parentName)}</div>
             </div>
             ` : ''}
         </div>
