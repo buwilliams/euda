@@ -504,11 +504,6 @@ function renderMemoryListView(agentId) {
             </div>
         </div>
         <div class="focus-view-content">
-            <!-- Action Menu -->
-            <div class="task-detail-actions">
-                <button class="task-detail-action" onclick="addMemoryItem('${agentId}')">+ Add Memory</button>
-            </div>
-
             <!-- Memory Items -->
             <div data-testid="memory-list">
             ${items.length === 0 ? '<div class="focus-empty">No short-term memory items.</div>' :
@@ -1115,12 +1110,6 @@ function renderIdentityView(agentId) {
     const identity = agentData.identity || '';
     const hasIdentity = identity.length > 0;
 
-    // Find the topic for this agent (for editing state)
-    const agentTopic = topicsData.find(j => j.agent_id === agentId);
-    const topicId = agentTopic?.id || agentId;
-
-    const isEditingIdentity = editingTopicField?.topicId === topicId && editingTopicField?.field === 'identity';
-
     return `
         <div class="focus-view-header" onclick="navigateFocusBack()">
             <span class="focus-back-btn" data-testid="back-btn">${icon('chevron-left')}</span>
@@ -1130,34 +1119,9 @@ function renderIdentityView(agentId) {
             </div>
         </div>
         <div class="focus-view-content">
-            ${isEditingIdentity ? `
-                <!-- Edit Mode -->
-                <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="saveAgentIdentityField('${agentId}', '${topicId}')">
-                        ${icon('check')} Save
-                    </button>
-                    <button class="task-detail-action" onclick="cancelEditing()">
-                        ${icon('x-mark')} Cancel
-                    </button>
-                </div>
-
-                <div class="identity-edit">
-                    <textarea class="topic-description-input" id="edit-identity-${topicId}"
-                        placeholder="Define the agent's identity and behavioral rules..."
-                        style="min-height: 300px;">${escapeHtml(identity)}</textarea>
-                </div>
-            ` : `
-                <!-- View Mode -->
-                <div class="task-detail-actions">
-                    <button class="task-detail-action" onclick="startEditingField('${topicId}', 'identity')">
-                        ${icon('pencil')} Edit
-                    </button>
-                </div>
-
-                <div class="identity-content ${hasIdentity ? '' : 'empty'}" data-testid="identity-content">
-                    ${hasIdentity ? marked.parse(identity) : '<em class="text-muted">No identity defined. Click Edit to define the agent\'s identity and behavioral rules.</em>'}
-                </div>
-            `}
+            <div class="identity-content ${hasIdentity ? '' : 'empty'}" data-testid="identity-content">
+                ${hasIdentity ? marked.parse(identity) : '<em class="text-muted">No identity defined.</em>'}
+            </div>
         </div>
     `;
 }

@@ -884,31 +884,6 @@ async function loadTopicTrace(topicId) {
 
 // ============== Memory Actions ==============
 
-async function addMemoryItem(agentId) {
-    const description = prompt('Memory description:');
-    if (!description) return;
-
-    const type = prompt('Type (person, place, thing, goal, concern, idea, learning, behavior):') || 'thing';
-
-    try {
-        const response = await fetch(`/api/agents/${agentId}/memory/short-term`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({
-                short_description: description,
-                type: type
-            })
-        });
-
-        if (response.ok) {
-            await refreshMemorySection(agentId, 'short-term-memory');
-        }
-    } catch (error) {
-        console.error('Failed to add memory item:', error);
-    }
-}
-
 async function deleteMemoryItem(agentId, entryId) {
     try {
         const response = await fetch(`/api/agents/${agentId}/memory/short-term/${entryId}`, {

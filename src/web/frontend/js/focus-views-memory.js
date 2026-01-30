@@ -7,9 +7,6 @@ function renderShortTermMemoryContent(items, agentId) {
     if (!items || items.length === 0) {
         return `
             <div class="focus-empty">No short-term memory items.</div>
-            <div class="memory-actions">
-                <button class="btn-secondary memory-add" onclick="addMemoryItem('${agentId}')">+ Add Memory</button>
-            </div>
         `;
     }
 
@@ -47,9 +44,6 @@ function renderShortTermMemoryContent(items, agentId) {
             <button class="memory-page-btn" onclick="pageMemory('${agentId}', 'next')" ${end >= items.length ? 'disabled' : ''}>Next</button>
         </div>
         ` : ''}
-        <div class="memory-actions">
-            <button class="btn-secondary memory-add" onclick="addMemoryItem('${agentId}')">+ Add Memory</button>
-        </div>
     `;
 }
 

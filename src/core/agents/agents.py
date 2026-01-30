@@ -12,6 +12,14 @@ from typing import List, Optional
 DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 AGENTS_DIR = DATA_DIR / "agents"
 
+def _normalize_identity_content(content: str) -> str:
+    """Normalize escaped newlines to real newlines for markdown rendering."""
+    if content is None:
+        return ""
+    normalized = content.replace("\\r\\n", "\n")
+    normalized = normalized.replace("\\n", "\n")
+    return normalized
+
 # Minimal tools every agent needs to function
 BASE_TOOLS = [
     "list_topics",
@@ -121,7 +129,11 @@ def get_agent_identity(agent_id: str) -> Optional[str]:
     """Get an agent's identity markdown."""
     identity_path = AGENTS_DIR / agent_id / "identity.md"
     if identity_path.exists():
-        return identity_path.read_text()
+        raw = identity_path.read_text()
+        normalized = _normalize_identity_content(raw)
+        if normalized != raw:
+            identity_path.write_text(normalized)
+        return normalized
     return None
 
 
@@ -132,7 +144,7 @@ def update_agent_identity_internal(agent_id: str, identity: str) -> dict:
         return {"error": f"Agent not found: {agent_id}"}
 
     identity_path = agent_dir / "identity.md"
-    identity_path.write_text(identity)
+    identity_path.write_text(_normalize_identity_content(identity))
 
     return {"updated": True, "agent_id": agent_id}
 
@@ -307,7 +319,7 @@ def update_own_identity(updates: str, agent_id: str = None) -> dict:
     identity_path = agent_dir / "identity.md"
 
     if identity_path.exists():
-        current_identity = identity_path.read_text()
+        current_identity = _normalize_identity_content(identity_path.read_text())
     else:
         current_identity = f"# Identity: {agent_id}\n"
 
@@ -315,7 +327,7 @@ def update_own_identity(updates: str, agent_id: str = None) -> dict:
     today = datetime.now().strftime("%Y-%m-%d")
     update_section = f"\n\n---\n\n## Reflection Update ({today})\n\n{updates}"
 
-    new_identity = current_identity + update_section
+    new_identity = _normalize_identity_content(current_identity + update_section)
     identity_path.write_text(new_identity)
 
     return {"updated": True, "agent_id": agent_id, "date": today}
@@ -341,14 +353,14 @@ def append_to_agent_identity(agent_id: str, section_title: str, content: str) ->
     identity_path = agent_dir / "identity.md"
 
     if identity_path.exists():
-        current_identity = identity_path.read_text()
+        current_identity = _normalize_identity_content(identity_path.read_text())
     else:
         current_identity = f"# {agent_id}\n"
 
     today = datetime.now().strftime("%Y-%m-%d")
     new_section = f"\n\n---\n\n## {section_title} ({today})\n\n{content}"
 
-    new_identity = current_identity + new_section
+    new_identity = _normalize_identity_content(current_identity + new_section)
     identity_path.write_text(new_identity)
 
     return {"updated": True, "agent_id": agent_id, "section": section_title, "date": today}

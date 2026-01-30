@@ -57,6 +57,7 @@ Triggers are objects with explicit `event` and topic fields:
 - `event`: What causes the trigger (schedule name or future system event)
 - `topic_name`: The name of the topic to create (e.g., `euno:consolidate`, `euno:quote`)
 - `instructions`: The full topic description (and guidance) that is written as the created topic description (optional)
+- `only_one`: If true, reuse a single topic for this trigger per agent. If an existing topic is `done`/`error`/`archived`, it is reopened as `todo` instead of creating a new row.
 
 ### Event Types
 
