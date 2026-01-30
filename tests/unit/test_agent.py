@@ -21,18 +21,17 @@ from tests.fixtures.llm import MockLLMClient, MockResponse
 def _write_test_prompts(agent_dir):
     """Create minimal prompt templates for a test agent and pre-populate the cache.
 
-    Writes the system template to data/system/prompts/ (shared) and
-    agent-specific templates to the agent's prompts directory.
+    Templates are written to the agent's prompts directory on disk.
+    All templates (including the system-level one) are pre-populated in the
+    cache so tests don't hit the real data/system/prompts/ directory.
     """
-    from src.agent.cognition.reasoning.prompts import _template_cache, PROMPTS_DIR
+    from src.agent.cognition.reasoning.prompts import _template_cache
 
     prompts_dir = agent_dir / "prompts"
     prompts_dir.mkdir(parents=True, exist_ok=True)
 
-    # System-level template (written to data/system/prompts/)
+    # System-level template (cache-only — not written to real data/system/prompts/)
     system_content = "## Euno\n\nEuno is a personal intelligence for human flourishing.\n\n## Agent Identity\n\n{identity}\n\n## User Context\n\n{user_identity}\n\n## Topics\n\nTopics are the primary unit of work.\n\n## Skills\n\nDiscover skills with list_skills.\n"
-    PROMPTS_DIR.mkdir(parents=True, exist_ok=True)
-    (PROMPTS_DIR / "system.md").write_text(system_content)
 
     # Agent-level templates
     templates = {
@@ -45,7 +44,6 @@ def _write_test_prompts(agent_dir):
     }
 
     agent_id = agent_dir.name
-    # Cache the system template
     _template_cache[f"{agent_id}:agent/system"] = system_content
 
     for name, content in templates.items():
