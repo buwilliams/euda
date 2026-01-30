@@ -1,0 +1,13 @@
+{
+  "name": "link-preview",
+  "description": "Display rich link previews from Open Graph metadata",
+  "display": ["embed"],
+  "schema": {
+    "url": "string (required) - The canonical URL",
+    "title": "string - Page title from og:title or <title>",
+    "description": "string - Description from og:description",
+    "image": "string - Image URL from og:image",
+    "site_name": "string - Site name from og:site_name",
+    "type": "string - Content type from og:type"
+  }
+}
