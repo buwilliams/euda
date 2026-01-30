@@ -64,30 +64,45 @@ export function render(container, data, ctx) {
         <style>
             .link-preview-card {
                 display: block;
-                border: 1px solid var(--color-border, #e0e0e0);
-                border-radius: var(--radius-lg, 12px);
+                border: 1px solid #d0d0d0;
+                border-radius: 12px;
                 overflow: hidden;
                 text-decoration: none;
                 color: inherit;
-                background: var(--color-bg-white, #fff);
+                background: #fff;
                 transition: box-shadow 0.2s ease, border-color 0.2s ease;
                 max-width: 500px;
+                margin: 4px 0;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.06);
             }
             .link-preview-card:hover {
-                border-color: var(--color-border-hover, #ccc);
-                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                border-color: #b0b0b0;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             }
             .link-preview-image {
                 width: 100%;
                 max-height: 250px;
                 overflow: hidden;
-                background: var(--color-bg-subtle, #f5f5f5);
+                background: #f5f5f5;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             .link-preview-image img {
                 width: 100%;
+                max-width: 100%;
+                max-height: 250px;
                 height: auto;
                 display: block;
-                object-fit: cover;
+                object-fit: contain;
+            }
+            /* SVG-specific handling */
+            .link-preview-image img[src$=".svg"],
+            .link-preview-image img[src*=".svg?"] {
+                max-width: 90%;
+                max-height: 200px;
+                width: auto;
+                padding: 16px;
             }
             .link-preview-content {
                 padding: 12px 16px;
