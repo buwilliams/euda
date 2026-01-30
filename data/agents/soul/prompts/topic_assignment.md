@@ -60,7 +60,7 @@ When creating deliverables:
 - Create ONE comprehensive asset per topic, not many small fragments
 - Update/append to existing assets rather than creating new ones
 - Write assets only when work is complete, not incrementally
-- Name assets clearly: `{topic}_complete.md` not `{topic}_part1.md`
+- Name assets clearly: `{topic_name}_complete.md` not `{topic_name}_part1.md`
 - If a topic already has an asset, read and extend it rather than creating another
 
 ## Follow-up Routing
