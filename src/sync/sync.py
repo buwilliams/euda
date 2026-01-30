@@ -7,6 +7,7 @@ local and remote Euno instances.
 
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
+import time
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
@@ -129,6 +130,9 @@ def sync(
         if verbose:
             print(f"  {msg}")
 
+    def log_duration(label: str, start_time: float) -> None:
+        log(f"{label} finished in {time.monotonic() - start_time:.1f}s")
+
     started_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     local_backup_name = ""
     remote_backup_name = ""
@@ -193,7 +197,8 @@ def sync(
     # Stop remote server and sync code (unless data_only or dry_run)
     if not data_only and not dry_run:
         # Stop remote server
-        log("Stopping remote server...")
+        log("Stopping remote server (timeout 30s)...")
+        stop_started = time.monotonic()
         success, message = transport.stop_remote_server()
         if not success:
             return SyncResult(
@@ -206,9 +211,11 @@ def sync(
             )
         server_was_stopped = True
         log(f"Server stopped: {message}")
+        log_duration("Stop remote server", stop_started)
 
         # Sync source code (local -> remote)
-        log("Syncing source code...")
+        log("Syncing source code (rsync --checksum --delete)...")
+        code_sync_started = time.monotonic()
         local_root = DATA_DIR.parent  # Euno root directory
         result = transport.sync_source_code(local_root, verbose=verbose)
         if not result.success:
@@ -226,10 +233,13 @@ def sync(
         code_synced = True
         code_files_transferred = result.files_transferred
         log(f"Code synced: {code_files_transferred} file(s) transferred")
+        log_duration("Code sync", code_sync_started)
 
     # Get remote instance ID
     log("Getting remote instance ID...")
+    instance_started = time.monotonic()
     remote_instance_id = transport.get_remote_instance_id()
+    log_duration("Remote instance ID fetch", instance_started)
     if not remote_instance_id:
         # Remote might not have sync initialized - that's OK for first sync
         remote_instance_id = "unknown"
@@ -269,6 +279,7 @@ def sync(
 
         deduped_conflicts = list(seen.values())
         log(f"Applying {len(deduped_conflicts)} resolved conflict(s) ({len(stale_ids)} stale duplicate(s) removed)...")
+        apply_conflict_started = time.monotonic()
 
         for conflict in deduped_conflicts:
             # Determine change type based on resolution
@@ -330,6 +341,7 @@ def sync(
                         # Delete failed conflict to prevent infinite loop
                         delete_conflict(conflict.id)
                     break
+        log_duration("Resolved conflict application", apply_conflict_started)
 
     # Collect all changes and conflicts
     all_changes: List[SyncChange] = []
@@ -338,11 +350,13 @@ def sync(
     # Phase 1: Detect changes from all handlers
     for handler in handlers:
         log(f"Detecting changes: {handler.name}...")
+        detect_started = time.monotonic()
         try:
             changes, conflicts = handler.detect_changes(transport, direction)
             all_changes.extend(changes)
             all_conflicts.extend(conflicts)
             log(f"  Found {len(changes)} change(s), {len(conflicts)} conflict(s)")
+            log_duration(f"Detect changes ({handler.name})", detect_started)
         except Exception as e:
             return SyncResult(
                 success=False,
@@ -387,6 +401,7 @@ def sync(
             has_pull = any(c.type == "pull" for c in all_changes)
             if has_pull:
                 log("Creating local backup...")
+                backup_started = time.monotonic()
                 success, result = backup_local_data()
                 if not success:
                     return SyncResult(
@@ -400,12 +415,14 @@ def sync(
                     )
                 local_backup_name = result
                 log(f"Local backup: {local_backup_name}")
+                log_duration("Local backup", backup_started)
 
         # Backup remote if we're pushing
         if direction in ("push", "bidirectional"):
             has_push = any(c.type == "push" for c in all_changes)
             if has_push:
                 log("Creating remote backup...")
+                backup_started = time.monotonic()
                 success, result = transport.backup_remote_data()
                 if not success:
                     return SyncResult(
@@ -419,12 +436,15 @@ def sync(
                     )
                 remote_backup_name = result
                 log(f"Remote backup: {remote_backup_name}")
+                log_duration("Remote backup", backup_started)
 
     # Phase 3: Apply changes
     for handler in handlers:
         log(f"Applying changes: {handler.name}...")
+        apply_started = time.monotonic()
         try:
             handler.apply_changes(transport, direction, all_changes)
+            log_duration(f"Apply changes ({handler.name})", apply_started)
         except Exception as e:
             return SyncResult(
                 success=False,
@@ -439,6 +459,7 @@ def sync(
     # Phase 4: Delete files that don't exist on source (if --delete flag)
     if delete and not dry_run:
         log("Checking for deletions...")
+        delete_started = time.monotonic()
         deletion_count = 0
         for handler in handlers:
             if hasattr(handler, 'apply_deletions'):
@@ -456,6 +477,7 @@ def sync(
                 except Exception as e:
                     log(f"  Error during deletion in {handler.name}: {e}")
         log(f"Deletions: {deletion_count} file(s) deleted")
+        log_duration("Deletions", delete_started)
 
     # Record sync
     completed_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
@@ -471,13 +493,15 @@ def sync(
     # Restart remote server if we stopped it and sync was successful with no conflicts
     server_restarted = False
     if server_was_stopped and not all_conflicts:
-        log("Restarting remote server...")
+        log("Restarting remote server (timeout 30s)...")
+        restart_started = time.monotonic()
         success, message = transport.start_remote_server()
         if success:
             server_restarted = True
             log(f"Server restarted: {message}")
         else:
             log(f"Warning: Failed to restart server: {message}")
+        log_duration("Start remote server", restart_started)
 
     return SyncResult(
         success=True,
