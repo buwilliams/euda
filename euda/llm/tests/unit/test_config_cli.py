@@ -39,3 +39,15 @@ def test_config_get_set(tmp_path):
     assert override_path.exists()
     override = json.loads(override_path.read_text(encoding="utf-8"))
     assert override["provider"] == "xai"
+
+
+def test_config_set_rounds_hourly_cost(tmp_path):
+    write_default_config(tmp_path)
+    runner = CliRunner()
+    env = {"LLM_CONFIG_DIR": str(tmp_path)}
+
+    result = runner.invoke(app, ["config", "set", "hourly_cost", "0.1234"], env=env)
+    assert result.exit_code == 0
+
+    override = json.loads((tmp_path / "config.json").read_text(encoding="utf-8"))
+    assert override["hourly_cost"] == 0.12

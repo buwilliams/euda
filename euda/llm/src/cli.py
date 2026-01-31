@@ -45,6 +45,8 @@ def config_set(
 ) -> None:
     _, override = load_config()
     parsed = parse_value(value)
+    if key.endswith("hourly_cost") and isinstance(parsed, (int, float, str)):
+        parsed = round(float(parsed), 2)
     set_value(override, key, parsed)
     write_override(override)
     if isinstance(parsed, (dict, list)):
@@ -177,6 +179,7 @@ def call(
     hourly_cost = config.get("hourly_cost", 0.0) or 0.0
     hourly_cost += (input_tokens / 1_000_000) * input_rate
     hourly_cost += (output_tokens / 1_000_000) * output_rate
+    hourly_cost = round(hourly_cost, 2)
     set_value(override, "hourly_input_tokens", (config.get("hourly_input_tokens", 0) or 0) + input_tokens)
     set_value(override, "hourly_output_tokens", (config.get("hourly_output_tokens", 0) or 0) + output_tokens)
     set_value(override, "hourly_cost", hourly_cost)

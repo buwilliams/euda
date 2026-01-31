@@ -4,6 +4,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 import main
+import src.cli as cli
 from src.providers import LLMResponse
 
 
@@ -38,7 +39,7 @@ class StubClient:
 
 def test_call_reads_stdin_prompt(tmp_path, monkeypatch):
     write_default_config(tmp_path)
-    monkeypatch.setattr(main, "_get_llm_client", lambda config: StubClient())
+    monkeypatch.setattr(cli, "_get_llm_client", lambda config: StubClient())
 
     runner = CliRunner()
     env = {"LLM_CONFIG_DIR": str(tmp_path)}
@@ -54,7 +55,7 @@ def test_call_reads_stdin_prompt(tmp_path, monkeypatch):
 
 def test_call_defaults_empty_system_prompt(tmp_path, monkeypatch):
     write_default_config(tmp_path)
-    monkeypatch.setattr(main, "_get_llm_client", lambda config: StubClient())
+    monkeypatch.setattr(cli, "_get_llm_client", lambda config: StubClient())
 
     runner = CliRunner()
     env = {"LLM_CONFIG_DIR": str(tmp_path)}

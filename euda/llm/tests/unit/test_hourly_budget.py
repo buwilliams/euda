@@ -4,6 +4,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 import main
+import src.cli as cli
 from src.providers import LLMResponse
 
 
@@ -38,7 +39,7 @@ class StubClient:
 
 def test_pause_when_budget_exceeded(tmp_path, monkeypatch):
     write_default_config(tmp_path, monthly_budget=1.0)
-    monkeypatch.setattr(main, "_get_llm_client", lambda config: StubClient())
+    monkeypatch.setattr(cli, "_get_llm_client", lambda config: StubClient())
 
     runner = CliRunner()
     env = {"LLM_CONFIG_DIR": str(tmp_path)}
@@ -52,7 +53,7 @@ def test_pause_when_budget_exceeded(tmp_path, monkeypatch):
 
 def test_reset_hour_unpauses(tmp_path, monkeypatch):
     write_default_config(tmp_path, monthly_budget=1.0)
-    monkeypatch.setattr(main, "_get_llm_client", lambda config: StubClient())
+    monkeypatch.setattr(cli, "_get_llm_client", lambda config: StubClient())
 
     runner = CliRunner()
     env = {"LLM_CONFIG_DIR": str(tmp_path)}

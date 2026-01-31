@@ -49,6 +49,8 @@ def load_config() -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
 def write_override(override: Dict[str, Any]) -> None:
     base_dir = config_dir()
+    if isinstance(override.get("hourly_cost"), (int, float)):
+        override["hourly_cost"] = round(float(override["hourly_cost"]), 2)
     save_json(base_dir / OVERRIDE_CONFIG_FILENAME, override)
 
 
@@ -62,6 +64,8 @@ def get_value(data: Dict[str, Any], key: str) -> Any:
 
 
 def set_value(data: Dict[str, Any], key: str, value: Any) -> None:
+    if key.endswith("hourly_cost") and isinstance(value, (int, float)):
+        value = round(float(value), 2)
     parts = key.split(".")
     current: Dict[str, Any] = data
     for part in parts[:-1]:
