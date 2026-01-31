@@ -17,4 +17,10 @@ build-backend = "hatchling.build"
 package = true
 
 [tool.hatch.build.targets.wheel]
-include = ["main.py"]
+include = [
+  "main.py",
+  "src/__init__.py",
+  "src/cli.py",
+  "src/config.py",
+  "config.default.json",
+]

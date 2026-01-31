@@ -16,6 +16,9 @@ venv/
 # Tools
 uv.lock
 
+# App config overrides
+**/config.json
+
 # OS / editor
 .DS_Store
 Thumbs.db

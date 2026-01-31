@@ -20,6 +20,7 @@ package = true
 include = [
   "main.py",
   "src/__init__.py",
+  "src/cli.py",
   "src/config.py",
   "src/llm.py",
   "src/providers/__init__.py",
