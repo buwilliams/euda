@@ -180,6 +180,9 @@ def call(
     provider: str | None = typer.Option(None, "--provider", help="Override provider for this call."),
     model: str | None = typer.Option(None, "--model", help="Override model for this call."),
 ) -> None:
+    if prompt is None:
+        prompt = system_prompt
+        system_prompt = ""
     config, override = load_config()
     current_hour = _current_hour_start_utc()
     if config.get("hour_window_start_utc") != current_hour:
