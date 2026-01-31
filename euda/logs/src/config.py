@@ -6,6 +6,7 @@ from typing import Any, Dict, Tuple
 CONFIG_ENV_VAR = "LOGS_CONFIG_DIR"
 DEFAULT_CONFIG_FILENAME = "config.default.json"
 OVERRIDE_CONFIG_FILENAME = "config.json"
+DATA_DIRNAME = "data"
 
 
 def config_dir() -> Path:
@@ -13,6 +14,10 @@ def config_dir() -> Path:
     if env_dir:
         return Path(env_dir)
     return Path(__file__).resolve().parent.parent
+
+
+def data_dir() -> Path:
+    return config_dir() / DATA_DIRNAME
 
 
 def load_json(path: Path) -> Dict[str, Any]:
