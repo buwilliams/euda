@@ -1,6 +1,6 @@
-# Eudaimonia (you-dye-MOH-nee-ah)
+# Euda
 
-_Euda (you-da) for short is an ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities._
+_Eudaimonia (you-dye-MOH-nee-ah), or  Euda (you-da) for short, is an ancient Greek concept for human flourishing: a deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities._
 
 **Euda is a personal intelligence for human flourishing.** It learns who you are—your values, patterns, and rhythms—not to optimize your productivity, but to help you grow. It can do tasks, curate information, and anticipate your needs. Those capabilities serve a deeper purpose: helping you live a life of meaning.
 
