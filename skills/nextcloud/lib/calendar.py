@@ -2,11 +2,173 @@
 
 import re
 import uuid
-from datetime import datetime, timedelta
-from typing import Optional
+from datetime import datetime, timedelta, date
+from typing import Optional, List
 from xml.etree import ElementTree as ET
 
+from dateutil.rrule import rrulestr
+
 from .client import NextcloudClient
+
+
+def _is_subscription_calendar(client: NextcloudClient, calendar: str) -> bool:
+    """Check if a calendar is a subscription (read-only external calendar).
+
+    Subscription calendars don't support standard CalDAV REPORT queries,
+    so we need to detect them and use the export endpoint instead.
+    """
+    caldav_path = f"/remote.php/dav/calendars/{client.username}/{calendar}/"
+
+    headers = {"Depth": "0", "Content-Type": "application/xml"}
+    propfind_body = b'''<?xml version="1.0" encoding="UTF-8"?>
+    <d:propfind xmlns:d="DAV:" xmlns:cs="http://calendarserver.org/ns/">
+        <d:prop><d:resourcetype/></d:prop>
+    </d:propfind>'''
+
+    try:
+        status, body, _ = client.request(
+            "PROPFIND", caldav_path, data=propfind_body, headers=headers
+        )
+    except ConnectionError:
+        return False
+
+    if status not in (200, 207) or not body:
+        return False
+
+    # Check for <cs:subscribed/> in resourcetype
+    return b"subscribed" in body
+
+
+def _expand_recurring_event(
+    vevent_data: str,
+    base_event: dict,
+    start_dt: datetime,
+    end_dt: datetime
+) -> List[dict]:
+    """Expand a recurring event into individual occurrences within a date range.
+
+    Args:
+        vevent_data: Raw VEVENT block
+        base_event: Parsed event dict with title, uid, etc.
+        start_dt: Range start
+        end_dt: Range end
+
+    Returns:
+        List of event dicts for each occurrence in the range
+    """
+    # Extract RRULE
+    rrule_match = re.search(r"RRULE:(.+)", vevent_data)
+    if not rrule_match:
+        return []
+
+    rrule_str = rrule_match.group(1).strip()
+
+    # Parse the base DTSTART
+    dtstart_match = re.search(r"DTSTART[^:]*:(\d{8}T?\d{0,6}Z?)", vevent_data)
+    if not dtstart_match:
+        return []
+
+    dtstart_str = dtstart_match.group(1)
+    try:
+        if len(dtstart_str) == 8:  # All-day
+            dtstart = datetime.strptime(dtstart_str, "%Y%m%d")
+        elif dtstart_str.endswith("Z"):
+            dtstart = datetime.strptime(dtstart_str, "%Y%m%dT%H%M%SZ")
+        else:
+            dtstart = datetime.strptime(dtstart_str, "%Y%m%dT%H%M%S")
+    except ValueError:
+        return []
+
+    # Calculate duration from base event
+    duration = timedelta(hours=1)  # Default
+    if "start" in base_event and "end" in base_event:
+        try:
+            ev_start = datetime.fromisoformat(base_event["start"])
+            ev_end = datetime.fromisoformat(base_event["end"])
+            duration = ev_end - ev_start
+        except (ValueError, TypeError):
+            pass
+
+    # Parse RRULE and expand occurrences
+    try:
+        rule = rrulestr(rrule_str, dtstart=dtstart)
+        occurrences = list(rule.between(start_dt, end_dt, inc=True))
+    except (ValueError, TypeError):
+        return []
+
+    # Create event instances for each occurrence
+    events = []
+    for occ_start in occurrences:
+        occ_end = occ_start + duration
+        event = {
+            "uid": base_event.get("uid", ""),
+            "title": base_event.get("title", "Untitled"),
+            "start": occ_start.isoformat(),
+            "end": occ_end.isoformat(),
+        }
+        if base_event.get("description"):
+            event["description"] = base_event["description"]
+        if base_event.get("location"):
+            event["location"] = base_event["location"]
+        events.append(event)
+
+    return events
+
+
+def _export_calendar_events(
+    client: NextcloudClient,
+    calendar: str,
+    start_dt: datetime,
+    end_dt: datetime
+) -> List[dict]:
+    """Export a calendar and filter events by date range.
+
+    Used for subscription calendars that don't support CalDAV REPORT queries.
+    Handles both single events and recurring events with RRULE expansion.
+    """
+    caldav_path = f"/remote.php/dav/calendars/{client.username}/{calendar}/?export"
+
+    try:
+        status, body, _ = client.request("GET", caldav_path)
+    except ConnectionError:
+        return []
+
+    if status != 200 or not body:
+        return []
+
+    ical_content = body.decode() if isinstance(body, bytes) else body
+
+    # Split into individual VEVENT blocks
+    events = []
+    vevent_pattern = re.compile(r"BEGIN:VEVENT\r?\n(.+?)\r?\nEND:VEVENT", re.DOTALL)
+
+    for match in vevent_pattern.finditer(ical_content):
+        vevent_data = "BEGIN:VEVENT\n" + match.group(1) + "\nEND:VEVENT"
+        event = _parse_icalendar_event(vevent_data)
+
+        if not event:
+            continue
+
+        # Check if this is a recurring event
+        has_rrule = "RRULE:" in vevent_data
+
+        if has_rrule:
+            # Expand recurring event into occurrences
+            expanded = _expand_recurring_event(vevent_data, event, start_dt, end_dt)
+            events.extend(expanded)
+        elif "start" in event:
+            # Single event - check if in range
+            try:
+                event_start = datetime.fromisoformat(event["start"])
+                if event_start.tzinfo is not None:
+                    event_start = event_start.replace(tzinfo=None)
+
+                if start_dt <= event_start <= end_dt:
+                    events.append(event)
+            except (ValueError, TypeError):
+                continue
+
+    return events
 
 
 def _parse_icalendar_event(ical_data: str) -> dict:
@@ -241,6 +403,13 @@ def nc_list_events(
 
     # Sort by start time
     events.sort(key=lambda e: e.get("start", ""))
+
+    # If no events from REPORT, check if this is a subscription calendar
+    # Subscription calendars don't support CalDAV REPORT queries, so we
+    # fall back to exporting the full calendar and filtering client-side
+    if len(events) == 0 and _is_subscription_calendar(client, calendar):
+        events = _export_calendar_events(client, calendar, start_dt, end_dt)
+        events.sort(key=lambda e: e.get("start", ""))
 
     return {
         "calendar": calendar,
