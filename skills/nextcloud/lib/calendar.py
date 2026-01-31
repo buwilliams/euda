@@ -182,19 +182,27 @@ def nc_list_events(
     headers = {
         "Depth": "1",
         "Content-Type": "application/xml",
+        # Nextcloud-specific: include webcal/subscription data in CalDAV responses
+        "X-NC-CalDAV-Webcal-Caching": "On",
     }
 
+    # Format dates for CalDAV query
+    start_str = start_dt.strftime('%Y%m%dT000000Z')
+    end_str = end_dt.strftime('%Y%m%dT235959Z')
+
     # CalDAV REPORT request for events in range
+    # Uses <expand> to expand recurring events within the date range
     report_body = f'''<?xml version="1.0" encoding="UTF-8"?>
     <c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
         <d:prop>
-            <d:getetag/>
-            <c:calendar-data/>
+            <c:calendar-data>
+                <c:expand start="{start_str}" end="{end_str}"/>
+            </c:calendar-data>
         </d:prop>
         <c:filter>
             <c:comp-filter name="VCALENDAR">
                 <c:comp-filter name="VEVENT">
-                    <c:time-range start="{start_dt.strftime('%Y%m%dT000000Z')}" end="{end_dt.strftime('%Y%m%dT235959Z')}"/>
+                    <c:time-range start="{start_str}" end="{end_str}"/>
                 </c:comp-filter>
             </c:comp-filter>
         </c:filter>
