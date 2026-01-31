@@ -190,3 +190,135 @@ def test_tail_long_ignores_existing_files(
     assert result.exit_code == 0
     output_lines = [line for line in result.stdout.splitlines() if line.strip()]
     assert output_lines == []
+
+
+def test_search_short_matches_within_window(
+    tmp_path: Path, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixed = datetime(2026, 1, 31, 12, 0, 0, tzinfo=timezone.utc)
+    _set_fixed_time(monkeypatch, fixed)
+
+    runner.invoke(
+        cli.app,
+        ["write", "\"hello world\"", "--term", "short", "--type", "note", "--id", "x"],
+        env={"MEMORY_CONFIG_DIR": str(tmp_path)},
+    )
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "search",
+            "hello world",
+            "--term",
+            "short",
+            "--type",
+            "note",
+            "--id",
+            "x",
+            "--within",
+            "2",
+        ],
+        env={"MEMORY_CONFIG_DIR": str(tmp_path)},
+    )
+
+    assert result.exit_code == 0
+    output_lines = [line for line in result.stdout.splitlines() if line.strip()]
+    assert len(output_lines) == 1
+    payload = json.loads(output_lines[0])
+    assert payload["entry"]["term"] == "short"
+    assert payload["score"] > 0
+    assert payload["matches"]["window"]["size"] <= 2
+
+
+def test_search_long_requires_within_distance(
+    tmp_path: Path, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixed = datetime(2026, 1, 31, 12, 0, 0, tzinfo=timezone.utc)
+    _set_fixed_time(monkeypatch, fixed)
+
+    runner.invoke(
+        cli.app,
+        ["write", "alpha beta gamma", "--term", "long", "--type", "note", "--id", "x"],
+        env={"MEMORY_CONFIG_DIR": str(tmp_path)},
+    )
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "search",
+            "alpha gamma",
+            "--term",
+            "long",
+            "--type",
+            "note",
+            "--id",
+            "x",
+            "--within",
+            "1",
+        ],
+        env={"MEMORY_CONFIG_DIR": str(tmp_path)},
+    )
+    assert result.exit_code == 0
+    assert [line for line in result.stdout.splitlines() if line.strip()] == []
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "search",
+            "alpha gamma",
+            "--term",
+            "long",
+            "--type",
+            "note",
+            "--id",
+            "x",
+            "--within",
+            "2",
+        ],
+        env={"MEMORY_CONFIG_DIR": str(tmp_path)},
+    )
+    assert result.exit_code == 0
+    output_lines = [line for line in result.stdout.splitlines() if line.strip()]
+    assert len(output_lines) == 1
+    payload = json.loads(output_lines[0])
+    assert payload["entry"]["term"] == "long"
+
+
+def test_search_both_terms(
+    tmp_path: Path, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixed = datetime(2026, 1, 31, 12, 0, 0, tzinfo=timezone.utc)
+    _set_fixed_time(monkeypatch, fixed)
+
+    runner.invoke(
+        cli.app,
+        ["write", "\"shared note\"", "--term", "short", "--type", "note", "--id", "x"],
+        env={"MEMORY_CONFIG_DIR": str(tmp_path)},
+    )
+    runner.invoke(
+        cli.app,
+        ["write", "shared note", "--term", "long", "--type", "note", "--id", "x"],
+        env={"MEMORY_CONFIG_DIR": str(tmp_path)},
+    )
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "search",
+            "shared note",
+            "--term",
+            "both",
+            "--type",
+            "note",
+            "--id",
+            "x",
+            "--within",
+            "2",
+        ],
+        env={"MEMORY_CONFIG_DIR": str(tmp_path)},
+    )
+
+    assert result.exit_code == 0
+    output_lines = [line for line in result.stdout.splitlines() if line.strip()]
+    terms = {json.loads(line)["entry"]["term"] for line in output_lines}
+    assert terms == {"short", "long"}

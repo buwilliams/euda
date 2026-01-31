@@ -35,9 +35,14 @@ app.add_typer(config_app, name="config")
 TERMS = {"short", "long"}
 
 
-def _validate_term(term: str) -> str:
+def _validate_term(term: str, *, allow_both: bool = False) -> str:
     normalized = term.strip().lower()
-    if normalized not in TERMS:
+    allowed = set(TERMS)
+    if allow_both:
+        allowed.add("both")
+    if normalized not in allowed:
+        if allow_both:
+            raise typer.BadParameter("Term must be 'short', 'long', or 'both'.")
         raise typer.BadParameter("Term must be 'short' or 'long'.")
     return normalized
 
@@ -228,6 +233,92 @@ def _entry_from_long_file(path: Path) -> dict | None:
         "index": index,
         "memory": body,
     }
+
+
+def _tokenize(text: str) -> list[str]:
+    tokens: list[str] = []
+    current: list[str] = []
+    for char in text.lower():
+        if char.isalnum():
+            current.append(char)
+        else:
+            if current:
+                tokens.append("".join(current))
+                current = []
+    if current:
+        tokens.append("".join(current))
+    return tokens
+
+
+def _best_window(positions_by_token: dict[str, list[int]]) -> tuple[int, int, int] | None:
+    if not positions_by_token:
+        return None
+    merged: list[tuple[int, str]] = []
+    for token, positions in positions_by_token.items():
+        for pos in positions:
+            merged.append((pos, token))
+    if not merged:
+        return None
+    merged.sort(key=lambda item: item[0])
+    required = set(positions_by_token.keys())
+    counts: dict[str, int] = {}
+    best: tuple[int, int, int] | None = None
+    left = 0
+    have = 0
+    for right, (pos, token) in enumerate(merged):
+        counts[token] = counts.get(token, 0) + 1
+        if counts[token] == 1:
+            have += 1
+        while have == len(required) and left <= right:
+            start_pos = merged[left][0]
+            end_pos = merged[right][0]
+            size = end_pos - start_pos
+            if best is None or size < best[2]:
+                best = (start_pos, end_pos, size)
+            left_token = merged[left][1]
+            counts[left_token] -= 1
+            if counts[left_token] == 0:
+                have -= 1
+            left += 1
+    return best
+
+
+def _entry_text(entry: dict) -> str:
+    memory = entry.get("memory", "")
+    if isinstance(memory, (dict, list)):
+        return json.dumps(memory, sort_keys=True)
+    return str(memory)
+
+
+def _match_query(entry: dict, query_tokens: list[str], within: int) -> tuple[int, dict] | None:
+    if not query_tokens:
+        return None
+    text_tokens = _tokenize(_entry_text(entry))
+    if not text_tokens:
+        return None
+    positions_by_token: dict[str, list[int]] = {token: [] for token in query_tokens}
+    for idx, token in enumerate(text_tokens):
+        if token in positions_by_token:
+            positions_by_token[token].append(idx)
+    if any(not positions for positions in positions_by_token.values()):
+        return None
+    window = _best_window(positions_by_token)
+    if window is None:
+        return None
+    start_pos, end_pos, size = window
+    if size > within:
+        return None
+    matches = {
+        "tokens": [
+            {"token": token, "positions": positions_by_token[token]}
+            for token in sorted(positions_by_token.keys())
+        ],
+        "window": {"start": start_pos, "end": end_pos, "size": size},
+    }
+    score = (len(query_tokens) * 10) + max(0, within - size) + sum(
+        len(positions) for positions in positions_by_token.values()
+    )
+    return score, matches
 
 
 @config_app.command("get", help="Get a merged config value (defaults + overrides).")
@@ -584,6 +675,82 @@ def clean(
                 continue
             path.unlink()
     typer.echo("Memories removed.")
+
+
+@app.command(help="Search memory entries within a time range.")
+def search(
+    query: str = typer.Argument(..., help="Query terms to search for."),
+    term: str = typer.Option(..., "--term", help="Memory term (short, long, or both)."),
+    entry_type: str = typer.Option(..., "--type", help="Memory type."),
+    entry_id: str = typer.Option(..., "--id", help="Memory id."),
+    within: int = typer.Option(5, "--within", help="Token distance window for matching terms."),
+    start_date: str | None = typer.Option(None, "--start-date", help="Start date (UTC, YYYY-MM-DD)."),
+    end_date: str | None = typer.Option(None, "--end-date", help="End date (UTC, YYYY-MM-DD)."),
+    start_time: str | None = typer.Option(None, "--start-time", help="Start time (UTC, HH:MM[:SS])."),
+    end_time: str | None = typer.Option(None, "--end-time", help="End time (UTC, HH:MM[:SS])."),
+    hours: int | None = typer.Option(None, "--hours", help="Hours backwards from now (UTC)."),
+    days: int | None = typer.Option(None, "--days", help="Days backwards from now (UTC)."),
+    minutes: int | None = typer.Option(None, "--minutes", help="Minutes backwards from now (UTC)."),
+) -> None:
+    term = _validate_term(term, allow_both=True)
+    if within < 0:
+        raise typer.BadParameter("--within must be >= 0.")
+    query_tokens = _tokenize(query)
+    if not query_tokens:
+        return
+
+    now = _utc_now()
+    if hours is not None or days is not None or minutes is not None:
+        delta = timedelta(hours=hours or 0, days=days or 0, minutes=minutes or 0)
+        start_dt = now - delta
+        end_dt = now
+    else:
+        today = _today_utc()
+        start_day = _parse_date(start_date) if start_date else today
+        end_day = _parse_date(end_date) if end_date else today
+        start_clock = _parse_time(start_time) if start_time else dt_time(0, 0, 0)
+        end_clock = _parse_time(end_time) if end_time else dt_time(23, 59, 59, 999999)
+        start_dt, end_dt = _make_range(start_day, end_day, start_clock, end_clock)
+
+    results: list[tuple[int, dict, dict]] = []
+
+    def process_entries(entries: Iterable[dict]) -> None:
+        for entry in entries:
+            match = _match_query(entry, query_tokens, within)
+            if match is None:
+                continue
+            score, matches = match
+            results.append((score, matches, entry))
+
+    if term in {"short", "both"}:
+        all_paths = []
+        for day in _date_span(start_dt, end_dt):
+            all_paths.extend(list(_iter_short_paths(day, entry_type, entry_id)))
+        entries = _iter_json_lines(all_paths)
+        filtered = _filter_entries(entries, start_dt, end_dt, entry_type, entry_id)
+        for entry in filtered:
+            entry.setdefault("term", "short")
+            process_entries([entry])
+
+    if term in {"long", "both"}:
+        entries: list[dict] = []
+        for day in _date_span(start_dt, end_dt):
+            for path in _long_glob(day, entry_type, entry_id):
+                entry = _entry_from_long_file(path)
+                if entry is None:
+                    continue
+                entries.append(entry)
+        filtered = _filter_entries(entries, start_dt, end_dt, entry_type, entry_id)
+        process_entries(filtered)
+
+    results.sort(key=lambda item: (-item[0], item[2].get("timestamp", "")))
+    for score, matches, entry in results:
+        payload = {
+            "score": score,
+            "matches": matches,
+            "entry": entry,
+        }
+        typer.echo(json.dumps(payload, sort_keys=True))
 
 
 if __name__ == "__main__":
