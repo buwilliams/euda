@@ -9,20 +9,30 @@ import urllib.error
 import base64
 
 
-def _get_config_path() -> Path:
-    """Get path to system config file."""
+def _get_skill_dir() -> Path:
+    """Get the skill data directory."""
     data_dir = os.environ.get("EUNO_DATA_DIR")
     if data_dir:
-        return Path(data_dir) / "system" / "config.json"
-    return Path(__file__).parent.parent.parent.parent / "data" / "system" / "config.json"
+        base = Path(data_dir)
+    else:
+        base = Path(__file__).parent.parent.parent.parent / "data"
+
+    skill_dir = base / "skills" / "nextcloud"
+    skill_dir.mkdir(parents=True, exist_ok=True)
+    return skill_dir
+
+
+def _get_config_path() -> Path:
+    """Get path to skill config file."""
+    return _get_skill_dir() / "config.json"
 
 
 def _load_config() -> dict:
-    """Load system configuration."""
+    """Load skill configuration."""
     config_path = _get_config_path()
     if config_path.exists():
         return json.loads(config_path.read_text())
-    return {}
+    return {"instances": []}
 
 
 def list_instances() -> list[dict]:
@@ -32,8 +42,7 @@ def list_instances() -> list[dict]:
         List of instance configs with id, name, url
     """
     config = _load_config()
-    nc_config = config.get("nextcloud", {})
-    instances = nc_config.get("instances", [])
+    instances = config.get("instances", [])
 
     return [
         {
@@ -55,8 +64,7 @@ def get_instance_config(instance_id: Optional[str] = None) -> Optional[dict]:
         Instance config dict or None if not found
     """
     config = _load_config()
-    nc_config = config.get("nextcloud", {})
-    instances = nc_config.get("instances", [])
+    instances = config.get("instances", [])
 
     if not instances:
         return None

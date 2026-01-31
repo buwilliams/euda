@@ -95,6 +95,42 @@ Skills receive context through environment variables:
 | `EUNO_TOPIC_ID` | Current topic being worked | When in work cycle |
 | `EUNO_SESSION_ID` | Chat session ID | During chat |
 
+### Skill Data Storage
+
+Skills that need persistent storage (config, credentials, cache) MUST use a dedicated directory under `data/skills/{skill_name}/`:
+
+```
+data/skills/
+├── gcal/
+│   ├── config.json      # Skill configuration
+│   └── accounts/        # Credential storage
+├── nextcloud/
+│   └── config.json      # Instance configuration
+└── rss/
+    └── config.json      # Feed configuration
+```
+
+**Implementation pattern:**
+
+```python
+def _get_skill_dir() -> Path:
+    """Get the skill data directory."""
+    data_dir = os.environ.get("EUNO_DATA_DIR")
+    if data_dir:
+        base = Path(data_dir)
+    else:
+        base = Path(__file__).parent.parent.parent / "data"
+
+    skill_dir = base / "skills" / "myskill"
+    skill_dir.mkdir(parents=True, exist_ok=True)
+    return skill_dir
+```
+
+**Important:**
+- The `data/skills/` directory is gitignored (contains user credentials)
+- Skills MUST NOT store config in `data/system/config.json` (reserved for system-wide settings)
+- Each skill is responsible for creating its directory on first use
+
 ## Agent Configuration
 
 Agents configure skill access via `excluded_skills` in `config.json`:
