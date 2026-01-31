@@ -7,6 +7,7 @@ dependencies = ["typer>=0.12.0", "pytest>=8.0.0"]
 
 [project.scripts]
 memory = "main:app"
+pytest = "pytest:main"
 
 
 [build-system]
