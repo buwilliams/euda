@@ -1,7 +1,7 @@
 [project]
 name = "euda-logs"
 version = "0.1.0"
-description = "Euda logs CLI"
+description = "Write, read, and tail structured logs"
 requires-python = ">=3.11"
 dependencies = ["typer>=0.12.0"]
 

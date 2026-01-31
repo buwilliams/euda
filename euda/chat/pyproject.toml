@@ -1,7 +1,7 @@
 [project]
 name = "euda-chat"
 version = "0.1.0"
-description = "Euda chat CLI"
+description = "Chat session configuration and settings"
 requires-python = ">=3.11"
 dependencies = ["typer>=0.12.0"]
 

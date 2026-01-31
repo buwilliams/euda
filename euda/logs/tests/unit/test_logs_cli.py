@@ -179,7 +179,7 @@ def test_clean_filters_by_time_and_type(
     assert log_path_system.exists()
 
 
-def test_tail_outputs_existing_lines_with_filters(
+def test_tail_ignores_existing_lines_with_filters(
     tmp_path: Path, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     fixed = datetime(2026, 1, 31, 12, 0, 0, tzinfo=timezone.utc)
@@ -203,5 +203,4 @@ def test_tail_outputs_existing_lines_with_filters(
 
     assert result.exit_code == 0
     output_lines = [line for line in result.stdout.splitlines() if line.strip()]
-    assert len(output_lines) == 2
-    assert [json.loads(line)["message"] for line in output_lines] == ["one", "two"]
+    assert output_lines == []

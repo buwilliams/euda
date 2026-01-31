@@ -25,3 +25,6 @@ uv.lock
 Thumbs.db
 .idea/
 .vscode/
+
+# Router history
+.euda_history.json

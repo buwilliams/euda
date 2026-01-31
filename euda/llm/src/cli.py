@@ -1,8 +1,10 @@
 import calendar
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 import typer
 
+import shared_cli
 from src.config import (
     OVERRIDE_CONFIG_FILENAME,
     config_dir,
@@ -15,13 +17,46 @@ from src.config import (
 from src.llm import get_llm_client
 from src.providers import LLMClientError
 
-app = typer.Typer(help="LLM CLI.")
+app = typer.Typer(help="LLM CLI.", invoke_without_command=True)
 config_app = typer.Typer(help="Inspect or update config.json overrides and merged defaults.")
+
+
+@app.callback()
+def app_callback(ctx: typer.Context) -> None:
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
+
 app.add_typer(config_app, name="config")
+REPO_ROOT = Path(__file__).resolve().parents[3]
+LOGS_APP_DIR = REPO_ROOT / "euda" / "logs"
 
 
 def _get_llm_client(config):
     return get_llm_client(config)
+
+
+def _log_llm_event(event: str, payload: dict) -> None:
+    if not LOGS_APP_DIR.exists():
+        return
+    message = json.dumps({"event": event, **payload}, sort_keys=True)
+    try:
+        shared_cli.run_cli(
+            [
+                "uv",
+                "run",
+                "euda",
+                "logs",
+                "write",
+                message,
+                "--type",
+                "system",
+                "--id",
+                "llm",
+            ]
+        )
+    except Exception:
+        return
 
 
 @config_app.command("get", help="Get a merged config value (defaults + overrides).")
@@ -136,8 +171,8 @@ def _model_pricing(config: dict) -> tuple[float, float]:
 
 @app.command(help="Send a system prompt and user prompt to the selected model.")
 def call(
-    system_prompt: str | None = typer.Argument(
-        None, help="System prompt, or '-' to read the system prompt from stdin."
+    system_prompt: str = typer.Argument(
+        "", help="System prompt, or '-' to read the system prompt from stdin."
     ),
     prompt: str | None = typer.Argument(
         None, help="User prompt. Reads stdin if omitted or '-'."
@@ -163,10 +198,31 @@ def call(
     if config.get("paused"):
         typer.echo("Hourly budget reached. Try again next hour.", err=True)
         raise typer.Exit(code=1)
+    _log_llm_event(
+        "call_started",
+        {
+            "provider": config.get("provider"),
+            "model": config.get("model"),
+            "system_prompt": system_prompt,
+            "prompt": prompt,
+            "system_prompt_chars": len(system_prompt),
+            "prompt_chars": len(prompt),
+        },
+    )
     try:
         client = _get_llm_client(config)
         response = client.call(system_prompt, prompt)
     except LLMClientError as exc:
+        _log_llm_event(
+            "call_failed",
+            {
+                "provider": config.get("provider"),
+                "model": config.get("model"),
+                "system_prompt": system_prompt,
+                "prompt": prompt,
+                "error": str(exc),
+            },
+        )
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=1)
     typer.echo(response.text)
@@ -180,6 +236,18 @@ def call(
     hourly_cost += (input_tokens / 1_000_000) * input_rate
     hourly_cost += (output_tokens / 1_000_000) * output_rate
     hourly_cost = round(hourly_cost, 2)
+    _log_llm_event(
+        "call_completed",
+        {
+            "provider": config.get("provider"),
+            "model": config.get("model"),
+            "response": response.text,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": total_tokens,
+            "hourly_cost": hourly_cost,
+        },
+    )
     set_value(override, "hourly_input_tokens", (config.get("hourly_input_tokens", 0) or 0) + input_tokens)
     set_value(override, "hourly_output_tokens", (config.get("hourly_output_tokens", 0) or 0) + output_tokens)
     set_value(override, "hourly_cost", hourly_cost)

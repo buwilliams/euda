@@ -18,8 +18,16 @@ from src.config import (
     write_override,
 )
 
-app = typer.Typer(help="Euda logs CLI.")
+app = typer.Typer(help="Euda logs CLI.", invoke_without_command=True)
 config_app = typer.Typer(help="Inspect or update config.json overrides and merged defaults.")
+
+
+@app.callback()
+def app_callback(ctx: typer.Context) -> None:
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
+
 app.add_typer(config_app, name="config")
 
 
@@ -261,20 +269,10 @@ def tail(
     seen: set[Path] = set()
     last_output: dict[Path, int] = {}
 
-    def emit_existing(path: Path) -> None:
+    def track_existing(path: Path) -> None:
         if not path.exists():
             return
         lines = path.read_text(encoding="utf-8").splitlines()
-        for line in lines[-10:]:
-            try:
-                data = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if entry_type is not None and data.get("type") != entry_type:
-                continue
-            if entry_id is not None and data.get("id") != entry_id:
-                continue
-            typer.echo(json.dumps(data, sort_keys=True))
         last_output[path] = len(lines)
 
     remaining = iterations
@@ -296,7 +294,7 @@ def tail(
         for path in _iter_log_paths(current_day, entry_type, entry_id):
             if path not in seen:
                 seen.add(path)
-                emit_existing(path)
+                track_existing(path)
             if not path.exists():
                 seen.discard(path)
                 last_output.pop(path, None)

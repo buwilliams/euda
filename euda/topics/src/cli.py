@@ -11,8 +11,16 @@ from src.config import (
     write_override,
 )
 
-app = typer.Typer(help="Euda topics CLI.")
+app = typer.Typer(help="Euda topics CLI.", invoke_without_command=True)
 config_app = typer.Typer(help="Inspect or update config.json overrides and merged defaults.")
+
+
+@app.callback()
+def app_callback(ctx: typer.Context) -> None:
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
+
 app.add_typer(config_app, name="config")
 
 
