@@ -1,4 +1,4 @@
-# Eudaimonia (or euda )
+# Eudaimonia (you-dye-MOH-nee-ah)
 
 _Euda (you-know), from Eudaimonia (you-dye-MOH-nee-ah)—ancient Greek for "human flourishing." A deep sense of fulfillment achieved through virtuous living, developing one's potential, and engaging in meaningful activities._
 
