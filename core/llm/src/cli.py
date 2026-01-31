@@ -29,7 +29,7 @@ def app_callback(ctx: typer.Context) -> None:
 
 app.add_typer(config_app, name="config")
 REPO_ROOT = Path(__file__).resolve().parents[3]
-LOGS_APP_DIR = REPO_ROOT / "euda" / "logs"
+LOGS_APP_DIR = REPO_ROOT / "core" / "logs"
 
 
 def _get_llm_client(config):

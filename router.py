@@ -12,7 +12,7 @@ import click
 import typer
 
 ROOT = Path(__file__).parent
-EUDA_DIR = ROOT / "euda"
+EUDA_DIR = ROOT / "core"
 SKILLS_DIR = ROOT / "skills"
 HISTORY_PATH = ROOT / ".euda_history.json"
 
