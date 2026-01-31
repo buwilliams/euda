@@ -41,19 +41,9 @@ def _log_llm_event(event: str, payload: dict) -> None:
         return
     message = json.dumps({"event": event, **payload}, sort_keys=True)
     try:
-        shared_router.run_cli(
-            [
-                "uv",
-                "run",
-                "euda",
-                "logs",
-                "write",
-                message,
-                "--type",
-                "system",
-                "--id",
-                "llm",
-            ]
+        shared_router.run_core(
+            "logs",
+            ["write", message, "--type", "system", "--id", "llm"],
         )
     except Exception:
         return

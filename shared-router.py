@@ -74,7 +74,8 @@ def run_cli_json(
     return json.loads(result.stdout)
 
 
-def run_euda(
+def run_core(
+    app: str,
     args: Sequence[str],
     *,
     input_text: str | None = None,
@@ -83,7 +84,7 @@ def run_euda(
     env: Mapping[str, str] | None = None,
 ) -> CliResult:
     return run_cli_or_raise(
-        ["uv", "run", "core", *args],
+        ["uv", "run", "core", app, *args],
         input_text=input_text,
         timeout=timeout,
         cwd=cwd,
@@ -91,7 +92,8 @@ def run_euda(
     )
 
 
-def run_euda_json(
+def run_core_json(
+    app: str,
     args: Sequence[str],
     *,
     input_text: str | None = None,
@@ -99,7 +101,46 @@ def run_euda_json(
     cwd: str | None = None,
     env: Mapping[str, str] | None = None,
 ) -> Any:
-    result = run_euda(
+    result = run_core(
+        app,
+        args,
+        input_text=input_text,
+        timeout=timeout,
+        cwd=cwd,
+        env=env,
+    )
+    return json.loads(result.stdout)
+
+
+def run_skills(
+    app: str,
+    args: Sequence[str],
+    *,
+    input_text: str | None = None,
+    timeout: float | None = 30.0,
+    cwd: str | None = None,
+    env: Mapping[str, str] | None = None,
+) -> CliResult:
+    return run_cli_or_raise(
+        ["uv", "run", "skills", app, *args],
+        input_text=input_text,
+        timeout=timeout,
+        cwd=cwd,
+        env=env,
+    )
+
+
+def run_skills_json(
+    app: str,
+    args: Sequence[str],
+    *,
+    input_text: str | None = None,
+    timeout: float | None = 30.0,
+    cwd: str | None = None,
+    env: Mapping[str, str] | None = None,
+) -> Any:
+    result = run_skills(
+        app,
         args,
         input_text=input_text,
         timeout=timeout,
