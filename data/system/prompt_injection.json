@@ -1,6 +1,0 @@
-{
-  "enabled": true,
-  "append_guardrail": true,
-  "append_min_level": "low",
-  "log": true
-}

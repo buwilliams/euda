@@ -1,1 +1,0 @@
-"""Web skill for Euno."""
