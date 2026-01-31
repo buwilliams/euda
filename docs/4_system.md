@@ -1,6 +1,6 @@
 # System
 
-There are three core concepts in Euno: **Agents**, **Skills**, and **Topics**.
+There are three core concepts in Euda: **Agents**, **Skills**, and **Topics**.
 
 - **Agents** are actors (AI or human) that do work
 - **Skills** are capabilities that agents use to act

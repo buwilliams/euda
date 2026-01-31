@@ -1,6 +1,6 @@
 # Getting Started
 
-Set up Euno for local development or deploy to your own server.
+Set up Euda for local development or deploy to your own server.
 
 ## Prerequisites
 
@@ -12,7 +12,7 @@ Set up Euno for local development or deploy to your own server.
 
 ```bash
 # Clone the repository
-git clone https://github.com/buwilliams/euno.git && cd euno
+git clone https://github.com/buwilliams/euda.git && cd euda
 
 # Configure environment
 cp .env.example .env
@@ -22,15 +22,15 @@ cp .env.example .env
 uv sync
 
 # Optional: Add alias for convenience
-echo "alias euno='uv run euno'" >> ~/.bashrc  # or ~/.zshrc
+echo "alias euda='uv run euda'" >> ~/.bashrc  # or ~/.zshrc
 source ~/.bashrc
 
 # Set your password
-euno set-password
+euda set-password
 
-# Start Euno (choose one)
-euno web     # Web UI at http://localhost:8000
-euno chat    # CLI chat interface
+# Start Euda (choose one)
+euda web     # Web UI at http://localhost:8000
+euda chat    # CLI chat interface
 ```
 
 ## Verify It Works
@@ -38,7 +38,7 @@ euno chat    # CLI chat interface
 1. Open Chat tab
 2. Send a message: "Hello, what can you do?"
 3. Check Topics tab to see system topics
-4. Ask: "Create a reminder to test Euno tomorrow"
+4. Ask: "Create a reminder to test Euda tomorrow"
 5. Verify the reminder appears in Topics
 
 ## Usage
@@ -46,11 +46,11 @@ euno chat    # CLI chat interface
 Commands below assume the alias. Without it, prefix with `uv run`.
 
 ```bash
-euno web                           # Web UI + agents
-euno chat                          # CLI chat + agents
-euno dev watch                     # Stream all system events
-euno dev memory chat               # View agent's memory
-euno skills core topics list       # List topics via skill
+euda web                           # Web UI + agents
+euda chat                          # CLI chat + agents
+euda dev watch                     # Stream all system events
+euda dev memory chat               # View agent's memory
+euda skills core topics list       # List topics via skill
 
 # Run tests
 uv run pytest                      # unit + integration tests
@@ -75,18 +75,18 @@ EUNO_SERVER=root@<ip>
 # Add your LLM provider API key (at least one required)
 
 # 4. Run setup (first time only)
-euno server-setup
+euda server-setup
 
 # 5. Deploy code and sync data
-euno sync
+euda sync
 
 # 6. Access at http://<ip>
 ```
 
-**Syncing:** `euno sync` deploys code and syncs data bidirectionally. Use `--data-only` to skip code deployment. See [Contributing](6_contribute.md#syncing-data) for details.
+**Syncing:** `euda sync` deploys code and syncs data bidirectionally. Use `--data-only` to skip code deployment. See [Contributing](6_contribute.md#syncing-data) for details.
 
 ## Next Steps
 
-- [Contributing](6_contribute.md) — Learn how to extend and improve Euno
+- [Contributing](6_contribute.md) — Learn how to extend and improve Euda
 - [System](4_system.md) — Understand the architecture
 - [Discord](https://discord.gg/5B9VdQ6vYP) — Join the community

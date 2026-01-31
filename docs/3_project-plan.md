@@ -1,4 +1,4 @@
-# Euno Project Plan
+# Euda Project Plan
 
 *This is a living document that will be updated as the project matures.*
 
@@ -6,7 +6,7 @@
 
 **A personal intelligence for human flourishing.**
 
-**Mission:** Help people grow into who they're meant to be—through purpose, meaning, and becoming. Data, integrations, and automations serve this mission; they are not the mission itself. This is the singular filter for all work on Euno. Any goal, task, or contribution that does not serve this purpose is out of bounds by default.
+**Mission:** Help people grow into who they're meant to be—through purpose, meaning, and becoming. Data, integrations, and automations serve this mission; they are not the mission itself. This is the singular filter for all work on Euda. Any goal, task, or contribution that does not serve this purpose is out of bounds by default.
 
 **Why Open Source:** Meaning is too important to gatekeep. This technology should be available to everyone who wants to use it, learn from it, or build upon it.
 
@@ -53,7 +53,7 @@ Each gate below is a checkpoint. We must pass each gate before moving forward. T
 **Target:** Invite others to contribute.
 
 **Signals:**
-- If Euno went down, would you feel the loss—or just switch to ChatGPT without noticing? Must feel this way for at least a week.
+- If Euda went down, would you feel the loss—or just switch to ChatGPT without noticing? Must feel this way for at least a week.
 - Are they excited by the vision?
 - Do they regularly contribute to the project's success?
 - Do they spend their own money to contribute (API costs, etc.)?
@@ -78,24 +78,24 @@ Each gate below is a checkpoint. We must pass each gate before moving forward. T
 
 ## Gate 3: Adoption
 
-**Target:** People using Euno—through contributions or running it themselves.
+**Target:** People using Euda—through contributions or running it themselves.
 
 **Signals:**
 - Do people we don't know contribute pull requests?
-- Are people cloning the repo to run Euno for themselves?
+- Are people cloning the repo to run Euda for themselves?
 - Is there organic growth without active promotion?
 
 **Success Criteria:** 100 engagement points, where:
 - 1 merged pull request = 1 point
 - 25 unique clones = 1 point
 
-This ratio acknowledges that contributing code requires significant effort, while cloning indicates real interest in running Euno. Both matter.
+This ratio acknowledges that contributing code requires significant effort, while cloning indicates real interest in running Euda. Both matter.
 
 Growth comes organically over time. We stay at this gate until we reach the target.
 
 **Current Status:** Not met.
 
-**Reward:** Validation. People find Euno valuable enough to use it.
+**Reward:** Validation. People find Euda valuable enough to use it.
 
 ---
 
@@ -110,4 +110,4 @@ Growth comes organically over time. We stay at this gate until we reach the targ
 
 **Current Status:** Not met.
 
-**Reward:** Euno has a life of its own. The mission continues regardless of any individual.
+**Reward:** Euda has a life of its own. The mission continues regardless of any individual.

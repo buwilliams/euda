@@ -4,11 +4,11 @@ Build for yourself first. If it helps you flourish, it will help others too.
 
 ## Extension Hierarchy
 
-When changing Euno, choose the lightest mechanism that achieves your goal:
+When changing Euda, choose the lightest mechanism that achieves your goal:
 
 ### 1. Interface Changes
 
-Modify how users interact with Euno.
+Modify how users interact with Euda.
 
 #### Web UI
 **Location:** `web/`
@@ -33,7 +33,7 @@ The command-line interface for terminal users.
 #### Future Interfaces
 **Location:** TBD
 
-Other ways to interact with Euno (mobile apps, voice, APIs).
+Other ways to interact with Euda (mobile apps, voice, APIs).
 
 **Principle:** All interfaces share the same backend (AgentManager, skills, topics). Only the presentation layer differs.
 
@@ -98,11 +98,11 @@ Modify core systems—agent lifecycle, data schemas, APIs.
 
 ## Your Arc
 
-An Arc is your personal chapter of contribution. It answers: **What do I want Euno to do for me?**
+An Arc is your personal chapter of contribution. It answers: **What do I want Euda to do for me?**
 
 **Good Arcs:**
-- "I want Euno to anticipate my day so my energy feels good"
-- "I want Euno to help me stay connected to people I care about"
+- "I want Euda to anticipate my day so my energy feels good"
+- "I want Euda to help me stay connected to people I care about"
 
 **Too Technical:**
 - "Calendar integration" (what value does it provide?)
@@ -112,14 +112,14 @@ Stay in an Arc until it's delivering real value. Then pick another.
 
 | Contributor | Arc |
 |-------------|-----|
-| Buddy | I want Euno to understand who I am and help me stay productive on what matters |
+| Buddy | I want Euda to understand who I am and help me stay productive on what matters |
 | *Your name* | *Your arc* |
 
 ## Source of Truth
 
-Euno follows a top-down information hierarchy. When making changes, update higher levels first:
+Euda follows a top-down information hierarchy. When making changes, update higher levels first:
 
-- **docs/** — most reliable understanding of Euno (what and why)
+- **docs/** — most reliable understanding of Euda (what and why)
 - **specs/** — technical details enforcing the docs (single-depth bullet rules)
 - **tests/** — enforces the specs and docs, not the Python code
 - **src/** — implementation produced from docs, specs, and tests
@@ -156,17 +156,17 @@ Keep local and remote in sync when developing on multiple machines or deploying 
 
 ```bash
 # Full sync (code + data, stops/restarts server)
-euno sync                          # Deploy code + bidirectional data merge
-euno sync --data-only              # Skip code sync, data only
-euno sync --push                   # Local → remote only
-euno sync --pull                   # Remote → local only
-euno sync --dry-run                # Preview changes
+euda sync                          # Deploy code + bidirectional data merge
+euda sync --data-only              # Skip code sync, data only
+euda sync --push                   # Local → remote only
+euda sync --pull                   # Remote → local only
+euda sync --dry-run                # Preview changes
 
 # Conflict resolution
-euno sync status                   # Show sync state
-euno sync conflicts                # List unresolved conflicts
-euno sync resolve <id> --keep-local
-euno sync resolve <id> --keep-remote
+euda sync status                   # Show sync state
+euda sync conflicts                # List unresolved conflicts
+euda sync resolve <id> --keep-local
+euda sync resolve <id> --keep-remote
 ```
 
 By default, sync: (1) stops remote server, (2) syncs code, (3) syncs data, (4) restarts server.
