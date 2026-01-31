@@ -83,7 +83,7 @@ def run_euda(
     env: Mapping[str, str] | None = None,
 ) -> CliResult:
     return run_cli_or_raise(
-        ["uv", "run", "euda", *args],
+        ["uv", "run", "core", *args],
         input_text=input_text,
         timeout=timeout,
         cwd=cwd,
