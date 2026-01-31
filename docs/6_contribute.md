@@ -21,12 +21,12 @@ The browser-based interface—layouts, styles, interactions.
 - Improve mobile responsiveness
 
 #### CLI
-**Location:** `main.py`, `src/cli/`
+**Location:** `router.py`, `src/cli/`
 
 The command-line interface for terminal users.
 
 **Examples:**
-- Add a new command to `main.py`
+- Add a new command to `router.py`
 - Modify the `chat` REPL experience
 - Add dev CLI commands in `src/cli/`
 

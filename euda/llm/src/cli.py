@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import typer
 
-import shared_cli
+import shared_router
 from src.config import (
     OVERRIDE_CONFIG_FILENAME,
     config_dir,
@@ -41,7 +41,7 @@ def _log_llm_event(event: str, payload: dict) -> None:
         return
     message = json.dumps({"event": event, **payload}, sort_keys=True)
     try:
-        shared_cli.run_cli(
+        shared_router.run_cli(
             [
                 "uv",
                 "run",
