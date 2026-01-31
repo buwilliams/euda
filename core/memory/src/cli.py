@@ -384,11 +384,6 @@ def config_write(
     typer.echo(json.dumps(data, indent=2, sort_keys=True))
 
 
-@app.command(help="Simple health check.")
-def ping() -> None:
-    typer.echo("pong")
-
-
 @app.command(help="Write a memory entry.")
 def write(
     payload: str | None = typer.Argument(None, help="Payload to store. Reads stdin when omitted or '-'."),
