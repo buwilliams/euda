@@ -92,26 +92,6 @@ def run_core(
     )
 
 
-def run_core_json(
-    app: str,
-    args: Sequence[str],
-    *,
-    input_text: str | None = None,
-    timeout: float | None = 30.0,
-    cwd: str | None = None,
-    env: Mapping[str, str] | None = None,
-) -> Any:
-    result = run_core(
-        app,
-        args,
-        input_text=input_text,
-        timeout=timeout,
-        cwd=cwd,
-        env=env,
-    )
-    return json.loads(result.stdout)
-
-
 def run_skills(
     app: str,
     args: Sequence[str],
@@ -129,22 +109,3 @@ def run_skills(
         env=env,
     )
 
-
-def run_skills_json(
-    app: str,
-    args: Sequence[str],
-    *,
-    input_text: str | None = None,
-    timeout: float | None = 30.0,
-    cwd: str | None = None,
-    env: Mapping[str, str] | None = None,
-) -> Any:
-    result = run_skills(
-        app,
-        args,
-        input_text=input_text,
-        timeout=timeout,
-        cwd=cwd,
-        env=env,
-    )
-    return json.loads(result.stdout)

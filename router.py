@@ -54,8 +54,6 @@ def _make_dynamic_group(base_dir: Path):
 app = typer.Typer(
     help="Euda CLI router.",
     invoke_without_command=True,
-    context_settings={"ignore_unknown_options": True, "allow_extra_args": True},
-    cls=_make_dynamic_group(EUDA_DIR),
 )
 
 
@@ -115,7 +113,7 @@ def _run_app(base: Path, name: str, args: List[str]) -> int:
         matches = get_close_matches(name, _list_apps(base), n=3, cutoff=0.3)
         if matches:
             typer.echo(f"Did you mean: {', '.join(matches)}", err=True)
-        typer.echo("Run 'euda list' or 'euda skills list' to see available apps.", err=True)
+        typer.echo("Run 'euda core list' or 'euda skills list' to see available apps.", err=True)
         typer.echo("Use '<app> --help' for usage.", err=True)
         return 2
     if not (app_dir / "main.py").exists():
@@ -137,6 +135,14 @@ def _run_app(base: Path, name: str, args: List[str]) -> int:
     result = subprocess.run(cmd, cwd=str(app_dir), env=env)
     return result.returncode
 
+
+
+core_app = typer.Typer(
+    help="Manage core CLI apps.",
+    invoke_without_command=True,
+    context_settings={"ignore_unknown_options": True, "allow_extra_args": True},
+    cls=_make_dynamic_group(EUDA_DIR),
+)
 
 
 skills_app = typer.Typer(
@@ -178,6 +184,13 @@ def _run_last() -> int:
 
 @app.callback()
 def app_callback(ctx: typer.Context):
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
+
+
+@core_app.callback()
+def core_callback(ctx: typer.Context):
     if ctx.invoked_subcommand is None and ctx.args:
         name, *args = ctx.args
         raise typer.Exit(_run_app(EUDA_DIR, name, args))
@@ -232,10 +245,11 @@ def _register_commands(router: typer.Typer, base: Path, label: str) -> None:
         raise typer.Exit(_run_last())
 
 
-_register_commands(app, EUDA_DIR, "euda")
+_register_commands(core_app, EUDA_DIR, "core")
 _register_commands(skills_app, SKILLS_DIR, "skills")
 
 
+app.add_typer(core_app, name="core")
 app.add_typer(skills_app, name="skills")
 
 
