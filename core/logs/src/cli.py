@@ -205,11 +205,18 @@ def write(
     if message is None or message == "-":
         message = typer.get_text_stream("stdin").read()
     message = message.rstrip("\n")
+    parsed_message: str | dict | list
+    try:
+        parsed = json.loads(message)
+    except json.JSONDecodeError:
+        parsed_message = message
+    else:
+        parsed_message = parsed
     entry = {
         "timestamp": _utc_now().isoformat(),
         "type": entry_type,
         "id": entry_id,
-        "message": message,
+        "message": parsed_message,
     }
     path = _log_path(_today_utc(), entry_type, entry_id)
     path.parent.mkdir(parents=True, exist_ok=True)

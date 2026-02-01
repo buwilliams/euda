@@ -84,7 +84,7 @@ def run_core(
     env: Mapping[str, str] | None = None,
 ) -> CliResult:
     return run_cli_or_raise(
-        ["uv", "run", "core", app, *args],
+        ["uv", "run", "euda", "core", app, *args],
         input_text=input_text,
         timeout=timeout,
         cwd=cwd,
@@ -108,4 +108,3 @@ def run_skills(
         cwd=cwd,
         env=env,
     )
-

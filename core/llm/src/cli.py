@@ -49,6 +49,19 @@ def _log_llm_event(event: str, payload: dict) -> None:
         return
 
 
+def _classify_llm_error(message: str) -> tuple[str, str]:
+    lowered = message.lower()
+    if "api key" in lowered or "not set" in lowered or "authentication" in lowered:
+        return ("auth", "Check your provider API key in core/llm/config.json.")
+    if "rate limit" in lowered or "429" in lowered:
+        return ("rate_limit", "Reduce request rate or upgrade your rate limits.")
+    if "temporarily unavailable" in lowered or "capacity" in lowered or "unavailable" in lowered:
+        return ("capacity", "Provider is at capacity. Retry later or switch provider/model.")
+    if "timeout" in lowered or "timed out" in lowered:
+        return ("timeout", "Increase timeout or reduce prompt size.")
+    return ("error", "See error details above.")
+
+
 @config_app.command("get", help="Get a merged config value (defaults + overrides).")
 def config_get(key: str = typer.Argument(..., help="Config key, supports dot paths.")) -> None:
     config, _ = load_config()
@@ -206,6 +219,7 @@ def call(
         client = _get_llm_client(config)
         response = client.call(system_prompt, prompt)
     except LLMClientError as exc:
+        category, hint = _classify_llm_error(str(exc))
         _log_llm_event(
             "call_failed",
             {
@@ -214,9 +228,10 @@ def call(
                 "system_prompt": system_prompt,
                 "prompt": prompt,
                 "error": str(exc),
+                "category": category,
             },
         )
-        typer.echo(str(exc), err=True)
+        typer.echo(f"{category}: {exc}\nHint: {hint}", err=True)
         raise typer.Exit(code=1)
     typer.echo(response.text)
     input_tokens = response.input_tokens or 0

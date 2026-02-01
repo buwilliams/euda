@@ -1,0 +1,9 @@
+{
+  "default_schema": "cognitive-core",
+  "prompts": {
+    "system": "consolidate-system-prompt.md",
+    "user": "consolidate-prompt.md",
+    "summary_system": "summarize-system-prompt.md",
+    "summary_user": "summarize-prompt.md"
+  }
+}

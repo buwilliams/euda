@@ -1,0 +1,31 @@
+[project]
+name = "euda-identity"
+version = "0.1.0"
+description = "Manage agent identities and cognitive schemas"
+requires-python = ">=3.11"
+dependencies = ["typer>=0.12.0", "pytest>=7.4.0"]
+
+[project.scripts]
+identity = "main:app"
+
+
+[build-system]
+requires = ["hatchling>=1.24.0"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = true
+
+[tool.hatch.build.targets.wheel]
+include = [
+  "main.py",
+  "src/__init__.py",
+  "src/cli.py",
+  "src/config.py",
+  "config.default.json",
+  "data/consolidate-system-prompt.md",
+  "data/consolidate-prompt.md",
+  "data/summarize-system-prompt.md",
+  "data/summarize-prompt.md",
+  "data/schema/*.json",
+]
