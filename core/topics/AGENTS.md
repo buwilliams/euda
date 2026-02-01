@@ -8,7 +8,6 @@
 
 ## Build, Test, and Development Commands
 - `uv pip install -e .` installs the CLI in editable mode.
-- `topics ping` or `uv run python main.py ping` runs a quick health check.
 - `uv run pytest` runs the test suite (unit and e2e).
 - `uv run python -m build` creates a wheel/sdist (Hatchling build backend).
 
