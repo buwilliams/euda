@@ -4,6 +4,7 @@ import json
 import shutil
 import sqlite3
 from dataclasses import dataclass
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
@@ -321,7 +322,9 @@ def create(
     tag: list[str] | None = typer.Option(None, "--tag", help="Tag (repeatable)."),
     parent_id: str | None = typer.Option(None, "--parent-id", help="Parent topic id."),
 ) -> None:
-    if description is None or description == "-":
+    if description == "-":
+        description = typer.get_text_stream("stdin").read().rstrip("\n")
+    elif description is None and not sys.stdin.isatty():
         description = typer.get_text_stream("stdin").read().rstrip("\n")
     state = _validate_state(state)
     assignee_value = _normalize_assignee(assignee)
