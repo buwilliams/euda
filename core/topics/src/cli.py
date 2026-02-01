@@ -368,8 +368,8 @@ def get(
     typer.echo(json.dumps(_topic_to_dict(topic), sort_keys=True))
 
 
-@app.command(help="List topics.")
-def list(
+@app.command(name="list", help="List topics.")
+def list_topics(
     state: str | None = typer.Option(None, "--state", help="Filter by state."),
     assignee: str | None = typer.Option(None, "--assignee", help="Filter by assignee."),
     parent_id: str | None = typer.Option(None, "--parent-id", help="Filter by parent id."),
