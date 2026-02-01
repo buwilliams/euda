@@ -207,6 +207,45 @@ def _identity_path(schema: str, name: str, version: int) -> Path:
     return _identity_dir(schema) / f"{name}-{version}.json"
 
 
+def _working_identity_path(schema: str, name: str, run_id: str) -> Path:
+    return _identity_dir(schema) / f"{name}-working-{run_id}.json"
+
+
+def _latest_working_path(schema: str, name: str) -> Path | None:
+    base = _identity_dir(schema)
+    if not base.exists():
+        return None
+    candidates = list(base.glob(f"{name}-working-*.json"))
+    if not candidates:
+        return None
+    return max(candidates, key=lambda path: path.stat().st_mtime)
+
+
+def _write_working_identity(
+    *,
+    schema: str,
+    name: str,
+    run_id: str,
+    current_identity: str,
+    schema_data: dict,
+    metadata: dict,
+) -> None:
+    working_payload = {
+        "name": name,
+        "schema": schema,
+        "schema_id": schema_data.get("schema_id"),
+        "schema_version": schema_data.get("version"),
+        "version": None,
+        "created_at": None,
+        "updated_at": _utc_iso(),
+        "content": current_identity.strip() + "\n",
+        "metadata": {"working": True, "run_id": run_id, **metadata},
+    }
+    working_path = _working_identity_path(schema, name, run_id)
+    working_path.parent.mkdir(parents=True, exist_ok=True)
+    save_json(working_path, working_payload)
+
+
 def _empty_identity_markdown(traits: Iterable[dict]) -> str:
     lines = []
     for trait in traits:
@@ -849,6 +888,42 @@ def identity_list(
             typer.echo(json.dumps(data, sort_keys=True))
 
 
+@identity_app.command("tail-working", help="Tail the working identity file in real time.")
+def identity_tail_working(
+    name: str = typer.Argument(..., help="Identity name."),
+    schema: str | None = typer.Option(None, "--schema", help="Schema name (defaults to config)."),
+    run_id: str | None = typer.Option(None, "--run-id", help="Specific consolidate run id."),
+    sleep_seconds: float = typer.Option(1.0, "--sleep", help="Sleep seconds between checks."),
+    iterations: int | None = typer.Option(
+        None, "--_iterations", hidden=True, help="Limit loop iterations (tests only)."
+    ),
+) -> None:
+    config, _ = load_config()
+    if schema is None:
+        schema = config.get("default_schema")
+    if not schema:
+        typer.echo("Missing schema (set default_schema in config or pass --schema).", err=True)
+        raise typer.Exit(code=1)
+    path = _working_identity_path(schema, name, run_id) if run_id else None
+    last_mtime: float | None = None
+    remaining = iterations
+    while True:
+        if path is None:
+            path = _latest_working_path(schema, name)
+        if path is not None and path.exists():
+            mtime = path.stat().st_mtime
+            if last_mtime is None or mtime > last_mtime:
+                data = load_json(path)
+                if data:
+                    typer.echo(json.dumps(data, sort_keys=True))
+                last_mtime = mtime
+        time.sleep(sleep_seconds)
+        if remaining is not None:
+            remaining -= 1
+            if remaining <= 0:
+                break
+
+
 @app.command(help="Consolidate identity by extracting schema traits from data sources.")
 def consolidate(
     name: str = typer.Argument(..., help="Identity name."),
@@ -868,9 +943,9 @@ def consolidate(
     years: int | None = typer.Option(None, "--years", help="Years backwards from now (UTC)."),
     days: int | None = typer.Option(None, "--days", help="Days backwards from now (UTC)."),
     hours: int | None = typer.Option(None, "--hours", help="Hours backwards from now (UTC)."),
-    max_chars: int = typer.Option(20000, "--max-chars", help="Max chars per source batch."),
+    max_chars: int = typer.Option(200000, "--max-chars", help="Max chars per source batch."),
     summary_max_chars: int = typer.Option(
-        8000, "--summary-max-chars", help="Max chars per summary chunk."
+        20000, "--summary-max-chars", help="Max chars per summary chunk."
     ),
     provider: str | None = typer.Option(None, "--provider", help="LLM provider override."),
     model: str | None = typer.Option(None, "--model", help="LLM model override."),
@@ -908,6 +983,8 @@ def consolidate(
             if value.strip():
                 sources.append(SourceItem(label="input", content=value, metadata={}))
 
+    memory_total = 0
+    memory_done = 0
     if not no_memory and (memory_term or memory_type or memory_id):
         if not memory_term or not memory_type or not memory_id:
             typer.echo("Memory input requires --memory-term, --memory-type, and --memory-id.", err=True)
@@ -921,6 +998,7 @@ def consolidate(
             days=days,
             hours=hours,
         )
+        memory_total = len(memory_entries)
         for entry in memory_entries:
             raw = _format_memory_entry(entry)
             summary = _summarize_text(
@@ -941,6 +1019,19 @@ def consolidate(
                         metadata={**raw.metadata, "summary": True},
                     )
                 )
+            memory_done += 1
+            _write_working_identity(
+                schema=schema,
+                name=name,
+                run_id=run_id,
+                current_identity=current_identity,
+                schema_data=schema_data,
+                metadata={
+                    "stage": "summary",
+                    "memory_progress": {"done": memory_done, "total": memory_total},
+                    "time_filter": {"years": years, "days": days, "hours": hours},
+                },
+            )
 
     if not no_topics:
         topic_entries = _fetch_topics(window)
@@ -962,6 +1053,7 @@ def consolidate(
     if not current_identity.strip():
         current_identity = _empty_identity_markdown(schema_data.get("traits", []))
 
+    run_id = uuid.uuid4().hex
     _log_event(
         "consolidate_started",
         {
@@ -969,13 +1061,15 @@ def consolidate(
             "schema": schema,
             "schema_version": schema_data.get("version"),
             "source_count": len(sources),
+            "run_id": run_id,
             "time_filter": {"years": years, "days": days, "hours": hours},
         },
     )
 
     batched_sources = _batch_sources_by_chars(sources, max_chars)
 
-    for source in batched_sources:
+    total_batches = len(batched_sources)
+    for idx, source in enumerate(batched_sources, start=1):
         _log_event(
             "consolidate_source_started",
             {
@@ -983,6 +1077,9 @@ def consolidate(
                 "schema": schema,
                 "label": source.label,
                 "metadata": source.metadata,
+                "batch_index": idx,
+                "batch_count": total_batches,
+                "run_id": run_id,
             },
         )
         prompt = _render_prompt(
@@ -1007,7 +1104,23 @@ def consolidate(
                 "schema": schema,
                 "label": source.label,
                 "metadata": source.metadata,
+                "batch_index": idx,
+                "batch_count": total_batches,
+                "run_id": run_id,
                 "content_chars": len(current_identity),
+            },
+        )
+        _write_working_identity(
+            schema=schema,
+            name=name,
+            run_id=run_id,
+            current_identity=current_identity,
+            schema_data=schema_data,
+            metadata={
+                "stage": "consolidate",
+                "batch_index": idx,
+                "batch_count": total_batches,
+                "time_filter": {"years": years, "days": days, "hours": hours},
             },
         )
 
@@ -1024,6 +1137,7 @@ def consolidate(
         "content": current_identity.strip() + "\n",
         "metadata": {
             "consolidation": {
+                "run_id": run_id,
                 "sources": {
                     "stdin": bool(stdin_text.strip()),
                     "input_count": len(input_text or []),
@@ -1051,6 +1165,9 @@ def consolidate(
     path = _identity_path(schema, name, version)
     path.parent.mkdir(parents=True, exist_ok=True)
     save_json(path, payload)
+    working_path = _working_identity_path(schema, name, run_id)
+    if working_path.exists():
+        working_path.unlink()
     _log_event(
         "consolidate_completed",
         {
@@ -1058,6 +1175,7 @@ def consolidate(
             "schema": schema,
             "version": version,
             "source_count": len(sources),
+            "run_id": run_id,
         },
     )
     typer.echo(json.dumps(payload, indent=2, sort_keys=True))
@@ -1081,9 +1199,9 @@ def update(
     years: int | None = typer.Option(None, "--years", help="Years backwards from now (UTC)."),
     days: int | None = typer.Option(None, "--days", help="Days backwards from now (UTC)."),
     hours: int | None = typer.Option(None, "--hours", help="Hours backwards from now (UTC)."),
-    max_chars: int = typer.Option(20000, "--max-chars", help="Max chars per source batch."),
+    max_chars: int = typer.Option(200000, "--max-chars", help="Max chars per source batch."),
     summary_max_chars: int = typer.Option(
-        8000, "--summary-max-chars", help="Max chars per summary chunk."
+        20000, "--summary-max-chars", help="Max chars per summary chunk."
     ),
     provider: str | None = typer.Option(None, "--provider", help="LLM provider override."),
     model: str | None = typer.Option(None, "--model", help="LLM model override."),
@@ -1189,6 +1307,7 @@ def update(
     if not current_identity.strip():
         current_identity = _empty_identity_markdown(schema_data.get("traits", []))
 
+    run_id = uuid.uuid4().hex
     _log_event(
         "update_started",
         {
@@ -1196,6 +1315,7 @@ def update(
             "schema": schema,
             "version": identity.get("version"),
             "source_count": len(sources),
+            "run_id": run_id,
             "time_filter": {"years": years, "days": days, "hours": hours},
         },
     )
@@ -1210,6 +1330,7 @@ def update(
                 "schema": schema,
                 "label": source.label,
                 "metadata": source.metadata,
+                "run_id": run_id,
             },
         )
         prompt = _render_prompt(
@@ -1234,6 +1355,7 @@ def update(
                 "schema": schema,
                 "label": source.label,
                 "metadata": source.metadata,
+                "run_id": run_id,
                 "content_chars": len(current_identity),
             },
         )
@@ -1241,6 +1363,7 @@ def update(
     now = _utc_iso()
     identity["content"] = current_identity.strip() + "\n"
     identity["updated_at"] = now
+    identity["run_id"] = run_id
     metadata = identity.get("metadata") or {}
     updates = metadata.get("updates") or []
     updates.append(
@@ -1263,6 +1386,7 @@ def update(
             "max_chars": max_chars,
             "summary_max_chars": summary_max_chars,
             "llm": {"provider": provider, "model": model, "timeout": llm_timeout},
+            "run_id": run_id,
         }
     )
     metadata["updates"] = updates
@@ -1275,6 +1399,7 @@ def update(
             "schema": schema,
             "version": identity.get("version"),
             "source_count": len(sources),
+            "run_id": run_id,
         },
     )
     typer.echo(json.dumps(identity, indent=2, sort_keys=True))
