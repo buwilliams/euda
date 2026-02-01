@@ -248,6 +248,65 @@ def _descendant_ids(conn: sqlite3.Connection, topic_id: str) -> list[str]:
     return [row["id"] for row in rows]
 
 
+def _child_rows(conn: sqlite3.Connection, topic_id: str) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM topics WHERE parent_id = ? ORDER BY created_at ASC",
+        (topic_id,),
+    ).fetchall()
+
+
+def _ancestor_rows(conn: sqlite3.Connection, topic_id: str) -> list[sqlite3.Row]:
+    rows = conn.execute(
+        """
+        WITH RECURSIVE ancestors(id, parent_id) AS (
+            SELECT id, parent_id FROM topics WHERE id = ?
+            UNION ALL
+            SELECT topics.id, topics.parent_id FROM topics
+            JOIN ancestors ON topics.id = ancestors.parent_id
+        )
+        SELECT topics.* FROM topics
+        JOIN ancestors ON topics.id = ancestors.id
+        WHERE topics.id != ?
+        """,
+        (topic_id, topic_id),
+    ).fetchall()
+    return rows
+
+
+def _descendant_rows(conn: sqlite3.Connection, topic_id: str) -> list[sqlite3.Row]:
+    return conn.execute(
+        """
+        WITH RECURSIVE descendants(id) AS (
+            SELECT id FROM topics WHERE id = ?
+            UNION ALL
+            SELECT topics.id FROM topics
+            JOIN descendants ON topics.parent_id = descendants.id
+        )
+        SELECT topics.* FROM topics
+        JOIN descendants ON topics.id = descendants.id
+        WHERE topics.id != ?
+        ORDER BY topics.created_at ASC
+        """,
+        (topic_id, topic_id),
+    ).fetchall()
+
+
+def _is_descendant(conn: sqlite3.Connection, topic_id: str, parent_id: str) -> bool:
+    row = conn.execute(
+        """
+        WITH RECURSIVE descendants(id) AS (
+            SELECT id FROM topics WHERE id = ?
+            UNION ALL
+            SELECT topics.id FROM topics
+            JOIN descendants ON topics.parent_id = descendants.id
+        )
+        SELECT 1 FROM descendants WHERE id = ? LIMIT 1
+        """,
+        (topic_id, parent_id),
+    ).fetchone()
+    return row is not None
+
+
 @config_app.command("get", help="Get a merged config value (defaults + overrides).")
 def config_get(key: str = typer.Argument(..., help="Config key, supports dot paths.")) -> None:
     config, _ = load_config()
@@ -377,11 +436,21 @@ def list_topics(
     assignee: str | None = typer.Option(None, "--assignee", help="Filter by assignee."),
     parent_id: str | None = typer.Option(None, "--parent-id", help="Filter by parent id."),
     tag: str | None = typer.Option(None, "--tag", help="Filter by tag."),
+    include_descendants: bool = typer.Option(
+        False, "--include-descendants", help="Include all descendants of parent id."
+    ),
 ) -> None:
     if state is not None:
         state = _validate_state(state)
     conn = _connect()
-    rows = _query_with_filters(conn, query=None, state=state, assignee=assignee, parent_id=parent_id)
+    if include_descendants and parent_id is not None:
+        rows = _descendant_rows(conn, parent_id)
+        if state is not None:
+            rows = [row for row in rows if row["state"] == state]
+        if assignee is not None:
+            rows = [row for row in rows if row["assignee"] == assignee]
+    else:
+        rows = _query_with_filters(conn, query=None, state=state, assignee=assignee, parent_id=parent_id)
     rows = _filter_tags(rows, tag)
     for row in rows:
         topic = _row_to_topic(row)
@@ -395,15 +464,193 @@ def search(
     assignee: str | None = typer.Option(None, "--assignee", help="Filter by assignee."),
     parent_id: str | None = typer.Option(None, "--parent-id", help="Filter by parent id."),
     tag: str | None = typer.Option(None, "--tag", help="Filter by tag."),
+    include_descendants: bool = typer.Option(
+        False, "--include-descendants", help="Include all descendants of parent id."
+    ),
 ) -> None:
     if state is not None:
         state = _validate_state(state)
     conn = _connect()
-    rows = _query_with_filters(conn, query=query, state=state, assignee=assignee, parent_id=parent_id)
+    if include_descendants and parent_id is not None:
+        rows = _descendant_rows(conn, parent_id)
+        if state is not None:
+            rows = [row for row in rows if row["state"] == state]
+        if assignee is not None:
+            rows = [row for row in rows if row["assignee"] == assignee]
+        if query:
+            tokens = [token for token in query.lower().split() if token.strip()]
+            filtered: list[sqlite3.Row] = []
+            for row in rows:
+                text = " ".join(
+                    [
+                        row["id"],
+                        row["name"],
+                        row["description"] or "",
+                        row["state"],
+                        row["assignee"],
+                        row["tags"],
+                        row["parent_id"] or "",
+                    ]
+                ).lower()
+                if all(token in text for token in tokens):
+                    filtered.append(row)
+            rows = filtered
+    else:
+        rows = _query_with_filters(conn, query=query, state=state, assignee=assignee, parent_id=parent_id)
     rows = _filter_tags(rows, tag)
     for row in rows:
         topic = _row_to_topic(row)
         typer.echo(json.dumps(_topic_to_dict(topic), sort_keys=True))
+
+
+@app.command(help="List direct children of a topic.")
+def children(
+    topic_id: str = typer.Argument(..., help="Topic id."),
+) -> None:
+    conn = _connect()
+    topic = _fetch_topic(conn, topic_id)
+    if topic is None:
+        typer.echo("Topic not found.", err=True)
+        raise typer.Exit(code=1)
+    for row in _child_rows(conn, topic_id):
+        typer.echo(json.dumps(_topic_to_dict(_row_to_topic(row)), sort_keys=True))
+
+
+@app.command(help="List ancestors of a topic.")
+def ancestors(
+    topic_id: str = typer.Argument(..., help="Topic id."),
+) -> None:
+    conn = _connect()
+    topic = _fetch_topic(conn, topic_id)
+    if topic is None:
+        typer.echo("Topic not found.", err=True)
+        raise typer.Exit(code=1)
+    for row in _ancestor_rows(conn, topic_id):
+        typer.echo(json.dumps(_topic_to_dict(_row_to_topic(row)), sort_keys=True))
+
+
+@app.command(help="List descendants of a topic.")
+def descendants(
+    topic_id: str = typer.Argument(..., help="Topic id."),
+) -> None:
+    conn = _connect()
+    topic = _fetch_topic(conn, topic_id)
+    if topic is None:
+        typer.echo("Topic not found.", err=True)
+        raise typer.Exit(code=1)
+    for row in _descendant_rows(conn, topic_id):
+        typer.echo(json.dumps(_topic_to_dict(_row_to_topic(row)), sort_keys=True))
+
+
+@app.command(help="Show the full path of a topic.")
+def path(
+    topic_id: str = typer.Argument(..., help="Topic id."),
+) -> None:
+    conn = _connect()
+    topic = _fetch_topic(conn, topic_id)
+    if topic is None:
+        typer.echo("Topic not found.", err=True)
+        raise typer.Exit(code=1)
+    rows = list(reversed(_ancestor_rows(conn, topic_id)))
+    names = [row["name"] for row in rows] + [topic.name]
+    typer.echo("/".join(names))
+
+
+@app.command(help="Resolve a topic by path.")
+def find(
+    path_value: str = typer.Option(..., "--path", help="Path like Root/Child/Leaf."),
+) -> None:
+    parts = [part.strip() for part in path_value.split("/") if part.strip()]
+    if not parts:
+        raise typer.BadParameter("Path must include at least one segment.")
+    conn = _connect()
+    current_id: str | None = None
+    current_topic: Topic | None = None
+    for part in parts:
+        if current_id is None:
+            row = conn.execute(
+                "SELECT * FROM topics WHERE name = ? AND parent_id IS NULL",
+                (part,),
+            ).fetchone()
+        else:
+            row = conn.execute(
+                "SELECT * FROM topics WHERE name = ? AND parent_id = ?",
+                (part, current_id),
+            ).fetchone()
+        if row is None:
+            typer.echo("Topic not found.", err=True)
+            raise typer.Exit(code=1)
+        current_topic = _row_to_topic(row)
+        current_id = current_topic.id
+    typer.echo(json.dumps(_topic_to_dict(current_topic), sort_keys=True))
+
+
+@app.command(help="Move a topic under a new parent.")
+def move(
+    topic_id: str = typer.Argument(..., help="Topic id."),
+    parent_id: str | None = typer.Argument(..., help="New parent id."),
+) -> None:
+    conn = _connect()
+    topic = _fetch_topic(conn, topic_id)
+    if topic is None:
+        typer.echo("Topic not found.", err=True)
+        raise typer.Exit(code=1)
+    if parent_id:
+        _ensure_parent(conn, parent_id)
+        if _is_descendant(conn, topic_id, parent_id):
+            typer.echo("Cannot move topic under its descendant.", err=True)
+            raise typer.Exit(code=1)
+    conn.execute(
+        "UPDATE topics SET parent_id = ?, updated_at = ? WHERE id = ?",
+        (parent_id, _utc_iso(), topic_id),
+    )
+    conn.commit()
+    updated = _fetch_topic(conn, topic_id)
+    if updated is None:
+        raise typer.Exit(code=1)
+    typer.echo(json.dumps(_topic_to_dict(updated), sort_keys=True))
+
+
+@app.command(help="Set a parent for a topic.")
+def parent_set(
+    topic_id: str = typer.Argument(..., help="Topic id."),
+    parent_id: str = typer.Argument(..., help="Parent id."),
+) -> None:
+    move(topic_id, parent_id)
+
+
+@app.command(help="Clear a topic's parent.")
+def parent_clear(
+    topic_id: str = typer.Argument(..., help="Topic id."),
+) -> None:
+    move(topic_id, None)
+
+
+@app.command(help="Archive a topic and its descendants.")
+def archive_tree(
+    topic_id: str = typer.Argument(..., help="Topic id."),
+) -> None:
+    conn = _connect()
+    topic = _fetch_topic(conn, topic_id)
+    if topic is None:
+        typer.echo("Topic not found.", err=True)
+        raise typer.Exit(code=1)
+    ids = _descendant_ids(conn, topic_id)
+    now = _utc_iso()
+    conn.executemany(
+        "UPDATE topics SET state = ?, updated_at = ? WHERE id = ?",
+        [("archived", now, item_id) for item_id in ids],
+    )
+    conn.commit()
+    typer.echo(json.dumps({"id": topic_id, "archived": True}, sort_keys=True))
+
+
+@app.command(help="Delete a topic subtree.")
+def delete_tree(
+    topic_id: str = typer.Argument(..., help="Topic id."),
+    yes: bool = typer.Option(False, "--yes", help="Skip confirmation prompt."),
+) -> None:
+    delete(topic_id, yes=yes)
 
 
 @app.command(help="Update a topic.")

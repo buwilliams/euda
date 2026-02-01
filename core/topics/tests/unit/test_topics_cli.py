@@ -292,3 +292,160 @@ def test_delete_removes_descendants_and_assets(tmp_path: Path, runner: CliRunner
     assert _fetch_all(tmp_path) == []
     assert not (tmp_path / "data" / "assets" / parent_id).exists()
     assert not (tmp_path / "data" / "assets" / child_id).exists()
+
+
+def test_children_ancestors_descendants_and_path(tmp_path: Path, runner: CliRunner) -> None:
+    _write_default_config(tmp_path)
+
+    root = runner.invoke(
+        cli.app,
+        ["create", "Root"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    root_id = json.loads(root.stdout)["id"]
+    child = runner.invoke(
+        cli.app,
+        ["create", "Child", "--parent-id", root_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    child_id = json.loads(child.stdout)["id"]
+    grand = runner.invoke(
+        cli.app,
+        ["create", "Grand", "--parent-id", child_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    grand_id = json.loads(grand.stdout)["id"]
+
+    result = runner.invoke(
+        cli.app,
+        ["children", root_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    assert len(lines) == 1
+    assert json.loads(lines[0])["id"] == child_id
+
+    result = runner.invoke(
+        cli.app,
+        ["ancestors", grand_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    names = [json.loads(line)["name"] for line in lines]
+    assert names == ["Child", "Root"]
+
+    result = runner.invoke(
+        cli.app,
+        ["descendants", root_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    ids = [json.loads(line)["id"] for line in lines]
+    assert ids == [child_id, grand_id]
+
+    result = runner.invoke(
+        cli.app,
+        ["path", grand_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    assert result.stdout.strip() == "Root/Child/Grand"
+
+    result = runner.invoke(
+        cli.app,
+        ["find", "--path", "Root/Child/Grand"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    assert json.loads(result.stdout)["id"] == grand_id
+
+
+def test_move_and_parent_clear_and_archive_tree(tmp_path: Path, runner: CliRunner) -> None:
+    _write_default_config(tmp_path)
+
+    root = runner.invoke(
+        cli.app,
+        ["create", "Root"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    root_id = json.loads(root.stdout)["id"]
+    other = runner.invoke(
+        cli.app,
+        ["create", "Other"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    other_id = json.loads(other.stdout)["id"]
+    child = runner.invoke(
+        cli.app,
+        ["create", "Child", "--parent-id", root_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    child_id = json.loads(child.stdout)["id"]
+
+    moved = runner.invoke(
+        cli.app,
+        ["move", child_id, other_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    assert json.loads(moved.stdout)["parent_id"] == other_id
+
+    cleared = runner.invoke(
+        cli.app,
+        ["parent-clear", child_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    assert json.loads(cleared.stdout)["parent_id"] is None
+
+    runner.invoke(
+        cli.app,
+        ["move", child_id, root_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+
+    result = runner.invoke(
+        cli.app,
+        ["archive-tree", root_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    assert result.exit_code == 0
+
+    listed = runner.invoke(
+        cli.app,
+        ["list", "--parent-id", root_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    payload = json.loads(listed.stdout.strip())
+    assert payload["state"] == "archived"
+
+
+def test_include_descendants_filters(tmp_path: Path, runner: CliRunner) -> None:
+    _write_default_config(tmp_path)
+
+    root = runner.invoke(
+        cli.app,
+        ["create", "Root", "--assignee", "agent"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    root_id = json.loads(root.stdout)["id"]
+    child = runner.invoke(
+        cli.app,
+        ["create", "Child", "--parent-id", root_id, "--assignee", "agent"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    child_id = json.loads(child.stdout)["id"]
+
+    result = runner.invoke(
+        cli.app,
+        ["list", "--parent-id", root_id, "--include-descendants"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    ids = [json.loads(line)["id"] for line in lines]
+    assert ids == [child_id]
+
+    result = runner.invoke(
+        cli.app,
+        ["search", "--query", "child", "--parent-id", root_id, "--include-descendants"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    assert len(lines) == 1
+    assert json.loads(lines[0])["id"] == child_id
