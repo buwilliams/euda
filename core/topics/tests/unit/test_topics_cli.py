@@ -110,6 +110,158 @@ def test_search_filters_by_query_and_tag(tmp_path: Path, runner: CliRunner) -> N
     assert json.loads(lines[0])["name"] == "Alpha topic"
 
 
+def test_list_and_get_with_filters(tmp_path: Path, runner: CliRunner) -> None:
+    _write_default_config(tmp_path)
+
+    first = runner.invoke(
+        cli.app,
+        ["create", "Parent", "--state", "working", "--assignee", "agent", "--tag", "alpha"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    parent_id = json.loads(first.stdout)["id"]
+    second = runner.invoke(
+        cli.app,
+        ["create", "Child", "--parent-id", parent_id, "--tag", "beta"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    child_id = json.loads(second.stdout)["id"]
+
+    result = runner.invoke(
+        cli.app,
+        ["list", "--state", "working", "--assignee", "agent", "--tag", "alpha"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    assert len(lines) == 1
+    assert json.loads(lines[0])["id"] == parent_id
+
+    result = runner.invoke(
+        cli.app,
+        ["list", "--parent-id", parent_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    assert len(lines) == 1
+    assert json.loads(lines[0])["id"] == child_id
+
+    result = runner.invoke(
+        cli.app,
+        ["get", child_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["name"] == "Child"
+
+
+def test_state_validation_and_parent_validation(tmp_path: Path, runner: CliRunner) -> None:
+    _write_default_config(tmp_path)
+
+    result = runner.invoke(
+        cli.app,
+        ["create", "Bad", "--state", "invalid"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    assert result.exit_code != 0
+
+    result = runner.invoke(
+        cli.app,
+        ["create", "Child", "--parent-id", "unknown"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    assert result.exit_code != 0
+
+
+def test_update_tags_and_parent_controls(tmp_path: Path, runner: CliRunner) -> None:
+    _write_default_config(tmp_path)
+
+    parent = runner.invoke(
+        cli.app,
+        ["create", "Parent"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    parent_id = json.loads(parent.stdout)["id"]
+    child = runner.invoke(
+        cli.app,
+        ["create", "Child", "--tag", "alpha", "--parent-id", parent_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    child_id = json.loads(child.stdout)["id"]
+
+    result = runner.invoke(
+        cli.app,
+        ["update", child_id, "--clear-tags"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    payload = json.loads(result.stdout)
+    assert payload["tags"] == []
+
+    result = runner.invoke(
+        cli.app,
+        ["update", child_id, "--clear-parent"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    payload = json.loads(result.stdout)
+    assert payload["parent_id"] is None
+
+    result = runner.invoke(
+        cli.app,
+        ["update", child_id, "--tag", "alpha", "--clear-tags"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    assert result.exit_code != 0
+
+    result = runner.invoke(
+        cli.app,
+        ["update", child_id, "--parent-id", parent_id, "--clear-parent"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    assert result.exit_code != 0
+
+
+def test_update_changes_updated_at(tmp_path: Path, runner: CliRunner) -> None:
+    _write_default_config(tmp_path)
+
+    created = runner.invoke(
+        cli.app,
+        ["create", "Task"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    topic_id = json.loads(created.stdout)["id"]
+
+    fetched = runner.invoke(
+        cli.app,
+        ["get", topic_id],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    before = json.loads(fetched.stdout)["updated_at"]
+
+    updated = runner.invoke(
+        cli.app,
+        ["update", topic_id, "--name", "Task Updated"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    after = json.loads(updated.stdout)["updated_at"]
+    assert after >= before
+
+
+def test_delete_requires_confirmation(tmp_path: Path, runner: CliRunner) -> None:
+    _write_default_config(tmp_path)
+
+    created = runner.invoke(
+        cli.app,
+        ["create", "Task"],
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    topic_id = json.loads(created.stdout)["id"]
+
+    result = runner.invoke(
+        cli.app,
+        ["delete", topic_id],
+        input="no\n",
+        env={"TOPICS_CONFIG_DIR": str(tmp_path)},
+    )
+    assert result.exit_code != 0
+    assert _fetch_all(tmp_path)
 def test_delete_removes_descendants_and_assets(tmp_path: Path, runner: CliRunner) -> None:
     _write_default_config(tmp_path)
 
