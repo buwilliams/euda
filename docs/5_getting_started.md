@@ -29,8 +29,8 @@ source ~/.bashrc
 euda set-password
 
 # Start Euda (choose one)
-euda web     # Web UI at http://localhost:8000
-euda chat    # CLI chat interface
+euda core web     # Web UI at http://localhost:8000
+euda core chat    # CLI chat interface
 ```
 
 ## Verify It Works
@@ -46,11 +46,11 @@ euda chat    # CLI chat interface
 Commands below assume the alias. Without it, prefix with `uv run`.
 
 ```bash
-euda web                           # Web UI + agents
-euda chat                          # CLI chat + agents
-euda dev watch                     # Stream all system events
-euda dev memory chat               # View agent's memory
-euda skills core topics list       # List topics via skill
+euda core web                      # Web UI + agents
+euda core chat                     # CLI chat + agents
+euda core logs tail                # Stream log entries
+euda core topics list              # List topics via CLI app
+euda skills list                   # List skill apps
 
 # Run tests
 uv run pytest                      # unit + integration tests

@@ -21,14 +21,14 @@ The browser-based interface—layouts, styles, interactions.
 - Improve mobile responsiveness
 
 #### CLI
-**Location:** `router.py`, `src/cli/`
+**Location:** `router.py`, `core/*/main.py`, `skills/*/main.py`
 
 The command-line interface for terminal users.
 
 **Examples:**
 - Add a new command to `router.py`
-- Modify the `chat` REPL experience
-- Add dev CLI commands in `src/cli/`
+- Modify the `chat` CLI app in `core/chat`
+- Add a new CLI app under `core/` or `skills/`
 
 #### Future Interfaces
 **Location:** TBD
@@ -72,6 +72,7 @@ Create a specialized agent for a new domain.
 **Location:** `skills/{name}/`
 
 Add new capabilities as CLI-based skills that agents can discover and execute.
+Each skill is a self-contained CLI app with its own `main.py` and `pyproject.toml`.
 
 **When to use:** Agents need to interact with external systems or perform new operations.
 
@@ -82,8 +83,8 @@ Add new capabilities as CLI-based skills that agents can discover and execute.
 - `EUNO_SESSION_ID` — Current session ID (set during chat)
 
 **Examples:**
-- Create `skills/calendar/cli.py` for calendar integration
-- Create `skills/obsidian/cli.py` for note-taking integration
+- Create `skills/calendar/main.py` for calendar integration
+- Create `skills/obsidian/main.py` for note-taking integration
 
 See `specs/8_skills.md` for skill development guide.
 

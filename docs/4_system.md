@@ -38,19 +38,13 @@ Agents grow through **consolidation**—a scheduled process that reviews memory 
 
 ## Skills
 
-Skills are CLI-based extensions that give agents capabilities. Agents don't call tools directly—they use three meta-tools to discover and execute skills:
+Skills are CLI apps that give agents capabilities. The primary interface is bash: agents (and users) run CLI apps to take action.
 
-- `list_skills` — see what's available
-- `skill_usage(skill)` — get help for a skill
-- `execute_skill(skill, command)` — run a command
+Skills are auto-discovered from `skills/`. Each skill is a self-contained CLI app with its own `main.py` and `pyproject.toml`. Use the router to list and run them:
 
-**Built-in skills:**
-- `core` — topics, memory, agents, identity, dates
-- `nextcloud` — files, calendar, deck
-- `speech` — text-to-speech
-- `mastodon` — social media
-
-Skills are auto-discovered from `skills/`. Each skill is a directory with a `cli.py` entry point using Typer. Agents can be configured to exclude specific skills.
+- `euda skills list`
+- `euda skills <app> --help`
+- `euda skills <app> [args...]`
 
 ---
 
@@ -95,6 +89,13 @@ Agent (work cycle):
 ```
 
 **Metacognition** monitors all agent activity—tracking token usage, detecting stuck patterns, and auto-pausing if limits are breached.
+
+---
+
+## CLI App Architecture
+
+Every app is a self-contained CLI project in either `core/` or `skills/`, with `main.py` as its entry point. `router.py` is the single CLI router that dispatches `euda core <app>` or `euda skills <app>` to the appropriate project (via `uv run --project`). `shared-router.py` provides helper functions for calling these CLI apps from Python and capturing structured output.
+This design is LLM-friendly: text-first CLI commands make it straightforward for agents to act through bash and record results.
 
 ---
 
