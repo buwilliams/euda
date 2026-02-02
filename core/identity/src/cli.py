@@ -146,6 +146,16 @@ def _identity_markdown_from_sources(name: str, content: str) -> str:
     return content
 
 
+def _load_identity_template(config: dict, name: str) -> str:
+    template_name = (config.get("identity") or {}).get("template")
+    if not template_name:
+        return f"# {name}\n"
+    path = data_dir() / template_name
+    if not path.exists():
+        return f"# {name}\n"
+    return path.read_text(encoding="utf-8").format(name=name)
+
+
 def _render_prompt(template: str, *, identity: str, guide: str, data: str, variance: str) -> str:
     return template.format(
         identity=identity.strip(),
@@ -348,8 +358,8 @@ def identity_create(
             content = stdin_text
             source_meta = {"type": "stdin"}
         else:
-            content = f"# {normalized}\n"
-            source_meta = {"type": "generated"}
+            content = _load_identity_template(config, normalized)
+            source_meta = {"type": "template"}
     else:
         if content == "-":
             content = typer.get_text_stream("stdin").read()

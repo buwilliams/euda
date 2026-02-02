@@ -4,7 +4,8 @@
   },
   "identity": {
     "max_chars": 8000,
-    "max_versions": 20
+    "max_versions": 20,
+    "template": "identity-template.md"
   },
   "consolidate": {
     "variance": "medium",

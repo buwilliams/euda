@@ -18,3 +18,4 @@ Manage agent identities and consolidation guides.
 - Consolidate uses the latest guide and latest identity.
 - Consolidate requires data via stdin, `--text`, or `--file`.
 - Identities are kept within size/retention limits from `config.default.json`.
+- New identities start from the template in `data/identity-template.md`.

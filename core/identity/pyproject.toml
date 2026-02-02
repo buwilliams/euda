@@ -25,6 +25,7 @@ include = [
   "config.default.json",
   "data/consolidate-system-prompt.md",
   "data/consolidate-prompt.md",
+  "data/identity-template.md",
   "data/guide/*.md",
   "data/guide/*.json",
 ]
