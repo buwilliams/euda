@@ -3,12 +3,17 @@ from pathlib import Path
 
 import pytest
 
+DEFAULT_GUIDE = """# guide
 
-DEFAULT_TRAITS = [
-    {"name": "Purpose", "instruction": "Why the agent exists."},
-    {"name": "Behavioral Rules", "instruction": "Must/must-not constraints."},
-    {"name": "Voice", "instruction": "Communication style."},
-]
+## Purpose
+- Instruct consolidation behavior.
+"""
+
+DEFAULT_IDENTITY = """# neo
+
+## Purpose
+- Seed.
+"""
 
 
 def write_prompts(data_dir: Path) -> None:
@@ -16,23 +21,46 @@ def write_prompts(data_dir: Path) -> None:
         "system", encoding="utf-8"
     )
     (data_dir / "consolidate-prompt.md").write_text(
-        "Schema: {schema_name} v{schema_version}\n{traits_markdown}\n{current_identity}\n{source_label}\n{source_metadata}\n{source_content}\n",
+        "Guide:\n{guide}\n\nIdentity:\n{identity}\n\nData:\n{data}\n\nVariance: {variance}\n",
         encoding="utf-8",
     )
 
 
-def write_schema(data_dir: Path, schema: str = "cognitive-core", version: int = 1) -> Path:
-    schema_dir = data_dir / "schema"
-    schema_dir.mkdir(parents=True, exist_ok=True)
-    payload = {
-        "schema": schema,
-        "schema_id": "schema-123",
-        "version": version,
-        "created_at": "2026-02-01T00:00:00+00:00",
-        "traits": DEFAULT_TRAITS,
-    }
-    path = schema_dir / f"{schema}-{version}.json"
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+def write_guide(data_dir: Path, version: int = 1, content: str | None = None) -> Path:
+    guide_dir = data_dir / "guide"
+    guide_dir.mkdir(parents=True, exist_ok=True)
+    body = content or DEFAULT_GUIDE
+    path = guide_dir / f"guide-{version}.md"
+    path.write_text(body, encoding="utf-8")
+    meta = guide_dir / f"guide-{version}.json"
+    meta.write_text(
+        json.dumps(
+            {"version": version, "created_at": "2026-02-02T00:00:00+00:00", "source": {"type": "seed"}},
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def write_identity(data_dir: Path, name: str = "neo", version: int = 1, content: str | None = None) -> Path:
+    identity_dir = data_dir / "identity" / name
+    identity_dir.mkdir(parents=True, exist_ok=True)
+    body = content or DEFAULT_IDENTITY
+    path = identity_dir / f"identity-{version}.md"
+    path.write_text(body, encoding="utf-8")
+    meta = identity_dir / f"identity-{version}.json"
+    meta.write_text(
+        json.dumps(
+            {"name": name, "version": version, "created_at": "2026-02-02T00:00:00+00:00", "source": {"type": "seed"}},
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     return path
 
 
@@ -42,15 +70,22 @@ def identity_env(tmp_path, monkeypatch):
     config_dir.mkdir(parents=True)
     data_dir = config_dir / "data"
     data_dir.mkdir(parents=True)
-    (data_dir / "schema").mkdir(parents=True, exist_ok=True)
     write_prompts(data_dir)
     (config_dir / "config.default.json").write_text(
         json.dumps(
             {
-                "default_schema": "cognitive-core",
+                "guide": {"max_versions": 20},
+                "identity": {"max_chars": 1000, "max_versions": 20},
+                "consolidate": {
+                    "variance": "medium",
+                    "max_change_ratio": 0.5,
+                    "llm_timeout": 5.0,
+                    "provider": None,
+                    "model": None,
+                },
                 "prompts": {
-                    "system": "consolidate-system-prompt.md",
-                    "user": "consolidate-prompt.md",
+                    "consolidate_system": "consolidate-system-prompt.md",
+                    "consolidate_user": "consolidate-prompt.md",
                 },
             },
             indent=2,

@@ -1,13 +1,12 @@
 from __future__ import annotations
 
+import difflib
 import json
+import re
 import sys
-import time
-import uuid
 from dataclasses import dataclass
-from datetime import date, datetime, timezone, timedelta
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
 
 import typer
 import shared_router
@@ -22,13 +21,16 @@ from src.config import (
     set_value,
     write_override,
     save_json,
-    load_json,
 )
 
-app = typer.Typer(help="Euda identity CLI.", invoke_without_command=True)
+app = typer.Typer(help="Identity CLI.", invoke_without_command=True)
 config_app = typer.Typer(help="Inspect or update config.json overrides and merged defaults.")
-schema_app = typer.Typer(help="Manage cognitive traits schemas.")
+guide_app = typer.Typer(help="Manage consolidation guides.")
 identity_app = typer.Typer(help="Manage identities.")
+
+app.add_typer(config_app, name="config")
+app.add_typer(guide_app, name="guide")
+app.add_typer(identity_app, name="identity")
 
 
 @app.callback()
@@ -38,13 +40,8 @@ def app_callback(ctx: typer.Context) -> None:
         raise typer.Exit()
 
 
-app.add_typer(config_app, name="config")
-app.add_typer(schema_app, name="schema")
-app.add_typer(identity_app, name="identity")
-
-
 @dataclass(frozen=True)
-class SourceItem:
+class InputSource:
     label: str
     content: str
     metadata: dict
@@ -58,225 +55,103 @@ def _utc_iso() -> str:
     return _utc_now().isoformat()
 
 
-def _today_utc() -> date:
-    return _utc_now().date()
+def _guide_dir() -> Path:
+    return data_dir() / "guide"
 
 
-def _schema_dir() -> Path:
-    return data_dir() / "schema"
+def _identity_dir(name: str) -> Path:
+    return data_dir() / "identity" / name
 
 
-def _identity_root() -> Path:
-    return data_dir() / "identity"
+def _normalize_name(name: str) -> str:
+    cleaned = re.sub(r"\s+", "-", name.strip().lower())
+    cleaned = re.sub(r"[^a-z0-9\-]", "-", cleaned)
+    cleaned = re.sub(r"-+", "-", cleaned).strip("-")
+    if not cleaned:
+        raise typer.BadParameter("Identity name must include alphanumeric characters.")
+    return cleaned
 
 
-def _identity_dir(schema: str) -> Path:
-    return _identity_root() / schema
-
-
-def _prompt_path(config: dict, key: str) -> Path:
-    prompts = config.get("prompts", {}) or {}
-    filename = prompts.get(key)
-    if not filename:
-        raise typer.BadParameter(f"Missing prompts.{key} in config.")
-    return data_dir() / filename
-
-
-def _read_prompt(config: dict, key: str) -> str:
-    path = _prompt_path(config, key)
-    if not path.exists():
-        raise typer.BadParameter(f"Missing prompt template: {path}")
-    return path.read_text(encoding="utf-8")
-
-
-def _read_stdin_if_available() -> str:
-    if sys.stdin is None or sys.stdin.isatty():
+def _read_stdin(allow_tty: bool) -> str:
+    if sys.stdin is None:
+        return ""
+    if sys.stdin.isatty() and not allow_tty:
         return ""
     return typer.get_text_stream("stdin").read()
 
 
-def _parse_traits_payload(payload: str) -> list[dict]:
+def _version_from_path(path: Path, prefix: str) -> int:
+    stem = path.stem
     try:
-        data = json.loads(payload)
-    except json.JSONDecodeError as exc:
-        raise typer.BadParameter("Traits payload must be valid JSON.") from exc
-    traits: list[dict] = []
-    if isinstance(data, dict):
-        for name, instruction in data.items():
-            traits.append({"name": str(name), "instruction": str(instruction)})
-    elif isinstance(data, list):
-        for item in data:
-            if not isinstance(item, dict):
-                raise typer.BadParameter("Trait list items must be objects.")
-            name = item.get("name")
-            instruction = item.get("instruction")
-            if not name or not instruction:
-                raise typer.BadParameter("Each trait needs name and instruction.")
-            traits.append({"name": str(name), "instruction": str(instruction)})
-    else:
-        raise typer.BadParameter("Traits payload must be a list or object.")
-    if not traits:
-        raise typer.BadParameter("Traits payload is empty.")
-    return traits
-
-
-def _schema_paths(schema: str) -> list[Path]:
-    base = _schema_dir()
-    if not base.exists():
-        return []
-    return sorted(base.glob(f"{schema}-*.json"))
-
-
-def _schema_version_from_path(path: Path) -> int:
-    name = path.stem
-    try:
-        return int(name.rsplit("-", 1)[-1])
+        return int(stem.replace(prefix + "-", ""))
     except ValueError:
         return 0
 
 
-def _latest_schema_path(schema: str) -> Path | None:
-    paths = _schema_paths(schema)
+def _latest_version_int(directory: Path, prefix: str) -> int | None:
+    if not directory.exists():
+        return None
+    paths = list(directory.glob(f"{prefix}-*.md"))
     if not paths:
         return None
-    return max(paths, key=_schema_version_from_path)
+    return max(paths, key=lambda p: _version_from_path(p, prefix))
 
 
-def _latest_schema(schema: str) -> dict | None:
-    path = _latest_schema_path(schema)
-    if path is None:
-        return None
-    return load_json(path)
-
-
-def _next_schema_version(schema: str) -> int:
-    path = _latest_schema_path(schema)
-    if path is None:
+def _next_version(directory: Path, prefix: str) -> int:
+    latest = _latest_version_int(directory, prefix)
+    if latest is None:
         return 1
-    return _schema_version_from_path(path) + 1
+    return _version_from_path(latest, prefix) + 1
 
 
-def _schema_id_for(schema: str) -> str:
-    latest = _latest_schema(schema)
-    if latest and latest.get("schema_id"):
-        return str(latest["schema_id"])
-    return uuid.uuid4().hex
+def _markdown_path(directory: Path, prefix: str, version: int) -> Path:
+    return directory / f"{prefix}-{version}.md"
 
 
-def _schema_path(schema: str, version: int) -> Path:
-    return _schema_dir() / f"{schema}-{version}.json"
+def _metadata_path(markdown_path: Path) -> Path:
+    return markdown_path.with_suffix(".json")
 
 
-def _identity_paths(schema: str, name: str) -> list[Path]:
-    base = _identity_dir(schema)
-    if not base.exists():
-        return []
-    return sorted(base.glob(f"{name}-*.json"))
+def _prune_versions(directory: Path, prefix: str, keep: int) -> None:
+    if keep <= 0:
+        return
+    paths = sorted(directory.glob(f"{prefix}-*.md"), key=lambda p: _version_from_path(p, prefix))
+    if len(paths) <= keep:
+        return
+    for path in paths[: len(paths) - keep]:
+        meta = _metadata_path(path)
+        if path.exists():
+            path.unlink()
+        if meta.exists():
+            meta.unlink()
 
 
-def _identity_version_from_path(path: Path) -> int:
-    name = path.stem
-    try:
-        return int(name.rsplit("-", 1)[-1])
-    except ValueError:
-        return 0
+def _validate_identity_header(content: str, name: str) -> None:
+    for line in content.splitlines():
+        if not line.strip():
+            continue
+        if not line.startswith("# "):
+            raise typer.BadParameter("Identity must start with a '# name' header.")
+        header = line[2:].strip()
+        if header != name:
+            raise typer.BadParameter(f"Identity header must be '# {name}'.")
+        return
+    raise typer.BadParameter("Identity is empty.")
 
 
-def _latest_identity_path(schema: str, name: str) -> Path | None:
-    paths = _identity_paths(schema, name)
-    if not paths:
-        return None
-    return max(paths, key=_identity_version_from_path)
+def _identity_markdown_from_sources(name: str, content: str) -> str:
+    if not content.endswith("\n"):
+        content = content + "\n"
+    _validate_identity_header(content, name)
+    return content
 
 
-def _latest_identity(schema: str, name: str) -> dict | None:
-    path = _latest_identity_path(schema, name)
-    if path is None:
-        return None
-    return load_json(path)
-
-
-def _next_identity_version(schema: str, name: str) -> int:
-    path = _latest_identity_path(schema, name)
-    if path is None:
-        return 1
-    return _identity_version_from_path(path) + 1
-
-
-def _identity_path(schema: str, name: str, version: int) -> Path:
-    return _identity_dir(schema) / f"{name}-{version}.json"
-
-
-def _working_identity_path(schema: str, name: str, run_id: str) -> Path:
-    return _identity_dir(schema) / f"{name}-working-{run_id}.json"
-
-
-def _latest_working_path(schema: str, name: str) -> Path | None:
-    base = _identity_dir(schema)
-    if not base.exists():
-        return None
-    candidates = list(base.glob(f"{name}-working-*.json"))
-    if not candidates:
-        return None
-    return max(candidates, key=lambda path: path.stat().st_mtime)
-
-
-def _write_working_identity(
-    *,
-    schema: str,
-    name: str,
-    run_id: str,
-    current_identity: str,
-    schema_data: dict,
-    metadata: dict,
-) -> None:
-    working_payload = {
-        "name": name,
-        "schema": schema,
-        "schema_id": schema_data.get("schema_id"),
-        "schema_version": schema_data.get("version"),
-        "version": None,
-        "created_at": None,
-        "updated_at": _utc_iso(),
-        "content": current_identity.strip() + "\n",
-        "metadata": {"working": True, "run_id": run_id, **metadata},
-    }
-    working_path = _working_identity_path(schema, name, run_id)
-    working_path.parent.mkdir(parents=True, exist_ok=True)
-    save_json(working_path, working_payload)
-
-
-def _empty_identity_markdown(traits: Iterable[dict]) -> str:
-    lines = []
-    for trait in traits:
-        lines.append(f"## {trait['name']}")
-        lines.append("")
-    return "\n".join(lines).strip() + "\n"
-
-
-def _traits_markdown(traits: Iterable[dict]) -> str:
-    lines = []
-    for trait in traits:
-        lines.append(f"- {trait['name']}: {trait['instruction']}")
-    return "\n".join(lines)
-
-
-def _render_prompt(
-    template: str,
-    *,
-    schema: dict,
-    current_identity: str,
-    source: SourceItem,
-) -> str:
+def _render_prompt(template: str, *, identity: str, guide: str, data: str, variance: str) -> str:
     return template.format(
-        schema_name=schema.get("schema"),
-        schema_version=schema.get("version"),
-        schema_id=schema.get("schema_id"),
-        traits_markdown=_traits_markdown(schema.get("traits", [])),
-        current_identity=current_identity.strip() or "(empty)",
-        source_label=source.label,
-        source_metadata=json.dumps(source.metadata, sort_keys=True),
-        source_content=source.content.strip() or "(empty)",
+        identity=identity.strip(),
+        guide=guide.strip(),
+        data=data.strip(),
+        variance=variance,
     )
 
 
@@ -284,365 +159,24 @@ def _call_llm(
     system_prompt: str,
     prompt: str,
     *,
-    provider: str | None = None,
-    model: str | None = None,
-    retries: int = 0,
-    retry_wait: float = 2.0,
-    timeout: float | None = 30.0,
+    provider: str | None,
+    model: str | None,
+    timeout: float | None,
 ) -> str:
     args = ["call", system_prompt, "-"]
     if provider:
         args.extend(["--provider", provider])
     if model:
         args.extend(["--model", model])
-    attempt = 0
-    while True:
-        try:
-            _log_event(
-                "llm_call_started",
-                {
-                    "provider": provider,
-                    "model": model,
-                    "prompt_chars": len(prompt),
-                    "system_chars": len(system_prompt),
-                    "timeout": timeout,
-                },
-            )
-            result = shared_router.run_core(
-                "llm",
-                args,
-                input_text=prompt,
-                timeout=timeout,
-            )
-            _log_event(
-                "llm_call_completed",
-                {"provider": provider, "model": model, "response_chars": len(result.stdout)},
-            )
-            return result.stdout
-        except Exception as exc:
-            message = str(exc)
-            lower = message.lower()
-            transient = (
-                "temporarily unavailable" in lower
-                or "unavailable" in lower
-                or "timed out" in lower
-                or "time out" in lower
-            )
-            if attempt >= retries or not transient:
-                _log_event(
-                    "llm_call_failed",
-                    {"provider": provider, "model": model, "error": message},
-                )
-                raise
-            attempt += 1
-            _log_event(
-                "llm_retry",
-                {"attempt": attempt, "error": message, "wait_seconds": retry_wait},
-            )
-            time.sleep(retry_wait)
+    result = shared_router.run_core("llm", args, input_text=prompt, timeout=timeout)
+    return result.stdout
 
 
-def _log_event(event: str, payload: dict) -> None:
-    message = json.dumps({"event": event, **payload}, sort_keys=True)
-    try:
-        shared_router.run_core(
-            "logs",
-            ["write", message, "--type", "system", "--id", "identity"],
-        )
-    except Exception:
-        return
-
-
-def _parse_iso_timestamp(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    try:
-        timestamp = datetime.fromisoformat(value)
-    except ValueError:
-        return None
-    if timestamp.tzinfo is None:
-        timestamp = timestamp.replace(tzinfo=timezone.utc)
-    return timestamp.astimezone(timezone.utc)
-
-
-def _range_from_filters(
-    years: int | None,
-    days: int | None,
-    hours: int | None,
-) -> tuple[datetime, datetime] | None:
-    if years is None and days is None and hours is None:
-        return None
-    total_days = (years or 0) * 365 + (days or 0)
-    delta = timedelta(days=total_days, hours=hours or 0)
-    end_dt = _utc_now()
-    start_dt = end_dt - delta
-    return start_dt, end_dt
-
-
-def _in_range(timestamp: datetime | None, window: tuple[datetime, datetime] | None) -> bool:
-    if timestamp is None:
-        return False
-    if window is None:
-        return True
-    start_dt, end_dt = window
-    return start_dt <= timestamp <= end_dt
-
-
-def _fetch_memory_entries(
-    *,
-    term: str,
-    entry_type: str,
-    entry_id: str,
-    window: tuple[datetime, datetime] | None,
-    years: int | None,
-    days: int | None,
-    hours: int | None,
-) -> list[dict]:
-    args = [
-        "read",
-        "--term",
-        term,
-        "--type",
-        entry_type,
-        "--id",
-        entry_id,
-    ]
-    total_days = (years or 0) * 365 + (days or 0)
-    if window is not None:
-        if hours is not None:
-            args.extend(["--hours", str(hours)])
-        if total_days:
-            args.extend(["--days", str(total_days)])
-    else:
-        args.extend(["--start-date", "1970-01-01", "--end-date", _today_utc().isoformat()])
-    result = shared_router.run_core("memory", args)
-    entries: list[dict] = []
-    for line in result.stdout.splitlines():
-        if not line.strip():
-            continue
-        try:
-            data = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(data, dict):
-            entries.append(data)
-    if window is None:
-        return entries
-    filtered: list[dict] = []
-    for entry in entries:
-        ts = _parse_iso_timestamp(entry.get("timestamp"))
-        if _in_range(ts, window):
-            filtered.append(entry)
-    return filtered
-
-
-def _format_memory_entry(entry: dict) -> SourceItem:
-    metadata = {
-        "timestamp": entry.get("timestamp"),
-        "type": entry.get("type"),
-        "id": entry.get("id"),
-        "term": entry.get("term"),
-        "index": entry.get("index"),
-    }
-    if "memory" in entry:
-        content = entry.get("memory") or ""
-    else:
-        content = json.dumps(entry, sort_keys=True)
-    return SourceItem(label="memory", content=str(content), metadata=metadata)
-
-
-def _fetch_topics(window: tuple[datetime, datetime] | None) -> list[dict]:
-    result = shared_router.run_core("topics", ["list"])
-    entries: list[dict] = []
-    for line in result.stdout.splitlines():
-        if not line.strip():
-            continue
-        try:
-            data = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(data, dict):
-            entries.append(data)
-    if window is None:
-        return entries
-    filtered: list[dict] = []
-    for entry in entries:
-        ts = _parse_iso_timestamp(entry.get("updated_at"))
-        if _in_range(ts, window):
-            filtered.append(entry)
-    return filtered
-
-
-def _format_topic(entry: dict) -> SourceItem:
-    metadata = {
-        "id": entry.get("id"),
-        "name": entry.get("name"),
-        "state": entry.get("state"),
-        "assignee": entry.get("assignee"),
-        "updated_at": entry.get("updated_at"),
-    }
-    content = json.dumps(entry, sort_keys=True)
-    return SourceItem(label="topic", content=content, metadata=metadata)
-
-
-def _split_by_chars(text: str, max_chars: int) -> list[str]:
-    if max_chars <= 0 or len(text) <= max_chars:
-        return [text]
-    chunks: list[str] = []
-    start = 0
-    while start < len(text):
-        end = min(start + max_chars, len(text))
-        chunks.append(text[start:end])
-        start = end
-    return chunks
-
-
-def _summarize_text(
-    config: dict,
-    source: SourceItem,
-    *,
-    max_chars: int,
-    provider: str | None,
-    model: str | None,
-    retries: int,
-    retry_wait: float,
-    timeout: float | None,
-) -> str:
-    _log_event(
-        "summary_started",
-        {
-            "label": source.label,
-            "metadata": source.metadata,
-            "content_chars": len(source.content),
-            "max_chars": max_chars,
-        },
-    )
-    system_prompt = _read_prompt(config, "summary_system")
-    user_template = _read_prompt(config, "summary_user")
-    chunks = _split_by_chars(source.content, max_chars)
-    summaries: list[str] = []
-    _log_event(
-        "summary_chunks_ready",
-        {"label": source.label, "chunk_count": len(chunks)},
-    )
-    for chunk in chunks:
-        _log_event(
-            "summary_chunk_started",
-            {"label": source.label, "chunk_chars": len(chunk)},
-        )
-        prompt = user_template.format(
-            source_label=source.label,
-            source_metadata=json.dumps(source.metadata, sort_keys=True),
-            source_content=chunk,
-        )
-        summary = _call_llm(
-            system_prompt,
-            prompt,
-            provider=provider,
-            model=model,
-            retries=retries,
-            retry_wait=retry_wait,
-            timeout=timeout,
-        ).strip()
-        if summary:
-            summaries.append(summary)
-        _log_event(
-            "summary_chunk_completed",
-            {"label": source.label, "summary_chars": len(summary)},
-        )
-    if not summaries:
-        _log_event(
-            "summary_completed",
-            {"label": source.label, "summary_chars": 0},
-        )
-        return ""
-    if len(summaries) == 1:
-        _log_event(
-            "summary_completed",
-            {"label": source.label, "summary_chars": len(summaries[0])},
-        )
-        return summaries[0]
-    combined = "\n\n".join(summaries)
-    _log_event(
-        "summary_merge_started",
-        {"label": source.label, "combined_chars": len(combined)},
-    )
-    prompt = user_template.format(
-        source_label=source.label,
-        source_metadata=json.dumps({**source.metadata, "summary_stage": "merge"}, sort_keys=True),
-        source_content=combined,
-    )
-    merged = _call_llm(
-        system_prompt,
-        prompt,
-        provider=provider,
-        model=model,
-        retries=retries,
-        retry_wait=retry_wait,
-        timeout=timeout,
-    ).strip()
-    _log_event(
-        "summary_completed",
-        {"label": source.label, "summary_chars": len(merged)},
-    )
-    return merged
-
-
-def _batch_sources_by_chars(sources: list[SourceItem], max_chars: int) -> list[SourceItem]:
-    if max_chars <= 0:
-        return sources
-    batches: list[SourceItem] = []
-    current_parts: list[str] = []
-    current_meta: list[dict] = []
-    current_len = 0
-
-    def flush() -> None:
-        nonlocal current_parts, current_meta, current_len
-        if not current_parts:
-            return
-        content = "\n\n".join(current_parts)
-        batches.append(SourceItem(label="batch", content=content, metadata={"items": current_meta}))
-        current_parts = []
-        current_meta = []
-        current_len = 0
-
-    for source in sources:
-        header = f"### Source\\nLabel: {source.label}\\nMetadata: {json.dumps(source.metadata, sort_keys=True)}\\n\\n"
-        block = header + source.content
-        block_len = len(block)
-        if current_len + block_len > max_chars and current_parts:
-            flush()
-        current_parts.append(block)
-        current_meta.append({"label": source.label, "metadata": source.metadata})
-        current_len += block_len
-
-    flush()
-    _log_event(
-        "batching_completed",
-        {"batch_count": len(batches), "max_chars": max_chars},
-    )
-    return batches
-
-
-def _identity_versions(schema: str, name: str) -> list[dict]:
-    paths = _identity_paths(schema, name)
-    entries: list[dict] = []
-    for path in sorted(paths, key=_identity_version_from_path):
-        data = load_json(path)
-        if data:
-            entries.append(data)
-    return entries
-
-
-def _previous_identity_for_range(
-    schema: str,
-    name: str,
-    window: tuple[datetime, datetime] | None,
-) -> dict | None:
-    latest = _latest_identity(schema, name)
-    if latest is None:
-        return None
-    return latest
+def _change_ratio(before: str, after: str) -> float:
+    before_lines = before.splitlines()
+    after_lines = after.splitlines()
+    matcher = difflib.SequenceMatcher(a=before_lines, b=after_lines)
+    return 1.0 - matcher.ratio()
 
 
 @config_app.command("get", help="Get a merged config value (defaults + overrides).")
@@ -708,701 +242,411 @@ def config_write(
     typer.echo(json.dumps(data, indent=2, sort_keys=True))
 
 
-@schema_app.command("create", help="Create a cognitive traits schema.")
-def schema_create(
-    schema: str = typer.Argument(..., help="Schema name."),
-    traits: str | None = typer.Argument(
-        None,
-        help="JSON traits payload (list or object). Reads stdin if omitted or '-'.",
-    ),
+@guide_app.command("read", help="Read the latest guide (markdown).")
+def guide_read(
+    version: int | None = typer.Option(None, "--version", help="Guide version (defaults to latest)."),
 ) -> None:
-    if traits is None or traits == "-":
-        traits = typer.get_text_stream("stdin").read()
-    parsed_traits = _parse_traits_payload(traits)
-    version = _next_schema_version(schema)
-    schema_id = _schema_id_for(schema)
-    payload = {
-        "schema": schema,
-        "schema_id": schema_id,
+    directory = _guide_dir()
+    prefix = "guide"
+    if version is None:
+        latest = _latest_version_int(directory, prefix)
+        if latest is None:
+            typer.echo("Guide not found.", err=True)
+            raise typer.Exit(code=1)
+        path = latest
+    else:
+        path = _markdown_path(directory, prefix, version)
+    if not path.exists():
+        typer.echo("Guide not found.", err=True)
+        raise typer.Exit(code=1)
+    typer.echo(path.read_text(encoding="utf-8").rstrip("\n"))
+
+
+@guide_app.command("write", help="Write a new guide version.")
+def guide_write(
+    content: str | None = typer.Argument(
+        None, help="Markdown content. Reads stdin if omitted or '-'."
+    ),
+    from_version: int | None = typer.Option(
+        None, "--from-version", help="Copy content from an earlier version."
+    ),
+    file: Path | None = typer.Option(None, "--file", help="Read markdown from a file."),
+) -> None:
+    if from_version is not None and (content is not None or file is not None):
+        typer.echo("Use --from-version by itself (no content or --file).", err=True)
+        raise typer.Exit(code=1)
+    directory = _guide_dir()
+    prefix = "guide"
+    if from_version is not None:
+        source_path = _markdown_path(directory, prefix, from_version)
+        if not source_path.exists():
+            typer.echo("Guide version not found.", err=True)
+            raise typer.Exit(code=1)
+        content = source_path.read_text(encoding="utf-8")
+        source_meta = {"type": "copy", "from_version": from_version}
+    elif file is not None:
+        if not file.exists():
+            typer.echo("File not found.", err=True)
+            raise typer.Exit(code=1)
+        content = file.read_text(encoding="utf-8")
+        source_meta = {"type": "file", "path": str(file)}
+    else:
+        if content is None or content == "-":
+            content = typer.get_text_stream("stdin").read()
+        source_meta = {"type": "stdin"}
+
+    if content is None or not content.strip():
+        typer.echo("Guide content is empty.", err=True)
+        raise typer.Exit(code=1)
+
+    version = _next_version(directory, prefix)
+    path = _markdown_path(directory, prefix, version)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not content.endswith("\n"):
+        content += "\n"
+    path.write_text(content, encoding="utf-8")
+    metadata = {
         "version": version,
         "created_at": _utc_iso(),
-        "traits": parsed_traits,
+        "source": source_meta,
     }
-    path = _schema_path(schema, version)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    save_json(path, payload)
-    typer.echo(json.dumps(payload, indent=2, sort_keys=True))
+    save_json(_metadata_path(path), metadata)
+
+    config, _ = load_config()
+    keep = int(get_value(config, "guide.max_versions"))
+    _prune_versions(directory, prefix, keep)
+
+    typer.echo(json.dumps(metadata, indent=2, sort_keys=True))
 
 
-@schema_app.command("get", help="Get a schema by name and version.")
-def schema_get(
-    schema: str = typer.Argument(..., help="Schema name."),
-    version: int | None = typer.Option(None, "--version", help="Schema version. Defaults to latest."),
-) -> None:
-    if version is None:
-        data = _latest_schema(schema)
-        if data is None:
-            typer.echo("Schema not found.", err=True)
-            raise typer.Exit(code=1)
-        typer.echo(json.dumps(data, indent=2, sort_keys=True))
-        return
-    path = _schema_path(schema, version)
-    if not path.exists():
-        typer.echo("Schema not found.", err=True)
-        raise typer.Exit(code=1)
-    data = load_json(path)
-    typer.echo(json.dumps(data, indent=2, sort_keys=True))
-
-
-@schema_app.command("latest", help="Get the latest schema version.")
-def schema_latest(
-    schema: str = typer.Argument(..., help="Schema name."),
-) -> None:
-    data = _latest_schema(schema)
-    if data is None:
-        typer.echo("Schema not found.", err=True)
-        raise typer.Exit(code=1)
-    typer.echo(json.dumps(data, indent=2, sort_keys=True))
-
-
-@schema_app.command("list", help="List schemas and versions.")
-def schema_list() -> None:
-    base = _schema_dir()
-    if not base.exists():
-        return
-    for path in sorted(base.glob("*.json"), key=_schema_version_from_path):
-        data = load_json(path)
-        if data:
-            typer.echo(json.dumps(data, sort_keys=True))
-
-
-@identity_app.command("create", help="Create a new identity version.")
+@identity_app.command("create", help="Create a new identity with a # name header.")
 def identity_create(
     name: str = typer.Argument(..., help="Identity name."),
     content: str | None = typer.Argument(
-        None,
-        help="Identity markdown content. Reads stdin if omitted or '-'.",
+        None, help="Optional markdown content. Reads stdin if omitted or '-'."
     ),
-    schema: str | None = typer.Option(None, "--schema", help="Schema name (defaults to config)."),
-    schema_version: int | None = typer.Option(
-        None, "--schema-version", help="Schema version (defaults to latest)."
-    ),
+    file: Path | None = typer.Option(None, "--file", help="Read markdown from a file."),
 ) -> None:
+    normalized = _normalize_name(name)
     config, _ = load_config()
-    if schema is None:
-        schema = config.get("default_schema")
-    if not schema:
-        typer.echo("Missing schema (set default_schema in config or pass --schema).", err=True)
+    max_chars = int(get_value(config, "identity.max_chars"))
+    directory = _identity_dir(normalized)
+    prefix = "identity"
+    if directory.exists() and list(directory.glob(f"{prefix}-*.md")):
+        typer.echo("Identity already exists.", err=True)
         raise typer.Exit(code=1)
-    if schema_version is None:
-        schema_data = _latest_schema(schema)
+
+    if file is not None:
+        if not file.exists():
+            typer.echo("File not found.", err=True)
+            raise typer.Exit(code=1)
+        content = file.read_text(encoding="utf-8")
+        source_meta = {"type": "file", "path": str(file)}
+    elif content is None:
+        stdin_text = _read_stdin(allow_tty=False)
+        if stdin_text.strip():
+            content = stdin_text
+            source_meta = {"type": "stdin"}
+        else:
+            content = f"# {normalized}\n"
+            source_meta = {"type": "generated"}
     else:
-        schema_data = load_json(_schema_path(schema, schema_version))
-    if not schema_data:
-        typer.echo("Schema not found.", err=True)
+        if content == "-":
+            content = typer.get_text_stream("stdin").read()
+            source_meta = {"type": "stdin"}
+        else:
+            source_meta = {"type": "inline"}
+
+    content = _identity_markdown_from_sources(normalized, content)
+    if max_chars > 0 and len(content) > max_chars:
+        typer.echo("Identity exceeds maximum size.", err=True)
         raise typer.Exit(code=1)
-    if content is None or content == "-":
-        content = typer.get_text_stream("stdin").read()
-    if not content.strip():
-        typer.echo("Identity content is empty.", err=True)
-        raise typer.Exit(code=1)
-    version = _next_identity_version(schema, name)
-    now = _utc_iso()
-    payload = {
-        "name": name,
-        "schema": schema,
-        "schema_id": schema_data.get("schema_id"),
-        "schema_version": schema_data.get("version"),
-        "version": version,
-        "created_at": now,
-        "updated_at": now,
-        "content": content,
-        "metadata": {},
-    }
-    path = _identity_path(schema, name, version)
+
+    version = _next_version(directory, prefix)
+    path = _markdown_path(directory, prefix, version)
     path.parent.mkdir(parents=True, exist_ok=True)
-    save_json(path, payload)
-    typer.echo(json.dumps(payload, indent=2, sort_keys=True))
+    path.write_text(content, encoding="utf-8")
+
+    metadata = {
+        "name": normalized,
+        "version": version,
+        "created_at": _utc_iso(),
+        "source": source_meta,
+    }
+    save_json(_metadata_path(path), metadata)
+
+    keep = int(get_value(config, "identity.max_versions"))
+    _prune_versions(directory, prefix, keep)
+
+    typer.echo(json.dumps(metadata, indent=2, sort_keys=True))
 
 
-@identity_app.command("get", help="Get an identity by name and version.")
-def identity_get(
+@identity_app.command("read", help="Read an identity (markdown).")
+def identity_read(
     name: str = typer.Argument(..., help="Identity name."),
-    schema: str | None = typer.Option(None, "--schema", help="Schema name (defaults to config)."),
     version: int | None = typer.Option(None, "--version", help="Identity version (defaults to latest)."),
+    metadata: bool = typer.Option(False, "--metadata", help="Print metadata JSON instead of markdown."),
 ) -> None:
-    config, _ = load_config()
-    if schema is None:
-        schema = config.get("default_schema")
-    if not schema:
-        typer.echo("Missing schema (set default_schema in config or pass --schema).", err=True)
-        raise typer.Exit(code=1)
+    normalized = _normalize_name(name)
+    directory = _identity_dir(normalized)
+    prefix = "identity"
     if version is None:
-        data = _latest_identity(schema, name)
-        if data is None:
+        latest = _latest_version_int(directory, prefix)
+        if latest is None:
             typer.echo("Identity not found.", err=True)
             raise typer.Exit(code=1)
-        typer.echo(json.dumps(data, indent=2, sort_keys=True))
-        return
-    path = _identity_path(schema, name, version)
+        path = latest
+    else:
+        path = _markdown_path(directory, prefix, version)
     if not path.exists():
         typer.echo("Identity not found.", err=True)
         raise typer.Exit(code=1)
-    typer.echo(json.dumps(load_json(path), indent=2, sort_keys=True))
-
-
-@identity_app.command("latest", help="Get the latest identity version.")
-def identity_latest(
-    name: str = typer.Argument(..., help="Identity name."),
-    schema: str | None = typer.Option(None, "--schema", help="Schema name (defaults to config)."),
-) -> None:
-    config, _ = load_config()
-    if schema is None:
-        schema = config.get("default_schema")
-    if not schema:
-        typer.echo("Missing schema (set default_schema in config or pass --schema).", err=True)
-        raise typer.Exit(code=1)
-    data = _latest_identity(schema, name)
-    if data is None:
-        typer.echo("Identity not found.", err=True)
-        raise typer.Exit(code=1)
-    typer.echo(json.dumps(data, indent=2, sort_keys=True))
-
-
-@identity_app.command("list", help="List identity versions for a schema.")
-def identity_list(
-    schema: str | None = typer.Option(None, "--schema", help="Schema name (defaults to config)."),
-) -> None:
-    config, _ = load_config()
-    if schema is None:
-        schema = config.get("default_schema")
-    if not schema:
-        typer.echo("Missing schema (set default_schema in config or pass --schema).", err=True)
-        raise typer.Exit(code=1)
-    base = _identity_dir(schema)
-    if not base.exists():
+    if metadata:
+        meta = _metadata_path(path)
+        if not meta.exists():
+            typer.echo("Identity metadata not found.", err=True)
+            raise typer.Exit(code=1)
+        typer.echo(meta.read_text(encoding="utf-8").rstrip("\n"))
         return
-    for path in sorted(base.glob("*.json"), key=_identity_version_from_path):
-        data = load_json(path)
-        if data:
-            typer.echo(json.dumps(data, sort_keys=True))
+    typer.echo(path.read_text(encoding="utf-8").rstrip("\n"))
 
 
-@identity_app.command("tail-working", help="Tail the working identity file in real time.")
-def identity_tail_working(
+@identity_app.command("write", help="Write a new identity version.")
+def identity_write(
     name: str = typer.Argument(..., help="Identity name."),
-    schema: str | None = typer.Option(None, "--schema", help="Schema name (defaults to config)."),
-    run_id: str | None = typer.Option(None, "--run-id", help="Specific consolidate run id."),
-    sleep_seconds: float = typer.Option(1.0, "--sleep", help="Sleep seconds between checks."),
-    iterations: int | None = typer.Option(
-        None, "--_iterations", hidden=True, help="Limit loop iterations (tests only)."
+    content: str | None = typer.Argument(
+        None, help="Markdown content. Reads stdin if omitted or '-'."
     ),
+    from_version: int | None = typer.Option(
+        None, "--from-version", help="Copy content from an earlier version."
+    ),
+    file: Path | None = typer.Option(None, "--file", help="Read markdown from a file."),
 ) -> None:
+    normalized = _normalize_name(name)
     config, _ = load_config()
-    if schema is None:
-        schema = config.get("default_schema")
-    if not schema:
-        typer.echo("Missing schema (set default_schema in config or pass --schema).", err=True)
+    max_chars = int(get_value(config, "identity.max_chars"))
+    directory = _identity_dir(normalized)
+    prefix = "identity"
+
+    if from_version is not None and (content is not None or file is not None):
+        typer.echo("Use --from-version by itself (no content or --file).", err=True)
         raise typer.Exit(code=1)
-    path = _working_identity_path(schema, name, run_id) if run_id else None
-    last_mtime: float | None = None
-    remaining = iterations
-    while True:
-        if path is None:
-            path = _latest_working_path(schema, name)
-        if path is not None and path.exists():
-            mtime = path.stat().st_mtime
-            if last_mtime is None or mtime > last_mtime:
-                data = load_json(path)
-                if data:
-                    typer.echo(json.dumps(data, sort_keys=True))
-                last_mtime = mtime
-        time.sleep(sleep_seconds)
-        if remaining is not None:
-            remaining -= 1
-            if remaining <= 0:
-                break
+
+    if from_version is not None:
+        source_path = _markdown_path(directory, prefix, from_version)
+        if not source_path.exists():
+            typer.echo("Identity version not found.", err=True)
+            raise typer.Exit(code=1)
+        content = source_path.read_text(encoding="utf-8")
+        source_meta = {"type": "copy", "from_version": from_version}
+    elif file is not None:
+        if not file.exists():
+            typer.echo("File not found.", err=True)
+            raise typer.Exit(code=1)
+        content = file.read_text(encoding="utf-8")
+        source_meta = {"type": "file", "path": str(file)}
+    else:
+        if content is None or content == "-":
+            content = typer.get_text_stream("stdin").read()
+            source_meta = {"type": "stdin"}
+        else:
+            source_meta = {"type": "inline"}
+
+    if content is None or not content.strip():
+        typer.echo("Identity content is empty.", err=True)
+        raise typer.Exit(code=1)
+
+    content = _identity_markdown_from_sources(normalized, content)
+    if max_chars > 0 and len(content) > max_chars:
+        typer.echo("Identity exceeds maximum size.", err=True)
+        raise typer.Exit(code=1)
+
+    version = _next_version(directory, prefix)
+    path = _markdown_path(directory, prefix, version)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+    metadata = {
+        "name": normalized,
+        "version": version,
+        "created_at": _utc_iso(),
+        "source": source_meta,
+    }
+    save_json(_metadata_path(path), metadata)
+
+    keep = int(get_value(config, "identity.max_versions"))
+    _prune_versions(directory, prefix, keep)
+
+    typer.echo(json.dumps(metadata, indent=2, sort_keys=True))
 
 
-@app.command(help="Consolidate identity by extracting schema traits from data sources.")
+@identity_app.command("update", help="Alias for write (creates a new version).")
+def identity_update(
+    name: str = typer.Argument(..., help="Identity name."),
+    content: str | None = typer.Argument(
+        None, help="Markdown content. Reads stdin if omitted or '-'."
+    ),
+    from_version: int | None = typer.Option(
+        None, "--from-version", help="Copy content from an earlier version."
+    ),
+    file: Path | None = typer.Option(None, "--file", help="Read markdown from a file."),
+) -> None:
+    identity_write(name=name, content=content, from_version=from_version, file=file)
+
+
+@app.command(help="Consolidate identity with latest cognitive core and input data.")
 def consolidate(
     name: str = typer.Argument(..., help="Identity name."),
-    schema: str | None = typer.Option(None, "--schema", help="Schema name (defaults to config)."),
-    schema_version: int | None = typer.Option(
-        None, "--schema-version", help="Schema version (defaults to latest)."
+    input_file: list[Path] = typer.Option(
+        None, "--file", help="Input data file (repeatable)."
     ),
-    memory_term: str | None = typer.Option(None, "--memory-term", help="Memory term (short or long)."),
-    memory_type: str | None = typer.Option(None, "--memory-type", help="Memory type."),
-    memory_id: str | None = typer.Option(None, "--memory-id", help="Memory id."),
-    input_text: list[str] = typer.Option(None, "--input", help="Inline text input (repeatable)."),
+    input_text: list[str] = typer.Option(
+        None, "--text", help="Inline input text (repeatable)."
+    ),
     no_stdin: bool = typer.Option(False, "--no-stdin", help="Disable stdin input."),
-    no_memory: bool = typer.Option(False, "--no-memory", help="Disable memory input."),
-    no_topics: bool = typer.Option(False, "--no-topics", help="Disable topics input."),
-    no_input: bool = typer.Option(False, "--no-input", help="Disable inline input."),
-    no_previous: bool = typer.Option(False, "--no-previous", help="Disable previous identity input."),
-    years: int | None = typer.Option(None, "--years", help="Years backwards from now (UTC)."),
-    days: int | None = typer.Option(None, "--days", help="Days backwards from now (UTC)."),
-    hours: int | None = typer.Option(None, "--hours", help="Hours backwards from now (UTC)."),
-    max_chars: int = typer.Option(200000, "--max-chars", help="Max chars per source batch."),
-    summary_max_chars: int = typer.Option(
-        20000, "--summary-max-chars", help="Max chars per summary chunk."
-    ),
     provider: str | None = typer.Option(None, "--provider", help="LLM provider override."),
     model: str | None = typer.Option(None, "--model", help="LLM model override."),
-    retries: int = typer.Option(2, "--retries", help="Retries on transient LLM errors."),
-    retry_wait: float = typer.Option(2.0, "--retry-wait", help="Seconds to wait between retries."),
-    llm_timeout: float | None = typer.Option(
-        60.0, "--llm-timeout", help="Timeout in seconds for each LLM call."
-    ),
+    llm_timeout: float | None = typer.Option(None, "--llm-timeout", help="LLM timeout in seconds."),
 ) -> None:
     config, _ = load_config()
-    if schema is None:
-        schema = config.get("default_schema")
-    if not schema:
-        typer.echo("Missing schema (set default_schema in config or pass --schema).", err=True)
-        raise typer.Exit(code=1)
-    if schema_version is None:
-        schema_data = _latest_schema(schema)
-    else:
-        schema_data = load_json(_schema_path(schema, schema_version))
-    if not schema_data:
-        typer.echo("Schema not found.", err=True)
-        raise typer.Exit(code=1)
+    normalized = _normalize_name(name)
 
-    window = _range_from_filters(years, days, hours)
-
-    sources: list[SourceItem] = []
-    stdin_text = ""
-    if not no_stdin:
-        stdin_text = _read_stdin_if_available()
-        if stdin_text.strip():
-            sources.append(SourceItem(label="stdin", content=stdin_text, metadata={}))
-
-    if not no_input and input_text:
-        for value in input_text:
-            if value.strip():
-                sources.append(SourceItem(label="input", content=value, metadata={}))
-
-    memory_total = 0
-    memory_done = 0
-    if not no_memory and (memory_term or memory_type or memory_id):
-        if not memory_term or not memory_type or not memory_id:
-            typer.echo("Memory input requires --memory-term, --memory-type, and --memory-id.", err=True)
-            raise typer.Exit(code=1)
-        memory_entries = _fetch_memory_entries(
-            term=memory_term,
-            entry_type=memory_type,
-            entry_id=memory_id,
-            window=window,
-            years=years,
-            days=days,
-            hours=hours,
-        )
-        memory_total = len(memory_entries)
-        for entry in memory_entries:
-            raw = _format_memory_entry(entry)
-            summary = _summarize_text(
-                config,
-                raw,
-                max_chars=summary_max_chars,
-                provider=provider,
-                model=model,
-                retries=retries,
-                retry_wait=retry_wait,
-                timeout=llm_timeout,
-            )
-            if summary:
-                sources.append(
-                    SourceItem(
-                        label="memory-summary",
-                        content=summary,
-                        metadata={**raw.metadata, "summary": True},
-                    )
-                )
-            memory_done += 1
-            _write_working_identity(
-                schema=schema,
-                name=name,
-                run_id=run_id,
-                current_identity=current_identity,
-                schema_data=schema_data,
-                metadata={
-                    "stage": "summary",
-                    "memory_progress": {"done": memory_done, "total": memory_total},
-                    "time_filter": {"years": years, "days": days, "hours": hours},
-                },
-            )
-
-    if not no_topics:
-        topic_entries = _fetch_topics(window)
-        for entry in topic_entries:
-            sources.append(_format_topic(entry))
-
-    previous_identity = None
-    if not no_previous:
-        previous_identity = _previous_identity_for_range(schema, name, window)
-
-    system_prompt = _read_prompt(config, "system")
-    user_template = _read_prompt(config, "user")
-
-    if previous_identity is not None:
-        current_identity = str(previous_identity.get("content") or "")
-    else:
-        current_identity = ""
-
-    if not current_identity.strip():
-        current_identity = _empty_identity_markdown(schema_data.get("traits", []))
-
-    run_id = uuid.uuid4().hex
-    _log_event(
-        "consolidate_started",
-        {
-            "name": name,
-            "schema": schema,
-            "schema_version": schema_data.get("version"),
-            "source_count": len(sources),
-            "run_id": run_id,
-            "time_filter": {"years": years, "days": days, "hours": hours},
-        },
-    )
-
-    batched_sources = _batch_sources_by_chars(sources, max_chars)
-
-    total_batches = len(batched_sources)
-    for idx, source in enumerate(batched_sources, start=1):
-        _log_event(
-            "consolidate_source_started",
-            {
-                "name": name,
-                "schema": schema,
-                "label": source.label,
-                "metadata": source.metadata,
-                "batch_index": idx,
-                "batch_count": total_batches,
-                "run_id": run_id,
-            },
-        )
-        prompt = _render_prompt(
-            user_template,
-            schema=schema_data,
-            current_identity=current_identity,
-            source=source,
-        )
-        current_identity = _call_llm(
-            system_prompt,
-            prompt,
-            provider=provider,
-            model=model,
-            retries=retries,
-            retry_wait=retry_wait,
-            timeout=llm_timeout,
-        ).strip()
-        _log_event(
-            "consolidate_source_completed",
-            {
-                "name": name,
-                "schema": schema,
-                "label": source.label,
-                "metadata": source.metadata,
-                "batch_index": idx,
-                "batch_count": total_batches,
-                "run_id": run_id,
-                "content_chars": len(current_identity),
-            },
-        )
-        _write_working_identity(
-            schema=schema,
-            name=name,
-            run_id=run_id,
-            current_identity=current_identity,
-            schema_data=schema_data,
-            metadata={
-                "stage": "consolidate",
-                "batch_index": idx,
-                "batch_count": total_batches,
-                "time_filter": {"years": years, "days": days, "hours": hours},
-            },
-        )
-
-    now = _utc_iso()
-    version = _next_identity_version(schema, name)
-    payload = {
-        "name": name,
-        "schema": schema,
-        "schema_id": schema_data.get("schema_id"),
-        "schema_version": schema_data.get("version"),
-        "version": version,
-        "created_at": now,
-        "updated_at": now,
-        "content": current_identity.strip() + "\n",
-        "metadata": {
-            "consolidation": {
-                "run_id": run_id,
-                "sources": {
-                    "stdin": bool(stdin_text.strip()),
-                    "input_count": len(input_text or []),
-                    "memory": None if no_memory else {
-                        "term": memory_term,
-                        "type": memory_type,
-                        "id": memory_id,
-                    },
-                    "topics": not no_topics,
-                    "previous_identity_version": previous_identity.get("version") if previous_identity else None,
-                },
-                "time_filter": {
-                    "years": years,
-                    "days": days,
-                    "hours": hours,
-                },
-                "source_count": len(sources),
-                "batch_count": len(batched_sources),
-                "max_chars": max_chars,
-                "summary_max_chars": summary_max_chars,
-                "llm": {"provider": provider, "model": model, "timeout": llm_timeout},
-            }
-        },
-    }
-    path = _identity_path(schema, name, version)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    save_json(path, payload)
-    working_path = _working_identity_path(schema, name, run_id)
-    if working_path.exists():
-        working_path.unlink()
-    _log_event(
-        "consolidate_completed",
-        {
-            "name": name,
-            "schema": schema,
-            "version": version,
-            "source_count": len(sources),
-            "run_id": run_id,
-        },
-    )
-    typer.echo(json.dumps(payload, indent=2, sort_keys=True))
-
-
-@app.command(help="Incrementally update the latest identity without creating a new version.")
-def update(
-    name: str = typer.Argument(..., help="Identity name."),
-    schema: str | None = typer.Option(None, "--schema", help="Schema name (defaults to config)."),
-    memory_term: str | None = typer.Option(None, "--memory-term", help="Memory term (short or long)."),
-    memory_type: str | None = typer.Option(None, "--memory-type", help="Memory type."),
-    memory_id: str | None = typer.Option(None, "--memory-id", help="Memory id."),
-    input_text: list[str] = typer.Option(None, "--input", help="Inline text input (repeatable)."),
-    no_stdin: bool = typer.Option(False, "--no-stdin", help="Disable stdin input."),
-    no_memory: bool = typer.Option(False, "--no-memory", help="Disable memory input."),
-    no_topics: bool = typer.Option(False, "--no-topics", help="Disable topics input."),
-    no_input: bool = typer.Option(False, "--no-input", help="Disable inline input."),
-    include_history: bool = typer.Option(
-        False, "--include-history", help="Include prior identity versions as data sources."
-    ),
-    years: int | None = typer.Option(None, "--years", help="Years backwards from now (UTC)."),
-    days: int | None = typer.Option(None, "--days", help="Days backwards from now (UTC)."),
-    hours: int | None = typer.Option(None, "--hours", help="Hours backwards from now (UTC)."),
-    max_chars: int = typer.Option(200000, "--max-chars", help="Max chars per source batch."),
-    summary_max_chars: int = typer.Option(
-        20000, "--summary-max-chars", help="Max chars per summary chunk."
-    ),
-    provider: str | None = typer.Option(None, "--provider", help="LLM provider override."),
-    model: str | None = typer.Option(None, "--model", help="LLM model override."),
-    retries: int = typer.Option(2, "--retries", help="Retries on transient LLM errors."),
-    retry_wait: float = typer.Option(2.0, "--retry-wait", help="Seconds to wait between retries."),
-    llm_timeout: float | None = typer.Option(
-        60.0, "--llm-timeout", help="Timeout in seconds for each LLM call."
-    ),
-) -> None:
-    config, _ = load_config()
-    if schema is None:
-        schema = config.get("default_schema")
-    if not schema:
-        typer.echo("Missing schema (set default_schema in config or pass --schema).", err=True)
-        raise typer.Exit(code=1)
-
-    latest_path = _latest_identity_path(schema, name)
-    if latest_path is None:
+    identity_directory = _identity_dir(normalized)
+    identity_prefix = "identity"
+    latest_identity_path = _latest_version_int(identity_directory, identity_prefix)
+    if latest_identity_path is None:
         typer.echo("Identity not found.", err=True)
         raise typer.Exit(code=1)
-    identity = load_json(latest_path)
-    schema_data = None
-    schema_version = identity.get("schema_version")
-    if schema_version:
-        schema_data = load_json(_schema_path(schema, int(schema_version)))
-    if not schema_data:
-        schema_data = _latest_schema(schema)
-    if not schema_data:
-        typer.echo("Schema not found.", err=True)
+    identity_markdown = latest_identity_path.read_text(encoding="utf-8")
+
+    guide_directory = _guide_dir()
+    guide_prefix = "guide"
+    latest_guide_path = _latest_version_int(guide_directory, guide_prefix)
+    if latest_guide_path is None:
+        typer.echo("Guide not found.", err=True)
+        raise typer.Exit(code=1)
+    guide_markdown = latest_guide_path.read_text(encoding="utf-8")
+
+    sources: list[InputSource] = []
+    if not no_stdin:
+        if sys.stdin is not None and sys.stdin.isatty() and not input_text and not input_file:
+            typer.echo(
+                "Consolidate requires data via stdin, --text, or --file.",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+        stdin_text = _read_stdin(allow_tty=False)
+        if stdin_text.strip():
+            sources.append(InputSource(label="stdin", content=stdin_text, metadata={}))
+    else:
+        stdin_text = ""
+
+    if input_text:
+        for text in input_text:
+            if text.strip():
+                sources.append(InputSource(label="text", content=text, metadata={}))
+
+    if input_file:
+        for path in input_file:
+            if not path.exists():
+                typer.echo(f"Input file not found: {path}", err=True)
+                raise typer.Exit(code=1)
+            content = path.read_text(encoding="utf-8")
+            if content.strip():
+                sources.append(
+                    InputSource(label="file", content=content, metadata={"path": str(path)})
+                )
+
+    if not sources:
+        typer.echo("Consolidate requires data via stdin, --text, or --file.", err=True)
         raise typer.Exit(code=1)
 
-    window = _range_from_filters(years, days, hours)
+    prompts = config.get("prompts", {}) or {}
+    template_name = prompts.get("consolidate_user") or "consolidate-prompt.md"
+    system_name = prompts.get("consolidate_system") or "consolidate-system-prompt.md"
+    template_path = data_dir() / template_name
+    system_path = data_dir() / system_name
+    if not template_path.exists() or not system_path.exists():
+        typer.echo("Missing consolidate prompt templates.", err=True)
+        raise typer.Exit(code=1)
 
-    sources: list[SourceItem] = []
-    stdin_text = ""
-    if not no_stdin:
-        stdin_text = _read_stdin_if_available()
-        if stdin_text.strip():
-            sources.append(SourceItem(label="stdin", content=stdin_text, metadata={}))
+    variance = str(get_value(config, "consolidate.variance"))
+    max_change_ratio = float(get_value(config, "consolidate.max_change_ratio"))
+    max_chars = int(get_value(config, "identity.max_chars"))
+    llm_timeout = llm_timeout if llm_timeout is not None else config.get("consolidate", {}).get("llm_timeout")
+    provider = provider or config.get("consolidate", {}).get("provider")
+    model = model or config.get("consolidate", {}).get("model")
 
-    if not no_input and input_text:
-        for value in input_text:
-            if value.strip():
-                sources.append(SourceItem(label="input", content=value, metadata={}))
+    merged_data = []
+    for source in sources:
+        header = f"### Source ({source.label})"
+        if source.metadata:
+            header += f"\nMetadata: {json.dumps(source.metadata, sort_keys=True)}"
+        merged_data.append(header + "\n" + source.content.strip())
+    data_block = "\n\n".join(merged_data)
 
-    if not no_memory and (memory_term or memory_type or memory_id):
-        if not memory_term or not memory_type or not memory_id:
-            typer.echo("Memory input requires --memory-term, --memory-type, and --memory-id.", err=True)
-            raise typer.Exit(code=1)
-        memory_entries = _fetch_memory_entries(
-            term=memory_term,
-            entry_type=memory_type,
-            entry_id=memory_id,
-            window=window,
-            years=years,
-            days=days,
-            hours=hours,
-        )
-        for entry in memory_entries:
-            raw = _format_memory_entry(entry)
-            summary = _summarize_text(
-                config,
-                raw,
-                max_chars=summary_max_chars,
-                provider=provider,
-                model=model,
-                retries=retries,
-                retry_wait=retry_wait,
-                timeout=llm_timeout,
-            )
-            if summary:
-                sources.append(
-                    SourceItem(
-                        label="memory-summary",
-                        content=summary,
-                        metadata={**raw.metadata, "summary": True},
-                    )
-                )
-
-    if not no_topics:
-        topic_entries = _fetch_topics(window)
-        for entry in topic_entries:
-            sources.append(_format_topic(entry))
-
-    if include_history:
-        history = _identity_versions(schema, name)
-        for item in history[:-1]:
-            created_at = _parse_iso_timestamp(item.get("created_at"))
-            if window is not None and not _in_range(created_at, window):
-                continue
-            sources.append(
-                SourceItem(
-                    label="identity-history",
-                    content=str(item.get("content") or ""),
-                    metadata={"version": item.get("version"), "created_at": item.get("created_at")},
-                )
-            )
-
-    system_prompt = _read_prompt(config, "system")
-    user_template = _read_prompt(config, "user")
-
-    current_identity = str(identity.get("content") or "")
-    if not current_identity.strip():
-        current_identity = _empty_identity_markdown(schema_data.get("traits", []))
-
-    run_id = uuid.uuid4().hex
-    _log_event(
-        "update_started",
-        {
-            "name": name,
-            "schema": schema,
-            "version": identity.get("version"),
-            "source_count": len(sources),
-            "run_id": run_id,
-            "time_filter": {"years": years, "days": days, "hours": hours},
-        },
+    prompt = _render_prompt(
+        template_path.read_text(encoding="utf-8"),
+        identity=identity_markdown,
+        guide=guide_markdown,
+        data=data_block,
+        variance=variance,
     )
 
-    batched_sources = _batch_sources_by_chars(sources, max_chars)
+    system_prompt = system_path.read_text(encoding="utf-8")
 
-    for source in batched_sources:
-        _log_event(
-            "update_source_started",
-            {
-                "name": name,
-                "schema": schema,
-                "label": source.label,
-                "metadata": source.metadata,
-                "run_id": run_id,
-            },
-        )
-        prompt = _render_prompt(
-            user_template,
-            schema=schema_data,
-            current_identity=current_identity,
-            source=source,
-        )
-        current_identity = _call_llm(
-            system_prompt,
-            prompt,
-            provider=provider,
-            model=model,
-            retries=retries,
-            retry_wait=retry_wait,
-            timeout=llm_timeout,
-        ).strip()
-        _log_event(
-            "update_source_completed",
-            {
-                "name": name,
-                "schema": schema,
-                "label": source.label,
-                "metadata": source.metadata,
-                "run_id": run_id,
-                "content_chars": len(current_identity),
-            },
-        )
+    response = _call_llm(
+        system_prompt,
+        prompt,
+        provider=provider,
+        model=model,
+        timeout=llm_timeout,
+    ).strip()
 
-    now = _utc_iso()
-    identity["content"] = current_identity.strip() + "\n"
-    identity["updated_at"] = now
-    identity["run_id"] = run_id
-    metadata = identity.get("metadata") or {}
-    updates = metadata.get("updates") or []
-    updates.append(
-        {
-            "updated_at": now,
-            "source_count": len(sources),
-            "time_filter": {"years": years, "days": days, "hours": hours},
-            "sources": {
-                "stdin": bool(stdin_text.strip()),
-                "input_count": len(input_text or []),
-                "memory": None if no_memory else {
-                    "term": memory_term,
-                    "type": memory_type,
-                    "id": memory_id,
-                },
-                "topics": not no_topics,
-                "included_history": include_history,
-            },
-            "batch_count": len(batched_sources),
-            "max_chars": max_chars,
-            "summary_max_chars": summary_max_chars,
+    if not response:
+        typer.echo("LLM returned empty identity.", err=True)
+        raise typer.Exit(code=1)
+
+    response = _identity_markdown_from_sources(normalized, response)
+
+    if max_chars > 0 and len(response) > max_chars:
+        typer.echo("Identity exceeds maximum size.", err=True)
+        raise typer.Exit(code=1)
+
+    change_ratio = _change_ratio(identity_markdown, response)
+    if max_change_ratio > 0 and change_ratio > max_change_ratio:
+        typer.echo("Identity change exceeds max change ratio.", err=True)
+        raise typer.Exit(code=1)
+
+    version = _next_version(identity_directory, identity_prefix)
+    new_path = _markdown_path(identity_directory, identity_prefix, version)
+    new_path.parent.mkdir(parents=True, exist_ok=True)
+    new_path.write_text(response, encoding="utf-8")
+
+    metadata = {
+        "name": normalized,
+        "version": version,
+        "created_at": _utc_iso(),
+        "source": {
+            "stdin": bool(stdin_text.strip()),
+            "input_text_count": len([s for s in sources if s.label == "text"]),
+            "input_file_count": len([s for s in sources if s.label == "file"]),
+        },
+        "guide_version": _version_from_path(latest_guide_path, guide_prefix),
+        "previous_identity_version": _version_from_path(latest_identity_path, identity_prefix),
+        "consolidate": {
+            "variance": variance,
+            "max_change_ratio": max_change_ratio,
+            "change_ratio": round(change_ratio, 4),
             "llm": {"provider": provider, "model": model, "timeout": llm_timeout},
-            "run_id": run_id,
-        }
-    )
-    metadata["updates"] = updates
-    identity["metadata"] = metadata
-    save_json(latest_path, identity)
-    _log_event(
-        "update_completed",
-        {
-            "name": name,
-            "schema": schema,
-            "version": identity.get("version"),
-            "source_count": len(sources),
-            "run_id": run_id,
         },
-    )
-    typer.echo(json.dumps(identity, indent=2, sort_keys=True))
+    }
+    save_json(_metadata_path(new_path), metadata)
+
+    keep = int(get_value(config, "identity.max_versions"))
+    _prune_versions(identity_directory, identity_prefix, keep)
+
+    typer.echo(json.dumps(metadata, indent=2, sort_keys=True))
 
 
 @app.command(help="Simple health check.")

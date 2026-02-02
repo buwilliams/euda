@@ -1,23 +1,20 @@
 # identity
 
-Manage agent identities and cognitive schemas.
+Manage agent identities and consolidation guides.
 
 ## Data layout
-- Schemas: `data/schema/{schema}-{version}.json`
-- Identities: `data/identity/{schema}/{name}-{version}.json`
+- Guides: `data/guide/guide-{version}.md` (+ `.json` metadata)
+- Identities: `data/identity/{name}/identity-{version}.md` (+ `.json` metadata)
 - Prompts: `data/consolidate-system-prompt.md`, `data/consolidate-prompt.md`
 
 ## Commands
-- `identity schema create/get/latest/list`
-- `identity identity create/get/latest/list`
-- `identity identity tail-working [--run-id <id>]`
+- `identity guide read|write`
+- `identity identity create|read|write|update`
 - `identity consolidate`
-- `identity update`
 
 ## Notes
-- Identities are versioned; `consolidate` writes a new version.
-- `update` modifies the latest identity in-place for incremental updates.
-- Consolidation uses memory/topics/stdin/inline inputs and LLM prompts.
-- Memory entries are summarized before consolidation and batched by `--max-chars` to fit context windows.
-- Default caps: `--max-chars 200000`, `--summary-max-chars 20000`.
-- Use `--summary-max-chars` to cap summary chunk size and `--llm-timeout` to increase per-call timeouts.
+- Versions auto-increment and are append-only.
+- Latest versions are determined by filename version.
+- Consolidate uses the latest guide and latest identity.
+- Consolidate requires data via stdin, `--text`, or `--file`.
+- Identities are kept within size/retention limits from `config.default.json`.

@@ -1,9 +1,20 @@
 {
-  "default_schema": "cognitive-core",
+  "guide": {
+    "max_versions": 20
+  },
+  "identity": {
+    "max_chars": 8000,
+    "max_versions": 20
+  },
+  "consolidate": {
+    "variance": "medium",
+    "max_change_ratio": 0.2,
+    "llm_timeout": 60.0,
+    "provider": null,
+    "model": null
+  },
   "prompts": {
-    "system": "consolidate-system-prompt.md",
-    "user": "consolidate-prompt.md",
-    "summary_system": "summarize-system-prompt.md",
-    "summary_user": "summarize-prompt.md"
+    "consolidate_system": "consolidate-system-prompt.md",
+    "consolidate_user": "consolidate-prompt.md"
   }
 }
