@@ -9,7 +9,7 @@ Manage agent identities and consolidation guides.
 
 ## Commands
 - `identity guide read|write`
-- `identity identity create|read|write|update`
+- `identity id create|read|list|write|update`
 - `identity consolidate`
 
 ## Notes

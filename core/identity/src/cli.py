@@ -30,7 +30,7 @@ identity_app = typer.Typer(help="Manage identities.")
 
 app.add_typer(config_app, name="config")
 app.add_typer(guide_app, name="guide")
-app.add_typer(identity_app, name="identity")
+app.add_typer(identity_app, name="id")
 
 
 @app.callback()
@@ -411,6 +411,16 @@ def identity_read(
     typer.echo(path.read_text(encoding="utf-8").rstrip("\n"))
 
 
+@identity_app.command("list", help="List identities being tracked.")
+def identity_list() -> None:
+    root = data_dir() / "identity"
+    if not root.exists():
+        return
+    names = sorted([path.name for path in root.iterdir() if path.is_dir()])
+    for name in names:
+        typer.echo(name)
+
+
 @identity_app.command("write", help="Write a new identity version.")
 def identity_write(
     name: str = typer.Argument(..., help="Identity name."),
@@ -651,11 +661,6 @@ def consolidate(
     _prune_versions(identity_directory, identity_prefix, keep)
 
     typer.echo(json.dumps(metadata, indent=2, sort_keys=True))
-
-
-@app.command(help="Simple health check.")
-def ping() -> None:
-    typer.echo("pong")
 
 
 if __name__ == "__main__":

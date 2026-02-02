@@ -37,3 +37,16 @@ def test_cli_consolidate_defaults(identity_env, monkeypatch):
     payload = json.loads(result.stdout)
     assert payload["name"] == "neo"
     assert payload["version"] == 2
+
+
+def test_identity_list(identity_env):
+    data_dir = identity_env / "data"
+    write_guide(data_dir)
+    write_identity(data_dir, name="neo")
+    write_identity(data_dir, name="trinity")
+
+    result = runner.invoke(app, ["id", "list"])
+
+    assert result.exit_code == 0
+    names = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    assert names == ["neo", "trinity"]

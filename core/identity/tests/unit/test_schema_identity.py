@@ -29,7 +29,6 @@ def test_identity_versioning(identity_env):
 
     cli.identity_create("neo", "# neo\n\n## Purpose\nOne\n", file=None)
     cli.identity_write("neo", "# neo\n\n## Purpose\nTwo\n", from_version=None, file=None)
-
     identity_dir = data_dir / "identity" / "neo"
     v1 = _load(identity_dir / "identity-1.json")
     v2 = _load(identity_dir / "identity-2.json")
