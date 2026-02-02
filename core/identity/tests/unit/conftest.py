@@ -21,7 +21,7 @@ def write_prompts(data_dir: Path) -> None:
         "system", encoding="utf-8"
     )
     (data_dir / "consolidate-prompt.md").write_text(
-        "Guide:\n{guide}\n\nIdentity:\n{identity}\n\nData:\n{data}\n\nVariance: {variance}\n",
+        "Identity:\n{identity}\n\nData:\n{data}\n\nVariance: {variance}\n",
         encoding="utf-8",
     )
 

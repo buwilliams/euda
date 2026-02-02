@@ -588,12 +588,16 @@ def consolidate(
     prompt = _render_prompt(
         template_path.read_text(encoding="utf-8"),
         identity=identity_markdown,
-        guide=guide_markdown,
+        guide="",
         data=data_block,
         variance=variance,
     )
 
-    system_prompt = system_path.read_text(encoding="utf-8")
+    system_prompt = system_path.read_text(encoding="utf-8").rstrip()
+    if system_prompt:
+        system_prompt = f"{system_prompt}\n\n{guide_markdown.strip()}\n"
+    else:
+        system_prompt = guide_markdown.strip() + "\n"
 
     response = _call_llm(
         system_prompt,
