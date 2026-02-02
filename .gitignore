@@ -19,6 +19,16 @@ uv.lock
 # App config overrides
 **/config.json
 **/data/
+!core/identity/data/
+!core/identity/data/consolidate-prompt.md
+!core/identity/data/consolidate-system-prompt.md
+!core/identity/data/identity-template.md
+!core/identity/data/guide/
+core/identity/data/identity/
+core/identity/data/guide/guide-*.md
+core/identity/data/guide/guide-*.json
+!core/identity/data/guide/guide-1.md
+!core/identity/data/guide/guide-1.json
 
 # OS / editor
 .DS_Store
