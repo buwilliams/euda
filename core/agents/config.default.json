@@ -1,4 +1,9 @@
 {
   "states": ["enabled", "disabled", "paused"],
-  "types": ["user", "autonomous", "subagent"]
+  "types": ["user", "autonomous", "subagent"],
+  "runner": {
+    "max_tokens": 4096,
+    "max_tool_rounds": 20,
+    "command_timeout": 30
+  }
 }

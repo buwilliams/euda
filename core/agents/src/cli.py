@@ -269,6 +269,31 @@ def delete(
     typer.echo(json.dumps({"name": norm, "deleted": True}, sort_keys=True))
 
 
+@app.command(help="Start an interactive conversation with a user agent.")
+def run(
+    name: str = typer.Argument(..., help="Agent name."),
+    provider: Optional[str] = typer.Option(None, "--provider", help="Override LLM provider."),
+    model: Optional[str] = typer.Option(None, "--model", help="Override LLM model."),
+) -> None:
+    norm = _normalize_name(name)
+    agent = _load_agent(norm)
+    if agent is None:
+        typer.echo(f"Agent not found: {norm}", err=True)
+        raise typer.Exit(code=1)
+    if agent.get("type") != "user":
+        typer.echo(f"Only user-type agents can be run interactively. Agent '{norm}' has type '{agent.get('type')}'.", err=True)
+        raise typer.Exit(code=1)
+    if agent.get("state") != "enabled":
+        typer.echo(f"Agent '{norm}' is not enabled (state: {agent.get('state')}).", err=True)
+        raise typer.Exit(code=1)
+    if not agent.get("identity"):
+        typer.echo(f"Agent '{norm}' has no identity linked. Use 'agents update {norm} --identity <name>'.", err=True)
+        raise typer.Exit(code=1)
+
+    from src.runner import run_agent
+    run_agent(agent, provider_override=provider, model_override=model)
+
+
 @app.command(help="Simple health check.")
 def ping() -> None:
     typer.echo("pong")
