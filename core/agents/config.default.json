@@ -1,1 +1,4 @@
-{}
+{
+  "states": ["enabled", "disabled", "paused"],
+  "types": ["user", "autonomous", "subagent"]
+}
