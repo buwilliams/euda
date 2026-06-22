@@ -14,6 +14,8 @@ _Eudaimonia (you-dye-MOH-nee-ah), or  Euda (you-da) for short, is an ancient Gre
 6. [Contributing](docs/6_contribute.md) — Extension hierarchy and PR process
 7. [Privacy](docs/7_privacy.md) — Privacy philosophy and current state
 
+For a deeper, durable explanation of the design—what Euda is trying to become and what must stay true as the code changes—see the [Intent Documentation](docs/intent/README.md). It covers the foundation (identity, agents, memory, topics), capabilities, surfaces, and the CLI-first architecture.
+
 The [Getting Started Guide](docs/5_getting_started.md) will have you running Euda locally in minutes.
 
 ## Community
